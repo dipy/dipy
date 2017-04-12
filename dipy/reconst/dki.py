@@ -3,19 +3,16 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import scipy.optimize as opt
-from dipy.reconst.dti import (TensorFit, mean_diffusivity,
-                              apparent_diffusion_coef, from_lower_triangular,
+from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
+                              radial_diffusivity, from_lower_triangular,
                               lower_triangular, decompose_tensor,
-                              eig_from_lo_tri, MIN_POSITIVE_SIGNAL)
+                              MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.utils.six.moves import range
-from dipy.reconst.base import ReconstModel
-from dipy.core.geometry import (sphere2cart, cart2sphere)
-from dipy.reconst.recspeed import local_maxima
+from ..core.onetime import auto_attr
+from .base import ReconstModel
 from dipy.core.ndindex import ndindex
-from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -365,10 +362,94 @@ def _F2m(a, b, c):
     return F2
 
 
-def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0,
-                          min_kurtosis=-3./7):
-    r""" Helper function that calculates the apparent kurtosis coefficient
-    (AKC) in each direction of a sphere for a single voxel.
+def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
+                           min_kurtosis=-1):
+    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+    of a sphere.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvectors respectively
+            3) Fifteen elements of the kurtosis tensor
+    sphere : a Sphere class instance
+        The AKC will be calculated for each of the vertices in the sphere
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. defaut = 0
+    min_kurtosis : float (optional)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. defaut = -1
+
+    Returns
+    --------
+    AKC : ndarray (x, y, z, g) or (n, g)
+        Apparent kurtosis coefficient (AKC) for all g directions of a sphere.
+
+    Notes
+    -----
+    For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
+    calculation of AKC is done using formula:
+
+    .. math ::
+        AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
+        \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
+
+    where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
+    diffusivity and ADC the apparent diffusion coefficent computed as:
+
+    .. math ::
+
+        ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
+
+    where $D_{ij}$ are the elements of the diffusion tensor.
+    """
+    # Flat parameters
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split data
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Initialize AKC matrix
+    V = sphere.vertices
+    AKC = np.zeros((len(kt), len(V)))
+
+    # select relevant voxels to process
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+    AKCi = AKC[rel_i]
+
+    # Compute MD
+    MD = mean_diffusivity(evals)
+
+    # loop over all relevant voxels
+    for vox in range(len(kt)):
+        R = evecs[vox]
+        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
+        AKCi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
+                                          min_diffusivity=min_diffusivity,
+                                          min_kurtosis=min_kurtosis)
+
+    # reshape data according to input data
+    AKC[rel_i] = AKCi
+
+    return AKC.reshape((outshape + (len(V),)))
+
+
+def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-1):
+    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
+    in each direction of a sphere for a single voxel.
 
     Parameters
     ----------
@@ -386,11 +467,10 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0,
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. defaut = 0
     min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physicaly
-        and biologicaly plausible, and these cause artefacts in kurtosis-based
-        measures, directional kurtosis values smaller than `min_kurtosis` are
-        replaced with `min_kurtosis`. defaut = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. defaut = -1
 
     Returns
     --------
@@ -433,101 +513,11 @@ def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0,
     if min_kurtosis is not None:
         AKC = AKC.clip(min=min_kurtosis)
 
-    return (MD/ADC) ** 2 * AKC
+    return (MD / ADC) ** 2 * AKC
 
 
-def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
-                           min_kurtosis=-3./7):
-    r""" Calculates the apparent kurtosis coefficient (AKC) in each direction
-    of a sphere.
-
-    Parameters
-    ----------
-    dki_params : ndarray (x, y, z, 27) or (n, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvectors respectively
-            3) Fifteen elements of the kurtosis tensor
-    sphere : a Sphere class instance
-        The AKC will be calculated for each of the vertices in the sphere
-    min_diffusivity : float (optional)
-        Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
-        values smaller than `min_diffusivity` are replaced with
-        `min_diffusivity`. defaut = 0
-    min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. defaut = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores)
-
-    Returns
-    --------
-    AKC : ndarray (x, y, z, g) or (n, g)
-        Apparent kurtosis coefficient (AKC) for all g directions of a sphere.
-
-    Notes
-    -----
-    For each sphere direction with coordinates $(n_{1}, n_{2}, n_{3})$, the
-    calculation of AKC is done using formula:
-
-    .. math ::
-        AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
-        \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
-
-    where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
-    diffusivity and ADC the apparent diffusion coefficent computed as:
-
-    .. math ::
-
-        ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
-
-    where $D_{ij}$ are the elements of the diffusion tensor.
-
-    See Also
-    --------
-    dipy.reconst.dki.radial_kurtosis
-    """
-    # Flat parameters
-    outshape = dki_params.shape[:-1]
-    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
-
-    # Split data
-    evals, evecs, kt = split_dki_param(dki_params)
-
-    # Initialize AKC matrix
-    V = sphere.vertices
-    AKC = np.zeros((len(kt), len(V)))
-
-    # select relevant voxels to process
-    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    kt = kt[rel_i]
-    evecs = evecs[rel_i]
-    evals = evals[rel_i]
-    AKCi = AKC[rel_i]
-
-    # Compute MD
-    MD = mean_diffusivity(evals)
-
-    # loop over all relevant voxels
-    for vox in range(len(kt)):
-        R = evecs[vox]
-        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKCi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
-                                          min_diffusivity=min_diffusivity,
-                                          min_kurtosis=min_kurtosis)
-
-    # reshape data according to input data
-    AKC[rel_i] = AKCi
-
-    return AKC.reshape((outshape + (len(V),)))
-
-
-def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
-    r""" Computes mean Kurtosis (MK) from the kurtosis tensor [1]_.
+def mean_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
+    r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
     Parameters
     ----------
@@ -541,8 +531,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
-        `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_)
+        `min_kurtosis`. defaut = 0
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
@@ -594,11 +583,6 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
-           Robust estimation from DW-MRI using homogeneous polynomials.
-           Proceedings of the 8th {IEEE} International Symposium on Biomedical
-           Imaging: From Nano to Macro, ISBI 2011, 262-265.
-           doi: 10.1109/ISBI.2011.5872402
     """
     # Flat parameters. For numpy versions more recent than 1.6.0, this step
     # isn't required
@@ -764,8 +748,8 @@ def _G2m(a, b, c):
     return G2
 
 
-def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
-    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_.
+def radial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
+    r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
 
     Parameters
     ----------
@@ -779,8 +763,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
-        `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_)
+        `min_kurtosis`. defaut = 0
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
@@ -793,7 +776,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
 
     Notes
     --------
-    RK is calculated with the following equation [1]_:
+    RK is calculated with the following equation:
     .. math::
         K_{\bot} = G_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2222} +
                    G_1(\lambda_1,\lambda_3,\lambda_2)\hat{W}_{3333} +
@@ -813,18 +796,6 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         G_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
-
-    References
-    ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-
-    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
-           Robust estimation from DW-MRI using homogeneous polynomials.
-           Proceedings of the 8th {IEEE} International Symposium on Biomedical
-           Imaging: From Nano to Macro, ISBI 2011, 262-265.
-           doi: 10.1109/ISBI.2011.5872402
     """
     # Flat parameters. For numpy versions more recent than 1.6.0, this step
     # isn't required
@@ -857,7 +828,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
+def axial_kurtosis(dki_params, min_kurtosis=0, max_kurtosis=3):
     r"""  Computes axial Kurtosis (AK) from the kurtosis tensor.
 
     Parameters
@@ -872,8 +843,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     min_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
-        `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores)
+        `min_kurtosis`. defaut = 0
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
@@ -883,10 +853,6 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     -------
     ak : array
         Calculated AK.
-
-    See also
-    --------
-    dipy.reconst.dki.radial_kurtosis
     """
     # Flat parameters
     outshape = dki_params.shape[:-1]
@@ -927,270 +893,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     return AK.reshape(outshape)
 
 
-def _kt_maxima_converge(ang, dt, MD, kt):
-    """ Helper function that computes the inverse of the directional kurtosis
-    of a voxel along a given directions in polar coordinates.
-
-    Parameters
-    ----------
-    ang : array (2,)
-        arrays containing the two polar angles
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
-    MD : float
-        mean diffusivity of the voxel
-    kt : array (15,)
-        elements of the kurtosis tensor of the voxel.
-
-    Returns
-    -------
-    neg_kt : float
-        The inverse values of the directional kurtosis for the given direction.
-
-    Notes
-    -----
-    This function is used to refine the kurtosis maxima estimate
-
-    See also
-    --------
-    dipy.reconst.dki.kurtosis_maximum
-    """
-    n = np.array([sphere2cart(1, ang[0], ang[1])])
-    return -1. * _directional_kurtosis(dt, MD, kt, n)
-
-
-def kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
-    """ Computes the maxima value of a single voxel kurtosis tensor
-
-    Parameters
-    ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
-    MD : float
-        mean diffusivity of the voxel
-    kt : array (15,)
-        elements of the kurtosis tensor of the voxel.
-    sphere : Sphere class instance, optional
-        The sphere providing sample directions for the initial search of the
-        maxima value of kurtosis.
-    gtol : float, optional
-        This input is to refine kurtosis maxima under the precision of the
-        directions sampled on the sphere class instance. The gradient of the
-        convergence procedure must be less than gtol before successful
-        termination. If gtol is None, fiber direction is directly taken from
-        the initial sampled directions of the given sphere object
-
-    Returns
-    --------
-    max_value : float
-        kurtosis tensor maxima value
-    max_dir : array (3,)
-        Cartesian coordinates of the direction of the maximal kurtosis value
-    """
-    # Estimation of maxima kurtosis candidates
-    AKC = _directional_kurtosis(dt, MD, kt, sphere.vertices)
-    max_val, ind = local_maxima(AKC, sphere.edges)
-    n = len(max_val)
-    max_dir = sphere.vertices[ind]
-
-    # Select the maxima from the candidates
-    max_value = max(max_val)
-    max_direction = max_dir[np.argmax(max_val.argmax)]
-
-    # refine maxima direction
-    if gtol is not None:
-        for p in range(n):
-            r, theta, phi = cart2sphere(max_dir[p, 0], max_dir[p, 1],
-                                        max_dir[p, 2])
-            ang = np.array([theta, phi])
-            ang[:] = opt.fmin_bfgs(_kt_maxima_converge, ang, args=(dt, MD, kt),
-                                   gtol=gtol, disp=False, retall=False)
-            k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
-            k_val = _directional_kurtosis(dt, MD, kt, k_dir)
-            if k_val > max_value:
-                max_value = k_val
-                max_direction = k_dir
-
-    return max_value, max_direction
-
-
-def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
-    """ Computes the DKI based axonal water fraction [1]_.
-
-    Parameters
-    ----------
-    dki_params : ndarray (x, y, z, 27) or (n, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follow:
-            1) Three diffusion tensor's eingenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-    sphere : Sphere class instance, optional
-        The sphere providing sample directions for the initial search of the
-        maximal value of kurtosis.
-    gtol : float, optional
-        This input is to refine kurtosis maxima under the precision of the
-        directions sampled on the sphere class instance. The gradient of the
-        convergence procedure must be less than gtol before successful
-        termination. If gtol is None, fiber direction is directly taken from
-        the initial sampled directions of the given sphere object
-    mask : ndarray
-        A boolean array used to mark the coordinates in the data that should be
-        analyzed that has the shape dki_params.shape[:-1]
-
-    Returns
-    --------
-    AWF : ndarray (x, y, z) or (n)
-        Axonal Water Fraction
-    Da : ndarray (x, y, z) or (n)
-        Axonal Diffusivity
-    ADe : ndarray (x, y, z) or (n)
-        Axial Diffusivity of extra-cellular compartment
-    RDe : ndarray (x, y, z) or (n)
-        Radial Diffusivity of extra-cellular compartment
-    tort : ndarray (x, y, z) or (n)
-        Tortuosity
-
-    References
-    ----------
-    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
-           characterization with diffusional kurtosis imaging.
-           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
-    """
-    shape = dki_params.shape[:-1]
-
-    # select voxels where to find fiber directions
-    if mask is None:
-        mask = np.ones(shape, dtype='bool')
-    else:
-        if mask.shape != shape:
-            raise ValueError("Mask is not the same shape as dki_params.")
-
-    evals, evecs, kt = split_dki_param(dki_params)
-
-    # select non-zero voxels
-    pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    mask = np.logical_and(mask, pos_evals)
-
-    kt_max = np.zeros(mask.shape)
-
-    for idx in ndindex(shape):
-        if not mask[idx]:
-            continue
-        DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
-        dt = lower_triangular(DT)
-        kt_max[idx], da = kurtosis_maximum(dt, np.mean(evals[idx]), kt[idx],
-                                           sphere, gtol=1e-5)
-
-    AWF = kt_max / (kt_max + 3)
-
-    return AWF
-
-
-def diffusion_components(dki_params, sphere, awf=None, mask=None):
-    """ Extracts the intra and extra-cellular diffusion tensors of well aligned
-    fibers from diffusion kurtosis imaging parameters [1]_.
-
-    Parameters
-    ----------
-    dki_params : ndarray (x, y, z, 27) or (n, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follow:
-            1) Three diffusion tensor's eingenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-    sphere : Sphere class instance, optional
-        The sphere providing sample directions to sample the intra and extra
-        cellular diffusion tensors. For more details see Fieremans et al.,
-        2011.
-    awk : ndarray (optional)
-        Array containing values of the axonal water fraction that has the shape
-        dki_params.shape[:-1]. If not given this will be automatically computed
-        using function axonal_water_fraction with function's default precision.
-    mask : ndarray (optional)
-        A boolean array used to mark the coordinates in the data that should be
-        analyzed that has the shape dki_params.shape[:-1]
-
-    Returns
-    --------
-    EDT : ndarray (x, y, z, 12) or (n, 12)
-        Parameters of the extra-cellular diffusion tensor.
-    IDT : ndarray (x, y, z, 12) or (n, 12)
-        Parameters of the intra-cellular diffusion tensor.
-
-    Notes
-    -----
-    The parameters of both extra-cellular and intra-cellular diffusion tensors
-    are order as follow:
-        1) Three diffusion tensor's eingenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-        second and third coordinates of the eigenvector
-
-    References
-    ----------
-    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
-           characterization with diffusional kurtosis imaging.
-           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
-    """
-    shape = dki_params.shape[:-1]
-
-    # select voxels where to applied the single fiber model
-    if mask is None:
-        mask = np.ones(shape, dtype='bool')
-    else:
-        if mask.shape != shape:
-            raise ValueError("Mask is not the same shape as dki_params.")
-        else:
-            mask = np.array(mask, dtype=bool, copy=False)
-
-    # check or compute awf values
-    if awf is None:
-        awf = axonal_water_fraction(dki_params, sphere, mask=mask)
-    else:
-        if awf.shape != shape:
-            raise ValueError("awf array is not the same shape as dki_params.")
-
-    # Initialize hindered and restricted diffusion tensors
-    EDT = np.zeros(shape + (12,))
-    IDT = np.zeros(shape + (12,))
-
-    # Generate matrix that converts apparant diffusion coefficients to tensors
-    B = np.zeros((sphere.x.size, 6))
-    B[:, 0] = sphere.x * sphere.x  # Bxx
-    B[:, 1] = sphere.x * sphere.y * 2.  # Bxy
-    B[:, 2] = sphere.y * sphere.y   # Byy
-    B[:, 3] = sphere.x * sphere.z * 2.  # Bxz
-    B[:, 4] = sphere.y * sphere.z * 2.  # Byz
-    B[:, 5] = sphere.z * sphere.z  # Bzz
-    pinvB = np.linalg.pinv(B)
-
-    # Compute hindered and restricted diffusion tensors for all voxels
-    evals, evecs, kt = split_dki_param(dki_params)
-    for idx in ndindex(shape):
-        if not mask[idx]:
-            continue
-        # sample apparent diffusion and kurtosis values
-        di = apparent_diffusion_coef(vec_val_vect(evecs[idx], evals[idx]),
-                                     sphere)
-        ki = apparent_kurtosis_coef(dki_params[idx], sphere)
-
-        # Convert apparent diffusion and kurtosis values to apparent diffusion
-        # values of the hindered and restricted diffusion
-        edi = di * (1 + np.sqrt(ki*awf[idx] / (3.0-3.0*awf[idx])))
-        idi = di * (1 - np.sqrt(ki * (1.0-awf[idx]) / (3.0*awf[idx])))
-
-        # generate hindered and restricted diffusion tensors
-        edt = eig_from_lo_tri(np.dot(pinvB, edi))
-        idt = eig_from_lo_tri(np.dot(pinvB, idi))
-        EDT[idx] = edt
-        IDT[idx] = idt
-
-    return EDT, IDT
-
-
-def dki_prediction(dki_params, gtab, S0=150):
+def dki_prediction(dki_params, gtab, S0=1.):
     """ Predict a signal given diffusion kurtosis imaging parameters.
 
     Parameters
@@ -1277,7 +980,7 @@ class DiffusionKurtosisModel(ReconstModel):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
         """
@@ -1423,7 +1126,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def mk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
@@ -1431,8 +1134,7 @@ class DiffusionKurtosisFit(TensorFit):
         min_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are smaller than `min_kurtosis` are replaced
-            with `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores [2]_)
+            with `min_kurtosis`. defaut = 0
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
@@ -1492,15 +1194,10 @@ class DiffusionKurtosisFit(TensorFit):
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
                Estimation of tensors and tensor-derived measures in diffusional
                kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
-               Robust estimation from DW-MRI using homogeneous polynomials.
-               Proceedings of the 8th {IEEE} International Symposium on
-               Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
-               doi: 10.1109/ISBI.2011.5872402
         """
         return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def ak(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def ak(self, min_kurtosis=0, max_kurtosis=3):
         r"""
         Axial Kurtosis (AK) of a diffusion kurtosis tensor.
 
@@ -1509,8 +1206,7 @@ class DiffusionKurtosisFit(TensorFit):
         min_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are smaller than `min_kurtosis` are replaced
-            with `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores)
+            with `min_kurtosis`. defaut = 0
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
@@ -1520,14 +1216,10 @@ class DiffusionKurtosisFit(TensorFit):
         -------
         ak : array
             Calculated AK.
-
-        See also
-        --------
-        dipy.reconst.dki.axial_kurtosis
         """
         return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def rk(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def rk(self, min_kurtosis=0, max_kurtosis=3):
         r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor.
 
         Parameters
@@ -1535,8 +1227,7 @@ class DiffusionKurtosisFit(TensorFit):
         min_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are smaller than `min_kurtosis` are replaced
-            with `min_kurtosis`. defaut = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores)
+            with `min_kurtosis`. defaut = 0
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
@@ -1575,10 +1266,6 @@ class DiffusionKurtosisFit(TensorFit):
             \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
             \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2
             \right )
-
-        See also
-        --------
-        dipy.reconst.dki.radial_kurtosis
         """
         return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
@@ -1765,7 +1452,7 @@ def wls_fit_dki(design_matrix, data):
 
     References
     ----------
-    .. [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
+       [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
            2013. Weighted linear least squares estimation of diffusion MRI
            parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
            335-346.
@@ -1888,9 +1575,9 @@ def Wrotate(kt, Basis):
 
     References
     ----------
-    .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-           characterization of neural tissues using directional diffusion
-           kurtosis analysis. Neuroimage 42(1): 122-34
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
     """
     inds = np.array([[0, 0, 0, 0], [1, 1, 1, 1], [2, 2, 2, 2],
                      [0, 0, 0, 1], [0, 0, 0, 2], [0, 1, 1, 1],
@@ -1950,9 +1637,9 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
 
     References
     ----------
-    .. [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
-           characterization of neural tissues using directional diffusion
-           kurtosis analysis. Neuroimage 42(1): 122-34
+    [1] Hui ES, Cheung MM, Qi L, Wu EX, 2008. Towards better MR
+    characterization of neural tissues using directional diffusion kurtosis
+    analysis. Neuroimage 42(1): 122-34
     """
 
     Wre = 0
@@ -2041,8 +1728,6 @@ def split_dki_param(dki_params):
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
-                      'WLLS': wls_fit_dki,
-                      'OLLS': wls_fit_dki,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
                       }
