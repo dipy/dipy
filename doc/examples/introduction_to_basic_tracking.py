@@ -66,6 +66,7 @@ but we can go a step further and restrict fiber tracking to those areas where
 the ODF shows significant restricted diffusion by thresholding on
 the general fractional anisotropy (GFA).
 """
+1/0
 
 from dipy.tracking.local import ThresholdTissueClassifier
 
