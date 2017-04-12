@@ -121,9 +121,9 @@ renderer.reset_clipping_range()
 Uncomment the following lines to start the interaction.
 """
 
-# show_manager.initialize()
-# show_manager.render()
-# show_manager.start()
+show_manager.initialize()
+show_manager.render()
+show_manager.start()
 
 
 window.record(renderer, out_path='mini_ui.png', size=(800, 800),
