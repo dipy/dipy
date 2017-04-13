@@ -276,10 +276,8 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     pjoin(dipy_home, 'sherbrooke_3shell'),
-    'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
-    ['3shells-1000-2000-3500-N193.nii.gz',
-     '3shells-1000-2000-3500-N193.bval',
-     '3shells-1000-2000-3500-N193.bvec'],
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38475/",
+    ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['0b735e8f16695a37bfbd66aab136eb66',
      'e9b9bb56252503ea49d31fb30a0ac637',
@@ -335,7 +333,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
     pjoin(dipy_home, 'syn_test'),
-    'https://dl.dropboxusercontent.com/u/5918983/',
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38476/",
     ['t1.nii.gz', 'b0.nii.gz'],
     ['t1.nii.gz', 'b0.nii.gz'],
     ['701bda02bb769655c7d4a9b1df2b73a6',
@@ -387,7 +385,7 @@ fetch_viz_icons = _make_fetcher("fetch_viz_icons",
 fetch_bundles_2_subjects = _make_fetcher(
     "fetch_bundles_2_subjects",
     pjoin(dipy_home, 'exp_bundles_and_maps'),
-    'https://dl.dropboxusercontent.com/u/2481924/',
+'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38477/',
     ['bundles_2_subjects.tar.gz'],
     ['bundles_2_subjects.tar.gz'],
     ['97756fbef11ce2df31f1bedf1fc7aac7'],
@@ -402,8 +400,8 @@ fetch_ivim = _make_fetcher(
     ['5305243', '5305246', '5305249'],
     ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
     ['cda596f89dc2676af7d9bf1cabccf600',
-    'f03d89f84aa9a9397103a400e43af43a',
-    'fb633a06b02807355e49ccd85cb92565'],
+     'f03d89f84aa9a9397103a400e43af43a',
+     'fb633a06b02807355e49ccd85cb92565'],
     doc="Download IVIM dataset")
 
 
