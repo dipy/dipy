@@ -1545,14 +1545,6 @@ class DiffusionKurtosisFit(TensorFit):
 
         Parameters
         ----------
-        dki_params : ndarray (x, y, z, 27) or (n, 27)
-            All parameters estimated from the diffusion kurtosis model.
-            Parameters are ordered as follows:
-                1) Three diffusion tensor's eigenvalues
-                2) Three lines of the eigenvector matrix each containing the
-                   first, second and third coordinates of the eigenvector
-                3) Fifteen elements of the kurtosis tensor
-
         gtab : a GradientTable class instance
             The gradient table for this prediction
 
