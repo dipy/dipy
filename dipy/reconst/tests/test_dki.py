@@ -579,6 +579,9 @@ def test_dki_errors():
     # test a incorrect mask
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
+    # error if data with only one non zero b-value is given
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+
 
 def test_kurtosis_maximum():
     # TEST 1

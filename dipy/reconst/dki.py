@@ -1212,6 +1212,15 @@ class DiffusionKurtosisModel(ReconstModel):
             e_s += " positive."
             raise ValueError(e_s)
 
+        # Check if at least three b-values are given
+        bmag = int(np.log10(self.gtab.bvals.max()))
+        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
+        b = b.round()
+        uniqueb = np.unique(b)
+        if len(uniqueb) < 3:
+            mes = "dki fit requires data for at least 2 non zero b-values"
+            raise ValueError(mes)
+
     def fit(self, data, mask=None):
         """ Fit method of the DKI model class
 
