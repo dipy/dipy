@@ -60,30 +60,7 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
            characterization with diffusional kurtosis imaging.
            Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
     """
-    shape = dki_params.shape[:-1]
-
-    # select voxels where to find fiber directions
-    if mask is None:
-        mask = np.ones(shape, dtype='bool')
-    else:
-        if mask.shape != shape:
-            raise ValueError("Mask is not the same shape as dki_params.")
-
-    evals, evecs, kt = split_dki_param(dki_params)
-
-    # select non-zero voxels
-    pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    mask = np.logical_and(mask, pos_evals)
-
-    kt_max = np.zeros(mask.shape)
-
-    for idx in ndindex(shape):
-        if not mask[idx]:
-            continue
-        DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
-        dt = lower_triangular(DT)
-        kt_max[idx], da = kurtosis_maximum(dt, np.mean(evals[idx]), kt[idx],
-                                           sphere, gtol=1e-5)
+    kt_max = kurtosis_maximum(dki_params, sphere=sphere, gtol=gtol, mask=mask)
 
     AWF = kt_max / (kt_max + 3)
 
