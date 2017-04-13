@@ -3,21 +3,23 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+import dipy.reconst.dki as dki
 from dipy.reconst.dti import (TensorFit, apparent_diffusion_coef,
-                              lower_triangular, eig_from_lo_tri,
-                              MIN_POSITIVE_SIGNAL)
+                              eig_from_lo_tri, MIN_POSITIVE_SIGNAL)
 
-from dipy.reconst.dki import (_positive_evals, split_dki_param,
-                              apparent_kurtosis_coef, kurtosis_maximum,
-                              common_fit_methods)
+from dipy.reconst.dki import (split_dki_param, apparent_kurtosis_coef,
+                              kurtosis_maximum, common_fit_methods,
+                              DiffusionKurtosisModel, DiffusionKurtosisFit)
 from dipy.reconst.utils import dki_design_matrix as design_matrix
+from dipy.reconst.dti import design_matrix as dti_design_matrix
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.reconst.vec_val_sum import vec_val_vect
 
 
-def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
-    """ Computes the DKI based axonal water fraction [1]_.
+def axonal_water_fraction(dki_params, sphere='symmetric362', gtol=1e-5,
+                          mask='None'):
+    """ Computes the axonal water fraction from DKI [1]_.
 
     Parameters
     ----------
@@ -45,14 +47,6 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
     --------
     AWF : ndarray (x, y, z) or (n)
         Axonal Water Fraction
-    Da : ndarray (x, y, z) or (n)
-        Axonal Diffusivity
-    ADe : ndarray (x, y, z) or (n)
-        Axial Diffusivity of extra-cellular compartment
-    RDe : ndarray (x, y, z) or (n)
-        Radial Diffusivity of extra-cellular compartment
-    tort : ndarray (x, y, z) or (n)
-        Tortuosity
 
     References
     ----------
@@ -67,7 +61,8 @@ def axonal_water_fraction(dki_params, sphere, mask=None, gtol=1e-5):
     return AWF
 
 
-def diffusion_components(dki_params, sphere, awf=None, mask=None):
+def diffusion_components(dki_params, sphere='symmetric362', awf=None,
+                         mask=None):
     """ Extracts the intra and extra-cellular diffusion tensors of well aligned
     fibers from diffusion kurtosis imaging parameters [1]_.
 
@@ -169,12 +164,72 @@ def diffusion_components(dki_params, sphere, awf=None, mask=None):
     return EDT, IDT
 
 
-class DiffusionKurtosisModel(ReconstModel):
-    """ Class for the Diffusion Kurtosis Model
+def dkimicro_prediction(params, gtab, S0=1):
+    r""" Signal prediction given the free water DTI model parameters.
+
+    Parameters
+    ----------
+    params : ndarray (x, y, z, 40) or (n, 40)
+    All parameters estimated from the diffusion kurtosis microstructural model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+            4) Six elements of the hindered diffusion tensor
+            5) Six elements of the restricted diffusion tensor
+            6) Axonal water fraction
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+    S0 : float or ndarray
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
+
+    Returns
+    --------
+    S : (..., N) ndarray
+        Simulated signal based on the free water DTI model
+
+    Notes
+    -----
+    The predicted signal is given by:
+    $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$, where
+    $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of the
+    diffusion hindered and restricted compartment for a given direction
+    $\theta$, $b$ is the b value provided in the GradientTable input for that
+    direction, $f$ is the volume fraction of the restricted diffusion
+    compartment (also known as the axonal water fraction).
     """
 
-    def __init__(self, gtab, fit_method="OLS", *args, **kwargs):
-        """ Diffusion Kurtosis Tensor Model [1]
+    # Initialize pred_sig
+    pred_sig = np.zeros(f.shape + (gtab.bvals.shape[0],))
+
+    # Define dti design matrix and region to process
+    D = dti_design_matrix(gtab)
+    evals = params[..., :3]
+    mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+
+    # Prepare parameters
+    f = params[..., 39]
+    adce = params[..., 27:33]
+    adce = params[..., 33:39]
+
+    # Process pred_sig for all data voxels
+    index = ndindex(evals.shape[:-1])
+    for v in index:
+        if mask[v]:
+            pred_sig[v] = (1 - f[v]) * np.exp(np.dot(adce[v], D.T)) + \
+                          f[v] * np.exp(np.dot(adci[v], D.T))
+
+    return pred_sig
+
+
+class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
+    """ Class for the Diffusion Kurtosis Microstructural Model
+    """
+
+    def __init__(self,  gtab, fit_method="WLS", *args, **kwargs):
+        """ Initialize a KurtosisMicrostruturalModel class instance [1]_.
 
         Parameters
         ----------
@@ -182,9 +237,11 @@ class DiffusionKurtosisModel(ReconstModel):
 
         fit_method : str or callable
             str can be one of the following:
-            'OLS' or 'ULLS' for ordinary least squares
+            'OLS' or 'ULLS' to fit the diffusion tensor and kurtosis tensor
+            using the ordinary linear least squares solution
                 dki.ols_fit_dki
-            'WLS' or 'UWLLS' for weighted ordinary least squares
+            'WLS' or 'UWLLS' to fit the diffusion tensor and kurtosis tensor
+            using the ordinary linear least squares solution
                 dki.wls_fit_dki
 
             callable has to have the signature:
@@ -193,33 +250,28 @@ class DiffusionKurtosisModel(ReconstModel):
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
 
+        Notes
+        -----
+        1) Since this model is an extension of DKI, class instance is defined
+           as subclass DiffusionKurtosisModel from dki.py
+        2) The first step of the DKI based microstructural model requires
+           diffusion tensor and kurtosis tensor fit. This fit is performed
+           using the DKI model solution specified by users by input parameter
+           fit_method.
+
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
+        DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args,
+                                        **kwargs)
+
         ReconstModel.__init__(self, gtab)
 
-        if not callable(fit_method):
-            try:
-                self.fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                raise ValueError('"' + str(fit_method) + '" is not a known '
-                                 'fit method, the fit method should either be '
-                                 'a function or one of the common fit methods')
-
-        self.design_matrix = design_matrix(self.gtab)
-        self.args = args
-        self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
-        if self.min_signal is not None and self.min_signal <= 0:
-            e_s = "The `min_signal` key-word argument needs to be strictly"
-            e_s += " positive."
-            raise ValueError(e_s)
-
-    def fit(self, data, mask=None):
-        """ Fit method of the DKI model class
+    def fit(self, data, mask=None, sphere, gtol=1e-5, awf_only=False):
+        """ Fit method of the Diffusion Kurtosis Microstructural Model
 
         Parameters
         ----------
@@ -229,6 +281,21 @@ class DiffusionKurtosisModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
+
+        sphere : Sphere class instance, optional
+            The sphere providing sample directions for the initial search of
+            the maximal value of kurtosis.
+
+        gtol : float, optional
+            This input is to refine kurtosis maxima under the precision of the
+            directions sampled on the sphere class instance. The gradient of
+            the convergence procedure must be less than gtol before successful
+            termination. If gtol is None, fiber direction is directly taken
+            from the initial sampled directions of the given sphere object
+
+        awf_only : bool, optiomal
+            If set to true only the axonal volume fraction is computed from
+            the kurtosis tensor. Default = False
         """
         if mask is None:
             # Flatten it to 2D either way:
@@ -246,74 +313,89 @@ class DiffusionKurtosisModel(ReconstModel):
             min_signal = self.min_signal
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
+
+        # DKI fit
         params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
                                          *self.args, **self.kwargs)
 
+        # Computing AWF
+        awf = axonal_water_fraction(params_in_mask, sphere=sphere, gtol=1e-5)
+
+        if awf_only:
+            params = np.concatenate((dki_params, np.array([f])), axis=0)
+        else:
+
+            # Computing the hindered and restricted diffusion tensors
+            edt, idt = diffusion_components(dki_params, sphere=sphere, awf=awf)
+
+            params = np.concatenate((dki_params,  edt, idt, np.array([f])),
+                                    axis=0)
+
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
-            dki_params = params_in_mask.reshape(out_shape)
+            params = params_in_mask.reshape(out_shape)
         else:
-            dki_params = np.zeros(data.shape[:-1] + (27,))
-            dki_params[mask, :] = params_in_mask
+            params = np.zeros(data.shape[:-1] + params.shape[-1])
+            params[mask, :] = params_in_mask
 
-        return DiffusionKurtosisFit(self, dki_params)
+        return KurtosisMicrostructuralFit(self, params)
 
-    def predict(self, dki_params, S0=1.):
-        """ Predict a signal for this DKI model class instance given
-        parameters.
+    def predict(self, params, S0=1.):
+        """ Predict a signal for the DKI microstructural model class instance
+        given parameters.
 
         Parameters
         ----------
-        dki_params : ndarray (x, y, z, 27) or (n, 27)
-            All parameters estimated from the diffusion kurtosis model.
+        params : ndarray (x, y, z, 40) or (n, 40)
+            All parameters estimated from the diffusion kurtosis
+            microstructural model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) Fifteen elements of the kurtosis tensor
+                4) Six elements of the hindered diffusion tensor
+                5) Six elements of the restricted diffusion tensor
+                6) Axonal water fraction
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
         """
-        return dki_prediction(dki_params, self.gtab, S0)
+        return dkimicro_prediction(params, self.gtab, S0)
 
 
-class DiffusionKurtosisFit(TensorFit):
-    """ Class for fitting the Diffusion Kurtosis Model"""
+class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
+    """ Class for fitting the Diffusion Kurtosis Microstructural Model """
 
     def __init__(self, model, model_params):
-        """ Initialize a DiffusionKurtosisFit class instance.
-
-        Since DKI is an extension of DTI, class instance is defined as subclass
-        of the TensorFit from dti.py
+        """ Initialize a KurtosisMicrostructural Fit class instance.
 
         Parameters
         ----------
         model : DiffusionKurtosisModel Class instance
             Class instance containing the Diffusion Kurtosis Model for the fit
-        model_params : ndarray (x, y, z, 27) or (n, 27)
-            All parameters estimated from the diffusion kurtosis model.
+        model_params : ndarray (x, y, z, 40) or (n, 40)
+            All parameters estimated from the diffusion kurtosis
+            microstructural model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) Fifteen elements of the kurtosis tensor
+                4) Six elements of the hindered diffusion tensor
+                5) Six elements of the restricted diffusion tensor
+                6) Axonal water fraction
+
+        Notes
+        -----
+        Since this model is an extension of DKI, class instance is defined
+        as subclass of the DiffusionKurtosisFit from dki.py
         """
-        TensorFit.__init__(self, model, model_params)
+        DiffusionKurtosisFit.__init__(self, model, model_params)
 
     def predict(self, gtab, S0=1.):
-        r""" Given a DKI model fit, predict the signal on the vertices of a
-        gradient table
-
-        Parameters
-        ----------
-        dki_params : ndarray (x, y, z, 27) or (n, 27)
-            All parameters estimated from the diffusion kurtosis model.
-            Parameters are ordered as follows:
-                1) Three diffusion tensor's eigenvalues
-                2) Three lines of the eigenvector matrix each containing the
-                   first, second and third coordinates of the eigenvector
-                3) Fifteen elements of the kurtosis tensor
+        r""" Given a DKI microstructural model fit, predict the signal on the
+        vertices of a gradient table
 
         gtab : a GradientTable class instance
             The gradient table for this prediction
@@ -326,26 +408,11 @@ class DiffusionKurtosisFit(TensorFit):
         -----
         The predicted signal is given by:
 
-        .. math::
-
-            S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}
-
-        $\mathbf{D(n)}$ and $\mathbf{K(n)}$ can be computed from the DT and KT
-        using the following equations:
-
-        .. math::
-
-            D(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
-
-        and
-
-        .. math::
-
-            K(n)=\frac{MD^{2}}{D(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
-            \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
-
-        where $D_{ij}$ and $W_{ijkl}$ are the elements of the second-order DT
-        and the fourth-order KT tensors, respectively, and $MD$ is the mean
-        diffusivity.
+        $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$,
+        where $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of
+        the diffusion hindered and restricted compartment for a given direction
+        $\theta$, $b$ is the b value provided in the GradientTable input for
+        that direction, $f$ is the volume fraction of the restricted diffusion
+        compartment (also known as the axonal water fraction).
         """
         return dki_prediction(self.model_params, gtab, S0)
