@@ -3,25 +3,25 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import dipy.reconst.dki as dki
-from dipy.reconst.dti import (TensorFit, apparent_diffusion_coef,
-                              _positive_evals, eig_from_lo_tri,
-                              _decompose_tensor_nan, trace,
+from dipy.reconst.dti import (apparent_diffusion_coef, from_lower_triangular,
+                              decompose_tensor, trace,
                               radial_diffusivity, axial_diffusivity,
                               MIN_POSITIVE_SIGNAL)
 
-from dipy.reconst.dki import (split_dki_param, apparent_kurtosis_coef,
-                              kurtosis_maximum, common_fit_methods,
-                              DiffusionKurtosisModel, DiffusionKurtosisFit)
-from dipy.reconst.utils import dki_design_matrix as design_matrix
+from dipy.reconst.dki import (split_dki_param, _positive_evals,
+                              apparent_kurtosis_coef,
+                              kurtosis_maximum, DiffusionKurtosisModel,
+                              DiffusionKurtosisFit)
 from dipy.reconst.dti import design_matrix as dti_design_matrix
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.data import get_sphere
+import dipy.core.sphere as dps
 
 
 def axonal_water_fraction(dki_params, sphere='symmetric362', gtol=1e-5,
-                          mask='None'):
+                          mask=None):
     """ Computes the axonal water fraction from DKI [1]_.
 
     Parameters
@@ -113,6 +113,10 @@ def diffusion_components(dki_params, sphere='symmetric362', awf=None,
     """
     shape = dki_params.shape[:-1]
 
+    # load gradient directions
+    if not isinstance(sphere, dps.Sphere):
+        sphere = get_sphere('symmetric362')
+
     # select voxels where to applied the single fiber model
     if mask is None:
         mask = np.ones(shape, dtype='bool')
@@ -124,14 +128,14 @@ def diffusion_components(dki_params, sphere='symmetric362', awf=None,
 
     # check or compute awf values
     if awf is None:
-        awf = axonal_water_fraction(dki_params, sphere, mask=mask)
+        awf = axonal_water_fraction(dki_params, sphere=sphere, mask=mask)
     else:
         if awf.shape != shape:
             raise ValueError("awf array is not the same shape as dki_params.")
 
     # Initialize hindered and restricted diffusion tensors
-    EDT = np.zeros(shape + (12,))
-    IDT = np.zeros(shape + (12,))
+    EDT = np.zeros(shape + (6,))
+    IDT = np.zeros(shape + (6,))
 
     # Generate matrix that converts apparant diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
@@ -159,8 +163,8 @@ def diffusion_components(dki_params, sphere='symmetric362', awf=None,
         idi = di * (1 - np.sqrt(ki * (1.0-awf[idx]) / (3.0*awf[idx])))
 
         # generate hindered and restricted diffusion tensors
-        edt = eig_from_lo_tri(np.dot(pinvB, edi))
-        idt = eig_from_lo_tri(np.dot(pinvB, idi))
+        edt = np.dot(pinvB, edi)
+        idt = np.dot(pinvB, idi)
         EDT[idx] = edt
         IDT[idx] = idt
 
@@ -205,7 +209,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     """
 
     # Initialize pred_sig
-    pred_sig = np.zeros(f.shape + (gtab.bvals.shape[0],))
+    pred_sig = np.zeros(params.shape[:-1] + (gtab.bvals.shape[0],))
 
     # Define dti design matrix and region to process
     D = dti_design_matrix(gtab)
@@ -215,7 +219,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     # Prepare parameters
     f = params[..., 39]
     adce = params[..., 27:33]
-    adce = params[..., 33:39]
+    adci = params[..., 33:39]
 
     # Process pred_sig for all data voxels
     index = ndindex(evals.shape[:-1])
@@ -273,7 +277,8 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
 
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None, sphere, gtol=1e-5, awf_only=False):
+    def fit(self, data, mask=None, sphere='symmetric362', gtol=1e-5,
+            awf_only=False):
         """ Fit method of the Diffusion Kurtosis Microstructural Model
 
         Parameters
@@ -325,21 +330,21 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         awf = axonal_water_fraction(params_in_mask, sphere=sphere, gtol=1e-5)
 
         if awf_only:
-            params = np.concatenate((dki_params, np.array([f])), axis=0)
+            params = np.concatenate((params_in_mask, np.array([awf])), axis=0)
         else:
-
             # Computing the hindered and restricted diffusion tensors
-            edt, idt = diffusion_components(dki_params, sphere=sphere, awf=awf)
+            edt, idt = diffusion_components(params_in_mask, sphere=sphere,
+                                            awf=awf)
 
-            params = np.concatenate((dki_params,  edt, idt, np.array([f])),
-                                    axis=0)
+            params = np.concatenate((params_in_mask,  edt, idt,
+                                     np.array([awf])), axis=-1)
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
-            params = params_in_mask.reshape(out_shape)
+            out_shape = data.shape[:-1] + (-1,)
+            params = params.reshape(out_shape)
         else:
             params = np.zeros(data.shape[:-1] + params.shape[-1])
-            params[mask, :] = params_in_mask
+            params[mask, :] = params
 
         return KurtosisMicrostructuralFit(self, params)
 
@@ -407,14 +412,16 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def restricted_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
         """
-        evals, evecs = _decompose_tensor_nan(self.model_params[..., 33:39])
+        rdt = self.model_params[..., 33:39]
+        evals, evecs = decompose_tensor(from_lower_triangular(rdt))
         return evals
 
     @property
     def hindered_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
         """
-        evals, evecs = _decompose_tensor_nan(self.model_params[..., 27:33])
+        hdt = self.model_params[..., 27:33]
+        evals, evecs = decompose_tensor(from_lower_triangular(hdt))
         return evals
 
     @property
@@ -486,4 +493,4 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         that direction, $f$ is the volume fraction of the restricted diffusion
         compartment (also known as the axonal water fraction).
         """
-        return dki_prediction(self.model_params, gtab, S0)
+        return dkimicro_prediction(self.model_params, gtab, S0)
