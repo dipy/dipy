@@ -318,8 +318,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
 "https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38480/",
-    ['taiwan_ntu_dsi.nii.gz', 'tawian_ntu_dsi.bval',
-     'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
+    ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['950408c0980a7154cb188666a885a91f',
      '602e5cb5fad2e7163e8025011d8a6755',
@@ -363,7 +362,8 @@ fetch_mni_template = _make_fetcher(
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
     dipy_home,
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38479",     ['datasets_multi-site_all_companies.zip'],
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38479/",
+    ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
     doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
@@ -373,7 +373,7 @@ fetch_scil_b0 = _make_fetcher(
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
                                 pjoin(dipy_home, "icons"),
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38478",
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38478/",
                                 ['icomoon.tar.gz'],
                                 ['icomoon.tar.gz'],
                                 ['94a07cba06b4136b6687396426f1e380'],
