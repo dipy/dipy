@@ -17,8 +17,7 @@ from .base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
-
-import dipy.core.sphere as sph_instance
+import dipy.core.sphere as dps
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -986,7 +985,7 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     return max_value, max_direction
 
 
-def kurtosis_maximum(dki_parameters, sphere='symmetric362', gtol=1e-5,
+def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
                      mask=None):
     """ Computes kurtosis maxima value
 
@@ -1022,7 +1021,7 @@ def kurtosis_maximum(dki_parameters, sphere='symmetric362', gtol=1e-5,
     shape = dki_params.shape[:-1]
 
     # load gradient directions
-    if not isintance(sph_instance, sphere):
+    if not isinstance(sphere, dps.Sphere):
         sphere = get_sphere('symmetric362')
 
     # select voxels where to find fiber directions
@@ -1048,7 +1047,7 @@ def kurtosis_maximum(dki_parameters, sphere='symmetric362', gtol=1e-5,
         kt_max[idx], da = _voxel_kurtosis_maximum(dt, np.mean(evals[idx]),
                                                   kt[idx], sphere, gtol=1e-5)
 
-    return max_value
+    return kt_max
 
 
 def dki_prediction(dki_params, gtab, S0=1.):
