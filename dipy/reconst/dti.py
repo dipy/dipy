@@ -495,9 +495,9 @@ def mode(q_form):
     return 3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
 
 
-def linearity(evals, axis=-1):
+def linearity(evals, axis=-1, version="1997"):
     r"""
-    The linearity of the tensor [1]_
+    The linearity of the tensor [1]_, [2]_.
 
     Parameters
     ----------
@@ -505,6 +505,9 @@ def linearity(evals, axis=-1):
         Eigenvalues of a diffusion tensor.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
+    version : str
+        One of {"1997" | "1999"} to select which of the definitions in the two
+        papers describing this method ([1]_, [2]_) to use. Default: "1997"
 
     Returns
     -------
@@ -513,7 +516,13 @@ def linearity(evals, axis=-1):
 
     Notes
     --------
-    Linearity is calculated with the following equation:
+    Linearity is calculated with the following equation (version="1997")[1]_:
+
+    .. math::
+
+        Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+
+    Or (version="1999") [2]_:
 
     .. math::
 
@@ -521,20 +530,27 @@ def linearity(evals, axis=-1):
 
     Notes
     -----
-    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-           Imaging. In Proceedings of Second Int. Conf. on Medical Image
-           Computing and Computer-assisted Interventions (MICCAI’99),
+    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+           (1997). "Geometrical diffusion measures for MRI from tensor basis
+           analysis" in Proc. 5th Annual ISMRM, 1997.
+
+    .. [2] Westin C.-F., Maier S.E., Khidhir B., Everett P., Jolesz F.A.,
+           Kikinis R. (1999). "Image Processing for Diffusion Tensor Magnetic
+           Resonance Imaging" In Proceedings of Second Int. Conf. on Medical
+           Image Computing and Computer-assisted Interventions (MICCAI’99),
            pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (ev1 - ev2) / ev1
+    if version == "1999":
+        return (ev1 - ev2) / ev1
+    elif version == "1997":
+        return (ev1 - ev2) / evals.sum(0)
 
 
-def planarity(evals, axis=-1):
+def planarity(evals, axis=-1, version="1997"):
     r"""
-    The planarity of the tensor [1]_
+    The planarity of the tensor [1]_, [2]_
 
     Parameters
     ----------
@@ -542,6 +558,9 @@ def planarity(evals, axis=-1):
         Eigenvalues of a diffusion tensor.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
+    version : str
+        One of {"1997" | "1999"} to select which of the definitions in the two
+        papers describing this method ([1]_, [2]_) to use. Default: "1997"
 
     Returns
     -------
@@ -550,29 +569,42 @@ def planarity(evals, axis=-1):
 
     Notes
     --------
-    Planarity is calculated with the following equation:
+    Planarity is calculated with the following equation (version="1997") [1]_:
 
     .. math::
 
         Planarity =
-        \frac{2 (\lambda_2-\lambda_3)}{\lambda_1}
+        \frac{2 (\lambda_2-\lambda_3)}{\lambda_1 + \lambda_2 + \lambda_3}
+
+    Or (version="1999") [2]_:
+
+    .. math::
+
+        Planarity = \frac{\lambda_2-\lambda_3}{\lambda_1}
 
     Notes
     -----
-    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-          (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-          Imaging. In Proceedings of Second Int. Conf. on Medical Image
-          Computing and Computer-assisted Interventions (MICCAI’99),
-          pp.441-452, 1999.
+    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+           (1997). "Geometrical diffusion measures for MRI from tensor basis
+           analysis" in Proc. 5th Annual ISMRM, 1997.
+
+    .. [2] Westin C.-F., Maier S.E., Khidhir B., Everett P., Jolesz F.A.,
+           Kikinis R. (1999). "Image Processing for Diffusion Tensor Magnetic
+           Resonance Imaging" In Proceedings of Second Int. Conf. on Medical
+           Image Computing and Computer-assisted Interventions (MICCAI’99),
+           pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (ev2 - ev3) / ev1
+    if version == "1999":
+        return (ev2 - ev3) / ev1
+    elif version == "1997":
+        return (2 * (ev2 - ev3) / evals.sum(0))
 
 
-def sphericity(evals, axis=-1):
+def sphericity(evals, axis=-1, version="1997"):
     r"""
-    The sphericity of the tensor [1]_
+    The sphericity of the tensor [1]_, [2]_.
 
     Parameters
     ----------
@@ -580,6 +612,9 @@ def sphericity(evals, axis=-1):
         Eigenvalues of a diffusion tensor.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
+    version : str
+        One of {"1997" | "1999"} to select which of the definitions in the two
+        papers describing this method ([1]_, [2]_) to use. Default: "1997"
 
     Returns
     -------
@@ -588,23 +623,36 @@ def sphericity(evals, axis=-1):
 
     Notes
     --------
-    Sphericity is calculated with the following equation:
+    Sphericity is calculated with the following equation (version="1997") [1]_:
 
     .. math::
 
         Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
+    Or with the following equation (version="1997") [2]_:
+
+    .. math::
+
+        Sphericity = \frac{\lambda_3}{\lambda_1}
+
     Notes
     -----
-    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-           Imaging. In Proceedings of Second Int. Conf. on Medical Image
-           Computing and Computer-assisted Interventions (MICCAI’99),
+    .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+           (1997). "Geometrical diffusion measures for MRI from tensor basis
+           analysis" in Proc. 5th Annual ISMRM, 1997.
+
+    .. [2] Westin C.-F., Maier S.E., Khidhir B., Everett P., Jolesz F.A.,
+           Kikinis R. (1999). "Image Processing for Diffusion Tensor Magnetic
+           Resonance Imaging" In Proceedings of Second Int. Conf. on Medical
+           Image Computing and Computer-assisted Interventions (MICCAI’99),
            pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return ev3 / ev1
+    if version == "1999":
+        return ev3 / ev1
+    elif version == "1997":
+        return (3 * ev3) / evals.sum(0)
 
 
 def apparent_diffusion_coef(q_form, sphere):
@@ -1002,35 +1050,6 @@ class TensorFit(object):
         return trace(self.evals)
 
     @auto_attr
-    def planarity(self):
-        r"""
-        Returns
-        -------
-        sphericity : array
-            Calculated sphericity of the diffusion tensor [1]_.
-
-        Notes
-        --------
-        Sphericity is calculated with the following equation:
-
-        .. math::
-
-            Sphericity =
-            \frac{(\lambda_3)}{\lambda_1}
-
-        Notes
-        -----
-
-
-        .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-            (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-            Imaging. In Proceedings of Second Int. Conf. on Medical Image
-            Computing and Computer-assisted Interventions (MICCAI’99),
-            pp.441-452, 1999.
-        """
-        return planarity(self.evals)
-
-    @auto_attr
     def linearity(self):
         r"""
         Returns
@@ -1045,16 +1064,37 @@ class TensorFit(object):
         .. math::
 
             Linearity =
-            \frac{\lambda_1-\lambda_2}{\lambda_1}
+            \frac{2 (\lambda_1-\lambda_2)}{\lambda_1+\lambda_2+\lambda_3}
 
-    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-           Imaging. In Proceedings of Second Int. Conf. on Medical Image
-           Computing and Computer-assisted Interventions (MICCAI’99),
-           pp.441-452, 1999.
+        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+               (1997). "Geometrical diffusion measures for MRI from tensor
+               basis analysis" in Proc. 5th Annual ISMRM, 1997.
 
         """
         return linearity(self.evals)
+
+    @auto_attr
+    def planarity(self):
+        r"""
+        Returns
+        -------
+        planarity : array
+            Calculated sphericity of the diffusion tensor [1]_.
+
+        Notes
+        --------
+        Planarity is calculated with the following equation:
+
+        .. math::
+
+            Planarity =
+            \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+               (1997). "Geometrical diffusion measures for MRI from tensor
+               basis analysis" in Proc. 5th Annual ISMRM, 1997.
+        """
+        return planarity(self.evals)
 
     @auto_attr
     def sphericity(self):
@@ -1070,16 +1110,11 @@ class TensorFit(object):
 
         .. math::
 
-            Sphericity = \frac{\lambda_3}{\lambda_1}
+            Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
-        .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
-               (1999). Image Processing for Diffusion Tensor Magnetic Resonance
-               Imaging. In Proceedings of Second Int. Conf. on Medical Image
-               Computing and Computer-assisted Interventions (MICCAI’99),
-               pp.441-452, 1999.
-
+        .. [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.
+               (1997). "Geometrical diffusion measures for MRI from tensor
+               basis analysis" in Proc. 5th Annual ISMRM, 1997.
         """
         return sphericity(self.evals)
 

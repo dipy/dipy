@@ -262,18 +262,32 @@ def test_diffusivities():
     Trace = trace(dmfit.evals)
     rd = radial_diffusivity(dmfit.evals)
     ad = axial_diffusivity(dmfit.evals)
-    lin = linearity(dmfit.evals)
-    plan = planarity(dmfit.evals)
-    spher = sphericity(dmfit.evals)
+    lin97 = linearity(dmfit.evals)
+    plan97 = planarity(dmfit.evals)
+    spher97 = sphericity(dmfit.evals)
+    lin99 = linearity(dmfit.evals, version="1999")
+    plan99 = planarity(dmfit.evals, version="1999")
+    spher99 = sphericity(dmfit.evals, version="1999")
 
     assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    assert_almost_equal(lin, (0.0015 - 0.0003) / 0.0015)
-    assert_almost_equal(plan, (0.0003 - 0.0001) / 0.0015)
-    assert_almost_equal(spher, 0.0001 / 0.0015)
-    assert_almost_equal(lin + plan + spher, 1)
+    assert_almost_equal(lin97, (0.0015 - 0.0003) / (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(plan97,
+                        2 * (0.0003 - 0.0001) / (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(spher97, 3 * 0.0001 / (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(lin99, (0.0015 - 0.0003) / 0.0015)
+    assert_almost_equal(plan99, (0.0003 - 0.0001) / 0.0015)
+    assert_almost_equal(spher99, 0.0001 / 0.0015)
+    assert_almost_equal(lin99 + plan99 + spher99, 1)
+
+    assert_almost_equal(dmfit.linearity,
+                        (0.0015 - 0.0003) / (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(dmfit.planarity,
+                        (2 * (0.0003 - 0.0001) / (0.0015 + 0.0003 + 0.0001)))
+    assert_almost_equal(dmfit.sphericity,
+                        3 * 0.0001 / (0.0015 + 0.0003 + 0.0001))
 
 
 def test_color_fa():
