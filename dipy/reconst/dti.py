@@ -517,17 +517,19 @@ def linearity(evals, axis=-1):
 
     .. math::
 
-        Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+        Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1}
 
     Notes
     -----
-    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+           Imaging. In Proceedings of Second Int. Conf. on Medical Image
+           Computing and Computer-assisted Interventions (MICCAI’99),
+           pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (ev1 - ev2) / evals.sum(0)
+    return (ev1 - ev2) / ev1
 
 
 def planarity(evals, axis=-1):
@@ -553,17 +555,19 @@ def planarity(evals, axis=-1):
     .. math::
 
         Planarity =
-        \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+        \frac{2 (\lambda_2-\lambda_3)}{\lambda_1}
 
     Notes
     -----
-    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+          (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+          Imaging. In Proceedings of Second Int. Conf. on Medical Image
+          Computing and Computer-assisted Interventions (MICCAI’99),
+          pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (2 * (ev2 - ev3) / evals.sum(0))
+    return (ev2 - ev3) / ev1
 
 
 def sphericity(evals, axis=-1):
@@ -592,13 +596,15 @@ def sphericity(evals, axis=-1):
 
     Notes
     -----
-    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
-        "Geometrical diffusion measures for MRI from tensor basis analysis" in
-        Proc. 5th Annual ISMRM, 1997.
+    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+           Imaging. In Proceedings of Second Int. Conf. on Medical Image
+           Computing and Computer-assisted Interventions (MICCAI’99),
+           pp.441-452, 1999.
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (3 * ev3) / evals.sum(0)
+    return ev3 / ev1
 
 
 def apparent_diffusion_coef(q_form, sphere):
@@ -1010,14 +1016,17 @@ class TensorFit(object):
         .. math::
 
             Sphericity =
-            \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+            \frac{(\lambda_3)}{\lambda_1}
 
         Notes
         -----
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
 
+
+        .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+            (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+            Imaging. In Proceedings of Second Int. Conf. on Medical Image
+            Computing and Computer-assisted Interventions (MICCAI’99),
+            pp.441-452, 1999.
         """
         return planarity(self.evals)
 
@@ -1036,11 +1045,13 @@ class TensorFit(object):
         .. math::
 
             Linearity =
-            \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+            \frac{\lambda_1-\lambda_2}{\lambda_1}
 
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
+    .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+           (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+           Imaging. In Proceedings of Second Int. Conf. on Medical Image
+           Computing and Computer-assisted Interventions (MICCAI’99),
+           pp.441-452, 1999.
 
         """
         return linearity(self.evals)
@@ -1059,13 +1070,15 @@ class TensorFit(object):
 
         .. math::
 
-            Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
+            Sphericity = \frac{\lambda_3}{\lambda_1}
 
         Notes
         -----
-        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
-            F., "Geometrical diffusion measures for MRI from tensor basis
-            analysis" in Proc. 5th Annual ISMRM, 1997.
+        .. [1] Westin CF, Maier SE, Khidhir B, Everett P, Jolesz FA, Kikinis R
+               (1999). Image Processing for Diffusion Tensor Magnetic Resonance
+               Imaging. In Proceedings of Second Int. Conf. on Medical Image
+               Computing and Computer-assisted Interventions (MICCAI’99),
+               pp.441-452, 1999.
 
         """
         return sphericity(self.evals)

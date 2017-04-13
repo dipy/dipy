@@ -270,9 +270,10 @@ def test_diffusivities():
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    assert_almost_equal(lin, (0.0015 - 0.0003)/Trace)
-    assert_almost_equal(plan, 2 * (0.0003 - 0.0001)/Trace)
-    assert_almost_equal(spher, (3 * 0.0001)/Trace)
+    assert_almost_equal(lin, (0.0015 - 0.0003) / 0.0015)
+    assert_almost_equal(plan, (0.0003 - 0.0001) / 0.0015)
+    assert_almost_equal(spher, 0.0001 / 0.0015)
+    assert_almost_equal(lin + plan + spher, 1)
 
 
 def test_color_fa():
@@ -791,7 +792,7 @@ def test_decompose_tensor_nan():
                                          from_lower_triangular(D_alter))
     assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
     assert_array_almost_equal(vfine, vref)
-    
+
     lref, vref = decompose_tensor(from_lower_triangular(D_alter))
     lalter, valter = _decompose_tensor_nan(from_lower_triangular(D_nan),
                                            from_lower_triangular(D_alter))
