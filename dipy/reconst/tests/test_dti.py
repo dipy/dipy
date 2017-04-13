@@ -826,39 +826,38 @@ def random_evecs(shape):
 
 
 def test_quantize_evecs():
-    test_shape = (50, 60, 70)
+    test_shape = (3, 4, 7)
     sphere = get_sphere('symmetric724')
 
     # Test for zero case
     zerovecs = np.zeros(test_shape+(3, 3))
     peak_indices = quantize_evecs(zerovecs, sphere.vertices)
-    npt.assert_equal(np.zeros(test_shape), peak_indices)
+    npt.assert_equal(peak_indices, np.zeros(test_shape))
 
     # Test for I case
     eyevecs = np.tile(np.identity(3), (np.prod(test_shape), 1))
     eyevecs = np.reshape(eyevecs, test_shape+(3, 3))
     peak_indices = quantize_evecs(eyevecs, sphere.vertices)
-    npt.assert_equal(360 * np.ones(test_shape), peak_indices)
+    npt.assert_equal(peak_indices, 360 * np.ones(test_shape))
 
     # Test an artificial evecs dataset
     evecs = random_evecs(test_shape)
     peak_indices = quantize_evecs(evecs, sphere.vertices)
-    npt.assert_equal(159, peak_indices[0, 0, 0])
+    npt.assert_equal(peak_indices[0, 0, 0], 159)
 
     # Test parallel processing
     peak_indices = quantize_evecs(zerovecs, sphere.vertices, nbr_processes=-1)
-    npt.assert_equal(np.zeros(test_shape), peak_indices)
+    npt.assert_equal(peak_indices, np.zeros(test_shape))
 
     peak_indices = quantize_evecs(eyevecs, sphere.vertices, nbr_processes=-1)
-    npt.assert_equal(360 * np.ones(test_shape), peak_indices)
+    npt.assert_equal(peak_indices, 360 * np.ones(test_shape))
 
     peak_indices = quantize_evecs(evecs, sphere.vertices, nbr_processes=-1)
-    npt.assert_equal(159, peak_indices[0, 0, 0])
+    npt.assert_equal(peak_indices[0, 0, 0], 159)
 
     # Test v
     peak_indices = quantize_evecs(eyevecs, sphere.vertices, v=1)
-    npt.assert_equal(np.zeros(test_shape), peak_indices)
+    npt.assert_equal(peak_indices, np.zeros(test_shape))
 
     peak_indices = quantize_evecs(eyevecs, sphere.vertices, v=2)
-    npt.assert_equal(358 * np.ones(test_shape), peak_indices)
->>>>>>> PEP8 + TST: Move tests into module test-suite. Fix up PEP8 in dti/tests.
+    npt.assert_equal(peak_indices, 358 * np.ones(test_shape))
