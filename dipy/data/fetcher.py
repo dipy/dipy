@@ -363,8 +363,7 @@ fetch_mni_template = _make_fetcher(
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
     dipy_home,
-    'http://scil.dinf.usherbrooke.ca/wp-content/data/',
-    ['datasets_multi-site_all_companies.zip'],
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38479",     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
     doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
@@ -374,7 +373,7 @@ fetch_scil_b0 = _make_fetcher(
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
                                 pjoin(dipy_home, "icons"),
-                                'https://dl.dropboxusercontent.com/u/2481924/',
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38478",
                                 ['icomoon.tar.gz'],
                                 ['icomoon.tar.gz'],
                                 ['94a07cba06b4136b6687396426f1e380'],
