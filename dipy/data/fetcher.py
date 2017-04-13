@@ -317,7 +317,7 @@ fetch_stanford_pve_maps = _make_fetcher(
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
-    "http://dl.dropbox.com/u/2481924/",
+"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38480/",
     ['taiwan_ntu_dsi.nii.gz', 'tawian_ntu_dsi.bval',
      'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
     ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
