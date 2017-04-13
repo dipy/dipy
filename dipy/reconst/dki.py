@@ -367,6 +367,85 @@ def _F2m(a, b, c):
     return F2
 
 
+def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-3/7):
+    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
+    in each direction of a sphere for a single voxel [1]_.
+
+    Parameters
+    ----------
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    MD : float
+        mean diffusivity of the voxel
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. Default = 0
+    min_kurtosis : float (optional)
+        Because high amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these causes huge artefacts in kurtosis
+        based measures, directional kurtosis values than `min_kurtosis` are
+        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
+        limit for regions that consist of water confined to spherical pores
+        [2]_)
+
+    Returns
+    --------
+    AKC : ndarray (g,)
+        Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
+        a single voxel.
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
+           Exploring the 3D geometry of the diffusion kurtosis tensor -
+           Impact on the development of robust tractography procedures and
+           novel biomarkers, NeuroImage 111: 85-99
+    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+           Robust estimation from DW-MRI using homogeneous polynomials.
+           Proceedings of the 8th {IEEE} International Symposium on
+           Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
+           doi: 10.1109/ISBI.2011.5872402
+    """
+    ADC = \
+        V[:, 0] * V[:, 0] * dt[0] + \
+        2 * V[:, 0] * V[:, 1] * dt[1] + \
+        V[:, 1] * V[:, 1] * dt[2] + \
+        2 * V[:, 0] * V[:, 2] * dt[3] + \
+        2 * V[:, 1] * V[:, 2] * dt[4] + \
+        V[:, 2] * V[:, 2] * dt[5]
+
+    if min_diffusivity is not None:
+        ADC = ADC.clip(min=min_diffusivity)
+
+    AKC = \
+        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
+        V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
+        V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
+        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
+        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
+        4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
+        4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
+        4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
+        4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
+        6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
+        6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
+        6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
+        12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
+        12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
+        12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
+
+    if min_kurtosis is not None:
+        AKC = AKC.clip(min=min_kurtosis)
+
+    return (MD / ADC) ** 2 * AKC
+
+
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-3./7):
     r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
@@ -464,85 +543,6 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     AKC[rel_i] = AKCi
 
     return AKC.reshape((outshape + (len(V),)))
-
-
-def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-3/7):
-    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
-    in each direction of a sphere for a single voxel [1]_.
-
-    Parameters
-    ----------
-    dt : array (6,)
-        elements of the diffusion tensor of the voxel.
-    MD : float
-        mean diffusivity of the voxel
-    kt : array (15,)
-        elements of the kurtosis tensor of the voxel.
-    V : array (g, 3)
-        g directions of a Sphere in Cartesian coordinates
-    min_diffusivity : float (optional)
-        Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
-        values smaller than `min_diffusivity` are replaced with
-        `min_diffusivity`. Default = 0
-    min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores
-        [2]_)
-
-    Returns
-    --------
-    AKC : ndarray (g,)
-        Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
-        a single voxel.
-
-    References
-    ----------
-    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
-           Exploring the 3D geometry of the diffusion kurtosis tensor -
-           Impact on the development of robust tractography procedures and
-           novel biomarkers, NeuroImage 111: 85-99
-    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
-           Robust estimation from DW-MRI using homogeneous polynomials.
-           Proceedings of the 8th {IEEE} International Symposium on
-           Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
-           doi: 10.1109/ISBI.2011.5872402
-    """
-    ADC = \
-        V[:, 0] * V[:, 0] * dt[0] + \
-        2 * V[:, 0] * V[:, 1] * dt[1] + \
-        V[:, 1] * V[:, 1] * dt[2] + \
-        2 * V[:, 0] * V[:, 2] * dt[3] + \
-        2 * V[:, 1] * V[:, 2] * dt[4] + \
-        V[:, 2] * V[:, 2] * dt[5]
-
-    if min_diffusivity is not None:
-        ADC = ADC.clip(min=min_diffusivity)
-
-    AKC = \
-        V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
-        V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
-        V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 1] * kt[3] + \
-        4 * V[:, 0] * V[:, 0] * V[:, 0] * V[:, 2] * kt[4] + \
-        4 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 1] * kt[5] + \
-        4 * V[:, 1] * V[:, 1] * V[:, 1] * V[:, 2] * kt[6] + \
-        4 * V[:, 0] * V[:, 2] * V[:, 2] * V[:, 2] * kt[7] + \
-        4 * V[:, 1] * V[:, 2] * V[:, 2] * V[:, 2] * kt[8] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 1] * kt[9] + \
-        6 * V[:, 0] * V[:, 0] * V[:, 2] * V[:, 2] * kt[10] + \
-        6 * V[:, 1] * V[:, 1] * V[:, 2] * V[:, 2] * kt[11] + \
-        12 * V[:, 0] * V[:, 0] * V[:, 1] * V[:, 2] * kt[12] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
-        12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
-
-    if min_kurtosis is not None:
-        AKC = AKC.clip(min=min_kurtosis)
-
-    return (MD / ADC) ** 2 * AKC
 
 
 def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
