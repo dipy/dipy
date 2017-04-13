@@ -5,7 +5,10 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import dipy.reconst.dki as dki
 from dipy.reconst.dti import (TensorFit, apparent_diffusion_coef,
-                              eig_from_lo_tri, MIN_POSITIVE_SIGNAL)
+                              _positive_evals, eig_from_lo_tri,
+                              _decompose_tensor_nan, trace,
+                              radial_diffusivity, axial_diffusivity,
+                              MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.dki import (split_dki_param, apparent_kurtosis_coef,
                               kurtosis_maximum, common_fit_methods,
@@ -392,6 +395,74 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         as subclass of the DiffusionKurtosisFit from dki.py
         """
         DiffusionKurtosisFit.__init__(self, model, model_params)
+
+    @property
+    def awf(self):
+        """ Returns the volume fraction of the restricted diffusion compartment
+        also known as axonal water fraction.
+        """
+        return self.model_params[..., 39]
+
+    @property
+    def restricted_evals(self):
+        """ Returns the eigenvalues of the restricted diffusion compartment.
+        """
+        evals, evecs = _decompose_tensor_nan(self.model_params[..., 33:39])
+        return evals
+
+    @property
+    def hindered_evals(self):
+        """ Returns the eigenvalues of the restricted diffusion compartment.
+        """
+        evals, evecs = _decompose_tensor_nan(self.model_params[..., 27:33])
+        return evals
+
+    @property
+    def axonal_diffusivity(self):
+        """ Returns the axonal diffusivity defined as the restricted diffusion
+        tensor trace [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        """
+        return trace(self.restricted_evals)
+
+    @property
+    def hindered_ad(self):
+        """ Returns the axial diffusivity of the hindered compartment.
+        """
+        return axial_diffusivity(self.hindered_evals)
+
+    @property
+    def hindered_rd(self):
+        """ Returns the radial diffusivity of the hindered compartment.
+        """
+        return radial_diffusivity(self.hindered_evals)
+
+    @property
+    def tortuosity(self):
+        """ Returns the tortuosity of the hindered diffusion which is defined
+        by ADe / RDe, where ADe and RDe are the axial and radial diffusivities
+        of the hindered compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
+        """
+        rd = self.hindered_rd
+        ad = self.hindered_ad
+        tortuosity = np.zeros(rd.shape)
+
+        # mask to avoid divisions by zero
+        mask = self.hindered_rd > 0
+
+        tortuosity[mask] = ad[mask] / rd[mask]
+        return tortuosity
 
     def predict(self, gtab, S0=1.):
         r""" Given a DKI microstructural model fit, predict the signal on the
