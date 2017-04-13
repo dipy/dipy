@@ -1,4 +1,4 @@
-""" Testing DKI """
+""" Testing DKI microstructural """
 
 from __future__ import division, print_function, absolute_import
 
@@ -11,7 +11,8 @@ from dipy.sims.voxel import (multi_tensor_dki, _check_directions)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
+from dipy.reconst.dti import (from_lower_triangular, decompose_tensor,
+                              eig_from_lo_tri)
 
 from dipy.data import get_sphere
 
@@ -100,7 +101,10 @@ def test_single_fiber_model():
     assert_almost_equal(AWF, fie)
 
     # Extra-cellular and intra-cellular components
-    EDT, IDT = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    EDT = eig_from_lo_tri(edt)
+    IDT = eig_from_lo_tri(idt)
+
     # check eigenvalues
     assert_array_almost_equal(EDT[0:3], np.array([ADe, RDe, RDe]))
     assert_array_almost_equal(IDT[0:3], np.array([ADi, RDi, RDi]))
@@ -110,6 +114,19 @@ def test_single_fiber_model():
     assert_almost_equal(f_norm, 1.)
     f_norm = abs(np.dot(fiber_direction, np.array((IDT[3], IDT[6], IDT[9]))))
     assert_almost_equal(f_norm, 1.)
+
+    # Test model and fit objects
+    wmtiM = dki_micro.KurtosisMicrostructuralModel(gtab_2s, fit_method="WLS")
+    wmtiF = wmtiM.fit(signal)
+    assert_almost_equal(wmtiF.awf, AWF)
+    assert_almost_equal(wmtiF.axonal_diffusivity, ADi)
+    assert_array_almost_equal(wmtiF.hindered_evals,
+                              np.array([ADe, RDe, RDe]))
+    assert_array_almost_equal(wmtiF.restricted_evals,
+                              np.array([ADi, RDi, RDi]))
+    assert_almost_equal(wmtiF.hindered_ad, ADe)
+    assert_almost_equal(wmtiF.hindered_rd, RDe)
+    assert_almost_equal(wmtiF.tortuosity, ADe/RDe)
 
 
 def test_wmti_model_multi_voxel():
@@ -157,7 +174,10 @@ def test_wmti_model_multi_voxel():
     assert_almost_equal(AWF, FIE)
 
     # Extra-cellular and intra-cellular components
-    EDT, IDT = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    EDT = eig_from_lo_tri(edt)
+    IDT = eig_from_lo_tri(idt)
+
     # check eigenvalues
     assert_array_almost_equal(EDT[..., 0], ADE)
     assert_array_almost_equal(EDT[..., 1], RDE)
@@ -183,8 +203,11 @@ def test_wmti_model_multi_voxel():
     assert_almost_equal(AWF, FIE)
 
     # Extra-cellular and intra-cellular components
-    EDT, IDT = dki_micro.diffusion_components(dkiF.model_params, sphere,
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere,
                                               mask=mask)
+    EDT = eig_from_lo_tri(edt)
+    IDT = eig_from_lo_tri(idt)
+
     # check eigenvalues
     assert_array_almost_equal(EDT[..., 0], ADE)
     assert_array_almost_equal(EDT[..., 1], RDE)
