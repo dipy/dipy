@@ -659,47 +659,8 @@ def test_kurtosis_maximum():
     assert_almost_equal(k_max_cross, RK)
 
 
-def test_single_fiber_model():
-    # single fiber simulate (which is the assumption of our model)
-    fie = 0.49
-    ADi = 0.00099
-    ADe = 0.00226
-    RDi = 0
-    RDe = 0.00087
-
-    # prepare simulation:
-    theta = random.uniform(0, 180)
-    phi = random.uniform(0, 320)
-    angles = [(theta, phi), (theta, phi)]
-    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
-    frac = [fie*100, (1 - fie)*100]
-    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
-                                      fractions=frac, snr=None)
-    # DKI fit
-    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
-    dkiF = dkiM.fit(signal)
-
-    # Axonal Water Fraction
-    sphere = get_sphere('symmetric724')
-    AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
-                                    gtol=1e-5)
-    assert_almost_equal(AWF, fie)
-
-    # Extra-cellular and intra-cellular components
-    EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere)
-    # check eigenvalues
-    assert_array_almost_equal(EDT[0:3], np.array([ADe, RDe, RDe]))
-    assert_array_almost_equal(IDT[0:3], np.array([ADi, RDi, RDi]))
-    # first eigenvalue should be the direction of the fibers
-    fiber_direction = _check_directions([(theta, phi)])
-    f_norm = abs(np.dot(fiber_direction, np.array((EDT[3], EDT[6], EDT[9]))))
-    assert_almost_equal(f_norm, 1.)
-    f_norm = abs(np.dot(fiber_direction, np.array((IDT[3], IDT[6], IDT[9]))))
-    assert_almost_equal(f_norm, 1.)
-
-
-def test_wmti_model_multi_voxel():
-    # single fiber simulate (which is the assumption of our model)
+def test_multi_voxel_kurtosis_maximum():
+    # Multi-voxel simulations parameters
     FIE = np.array([[[0.30, 0.32], [0.74, 0.51]],
                     [[0.47, 0.21], [0.80, 0.63]]])
     RDI = np.zeros((2, 2, 2))
@@ -732,48 +693,17 @@ def test_wmti_model_multi_voxel():
                                                   fractions=frac, snr=None)
                 DWIsim[i, j, k, :] = signal
 
-    # DKI fit
+    # Ground truth Maximum kurtosis
+    RD = FIE*RDI + (1-FIE)*RDE
+    RK = 3 * FIE * (1-FIE) * ((RDI-RDE) / RD) ** 2
+
+    # prepare inputs
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dkiF = dkiM.fit(DWIsim)
+    sphere = get_sphere('symmetric724')
 
-    # Axonal Water Fraction
-    sphere = get_sphere()
-    AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
-                                    gtol=1e-5)
-    assert_almost_equal(AWF, FIE)
+    # TEST - no sphere is given
+    k_max = dki.kurtosis_maximum(dkiF.model_params)
 
-    # Extra-cellular and intra-cellular components
-    EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere)
-    # check eigenvalues
-    assert_array_almost_equal(EDT[..., 0], ADE)
-    assert_array_almost_equal(EDT[..., 1], RDE)
-    assert_array_almost_equal(EDT[..., 2], RDE)
-    assert_array_almost_equal(IDT[..., 0], ADI)
-    assert_array_almost_equal(IDT[..., 1], RDI)
-    assert_array_almost_equal(IDT[..., 2], RDI)
+    assert_almost_equal(k_max, RK)
 
-    # Test methods performance when a signal with all zeros is present
-    FIE[0, 0, 0] = 0
-    RDI[0, 0, 0] = 0
-    ADI[0, 0, 0] = 0
-    ADE[0, 0, 0] = 0
-    Tor[0, 0, 0] = 0
-    RDE[0, 0, 0] = 0
-    DWIsim[0, 0, 0, :] = 0
-    mask = np.ones((2., 2., 2.))
-    mask[0, 0, 0] = 0
-
-    dkiF = dkiM.fit(DWIsim)
-    AWF = dki.axonal_water_fraction(dkiF.model_params, sphere, mask=mask,
-                                    gtol=1e-5)
-    assert_almost_equal(AWF, FIE)
-
-    # Extra-cellular and intra-cellular components
-    EDT, IDT = dki.diffusion_components(dkiF.model_params, sphere, mask=mask)
-    # check eigenvalues
-    assert_array_almost_equal(EDT[..., 0], ADE)
-    assert_array_almost_equal(EDT[..., 1], RDE)
-    assert_array_almost_equal(EDT[..., 2], RDE)
-    assert_array_almost_equal(IDT[..., 0], ADI)
-    assert_array_almost_equal(IDT[..., 1], RDI)
-    assert_array_almost_equal(IDT[..., 2], RDI)
