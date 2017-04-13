@@ -1167,7 +1167,7 @@ class DiffusionKurtosisModel(ReconstModel):
     """ Class for the Diffusion Kurtosis Model
     """
 
-    def __init__(self, gtab, fit_method="OLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
         """ Diffusion Kurtosis Tensor Model [1]
 
         Parameters
