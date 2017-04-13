@@ -56,7 +56,6 @@ class GradientTable(object):
     using the factory function gradient_table
 
     """
-
     def __init__(self, gradients, big_delta=None, small_delta=None,
                  b0_threshold=0):
         """Constructor for GradientTable class"""
@@ -345,3 +344,43 @@ def generate_bvecs(N, iters=5000):
     hsph_updated, potential = disperse_charges(hsph_initial, iters)
     bvecs = hsph_updated.vertices
     return bvecs
+
+
+def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
+    """
+    Check if you have enough different b-values in your gradient table
+
+    Parameters
+    ----------
+    gtab : GradientTable class instance.
+
+    n_bvals : int
+        The number of different b-values you are checking for.
+    non_zero : bool
+        Whether to check only non-zero bvalues. In this case, we will require
+        at least `n_bvals` *non-zero* b-values (where non-zero is defined
+        depending on the `gtab` object's `b0_threshold` attribute)
+    bmag : int
+        The order of magnitude of the b-values used. The function will
+        normalize the b-values relative $10^{bmag - 1}$. Default: derive this
+        value from the maximal b-value provided: $bmag=log_{10}(max(bvals))$.
+
+    Returns
+    -------
+    bool : Whether there are at least `n_bvals` different b-values in the
+    gradient table used.
+    """
+    bvals = gtab.bvals.copy()
+    if non_zero:
+        bvals = bvals[~gtab.b0s_mask]
+
+    if bmag is None:
+        bmag = int(np.log10(np.max(bvals)))
+
+    b = bvals / (10 ** (bmag - 1))  # normalize b units
+    b = b.round()
+    uniqueb = np.unique(b)
+    if uniqueb.shape[0] < n_bvals:
+        return False
+    else:
+        return True
