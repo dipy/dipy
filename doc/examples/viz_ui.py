@@ -140,6 +140,13 @@ line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
 
 """
+2D Disk Slider 
+==============
+"""
+
+disk_slider = ui.DiskSlider2D()
+
+"""
 Adding Elements to the ShowManager
 ==================================
 
@@ -155,6 +162,7 @@ show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
+show_manager.ren.add(disk_slider)
 
 # Uncomment this to start the visualisation
 # show_manager.start()

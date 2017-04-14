@@ -3,6 +3,8 @@ from _warnings import warn
 
 import numpy as np
 
+import math
+
 from dipy.viz.interactor import CustomInteractorStyle
 
 from dipy.utils.optpkg import optional_package
@@ -1577,3 +1579,260 @@ class LineSlider2D(UI):
         self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
         self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
         self.add_callback(self.slider_line, "MouseMoveEvent", self.disk_move_callback)
+
+
+class DiskSlider2D(UI):
+    """ A disk slider.
+    
+    A disk moves along the boundary of a ring.
+    Goes from 0-360 degrees.
+    
+    Attributes
+    ----------
+    base_disk_inner_radius: int
+        Inner radius of the base disk.
+    base_disk_outer_radius: int
+        Outer radius of the base disk.
+    base_disk_center: (float, float)
+        Position of the system.
+    base_disk_radius: float
+        Average radius of the base disk.
+    probe_outer_radius: int
+        Outer radius of the moving disk.
+    probe_inner_radius: int
+        Inner radius of the moving disk.
+            
+    """
+    def __init__(self, base_disk_inner_radius=40, base_disk_outer_radius=44, base_disk_position=(450, 100),
+                 probe_outer_radius=10, probe_inner_radius=0):
+        """
+        Parameters
+        ----------
+        base_disk_inner_radius: int
+            Inner radius of the base disk.
+        base_disk_outer_radius: int
+            Outer radius of the base disk.
+        base_disk_position: (float, float)
+            Position of the system.
+        probe_outer_radius: int
+            Outer radius of the moving disk.
+        probe_inner_radius: int
+            Inner radius of the moving disk.
+            
+        """
+        super(DiskSlider2D, self).__init__()
+        self.probe_inner_radius = probe_inner_radius
+        self.probe_outer_radius = probe_outer_radius
+        self.base_disk_inner_radius = base_disk_inner_radius
+        self.base_disk_outer_radius = base_disk_outer_radius
+        self.base_disk_radius = base_disk_inner_radius + (base_disk_outer_radius - base_disk_inner_radius) / 2
+        self.base_disk_center = base_disk_position
+
+        self.angle_state = 0
+
+        self.base_disk = None
+        self.probe = None
+        self.text = None
+
+        self.build_actors()
+
+        self.handle_events(None)
+
+    def build_actors(self):
+        """ Builds actors for the system.
+        
+        """
+        # Base Disk
+        base_disk = vtk.vtkDiskSource()
+        base_disk.SetInnerRadius(self.base_disk_inner_radius)
+        base_disk.SetOuterRadius(self.base_disk_outer_radius)
+        base_disk.SetRadialResolution(10)
+        base_disk.SetCircumferentialResolution(50)
+        base_disk.Update()
+
+        base_disk_mapper = vtk.vtkPolyDataMapper2D()
+        base_disk_mapper.SetInputConnection(base_disk.GetOutputPort())
+
+        self.base_disk = vtk.vtkActor2D()
+        self.base_disk.SetMapper(base_disk_mapper)
+        self.base_disk.GetProperty().SetColor(1, 0, 0)
+        self.base_disk.SetPosition(self.base_disk_center)
+        # /Base Disk
+
+        # Move Disk
+        probe = vtk.vtkDiskSource()
+        probe.SetInnerRadius(self.probe_inner_radius)
+        probe.SetOuterRadius(self.probe_outer_radius)
+        probe.SetRadialResolution(10)
+        probe.SetCircumferentialResolution(50)
+        probe.Update()
+
+        probe_mapper = vtk.vtkPolyDataMapper2D()
+        probe_mapper.SetInputConnection(probe.GetOutputPort())
+
+        self.probe = vtk.vtkActor2D()
+        self.probe.SetMapper(probe_mapper)
+        self.probe.GetProperty().SetColor(1, 1, 1)
+        self.probe.SetPosition((self.base_disk_center[0] + self.base_disk_radius, self.base_disk_center[1]))
+        # /Move Disk
+
+        # Text
+        self.text = TextActor2D()
+
+        self.text.position = (self.base_disk_center[0] - 16, self.base_disk_center[1] - 8)
+        percentage = self.calculate_percentage(current_val=0)
+        self.text.message = percentage
+        self.text.font_size = 16
+        # /Text
+
+    def set_percentage(self, current_val):
+        """ Sets the text percentage.
+        
+        Parameters
+        ----------
+        current_val: float
+            Current value (%) to be set to the text actor.
+        
+        """
+        percentage = self.calculate_percentage(current_val=current_val)
+        self.text.message = percentage
+
+    def calculate_percentage(self, current_val):
+        """ Calculate percentage of completion.
+        
+        Parameters
+        ----------
+        current_val : float
+            Current absolute value of the system.
+            
+        """
+        percentage = int((current_val/360)*100)
+        if len(str(percentage)) == 1:
+            percentage_string = "0" + str(percentage)
+        else:
+            percentage_string = str(percentage)
+        return percentage_string + "%"
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component. 
+        
+        """
+        return [self.base_disk, self.probe, self.text.get_actor()]
+
+    def get_poi(self, coordinates):
+        """ Finds point of intersection between the line joining 
+        the mouse position and the center with the base disk.
+        
+        Parameters
+        ----------
+        coordinates : (float, float)
+            Coordinates of the mouse pointer.
+        
+        Returns
+        -------
+        x, y : (float, float)
+            The point of intersection on the base disk.
+        
+        """
+        radius = self.base_disk_radius
+        center = self.base_disk_center
+        point = coordinates
+
+        dx = point[0] - center[0]
+        dy = point[1] - center[1]
+
+        x1 = float(center[0]) + float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
+        x2 = float(center[0]) - float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
+
+        if x1 == x2:
+            y1 = center[1] + radius
+            y2 = center[1] - radius
+        else:
+            y1 = float(center[1]) + float(float(dy) / float(dx)) * float(x1 - center[0])
+            y2 = float(center[1]) + float(float(dy) / float(dx)) * float(x2 - center[0])
+
+        d1 = (x1 - point[0])*(x1 - point[0]) + (y1 - point[1])*(y1 - point[1])
+        d2 = (x2 - point[0])*(x2 - point[0]) + (y2 - point[1])*(y2 - point[1])
+
+        if d1 < d2:
+            return x1, y1
+        else:
+            return x2, y2
+
+    def get_angle(self, coordinates):
+        """ Gets the angle made with the X-Axis for calculating
+        the percentage. Varies between 0-360.
+        
+        Parameters
+        ----------
+        coordinates : (float, float)
+            Coordinates of the poi on the base disk.
+        
+        Returns
+        -------
+        angle : float
+            The angle made with the x axis.
+        
+        """
+        center = self.base_disk_center
+
+        perpendicular = -center[1] + coordinates[1]
+        base = -center[0] + coordinates[0]
+
+        angle = math.degrees(math.atan2(float(perpendicular), float(base)))
+        if angle < 0:
+            angle += 360
+
+        return angle
+
+    def move_probe(self, click_position):
+        """Moves the probe.
+        
+        Parameters
+        ----------
+        click_position: (float, float)
+            Position of the mouse click.
+            
+        """
+        intersection_coordinate = self.get_poi(click_position)
+        self.set_position(intersection_coordinate)
+        angle = self.get_angle(intersection_coordinate)
+        self.set_percentage(angle)
+        self.angle_state = angle
+
+    def set_position(self, position):
+        """ Sets the probe's position.
+        
+        Parameters
+        ----------
+        position : (float, float)
+            The new position of the probe.
+            
+        """
+        self.probe.SetPosition(position)
+
+    def set_center(self, position):
+        """ Sets the center of the system to position.
+        
+        Parameters
+        ----------
+        position : (float, float)
+            New position.
+            
+        """
+        self.base_disk_center = position
+
+        self.base_disk.SetPosition(position)
+
+        if self.angle_state > 180:
+            self.angle_state -= 360
+        self.set_position((position[0] + self.base_disk_radius * math.cos(math.radians(self.angle_state)),
+                           position[1] + self.base_disk_radius * math.sin(math.radians(self.angle_state))))
+
+        self.text.SetPosition(position[0] - 16, position[1] - 8)
+
+    def handle_events(self, actor):
+        """ Handle all default slider events.
+        
+        """
+        pass
