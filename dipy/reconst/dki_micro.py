@@ -217,7 +217,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     pred_sig = np.zeros(params.shape[:-1] + (gtab.bvals.shape[0],))
 
     # Define dti design matrix and region to process
-    D = dti_design_matrix(gtab)
+    D = -1.0 * dti_design_matrix(gtab)
     evals = params[..., :3]
     mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
 
@@ -230,8 +230,8 @@ def dkimicro_prediction(params, gtab, S0=1):
     index = ndindex(evals.shape[:-1])
     for v in index:
         if mask[v]:
-            pred_sig[v] = (1 - f[v]) * np.exp(np.dot(adce[v], D.T)) + \
-                          f[v] * np.exp(np.dot(adci[v], D.T))
+            pred_sig[v] = (1. - f[v]) * np.exp(np.dot(adce[v], D[:, :6].T)) + \
+                          f[v] * np.exp(np.dot(adci[v], D[:, :6].T))
 
     return pred_sig
 
