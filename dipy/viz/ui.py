@@ -1659,7 +1659,7 @@ class DiskSlider2D(UI):
         self.base_disk.SetPosition(self.base_disk_center)
         # /Base Disk
 
-        # Move Disk
+        # Probe
         probe = vtk.vtkDiskSource()
         probe.SetInnerRadius(self.probe_inner_radius)
         probe.SetOuterRadius(self.probe_outer_radius)
@@ -1674,7 +1674,7 @@ class DiskSlider2D(UI):
         self.probe.SetMapper(probe_mapper)
         self.probe.GetProperty().SetColor(1, 1, 1)
         self.probe.SetPosition((self.base_disk_center[0] + self.base_disk_radius, self.base_disk_center[1]))
-        # /Move Disk
+        # /Probe
 
         # Text
         self.text = TextActor2D()
@@ -1829,10 +1829,61 @@ class DiskSlider2D(UI):
         self.set_position((position[0] + self.base_disk_radius * math.cos(math.radians(self.angle_state)),
                            position[1] + self.base_disk_radius * math.sin(math.radians(self.angle_state))))
 
-        self.text.SetPosition(position[0] - 16, position[1] - 8)
+        self.text.position = (position[0] - 16, position[1] - 8)
+
+    @staticmethod
+    def base_disk_click_callback(i_ren, obj, slider):
+        """ Update disk position and grab the focus.
+        
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+        
+        """
+        click_position = i_ren.event.position
+        slider.move_probe(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def probe_move_callback(i_ren, obj, slider):
+        """ Move the probe.
+        
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+        
+        """
+        click_position = i_ren.event.position
+        slider.move_probe(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def probe_press_callback(i_ren, obj, slider):
+        """ This is only needed to grab the focus.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+
+        """
+        i_ren.event.abort()  # Stop propagating the event.
 
     def handle_events(self, actor):
         """ Handle all default slider events.
         
         """
-        pass
+        self.add_callback(self.base_disk, "LeftButtonPressEvent", self.base_disk_click_callback)
+        self.add_callback(self.probe, "LeftButtonPressEvent", self.probe_press_callback)
+        self.add_callback(self.base_disk, "MouseMoveEvent", self.probe_move_callback)
+        self.add_callback(self.probe, "MouseMoveEvent", self.probe_move_callback)
