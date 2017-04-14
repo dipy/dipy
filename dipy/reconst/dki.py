@@ -12,8 +12,7 @@ from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.recspeed import local_maxima
 from dipy.utils.six.moves import range
-from ..core.onetime import auto_attr
-from .base import ReconstModel
+from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
@@ -367,9 +366,9 @@ def _F2m(a, b, c):
     return F2
 
 
-def _directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-3/7):
-    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
-    in each direction of a sphere for a single voxel [1]_.
+def directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-3/7):
+    r""" Calculates the apparent kurtosis coefficient (AKC) in each direction
+    of a sphere for a single voxel [1]_.
 
     Parameters
     ----------
@@ -535,9 +534,9 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKCi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
-                                          min_diffusivity=min_diffusivity,
-                                          min_kurtosis=min_kurtosis)
+        AKCi[vox] = directional_kurtosis(dt, MD[vox], kt[vox], V,
+                                         min_diffusivity=min_diffusivity,
+                                         min_kurtosis=min_kurtosis)
 
     # reshape data according to input data
     AKC[rel_i] = AKCi
@@ -935,8 +934,8 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
-                                         np.array([R[:, 0]]))
+        AKi[vox] = directional_kurtosis(dt, MD[vox], kt[vox],
+                                        np.array([R[:, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -979,10 +978,10 @@ def _kt_maxima_converge(ang, dt, MD, kt):
     dipy.reconst.dki.kurtosis_maximum
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
-    return -1. * _directional_kurtosis(dt, MD, kt, n)
+    return -1. * directional_kurtosis(dt, MD, kt, n)
 
 
-def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
+def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-2):
     """ Computes the maxima value of a single voxel kurtosis tensor
 
     Parameters
@@ -1011,7 +1010,7 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
         Cartesian coordinates of the direction of the maximal kurtosis value
     """
     # Estimation of maxima kurtosis candidates
-    AKC = _directional_kurtosis(dt, MD, kt, sphere.vertices)
+    AKC = directional_kurtosis(dt, MD, kt, sphere.vertices)
     max_val, ind = local_maxima(AKC, sphere.edges)
     n = len(max_val)
     max_dir = sphere.vertices[ind]
@@ -1029,7 +1028,7 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
             ang[:] = opt.fmin_bfgs(_kt_maxima_converge, ang, args=(dt, MD, kt),
                                    gtol=gtol, disp=False, retall=False)
             k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
-            k_val = _directional_kurtosis(dt, MD, kt, k_dir)
+            k_val = directional_kurtosis(dt, MD, kt, k_dir)
             if k_val > max_value:
                 max_value = k_val
                 max_direction = k_dir
@@ -1037,7 +1036,7 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     return max_value, max_direction
 
 
-def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-5,
+def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
                      mask=None):
     """ Computes kurtosis maxima value
 
@@ -1097,7 +1096,7 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-5,
         DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
         dt = lower_triangular(DT)
         kt_max[idx], da = _voxel_kurtosis_maximum(dt, np.mean(evals[idx]),
-                                                  kt[idx], sphere, gtol=1e-5)
+                                                  kt[idx], sphere, gtol=gtol)
 
     return kt_max
 
