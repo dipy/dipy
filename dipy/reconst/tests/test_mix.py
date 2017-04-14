@@ -8,14 +8,14 @@ import nibabel as nib
 from dipy.core.gradients import gradient_table
 from numpy.testing import assert_equal, assert_almost_equal
 from scipy.optimize import  least_squares
-import cvxpy as cvx
-from scipy.optimize import differential_evolution
+#import cvxpy as cvx
+#from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import dipy.reconst.mix as mix
-from dipy.reconst.mix import (norm_meas_Aax, activax_exvivo_compartments,
-                              activax_exvivo_model, activeax_cost_one, cost_one, 
-                              estimate_f, estimate_x_and_f, final, activax_exvivo_compartments2, 
-                              activax_exvivo_model2, dif_evol)
+#from dipy.reconst.mix import (norm_meas_Aax, activax_exvivo_compartments,
+#                              activax_exvivo_model, activeax_cost_one, cost_one, 
+#                              estimate_f, estimate_x_and_f, final, activax_exvivo_compartments2, 
+#                              activax_exvivo_model2, dif_evol)
 
 fname, fscanner = get_data('ActiveAx_synth_2d')
 params = np.loadtxt(fscanner)
@@ -35,6 +35,8 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       small_delta=small_delta,
                       b0_threshold=0, atol=1e-2)
 signal = np.array(data[0, 0, 0])
+
+signal_param = mix.make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta)
 
 """
 normalizing the signal based on the b0 values of each shell
@@ -114,7 +116,7 @@ def test_activax_exvivo_model():
 def test_estimate_x_and_f():
     x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
     x_fe = np.squeeze(x_fe)
-    cost = mix.estimate_x_and_f(x_fe, signal)
+    cost = mix.estimate_x_and_f(x_fe, signal_param)
     """
     assert_array_equal()
     [0.00039828375771280502]
@@ -141,7 +143,7 @@ def test_final():
     x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
     bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01],[0.9,  0.9,  0.9,   np.pi, np.pi, 11, 0.9])      
     res = least_squares(mix.estimate_x_and_f, x_fe, bounds = (bounds), args=(signal,))
-    
+     
     """
     assert_array_equal()
     [[ 0.44553814,  0.28593944,  0.15950191,  2.6832976 ,  2.89085801,
@@ -154,9 +156,8 @@ def test_dif_evol():
 
     """
     assert_array_equal()
-    [[ 2.68329769,  2.89086488,  3.39903062,  0.60759899])]
+    [[ 2.68329953,  2.89083525,  3.40510099,  0.6076389 ]]
     """
-
     return res_one    
   
 #def test_norm_meas_Aax():
