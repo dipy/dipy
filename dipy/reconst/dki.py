@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import scipy.optimize as opt
+import dipy.core.sphere as dps
 from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
@@ -17,7 +18,7 @@ from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
 from dipy.reconst.vec_val_sum import vec_val_vect
-import dipy.core.sphere as dps
+from dipy.core.gradients import check_multi_b
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -1295,13 +1296,7 @@ class DiffusionKurtosisModel(ReconstModel):
             raise ValueError(e_s)
 
         # Check if at least three b-values are given
-        bmag = int(np.log10(self.gtab.bvals.max()))
-        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
-        b = b.round()
-        uniqueb = np.unique(b)
-        if len(uniqueb) < 3:
-            mes = "dki fit requires data for at least 2 non zero b-values"
-            raise ValueError(mes)
+        check_multi_b(self.gtab, 3, non_zero=False)
 
     def fit(self, data, mask=None):
         """ Fit method of the DKI model class
