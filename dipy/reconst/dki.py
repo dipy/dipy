@@ -402,8 +402,9 @@ def _akc(kt, V, min_kurtosis=-3/7):
         AKC = AKC.clip(min=min_kurtosis)
     return AKC
 
-def _directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
-                          adc=None, akc=None):
+
+def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
+                         adc=None, akc=None):
     r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
     in each direction of a sphere for a single voxel [1]_.
 
@@ -538,13 +539,13 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     AKCi = AKC[rel_i]
 
     # Compute MD
-    MD = mean_diffusivity(evals)
+    md = mean_diffusivity(evals)
 
     # loop over all relevant voxels
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKCi[vox] = directional_kurtosis(dt, MD[vox], kt[vox], V,
+        AKCi[vox] = directional_kurtosis(dt, md[vox], kt[vox], V,
                                          min_diffusivity=min_diffusivity,
                                          min_kurtosis=min_kurtosis)
 

@@ -13,7 +13,6 @@ from dipy.reconst.dki import (split_dki_param, _positive_evals,
                               kurtosis_maximum, DiffusionKurtosisModel,
                               DiffusionKurtosisFit)
 from dipy.reconst.dti import design_matrix as dti_design_matrix
-from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.data import get_sphere
