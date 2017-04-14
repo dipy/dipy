@@ -266,7 +266,7 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         -----
         1) Since this model is an extension of DKI, class instance is defined
            as subclass DiffusionKurtosisModel from dki.py
-        2) The first step of the DKI based microstructural model requires
+        2) The first step of the DKI-based microstructural model requires
            diffusion tensor and kurtosis tensor fit. This fit is performed
            using the DKI model solution specified by users by input parameter
            fit_method.
