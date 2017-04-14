@@ -1037,7 +1037,7 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     return max_value, max_direction
 
 
-def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
+def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-5,
                      mask=None):
     """ Computes kurtosis maxima value
 
@@ -1074,7 +1074,7 @@ def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere('symmetric362')
+        sphere = get_sphere('repulsion100')
 
     # select voxels where to find fiber directions
     if mask is None:
@@ -1517,7 +1517,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def kmax(self, sphere='symmetric362', gtol=1e-5, mask=None):
+    def kmax(self, sphere='repulsion100', gtol=1e-5, mask=None):
         r""" Computes the maxima value of a single voxel kurtosis tensor
 
         Parameters
