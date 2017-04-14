@@ -637,10 +637,12 @@ class Panel2D(UI):
     @staticmethod
     def left_button_press(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] - panel2d_object.panel.actor.GetPosition()[0]
-                                   - panel2d_object.panel.size[0] / 2,
-                                   click_position[1] - panel2d_object.panel.actor.GetPosition()[1]
-                                   - panel2d_object.panel.size[1] / 2)
+        panel2d_object.ui_param = (click_position[0] -
+                                   panel2d_object.panel.actor.GetPosition()[0] -
+                                   panel2d_object.panel.size[0] / 2,
+                                   click_position[1] -
+                                   panel2d_object.panel.actor.GetPosition()[1] -
+                                   panel2d_object.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
@@ -1170,9 +1172,12 @@ class TextBox2D(UI):
             return
         if character.lower() == "space":
             character = " "
-        self.text = self.text[:self.caret_pos] + character + self.text[self.caret_pos:]
+        self.text = (self.text[:self.caret_pos] +
+                     character +
+                     self.text[self.caret_pos:])
         self.move_caret_right()
-        if self.window_right - self.window_left == self.height * self.width - 1:
+        if (self.window_right -
+                self.window_left == self.height * self.width - 1):
             self.left_move_right()
         self.right_move_right()
 
@@ -1186,7 +1191,8 @@ class TextBox2D(UI):
         self.move_caret_left()
         if len(self.text) < self.height * self.width - 1:
             self.right_move_left()
-        if self.window_right - self.window_left == self.height * self.width - 1:
+        if (self.window_right -
+                self.window_left == self.height * self.width - 1):
             if self.window_left > 0:
                 self.left_move_left()
                 self.right_move_left()
@@ -1197,7 +1203,8 @@ class TextBox2D(UI):
         """
         self.move_caret_left()
         if self.caret_pos == self.window_left - 1:
-            if self.window_right - self.window_left == self.height * self.width - 1:
+            if (self.window_right -
+                    self.window_left == self.height * self.width - 1):
                 self.left_move_left()
                 self.right_move_left()
 
@@ -1207,7 +1214,8 @@ class TextBox2D(UI):
         """
         self.move_caret_right()
         if self.caret_pos == self.window_right + 1:
-            if self.window_right - self.window_left == self.height * self.width - 1:
+            if (self.window_right -
+                    self.window_left == self.height * self.width - 1):
                 self.left_move_right()
                 self.right_move_right()
 
@@ -1221,7 +1229,9 @@ class TextBox2D(UI):
 
         """
         if show_caret:
-            ret_text = self.text[:self.caret_pos] + "_" + self.text[self.caret_pos:]
+            ret_text = (self.text[:self.caret_pos] +
+                        "_" +
+                        self.text[self.caret_pos:])
         else:
             ret_text = self.text
         ret_text = ret_text[self.window_left:self.window_right + 1]
@@ -1575,18 +1585,22 @@ class LineSlider2D(UI):
         Base method needs to be overridden due to multiple actors.
 
         """
-        self.add_callback(self.slider_line, "LeftButtonPressEvent", self.line_click_callback)
-        self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
-        self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
-        self.add_callback(self.slider_line, "MouseMoveEvent", self.disk_move_callback)
+        self.add_callback(self.slider_line, "LeftButtonPressEvent",
+                          self.line_click_callback)
+        self.add_callback(self.slider_disk, "LeftButtonPressEvent",
+                          self.disk_press_callback)
+        self.add_callback(self.slider_disk, "MouseMoveEvent",
+                          self.disk_move_callback)
+        self.add_callback(self.slider_line, "MouseMoveEvent",
+                          self.disk_move_callback)
 
 
 class DiskSlider2D(UI):
     """ A disk slider.
-    
+
     A disk moves along the boundary of a ring.
     Goes from 0-360 degrees.
-    
+
     Attributes
     ----------
     base_disk_inner_radius: int
@@ -1601,10 +1615,11 @@ class DiskSlider2D(UI):
         Outer radius of the moving disk.
     probe_inner_radius: int
         Inner radius of the moving disk.
-            
+
     """
-    def __init__(self, base_disk_inner_radius=40, base_disk_outer_radius=44, base_disk_position=(450, 100),
-                 probe_outer_radius=10, probe_inner_radius=0):
+    def __init__(self, base_disk_inner_radius=40, base_disk_outer_radius=44,
+                 base_disk_position=(450, 100), probe_outer_radius=10,
+                 probe_inner_radius=0):
         """
         Parameters
         ----------
@@ -1618,14 +1633,16 @@ class DiskSlider2D(UI):
             Outer radius of the moving disk.
         probe_inner_radius: int
             Inner radius of the moving disk.
-            
+
         """
         super(DiskSlider2D, self).__init__()
         self.probe_inner_radius = probe_inner_radius
         self.probe_outer_radius = probe_outer_radius
         self.base_disk_inner_radius = base_disk_inner_radius
         self.base_disk_outer_radius = base_disk_outer_radius
-        self.base_disk_radius = base_disk_inner_radius + (base_disk_outer_radius - base_disk_inner_radius) / 2
+        self.base_disk_radius = (
+            base_disk_inner_radius +
+            (base_disk_outer_radius - base_disk_inner_radius) / 2)
         self.base_disk_center = base_disk_position
 
         self.angle_state = 0
@@ -1640,7 +1657,7 @@ class DiskSlider2D(UI):
 
     def build_actors(self):
         """ Builds actors for the system.
-        
+
         """
         # Base Disk
         base_disk = vtk.vtkDiskSource()
@@ -1673,13 +1690,16 @@ class DiskSlider2D(UI):
         self.probe = vtk.vtkActor2D()
         self.probe.SetMapper(probe_mapper)
         self.probe.GetProperty().SetColor(1, 1, 1)
-        self.probe.SetPosition((self.base_disk_center[0] + self.base_disk_radius, self.base_disk_center[1]))
+        self.probe.SetPosition((
+            self.base_disk_center[0] + self.base_disk_radius,
+            self.base_disk_center[1]))
         # /Probe
 
         # Text
         self.text = TextActor2D()
 
-        self.text.position = (self.base_disk_center[0] - 16, self.base_disk_center[1] - 8)
+        self.text.position = (self.base_disk_center[0] - 16,
+                              self.base_disk_center[1] - 8)
         percentage = self.calculate_percentage(current_val=0)
         self.text.message = percentage
         self.text.font_size = 16
@@ -1687,24 +1707,24 @@ class DiskSlider2D(UI):
 
     def set_percentage(self, current_val):
         """ Sets the text percentage.
-        
+
         Parameters
         ----------
         current_val: float
             Current value (%) to be set to the text actor.
-        
+
         """
         percentage = self.calculate_percentage(current_val=current_val)
         self.text.message = percentage
 
     def calculate_percentage(self, current_val):
         """ Calculate percentage of completion.
-        
+
         Parameters
         ----------
         current_val : float
             Current absolute value of the system.
-            
+
         """
         percentage = int((current_val/360)*100)
         if len(str(percentage)) == 1:
@@ -1714,25 +1734,25 @@ class DiskSlider2D(UI):
         return percentage_string + "%"
 
     def get_actors(self):
-        """ Returns the actors that compose this UI component. 
-        
+        """ Returns the actors that compose this UI component.
+
         """
         return [self.base_disk, self.probe, self.text.get_actor()]
 
     def get_poi(self, coordinates):
-        """ Finds point of intersection between the line joining 
+        """ Finds point of intersection between the line joining
         the mouse position and the center with the base disk.
-        
+
         Parameters
         ----------
         coordinates : (float, float)
             Coordinates of the mouse pointer.
-        
+
         Returns
         -------
         x, y : (float, float)
             The point of intersection on the base disk.
-        
+
         """
         radius = self.base_disk_radius
         center = self.base_disk_center
@@ -1741,15 +1761,19 @@ class DiskSlider2D(UI):
         dx = point[0] - center[0]
         dy = point[1] - center[1]
 
-        x1 = float(center[0]) + float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
-        x2 = float(center[0]) - float(radius*dx)/float(math.sqrt(float(dx*dx) + float(dy*dy)))
+        x1 = float(center[0]) + float(radius*dx)/float(
+            math.sqrt(float(dx*dx) + float(dy*dy)))
+        x2 = float(center[0]) - float(radius*dx)/float(
+            math.sqrt(float(dx*dx) + float(dy*dy)))
 
         if x1 == x2:
             y1 = center[1] + radius
             y2 = center[1] - radius
         else:
-            y1 = float(center[1]) + float(float(dy) / float(dx)) * float(x1 - center[0])
-            y2 = float(center[1]) + float(float(dy) / float(dx)) * float(x2 - center[0])
+            y1 = float(center[1]) + float(
+                float(dy) / float(dx)) * float(x1 - center[0])
+            y2 = float(center[1]) + float(
+                float(dy) / float(dx)) * float(x2 - center[0])
 
         d1 = (x1 - point[0])*(x1 - point[0]) + (y1 - point[1])*(y1 - point[1])
         d2 = (x2 - point[0])*(x2 - point[0]) + (y2 - point[1])*(y2 - point[1])
@@ -1762,17 +1786,17 @@ class DiskSlider2D(UI):
     def get_angle(self, coordinates):
         """ Gets the angle made with the X-Axis for calculating
         the percentage. Varies between 0-360.
-        
+
         Parameters
         ----------
         coordinates : (float, float)
             Coordinates of the poi on the base disk.
-        
+
         Returns
         -------
         angle : float
             The angle made with the x axis.
-        
+
         """
         center = self.base_disk_center
 
@@ -1787,12 +1811,12 @@ class DiskSlider2D(UI):
 
     def move_probe(self, click_position):
         """Moves the probe.
-        
+
         Parameters
         ----------
         click_position: (float, float)
             Position of the mouse click.
-            
+
         """
         intersection_coordinate = self.get_poi(click_position)
         self.set_position(intersection_coordinate)
@@ -1802,23 +1826,23 @@ class DiskSlider2D(UI):
 
     def set_position(self, position):
         """ Sets the probe's position.
-        
+
         Parameters
         ----------
         position : (float, float)
             The new position of the probe.
-            
+
         """
         self.probe.SetPosition(position)
 
     def set_center(self, position):
         """ Sets the center of the system to position.
-        
+
         Parameters
         ----------
         position : (float, float)
             New position.
-            
+
         """
         self.base_disk_center = position
 
@@ -1826,22 +1850,25 @@ class DiskSlider2D(UI):
 
         if self.angle_state > 180:
             self.angle_state -= 360
-        self.set_position((position[0] + self.base_disk_radius * math.cos(math.radians(self.angle_state)),
-                           position[1] + self.base_disk_radius * math.sin(math.radians(self.angle_state))))
+        self.set_position((
+            position[0] + self.base_disk_radius * math.cos(
+                math.radians(self.angle_state)),
+            position[1] + self.base_disk_radius * math.sin(
+                math.radians(self.angle_state))))
 
         self.text.position = (position[0] - 16, position[1] - 8)
 
     @staticmethod
     def base_disk_click_callback(i_ren, obj, slider):
         """ Update disk position and grab the focus.
-        
+
         Parameters
         ----------
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
         slider : :class:`DiskSlider2D`
-        
+
         """
         click_position = i_ren.event.position
         slider.move_probe(click_position=click_position)
@@ -1851,14 +1878,14 @@ class DiskSlider2D(UI):
     @staticmethod
     def probe_move_callback(i_ren, obj, slider):
         """ Move the probe.
-        
+
         Parameters
         ----------
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
         slider : :class:`DiskSlider2D`
-        
+
         """
         click_position = i_ren.event.position
         slider.move_probe(click_position=click_position)
@@ -1881,9 +1908,13 @@ class DiskSlider2D(UI):
 
     def handle_events(self, actor):
         """ Handle all default slider events.
-        
+
         """
-        self.add_callback(self.base_disk, "LeftButtonPressEvent", self.base_disk_click_callback)
-        self.add_callback(self.probe, "LeftButtonPressEvent", self.probe_press_callback)
-        self.add_callback(self.base_disk, "MouseMoveEvent", self.probe_move_callback)
-        self.add_callback(self.probe, "MouseMoveEvent", self.probe_move_callback)
+        self.add_callback(self.base_disk, "LeftButtonPressEvent",
+                          self.base_disk_click_callback)
+        self.add_callback(self.probe, "LeftButtonPressEvent",
+                          self.probe_press_callback)
+        self.add_callback(self.base_disk, "MouseMoveEvent",
+                          self.probe_move_callback)
+        self.add_callback(self.probe, "MouseMoveEvent",
+                          self.probe_move_callback)
