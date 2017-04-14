@@ -776,7 +776,7 @@ def _G1m(a, b, c):
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
     # Error is defined as three order of magnitude larger than system's epslon
-    er = np.finfo(a.ravel()[0]).eps * 1e3
+    er = np.finfo(a.ravel()[0]).eps * 1e5
 
     # Initialize G1
     G1 = np.zeros(a.shape)
@@ -838,7 +838,7 @@ def _G2m(a, b, c):
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
     # Error is defined as three order of magnitude larger than system's epslon
-    er = np.finfo(a.ravel()[0]).eps * 1e3
+    er = np.finfo(a.ravel()[0]).eps * 1e5
 
     # Initialize G2
     G2 = np.zeros(a.shape)
@@ -1296,7 +1296,10 @@ class DiffusionKurtosisModel(ReconstModel):
             raise ValueError(e_s)
 
         # Check if at least three b-values are given
-        check_multi_b(self.gtab, 3, non_zero=False)
+        enough_b = check_multi_b(self.gtab, 3, non_zero=False)
+        if not enough_b:
+            mes = "DKI requires at least 3 b-values (which can include b=0)"
+            raise ValueError(mes)
 
     def fit(self, data, mask=None):
         """ Fit method of the DKI model class
