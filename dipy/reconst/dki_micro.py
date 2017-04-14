@@ -3,15 +3,15 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from dipy.reconst.dti import (apparent_diffusion_coef, from_lower_triangular,
-                              decompose_tensor, trace,
+from dipy.reconst.dti import (lower_triangular, from_lower_triangular,
+                              decompose_tensor, trace, mean_diffusivity,
                               radial_diffusivity, axial_diffusivity,
                               MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.dki import (split_dki_param, _positive_evals,
-                              apparent_kurtosis_coef,
-                              kurtosis_maximum, DiffusionKurtosisModel,
-                              DiffusionKurtosisFit)
+                              directional_kurtosis,
+                              directional_diffusion, kurtosis_maximum,
+                              DiffusionKurtosisModel, DiffusionKurtosisFit)
 from dipy.reconst.dti import design_matrix as dti_design_matrix
 from dipy.core.ndindex import ndindex
 from dipy.reconst.vec_val_sum import vec_val_vect
@@ -148,15 +148,17 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
 
     # Compute hindered and restricted diffusion tensors for all voxels
     evals, evecs, kt = split_dki_param(dki_params)
+    dt = lower_triangular(vec_val_vect(evecs, evals))
+    md = mean_diffusivity(evals)
 
     index = ndindex(mask.shape)
     for idx in index:
         if not mask[idx]:
             continue
         # sample apparent diffusion and kurtosis values
-        di = apparent_diffusion_coef(vec_val_vect(evecs[idx], evals[idx]),
-                                     sphere)
-        ki = apparent_kurtosis_coef(dki_params[idx], sphere)
+        di = directional_diffusion(dt[idx], sphere.vertices)
+        ki = directional_kurtosis(dt[idx], md[idx], kt[idx], sphere.vertices,
+                                  adc=di)
         edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
         edt = np.dot(pinvB, edi)
         edt[idx] = edt
