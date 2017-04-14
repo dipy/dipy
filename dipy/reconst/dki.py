@@ -16,6 +16,7 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
+from dipy.reconst.vec_val_sum import vec_val_vect
 import dipy.core.sphere as dps
 
 
@@ -366,8 +367,36 @@ def _F2m(a, b, c):
     return F2
 
 
-def _adc(dt, V, min_diffusivity=0):
-    ADC = \
+def directional_diffusion(dt, V, min_diffusivity=0):
+    r""" Calculates the apparent diffusion coefficient (adc) in each direction
+    of a sphere for a single voxel [1]_.
+
+    Parameters
+    ----------
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
+    min_diffusivity : float (optional)
+        Because negative eigenvalues are not physical and small eigenvalues
+        cause quite a lot of noise in diffusion-based metrics, diffusivity
+        values smaller than `min_diffusivity` are replaced with
+        `min_diffusivity`. Default = 0
+
+    Returns
+    --------
+    adc : ndarray (g,)
+        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        for a single voxel.
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
+           Exploring the 3D geometry of the diffusion kurtosis tensor -
+           Impact on the development of robust tractography procedures and
+           novel biomarkers, NeuroImage 111: 85-99
+    """
+    adc = \
         V[:, 0] * V[:, 0] * dt[0] + \
         2 * V[:, 0] * V[:, 1] * dt[1] + \
         V[:, 1] * V[:, 1] * dt[2] + \
@@ -376,12 +405,50 @@ def _adc(dt, V, min_diffusivity=0):
         V[:, 2] * V[:, 2] * dt[5]
 
     if min_diffusivity is not None:
-        ADC = ADC.clip(min=min_diffusivity)
-    return ADC
+        adc = adc.clip(min=min_diffusivity)
+    return adc
 
 
-def _akc(kt, V, min_kurtosis=-3/7):
-    AKC = \
+def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
+    r""" Calculates the apparent diffusion variance (adv) in each direction
+    of a sphere for a single voxel [1]_.
+
+    Parameters
+    ----------
+    dt : array (6,)
+        elements of the diffusion tensor of the voxel.
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    V : array (g, 3)
+        g directions of a Sphere in Cartesian coordinates
+    min_kurtosis : float (optional)
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these cause artefacts in
+        kurtosis-based measures, directional kurtosis values smaller than
+        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        (theoretical kurtosis limit for regions that consist of water confined
+        to spherical pores [2]_)
+    adc : ndarray(g,) (optional)
+        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        for a single voxel.
+    advc : ndarray(g,) (optional)
+        Apparent diffusion variance coefficient (advc) in all g directions of
+        a sphere for a single voxel.
+
+    Returns
+    --------
+    adv : ndarray (g,)
+        Apparent diffusion variance (adv) in all g directions of a sphere for
+        a single voxel.
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
+           Exploring the 3D geometry of the diffusion kurtosis tensor -
+           Impact on the development of robust tractography procedures and
+           novel biomarkers, NeuroImage 111: 85-99
+    """
+    akc = \
         V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
         V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
         V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
@@ -398,15 +465,13 @@ def _akc(kt, V, min_kurtosis=-3/7):
         12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
         12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
 
-    if min_kurtosis is not None:
-        AKC = AKC.clip(min=min_kurtosis)
-    return AKC
+    return akc
 
 
 def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
                          adc=None, akc=None):
-    r""" Helper function that calculate the apparent kurtosis coefficient (AKC)
-    in each direction of a sphere for a single voxel [1]_.
+    r""" Calculates the apparent kurtosis coefficient (akc) in each direction
+    of a sphere for a single voxel [1]_.
 
     Parameters
     ----------
@@ -430,10 +495,16 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
         (theoretical kurtosis limit for regions that consist of water confined
         to spherical pores [2]_)
+    adc : ndarray(g,) (optional)
+        Apparent diffusion coefficient (adc) in all g directions of a sphere
+        for a single voxel.
+    adv : ndarray(g,) (optional)
+        Apparent diffusion variance (advc) in all g directions of a sphere for
+        a single voxel.
 
     Returns
     --------
-    AKC : ndarray (g,)
+    akc : ndarray (g,)
         Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
         a single voxel.
 
@@ -450,10 +521,12 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
            doi: 10.1109/ISBI.2011.5872402
     """
     if adc is None:
-        adc = _adc(dt, V, min_diffusivity=min_diffusivity)
+        adc = directional_diffusion(dt, V, min_diffusivity=min_diffusivity)
     if akc is None:
-        akc = _akc(kt, V, min_kurtosis=min_kurtosis)
-    return (md / adc) ** 2 * akc
+        akc = directional_diffusion_variance(kt, V) * (md / adc) ** 2
+    if min_kurtosis is not None:
+        akc = akc.clip(min=min_kurtosis)
+    return akc
 
 
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
@@ -538,14 +611,13 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     evals = evals[rel_i]
     AKCi = AKC[rel_i]
 
-    # Compute MD
+    # Compute MD and DT
     md = mean_diffusivity(evals)
+    dt = lower_triangular(vec_val_vect(evecs, evals))
 
     # loop over all relevant voxels
     for vox in range(len(kt)):
-        R = evecs[vox]
-        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKCi[vox] = directional_kurtosis(dt, md[vox], kt[vox], V,
+        AKCi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox], V,
                                          min_diffusivity=min_diffusivity,
                                          min_kurtosis=min_kurtosis)
 
@@ -575,7 +647,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 3
+        `max_kurtosis`. Default = 10
 
     Returns
     -------
@@ -793,7 +865,7 @@ def _G2m(a, b, c):
     return G2
 
 
-def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
+def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_.
 
     Parameters
@@ -886,7 +958,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     return RK.reshape(outshape)
 
 
-def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
+def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     r"""  Computes axial Kurtosis (AK) from the kurtosis tensor.
 
     Parameters
@@ -906,7 +978,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 3
+        `max_kurtosis`. Default = 10
 
     Returns
     -------
@@ -939,14 +1011,13 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     AKi = AK[rel_i]
 
     # Compute MD
-    MD = mean_diffusivity(evals)
+    md = mean_diffusivity(evals)
+    dt = lower_triangular(vec_val_vect(evecs, evals))
 
     # loop over all voxels
     for vox in range(len(kt)):
-        R = evecs[vox]
-        dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKi[vox] = directional_kurtosis(dt, MD[vox], kt[vox],
-                                        np.array([R[:, 0]]))
+        AKi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox],
+                                        np.array([evecs[vox, :, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -960,7 +1031,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     return AK.reshape(outshape)
 
 
-def _kt_maximum_converge(ang, dt, MD, kt):
+def _kt_maximum_converge(ang, dt, md, kt):
     """ Helper function that computes the inverse of the directional kurtosis
     of a voxel along a given direction in polar coordinates.
 
@@ -970,7 +1041,7 @@ def _kt_maximum_converge(ang, dt, MD, kt):
         array containing the two polar angles
     dt : array (6,)
         elements of the diffusion tensor of the voxel.
-    MD : float
+    md : float
         mean diffusivity of the voxel
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
@@ -989,17 +1060,17 @@ def _kt_maximum_converge(ang, dt, MD, kt):
     dipy.reconst.dki.kurtosis_maximum
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
-    return -1. * directional_kurtosis(dt, MD, kt, n)
+    return -1. * directional_kurtosis(dt, md, kt, n)
 
 
-def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-2):
+def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     """ Computes the maximum value of a single voxel kurtosis tensor
 
     Parameters
     ----------
     dt : array (6,)
         elements of the diffusion tensor of the voxel.
-    MD : float
+    md : float
         mean diffusivity of the voxel
     kt : array (15,)
         elements of the kurtosis tensor of the voxel.
@@ -1021,8 +1092,8 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-2):
         Cartesian coordinates of the direction of the maximal kurtosis value
     """
     # Estimation of maximum kurtosis candidates
-    AKC = directional_kurtosis(dt, MD, kt, sphere.vertices)
-    max_val, ind = local_maxima(AKC, sphere.edges)
+    akc = directional_kurtosis(dt, md, kt, sphere.vertices)
+    max_val, ind = local_maxima(akc, sphere.edges)
     n = len(max_val)
     max_dir = sphere.vertices[ind]
 
@@ -1037,10 +1108,10 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-2):
                                         max_dir[p, 2])
             ang = np.array([theta, phi])
             ang[:] = opt.fmin_bfgs(_kt_maximum_converge, ang,
-                                   args=(dt, MD, kt), gtol=gtol, disp=False,
+                                   args=(dt, md, kt), gtol=gtol, disp=False,
                                    retall=False)
             k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
-            k_val = directional_kurtosis(dt, MD, kt, k_dir)
+            k_val = directional_kurtosis(dt, md, kt, k_dir)
             if k_val > max_value:
                 max_value = k_val
                 max_direction = k_dir
@@ -1101,14 +1172,14 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
     mask = np.logical_and(mask, pos_evals)
 
     kt_max = np.zeros(mask.shape)
+    dt = lower_triangular(vec_val_vect(evecs, evals))
+    md = mean_diffusivity(evals)
 
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-        DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
-        dt = lower_triangular(DT)
-        kt_max[idx], da = _voxel_kurtosis_maximum(dt, np.mean(evals[idx]),
-                                                  kt[idx], sphere, gtol=gtol)
+        kt_max[idx], da = _voxel_kurtosis_maximum(dt[idx], md[idx], kt[idx],
+                                                  sphere, gtol=gtol)
 
     return kt_max
 
@@ -1355,7 +1426,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def mk(self, min_kurtosis=-3./7, max_kurtosis=10):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
@@ -1432,7 +1503,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def ak(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def ak(self, min_kurtosis=-3./7, max_kurtosis=10):
         r"""
         Axial Kurtosis (AK) of a diffusion kurtosis tensor [1]_.
 
@@ -1446,7 +1517,7 @@ class DiffusionKurtosisFit(TensorFit):
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 3
+            with `max_kurtosis`. Default = 10
 
         Returns
         -------
@@ -1466,7 +1537,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def rk(self, min_kurtosis=-3./7, max_kurtosis=3):
+    def rk(self, min_kurtosis=-3./7, max_kurtosis=10):
         r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_.
 
         Parameters
@@ -1479,7 +1550,7 @@ class DiffusionKurtosisFit(TensorFit):
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 3
+            with `max_kurtosis`. Default = 10
 
         Returns
         -------
