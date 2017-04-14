@@ -382,16 +382,16 @@ def directional_kurtosis(dt, MD, kt, V, min_diffusivity=0, min_kurtosis=-3/7):
         g directions of a Sphere in Cartesian coordinates
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
+        cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores
-        [2]_)
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these cause artefacts in
+        kurtosis-based measures, directional kurtosis values smaller than
+        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        (theoretical kurtosis limit for regions that consist of water confined
+        to spherical pores [2]_)
 
     Returns
     --------
@@ -463,16 +463,16 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         The AKC will be calculated for each of the vertices in the sphere
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
+        cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores
-        [2]_)
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these cause artefacts in
+        kurtosis-based measures, directional kurtosis values smaller than
+        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        (theoretical kurtosis limit for regions that consist of water confined
+        to spherical pores [2]_)
 
     Returns
     --------
@@ -1621,7 +1621,7 @@ def ols_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion aloud
+    # inverting design matrix and defining minimun diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
@@ -1726,7 +1726,7 @@ def wls_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion aloud
+    # inverting design matrix and defining minimun diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
