@@ -6,7 +6,7 @@ from warnings import warn
 
 
 def localpca(arr, sigma, patch_radius=1):
-    r"""Local PCA-based denoising of diffusion datasets
+    r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
     ----------
