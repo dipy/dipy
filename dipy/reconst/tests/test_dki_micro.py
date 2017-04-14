@@ -113,6 +113,38 @@ def test_single_fiber_model():
 
 
 def test_wmti_model_multi_voxel():
+    # single fiber simulate (which is the assumption of our model)
+    FIE = np.array([[[0.30, 0.32], [0.74, 0.51]],
+                    [[0.47, 0.21], [0.80, 0.63]]])
+    RDI = np.zeros((2, 2, 2))
+    ADI = np.array([[[1e-3, 1.3e-3], [0.8e-3, 1e-3]],
+                    [[0.9e-3, 0.99e-3], [0.89e-3, 1.1e-3]]])
+    ADE = np.array([[[2.2e-3, 2.3e-3], [2.8e-3, 2.1e-3]],
+                    [[1.9e-3, 2.5e-3], [1.89e-3, 2.1e-3]]])
+    Tor = np.array([[[2.6, 2.4], [2.8, 2.1]],
+                    [[2.9, 2.5], [2.7, 2.3]]])
+    RDE = ADE / Tor
+
+    # prepare simulation:
+    DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ADi = ADI[i, j, k]
+                RDi = RDI[i, j, k]
+                ADe = ADE[i, j, k]
+                RDe = RDE[i, j, k]
+                fie = FIE[i, j, k]
+                mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+                frac = [fie*100, (1 - fie)*100]
+                theta = random.uniform(0, 180)
+                phi = random.uniform(0, 320)
+                angles = [(theta, phi), (theta, phi)]
+                signal, dt, kt = multi_tensor_dki(gtab_2s, mevals,
+                                                  angles=angles,
+                                                  fractions=frac, snr=None)
+                DWIsim[i, j, k, :] = signal
 
     # DKI fit
     dkiM = dki_micro.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
