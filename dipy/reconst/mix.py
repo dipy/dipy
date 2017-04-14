@@ -4,31 +4,31 @@ Created on Thu Mar 02 15:37:46 2017
 @author: elef
 """
 import numpy as np
-import nibabel as nib
-from dipy.core.gradients import gradient_table
+#import nibabel as nib
+#from dipy.core.gradients import gradient_table
 from scipy.optimize import  least_squares
 import cvxpy as cvx
-from dipy.data import get_data
+#from dipy.data import get_data
 from scipy.optimize import differential_evolution
 
-fname, fscanner = get_data('ActiveAx_synth_2d')
-params = np.loadtxt(fscanner)
-img = nib.load(fname)
-data = img.get_data()
-affine = img.affine
-bvecs = params[:, 0:3]
-G = params[:, 3] / 10 ** 6  # gradient strength
-big_delta = params[:, 4]
-small_delta = params[:, 5]
-te = params[:, 6]
+#fname, fscanner = get_data('ActiveAx_synth_2d')
+#params = np.loadtxt(fscanner)
+#img = nib.load(fname)
+#data = img.get_data()
+#affine = img.affine
+#bvecs = params[:, 0:3]
+#G = params[:, 3] / 10 ** 6  # gradient strength
+#big_delta = params[:, 4]
+#small_delta = params[:, 5]
+#te = params[:, 6]
 gamma = 2.675987 * 10 ** 8
-bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
-bvals = bvals
-print(bvals * 10 ** 6)
-gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
-                      small_delta=small_delta,
-                      b0_threshold=0, atol=1e-2)
-signal = np.array(data[0, 0, 0])
+#bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
+#bvals = bvals
+#print(bvals * 10 ** 6)
+#gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
+#                      small_delta=small_delta,
+#                      b0_threshold=0, atol=1e-2)
+#signal = np.array(data[0, 0, 0])
 
 def norm_meas_Aax(signal):
     
@@ -47,9 +47,9 @@ def norm_meas_Aax(signal):
     f = np.concatenate((y1,y2,y3,y4))
     return f
     
-signal = norm_meas_Aax(signal)
+#signal = norm_meas_Aax(signal)
 
-def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
+def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
                           gamma=gamma,
                           D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                           debug=False):
@@ -183,7 +183,7 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                          debug=False):
 
-      """
+    """
     Aax_exvivo_nlin
 
     Parameters
@@ -227,12 +227,11 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
         S_dot = exp(-yhat_dot)
                 
     """ 
-    
-    res = activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
+    res = activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
                                 gamma=gamma,
                                 D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                                 debug=False)
-
+    
     yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot = res
 
     phi = np.vstack([yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot]).T
@@ -243,7 +242,7 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
 
 def activeax_cost_one(phi, signal): # sigma
                      
-      """
+    """
     Aax_exvivo_nlin
     
     to make cost function for genetic algorithm
@@ -278,7 +277,7 @@ def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
     phi = activax_exvivo_model(x, bvals, bvecs, G,
                                small_delta, big_delta)
     
-          """
+    """
     Aax_exvivo_nlin
     
     Cost function for genetic algorithm
@@ -365,7 +364,10 @@ def estimate_f(signal, phi):
     
     return np.array(fe.value)
    
-def estimate_x_and_f(x_fe, signal):
+def estimate_x_and_f(x_fe, signal,bvals, bvecs, G, small_delta, big_delta,
+                               gamma=gamma,
+                               D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                               debug=False):
     
     """
     Aax_exvivo_eval
@@ -396,7 +398,8 @@ def estimate_x_and_f(x_fe, signal):
 
         sum{(signal -  phi*fe)^2}                   
     """
-    
+    fe = np.zeros((1,4))
+    fe = np.squeeze(fe)
     fe[0:3] = x_fe[0:3]
     fe[3] = x_fe[6] 
     phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
@@ -449,7 +452,7 @@ def final(signal, x, fe):
     res = least_squares(estimate_x_and_f, x_fe, bounds = (bounds), args=(signal,))
     return res    
 
-def activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
+def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                           gamma=gamma,
                           D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                           debug=False):
@@ -615,25 +618,25 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
+    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
     the following four compartments:
 
     .. math::
 
-        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{Ŝ_cylinder(R,theta,phi)}+
-                    {f2}{Ŝ_zeppelin(d_perp,theta,phi)}+
-                    {f3}{Ŝ_ball}+
-                    {f4}{Ŝ_dot}
+        S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{S_cylinder(R,theta,phi)}+
+                    {f2}{S_zeppelin(d_perp,theta,phi)}+
+                    {f3}{S_ball}+
+                    {f4}{S_dot}
         
         where d_perp=D_intra*(1-v)
-        Ŝ_cylinder = exp(-yhat_cylinder)
-        Ŝ_zeppelin = exp(-yhat_zeppelin)
-        Ŝ_ball = exp(-yhat_ball)
-        Ŝ_dot = exp(-yhat_dot)
+        S_cylinder = exp(-yhat_cylinder)
+        S_zeppelin = exp(-yhat_zeppelin)
+        S_ball = exp(-yhat_ball)
+        S_dot = exp(-yhat_dot)
                 
     """ 
 
-    res = activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
+    res = activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                                 gamma=gamma,
                                 D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                                 debug=False)
@@ -647,7 +650,7 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
 def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
     
-        """
+    """
     differential evolution algorithm instead of genetic algorithm in MIX paper
 
     Parameters
@@ -674,30 +677,30 @@ def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
     """ 
     
     bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
-    res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
-return res_one.x
+    res_one = differential_evolution(cost_one, bounds, args=(signal, bvals, bvecs, G, small_delta, big_delta))
+    return res_one.x
 
-bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
-result = np.zeros([10,10,7])
-#for i in range(0 , 10):
-#    for j in range(0 , 10):
-for i in range(0 , 10):
-    for j in range(0 , 10):
-        signal1 = np.array(data[i,j,0])
-        res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
-        x1 = res_one.x    
-        phi = activax_exvivo_model(x1, bvals, bvecs, G, small_delta, big_delta,
-                         gamma=gamma,
-                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                         debug=False)
-
-        fe = estimate_f(signal1, phi)
-        fe = np.squeeze(fe)
-        x_fe = np.zeros([7])
-        x_fe[:3] = fe[:3]
-        x_fe[3:6] = x1[:3]
-        x_fe[6] = fe[3]
-        res2 = final(signal1, x1[:3], fe)
-        result[i,j,:] = res2.x
+#bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
+#result = np.zeros([10,10,7])
+##for i in range(0 , 10):
+##    for j in range(0 , 10):
+#for i in range(0 , 1):
+#    for j in range(0 , 1):
+#        signal1 = np.array(data[i,j,0])
+#        res_one = differential_evolution(cost_one, bounds, args=(signal1, bvals, bvecs, G, small_delta, big_delta))
+#        x1 = res_one.x    
+#        phi = activax_exvivo_model(x1, bvals, bvecs, G, small_delta, big_delta,
+#                         gamma=gamma,
+#                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+#                         debug=False)
+#
+#        fe = estimate_f(signal1, phi)
+#        fe = np.squeeze(fe)
+#        x_fe = np.zeros([7])
+#        x_fe[:3] = fe[:3]
+#        x_fe[3:6] = x1[:3]
+#        x_fe[6] = fe[3]
+#        res2 = final(signal1, x1[:3], fe)
+#        result[i,j,:] = res2.x
         
 #print(res2)
