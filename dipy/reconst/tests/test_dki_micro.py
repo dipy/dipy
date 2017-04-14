@@ -215,3 +215,11 @@ def test_wmti_model_multi_voxel():
     assert_array_almost_equal(IDT[..., 0], ADI)
     assert_array_almost_equal(IDT[..., 1], RDI)
     assert_array_almost_equal(IDT[..., 2], RDI)
+
+    wmtiM = dki_micro.KurtosisMicrostructuralModel(gtab_2s, fit_method="WLS")
+    wmtiF = wmtiM.fit(DWIsim, mask=mask)
+    assert_almost_equal(wmtiF.awf, FIE)
+    assert_almost_equal(wmtiF.axonal_diffusivity, ADI)
+    assert_almost_equal(wmtiF.hindered_ad, ADE)
+    assert_almost_equal(wmtiF.hindered_rd, RDE)
+    assert_almost_equal(wmtiF.tortuosity, Tor)
