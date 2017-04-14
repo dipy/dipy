@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+import scipy.special as sps
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
@@ -191,8 +192,8 @@ def test_phantom():
     # To test without rician correction
     temp = (DWI_clean / sigma)**2
     DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * (
-        (1 + 0.5 * temp) * sp.special.iv(
-            0, 0.25 * temp) + 0.5 * temp * sp.special.iv(1, 0.25 * temp))**2
+        (1 + 0.5 * temp) * sps.iv(
+            0, 0.25 * temp) + 0.5 * temp * sps.iv(1, 0.25 * temp))**2
 
     DWI_den = localpca_slow(DWI, sigma, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
