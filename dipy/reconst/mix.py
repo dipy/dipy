@@ -59,18 +59,19 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
 
     Parameters
     ----------
-    x: 
+    x : array
         x.shape = 4x1  
         x(0) theta (radian)
         x(1) phi (radian)
         x(2) R (micrometers)
         x(3) v=f1/(f1+f2) (ranges from 0.1 to 0.8)      
     
-    bvals
-    bvecs
+    bvals : array
+        bvals.shape = number of data points x 1
+    bvecs : array
     G: gradient strength 
-    small_delta
-    big_delta
+    small_delta : array
+    big_delta : array
     gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
     D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
     D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
@@ -86,7 +87,7 @@ def activax_exvivo_params(x, bvals, bvecs, G, small_delta, big_delta,
 
     .. math::
 
-        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
+        S_hat_𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
                     {f2}{exp(-yhat_zeppelin)}+
                     {f3}{exp(-yhat_ball)}+
                     {f4}{exp(-yhat_dot)}
@@ -187,7 +188,7 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
 
     Parameters
     ----------
-    x: 
+    x : array 
         x.shape = 4x1  
         x(0) theta (radian)
         x(1) phi (radian)
@@ -214,16 +215,16 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
 
     .. math::
 
-        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{Ŝ_cylinder(R,theta,phi)}+
-                    {f2}{Ŝ_zeppelin(d_perp,theta,phi)}+
-                    {f3}{Ŝ_ball}+
-                    {f4}{Ŝ_dot}
+        S_hat_𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{S_cylinder(R,theta,phi)}+
+                    {f2}{S_zeppelin(d_perp,theta,phi)}+
+                    {f3}{S_ball}+
+                    {f4}{S_dot}
         
         where d_perp=D_intra*(1-v)
-        Ŝ_cylinder = exp(-yhat_cylinder)
-        Ŝ_zeppelin = exp(-yhat_zeppelin)
-        Ŝ_ball = exp(-yhat_ball)
-        Ŝ_dot = exp(-yhat_dot)
+        S_cylinder = exp(-yhat_cylinder)
+        S_zeppelin = exp(-yhat_zeppelin)
+        S_ball = exp(-yhat_ball)
+        S_dot = exp(-yhat_dot)
                 
     """ 
     
@@ -256,7 +257,7 @@ def activeax_cost_one(phi, signal): # sigma
        
     Returns
     -------
-    (signal -  Ŝ)^T(signal -  Ŝ)   
+    (signal -  S)^T(signal -  S)   
 
     Notes
     --------
@@ -264,7 +265,7 @@ def activeax_cost_one(phi, signal): # sigma
 
     .. math::
 
-        (signal -  Ŝ)^T(signal -  Ŝ)
+        (signal -  S)^T(signal -  S)
                 
     """ 
 
@@ -284,7 +285,7 @@ def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
 
     Parameters
     ----------
-    x: 
+    x : array 
         x.shape = 4x1  
         x(0) theta (radian)
         x(1) phi (radian)
@@ -302,7 +303,7 @@ def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
     
     Returns
     -------
-    (signal -  Ŝ)^T(signal -  Ŝ)   
+    (signal -  S)^T(signal -  S)   
 
     Notes
     --------
@@ -310,7 +311,7 @@ def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
 
     .. math::
 
-        (signal -  Ŝ)^T(signal -  Ŝ)                
+        (signal -  S)^T(signal -  S)                
     """ 
 
     error_one =  activeax_cost_one(phi, signal)
@@ -324,9 +325,9 @@ def estimate_f(signal, phi):
     
     Parameters
     ----------
-    phi: 
+    phi : array
         phi.shape = number of data points x 4  
-    signal:
+    signal : array
         signal.shape = number of data points x 1    
     
     Returns
@@ -373,13 +374,14 @@ def estimate_x_and_f(x_fe, signal):
     
     Parameters
     ----------
-    x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
-    x_fe(3) theta
-    x_fe(4) phi
-    x_fe(5) R 
-    x_fe(6) as f4     
+    x_fe : array 
+        x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
+        x_fe(3) theta
+        x_fe(4) phi
+        x_fe(5) R 
+        x_fe(6) as f4     
     
-    signal:
+    signal : array
         signal.shape = number of data points x 1    
     
     Returns
@@ -410,7 +412,10 @@ def final(signal, x, fe):
     
     Parameters
     ----------
+    fe : array
     fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
+    
+    x : array
     x(0) theta
     x(1) phi
     x(2) R 
@@ -455,7 +460,7 @@ def activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Parameters
     ----------
-    x_fe: 
+    x_fe : array 
         x_fe.shape = 7x1  
         x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
         x_fe(3) theta
@@ -483,7 +488,7 @@ def activax_exvivo_params2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     .. math::
 
-        Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
+        S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
                     {f2}{exp(-yhat_zeppelin)}+
                     {f3}{exp(-yhat_ball)}+
                     {f4}{exp(-yhat_dot)}
@@ -587,7 +592,7 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Parameters
     ----------
-    x_fe: 
+    x_fe: array
         x_fe.shape = 7x1  
         x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
         x_fe(3) theta
