@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Classes and functions for fitting the diffusion kurtosis model """
+""" Classes and functions for fitting the DKI-based microstructural model """
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
@@ -28,8 +28,8 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-5,
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follow:
-            1) Three diffusion tensor's eingenvalues
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
@@ -59,14 +59,14 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-5,
     """
     kt_max = kurtosis_maximum(dki_params, sphere=sphere, gtol=gtol, mask=mask)
 
-    AWF = kt_max / (kt_max + 3)
+    awf = kt_max / (kt_max + 3)
 
-    return AWF
+    return awf
 
 
 def diffusion_components(dki_params, sphere='repulsion100', awf=None,
                          mask=None):
-    """ Extracts the intra and extra-cellular diffusion tensors of well aligned
+    """ Extracts the restricted and hindered diffusion tensors of well aligned
     fibers from diffusion kurtosis imaging parameters [1]_.
 
     Parameters
@@ -74,34 +74,34 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
-            1) Three diffusion tensor's eingenvalues
+            1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
     sphere : Sphere class instance, optional
-        The sphere providing sample directions to sample the intra and extra
-        cellular diffusion tensors. For more details see Fieremans et al.,
-        2011.
-    awk : ndarray (optional)
+        The sphere providing sample directions to sample the restricted and
+        hindered cellular diffusion tensors. For more details see Fieremans
+        et al., 2011.
+    awf : ndarray (optional)
         Array containing values of the axonal water fraction that has the shape
         dki_params.shape[:-1]. If not given this will be automatically computed
-        using function axonal_water_fraction with function's default precision.
+        using :func:`axonal_water_fraction`" with function's default precision.
     mask : ndarray (optional)
         A boolean array used to mark the coordinates in the data that should be
         analyzed that has the shape dki_params.shape[:-1]
 
     Returns
     --------
-    EDT : ndarray (x, y, z, 12) or (n, 12)
-        Parameters of the extra-cellular diffusion tensor.
-    IDT : ndarray (x, y, z, 12) or (n, 12)
-        Parameters of the intra-cellular diffusion tensor.
+    edt : ndarray (x, y, z, 6) or (n, 6)
+        Parameters of the hindered diffusion tensor.
+    idt : ndarray (x, y, z, 6) or (n, 6)
+        Parameters of the restricted diffusion tensor.
 
     Notes
     -----
-    The parameters of both extra-cellular and intra-cellular diffusion tensors
-    are order as follows:
-        1) Three diffusion tensor's eingenvalues
+    The parameters of both hindered and restricted diffusion tensors are order
+    as follows:
+        1) Three diffusion tensor's eigenvalues
         2) Three lines of the eigenvector matrix each containing the first,
         second and third coordinates of the eigenvector
 
@@ -134,8 +134,8 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
             raise ValueError("awf array is not the same shape as dki_params.")
 
     # Initialize hindered and restricted diffusion tensors
-    EDT = np.zeros(shape + (6,))
-    IDT = np.zeros(shape + (6,))
+    edt = np.zeros(shape + (6,))
+    idt = np.zeros(shape + (6,))
 
     # Generate matrix that converts apparant diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
@@ -160,7 +160,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
         ki = apparent_kurtosis_coef(dki_params[idx], sphere)
         edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
         edt = np.dot(pinvB, edi)
-        EDT[idx] = edt
+        edt[idx] = edt
 
         # We only move on if there is an axonal water fraction.
         # Otherwise, remaining params are already zero, so move on
@@ -171,18 +171,18 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
         idi = di * (1 - np.sqrt(ki * (1.0 - awf[idx]) / (3.0 * awf[idx])))
         # generate hindered and restricted diffusion tensors
         idt = np.dot(pinvB, idi)
-        IDT[idx] = idt
+        idt[idx] = idt
 
-    return EDT, IDT
+    return edt, idt
 
 
 def dkimicro_prediction(params, gtab, S0=1):
-    r""" Signal prediction given the free water DTI model parameters.
+    r""" Signal prediction given the DKI microstructure model parameters.
 
     Parameters
     ----------
     params : ndarray (x, y, z, 40) or (n, 40)
-    All parameters estimated from the diffusion kurtosis microstructural model.
+    All parameters estimated from the diffusion kurtosis microstructure model.
         Parameters are ordered as follows:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
@@ -200,7 +200,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     Returns
     --------
     S : (..., N) ndarray
-        Simulated signal based on the free water DTI model
+        Simulated signal based on the DKI microstructure model
 
     Notes
     -----
@@ -236,12 +236,12 @@ def dkimicro_prediction(params, gtab, S0=1):
     return pred_sig
 
 
-class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
+class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """ Class for the Diffusion Kurtosis Microstructural Model
     """
 
     def __init__(self,  gtab, fit_method="WLS", *args, **kwargs):
-        """ Initialize a KurtosisMicrostruturalModel class instance [1]_.
+        """ Initialize a KurtosisMicrostrutureModel class instance [1]_.
 
         Parameters
         ----------
@@ -262,15 +262,6 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
 
-        Notes
-        -----
-        1) Since this model is an extension of DKI, class instance is defined
-           as subclass DiffusionKurtosisModel from dki.py
-        2) The first step of the DKI-based microstructural model requires
-           diffusion tensor and kurtosis tensor fit. This fit is performed
-           using the DKI model solution specified by users by input parameter
-           fit_method.
-
         References
         ----------
         .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
@@ -280,8 +271,6 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args,
                                         **kwargs)
 
-        ReconstModel.__init__(self, gtab)
-
     def fit(self, data, mask=None, sphere='repulsion100', gtol=1e-5,
             awf_only=False):
         """ Fit method of the Diffusion Kurtosis Microstructural Model
@@ -289,7 +278,7 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         Parameters
         ----------
         data : array
-            The measured signal from one voxel.
+            An 4D matrix containing the diffusion-weighted data.
 
         mask : array
             A boolean array used to mark the coordinates in the data that
