@@ -4,16 +4,15 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import scipy.optimize as opt
-from dipy.reconst.dti import (TensorFit, mean_diffusivity, axial_diffusivity,
-                              radial_diffusivity, from_lower_triangular,
+from dipy.reconst.dti import (TensorFit, mean_diffusivity,
+                              from_lower_triangular,
                               lower_triangular, decompose_tensor,
                               MIN_POSITIVE_SIGNAL)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.recspeed import local_maxima
 from dipy.utils.six.moves import range
-from ..core.onetime import auto_attr
-from .base import ReconstModel
+from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
@@ -420,16 +419,16 @@ def _directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
         g directions of a Sphere in Cartesian coordinates
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
+        cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores
-        [2]_)
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these cause artefacts in
+        kurtosis-based measures, directional kurtosis values smaller than
+        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        (theoretical kurtosis limit for regions that consist of water confined
+        to spherical pores [2]_)
 
     Returns
     --------
@@ -458,7 +457,7 @@ def _directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
 
 def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
                            min_kurtosis=-3./7):
-    r""" Calculate the apparent kurtosis coefficient (AKC) in each direction
+    r""" Calculates the apparent kurtosis coefficient (AKC) in each direction
     of a sphere [1]_.
 
     Parameters
@@ -474,16 +473,16 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         The AKC will be calculated for each of the vertices in the sphere
     min_diffusivity : float (optional)
         Because negative eigenvalues are not physical and small eigenvalues
-        cause quite a lot of noise in diffusion based metrics, diffusivity
+        cause quite a lot of noise in diffusion-based metrics, diffusivity
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high amplitude negative values of kurtosis are not physicaly
-        and biologicaly pluasible, and these causes huge artefacts in kurtosis
-        based measures, directional kurtosis values than `min_kurtosis` are
-        replaced with `min_kurtosis`. Default = -3./7 (theoretical kurtosis
-        limit for regions that consist of water confined to spherical pores
-        [2]_)
+        Because high-amplitude negative values of kurtosis are not physicaly
+        and biologicaly pluasible, and these cause artefacts in
+        kurtosis-based measures, directional kurtosis values smaller than
+        `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
+        (theoretical kurtosis limit for regions that consist of water confined
+        to spherical pores [2]_)
 
     Returns
     --------
@@ -545,9 +544,9 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKCi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox], V,
-                                          min_diffusivity=min_diffusivity,
-                                          min_kurtosis=min_kurtosis)
+        AKCi[vox] = directional_kurtosis(dt, MD[vox], kt[vox], V,
+                                         min_diffusivity=min_diffusivity,
+                                         min_kurtosis=min_kurtosis)
 
     # reshape data according to input data
     AKC[rel_i] = AKCi
@@ -945,8 +944,8 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     for vox in range(len(kt)):
         R = evecs[vox]
         dt = lower_triangular(np.dot(np.dot(R, np.diag(evals[vox])), R.T))
-        AKi[vox] = _directional_kurtosis(dt, MD[vox], kt[vox],
-                                         np.array([R[:, 0]]))
+        AKi[vox] = directional_kurtosis(dt, MD[vox], kt[vox],
+                                        np.array([R[:, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
@@ -960,14 +959,14 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     return AK.reshape(outshape)
 
 
-def _kt_maxima_converge(ang, dt, MD, kt):
+def _kt_maximum_converge(ang, dt, MD, kt):
     """ Helper function that computes the inverse of the directional kurtosis
-    of a voxel along a given directions in polar coordinates.
+    of a voxel along a given direction in polar coordinates.
 
     Parameters
     ----------
     ang : array (2,)
-        arrays containing the two polar angles
+        array containing the two polar angles
     dt : array (6,)
         elements of the diffusion tensor of the voxel.
     MD : float
@@ -978,22 +977,22 @@ def _kt_maxima_converge(ang, dt, MD, kt):
     Returns
     -------
     neg_kt : float
-        The inverse values of the directional kurtosis for the given direction.
+        The inverse value of the apparent kurtosis for the given direction.
 
     Notes
     -----
-    This function is used to refine the kurtosis maxima estimate
+    This function is used to refine the kurtosis maximum estimate
 
     See also
     --------
     dipy.reconst.dki.kurtosis_maximum
     """
     n = np.array([sphere2cart(1, ang[0], ang[1])])
-    return -1. * _directional_kurtosis(dt, MD, kt, n)
+    return -1. * directional_kurtosis(dt, MD, kt, n)
 
 
-def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
-    """ Computes the maxima value of a single voxel kurtosis tensor
+def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-2):
+    """ Computes the maximum value of a single voxel kurtosis tensor
 
     Parameters
     ----------
@@ -1005,9 +1004,9 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
         elements of the kurtosis tensor of the voxel.
     sphere : Sphere class instance, optional
         The sphere providing sample directions for the initial search of the
-        maxima value of kurtosis.
+        maximum value of kurtosis.
     gtol : float, optional
-        This input is to refine kurtosis maxima under the precision of the
+        This input is to refine kurtosis maximum under the precision of the
         directions sampled on the sphere class instance. The gradient of the
         convergence procedure must be less than gtol before successful
         termination. If gtol is None, fiber direction is directly taken from
@@ -1016,30 +1015,31 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     Returns
     -------
     max_value : float
-        kurtosis tensor maxima value
+        kurtosis tensor maximum value
     max_dir : array (3,)
         Cartesian coordinates of the direction of the maximal kurtosis value
     """
-    # Estimation of maxima kurtosis candidates
-    AKC = _directional_kurtosis(dt, MD, kt, sphere.vertices)
+    # Estimation of maximum kurtosis candidates
+    AKC = directional_kurtosis(dt, MD, kt, sphere.vertices)
     max_val, ind = local_maxima(AKC, sphere.edges)
     n = len(max_val)
     max_dir = sphere.vertices[ind]
 
-    # Select the maxima from the candidates
+    # Select the maximum from the candidates
     max_value = max(max_val)
     max_direction = max_dir[np.argmax(max_val.argmax)]
 
-    # refine maxima direction
+    # refine maximum direction
     if gtol is not None:
         for p in range(n):
             r, theta, phi = cart2sphere(max_dir[p, 0], max_dir[p, 1],
                                         max_dir[p, 2])
             ang = np.array([theta, phi])
-            ang[:] = opt.fmin_bfgs(_kt_maxima_converge, ang, args=(dt, MD, kt),
-                                   gtol=gtol, disp=False, retall=False)
+            ang[:] = opt.fmin_bfgs(_kt_maximum_converge, ang,
+                                   args=(dt, MD, kt), gtol=gtol, disp=False,
+                                   retall=False)
             k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
-            k_val = _directional_kurtosis(dt, MD, kt, k_dir)
+            k_val = directional_kurtosis(dt, MD, kt, k_dir)
             if k_val > max_value:
                 max_value = k_val
                 max_direction = k_dir
@@ -1047,9 +1047,9 @@ def _voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5):
     return max_value, max_direction
 
 
-def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
+def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
                      mask=None):
-    """ Computes kurtosis maxima value
+    """ Computes kurtosis maximum value
 
     Parameters
     ----------
@@ -1064,7 +1064,7 @@ def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
         The sphere providing sample directions for the initial search of the
         maximal value of kurtosis.
     gtol : float, optional
-        This input is to refine kurtosis maxima under the precision of the
+        This input is to refine kurtosis maximum under the precision of the
         directions sampled on the sphere class instance. The gradient of the
         convergence procedure must be less than gtol before successful
         termination. If gtol is None, fiber direction is directly taken from
@@ -1076,7 +1076,7 @@ def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
     Returns
     --------
     max_value : float
-        kurtosis tensor maxima value
+        kurtosis tensor maximum value
     max_dir : array (3,)
         Cartesian coordinates of the direction of the maximal kurtosis value
     """
@@ -1084,7 +1084,7 @@ def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere('symmetric362')
+        sphere = get_sphere('repulsion100')
 
     # select voxels where to find fiber directions
     if mask is None:
@@ -1107,7 +1107,7 @@ def kurtosis_maximum(dki_params, sphere='symmetric362', gtol=1e-5,
         DT = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
         dt = lower_triangular(DT)
         kt_max[idx], da = _voxel_kurtosis_maximum(dt, np.mean(evals[idx]),
-                                                  kt[idx], sphere, gtol=1e-5)
+                                                  kt[idx], sphere, gtol=gtol)
 
     return kt_max
 
@@ -1322,7 +1322,7 @@ class DiffusionKurtosisFit(TensorFit):
         return self.model_params[..., 12:]
 
     def akc(self, sphere):
-        r""" Calculate the apparent kurtosis coefficient (AKC) in each
+        r""" Calculates the apparent kurtosis coefficient (AKC) in each
         direction on the sphere for each voxel in the data
 
         Parameters
@@ -1527,16 +1527,16 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return radial_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
 
-    def kmax(self, sphere='symmetric362', gtol=1e-5, mask=None):
-        r""" Computes the maxima value of a single voxel kurtosis tensor
+    def kmax(self, sphere='repulsion100', gtol=1e-5, mask=None):
+        r""" Computes the maximum value of a single voxel kurtosis tensor
 
         Parameters
         ----------
         sphere : Sphere class instance, optional
             The sphere providing sample directions for the initial search of
-            the maxima value of kurtosis.
+            the maximum value of kurtosis.
         gtol : float, optional
-            This input is to refine kurtosis maxima under the precision of the
+            This input is to refine kurtosis maximum under the precision of the
             directions sampled on the sphere class instance. The gradient of
             the convergence procedure must be less than gtol before successful
             termination. If gtol is None, fiber direction is directly taken
@@ -1545,7 +1545,7 @@ class DiffusionKurtosisFit(TensorFit):
         Returns
         --------
         max_value : float
-            kurtosis tensor maxima value
+            kurtosis tensor maximum value
         """
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
 
@@ -1632,7 +1632,7 @@ def ols_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion aloud
+    # inverting design matrix and defining minimun diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
@@ -1737,7 +1737,7 @@ def wls_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion aloud
+    # inverting design matrix and defining minimun diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
