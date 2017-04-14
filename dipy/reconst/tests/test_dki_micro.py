@@ -143,7 +143,7 @@ def test_wmti_model_multi_voxel():
     RDE = ADE / Tor
 
     # prepare simulation:
-    DWIsim = np.zeros((2., 2., 2., gtab_2s.bvals.size))
+    DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 
     for i in range(2):
         for j in range(2):
