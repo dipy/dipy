@@ -20,7 +20,7 @@ from dipy.data import get_sphere
 import dipy.core.sphere as dps
 
 
-def axonal_water_fraction(dki_params, sphere='symmetric362', gtol=1e-5,
+def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-5,
                           mask=None):
     """ Computes the axonal water fraction from DKI [1]_.
 
@@ -64,7 +64,7 @@ def axonal_water_fraction(dki_params, sphere='symmetric362', gtol=1e-5,
     return AWF
 
 
-def diffusion_components(dki_params, sphere='symmetric362', awf=None,
+def diffusion_components(dki_params, sphere='repulsion100', awf=None,
                          mask=None):
     """ Extracts the intra and extra-cellular diffusion tensors of well aligned
     fibers from diffusion kurtosis imaging parameters [1]_.
@@ -115,7 +115,7 @@ def diffusion_components(dki_params, sphere='symmetric362', awf=None,
 
     # load gradient directions
     if not isinstance(sphere, dps.Sphere):
-        sphere = get_sphere('symmetric362')
+        sphere = get_sphere(sphere)
 
     # select voxels where to applied the single fiber model
     if mask is None:
@@ -149,23 +149,28 @@ def diffusion_components(dki_params, sphere='symmetric362', awf=None,
 
     # Compute hindered and restricted diffusion tensors for all voxels
     evals, evecs, kt = split_dki_param(dki_params)
-    for idx in ndindex(shape):
+
+    index = ndindex(mask.shape)
+    for idx in index:
         if not mask[idx]:
             continue
         # sample apparent diffusion and kurtosis values
         di = apparent_diffusion_coef(vec_val_vect(evecs[idx], evals[idx]),
                                      sphere)
         ki = apparent_kurtosis_coef(dki_params[idx], sphere)
+        edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
+        edt = np.dot(pinvB, edi)
+        EDT[idx] = edt
 
+        # We only move on if there is an axonal water fraction.
+        # Otherwise, remaining params are already zero, so move on
+        if awf[idx] == 0:
+            continue
         # Convert apparent diffusion and kurtosis values to apparent diffusion
         # values of the hindered and restricted diffusion
-        edi = di * (1 + np.sqrt(ki*awf[idx] / (3.0-3.0*awf[idx])))
-        idi = di * (1 - np.sqrt(ki * (1.0-awf[idx]) / (3.0*awf[idx])))
-
+        idi = di * (1 - np.sqrt(ki * (1.0 - awf[idx]) / (3.0 * awf[idx])))
         # generate hindered and restricted diffusion tensors
-        edt = np.dot(pinvB, edi)
         idt = np.dot(pinvB, idi)
-        EDT[idx] = edt
         IDT[idx] = idt
 
     return EDT, IDT
@@ -277,7 +282,7 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
 
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None, sphere='symmetric362', gtol=1e-5,
+    def fit(self, data, mask=None, sphere='repulsion100', gtol=1e-5,
             awf_only=False):
         """ Fit method of the Diffusion Kurtosis Microstructural Model
 
@@ -323,28 +328,29 @@ class KurtosisMicrostructuralModel(DiffusionKurtosisModel):
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
         # DKI fit
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
+        dki_params = self.fit_method(self.design_matrix, data_in_mask,
+                                     *self.args, **self.kwargs)
 
         # Computing AWF
-        awf = axonal_water_fraction(params_in_mask, sphere=sphere, gtol=1e-5)
+        awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=1e-5)
 
         if awf_only:
-            params = np.concatenate((params_in_mask, np.array([awf])), axis=0)
+            params_all_mask = np.concatenate((dki_params, np.array([awf])),
+                                             axis=0)
         else:
             # Computing the hindered and restricted diffusion tensors
-            edt, idt = diffusion_components(params_in_mask, sphere=sphere,
+            edt, idt = diffusion_components(dki_params, sphere=sphere,
                                             awf=awf)
 
-            params = np.concatenate((params_in_mask,  edt, idt,
-                                     np.array([awf])), axis=-1)
+            params_all_mask = np.concatenate((dki_params,  edt, idt,
+                                              np.array([awf]).T), axis=-1)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1,)
-            params = params.reshape(out_shape)
+            params = params_all_mask.reshape(out_shape)
         else:
-            params = np.zeros(data.shape[:-1] + params.shape[-1])
-            params[mask, :] = params
+            params = np.zeros(data.shape[:-1] + (params_all_mask.shape[-1],))
+            params[mask, :] = params_all_mask
 
         return KurtosisMicrostructuralFit(self, params)
 
