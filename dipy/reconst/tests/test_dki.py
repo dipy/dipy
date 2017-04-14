@@ -444,10 +444,10 @@ def test_single_voxel_DKI_stats():
     RDi = 0
     RDe = 0.00087
     # Reference values
-    AD = fie*ADi + (1-fie)*ADe
-    AK = 3 * fie * (1-fie) * ((ADi-ADe) / AD) ** 2
-    RD = fie*RDi + (1-fie)*RDe
-    RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
+    AD = fie * ADi + (1 - fie) * ADe
+    AK = 3 * fie * (1 - fie) * ((ADi-ADe) / AD) ** 2
+    RD = fie * RDi + (1 - fie) * RDe
+    RK = 3 * fie * (1 - fie) * ((RDi-RDe) / RD) ** 2
     ref_vals = np.array([AD, AK, RD, RK])
 
     # simulate fiber randomly oriented
@@ -455,7 +455,7 @@ def test_single_voxel_DKI_stats():
     phi = random.uniform(0, 320)
     angles = [(theta, phi), (theta, phi)]
     mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
-    frac = [fie*100, (1-fie)*100]
+    frac = [fie * 100, (1 - fie) * 100]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
                                       fractions=frac, snr=None)
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
@@ -676,7 +676,7 @@ def test_multi_voxel_kurtosis_maximum():
     RDE = ADE / Tor
 
     # prepare simulation:
-    DWIsim = np.zeros((2., 2., 2., gtab_2s.bvals.size))
+    DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 
     for i in range(2):
         for j in range(2):
