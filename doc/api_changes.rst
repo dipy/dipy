@@ -26,6 +26,9 @@ the probability mass function (pmf) when selecting the tracking direction.
 
 Default of DKI model fitting was changed from "OLS" to "WLS".
 
+The default max_kurtosis of the functions axial_kurtosis, mean_kurtosis,
+radial_kurotis was changed from 3 to 10.  
+
 
 Dipy 0.10 Changes
 -----------------
