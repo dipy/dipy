@@ -707,15 +707,15 @@ def test_multi_voxel_kurtosis_maximum():
 
     # TEST - when no sphere is given
     k_max = dki.kurtosis_maximum(dkiF.model_params)
-    assert_almost_equal(k_max, RK)
+    assert_almost_equal(k_max, RK, decimal=5)
 
     # TEST - when sphere is given
     k_max = dki.kurtosis_maximum(dkiF.model_params, sphere)
-    assert_almost_equal(k_max, RK)
+    assert_almost_equal(k_max, RK, decimal=5)
 
     # TEST - when mask is given
     mask = np.ones((2, 2, 2), dtype='bool')
     mask[1, 1, 1] = 0
     RK[1, 1, 1] = 0
     k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
-    assert_almost_equal(k_max, RK)
+    assert_almost_equal(k_max, RK, decimal=5)
