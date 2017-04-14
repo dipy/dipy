@@ -39,7 +39,7 @@ def test_io_peaks():
     verbose = True
 
     pam = PeaksAndMetrics()
-    pam.affine = np.eye(4)
+    pam.affine = None
     pam.peak_dirs = np.zeros((10, 10, 10, 5, 3))
     pam.peak_values = np.zeros((10, 10, 10, 5))
     pam.peak_indices = np.zeros((10, 10, 10, 5))
@@ -64,10 +64,30 @@ def test_io_peaks():
         func_create_earray = f.create_earray
 
     group = func_create_group(f.root, 'pam')
-    x = pam.affine
-    atom = tables.Atom.from_dtype(x.dtype)
-    ds = func_create_carray(group, 'affine', atom, x.shape)
-    ds[:] = x
+
+    def save_array(group, x, name):
+
+        if x is None:
+            atom = tables.Atom.from_dtype(np.int)
+            ds = func_create_carray(group, name, atom)
+        else:
+            atom = tables.Atom.from_dtype(x.dtype)
+            ds = func_create_carray(group, name, atom, x.shape)
+            ds[:] = x
+
+    save_array(group, pam.affine, 'affine')
+    save_array(group, pam.peak_dirs, 'peak_dirs')
+    save_array(group, pam.peak_values, 'peak_values')
+    save_array(group, pam.peak_indices, 'peak_indices')
+    save_array(group, pam.shm_coeff, 'shm_coeff')
+    save_array(group, pam.sphere.vertices, 'sphere')
+    save_array(group, pam.B, 'B')
+    save_array(group, np.array([pam.total_weight]), 'total_weight')
+    save_array(group, np.array([pam.ang_thr]), 'ang_thr')
+    save_array(group, pam.B, 'gfa')
+    save_array(group, pam.B, 'qa')
+    save_array(group, pam.B, 'odf')
+
     f.close()
 
     f2 = func_open_file(fname, 'r')
