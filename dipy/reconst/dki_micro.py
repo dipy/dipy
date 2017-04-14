@@ -223,9 +223,9 @@ def dkimicro_prediction(params, gtab, S0=1):
     mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
 
     # Prepare parameters
-    f = params[..., 39]
-    adce = params[..., 27:33]
-    adci = params[..., 33:39]
+    f = params[..., 27]
+    adce = params[..., 28:34]
+    adci = params[..., 34:40]
 
     # Process pred_sig for all data voxels
     index = ndindex(evals.shape[:-1])
@@ -332,8 +332,8 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             edt, idt = diffusion_components(dki_params, sphere=sphere,
                                             awf=awf)
 
-            params_all_mask = np.concatenate((dki_params,  edt, idt,
-                                              np.array([awf]).T), axis=-1)
+            params_all_mask = np.concatenate((dki_params, np.array([awf]).T,
+                                              edt, idt), axis=-1)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1,)
@@ -402,13 +402,14 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the volume fraction of the restricted diffusion compartment
         also known as axonal water fraction.
         """
-        return self.model_params[..., 39]
+        return self.model_params[..., 27]
 
     @property
     def restricted_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
         """
-        rdt = self.model_params[..., 33:39]
+        self._is_awfonly()
+        rdt = self.model_params[..., 34:40]
         evals, evecs = decompose_tensor(from_lower_triangular(rdt))
         return evals
 
@@ -416,7 +417,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def hindered_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
         """
-        hdt = self.model_params[..., 27:33]
+        self._is_awfonly()
+        hdt = self.model_params[..., 28:34]
         evals, evecs = decompose_tensor(from_lower_triangular(hdt))
         return evals
 
@@ -467,6 +469,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         tortuosity[mask] = ad[mask] / rd[mask]
         return tortuosity
 
+    def _is_awfonly(self):
+        """ To raise error if only the axonal water fraction was computed """
+        if self.model_params.shape[-1] < 39:
+            raise ValueError('Only the AWF was processed! Rerun model fit '
+                             'with input parameter awf_only set to False')
+
     def predict(self, gtab, S0=1.):
         r""" Given a DKI microstructural model fit, predict the signal on the
         vertices of a gradient table
@@ -489,4 +497,6 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         that direction, $f$ is the volume fraction of the restricted diffusion
         compartment (also known as the axonal water fraction).
         """
+        self._is_awfonly()
+
         return dkimicro_prediction(self.model_params, gtab, S0)
