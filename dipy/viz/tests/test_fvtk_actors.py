@@ -23,10 +23,13 @@ run_test = (actor.have_vtk and
 if actor.have_vtk:
     if actor.major_version == 5 and use_xvfb:
         skip_slicer = True
+        skip_surface = True
     else:
         skip_slicer = False
+        skip_surface = False
 else:
     skip_slicer = False
+    skip_surface = False
 
 
 @npt.dec.skipif(skip_slicer)
@@ -156,6 +159,139 @@ def test_slicer():
     npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
                            np.array(slicer.shape))
 
+@npt.dec.skipif(skip_surface)
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_surface():
+
+    renderer = window.renderer()
+    data = np.zeros((50, 50, 50))
+    data[20:30,25,25]=1.
+    data[25, 20:30, 25] = 1.
+    affine = np.eye(4)
+    surface = actor.surface_actor(data, affine,
+                                  colors=np.array([1, 0, 1]),
+                                  opacity=.5)
+    renderer.add(surface)
+
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    window.show(renderer)
+
+
+
+    '''
+    # copy pixels in numpy array directly
+    arr = window.snapshot(renderer, 'test_slicer.png', offscreen=False)
+    import scipy
+    print(scipy.__version__)
+    print(scipy.__file__)
+
+    print(arr.sum())
+    print(np.sum(arr == 0))
+    print(np.sum(arr > 0))
+    print(arr.shape)
+    print(arr.dtype)
+
+    report = window.analyze_snapshot(arr, find_objects=True)
+
+    print(report)
+
+    npt.assert_equal(report.objects, 1)
+    # print(arr[..., 0])
+
+    # The slicer can cut directly a smaller part of the image
+    slicer.display_extent(10, 30, 10, 30, 35, 35)
+    renderer.ResetCamera()
+
+    renderer.add(slicer)
+
+    # save pixels in png file not a numpy array
+    with TemporaryDirectory() as tmpdir:
+        fname = os.path.join(tmpdir, 'slice.png')
+        # window.show(renderer)
+        arr = window.snapshot(renderer, fname, offscreen=False)
+        report = window.analyze_snapshot(fname, find_objects=True)
+        npt.assert_equal(report.objects, 1)
+
+    npt.assert_raises(ValueError, actor.slicer, np.ones(10))
+
+    renderer.clear()
+
+    rgb = np.zeros((30, 30, 30, 3))
+    rgb[..., 0] = 1.
+    rgb_actor = actor.slicer(rgb)
+
+    renderer.add(rgb_actor)
+
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(report.colors_found, [True])
+
+    lut = actor.colormap_lookup_table(scale_range=(0, 255),
+                                      hue_range=(0.4, 1.),
+                                      saturation_range=(1, 1.),
+                                      value_range=(0., 1.))
+    renderer.clear()
+    slicer_lut = actor.slicer(data, lookup_colormap=lut)
+
+    slicer_lut.display(10, None, None)
+    slicer_lut.display(None, 10, None)
+    slicer_lut.display(None, None, 10)
+
+    slicer_lut2 = slicer_lut.copy()
+    slicer_lut2.display(None, None, 10)
+    renderer.add(slicer_lut2)
+
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+
+    renderer.clear()
+
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+    slicer = actor.slicer(data, affine, interpolation='nearest')
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(data.shape, slicer.shape)
+
+    renderer.clear()
+
+    data = (255 * np.random.rand(50, 50, 50))
+    affine = np.diag([1, 3, 2, 1])
+
+    from dipy.align.reslice import reslice
+
+    data2, affine2 = reslice(data, affine, zooms=(1, 3, 2),
+                             new_zooms=(1, 1, 1))
+
+    slicer = actor.slicer(data2, affine2, interpolation='linear')
+    slicer.display(None, None, 25)
+
+    renderer.add(slicer)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    # window.show(renderer, reset_camera=False)
+    arr = window.snapshot(renderer, offscreen=False)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 1)
+    npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
+                           np.array(slicer.shape))'''
 
 @npt.dec.skipif(not run_test)
 @xvfb_it
