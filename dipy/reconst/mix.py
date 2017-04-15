@@ -22,6 +22,8 @@ from scipy.optimize import differential_evolution
 #small_delta = params[:, 5]
 #te = params[:, 6]
 gamma = 2.675987 * 10 ** 8
+D_intra=0.6 * 10 ** 3 
+D_iso=2 * 10 ** 3
 #bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
 #bvals = bvals
 #print(bvals * 10 ** 6)
@@ -48,6 +50,14 @@ def norm_meas_Aax(signal):
     return f
     
 #signal = norm_meas_Aax(signal)
+
+def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
+    
+    signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs, G[:, None], \
+                          small_delta[:, None], big_delta[:, None]])
+    
+    return signal_param
+   
 
 def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
                           gamma=gamma,
@@ -364,10 +374,7 @@ def estimate_f(signal, phi):
     
     return np.array(fe.value)
    
-def estimate_x_and_f(x_fe, signal,bvals, bvecs, G, small_delta, big_delta,
-                               gamma=gamma,
-                               D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                               debug=False):
+def estimate_x_and_f(x_fe, signal_param):
     
     """
     Aax_exvivo_eval
@@ -383,8 +390,11 @@ def estimate_x_and_f(x_fe, signal,bvals, bvecs, G, small_delta, big_delta,
         x_fe(5) R 
         x_fe(6) as f4     
     
-    signal : array
-        signal.shape = number of data points x 1    
+    signal_param : array
+        signal_param.shape = number of data points x 7
+        
+        signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs, G[:, None], \
+                          small_delta[:, None], big_delta[:, None]])
     
     Returns
     -------
@@ -397,15 +407,29 @@ def estimate_x_and_f(x_fe, signal,bvals, bvecs, G, small_delta, big_delta,
     .. math::
 
         sum{(signal -  phi*fe)^2}                   
-    """
+    """   
+    
+#    gamma = 2.675987 * 10 ** 8
+#    D_intra=0.6 * 10 ** 3 
+#    D_iso=2 * 10 ** 3
+#    
     fe = np.zeros((1,4))
     fe = np.squeeze(fe)
     fe[0:3] = x_fe[0:3]
     fe[3] = x_fe[6] 
+        
+    signal = signal_param[:,0]
+    bvals = signal_param[:,1]
+    bvecs = signal_param[:,2:5]
+    G = signal_param[:,5]
+    small_delta = signal_param[:,6]
+    big_delta = signal_param[:,7]
+                                         
     phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                                gamma=gamma,
                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
                                debug=False)
+    
     return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
 
 def final(signal, x, fe):
@@ -704,3 +728,17 @@ def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 #        result[i,j,:] = res2.x
         
 #print(res2)
+
+#signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs, G[:, None], \
+#                          small_delta[:, None], big_delta[:, None]])
+#
+#signal_param  = np.concatenate((signal,bvals.T))
+#
+#signal_param = np.concatenate((signal, bvals ,bvecs))
+#
+#a = np.array([[1, 2], [3, 4]])
+#b = np.array([[5, 6]])
+#np.concatenate((a, b.T), axis=1)
+
+
+
