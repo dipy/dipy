@@ -19,7 +19,7 @@ from dipy.data import get_sphere
 import dipy.core.sphere as dps
 
 
-def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-5,
+def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
                           mask=None):
     """ Computes the axonal water fraction from DKI [1]_.
 
@@ -133,8 +133,8 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
             raise ValueError("awf array is not the same shape as dki_params.")
 
     # Initialize hindered and restricted diffusion tensors
-    edt = np.zeros(shape + (6,))
-    idt = np.zeros(shape + (6,))
+    edt_all = np.zeros(shape + (6,))
+    idt_all = np.zeros(shape + (6,))
 
     # Generate matrix that converts apparant diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
@@ -161,7 +161,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
                                   adc=di)
         edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
         edt = np.dot(pinvB, edi)
-        edt[idx] = edt
+        edt_all[idx] = edt
 
         # We only move on if there is an axonal water fraction.
         # Otherwise, remaining params are already zero, so move on
@@ -172,9 +172,9 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
         idi = di * (1 - np.sqrt(ki * (1.0 - awf[idx]) / (3.0 * awf[idx])))
         # generate hindered and restricted diffusion tensors
         idt = np.dot(pinvB, idi)
-        idt[idx] = idt
+        idt_all[idx] = idt
 
-    return edt, idt
+    return edt_all, idt_all
 
 
 def dkimicro_prediction(params, gtab, S0=1):
@@ -272,7 +272,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         DiffusionKurtosisModel.__init__(self, gtab, fit_method="WLS", *args,
                                         **kwargs)
 
-    def fit(self, data, mask=None, sphere='repulsion100', gtol=1e-5,
+    def fit(self, data, mask=None, sphere='repulsion100', gtol=1e-2,
             awf_only=False):
         """ Fit method of the Diffusion Kurtosis Microstructural Model
 
@@ -322,7 +322,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                                      *self.args, **self.kwargs)
 
         # Computing AWF
-        awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=1e-5)
+        awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=gtol)
 
         if awf_only:
             params_all_mask = np.concatenate((dki_params, np.array([awf])),
