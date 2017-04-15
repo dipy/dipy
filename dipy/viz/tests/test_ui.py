@@ -282,6 +282,37 @@ def test_ui_line_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_disk_slider_2d(recording=False):
+    filename = "test_ui_disk_slider_2d"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    disk_slider_2d_test = ui.DiskSlider2D()
+    disk_slider_2d_test.set_center((300, 300))
+
+    # Assign the counter callback to every possible event.
+    event_counter = EventCounter()
+    event_counter.monitor(disk_slider_2d_test)
+
+    current_size = (600, 600)
+    show_manager = window.ShowManager(size=current_size,
+                                      title="DIPY Disk Slider")
+
+    show_manager.ren.add(disk_slider_2d_test)
+
+    if recording:
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
+
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
@@ -291,3 +322,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_slider_2d":
         test_ui_line_slider_2d(recording=True)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_disk_slider_2d":
+        test_ui_disk_slider_2d(recording=True)
