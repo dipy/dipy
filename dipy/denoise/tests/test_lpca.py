@@ -79,41 +79,20 @@ def rfiw_phantom(gtab, snr=None):
 
 
 def gen_gtab():
-    # generate the phantom data
-    # Sample 8 diffusion-weighted directions for first shell
-    n_pts = 8
-    theta = np.pi * np.random.rand(n_pts)
-    phi = 2 * np.pi * np.random.rand(n_pts)
-    hsph_initial = HemiSphere(theta=theta, phi=phi)
-    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-    directions8 = hsph_updated.vertices  # directions for each shell
-
-
-    # Sample 30 diffusion-weighted directions for second shell
-    n_pts = 30
-    theta = np.pi * np.random.rand(n_pts)
-    phi = 2 * np.pi * np.random.rand(n_pts)
-    hsph_initial = HemiSphere(theta=theta, phi=phi)
-    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-    directions30 = hsph_updated.vertices  # directions for each shell
-
-    # Sample 60 diffusion-weighted directions for second shell
-    n_pts = 60
-    theta = np.pi * np.random.rand(n_pts)
-    phi = 2 * np.pi * np.random.rand(n_pts)
-    hsph_initial = HemiSphere(theta=theta, phi=phi)
-    hsph_updated, potential = disperse_charges(hsph_initial, 5000)
-    directions60 = hsph_updated.vertices  # directions for each shell
-
+    # generate a gradient table for phantom data
+    directions8 = generate_bvecs(8)
+    directions30 = generate_bvecs(30)
+    directions60 = generate_bvecs(60)
     # Create full dataset parameters
     # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
     # 1000 and 60 directions for b-value 2000)
-    bvals = np.hstack((np.zeros(6), 300 * np.ones(8),
-                       1000 * np.ones(30), 2000 * np.ones(60)))
-    bvecs = np.vstack((np.zeros((6, 3)), directions8,
-                       directions30, directions60))
+    bvals = np.hstack((np.zeros(6),
+                       300 * np.ones(8),
+                       1000 * np.ones(30),
+                       2000 * np.ones(60)))
+    bvecs = np.vstack((np.zeros((6, 3)),
+                       directions8, directions30, directions60))
     gtab = gradient_table(bvals, bvecs)
-
     return gtab
 
 
