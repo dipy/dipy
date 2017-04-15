@@ -218,7 +218,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     pred_sig = np.zeros(params.shape[:-1] + (gtab.bvals.shape[0],))
 
     # Define dti design matrix and region to process
-    D = -1.0 * dti_design_matrix(gtab)
+    D = dti_design_matrix(gtab)
     evals = params[..., :3]
     mask = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
 
@@ -227,14 +227,19 @@ def dkimicro_prediction(params, gtab, S0=1):
     adce = params[..., 28:34]
     adci = params[..., 34:40]
 
+    if isinstance(S0, np.ndarray):
+        S0_vol = S0 * np.ones(params.shape[:-1])
+    else:
+        S0_vol = S0
+
     # Process pred_sig for all data voxels
     index = ndindex(evals.shape[:-1])
     for v in index:
         if mask[v]:
-            pred_sig[v] = (1. - f[v]) * np.exp(np.dot(adce[v], D[:, :6].T)) + \
-                          f[v] * np.exp(np.dot(adci[v], D[:, :6].T))
+            pred_sig[v] = (1. - f[v]) * np.exp(np.dot(D[:, :6], adce[v])) + \
+                f[v] * np.exp(np.dot(D[:, :6], adci[v]))
 
-    return pred_sig
+    return pred_sig * S0_vol
 
 
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
@@ -325,8 +330,8 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=gtol)
 
         if awf_only:
-            params_all_mask = np.concatenate((dki_params, np.array([awf])),
-                                             axis=0)
+            params_all_mask = np.concatenate((dki_params, np.array([awf]).T),
+                                             axis=-1)
         else:
             # Computing the hindered and restricted diffusion tensors
             edt, idt = diffusion_components(dki_params, sphere=sphere,
