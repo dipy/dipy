@@ -6,7 +6,7 @@ import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
-from dipy.sims.voxel import (multi_tensor_dki, _check_directions)
+from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
@@ -36,7 +36,22 @@ Tor = np.array([[[2.6, 2.4], [2.8, 2.1]],
 RDE = ADE / Tor
 
 # prepare simulation:
-DWIsim = np.zeros((2., 2., 2., gtab_2s.bvals.size))
+DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+# Diffusion microstructural model assumes that signal does not have Taylor
+# approximation components larger than the fourth order. Thus parameter
+# estimates are only equal to the ground truth values of the simulation
+# if signals taylor components larger than the fourth order are removed.
+# Signal whithout this taylor components can be generated using the
+# multi_tensor_dki simulations. Therefore we used this function to test the
+# expected estimates of the model.
+
+DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+# Signal with all taylor components can be simulated using the function
+# multi_tensor. Generating this signals will be usefull to test the prediction
+# procedures of DKI-based microstructural model.
+
 
 for i in range(2):
     for j in range(2):
@@ -55,6 +70,9 @@ for i in range(2):
                                               angles=angles,
                                               fractions=frac, snr=None)
             DWIsim[i, j, k, :] = signal
+            signal, sticks = multi_tensor(gtab_2s, mevals, angles=angles,
+                                          fractions=frac, snr=None)
+            DWIsim_all_taylor[i, j, k, :] = signal
 
 
 def test_single_fiber_model():
@@ -206,14 +224,14 @@ def test_dki_micro_predict():
 
     # Check predict of KurtosisMicrostruturalModel
     pred = dkiM.predict(dkiF.model_params)
-    assert_array_almost_equal(pred, DWIsim)
+    assert_array_almost_equal(pred, DWIsim_all_taylor)
 
     pred = dkiM.predict(dkiF.model_params, S0=100)
-    assert_array_almost_equal(pred, DWIsim * 100)
+    assert_array_almost_equal(pred, DWIsim_all_taylor * 100)
 
     # Check predict of KurtosisMicrostruturalFit
     pred = dkiF.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(pred, DWIsim * 100)
+    assert_array_almost_equal(pred, DWIsim_all_taylor * 100)
 
 
 def test_dki_micro_awf_only():
