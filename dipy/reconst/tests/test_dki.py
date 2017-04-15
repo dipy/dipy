@@ -1,4 +1,4 @@
-""" Testing DKI """
+""" Testing DKI microstructure """
 
 from __future__ import division, print_function, absolute_import
 
@@ -9,7 +9,7 @@ import dipy.reconst.dti as dti
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
-from dipy.sims.voxel import (multi_tensor_dki, _check_directions)
+from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data

@@ -239,4 +239,3 @@ def test_dki_micro_awf_only():
     dkiF = dkiM.fit(DWIsim, awf_only=True)
     awf = dki_micro.axonal_water_fraction(dkiF.model_params)
     assert_almost_equal(awf, FIE)
-
