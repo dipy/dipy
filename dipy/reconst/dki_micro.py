@@ -47,7 +47,7 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
 
     Returns
     --------
-    AWF : ndarray (x, y, z) or (n)
+    awf : ndarray (x, y, z) or (n)
         Axonal Water Fraction
 
     References
@@ -96,13 +96,11 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     idt : ndarray (x, y, z, 6) or (n, 6)
         Parameters of the restricted diffusion tensor.
 
-    Notes
-    -----
-    The parameters of both hindered and restricted diffusion tensors are order
-    as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the first,
-        second and third coordinates of the eigenvector
+    Note
+    ----
+    In the original article of DKI microstructural model [1]_, the hindered and
+    restricted tensors were definde as the intra-cellular and extra-cellular
+    diffusion compartments respectively.
 
     References
     ----------
@@ -205,13 +203,17 @@ def dkimicro_prediction(params, gtab, S0=1):
 
     Notes
     -----
-    The predicted signal is given by:
+    1) The predicted signal is given by:
     $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$, where
     $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of the
     diffusion hindered and restricted compartment for a given direction
     $\theta$, $b$ is the b value provided in the GradientTable input for that
     direction, $f$ is the volume fraction of the restricted diffusion
     compartment (also known as the axonal water fraction).
+
+    2) In the original article of DKI microstructural model [1]_, the hindered
+    and restricted tensors were definde as the intra-cellular and
+    extra-cellular diffusion compartments respectively.
     """
 
     # Initialize pred_sig
@@ -326,7 +328,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         dki_params = self.fit_method(self.design_matrix, data_in_mask,
                                      *self.args, **self.kwargs)
 
-        # Computing AWF
+        # Computing awf
         awf = axonal_water_fraction(dki_params, sphere=sphere, gtol=gtol)
 
         if awf_only:
@@ -369,6 +371,18 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         S0 : float or ndarray (optional)
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
+
+        Note
+        -----
+        In the original article of DKI microstructural model [1]_, the hindered
+        and restricted tensors were definde as the intra-cellular and
+        extra-cellular diffusion compartments respectively.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         return dkimicro_prediction(params, self.gtab, S0)
 
@@ -395,10 +409,17 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                 5) Six elements of the restricted diffusion tensor
                 6) Axonal water fraction
 
-        Notes
+        Note
         -----
-        Since this model is an extension of DKI, class instance is defined
-        as subclass of the DiffusionKurtosisFit from dki.py
+        In the original article of DKI microstructural model [1]_, the hindered
+        and restricted tensors were definde as the intra-cellular and
+        extra-cellular diffusion compartments respectively.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         DiffusionKurtosisFit.__init__(self, model, model_params)
 
@@ -406,12 +427,34 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def awf(self):
         """ Returns the volume fraction of the restricted diffusion compartment
         also known as axonal water fraction.
+
+        Note
+        ----
+        The volume fraction of the restricted diffusion compartment can be seem
+        as the volume fraction of the intra-cellular compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         return self.model_params[..., 27]
 
     @property
     def restricted_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
+
+        Note
+        -----
+        The restricted diffusion tensor can be seem as the tissue's
+        intra-cellular diffusion compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         self._is_awfonly()
         rdt = self.model_params[..., 34:40]
@@ -420,7 +463,18 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
 
     @property
     def hindered_evals(self):
-        """ Returns the eigenvalues of the restricted diffusion compartment.
+        """ Returns the eigenvalues of the hindered diffusion compartment.
+
+        Note
+        -----
+        The hindered diffusion tensor can be seem as the tissue's
+        extra-cellular diffusion compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         self._is_awfonly()
         hdt = self.model_params[..., 28:34]
@@ -443,12 +497,34 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     @property
     def hindered_ad(self):
         """ Returns the axial diffusivity of the hindered compartment.
+
+        Note
+        -----
+        The hindered diffusion tensor can be seem as the tissue's
+        extra-cellular diffusion compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         return axial_diffusivity(self.hindered_evals)
 
     @property
     def hindered_rd(self):
         """ Returns the radial diffusivity of the hindered compartment.
+
+        Note
+        -----
+        The hindered diffusion tensor can be seem as the tissue's
+        extra-cellular diffusion compartment [1]_.
+
+        References
+        ----------
+        .. [1] Fieremans, E., Jensen, J.H., Helpern, J.A., 2011. White Matter
+               Characterization with Diffusion Kurtosis Imaging. Neuroimage
+               58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
         return radial_diffusivity(self.hindered_evals)
 
@@ -457,6 +533,11 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the tortuosity of the hindered diffusion which is defined
         by ADe / RDe, where ADe and RDe are the axial and radial diffusivities
         of the hindered compartment [1]_.
+
+        Note
+        -----
+        The hindered diffusion tensor can be seem as the tissue's
+        extra-cellular diffusion compartment [1]_.
 
         References
         ----------
@@ -477,7 +558,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def _is_awfonly(self):
         """ To raise error if only the axonal water fraction was computed """
         if self.model_params.shape[-1] < 39:
-            raise ValueError('Only the AWF was processed! Rerun model fit '
+            raise ValueError('Only the awf was processed! Rerun model fit '
                              'with input parameter awf_only set to False')
 
     def predict(self, gtab, S0=1.):
@@ -503,5 +584,4 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         compartment (also known as the axonal water fraction).
         """
         self._is_awfonly()
-
         return dkimicro_prediction(self.model_params, gtab, S0)

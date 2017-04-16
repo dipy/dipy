@@ -170,7 +170,7 @@ def test_wmti_model_multi_voxel():
     Torc[0, 0, 0] = 0
     RDEc[0, 0, 0] = 0
     DWIsimc[0, 0, 0, :] = 0
-    mask = np.ones((2., 2., 2.))
+    mask = np.ones((2, 2, 2))
     mask[0, 0, 0] = 0
 
     dkiF = dkiM.fit(DWIsimc)
