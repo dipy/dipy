@@ -218,7 +218,44 @@ def test_wmti_model_multi_voxel():
     assert_almost_equal(wmtiF.tortuosity, Torc)
 
 
-def test_dki_micro_predict():
+def test_dki_micro_predict_single_voxel():
+    # single fiber simulate (which is the assumption of our model)
+    fie = 0.49
+    ADi = 0.00099
+    ADe = 0.00226
+    RDi = 0
+    RDe = 0.00087
+
+    # prepare simulation:
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
+    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+    frac = [fie*100, (1 - fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+    signal_gt, da = multi_tensor(gtab_2s, mevals, angles=angles,
+                                 fractions=frac, snr=None)
+
+    # Defined DKI microstrutural model
+    dkiM = dki_micro.KurtosisMicrostructureModel(gtab_2s)
+
+    # Fit single voxel signal
+    dkiF = dkiM.fit(signal)
+
+    # Check predict of KurtosisMicrostruturalModel
+    pred = dkiM.predict(dkiF.model_params)
+    assert_array_almost_equal(pred, signal_gt)
+
+    pred = dkiM.predict(dkiF.model_params, S0=100)
+    assert_array_almost_equal(pred, signal_gt * 100)
+
+    # Check predict of KurtosisMicrostruturalFit
+    pred = dkiF.predict(gtab_2s, S0=100)
+    assert_array_almost_equal(pred, signal_gt * 100)
+
+
+def test_dki_micro_predict_multi_voxel():
     dkiM = dki_micro.KurtosisMicrostructureModel(gtab_2s)
     dkiF = dkiM.fit(DWIsim)
 
