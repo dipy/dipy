@@ -276,3 +276,18 @@ def test_dki_micro_awf_only():
     dkiF = dkiM.fit(DWIsim, awf_only=True)
     awf = dki_micro.axonal_water_fraction(dkiF.model_params)
     assert_almost_equal(awf, FIE)
+
+
+def additional_tortuosity_tests():
+    # Test tortuosity when rd is zero
+    # single voxel
+    t = dki_micro.tortuosity(1.7e-3, 0.0)
+    assert_almost_equal(t, 0.0)
+
+    # multi-voxel
+    RDEc = RDE.copy()
+    Torc = Tor.copy()
+    RDEc[1, 1, 1] = 0.0
+    Torc[1, 1, 1] = 0.0
+    t = dki_micro.tortuosity(ADE, RDEc)
+    assert_almost_equal(Torc, t)

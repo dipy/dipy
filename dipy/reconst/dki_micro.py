@@ -244,6 +244,43 @@ def dkimicro_prediction(params, gtab, S0=1):
     return pred_sig * S0_vol
 
 
+def tortuosity(hindered_ad, hindered_rd):
+    """ Computes the tortuosity of the hindered diffusion compartment given
+    its axial and radial diffusivities
+
+    Parameters
+    ----------
+    hindered_ad: ndarray
+        Array containing the values of the hindered axial diffusivity.
+    hindered_rd: ndarry
+        Array containing the values of the hindered radial diffusivity.
+
+    Return
+    ------
+    Tortuosity of the hindered diffusion compartment
+    """
+    if not isinstance(hindered_rd, np.ndarray):
+        hindered_rd = np.array(hindered_rd)
+    if not isinstance(hindered_ad, np.ndarray):
+        hindered_ad = np.array(hindered_ad)
+
+    tortuosity = np.zeros(hindered_rd.shape)
+
+    # mask to avoid divisions by zero
+    mask = hindered_rd > 0
+
+    # Check single voxel cases. For numpy versions more recent than 1.7,
+    # this if else condition is not required since single voxel can be
+    # processed using the same line of code of multi-voxel
+    if hindered_rd.size == 1:
+        if mask:
+                tortuosity = hindered_ad / hindered_rd
+    else:
+        tortuosity[mask] = hindered_ad[mask] / hindered_rd[mask]
+
+    return tortuosity
+
+
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
     """ Class for the Diffusion Kurtosis Microstructural Model
     """
@@ -545,15 +582,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
-        rd = self.hindered_rd
-        ad = self.hindered_ad
-        tortuosity = np.zeros(rd.shape)
-
-        # mask to avoid divisions by zero
-        mask = self.hindered_rd > 0
-
-        tortuosity[mask] = ad[mask] / rd[mask]
-        return tortuosity
+        return tortuosity(self.hindered_ad, self.hindered_rd)
 
     def _is_awfonly(self):
         """ To raise error if only the axonal water fraction was computed """
