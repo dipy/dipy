@@ -60,10 +60,10 @@ based statistics.
 First, we import all relevant modules:
 """
 
-import numpy as np
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
+import numpy as np
 from dipy.data import fetch_cenir_multib
 from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
@@ -119,15 +119,15 @@ to compute the entire dataset. Therefore, to speed the run time in this example
 we only denoise an axial slice of the data.
 """
 
-axial_slice = 40
+sigma = estimate_sigma(data)
 
-sigma = estimate_sigma(data, N=4)
+data = data[:, :, 39:42, :]
+mask = mask[:, :, 39:42]
 
-mask_roi = np.zeros(data.shape[:-1], dtype=bool)
-mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
+mask_roi = np.zeros(mask.shape)
+mask_roi[:, :, 1] = mask[:, :, 1]
 
 den = nlmeans(data, sigma=sigma, mask=mask_roi)
-den = den[:, :, axial_slice, :]
 
 """
 Now that we have loaded and prepared the voxels to process we can go forward
