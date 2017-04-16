@@ -87,7 +87,7 @@ def localpca(arr, sigma, patch_radius=1):
 
                 # 2. Alternatively, calculate the eigenvalues and
                 #  eigenvectors of the covariance matrix through an SVD:
-                U, S, Vt = svd(X, *svd_args)[0, 1, 2]
+                U, S, Vt = svd(X, *svd_args)[:3]
                 # Items in S are the eigenvalues, but in ascending order
                 # We invert the order (=> descending), square and normalize
                 # \lambda_i = s_i^2 / n
