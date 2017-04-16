@@ -1,8 +1,17 @@
 import numpy as np
 import scipy as sp
 import scipy.linalg as sla
-from scipy.linalg.lapack import sgesvd
 from warnings import warn
+
+# Try to get the SVD through direct API to lapack:
+try:
+    from scipy.linalg.lapack import sgesvd as svd
+    svd_args = [1, 0]
+# If you have an older version of scipy, we fall back
+# on the standard scipy SVD API:
+except ImportError:
+    from scipy.linalg import svd
+    svd_args = [False]
 
 
 def localpca(arr, sigma, patch_radius=1):
@@ -78,11 +87,7 @@ def localpca(arr, sigma, patch_radius=1):
 
                 # 2. Alternatively, calculate the eigenvalues and
                 #  eigenvectors of the covariance matrix through an SVD:
-                # We can do this using scipy's linear algebra API (this is
-                # slower):
-                # U, S, Vt = sla.svd(X, full_matrices=False)
-                # Or through the bare bones direct access to LAPACK (faster):
-                U, S, Vt, info = sgesvd(X, 1, 0)
+                U, S, Vt, info = svd(X, *svd_args)
                 # These are the eigenvalues, but in ascending order:
                 d = S[::-1] ** 2 / X.shape[0]
                 # Rows are eigenvectors, but also in ascending eigenvalue
