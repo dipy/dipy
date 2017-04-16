@@ -88,12 +88,13 @@ def localpca(arr, sigma, patch_radius=1):
                 # 2. Alternatively, calculate the eigenvalues and
                 #  eigenvectors of the covariance matrix through an SVD:
                 U, S, Vt, info = svd(X, *svd_args)
-                # These are the eigenvalues, but in ascending order:
+                # Items in S are the eigenvalues, but in ascending order
+                # We invert the order (=> descending), square and normalize
+                # \lambda_i = s_i^2 / n
                 d = S[::-1] ** 2 / X.shape[0]
-                # Rows are eigenvectors, but also in ascending eigenvalue
+                # Rows of Vt are eigenvectors, but also in ascending eigenvalue
                 # order:
                 W = Vt[::-1].T
-
                 d[d < tau[i, j, k, :]] = 0
                 W_hat = np.zeros_like(W)
                 W_hat[:, d > 0] = W[:, d > 0]
