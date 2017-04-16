@@ -1,3 +1,5 @@
+.. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
+    :target: https://travis-ci.org/nipy/dipy
 ======
  DIPY
 ======
