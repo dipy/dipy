@@ -432,7 +432,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
     adc : ndarray(g,) (optional)
         Apparent diffusion coefficient (adc) in all g directions of a sphere
         for a single voxel.
-    advc : ndarray(g,) (optional)
+    adv : ndarray(g,) (optional)
         Apparent diffusion variance coefficient (advc) in all g directions of
         a sphere for a single voxel.
 
@@ -449,7 +449,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
            Impact on the development of robust tractography procedures and
            novel biomarkers, NeuroImage 111: 85-99
     """
-    akc = \
+    adv = \
         V[:, 0] * V[:, 0] * V[:, 0] * V[:, 0] * kt[0] + \
         V[:, 1] * V[:, 1] * V[:, 1] * V[:, 1] * kt[1] + \
         V[:, 2] * V[:, 2] * V[:, 2] * V[:, 2] * kt[2] + \
@@ -466,11 +466,11 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
         12 * V[:, 0] * V[:, 1] * V[:, 1] * V[:, 2] * kt[13] + \
         12 * V[:, 0] * V[:, 1] * V[:, 2] * V[:, 2] * kt[14]
 
-    return akc
+    return adv
 
 
 def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
-                         adc=None, akc=None):
+                         adc=None, adv=None):
     r""" Calculates the apparent kurtosis coefficient (akc) in each direction
     of a sphere for a single voxel [1]_.
 
@@ -523,10 +523,10 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
     """
     if adc is None:
         adc = directional_diffusion(dt, V, min_diffusivity=min_diffusivity)
-    if akc is None:
-        akc = directional_diffusion_variance(kt, V) * (md / adc) ** 2
+    if adv is None:
+        adv = directional_diffusion_variance(kt, V) * (md / adc) ** 2
     if min_kurtosis is not None:
-        akc = akc.clip(min=min_kurtosis)
+        akc = adv.clip(min=min_kurtosis)
     return akc
 
 
@@ -561,7 +561,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     Returns
     --------
-    AKC : ndarray (x, y, z, g) or (n, g)
+    akc : ndarray (x, y, z, g) or (n, g)
         Apparent kurtosis coefficient (AKC) for all g directions of a sphere.
 
     Notes
@@ -603,14 +603,14 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     # Initialize AKC matrix
     V = sphere.vertices
-    AKC = np.zeros((len(kt), len(V)))
+    akc = np.zeros((len(kt), len(V)))
 
     # select relevant voxels to process
     rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     kt = kt[rel_i]
     evecs = evecs[rel_i]
     evals = evals[rel_i]
-    AKCi = AKC[rel_i]
+    akci = akc[rel_i]
 
     # Compute MD and DT
     md = mean_diffusivity(evals)
@@ -618,14 +618,14 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
     # loop over all relevant voxels
     for vox in range(len(kt)):
-        AKCi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox], V,
+        akci[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox], V,
                                          min_diffusivity=min_diffusivity,
                                          min_kurtosis=min_kurtosis)
 
     # reshape data according to input data
-    AKC[rel_i] = AKCi
+    akc[rel_i] = akci
 
-    return AKC.reshape((outshape + (len(V),)))
+    return akc.reshape((outshape + (len(V),)))
 
 
 def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
@@ -1128,7 +1128,7 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
     ----------
     dki_params : ndarray (x, y, z, 27) or (n, 27)
         All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follow:
+        Parameters are ordered as follows:
             1) Three diffusion tensor's eingenvalues
             2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
@@ -1702,7 +1702,7 @@ def ols_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion
+    # inverting design matrix and defining minimum diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
@@ -1807,7 +1807,7 @@ def wls_fit_dki(design_matrix, data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
 
-    # inverting design matrix and defining minimun diffusion
+    # inverting design matrix and defining minimum diffusion
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 

@@ -180,8 +180,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters
         ----------
-        filtering : boolean
-            default true, perform the hanning filtering
+        filtering : boolean, optional
+            Whether to perform Hanning filtering. Default: True
 
         Returns
         -------
@@ -200,13 +200,15 @@ class DiffusionSpectrumFit(OdfFit):
 
     def rtop_pdf(self, normalized=True):
         r""" Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Descoteaux et Al. [1]_, Tuch [2]_, Wu et al. [3]_)
+        the propagator evaluated at zero (see Descoteaux et Al. [1]_,
+        Tuch [2]_, Wu et al. [3]_)
         rtop = P(0)
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True.
 
         Returns
         -------
@@ -243,12 +245,14 @@ class DiffusionSpectrumFit(OdfFit):
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
                 \end{equation}
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space (see Wu et. al [1]_).
+        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space
+        (see Wu et. al [1]_).
 
         Parameters
         ----------
-        normalized : boolean
-            default true, normalize the propagator by its sum in order to obtain a pdf
+        normalized : boolean, optional
+            Whether to normalize the propagator by its sum in order to obtain a
+            pdf. Default: True
 
         Returns
         -------
@@ -573,7 +577,7 @@ class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
         self.model.cache_set('deconv_psf', self.model.gtab, DSID_PSF)
         # apply fourier transform
         Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq),
-                      3 * (self.qgrid_sz, )))))
+                                          3 * (self.qgrid_sz, )))))
         # threshold propagator
         Pr = threshold_propagator(Pr)
         # apply LR deconvolution
@@ -645,8 +649,9 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
         reBlurred = np.real(np.fft.ifftn(otf * np.fft.fftn(prop_deconv)))
         reBlurred[reBlurred < eps] = eps
         # Update the estimate
-        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(otf *
-                                                          np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
+        prop_deconv = prop_deconv * (
+            np.real(np.fft.ifftn(
+                otf * np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
         # Enforce positivity
         prop_deconv = np.clip(prop_deconv, 0, np.inf)
     return prop_deconv / prop_deconv.sum()

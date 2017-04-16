@@ -170,7 +170,7 @@ def test_wmti_model_multi_voxel():
     Torc[0, 0, 0] = 0
     RDEc[0, 0, 0] = 0
     DWIsimc[0, 0, 0, :] = 0
-    mask = np.ones((2., 2., 2.))
+    mask = np.ones((2, 2, 2))
     mask[0, 0, 0] = 0
 
     dkiF = dkiM.fit(DWIsimc)
@@ -218,7 +218,44 @@ def test_wmti_model_multi_voxel():
     assert_almost_equal(wmtiF.tortuosity, Torc)
 
 
-def test_dki_micro_predict():
+def test_dki_micro_predict_single_voxel():
+    # single fiber simulate (which is the assumption of our model)
+    fie = 0.49
+    ADi = 0.00099
+    ADe = 0.00226
+    RDi = 0
+    RDe = 0.00087
+
+    # prepare simulation:
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
+    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+    frac = [fie*100, (1 - fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+    signal_gt, da = multi_tensor(gtab_2s, mevals, angles=angles,
+                                 fractions=frac, snr=None)
+
+    # Defined DKI microstrutural model
+    dkiM = dki_micro.KurtosisMicrostructureModel(gtab_2s)
+
+    # Fit single voxel signal
+    dkiF = dkiM.fit(signal)
+
+    # Check predict of KurtosisMicrostruturalModel
+    pred = dkiM.predict(dkiF.model_params)
+    assert_array_almost_equal(pred, signal_gt)
+
+    pred = dkiM.predict(dkiF.model_params, S0=100)
+    assert_array_almost_equal(pred, signal_gt * 100)
+
+    # Check predict of KurtosisMicrostruturalFit
+    pred = dkiF.predict(gtab_2s, S0=100)
+    assert_array_almost_equal(pred, signal_gt * 100)
+
+
+def test_dki_micro_predict_multi_voxel():
     dkiM = dki_micro.KurtosisMicrostructureModel(gtab_2s)
     dkiF = dkiM.fit(DWIsim)
 
@@ -239,3 +276,18 @@ def test_dki_micro_awf_only():
     dkiF = dkiM.fit(DWIsim, awf_only=True)
     awf = dki_micro.axonal_water_fraction(dkiF.model_params)
     assert_almost_equal(awf, FIE)
+
+
+def additional_tortuosity_tests():
+    # Test tortuosity when rd is zero
+    # single voxel
+    t = dki_micro.tortuosity(1.7e-3, 0.0)
+    assert_almost_equal(t, 0.0)
+
+    # multi-voxel
+    RDEc = RDE.copy()
+    Torc = Tor.copy()
+    RDEc[1, 1, 1] = 0.0
+    Torc[1, 1, 1] = 0.0
+    t = dki_micro.tortuosity(ADE, RDEc)
+    assert_almost_equal(Torc, t)
