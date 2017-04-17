@@ -5,7 +5,8 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
+                           assert_)
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -128,6 +129,21 @@ def test_single_fiber_model():
     assert_almost_equal(wmtiF.hindered_rd, RDe)
     assert_almost_equal(wmtiF.axonal_diffusivity, ADi)
     assert_almost_equal(wmtiF.tortuosity, ADe/RDe)
+
+    # Test diffusion_components when a kurtosis tensors is associated with
+    # negative kurtosis values. E.g of this cases is given below:
+    dkiparams = np.array([1.67135726e-03, 5.03651205e-04, 9.35365328e-05,
+                          -7.11167583e-01, 6.23186820e-01, -3.25390313e-01,
+                          -1.75247376e-02, -4.78415563e-01, -8.77958674e-01,
+                          7.02804064e-01, 6.18673368e-01, -3.51154825e-01,
+                          2.18384153, -2.76378153e-02, 2.22893297,
+                          -2.68306546e-01, -1.28411610, -1.56557645e-01,
+                          -1.80850619e-01, -8.33152110e-01, -3.62410766e-01,
+                          1.57775442e-01, 8.73775381e-01, 2.77188975e-01,
+                          -3.67415502e-02, -1.56330984e-01, -1.62295407e-02])
+    edt, idt = dki_micro.diffusion_components(dkiparams)
+    assert_(np.all(np.isfinite(edt)))
+    
 
 
 def test_wmti_model_multi_voxel():

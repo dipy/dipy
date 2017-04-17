@@ -156,7 +156,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
         # sample apparent diffusion and kurtosis values
         di = directional_diffusion(dt[idx], sphere.vertices)
         ki = directional_kurtosis(dt[idx], md[idx], kt[idx], sphere.vertices,
-                                  adc=di)
+                                  adc=di, min_kurtosis=0)
         edi = di * (1 + np.sqrt(ki * awf[idx] / (3.0 - 3.0 * awf[idx])))
         edt = np.dot(pinvB, edi)
         edt_all[idx] = edt
