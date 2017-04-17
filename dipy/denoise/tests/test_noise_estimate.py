@@ -7,6 +7,7 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_array_almost_equal)
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
 from dipy.denoise.noise_estimate import _piesno_3D
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 import dipy.data
 
 # See page 5 of the reference paper for tested values
@@ -78,7 +79,6 @@ def test_piesno():
 
 
 def test_estimate_sigma():
-
     sigma = estimate_sigma(np.ones((7, 7, 7)), disable_background_masking=True)
     assert_equal(sigma, 0.)
 
@@ -105,9 +105,12 @@ def test_estimate_sigma():
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=False, N=1)
     assert_array_almost_equal(sigma,
-                              np.array([0.10286889997472792 / np.sqrt(0.42920367320510366),
-                                        0.10286889997472792 / np.sqrt(0.42920367320510366),
-                                        0.10286889997472792 / np.sqrt(0.42920367320510366)]))
+                              np.array([0.10286889997472792 /
+                                        np.sqrt(0.42920367320510366),
+                                        0.10286889997472792 /
+                                        np.sqrt(0.42920367320510366),
+                                        0.10286889997472792 /
+                                        np.sqrt(0.42920367320510366)]))
 
     arr = np.zeros((3, 3, 3))
     arr[0, 0, 0] = 1
@@ -122,6 +125,12 @@ def test_estimate_sigma():
 
     arr[0, 0, 0] = 1
     sigma = estimate_sigma(arr, disable_background_masking=True, N=12)
-    assert_array_almost_equal(sigma, np.array([0.46291005 / np.sqrt(0.4946862482541263),
-                                               0.46291005 / np.sqrt(0.4946862482541263),
-                                               0.46291005 / np.sqrt(0.4946862482541263)]))
+    assert_array_almost_equal(sigma, np.array([0.46291005 /
+                                               np.sqrt(0.4946862482541263),
+                                               0.46291005 /
+                                               np.sqrt(0.4946862482541263),
+                                               0.46291005 /
+                                               np.sqrt(0.4946862482541263)]))
+
+
+def test_pca_noise_estimate():

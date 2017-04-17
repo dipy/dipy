@@ -83,7 +83,7 @@ for modulename, other_sources, language in (
     ('dipy.segment.clustering_algorithms', [], 'c'),
     ('dipy.segment.mrf', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c'),
-    ('dipy.denoise.fast_noise_estimate', [], 'c'),
+    ('dipy.denoise.pca_noise_estimate', [], 'c'),
     ('dipy.denoise.nlmeans_block', [], 'c'),
     ('dipy.denoise.enhancement_kernel', [], 'c'),
     ('dipy.denoise.shift_twist_convolution', [], 'c'),
@@ -105,8 +105,8 @@ for modulename, other_sources, language in (
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
 # We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec
-# We may make tripwire versions of build_ext, build_py, install
+# building, rather than unconditionally in the setup.py import or exec We may
+# make tripwire versions of build_ext, build_py, install
 need_cython = True
 pybuilder = get_comrec_build('dipy')
 # Cython is a dependency for building extensions, iff we don't have stamped

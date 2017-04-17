@@ -3,56 +3,58 @@
 Denoise images using Local PCA
 ===============================
 
-Using the local PCA based denoising for diffusion
-images [Manjon2013]_ we can denoise diffusion images significantly. This
-algorithm is effective as it takes into account the directional information in
-diffusion data.
+The local PCA based denoising algorithm [Manjon2013]_ is an effective denoising
+method because it takes into account the directional information in diffusion
+data.
 
-The basic idea behind local PCA based diffusion denoising can
-be explained in the following three basic steps
+The basic idea behind local PCA based diffusion denoising can be explained in
+the following three basic steps:
 
-* First we estimate the local noise variance at each voxel
+* First, we estimate the local noise variance at each voxel.
 
-* Then we apply PCA at local patches around each voxels over the gradient
-  directions
+* Then, we apply PCA in local patches around each voxel over the gradient
+  directions.
 
-* Threshold the eigenvalues based on the local estimate of sigma and then do
-  the PCA reconstruction
+* Finally, we threshold the eigenvalues based on the local estimate of sigma
+  and then do a PCA reconstruction
 
 Let's load the necessary modules
 """
 
 import numpy as np
-import scipy as sp
 import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
-from dipy.denoise.localpca_slow import localpca_slow
-from dipy.denoise.fast_noise_estimate import fast_noise_estimate
-from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell
+from dipy.denoise.localpca import localpca
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
+from dipy.data import read_isbi2013_2shell
 
 """
-Load one of the datasets, it has 63 gradients and 1 b0 image
+
+Load one of the datasets. These data were acquired with 63 gradients and 1
+non-diffusion (b=0) image.
+
 """
 
-fetch_isbi2013_2shell()
 img, gtab = read_isbi2013_2shell()
 
-data = np.array(img.get_data())
+data = img.get_data()
 affine = img.get_affine()
 
 print("Input Volume", data.shape)
 
 """
-We use a special noise estimation method ``fast_noise_estimate`` for getting
-the sigma to be used in local PCA algorithm. It takes both data and the
-gradient table object as input and returns an estimate of local noise standard
-deviation as a 3D array.
+
+We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
+used in local PCA algorithm. It takes both data and the gradient table object
+as input and returns an estimate of local noise standard deviation as a 3D
+array. We return a smoothed version, where a Gaussian filter with radius
+3 voxels has been applied to the estimate of the noise before returning it.
 """
 
 t = time()
 
-sigma = np.array(fast_noise_estimate(data.astype(np.float64), gtab))
+sigma = pca_noise_estimate(data, gtab, smooth=3)
 print("Sigma estimation time", time() - t)
 
 """
@@ -67,7 +69,7 @@ estimate.
 
 t = time()
 
-denoised_arr = localpca_slow(data, sigma=sigma, patch_radius=2)
+denoised_arr = localpca(data, sigma=sigma, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 
@@ -76,11 +78,11 @@ Let us plot the axial slice of the original and denoised data.
 We visualize all the slices (22 in total)
 """
 
-sli = data.shape[2] / 2
-gra = data.shape[3] / 2
+sli = data.shape[2] // 2
+gra = data.shape[3] // 2
 orig = data[:, :, sli, gra]
 den = denoised_arr[:, :, sli, gra]
-diff = np.abs(orig.astype('f8') - den.astype('f8'))
+rms_diff = np.sqrt((orig - den) ** 2)
 
 fig, ax = plt.subplots(1, 3)
 ax[0].imshow(orig, cmap='gray', origin='lower', interpolation='none')
@@ -89,7 +91,7 @@ ax[0].set_axis_off()
 ax[1].imshow(den, cmap='gray', origin='lower', interpolation='none')
 ax[1].set_title('Denoised Output')
 ax[1].set_axis_off()
-ax[2].imshow(diff, cmap='gray', origin='lower', interpolation='none')
+ax[2].imshow(rms_diff, cmap='gray', origin='lower', interpolation='none')
 ax[2].set_title('Residual')
 ax[2].set_axis_off()
 plt.savefig('denoised_localpca.png', bbox_inches='tight')
