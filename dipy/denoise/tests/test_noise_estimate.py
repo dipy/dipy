@@ -8,7 +8,9 @@ from numpy.testing import (assert_almost_equal, assert_equal, assert_,
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
 from dipy.denoise.noise_estimate import _piesno_3D
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
-import dipy.data
+import dipy.data as dpd
+import dipy.core.gradients as dpg
+import dipy.sims.voxel as vox
 
 # See page 5 of the reference paper for tested values
 
@@ -30,7 +32,7 @@ def test_inv_nchi():
 def test_piesno():
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
-    test_piesno_data = nib.load(dipy.data.get_data("test_piesno")).get_data()
+    test_piesno_data = nib.load(dpd.get_data("test_piesno")).get_data()
     sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10,
                    return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
@@ -134,4 +136,15 @@ def test_estimate_sigma():
 
 
 def test_pca_noise_estimate():
-    dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_data()
+    sibe_gtab = dpg.gradient_table(fbvals, fbvecs)
+    sibe_data = nib.load(fdata).get_data()
+    mube_gtab = dpg.gradient_table(
+                        np.concatenate([[0], sibe_gtab.bvals]),
+                        np.concatenate([[[0, 0, 0]], sibe_gtab.bvecs]))
+    mube_data = np.concatenate([sibe_data[..., 0][..., np.newaxis],
+                                sibe_data], axis=-1)
+    for gtab, data in zip([sibe_gtab, mube_gtab], [sibe_data, mube_data]):
+        sigma = data - vox.add_noise(data, 20, S0=data[..., gtab.b0s_mask])
+        sigma_est = pca_noise_estimate(data + sigma, gtab, correct_bias=True)
+        assert_array_almost_equal(sigma_est, sigma[..., 0])
