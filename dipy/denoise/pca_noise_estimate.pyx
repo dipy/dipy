@@ -24,7 +24,7 @@ except ImportError:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def pca_noise_estimate(data, gtab, smooth=None):
+def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
     """Noise estimation for local PCA denoising.
 
     Parameters
@@ -37,9 +37,14 @@ def pca_noise_estimate(data, gtab, smooth=None):
         diffusion data, which is needed here to select between the noise
         estimation methods.
 
+    correct_bias : bool
+      Whether to correct for bias due to Rician noise. This is an
+      implementation of equation 8 in [1]_.
+
     smooth : int
         Radius of a Gaussian smoothing filter to apply to the noise estimate
         before returning. Default: no smoothing.
+
 
     Returns
     -------
@@ -48,9 +53,9 @@ def pca_noise_estimate(data, gtab, smooth=None):
 
     References
     ----------
-    [1]: Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-        "Diffusion Weighted Image Denoising Using Overcomplete
-         Local PCA"
+    .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
+           Weighted Image Denoising Using Overcomplete Local PCA". PLoS ONE
+           8(9): e73021. doi:10.1371/journal.pone.0073021
     """
     # first identify the number of  b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size
@@ -131,16 +136,23 @@ def pca_noise_estimate(data, gtab, smooth=None):
     snr = np.zeros_like(I)
     sigma_corr = np.zeros_like(data)
 
-    # find the SNR and make the correction
-    snr = np.divide(mean, np.sqrt(sigma_sq))
-    eta = (2 + snr ** 2 -
-           (np.pi / 8) * np.exp(-0.5 * (snr ** 2)) *
-           ((2 + snr ** 2) * sps.iv(0, 0.25 * (snr**2)) +
-            (snr**2) * sps.iv(1, 0.25 * (snr ** 2)))**2)
-    sigma_sq_corr = sigma_sq / eta
-    # smoothing by lpf
+    if correct_bias:
+      # find the SNR and make the correction (equation 8 in Manjon 2013)
+      snr = np.divide(mean, np.sqrt(sigma_sq))
+      eta = (2 + snr ** 2 -
+             (np.pi / 8) * np.exp(-0.5 * (snr ** 2)) *
+             ((2 + snr ** 2) * sps.iv(0, 0.25 * (snr ** 2)) +
+              (snr ** 2) * sps.iv(1, 0.25 * (snr ** 2))) ** 2)
+
+      sigma_sq_corr = sigma_sq / eta
+    else:
+      sigma_sq_corr = sigma_sq
+
+    # Avoid NaNs:
     sigma_sq_corr[np.isnan(sigma_sq_corr)] = 0
+
     if smooth is not None:
+      # smoothing by lpf
       sigma_sq_corr = ndimage.gaussian_filter(sigma_sq_corr, smooth)
 
     return np.sqrt(sigma_corr)
