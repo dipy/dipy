@@ -50,10 +50,13 @@ used in local PCA algorithm. It takes both data and the gradient table object
 as input and returns an estimate of local noise standard deviation as a 3D
 array. We return a smoothed version, where a Gaussian filter with radius
 3 voxels has been applied to the estimate of the noise before returning it.
+
+We correct for the bias due to Rician noise, based on an equation developed by
+Koay and Basser [Koay2006]_.
+
 """
 
 t = time()
-
 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
 print("Sigma estimation time", time() - t)
 
@@ -111,8 +114,13 @@ nib.save(nib.Nifti1Image(denoised_arr,
 print("Entire denoised data saved in denoised_localpca.nii.gz")
 
 """
-.. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL
-   "Diffusion Weighted Image Denoising Using Overcomplete Local PCA" PLOS 2013
+.. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
+                Weighted Image Denoising Using Overcomplete Local PCA" (2013).
+                PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
+
+.. [Koay2006]  Koay CG, Basser PJ (2006). "Analytically exact correction scheme
+               for signal extraction from noisy magnitude MR signals". JMR 179:
+               317-322.
 
 .. include:: ../links_names.inc
 """
