@@ -1,8 +1,10 @@
 """
-===========================================
-Estimate Noise Levels for LocalPCA Datasets
-===========================================
+================================
+PCA Based Local Noise Estimation
+================================
+
 """
+
 import numpy as np
 import nibabel as nib
 import scipy.special as sps
@@ -24,52 +26,50 @@ except ImportError:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
-    """Noise estimation for local PCA denoising.
+def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
+    """ PCA based local noise estimation
 
     Parameters
     ----------
     data: 4D array
-        the input dMR data.
+        the input dMRI data.
 
     gtab: gradient table object
-        gradient information for the data gives us the bvals and bvecs of
-        diffusion data, which is needed here to select between the noise
-        estimation methods.
+      gradient information for the data gives us the bvals and bvecs of
+      diffusion data, which is needed here to select between the noise
+      estimation methods.
 
     correct_bias : bool
-      Whether to correct for bias due to Rician noise. This is an
-      implementation of equation 8 in [1]_.
+      Whether to correct for bias due to Rician noise. This is an implementation
+      of equation 8 in [1]_.
 
     smooth : int
-        Radius of a Gaussian smoothing filter to apply to the noise estimate
-        before returning. Default: no smoothing.
-
+      Radius of a Gaussian smoothing filter to apply to the noise estimate
+      before returning. Default: no smoothing.
 
     Returns
     -------
     sigma_corr: 3D array
-        The local noise variance estimate
+        The local noise standard deviation estimate.
 
     References
     ----------
     .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
            Weighted Image Denoising Using Overcomplete Local PCA". PLoS ONE
-           8(9): e73021. doi:10.1371/journal.pone.0073021
+           8(9): e73021. doi:10.1371/journal.pone.0073021.
     """
-    if len(data.shape) != 4:
-      raise ValueError("Data must be 4 dimensional", data.shape)
-
-    # first identify the number of  b0 images
+    # first identify the number of the b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size
 
     if(K > 1):
-        # If multiple b0 values then MUBE Noise Estimate
+        # If multiple b0 values then
         data0 = data[..., gtab.b0s_mask]
 
     else:
-        # if only one b0 value then SIBE Noise Estimate
+        # if only one b0 value then
+        # SIBE Noise Estimate
         data0 = data[..., ~gtab.b0s_mask]
+        # MUBE Noise Estimate
 
     cdef:
         cnp.npy_intp n0 = data0.shape[0]
@@ -85,33 +85,20 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
         double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
         double[:, :, :, :] data0temp = data0
 
-    X = data0.reshape(n0 * n1 * n2, n3)
+    X = data0.reshape(nsamples, n3)
+    # Demean:
+    M = np.mean(X, axis=0)
+    X = X - np.array([M, ] * X.shape[0], dtype=np.float64)
 
-    # Demean the data:
-    X = X - np.mean(X, axis=0)
-
-    # PCA using the SVD:
     U, S, Vt = svd(X, *svd_args)[:3]
-    # Items in S are the eigenvalues, but in ascending order
-    # We invert the order (=> descending), square and normalize
-    # \lambda_i = s_i^2 / n
-    d = S[::-1] ** 2 / X.shape[0]
-    # Rows of Vt are eigenvectors, but also in ascending eigenvalue
-    # order:
-    W = Vt[::-1].T
-    d[d < 0] = 0
-    d_new = d[d != 0]
-    # we want eigen vectors of XX^T so we do
+    # Rows of Vt are the eigenvectors, in ascending eigenvalue order:
+    W = Vt.T
+    # Project into the data space
     V = X.dot(W)
-    print(d.shape)
-    print(d_new.shape)
-    print(V.shape)
-    print((V[:, d.shape[0] - d_new.shape[0]]).shape)
-    print(n0)
-    print(n1)
-    print(n2)
-    I = np.reshape(V[:, d.shape[0] - d_new.shape[0]], (n0, n1, n2))
-    print(I.shape)
+
+    # Grab the column corresponding to the smallest eigen-vector/-value:
+    I = V[:, -1].reshape(data0.shape[0], data0.shape[1], data0.shape[2])
+
 
     with nogil:
         for i in range(1, n0 - 1):
@@ -124,41 +111,34 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
                             for k0 in range(-1, 2):
                                 sum_reg += I[i + i0, j + j0, k + k0] / 27.0
                                 for l0 in range(n3):
-                                    temp1 += (
-                                    data0temp[i + i0, j+ j0, k + k0, l0] / (27.0 * n3))
+                                    temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (27.0 * n3)
 
                     for i0 in range(-1, 2):
                         for j0 in range(-1, 2):
                             for k0 in range(-1, 2):
-                                sigma_sq[i + i0, j +j0, k + k0] = (
-                                  sigma_sq[i + i0, j +j0, k + k0] +
-                                  (I[i + i0, j + j0, k + k0] - sum_reg) ** 2)
+                                sigma_sq[i + i0, j +j0, k + k0] += (I[i + i0, j + j0, k + k0] - sum_reg)**2
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j +j0, k + k0] += 1
 
     sigma_sq = np.divide(sigma_sq, count)
 
-    # Compute the local mean of the data
-    mean = np.divide(mean, count)
-
+    # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
-      # find the SNR and make the correction (equation 8 in Manjon 2013)
+      mean = np.divide(mean, count)
+      snr = np.zeros_like(I).astype(np.float64)
       snr = np.divide(mean, np.sqrt(sigma_sq))
       snr_sq = snr ** 2
-      zeta = (
-        2 + snr_sq -
-        (np.pi / 8) * np.exp(-snr_sq / 2) *
-        ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
-         (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2)
-      sigma_sq = np.divide(sigma_sq, zeta)
+      zeta = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
+              ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
+              (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2)
 
-    # Avoid NaNs:
-    #sigma_sq[np.isnan(sigma_sq)] = 0
+      sigma_sq = np.divide(sigma_sq, zeta)
+      sigma_corr = sigma_sq / zeta
+      sigma_corr[np.isnan(sigma_corr)] = 0
+    else:
+      sigma_corr = sigma_sq
 
     if smooth is not None:
-      # smoothing by lpf
-      sigma_sq = ndimage.gaussian_filter(sigma_sq, smooth)
+      sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
 
-    sigma_sq[np.isnan(sigma_sq)] = 0
-
-    return np.sqrt(sigma_sq)
+    return np.sqrt(sigma_corr)

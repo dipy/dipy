@@ -54,7 +54,7 @@ array. We return a smoothed version, where a Gaussian filter with radius
 
 t = time()
 
-sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=2)
+sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
 print("Sigma estimation time", time() - t)
 
 """
