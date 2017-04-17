@@ -244,7 +244,7 @@ def dkimicro_prediction(params, gtab, S0=1):
     return pred_sig * S0_vol
 
 
-def tortuosity(hindered_ad, hindered_rd):
+def tortuosity(hindered_ad, hindered_rd, min_diffusivity=0):
     """ Computes the tortuosity of the hindered diffusion compartment given
     its axial and radial diffusivities
 
@@ -252,8 +252,13 @@ def tortuosity(hindered_ad, hindered_rd):
     ----------
     hindered_ad: ndarray
         Array containing the values of the hindered axial diffusivity.
-    hindered_rd: ndarry
+    hindered_rd: ndarray
         Array containing the values of the hindered radial diffusivity.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
 
     Return
     ------
@@ -267,7 +272,7 @@ def tortuosity(hindered_ad, hindered_rd):
     tortuosity = np.zeros(hindered_rd.shape)
 
     # mask to avoid divisions by zero
-    mask = hindered_rd > 0
+    mask = hindered_rd > min_diffusivity
 
     # Check single voxel cases. For numpy versions more recent than 1.7,
     # this if else condition is not required since single voxel can be
@@ -279,6 +284,31 @@ def tortuosity(hindered_ad, hindered_rd):
         tortuosity[mask] = hindered_ad[mask] / hindered_rd[mask]
 
     return tortuosity
+
+
+def _compartments_eigenvalues(cdt, min_diffusivity=0):
+    """ Helper function that computes the eigenvalues of a tissue sub
+    compartment given its individual diffusion tensor
+
+    Parameters
+    ----------
+    cdt : ndarray (..., 6)
+        Diffusion tensors elements of the tissue compartment stored in lower
+        triangular order.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
+
+    Returns
+    -------
+    eval : ndarry (..., 3)
+        Eigenvalues of the tissue compartment
+    """
+    evals, evecs = decompose_tensor(from_lower_triangular(cdt),
+                                    min_diffusivity=min_diffusivity)
+    return evals
 
 
 class KurtosisMicrostructureModel(DiffusionKurtosisModel):
@@ -352,11 +382,9 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:
-            min_signal = MIN_POSITIVE_SIGNAL
-        else:
-            min_signal = self.min_signal
+            self.min_signal = MIN_POSITIVE_SIGNAL
 
-        data_in_mask = np.maximum(data_in_mask, min_signal)
+        data_in_mask = np.maximum(data_in_mask, self.min_signal)
 
         # DKI fit
         dki_params = self.fit_method(self.design_matrix, data_in_mask,
@@ -489,14 +517,9 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
-        tol = 1e-6
         self._is_awfonly()
-        d = self.model.design_matrix[:, :6]
-        rdt = self.model_params[..., 34:40]
-        evals, evecs = decompose_tensor(from_lower_triangular(rdt),
-                                        min_diffusivity=tol / -d.min())
-
-        return evals
+        return _compartments_eigenvalues(self.model_params[..., 34:40],
+                                         self._min_diffusivity)
 
     @property
     def hindered_evals(self):
@@ -513,14 +536,9 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
-        tol = 1e-6
         self._is_awfonly()
-        d = self.model.design_matrix[:, :6]
-        hdt = self.model_params[..., 28:34]
-        evals, evecs = decompose_tensor(from_lower_triangular(hdt),
-                                        min_diffusivity=tol / -d.min())
-
-        return evals
+        return _compartments_eigenvalues(self.model_params[..., 28:34],
+                                         self._min_diffusivity)
 
     @property
     def axonal_diffusivity(self):
@@ -586,13 +604,22 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
-        return tortuosity(self.hindered_ad, self.hindered_rd)
+        return tortuosity(self.hindered_ad, self.hindered_rd,
+                          min_diffusivity=self._min_diffusivity)
 
     def _is_awfonly(self):
         """ To raise error if only the axonal water fraction was computed """
         if self.model_params.shape[-1] < 39:
             raise ValueError('Only the awf was processed! Rerun model fit '
                              'with input parameter awf_only set to False')
+
+    @property
+    def _min_diffusivity(self):
+        """ Define min diffusivity from the design matrix and the signal
+        minimun """
+        D = self.model.design_matrix
+        min_signal = self.model.min_signal
+        return min_signal / (-1.0 * D.min())
 
     def predict(self, gtab, S0=1.):
         r""" Given a DKI microstructural model fit, predict the signal on the

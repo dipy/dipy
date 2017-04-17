@@ -120,13 +120,13 @@ def test_single_fiber_model():
     wmtiM = dki_micro.KurtosisMicrostructureModel(gtab_2s, fit_method="WLS")
     wmtiF = wmtiM.fit(signal)
     assert_almost_equal(wmtiF.awf, AWF)
-    assert_almost_equal(wmtiF.axonal_diffusivity, ADi)
     assert_array_almost_equal(wmtiF.hindered_evals,
                               np.array([ADe, RDe, RDe]))
     assert_array_almost_equal(wmtiF.restricted_evals,
                               np.array([ADi, RDi, RDi]))
     assert_almost_equal(wmtiF.hindered_ad, ADe)
     assert_almost_equal(wmtiF.hindered_rd, RDe)
+    assert_almost_equal(wmtiF.axonal_diffusivity, ADi)
     assert_almost_equal(wmtiF.tortuosity, ADe/RDe)
 
 
@@ -147,12 +147,12 @@ def test_wmti_model_multi_voxel():
     IDT = eig_from_lo_tri(idt)
 
     # check eigenvalues
-    assert_array_almost_equal(EDT[..., 0], ADE)
-    assert_array_almost_equal(EDT[..., 1], RDE)
-    assert_array_almost_equal(EDT[..., 2], RDE)
-    assert_array_almost_equal(IDT[..., 0], ADI)
-    assert_array_almost_equal(IDT[..., 1], RDI)
-    assert_array_almost_equal(IDT[..., 2], RDI)
+    assert_array_almost_equal(EDT[..., 0], ADE, decimal=3)
+    assert_array_almost_equal(EDT[..., 1], RDE, decimal=3)
+    assert_array_almost_equal(EDT[..., 2], RDE, decimal=3)
+    assert_array_almost_equal(IDT[..., 0], ADI, decimal=3)
+    assert_array_almost_equal(IDT[..., 1], RDI, decimal=3)
+    assert_array_almost_equal(IDT[..., 2], RDI, decimal=3)
 
     # Test methods performance when a signal with all zeros is present
     FIEc = FIE.copy()
@@ -183,39 +183,39 @@ def test_wmti_model_multi_voxel():
                                               awf=awf)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
-    assert_array_almost_equal(EDT[..., 0], ADEc)
-    assert_array_almost_equal(EDT[..., 1], RDEc)
-    assert_array_almost_equal(EDT[..., 2], RDEc)
-    assert_array_almost_equal(IDT[..., 0], ADIc)
-    assert_array_almost_equal(IDT[..., 1], RDIc)
-    assert_array_almost_equal(IDT[..., 2], RDIc)
+    assert_array_almost_equal(EDT[..., 0], ADEc, decimal=3)
+    assert_array_almost_equal(EDT[..., 1], RDEc, decimal=3)
+    assert_array_almost_equal(EDT[..., 2], RDEc, decimal=3)
+    assert_array_almost_equal(IDT[..., 0], ADIc, decimal=3)
+    assert_array_almost_equal(IDT[..., 1], RDIc, decimal=3)
+    assert_array_almost_equal(IDT[..., 2], RDIc, decimal=3)
 
     # Check when mask is given
     dkiF = dkiM.fit(DWIsim)
     awf = dki_micro.axonal_water_fraction(dkiF.model_params, sphere,
                                           gtol=1e-5, mask=mask)
-    assert_almost_equal(awf, FIEc)
+    assert_almost_equal(awf, FIEc, decimal=3)
 
     # Extra-cellular and intra-cellular components
     edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere,
                                               awf=awf, mask=mask)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
-    assert_array_almost_equal(EDT[..., 0], ADEc)
-    assert_array_almost_equal(EDT[..., 1], RDEc)
-    assert_array_almost_equal(EDT[..., 2], RDEc)
-    assert_array_almost_equal(IDT[..., 0], ADIc)
-    assert_array_almost_equal(IDT[..., 1], RDIc)
-    assert_array_almost_equal(IDT[..., 2], RDIc)
+    assert_array_almost_equal(EDT[..., 0], ADEc, decimal=3)
+    assert_array_almost_equal(EDT[..., 1], RDEc, decimal=3)
+    assert_array_almost_equal(EDT[..., 2], RDEc, decimal=3)
+    assert_array_almost_equal(IDT[..., 0], ADIc, decimal=3)
+    assert_array_almost_equal(IDT[..., 1], RDIc, decimal=3)
+    assert_array_almost_equal(IDT[..., 2], RDIc, decimal=3)
 
     # Check class object
     wmtiM = dki_micro.KurtosisMicrostructureModel(gtab_2s, fit_method="WLS")
     wmtiF = wmtiM.fit(DWIsim, mask=mask)
-    assert_almost_equal(wmtiF.awf, FIEc)
-    assert_almost_equal(wmtiF.axonal_diffusivity, ADIc)
-    assert_almost_equal(wmtiF.hindered_ad, ADEc)
-    assert_almost_equal(wmtiF.hindered_rd, RDEc)
-    assert_almost_equal(wmtiF.tortuosity, Torc)
+    assert_almost_equal(wmtiF.awf, FIEc, decimal=3)
+    assert_almost_equal(wmtiF.axonal_diffusivity, ADIc, decimal=3)
+    assert_almost_equal(wmtiF.hindered_ad, ADEc, decimal=3)
+    assert_almost_equal(wmtiF.hindered_rd, RDEc, decimal=3)
+    assert_almost_equal(wmtiF.tortuosity, Torc, decimal=3)
 
 
 def test_dki_micro_predict_single_voxel():
@@ -261,14 +261,14 @@ def test_dki_micro_predict_multi_voxel():
 
     # Check predict of KurtosisMicrostruturalModel
     pred = dkiM.predict(dkiF.model_params)
-    assert_array_almost_equal(pred, DWIsim_all_taylor)
+    assert_array_almost_equal(pred, DWIsim_all_taylor, decimal=3)
 
     pred = dkiM.predict(dkiF.model_params, S0=100)
-    assert_array_almost_equal(pred, DWIsim_all_taylor * 100)
+    assert_array_almost_equal(pred, DWIsim_all_taylor * 100, decimal=3)
 
     # Check predict of KurtosisMicrostruturalFit
     pred = dkiF.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(pred, DWIsim_all_taylor * 100)
+    assert_array_almost_equal(pred, DWIsim_all_taylor * 100, decimal=3)
 
 
 def test_dki_micro_awf_only():
