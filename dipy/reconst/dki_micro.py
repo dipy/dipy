@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from dipy.reconst.dti import (lower_triangular, from_lower_triangular,
-                              eig_from_lo_tri, trace, mean_diffusivity,
+                              decompose_tensor, trace, mean_diffusivity,
                               radial_diffusivity, axial_diffusivity,
                               MIN_POSITIVE_SIGNAL)
 
@@ -493,7 +493,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         self._is_awfonly()
         d = self.model.design_matrix[:, :6]
         rdt = self.model_params[..., 34:40]
-        evals, evecs = eig_from_lo_tri(rdt, min_diffusivity=tol / -d.min())
+        evals, evecs = decompose_tensor(from_lower_triangular(rdt),
+                                        min_diffusivity=tol / -d.min())
 
         return evals
 
@@ -516,7 +517,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         self._is_awfonly()
         d = self.model.design_matrix[:, :6]
         hdt = self.model_params[..., 28:34]
-        evals, evecs = eig_from_lo_tri(hdt, min_diffusivity=tol / -d.min())
+        evals, evecs = decompose_tensor(from_lower_triangular(hdt),
+                                        min_diffusivity=tol / -d.min())
 
         return evals
 
