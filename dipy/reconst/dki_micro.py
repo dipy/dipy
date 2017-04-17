@@ -114,7 +114,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     if not isinstance(sphere, dps.Sphere):
         sphere = get_sphere(sphere)
 
-    # select voxels where to applied the single fiber model
+    # select voxels where to apply the single fiber model
     if mask is None:
         mask = np.ones(shape, dtype='bool')
     else:
@@ -344,15 +344,12 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             If set to true only the axonal volume fraction is computed from
             the kurtosis tensor. Default = False
         """
-        if mask is None:
-            # Flatten it to 2D either way:
-            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
-        else:
+        if mask is not None:
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:
             min_signal = MIN_POSITIVE_SIGNAL

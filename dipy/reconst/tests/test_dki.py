@@ -1,4 +1,4 @@
-""" Testing DKI """
+""" Testing DKI microstructure """
 
 from __future__ import division, print_function, absolute_import
 
