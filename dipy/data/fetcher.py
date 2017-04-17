@@ -420,8 +420,8 @@ fetch_cfin_multib = _make_fetcher(
      '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec'],
     ['889883b5e7d93a6e372bc760ea887e7c',
      '9daea1d01d68fd0055a3b34f5ffd5f6e',
-     '948373391de950e7cc1201ba9f696bf0',
-     '3ee44135fde7ea5c9b8c801414bdde2c'],
+     '3ee44135fde7ea5c9b8c801414bdde2c',
+     '948373391de950e7cc1201ba9f696bf0'],
     doc="Download CFIN multi b-value diffusion data")
 
 
@@ -1006,9 +1006,9 @@ def read_cfin_dwi():
     fraw = pjoin(folder,
                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
     fbval = pjoin(folder,
-                  '/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
     fbvec = pjoin(folder,
-                  '/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii.bvec')
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
