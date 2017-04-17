@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from dipy.reconst.dti import (lower_triangular, from_lower_triangular,
-                              decompose_tensor, trace, mean_diffusivity,
+                              eig_from_lo_tri, trace, mean_diffusivity,
                               radial_diffusivity, axial_diffusivity,
                               MIN_POSITIVE_SIGNAL)
 
@@ -373,11 +373,10 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
                                              axis=-1)
         else:
             # Computing the hindered and restricted diffusion tensors
-            edt, idt = diffusion_components(dki_params, sphere=sphere,
+            hdt, rdt = diffusion_components(dki_params, sphere=sphere,
                                             awf=awf)
-
             params_all_mask = np.concatenate((dki_params, np.array([awf]).T,
-                                              edt, idt), axis=-1)
+                                              hdt, rdt), axis=-1)
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1,)
@@ -493,9 +492,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
+        tol = 1e-6
         self._is_awfonly()
+        d = self.model.design_matrix[:, :6]
         rdt = self.model_params[..., 34:40]
-        evals, evecs = decompose_tensor(from_lower_triangular(rdt))
+        evals, evecs = eig_from_lo_tri(rdt, min_diffusivity=tol / -d.min())
+
         return evals
 
     @property
@@ -513,9 +515,12 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                Characterization with Diffusion Kurtosis Imaging. Neuroimage
                58(1): 177-188. doi:10.1016/j.neuroimage.2011.06.006
         """
+        tol = 1e-6
         self._is_awfonly()
+        d = self.model.design_matrix[:, :6]
         hdt = self.model_params[..., 28:34]
-        evals, evecs = decompose_tensor(from_lower_triangular(hdt))
+        evals, evecs = eig_from_lo_tri(hdt, min_diffusivity=tol / -d.min())
+
         return evals
 
     @property
