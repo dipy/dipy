@@ -134,3 +134,4 @@ def test_estimate_sigma():
 
 
 def test_pca_noise_estimate():
+    dpd.get_data()

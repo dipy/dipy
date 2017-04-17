@@ -57,6 +57,9 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
            Weighted Image Denoising Using Overcomplete Local PCA". PLoS ONE
            8(9): e73021. doi:10.1371/journal.pone.0073021
     """
+    if len(data.shape) != 4:
+      raise ValueError("Data must be 4 dimensional", data.shape)
+
     # first identify the number of  b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size
 
@@ -82,14 +85,11 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
         double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
         double[:, :, :, :] data0temp = data0
 
-    X = data0.reshape(
-        data0.shape[0] *
-        data0.shape[1] *
-        data0.shape[2],
-        data0.shape[3])
+    X = data0.reshape(n0 * n1 * n2, n3)
 
     # Demean the data:
     X = X - np.mean(X, axis=0)
+
     # PCA using the SVD:
     U, S, Vt = svd(X, *svd_args)[:3]
     # Items in S are the eigenvalues, but in ascending order
@@ -103,10 +103,15 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
     d_new = d[d != 0]
     # we want eigen vectors of XX^T so we do
     V = X.dot(W)
-
-    I = V[:, d.shape[0] - d_new.shape[0]].reshape(data0.shape[0],
-                                                  data0.shape[1],
-                                                  data0.shape[2])
+    print(d.shape)
+    print(d_new.shape)
+    print(V.shape)
+    print((V[:, d.shape[0] - d_new.shape[0]]).shape)
+    print(n0)
+    print(n1)
+    print(n2)
+    I = np.reshape(V[:, d.shape[0] - d_new.shape[0]], (n0, n1, n2))
+    print(I.shape)
 
     with nogil:
         for i in range(1, n0 - 1):
@@ -114,45 +119,46 @@ def pca_noise_estimate(data, gtab, correct_bias=False, smooth=None):
                 for k in range(1, n2 - 1):
                     sum_reg = 0
                     temp1 = 0
-                    for i0 in range(-1,2):
-                        for j0 in range(-1,2):
-                            for k0 in range(-1,2):
+                    for i0 in range(-1, 2):
+                        for j0 in range(-1, 2):
+                            for k0 in range(-1, 2):
                                 sum_reg += I[i + i0, j + j0, k + k0] / 27.0
                                 for l0 in range(n3):
                                     temp1 += (
                                     data0temp[i + i0, j+ j0, k + k0, l0] / (27.0 * n3))
 
-                    for i0 in range(-1,2):
-                        for j0 in range(-1,2):
-                            for k0 in range(-1,2):
-                                sigma_sq[i + i0, j +j0, k + k0] += (
-                                I[i + i0, j + j0, k + k0] - sum_reg) ** 2
+                    for i0 in range(-1, 2):
+                        for j0 in range(-1, 2):
+                            for k0 in range(-1, 2):
+                                sigma_sq[i + i0, j +j0, k + k0] = (
+                                  sigma_sq[i + i0, j +j0, k + k0] +
+                                  (I[i + i0, j + j0, k + k0] - sum_reg) ** 2)
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j +j0, k + k0] += 1
 
     sigma_sq = np.divide(sigma_sq, count)
+
     # Compute the local mean of the data
     mean = np.divide(mean, count)
-    snr = np.zeros_like(I)
-    sigma_corr = np.zeros_like(data)
 
     if correct_bias:
       # find the SNR and make the correction (equation 8 in Manjon 2013)
       snr = np.divide(mean, np.sqrt(sigma_sq))
-      eta = (2 + snr ** 2 -
-             (np.pi / 8) * np.exp(-0.5 * (snr ** 2)) *
-             ((2 + snr ** 2) * sps.iv(0, 0.25 * (snr ** 2)) +
-              (snr ** 2) * sps.iv(1, 0.25 * (snr ** 2))) ** 2)
-
-      sigma_sq_corr = sigma_sq / eta
-    else:
-      sigma_sq_corr = sigma_sq
+      snr_sq = snr ** 2
+      zeta = (
+        2 + snr_sq -
+        (np.pi / 8) * np.exp(-snr_sq / 2) *
+        ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
+         (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2)
+      sigma_sq = np.divide(sigma_sq, zeta)
 
     # Avoid NaNs:
-    sigma_sq_corr[np.isnan(sigma_sq_corr)] = 0
+    #sigma_sq[np.isnan(sigma_sq)] = 0
 
     if smooth is not None:
       # smoothing by lpf
-      sigma_sq_corr = ndimage.gaussian_filter(sigma_sq_corr, smooth)
+      sigma_sq = ndimage.gaussian_filter(sigma_sq, smooth)
 
-    return np.sqrt(sigma_corr)
+    sigma_sq[np.isnan(sigma_sq)] = 0
+
+    return np.sqrt(sigma_sq)
