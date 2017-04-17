@@ -43,7 +43,10 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_ivim,
                                read_ivim,
                                fetch_tissue_data,
-                               read_tissue_data)
+                               read_tissue_data,
+                               fetch_cfin_multib,
+                               read_cfin_dwi,
+                               read_cfin_t1)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
