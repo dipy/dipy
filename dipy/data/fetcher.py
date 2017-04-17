@@ -422,7 +422,10 @@ fetch_cfin_multib = _make_fetcher(
      '9daea1d01d68fd0055a3b34f5ffd5f6e',
      '3ee44135fde7ea5c9b8c801414bdde2c',
      '948373391de950e7cc1201ba9f696bf0'],
-    doc="Download CFIN multi b-value diffusion data")
+    doc="Download CFIN multi b-value diffusion data",
+    msg=("This data was provided by Brian Hansen and Sune Jespersen",
+         "More details about the data are available in their paper: ",
+         "https://www.nature.com/articles/sdata201672"))
 
 
 def read_scil_b0():
