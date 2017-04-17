@@ -524,9 +524,13 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
     if adc is None:
         adc = directional_diffusion(dt, V, min_diffusivity=min_diffusivity)
     if adv is None:
-        adv = directional_diffusion_variance(kt, V) * (md / adc) ** 2
+        adv = directional_diffusion_variance(kt, V)
+
+    akc = adv * (md / adc) ** 2
+
     if min_kurtosis is not None:
-        akc = adv.clip(min=min_kurtosis)
+        akc = akc.clip(min=min_kurtosis)
+
     return akc
 
 
@@ -1096,6 +1100,11 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
     akc = directional_kurtosis(dt, md, kt, sphere.vertices)
     max_val, ind = local_maxima(akc, sphere.edges)
     n = len(max_val)
+
+    # case that none maximum was find (spherical or null kurtosis tensors)
+    if n == 0:
+        return np.mean(akc), np.zeros(3)
+
     max_dir = sphere.vertices[ind]
 
     # Select the maximum from the candidates
@@ -1109,8 +1118,8 @@ def _voxel_kurtosis_maximum(dt, md, kt, sphere, gtol=1e-2):
                                         max_dir[p, 2])
             ang = np.array([theta, phi])
             ang[:] = opt.fmin_bfgs(_kt_maximum_converge, ang,
-                                   args=(dt, md, kt), gtol=gtol, disp=False,
-                                   retall=False)
+                                   args=(dt, md, kt), disp=False,
+                                   retall=False, gtol=gtol)
             k_dir = np.array([sphere2cart(1., ang[0], ang[1])])
             k_val = directional_kurtosis(dt, md, kt, k_dir)
             if k_val > max_value:
