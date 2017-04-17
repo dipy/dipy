@@ -63,7 +63,6 @@ def pca_noise_estimate(data, gtab, smooth=None):
         # if only one b0 value then SIBE Noise Estimate
         data0 = data[..., ~gtab.b0s_mask]
 
-
     cdef:
         cnp.npy_intp n0 = data0.shape[0]
         cnp.npy_intp n1 = data0.shape[1]
@@ -137,7 +136,7 @@ def pca_noise_estimate(data, gtab, smooth=None):
     eta = (2 + snr ** 2 -
            (np.pi / 8) * np.exp(-0.5 * (snr ** 2)) *
            ((2 + snr ** 2) * sps.iv(0, 0.25 * (snr**2)) +
-            (snr**2) * sps.iv(1, 0.25 * (snr ** 2)))**2
+            (snr**2) * sps.iv(1, 0.25 * (snr ** 2)))**2)
     sigma_sq_corr = sigma_sq / eta
     # smoothing by lpf
     sigma_sq_corr[np.isnan(sigma_sq_corr)] = 0
