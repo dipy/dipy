@@ -2078,4 +2078,6 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
+                      'WLLS': wls_fit_dki,
+                      'OLLS': ols_fit_dki,
                       }
