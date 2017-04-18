@@ -24,6 +24,8 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 
+import sys
+
 import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
@@ -165,7 +167,11 @@ def spherical_harmonics(m, n, theta, phi):
     val = val * np.exp(1j * m * theta)
     return val
 
-if SCIPY_15_PLUS:
+# If we have scipy later than 15, and we are not on Anaconda 2.7, we can use
+# The scipy spherical_harmonics. Otherwise, we rely on our own
+# See https://github.com/nipy/dipy/issues/852
+if SCIPY_15_PLUS and not(
+        "Continuum" in sys.version and sys.version_info.major == 2):
     def spherical_harmonics(m, n, theta, phi):
         return sps.sph_harm(m, n, theta, phi, dtype=complex)
 
