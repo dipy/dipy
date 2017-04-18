@@ -101,12 +101,12 @@ maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 Since the diffusion kurtosis models involves the estimation of a large number
 of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
 diffusion signal are more sensitive to artefacts [NetoHe2012]_, it might be
-favorable to suppress the effects if noise and artefacts before diffusion
+favorable to suppress the effects of noise and artefacts before diffusion
 kurtosis fitting. In this example the effects of noise and artefacts are
-suppress by using an 3D gaussian smothing (with a gaussian kernel with
-fwhm=1.25) as suggested bypioner DKI studies (e.g. [Jensen2005]_,
-[NetoHe2012]_). Although here the gaussian smoothing is used so that results
-are comparible these studies, it is important to note that more advance noise
+suppress by using 3D gaussian smothing (with a Gaussian kernel with
+fwhm=1.25) as suggested by pioner DKI studies (e.g. [Jensen2005]_,
+[NetoHe2012]_). Although here the Gaussian smoothing is used so that results
+are comparable these studies, it is important to note that more advanced noise
 and artifact suppression algorithms are available in Dipy (e.g. the non-local
 mean filter :ref:`example-denoise-nlmeans`).
 """
@@ -120,7 +120,7 @@ for v in range(data.shape[-1]):
 """
 Now that we have loaded and pre-processed the data we can go forward
 with DKI fitting. For this, the DKI model is first defined for the data's
-GradientTable objec by instantiating the DiffusionKurtosisModel object in the
+GradientTable object by instantiating the DiffusionKurtosisModel object in the
 following way:
 """
 
@@ -254,14 +254,14 @@ than for the radial directions (larger amplitudes shown in the RK map).
 As mentioned above, DKI can also be used to derive concrete biophysical
 parameters by applying microstructural models to DT and KT estimated from DKI.
 For instance,  Fieremans et al. (2011) showed that DKI can be used to estimate
-the contribution of hindered and restricted diffusion for well aligned fibers.
-These tensors can be also interprested as the influences of intra and
+the contribution of hindered and restricted diffusion for well-aligned fibers.
+These tensors can be also interpreted as the influences of intra- and
 extra-cellular compartments and can be used to estimate the axonal volume
 fraction and diffusion extra-cellular tortuosity. According to recent studies,
 these later measures can be used to distinguish processes of axonal loss from
 processes of myelin degeneration [Fieremans2012]_.
 
-The model proposed by Fieremans and collegues can be defined in dipy by
+The model proposed by Fieremans and colleagues can be defined in dipy by
 instantiating the 'KurtosisMicrostructureModel' Object in the following way:
 """
 
@@ -270,13 +270,13 @@ dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
 """
 Before fitting this microstructural model, it is usefull to indicate the
 regions in which this model provides meanfully information (i.e. voxels of
-well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simpe way
-to select this region is to generate a well aligned fiber mask based on the
+well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple way
+to select this region is to generate a well-aligned fiber mask based on the
 values of diffusion sphericity, planarity and linearity. Here we will follow
 this selection criteria for a better comparision of our figures with the
-orignal article publised by Fieremans et al. [Fieremans2011]_. Nevertheless, it
-is important to note that voxel well-aligned fiber can be selected based on
-other approaches such as using predefined regions of interest.
+original article publised by Fieremans et al. [Fieremans2011]_. Nevertheless,
+it is important to note that voxels with well-aligned fiber can be selected
+based on other approaches such as using predefined regions of interest.
 """
 
 well_aligned_mask = np.ones(data.shape[:-1], dtype='bool')
@@ -310,8 +310,8 @@ dki_micro_fit = dki_micro_model.fit(data_smooth, mask=well_aligned_mask)
 
 """
 The KurtosisMicrostructureFit object created by this ``fit`` function can then
-be used to extract model parameters as the axonal water fraction and diffusion
-hindered tortuosity:
+be used to extract model parameters such as the axonal water fraction and
+diffusion hindered tortuosity:
 """
 
 AWF = dki_micro_fit.awf
@@ -319,6 +319,7 @@ TORT = dki_micro_fit.tortuosity
 
 
 """ Below these parameters are ploted in top of the mean kurtosis maps: """
+
 fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
                         subplot_kw={'xticks': [], 'yticks': []})
 
