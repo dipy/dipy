@@ -84,7 +84,9 @@ print("Centroid of the last cluster:\n", clusters[-1].centroid)
            [  66.74534607,   86.00262451,   78.82582092],
            [  64.02451324,   88.43942261,   75.0697403 ]], dtype=float32)
 
+"""
 
+"""
 `clusters` has also attributes like `centroids` (cluster representatives), and
 methods like `add`, `remove`, and `clear` to modify the clustering result.
 
