@@ -1,4 +1,4 @@
-""" Testing DKI microstructure """
+""" Testing DKI """
 
 from __future__ import division, print_function, absolute_import
 
@@ -660,6 +660,19 @@ def test_kurtosis_maximum():
     # also equal to the maxima kurtosis value of well-aligned fibers, since
     # simulations parameters (apart from fiber directions) are equal
     assert_almost_equal(k_max_cross, RK)
+
+    # Test 3 - Test performance when kurtosis is spherical - this case, can be
+    # problematic since a spherical kurtosis does not have an maximum
+    k_max, max_dir = dki._voxel_kurtosis_maximum(dt_sph, np.mean(evals_sph),
+                                                 kt_sph, sphere, gtol=1e-2)
+    assert_almost_equal(k_max, Kref_sphere)
+
+    # Test 4 - Test performance when kt have all elements zero - this case, can
+    # be problematic this case does not have an maximum
+    k_max, max_dir = dki._voxel_kurtosis_maximum(dt_sph, np.mean(evals_sph),
+                                                 np.zeros(15), sphere,
+                                                 gtol=1e-2)
+    assert_almost_equal(k_max, 0.0)
 
 
 def test_multi_voxel_kurtosis_maximum():
