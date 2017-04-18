@@ -77,20 +77,6 @@ fvtk.add(ren, streamlines_actor)
 fvtk.add(ren, seedroi_actor)
 
 """
-We can also change also the opacity of the slicer
-"""
-
-slicer_opacity = .6
-image_actor.opacity(slicer_opacity)
-
-"""
-Connect the actors with the Renderer.
-"""
-
-ren.add(stream_actor)
-ren.add(image_actor)
-
-"""
 If you uncomment the following line, the rendering will pop up in an interactive
 window.
 """
