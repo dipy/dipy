@@ -201,45 +201,37 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     return image_actor
 
 
-def contour_actor(data, affine=None, levels=[50],
-                  colors=[np.array([1.0, 0.0, 0.0])], opacities=[1]):
-    """Take a volume and draw surface contours for any any number of
-    thresholds (levels) where every contour has its own color and opacity
+def surface_actor(data, affine=None,
+                  color=np.array([1, 0, 0]), opacity=1):
+    """Take a binary roi and generate a surface actor of the specified color
+    and opacity
 
     Parameters
     ----------
-    data : array, shape (X, Y, Z) or (X, Y, Z, 3)
-        A grayscale or rgb 4D volume as a numpy array.
+    data : array, shape (X, Y, Z)
+        an ROI file that will be binarized and displayed
     affine : array, shape (4, 4)
         Grid to space (usually RAS 1mm) transformation matrix. Default is None.
         If None then the identity matrix is used.
-    levels : array_like
-        Sequence of thresholds for the contours taken from image values needs
-        to be same datatype as `vol`.
-    colors : (N, 3) ndarray
+    color : (1, 3) ndarray
         RGB values in [0,1].
-    opacities : array_like
-        Opacities of contours.
+    opacity : float
+        Opacity of surface between 0 and 1.
 
     Returns
     -------
     contour_assembly : vtkAssembly
-        An object that is capable of displaying an roi as contours in space
+        ROI surface object displayed in space
         coordinates as calculated by the affine parameter.
 
     """
 
     if data.ndim != 3:
-        if data.ndim == 4:
-            if data.shape[3] != 3:
-                raise ValueError('Only RGB 3D arrays are currently supported.')
-            else:
-                nb_components = 3
-        else:
-            raise ValueError('Only 3D arrays are currently supported.')
+        raise ValueError('Only 3D arrays are currently supported.')
     else:
         nb_components = 1
 
+    data = (data>0)*1
     vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     vol = vol.astype('uint8')
 
@@ -258,10 +250,6 @@ def contour_actor(data, affine=None, levels=[50],
         im.AllocateScalars(vtk.VTK_UNSIGNED_CHAR, nb_components)
 
     # copy data
-    # what I do below is the same as what is commented here but much faster
-    # for index in ndindex(vol.shape):
-    #     i, j, k = index
-    #     im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
     vol = np.swapaxes(vol, 0, 2)
     vol = np.ascontiguousarray(vol)
 
@@ -304,37 +292,34 @@ def contour_actor(data, affine=None, levels=[50],
     image_resliced.Update()
 
     # code from fvtk contour function
-    skin_assembly = vtk.vtkAssembly()
 
-    for (i, l) in enumerate(levels):
-        skin_extractor = vtk.vtkContourFilter()
-        if major_version <= 5:
-            skin_extractor.SetInput(image_resliced)
-        else:
-            skin_extractor.SetInputData(image_resliced.GetOutput())
-        skin_extractor.SetValue(0, l)
+    skin_extractor = vtk.vtkContourFilter()
+    if major_version <= 5:
+        skin_extractor.SetInput(image_resliced)
+    else:
+        skin_extractor.SetInputData(image_resliced.GetOutput())
 
-        skin_normals = vtk.vtkPolyDataNormals()
-        skin_normals.SetInputConnection(skin_extractor.GetOutputPort())
-        skin_normals.SetFeatureAngle(60.0)
+    skin_extractor.SetValue(0,1)
 
-        skin_mapper = vtk.vtkPolyDataMapper()
-        skin_mapper.SetInputConnection(skin_normals.GetOutputPort())
-        skin_mapper.ScalarVisibilityOff()
+    skin_normals = vtk.vtkPolyDataNormals()
+    skin_normals.SetInputConnection(skin_extractor.GetOutputPort())
+    skin_normals.SetFeatureAngle(60.0)
 
-        skin_actor = vtk.vtkActor()
+    skin_mapper = vtk.vtkPolyDataMapper()
+    skin_mapper.SetInputConnection(skin_normals.GetOutputPort())
+    skin_mapper.ScalarVisibilityOff()
 
-        skin_actor.SetMapper(skin_mapper)
-        skin_actor.GetProperty().SetOpacity(opacities[i])
+    skin_actor = vtk.vtkActor()
 
-        skin_actor.GetProperty().SetColor(colors[i][0], colors[i][1], colors[i][2])
-        skin_assembly.AddPart(skin_actor)
+    skin_actor.SetMapper(skin_mapper)
+    skin_actor.GetProperty().SetOpacity(opacity)
 
-        del skin_actor
-        del skin_mapper
-        del skin_extractor
+    skin_actor.GetProperty().SetColor(color[0], color[1], color[2])
 
-    return skin_assembly
+    del skin_mapper
+    del skin_extractor
+
+    return skin_actor
 
 
 def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
