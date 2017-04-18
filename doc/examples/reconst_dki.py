@@ -61,14 +61,14 @@ First, we import all relevant modules:
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
-import matplotlib.pyplot as plt
+import dipy.reconst.dki_micro as dki_micro
 from dipy.data import fetch_cenir_multib
 from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
-from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.denoise.nlmeans import nlmeans
+from scipy.ndimage.filters import gaussian_filter
 
 """
 DKI requires multi-shell data, i.e. data acquired from more than one non-zero
@@ -110,26 +110,32 @@ maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 """
 Since the diffusion kurtosis models involves the estimation of a large number
 of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
-diffusion signal are more sensitive to artefacts [NetoHe2012]_, a fundamental
-data pre-processing step for diffusion kurtosis fitting is to denoise our data.
+diffusion signal are more sensitive to artefacts [NetoHe2012]_, suppression of
+the effects of noise and artefacsts are fundamental before diffusion kurtosis
+fitting. Following the suggestion of pioner DKI studies (e.g. [Jensen2005]_,
+ [NetoHe2012]_, [Fierem2011]_), the suppression of noise and artefacts in
+this example is done using a 3D gaussian smoothing procedure (with a gaussian
+kernel with fwhm=1.25).
+
 For this, we use Dipy's non-local mean filter (see
-:ref:`example-denoise-nlmeans`). Note that, since the HCP-like data has a large
-number of diffusion-weigthed volumes, this procedure can take a couple of hours
-to compute the entire dataset. Therefore, to speed the run time in this example
-we only denoise an axial slice of the data.
+:ref:`example-denoise-nlmeans`).
 """
 
-axial_slice = 40
-
-sigma = estimate_sigma(data, N=4)
-
-mask_roi = np.zeros(data.shape[:-1], dtype=bool)
-mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
-
-den = nlmeans(data, sigma=sigma, mask=mask_roi)
-den = den[:, :, axial_slice, :]
+fwhm = 1.25
+gauss_std = fwhm / np.sqrt(8 * np.log(2))  # converting fwhm to gaussian std
+data_smooth = np.zeros(data.shape)
+for v in range(data.shape[-1]):
+    data_smooth[..., v] = gaussian_filter(data[..., v], sigma=gauss_std)
 
 """
+Data smoothing has the drawback of corrupting the data spatial information and
+increasing partial volume effects. We opted to smooth DKI data just for
+illustration proposes and easier comparison between produced figures and
+previous literature. However, it is important to note that alternative noise
+suppression algorithms are available in dipy as the use of non-local mean
+(see :ref:`example-denoise-nlmeans`) and PCA filtering
+(see :ref:`example-denoise-nlmeans`) techniques.
+
 Now that we have loaded and prepared the voxels to process we can go forward
 with the voxel reconstruction. This can be done by first instantiating the
 DiffusionKurtosisModel in the following way:
@@ -142,7 +148,7 @@ To fit the data using the defined model object, we call the ``fit`` function of
 this object:
 """
 
-dkifit = dkimodel.fit(den)
+dkifit = dkimodel.fit(data_smooth, mask=mask)
 
 """
 The fit method creates a DiffusionKurtosisFit object which contains all the
@@ -170,7 +176,7 @@ FA, MD, AD, and RD using Dipy's TensorModel.
 """
 
 tenmodel = dti.TensorModel(gtab)
-tenfit = tenmodel.fit(den)
+tenfit = tenmodel.fit(data_smooth, mask=mask)
 
 dti_FA = tenfit.fa
 dti_MD = tenfit.md
@@ -180,30 +186,32 @@ dti_RD = tenfit.rd
 """
 The DT based measures can be easly visualized using matplotlib. For example,
 the FA, MD, AD, and RD obtain from the diffusion kurtosis model (upper panels)
-and the tensor model (lower panels) are plotted for the selected axial slice.
+and the tensor model (lower panels) are plotted for a selected axial slice.
 """
+
+axial_slice = 40
 
 fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(FA, cmap='gray')
+ax.flat[0].imshow(FA[:, :, axial_slice], cmap='gray')
 ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD, cmap='gray')
+ax.flat[1].imshow(MD[:, :, axial_slice], cmap='gray')
 ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD, cmap='gray')
+ax.flat[2].imshow(AD[:, :, axial_slice], cmap='gray')
 ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD, cmap='gray')
+ax.flat[3].imshow(RD[:, :, axial_slice], cmap='gray')
 ax.flat[3].set_title('RD (DKI)')
 
-ax.flat[4].imshow(dti_FA, cmap='gray')
+ax.flat[4].imshow(dti_FA[:, :, axial_slice], cmap='gray')
 ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD, cmap='gray')
+ax.flat[5].imshow(dti_MD[:, :, axial_slice], cmap='gray')
 ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD, cmap='gray')
+ax.flat[6].imshow(dti_AD[:, :, axial_slice], cmap='gray')
 ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD, cmap='gray')
+ax.flat[7].imshow(dti_RD[:, :, axial_slice], cmap='gray')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
@@ -245,11 +253,11 @@ fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MK, cmap='gray')
+ax.flat[0].imshow(MK[:, :, axial_slice], cmap='gray')
 ax.flat[0].set_title('MK')
-ax.flat[1].imshow(AK, cmap='gray')
+ax.flat[1].imshow(AK[:, :, axial_slice], cmap='gray')
 ax.flat[1].set_title('AK')
-ax.flat[2].imshow(RK, cmap='gray')
+ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray')
 ax.flat[2].set_title('RK')
 
 plt.show()
@@ -258,7 +266,7 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 """
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
-   
+
    **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
@@ -267,6 +275,104 @@ Therefore, as the figure above shows, white matter kurtosis values are smaller
 along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
 
+As mentioned above, DKI can also be used to derive concrete biophysical
+parameters by applying microstructural models to DT and KT estimated from DKI.
+For instance,  Fieremans et al. (2011) showed that DKI can be used to estimate
+the contribution of hindered and restricted diffusion for well aligned fibers.
+These tensors can be also interprested as the influences of intra and
+extra-cellular compartments and can be used to estimate the axonal volume
+fraction and diffusion extra-cellular tortuosity which can be used to
+distinguish processes of axonal loss from processes of myelin degeneration
+[Fieremans2012]_.
+
+The model proposed by Fieremans and collegues can be defined in dipy by
+instantiating the 'KurtosisMicrostructureModel' Object in the following way:
+"""
+
+dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
+
+"""
+Before fitting this microstructural model, it is usefull to indicate the
+regions in which this model provides meanfully information (i.e. voxels of
+well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simpe way
+to select this regions is to generate a well aligned fiber mask based on the
+values of diffusion sphericity, planarity and linearity. Here we will follow
+this selection criteria for a better comparision of our results with Fieremans
+original article, however it is important to note that voxel well-aligned fiber
+can be selected using other approaches such as based on predefined regions of
+interest.
+"""
+
+well_aligned_mask = np.ones(data.shape[:-1], dtype='bool')
+
+cl = tenfit.linearity.copy()
+well_aligned_mask[cl < 0.4] = False
+well_aligned_mask[np.isnan(cl)] = False
+
+cp = tenfit.planarity.copy()
+well_aligned_mask[cp > 0.3] = False
+well_aligned_mask[np.isnan(cp)] = False
+
+cs = tenfit.sphericity.copy()
+well_aligned_mask[cs > 0.5] = False
+well_aligned_mask[np.isnan(cs)] = False
+
+print(np.sum(well_aligned_mask == True))
+
+well_aligned_mask = np.ones(data.shape[:-1], dtype='bool')
+
+ev1 = dkifit.evals[..., 0]
+ev2 = dkifit.evals[..., 1]
+ev3 = dkifit.evals[..., 1]
+
+cs = ev3 / ev1
+cp = (ev2 - ev3) / ev1
+cl = (ev1 - ev2) / ev1
+
+cl = dkifit.linearity
+well_aligned_mask[cl < 0.4] = False
+well_aligned_mask[np.isnan(cl)] = False
+
+cp = dkifit.planarity
+well_aligned_mask[cp > 0.2] = False
+well_aligned_mask[np.isnan(cp)] = False
+
+cs = dkifit.sphericity
+well_aligned_mask[cs > 0.35] = False
+well_aligned_mask[np.isnan(cs)] = False
+
+print(np.sum(well_aligned_mask == True))
+
+"""
+Analgous to DKI, the data fit can be done by calling the ``fit`` function of
+the model's object as follows:
+"""
+
+dki_micro_fit = dki_micro_model.fit(data_smooth, mask=well_aligned_mask)
+
+"""
+The KurtosisMicrostructureFit object created by this ``fit`` function can then
+be used to extract model parameters as the axonal water fraction and diffusion
+hindered tortuosity:
+"""
+
+AWF = dki_micro_fit.awf
+TORT = dki_micro_fit.tortuosity
+
+""" Below these parameters are ploted in top of the mean kurtosis maps:
+"""
+fig2, ax = plt.subplots(1, 2, figsize=(9, 3),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+ax[0].imshow(MK[:, :, 41], cmap=plt.cm.gray, interpolation='nearest')
+ax[0].imshow(AWF[:, :, 41], cmap=plt.cm.Reds, alpha=.5,
+             interpolation='nearest')
+
+ax[1].imshow(MK[:, :, 41], cmap=plt.cm.gray, interpolation='nearest')
+ax[1].imshow(TORT[:, :, 41], cmap=plt.cm.Reds, alpha=.5,
+             interpolation='nearest')
+
+"""
 References:
 
 .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
@@ -283,6 +389,12 @@ References:
 .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
+.. [Fierem2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
+                Inglese M, Novikov DS. (2012). Diffusion distinguishes between
+                axonal loss and demyelination in brain white matter.
+                Proceedings of the 20th Annual Meeting of the International
+                Society for Magnetic Resonance Medicine; Melbourne, Australia.
+                May 5–11.
 .. [NetoHe2012] Neto Henriques R, Ferreira H, Correia M, (2012). Diffusion
                 kurtosis imaging of the healthy human brain. Master
                 Dissertation Bachelor and Master Programin Biomedical
