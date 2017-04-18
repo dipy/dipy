@@ -615,11 +615,11 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         The predicted signal is given by:
 
         $S(\theta, b) = S_0 * [f * e^{-b ADC_{r}} + (1-f) * e^{-b ADC_{h}]$,
-        where $ ADC_{r} and ADC_{h} are the apparent diffusion coefficients of
-        the diffusion hindered and restricted compartment for a given direction
-        $\theta$, $b$ is the b value provided in the GradientTable input for
-        that direction, $f$ is the volume fraction of the restricted diffusion
-        compartment (also known as the axonal water fraction).
+        where $ADC_{r}$ and $ADC_{h}$ are the apparent diffusion coefficients
+        of the diffusion hindered and restricted compartment for a given
+        direction $\theta$, $b$ is the b value provided in the GradientTable
+        input for that direction, $f$ is the volume fraction of the restricted
+        diffusion compartment (also known as the axonal water fraction).
         """
         self._is_awfonly()
         return dkimicro_prediction(self.model_params, gtab, S0)
