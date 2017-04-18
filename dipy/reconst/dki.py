@@ -779,7 +779,7 @@ def _G1m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
-    # Error is defined as three order of magnitude larger than system's epslon
+    # Error is defined as five orders of magnitude larger than system's epslon
     er = np.finfo(a.ravel()[0]).eps * 1e5
 
     # Initialize G1
@@ -841,7 +841,7 @@ def _G2m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
-    # Error is defined as three order of magnitude larger than system's epslon
+    # Error is defined as five order of magnitude larger than system's epslon
     er = np.finfo(a.ravel()[0]).eps * 1e5
 
     # Initialize G2
@@ -890,7 +890,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, radial
         kurtosis values that are larger than `max_kurtosis` are replaced with
-        `max_kurtosis`. Default = 3
+        `max_kurtosis`. Default = 10
 
     Returns
     -------
@@ -1443,7 +1443,7 @@ class DiffusionKurtosisFit(TensorFit):
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
-            with `max_kurtosis`. Default = 3
+            with `max_kurtosis`. Default = 10
 
         Returns
         -------
