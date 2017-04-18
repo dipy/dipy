@@ -6,7 +6,7 @@ import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_)
+                           assert_, assert_raises)
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -143,7 +143,6 @@ def test_single_fiber_model():
                           -3.67415502e-02, -1.56330984e-01, -1.62295407e-02])
     edt, idt = dki_micro.diffusion_components(dkiparams)
     assert_(np.all(np.isfinite(edt)))
-    
 
 
 def test_wmti_model_multi_voxel():
@@ -287,11 +286,29 @@ def test_dki_micro_predict_multi_voxel():
     assert_array_almost_equal(pred, DWIsim_all_taylor * 100, decimal=3)
 
 
+def _help_test_awf_only(dkimicrofit, string):
+    exec(string)
+
+
 def test_dki_micro_awf_only():
     dkiM = dki_micro.KurtosisMicrostructureModel(gtab_2s)
     dkiF = dkiM.fit(DWIsim, awf_only=True)
-    awf = dki_micro.axonal_water_fraction(dkiF.model_params)
-    assert_almost_equal(awf, FIE)
+    awf = dkiF.awf
+    assert_almost_equal(awf, FIE, decimal=3)
+
+    # assert_raises(dkiF.hindered_evals)
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.hindered_evals')
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.restricted_evals')
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.axonal_diffusivity')
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.hindered_ad')
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.hindered_rd')
+    assert_raises(ValueError, _help_test_awf_only, dkiF,
+                  'dkimicrofit.tortuosity')
 
 
 def additional_tortuosity_tests():
