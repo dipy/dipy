@@ -25,6 +25,9 @@ else:
 # Set a user-writeable file-system location to put files:
 dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
 
+# The URL to the University of Washington Researchworks repository:
+UW_RW_URL = \
+  "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
 
 class FetcherError(Exception):
     pass
@@ -252,7 +255,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
 fetch_isbi2013_2shell = _make_fetcher(
     "fetch_isbi2013_2shell",
     pjoin(dipy_home, 'isbi2013'),
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38465/',
+    UW_RW_URL + '1773/38465/',
     ['phantom64.nii.gz',
      'phantom64.bval',
      'phantom64.bvec'],
@@ -276,7 +279,7 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     pjoin(dipy_home, 'sherbrooke_3shell'),
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38475/",
+    UW_RW_URL + "1773/38475/",
     ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['0b735e8f16695a37bfbd66aab136eb66',
@@ -317,7 +320,7 @@ fetch_stanford_pve_maps = _make_fetcher(
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38480/",
+    UW_RW_URL + "1773/38480/",
     ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['950408c0980a7154cb188666a885a91f',
@@ -332,7 +335,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
     pjoin(dipy_home, 'syn_test'),
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38476/",
+    UW_RW_URL + "1773/38476/",
     ['t1.nii.gz', 'b0.nii.gz'],
     ['t1.nii.gz', 'b0.nii.gz'],
     ['701bda02bb769655c7d4a9b1df2b73a6',
@@ -362,7 +365,7 @@ fetch_mni_template = _make_fetcher(
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
     dipy_home,
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38479/",
+    UW_RW_URL + "1773/38479/",
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
@@ -373,7 +376,7 @@ fetch_scil_b0 = _make_fetcher(
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
                                 pjoin(dipy_home, "icons"),
-"https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38478/",
+                                UW_RW_URL + "1773/38478/",
                                 ['icomoon.tar.gz'],
                                 ['icomoon.tar.gz'],
                                 ['94a07cba06b4136b6687396426f1e380'],
@@ -384,7 +387,7 @@ fetch_viz_icons = _make_fetcher("fetch_viz_icons",
 fetch_bundles_2_subjects = _make_fetcher(
     "fetch_bundles_2_subjects",
     pjoin(dipy_home, 'exp_bundles_and_maps'),
-'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/38477/',
+    UW_RW_URL + '1773/38477/',
     ['bundles_2_subjects.tar.gz'],
     ['bundles_2_subjects.tar.gz'],
     ['97756fbef11ce2df31f1bedf1fc7aac7'],
@@ -402,6 +405,27 @@ fetch_ivim = _make_fetcher(
      'f03d89f84aa9a9397103a400e43af43a',
      'fb633a06b02807355e49ccd85cb92565'],
     doc="Download IVIM dataset")
+
+fetch_cfin_multib = _make_fetcher(
+    "fetch_cfin_multib",
+    pjoin(dipy_home, 'cfin_multib'),
+    UW_RW_URL + '/1773/38488/',
+    ['T1.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec'],
+    ['T1.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec'],
+    ['889883b5e7d93a6e372bc760ea887e7c',
+     '9daea1d01d68fd0055a3b34f5ffd5f6e',
+     '3ee44135fde7ea5c9b8c801414bdde2c',
+     '948373391de950e7cc1201ba9f696bf0'],
+    doc="Download CFIN multi b-value diffusion data",
+    msg=("This data was provided by Brian Hansen and Sune Jespersen" +
+         " More details about the data are available in their paper: " +
+         " https://www.nature.com/articles/sdata201672"))
 
 
 def read_scil_b0():
@@ -792,8 +816,7 @@ def fetch_cenir_multib(with_raw=False):
                          '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
     files = {}
-    baseurl = 'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
-
+    baseurl = UW_RW_URL + '1773/33311/'
     for f, m in zip(fname_list, md5_list):
         files[f] = (baseurl + f, m)
 
@@ -969,4 +992,40 @@ def read_ivim():
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
+    return img, gtab
+
+
+def read_cfin_dwi():
+    """Load CFIN multi b-value DWI data
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    files, folder = fetch_cfin_multib()
+    fraw = pjoin(folder,
+                 '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
+    fbval = pjoin(folder,
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
+    fbvec = pjoin(folder,
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
+
+
+def read_cfin_t1():
+    """Load CFIN T1-weighted data.
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    """
+    files, folder = fetch_cfin_multib()
+    img = nib.load(pjoin(folder, 'T1.nii'))
     return img, gtab
