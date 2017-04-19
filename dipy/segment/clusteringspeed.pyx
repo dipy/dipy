@@ -5,14 +5,11 @@ import numpy as np
 cimport numpy as cnp
 
 from libc.math cimport fabs
+from libc.stdlib cimport calloc, realloc, free
 from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape, same_shape
-
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
-    void free(void *ptr)
-    void *calloc(size_t nelem, size_t elsize)
-    void *realloc(void *ptr, size_t elsize)
     void *memset(void *ptr, int value, size_t num)
 
 DTYPE = np.float32
