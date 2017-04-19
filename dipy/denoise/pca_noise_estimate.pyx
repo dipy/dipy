@@ -125,14 +125,14 @@ def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
     # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
       mean = np.divide(mean, count)
-      snr = np.zeros_like(I).astype(np.float64)
       snr = np.divide(mean, np.sqrt(sigma_sq))
       snr_sq = snr ** 2
       zeta = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
               ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
               (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2)
-
-      sigma_sq = np.divide(sigma_sq, zeta)
+      # Zeta is practically equal to 1 above 37.4, and we overflow, creating
+      # Not-a-numbers. Instead, replace these values with 1:
+      zeta[snr > 37.4] = 1
       sigma_corr = sigma_sq / zeta
       sigma_corr[np.isnan(sigma_corr)] = 0
     else:
