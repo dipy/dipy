@@ -4,7 +4,10 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
-from scipy.misc import factorial, factorial2
+try:  # preferred scipy >= 0.14, required scipy >= 1.0
+    from scipy.special import factorial, factorial2
+except ImportError:
+    from scipy.misc import factorial, factorial2
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.shm import real_sph_harm, sph_harm_ind_list
 import dipy.reconst.dti as dti
