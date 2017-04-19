@@ -27,7 +27,7 @@ except ImportError:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
-    """ PCA based local noise estimation
+    """ PCA based local noise estimation for 3-by-3-by-3 voxel blocks.
 
     Parameters
     ----------
