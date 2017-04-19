@@ -12,10 +12,9 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 import dipy.sims.voxel as vox
 
-# See page 5 of the reference paper for tested values
-
 
 def test_inv_nchi():
+    # See page 5 of the reference paper for tested values
     # Values taken from hispeed.MedianPIESNO.lambdaPlus
     # and hispeed.MedianPIESNO.lambdaMinus
     N = 8
@@ -136,15 +135,36 @@ def test_estimate_sigma():
 
 
 def test_pca_noise_estimate():
-    fdata, fbvals, fbvecs = dpd.get_data()
-    sibe_gtab = dpg.gradient_table(fbvals, fbvecs)
-    sibe_data = nib.load(fdata).get_data()
-    mube_gtab = dpg.gradient_table(
-                        np.concatenate([[0], sibe_gtab.bvals]),
-                        np.concatenate([[[0, 0, 0]], sibe_gtab.bvecs]))
-    mube_data = np.concatenate([sibe_data[..., 0][..., np.newaxis],
-                                sibe_data], axis=-1)
-    for gtab, data in zip([sibe_gtab, mube_gtab], [sibe_data, mube_data]):
-        sigma = data - vox.add_noise(data, 20, S0=data[..., gtab.b0s_mask])
-        sigma_est = pca_noise_estimate(data + sigma, gtab, correct_bias=True)
-        assert_array_almost_equal(sigma_est, sigma[..., 0])
+    np.random.seed(1984)
+    # MUBE:
+    bvals1 = np.concatenate([np.zeros(17), np.ones(3) * 1000])
+    bvecs1 = np.concatenate([np.zeros((17, 3)), np.eye(3)])
+    gtab1 = dpg.gradient_table(bvals1, bvecs1)
+    # SIBE:
+    bvals2 = np.concatenate([np.zeros(1), np.ones(3) * 1000])
+    bvecs2 = np.concatenate([np.zeros((1, 3)), np.eye(3)])
+    gtab2 = dpg.gradient_table(bvals2, bvecs2)
+
+    for gtab in [gtab1, gtab2]:
+        signal = np.ones((20, 20, 20, gtab.bvals.shape[0]))
+        for correct_bias in [True, False]:
+            if not correct_bias:
+                # High signal for no bias correction
+                signal = signal * 100
+
+        sigma = 1
+        noise1 = np.random.normal(0, sigma, size=signal.shape)
+        noise2 = np.random.normal(0, sigma, size=signal.shape)
+
+        # Rician noise:
+        data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
+
+        sigma_est = pca_noise_estimate(data, gtab, correct_bias=correct_bias)
+        assert_array_almost_equal(np.mean(sigma_est), sigma, decimal=1)
+
+    sigma = 1
+    noise1 = np.random.normal(0, sigma, size=signal.shape)
+    noise2 = np.random.normal(0, sigma, size=signal.shape)
+    signal = np.ones((20, 20, 20, gtab.bvals.shape[0]))
+    assert_(np.mean(pca_noise_estimate(data, gtab, correct_bias=True)) >
+            np.mean(pca_noise_estimate(data, gtab, correct_bias=False)))
