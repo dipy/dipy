@@ -17,6 +17,7 @@ from dipy.reconst.dki import _positive_evals
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
+from dipy.core.gradients import check_multi_b
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
 
@@ -128,12 +129,9 @@ class FreeWaterTensorModel(ReconstModel):
         self.kwargs = kwargs
 
         # Check if at least three b-values are given
-        bmag = int(np.log10(self.gtab.bvals.max()))
-        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
-        b = b.round()
-        uniqueb = np.unique(b)
-        if len(uniqueb) < 3:
-            mes = "fwdti fit requires data for at least 2 non zero b-values"
+        enough_b = check_multi_b(self.gtab, 3, non_zero=False)
+        if not enough_b:
+            mes = "fwDTI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
 
     @multi_voxel_fit
