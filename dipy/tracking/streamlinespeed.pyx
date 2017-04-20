@@ -37,7 +37,8 @@ cdef double c_length(Streamline streamline) nogil:
 
 
 cdef void c_arclengths_from_arraysequence(Streamline points,
-                                          long[:] offsets, long[:] lengths,
+                                          np.npy_intp[:] offsets,
+                                          np.npy_intp[:] lengths,
                                           double[:] arclengths) nogil:
     cdef:
         np.npy_intp i, j, k
