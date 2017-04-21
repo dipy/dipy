@@ -291,6 +291,7 @@ def test_ui_disk_slider_2d(recording=False):
 
     disk_slider_2d_test = ui.DiskSlider2D()
     disk_slider_2d_test.set_center((300, 300))
+    disk_slider_2d_test.value = 90
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
