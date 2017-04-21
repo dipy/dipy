@@ -5,7 +5,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
-from dipy.core.gradients import (check_multi_b, round_bvals)
+from dipy.core.gradients import (check_multi_b, unique_bvals)
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL, iter_fit_tensor)
 
@@ -30,12 +30,17 @@ class MeanDiffusionKurtosisModel(ReconstModel):
     """ Mean spherical Diffusion Kurtosis Model
     """
 
-    def __init__(self, gtab, return_S0_hat=False, *args, **kwargs):
+    def __init__(self, gtab, bmag=None, return_S0_hat=False, *args, **kwargs):
         """ Mean Spherical Diffusion Kurtosis Model [1]_.
 
         Parameters
         ----------
         gtab : GradientTable class instance
+
+        bmag : int
+            The order of magnitude that the bvalues have to differ to be
+            considered an unique b-value. Default: derive this value from the
+            maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
@@ -55,7 +60,9 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
+        self.ubvals = unique_bvals(gtab.bvals, bmag)
         self.return_S0_hat = return_S0_hat
+        self.design_matrix = design_matrix(self.ubvals)
         self.args = args
         self.kwargs = kwargs
         self.min_signal = self.kwargs.pop('min_signal', None)
@@ -278,27 +285,32 @@ def _wls_fit_mdki(design_matrix, msignal, ng, return_S0_hat=False):
     params[1] = params[1] / (params[0]**2)
 
     if return_S0_hat:
-        return (params[:2], np.exp(-1.0 * params[2]))
+        return (params[:2], np.exp(params[2]))
     else:
         return params[:2]
 
 
-def design_matrix(gtab, dtype=None):
+def design_matrix(ubvals):
     """  Constructs design matrix for the mean spherical diffusion kurtosis
     model
 
     Parameters
     ----------
-    gtab : A GradientTable class instance
+    ubals : Unique b-values
 
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
     Returns
     -------
-    design_matrix : array (g,7)
-        Design matrix or B matrix assuming Gaussian distributed tensor model
-        design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
+    design_matrix : array (nb, 3)
+        Design matrix or B matrix for the mean spherical diffusion kurtosis
+        model assuming that parameters are in the following order:
+        design_matrix[j, :] = (MD, MK, S0)
     """
-    B = 0
-    return B 
+    nb = ubvals.shape
+    B = np.zeros(nb + (3,))
+    B[:, 0] = -ubvals
+    B[:, 1] = 1.0/6.0 * ubvals**2
+    B[:, 2] = np.ones(nb)
+    return B
