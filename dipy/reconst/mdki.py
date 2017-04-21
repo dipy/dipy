@@ -117,7 +117,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
                 S0_params = np.zeros(data.shape[:-1] + (1,))
                 S0_params[mask] = model_S0
 
-        return MeanDiffusionKurtosisFit(self, dti_params, model_S0=S0_params)
+        return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -233,27 +233,31 @@ class MeanDiffusionKurtosisFit(object):
 
 
 @iter_fit_tensor()
-def wls_fit_mdki(design_matrix, data, return_S0_hat=False):
+def _wls_fit_mdki(design_matrix, msignal, ng, return_S0_hat=False):
     r"""
-    Fits the mean spherical diffusion kurtosis imaging based on a weighted
-    least square solution [1]_.
+    Helper function that fits the mean spherical diffusion kurtosis imaging
+    based on a weighted least square solution [1]_.
 
     Parameters
     ----------
-    design_matrix : array (g, 7)
+    design_matrix : array (nub, 3)
         Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
+        coefficients of the mean spherical diffusion kurtosis model. Note that
+        nub is the number of unique b-values
+    msignal : ndarray ([X, Y, Z, ..., nub])
+        Mean signal along all gradient direction for each unique b-value
+        Note that the last dimension should contain the signal means and nub
+        is the number of unique b-values.
+    ng : ndarray([X, Y, Z, ..., nub])
+        Number of gradient directions used to compute the mean signal for
+        all unique b-values
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
 
     Returns
     -------
     params : array (..., 2)
-        The two mean spherical diffusion kurtosis tensor parameters
-        (spherical mean diffusivity) and (spherical mean kurtosis)
+        Containing the mean spherical diffusivity and mean spherical kurtosis
 
     References
     ----------
@@ -261,8 +265,22 @@ def wls_fit_mdki(design_matrix, data, return_S0_hat=False):
            changes based on the mean signal diffusion kurtosis. 25th Annual
            Meeting of the ISMRM; Honolulu. April 22-28
     """
-    params = 0
-    return params
+    # Define weights as diag(sqrt(ng) * msignal ** 2)
+    W = np.diag(ng * msignal ** 2)
+
+    # WLS solution
+    BTW = np.dot(design_matrix.T, W)
+    inv_BT_W_B = np.linalg.pinv(np.dot(BTW, design_matrix))
+    invBTWB_BTW = np.dot(inv_BT_W_B, BTW)
+    params = np.dot(invBTWB_BTW, np.log(msignal))
+
+    # Convert 2nd parameter to MK
+    params[1] = params[1] / (params[0]**2)
+
+    if return_S0_hat:
+        return (params[:2], np.exp(-1.0 * params[2]))
+    else:
+        return params[:2]
 
 
 def design_matrix(gtab, dtype=None):
