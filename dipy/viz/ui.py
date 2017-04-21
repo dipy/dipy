@@ -3,8 +3,6 @@ from _warnings import warn
 
 import numpy as np
 
-import math
-
 from dipy.viz.interactor import CustomInteractorStyle
 
 from dipy.utils.optpkg import optional_package
@@ -19,6 +17,7 @@ if have_vtk:
 else:
     vtkTextActor = object
 
+TWO_PI = 2 * np.pi
 
 class UI(object):
     """ An umbrella class for all UI elements.
@@ -1603,56 +1602,74 @@ class DiskSlider2D(UI):
 
     Attributes
     ----------
-    base_disk_inner_radius: int
-        Inner radius of the base disk.
-    base_disk_outer_radius: int
-        Outer radius of the base disk.
     base_disk_center: (float, float)
         Position of the system.
-    base_disk_radius: float
+    slider_inner_radius: int
+        Inner radius of the base disk.
+    slider_outer_radius: int
+        Outer radius of the base disk.
+    slider_radius: float
         Average radius of the base disk.
-    probe_outer_radius: int
-        Outer radius of the moving disk.
-    probe_inner_radius: int
-        Inner radius of the moving disk.
+    handle_outer_radius: int
+        Outer radius of the slider's handle.
+    handle_inner_radius: int
+        Inner radius of the slider's handle.
 
     """
-    def __init__(self, base_disk_inner_radius=40, base_disk_outer_radius=44,
-                 base_disk_position=(450, 100), probe_outer_radius=10,
-                 probe_inner_radius=0):
+    def __init__(self, position=(0, 0),
+                 initial_value=180, min_value=0, max_value=360,
+                 slider_inner_radius=40, slider_outer_radius=44,
+                 handle_inner_radius=10, handle_outer_radius=0,
+                 text_size=16,
+                 text_template="{ratio:.0%}"):
+
         """
         Parameters
         ----------
-        base_disk_inner_radius: int
+        position : (float, float)
+            Position (x, y) of the slider's center.
+        initial_value : float
+            Initial value of the slider.
+        min_value : float
+            Minimum value of the slider.
+        max_value : float
+            Maximum value of the slider.
+        slider_inner_radius : int
             Inner radius of the base disk.
-        base_disk_outer_radius: int
+        slider_outer_radius : int
             Outer radius of the base disk.
-        base_disk_position: (float, float)
-            Position of the system.
-        probe_outer_radius: int
-            Outer radius of the moving disk.
-        probe_inner_radius: int
-            Inner radius of the moving disk.
+        handle_outer_radius : int
+            Outer radius of the slider's handle.
+        handle_inner_radius : int
+            Inner radius of the slider's handle.
+        text_size : int
+            Size of the text to display alongside the slider (pt).
+        text_template : str, callable
+            If str, text template can contain one or multiple of the
+            replacement fields: `{value:}`, `{ratio:}`, `{angle:}`.
+            If callable, this instance of `:class:DiskSlider2D` will be
+            passed as argument to the text template function.
 
         """
         super(DiskSlider2D, self).__init__()
-        self.probe_inner_radius = probe_inner_radius
-        self.probe_outer_radius = probe_outer_radius
-        self.base_disk_inner_radius = base_disk_inner_radius
-        self.base_disk_outer_radius = base_disk_outer_radius
-        self.base_disk_radius = (
-            base_disk_inner_radius +
-            (base_disk_outer_radius - base_disk_inner_radius) / 2)
-        self.base_disk_center = base_disk_position
+        self.center = np.array(position)
+        self.min_value = min_value
+        self.max_value = max_value
 
-        self.angle_state = 0
+        self.slider_inner_radius = slider_inner_radius
+        self.slider_outer_radius = slider_outer_radius
+        self.handle_inner_radius = handle_inner_radius
+        self.handle_outer_radius = handle_outer_radius
+        self.slider_radius = (slider_inner_radius + slider_outer_radius) / 2.
 
-        self.base_disk = None
-        self.probe = None
         self.text = None
+        self.text_size = text_size
+        self.text_template = text_template
 
         self.build_actors()
 
+        # By setting the value, it also updates everything.
+        self.value = initial_value
         self.handle_events(None)
 
     def build_actors(self):
@@ -1661,8 +1678,8 @@ class DiskSlider2D(UI):
         """
         # Base Disk
         base_disk = vtk.vtkDiskSource()
-        base_disk.SetInnerRadius(self.base_disk_inner_radius)
-        base_disk.SetOuterRadius(self.base_disk_outer_radius)
+        base_disk.SetInnerRadius(self.slider_inner_radius)
+        base_disk.SetOuterRadius(self.slider_outer_radius)
         base_disk.SetRadialResolution(10)
         base_disk.SetCircumferentialResolution(50)
         base_disk.Update()
@@ -1673,144 +1690,102 @@ class DiskSlider2D(UI):
         self.base_disk = vtk.vtkActor2D()
         self.base_disk.SetMapper(base_disk_mapper)
         self.base_disk.GetProperty().SetColor(1, 0, 0)
-        self.base_disk.SetPosition(self.base_disk_center)
+        self.base_disk.SetPosition(self.center)
         # /Base Disk
 
-        # Probe
-        probe = vtk.vtkDiskSource()
-        probe.SetInnerRadius(self.probe_inner_radius)
-        probe.SetOuterRadius(self.probe_outer_radius)
-        probe.SetRadialResolution(10)
-        probe.SetCircumferentialResolution(50)
-        probe.Update()
+        # Slider handle
+        handle = vtk.vtkDiskSource()
+        handle.SetInnerRadius(self.handle_inner_radius)
+        handle.SetOuterRadius(self.handle_outer_radius)
+        handle.SetRadialResolution(10)
+        handle.SetCircumferentialResolution(50)
+        handle.Update()
 
-        probe_mapper = vtk.vtkPolyDataMapper2D()
-        probe_mapper.SetInputConnection(probe.GetOutputPort())
+        handle_mapper = vtk.vtkPolyDataMapper2D()
+        handle_mapper.SetInputConnection(handle.GetOutputPort())
 
-        self.probe = vtk.vtkActor2D()
-        self.probe.SetMapper(probe_mapper)
-        self.probe.GetProperty().SetColor(1, 1, 1)
-        self.probe.SetPosition((
-            self.base_disk_center[0] + self.base_disk_radius,
-            self.base_disk_center[1]))
-        # /Probe
+        self.handle = vtk.vtkActor2D()
+        self.handle.SetMapper(handle_mapper)
+
+        # self.probe.GetProperty().SetColor(1, 1, 1)
+        # self.probe.SetPosition((
+        #     self.base_disk_center[0] + self.base_disk_radius,
+        #     self.base_disk_center[1]))
+        # # /Probe
 
         # Text
         self.text = TextActor2D()
+        offset = np.array((16., 8.))
+        self.text.position = self.center - offset
+        self.text.font_size = self.text_size
 
-        self.text.position = (self.base_disk_center[0] - 16,
-                              self.base_disk_center[1] - 8)
-        percentage = self.calculate_percentage(current_val=0)
-        self.text.message = percentage
-        self.text.font_size = 16
-        # /Text
+        #percentage = self.calculate_percentage(current_val=0)
+        #self.text.message = percentage
+        #self.text.font_size = 16
+        ## /Text
 
-    def set_percentage(self, current_val):
-        """ Sets the text percentage.
+    @property
+    def value(self):
+        return self._value
 
-        Parameters
-        ----------
-        current_val: float
-            Current value (%) to be set to the text actor.
+    @value.setter
+    def value(self, value):
+        value_range = self.max_value - self.min_value
+        self.ratio = (value - self.min_value) / value_range
 
-        """
-        percentage = self.calculate_percentage(current_val=current_val)
-        self.text.message = percentage
+    @property
+    def ratio(self):
+        return self._ratio
 
-    def calculate_percentage(self, current_val):
-        """ Calculate percentage of completion.
+    @ratio.setter
+    def ratio(self, ratio):
+        self.angle = ratio * TWO_PI
 
-        Parameters
-        ----------
-        current_val : float
-            Current absolute value of the system.
+    @property
+    def angle(self):
+        """ Angle (in rad) the handle makes with x-axis """
+        return self._angle
 
-        """
-        percentage = int((current_val/360)*100)
-        if len(str(percentage)) == 1:
-            percentage_string = "0" + str(percentage)
-        else:
-            percentage_string = str(percentage)
-        return percentage_string + "%"
+    @angle.setter
+    def angle(self, angle):
+        self._angle = angle % TWO_PI  # Wraparound
+        self.update()
+
+    def format_text(self):
+        """ Returns formatted text to display along the slider. """
+        if callable(self.text_template):
+            return self.text_template(self)
+
+        return self.text_template.format(ratio=self.ratio, value=self.value,
+                                         angle=np.rad2deg(self.angle))
+
+    def update(self):
+        """ Updates the slider. """
+
+        # Compute the ratio determined by the position of the slider disk.
+        self._ratio = self.angle / TWO_PI
+
+        # Compute the selected value considering min_value and max_value.
+        value_range = self.max_value - self.min_value
+        self._value = self.min_value + self.ratio*value_range
+
+        # Update text disk actor.
+        x = self.slider_radius * np.cos(self.angle) + self.center[0]
+        y = self.slider_radius * np.sin(self.angle) + self.center[1]
+        self.handle.SetPosition(x, y)
+
+        # Update text.
+        text = self.format_text()
+        self.text.message = text
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
 
         """
-        return [self.base_disk, self.probe, self.text.get_actor()]
+        return [self.base_disk, self.handle, self.text.get_actor()]
 
-    def get_poi(self, coordinates):
-        """ Finds point of intersection between the line joining
-        the mouse position and the center with the base disk.
-
-        Parameters
-        ----------
-        coordinates : (float, float)
-            Coordinates of the mouse pointer.
-
-        Returns
-        -------
-        x, y : (float, float)
-            The point of intersection on the base disk.
-
-        """
-        radius = self.base_disk_radius
-        center = self.base_disk_center
-        point = coordinates
-
-        dx = point[0] - center[0]
-        dy = point[1] - center[1]
-
-        x1 = float(center[0]) + float(radius*dx)/float(
-            math.sqrt(float(dx*dx) + float(dy*dy)))
-        x2 = float(center[0]) - float(radius*dx)/float(
-            math.sqrt(float(dx*dx) + float(dy*dy)))
-
-        if x1 == x2:
-            y1 = center[1] + radius
-            y2 = center[1] - radius
-        else:
-            y1 = float(center[1]) + float(
-                float(dy) / float(dx)) * float(x1 - center[0])
-            y2 = float(center[1]) + float(
-                float(dy) / float(dx)) * float(x2 - center[0])
-
-        d1 = (x1 - point[0])*(x1 - point[0]) + (y1 - point[1])*(y1 - point[1])
-        d2 = (x2 - point[0])*(x2 - point[0]) + (y2 - point[1])*(y2 - point[1])
-
-        if d1 < d2:
-            return x1, y1
-        else:
-            return x2, y2
-
-    def get_angle(self, coordinates):
-        """ Gets the angle made with the X-Axis for calculating
-        the percentage. Varies between 0-360.
-
-        Parameters
-        ----------
-        coordinates : (float, float)
-            Coordinates of the poi on the base disk.
-
-        Returns
-        -------
-        angle : float
-            The angle made with the x axis.
-
-        """
-        center = self.base_disk_center
-
-        perpendicular = -center[1] + coordinates[1]
-        base = -center[0] + coordinates[0]
-
-        angle = math.degrees(math.atan2(float(perpendicular), float(base)))
-        if angle < 0:
-            angle += 360
-
-        return angle
-
-    def move_probe(self, click_position):
-        """Moves the probe.
+    def move_handle(self, click_position):
+        """Moves the slider's handle.
 
         Parameters
         ----------
@@ -1818,45 +1793,28 @@ class DiskSlider2D(UI):
             Position of the mouse click.
 
         """
-        intersection_coordinate = self.get_poi(click_position)
-        self.set_position(intersection_coordinate)
-        angle = self.get_angle(intersection_coordinate)
-        self.set_percentage(angle)
-        self.angle_state = angle
+        x, y = np.array(click_position) - self.center
+        angle = np.arctan2(y, x)
+        if angle < 0:
+            angle += TWO_PI
 
-    def set_position(self, position):
-        """ Sets the probe's position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new position of the probe.
-
-        """
-        self.probe.SetPosition(position)
+        self.angle = angle
 
     def set_center(self, position):
-        """ Sets the center of the system to position.
+        """ Changes the slider's center position.
 
         Parameters
         ----------
         position : (float, float)
-            New position.
+            New position (x, y).
 
         """
-        self.base_disk_center = position
-
+        position = np.array(position)
+        offset = position - self.center
         self.base_disk.SetPosition(position)
-
-        if self.angle_state > 180:
-            self.angle_state -= 360
-        self.set_position((
-            position[0] + self.base_disk_radius * math.cos(
-                math.radians(self.angle_state)),
-            position[1] + self.base_disk_radius * math.sin(
-                math.radians(self.angle_state))))
-
-        self.text.position = (position[0] - 16, position[1] - 8)
+        self.handle.SetPosition(*(offset + self.handle.GetPosition()))
+        self.text.position += offset
+        self.center = position
 
     @staticmethod
     def base_disk_click_callback(i_ren, obj, slider):
@@ -1871,13 +1829,13 @@ class DiskSlider2D(UI):
 
         """
         click_position = i_ren.event.position
-        slider.move_probe(click_position=click_position)
+        slider.move_handle(click_position=click_position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
-    def probe_move_callback(i_ren, obj, slider):
-        """ Move the probe.
+    def handle_move_callback(i_ren, obj, slider):
+        """ Move the slider's handle.
 
         Parameters
         ----------
@@ -1888,12 +1846,12 @@ class DiskSlider2D(UI):
 
         """
         click_position = i_ren.event.position
-        slider.move_probe(click_position=click_position)
+        slider.move_handle(click_position=click_position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
-    def probe_press_callback(i_ren, obj, slider):
+    def handle_press_callback(i_ren, obj, slider):
         """ This is only needed to grab the focus.
 
         Parameters
@@ -1912,9 +1870,9 @@ class DiskSlider2D(UI):
         """
         self.add_callback(self.base_disk, "LeftButtonPressEvent",
                           self.base_disk_click_callback)
-        self.add_callback(self.probe, "LeftButtonPressEvent",
-                          self.probe_press_callback)
+        self.add_callback(self.handle, "LeftButtonPressEvent",
+                          self.handle_press_callback)
         self.add_callback(self.base_disk, "MouseMoveEvent",
-                          self.probe_move_callback)
-        self.add_callback(self.probe, "MouseMoveEvent",
-                          self.probe_move_callback)
+                          self.handle_move_callback)
+        self.add_callback(self.handle, "MouseMoveEvent",
+                          self.handle_move_callback)
