@@ -10,6 +10,46 @@ from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL, iter_fit_tensor)
 
 
+def mean_signal_bvalue(data, gtab, bmag=None):
+    """
+    Computes the average signal for each unique b-values of the data's gradient
+    table
+
+    Parameters
+    ----------
+    data : ndarray ([X, Y, Z, ...], g)
+        ndarray containing the data signals in its last dimension.
+    gtab : a GradientTable class instance
+        The gradient table containing diffusion acquisition parameters.
+    bmag : The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+
+    Returns
+    -------
+    msignal : ndarray ([X, Y, Z, ..., nub])
+        Mean signal along all gradient direction for each unique b-value
+        Note that the last dimension should contain the signal means and nub
+        is the number of unique b-values.
+    ng : ndarray(nub)
+        Number of gradient directions used to compute the mean signal for
+        all unique b-values
+    """
+    bvals = gtab.bvals.copy()
+
+    # Compute unique and rounded bvals
+    ub, rb = unique_bvals(bvals, bmag=bmag, rbvals=True)
+
+    # Initialize msignal and ng
+    nub = ub.size
+    ng = np.zeros(nub)
+    msigma = np.zeros(data.shape[:-1] + (nub,))
+    for bi in range(ub.size):
+        msigma[..., bi] = np.mean(data[..., rb == ub[bi]], axis=-1)
+        ng[bi] = np.sum(rb == ub[bi])
+    return msigma, ng
+
+
 def mdki_prediction(dti_params, gtab, S0):
     """
     Predict a signal given the mean dki parameters.
@@ -60,9 +100,10 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-        self.ubvals = unique_bvals(gtab.bvals, bmag)
         self.return_S0_hat = return_S0_hat
+        self.ubvals = unique_bvals(gtab.bvals, bmag)
         self.design_matrix = design_matrix(self.ubvals)
+        self.bmag = bmag
         self.args = args
         self.kwargs = kwargs
         self.min_signal = self.kwargs.pop('min_signal', None)
@@ -82,8 +123,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         Parameters
         ----------
-        data : array
-            The measured signal from one voxel.
+        data : ndarray ([X, Y, Z, ...], g)
+            ndarray containing the data signals in its last dimension.
 
         mask : array
             A boolean array used to mark the coordinates in the data that
@@ -106,9 +147,9 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
 
-        params_in_mask = wls_fit_mdki(self.design_matrix, data_in_mask,
-                                      return_S0_hat=self.return_S0_hat,
-                                      *self.args, **self.kwargs)
+        params_in_mask = _wls_fit_mdki(self.design_matrix, data_in_mask,
+                                       return_S0_hat=self.return_S0_hat,
+                                       *self.args, **self.kwargs)
         if self.return_S0_hat:
             params_in_mask, model_S0 = params_in_mask
 
@@ -255,7 +296,7 @@ def _wls_fit_mdki(design_matrix, msignal, ng, return_S0_hat=False):
         Mean signal along all gradient direction for each unique b-value
         Note that the last dimension should contain the signal means and nub
         is the number of unique b-values.
-    ng : ndarray([X, Y, Z, ..., nub])
+    ng : ndarray(nub)
         Number of gradient directions used to compute the mean signal for
         all unique b-values
     return_S0_hat : bool

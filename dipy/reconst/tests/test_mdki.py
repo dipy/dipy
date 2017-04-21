@@ -10,7 +10,7 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
 from nose.tools import assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import (gradient_table, unique_bvals)
+from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
 from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 import dipy.reconst.mdki as mdki
@@ -21,6 +21,7 @@ from dipy.core.geometry import (sphere2cart, perpendicular_directions)
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+bvals = round_bvals(bvals)
 gtab = gradient_table(bvals, bvecs)
 
 # 2 shells for techniques that requires multishell data
@@ -43,9 +44,14 @@ signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
 MDgt = f*Di + (1-f)*De
 MKgt = 3 * f * (1-f) * ((Di-De) / MDgt) ** 2
 params = np.array([MDgt, MKgt])
+msignal_sph = np.zeros(3)
+msignal_sph[0] = signal_sph[0]
+msignal_sph[1] = signal_sph[1]
+msignal_sph[2] = signal_sph[100]
 
 # Simulation 2. Multi-voxel simulations
 DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
+MDWI = np.zeros((2, 2, 2, 3))
 MDgt_multi = np.zeros((2, 2, 2))
 MKgt_multi = np.zeros((2, 2, 2))
 S0gt_multi = np.zeros((2, 2, 2))
@@ -67,6 +73,10 @@ for i in range(2):
             S0gt_multi = 100
             params_multi[i, j, k, 0] = md_i
             params_multi[i, j, k, 1] = mk_i
+            MDWI[i, j, k, 0] = signal_i[0] 
+            MDWI[i, j, k, 1] = signal_i[1] 
+            MDWI[i, j, k, 2] = signal_i[100] 
+            
 
 
 def test_dki_predict():
@@ -113,15 +123,25 @@ def test_dki_errors():
     # assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
 
     # error if data with only one non zero b-value is given
-    #assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+    # assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+
 
 def test_design_matrix():
     ub = unique_bvals(bvals_2s)
     D = mdki.design_matrix(ub)
     Dgt = np.ones((3, 3))
     Dgt[:, 0] = -ub
-    Dgt[:, 1] =  1.0/6 * ub ** 2
+    Dgt[:, 1] = 1.0/6 * ub ** 2
     assert_array_almost_equal(D, Dgt)
-    
-    
-    
+
+
+def test_msignal():
+    # Multi-voxel case
+    ms, ng = mdki.mean_signal_bvalue(DWI, gtab_2s)
+    assert_array_almost_equal(ms, MDWI)
+    assert_array_almost_equal(ng, np.array([2, 64, 64]))
+
+    # Single-voxel case
+    ms, ng = mdki.mean_signal_bvalue(signal_sph, gtab_2s)
+    assert_array_almost_equal(ng, np.array([2, 64, 64]))
+    assert_array_almost_equal(ms, msignal_sph)
