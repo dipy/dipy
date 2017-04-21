@@ -89,6 +89,10 @@ def test_dki_errors():
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
                   min_signal=-1)
 
+    # third error raises if wrong mask is given to fit
+    mask_wrong = np.ones((2, 3, 1))
+    mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_2s)
+    assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
     # try case with correct min_signal
     # dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
     # dkiF = dkiM.fit(DWI)
