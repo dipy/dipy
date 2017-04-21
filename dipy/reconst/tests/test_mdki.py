@@ -83,12 +83,6 @@ def test_dki_predict():
     dkiM = mdki.MeanDiffusionKurtosisModel(gtab_2s)
 
 
-def test_mdki_statistics():
-    # tests if MD and MK are equal to expected values of a spherical
-    # tensors
-    a = 0
-
-
 def test_dki_errors():
     # first error raises if MeanDiffusionKurtosisModel is called for
     # data will only one non-zero b-value
@@ -145,3 +139,14 @@ def test_msignal():
     ms, ng = mdki.mean_signal_bvalue(signal_sph, gtab_2s)
     assert_array_almost_equal(ng, np.array([2, 64, 64]))
     assert_array_almost_equal(ms, msignal_sph)
+
+
+def test_mdki_statistics():
+    # tests if MD and MK are equal to expected values of a spherical
+    # tensors
+
+    # Multi-tensors
+    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_2s)
+    mdkiF = mdkiM.fit(DWI)
+    mk = mdkiF.mk
+    assert_array_almost_equal(MKgt_multi, mk)

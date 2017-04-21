@@ -133,33 +133,37 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         """
         S0_params = None
 
+        # Compute mean signal for each unique b-value
+        mdata, ng = mean_signal_bvalue(data, self.gtab, bmag=self.bmag)
+
+        # Select voxels in mask
         if mask is not None:
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+        mdata_in_mask = np.reshape(mdata[mask], (-1, mdata.shape[-1]))
 
+        # Remove mdata zeros
         if self.min_signal is None:
             min_signal = MIN_POSITIVE_SIGNAL
         else:
             min_signal = self.min_signal
 
-        data_in_mask = np.maximum(data_in_mask, min_signal)
+        mdata_in_mask = np.maximum(mdata_in_mask, min_signal)
 
-        params_in_mask = _wls_fit_mdki(self.design_matrix, data_in_mask,
-                                       return_S0_hat=self.return_S0_hat,
+        params_in_mask = _wls_fit_mdki(self.design_matrix, mdata_in_mask, ng,
                                        *self.args, **self.kwargs)
         if self.return_S0_hat:
             params_in_mask, model_S0 = params_in_mask
 
         if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
+            out_shape = mdata.shape[:-1] + (-1, )
             params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
         else:
-            params = np.zeros(data.shape[:-1] + (12,))
+            params = np.zeros(mdata.shape[:-1] + (2,))
             params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1] + (1,))
@@ -225,8 +229,8 @@ class MeanDiffusionKurtosisFit(object):
                changes based on the mean signal diffusion kurtosis. 25th Annual
                Meeting of the ISMRM; Honolulu. April 22-28
         """
-        return model_params[..., 0]
-    
+        return self.model_params[..., 0]
+
     @property
     def mk(self):
         r"""
@@ -244,7 +248,7 @@ class MeanDiffusionKurtosisFit(object):
                changes based on the mean signal diffusion kurtosis. 25th Annual
                Meeting of the ISMRM; Honolulu. April 22-28
         """
-        return model_params[..., 1]
+        return self.model_params[..., 1]
 
     def predict(self, gtab, S0=None, step=None):
         r"""
