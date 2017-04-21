@@ -10,7 +10,7 @@ from numpy.testing import (assert_array_almost_equal, assert_array_equal,
 from nose.tools import assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import (gradient_table, unique_bvals)
 from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 import dipy.reconst.mdki as mdki
@@ -114,3 +114,14 @@ def test_dki_errors():
 
     # error if data with only one non zero b-value is given
     #assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+
+def test_design_matrix():
+    ub = unique_bvals(bvals_2s)
+    D = mdki.design_matrix(ub)
+    Dgt = np.ones((3, 3))
+    Dgt[:, 0] = -ub
+    Dgt[:, 1] =  1.0/6 * ub ** 2
+    assert_array_almost_equal(D, Dgt)
+    
+    
+    
