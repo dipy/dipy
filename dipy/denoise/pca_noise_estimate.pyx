@@ -26,8 +26,8 @@ except ImportError:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
-    """ PCA based local noise estimation for 3-by-3-by-3 voxel blocks.
+def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
+    """ PCA based local noise estimation.
 
     Parameters
     ----------
@@ -38,7 +38,9 @@ def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
       gradient information for the data gives us the bvals and bvecs of
       diffusion data, which is needed here to select between the noise
       estimation methods.
-
+    patch_radius : int
+        The radius of the local patch to be taken around each voxel (in
+        voxels). Default: 1 (estimate noise in blocks of 3x3x3 voxels).
     correct_bias : bool
       Whether to correct for bias due to Rician noise. This is an implementation
       of equation 8 in [1]_.
@@ -78,6 +80,10 @@ def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
         cnp.npy_intp n3 = data0.shape[3]
         cnp.npy_intp nsamples = n0 * n1 * n2
         cnp.npy_intp i, j, k, i0, j0, k0, l0
+        cnp.npy_intp pr = patch_radius
+        cnp.npy_intp  patch_size = 2 * pr + 1
+        double norm = patch_size ** 3
+
         double sum_reg, temp1
         double[:, :, :] I = np.zeros((n0, n1, n2))
         double[:, :, :] count = np.zeros((n0, n1, n2))
@@ -99,29 +105,28 @@ def pca_noise_estimate(data, gtab, correct_bias=True, smooth=2):
     # Grab the column corresponding to the smallest eigen-vector/-value:
     I = V[:, -1].reshape(data0.shape[0], data0.shape[1], data0.shape[2])
 
-
     with nogil:
-        for i in range(1, n0 - 1):
-            for j in range(1, n1 - 1):
-                for k in range(1, n2 - 1):
+        for i in range(pr, n0 - pr):
+            for j in range(pr, n1 - pr):
+                for k in range(pr, n2 - pr):
                     sum_reg = 0
                     temp1 = 0
-                    for i0 in range(-1, 2):
-                        for j0 in range(-1, 2):
-                            for k0 in range(-1, 2):
-                                sum_reg += I[i + i0, j + j0, k + k0] / 27.0
+                    for i0 in range(-pr, pr + 1):
+                        for j0 in range(-pr, pr + 1):
+                            for k0 in range(-pr, pr + 1):
+                                sum_reg += I[i + i0, j + j0, k + k0] / norm
                                 for l0 in range(n3):
-                                    temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (27.0 * n3)
+                                    temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (norm * n3)
 
-                    for i0 in range(-1, 2):
-                        for j0 in range(-1, 2):
-                            for k0 in range(-1, 2):
-                                sigma_sq[i + i0, j +j0, k + k0] += (I[i + i0, j + j0, k + k0] - sum_reg)**2
+                    for i0 in range(-pr, pr + 1):
+                        for j0 in range(-pr, pr + 1):
+                            for k0 in range(-pr, pr + 1):
+                                sigma_sq[i + i0, j +j0, k + k0] += (
+                                    I[i + i0, j + j0, k + k0] - sum_reg)**2
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j +j0, k + k0] += 1
 
     sigma_sq = np.divide(sigma_sq, count)
-
     # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
       mean = np.divide(mean, count)
