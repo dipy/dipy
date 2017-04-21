@@ -146,6 +146,7 @@ line_slider = ui.LineSlider2D(initial_value=-2,
 """
 
 disk_slider = ui.DiskSlider2D()
+disk_slider.set_center((200, 200))
 
 """
 Adding Elements to the ShowManager
@@ -166,4 +167,4 @@ show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
