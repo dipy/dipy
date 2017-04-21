@@ -533,6 +533,55 @@ def generate_bvecs(N, iters=5000):
     return bvecs
 
 
+def round_bvals(bvals, bmag=None):
+    """"This function rounds the b-values
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    bmag : int
+        The order of magnitude to round the b-values. If not given b-values
+        will be rounded relative to the order of magnitude
+        $bmag = (bmagmax - 1)$, where bmaxmag is the magnitude order of the
+        larger b-value.
+
+    Returns
+    ------
+    rbvals : ndarray
+        Array containing the rounded b-values
+    """
+    if bmag is None:
+        bmag = int(np.log10(np.max(bvals))) - 1
+
+    b = bvals / (10 ** bmag)  # normalize b units
+    return b.round() * (10 ** bmag)
+
+
+def unique_bvals(bvals, bmag=None):
+    """ This function gives the unique rounded b-values of the data
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    bmag : int
+        The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. B-values are also rounded to relative
+        to this order of magnitude. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+
+    Returns
+    ------
+    ubvals : ndarray
+        Array containing the rounded unique b-values
+    """
+    b = round_bvals(bvals, bmag)
+    return np.unique(b)
+
+
 def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     """
     Check if you have enough different b-values in your gradient table
@@ -562,31 +611,8 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     if non_zero:
         bvals = bvals[~gtab.b0s_mask]
 
-    b = round_bvals(bvals, bmag)
-
-    uniqueb = np.unique(b)
+    uniqueb = unique_bvals(bvals, bmag)
     if uniqueb.shape[0] < n_bvals:
         return False
     else:
         return True
-
-
-def round_bvals(bvals, bmag=None):
-    """"This function rounds the b-values
-
-    Parameters
-    ----------
-    bvals : ndarry
-        Array containing the b-values
-
-    bmag : int
-        The order of magnitude to round the b-values. If not given b-values
-        will be rounded relative to the order of magnitude
-        $bmag = (bmagmax - 1)$, where bmaxmag is the magnitude order of the
-        larger b-value.
-    """
-    if bmag is None:
-        bmag = int(np.log10(np.max(bvals))) - 1
-
-    b = bvals / (10 ** bmag)  # normalize b units
-    return b.round() * (10 ** bmag)
