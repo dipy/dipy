@@ -383,6 +383,14 @@ def test_unique_bvals():
     ubvals_gt = np.array([0, 1, 2])
     npt.assert_array_almost_equal(ubvals_gt, b)
 
+    # Test case that optional parameter round_bvals is set to true
+    bvals = np.array([995, 1000, 1004, 1000, 2001, 2000, 1988, 2017, 0])
+    ubvals_gt = np.array([0, 1000, 2000])
+    rbvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    ub, rb = unique_bvals(bvals, rbvals=True)
+    npt.assert_array_almost_equal(ubvals_gt, ub)
+    npt.assert_array_almost_equal(rbvals_gt, rb)
+
 
 def test_check_multi_b():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])

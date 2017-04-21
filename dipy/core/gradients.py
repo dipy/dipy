@@ -559,7 +559,7 @@ def round_bvals(bvals, bmag=None):
     return b.round() * (10 ** bmag)
 
 
-def unique_bvals(bvals, bmag=None):
+def unique_bvals(bvals, bmag=None, rbvals=False):
     """ This function gives the unique rounded b-values of the data
 
     Parameters
@@ -573,13 +573,20 @@ def unique_bvals(bvals, bmag=None):
         to this order of magnitude. Default: derive this value from the
         maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
+    rbvals : bool, optional
+        If True function also returns the all individual rounded b-values.
+        Default: False
+
     Returns
     ------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
     b = round_bvals(bvals, bmag)
-    return np.unique(b)
+    if rbvals:
+        return np.unique(b), b
+    else:
+        return np.unique(b)
 
 
 def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
@@ -611,7 +618,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     if non_zero:
         bvals = bvals[~gtab.b0s_mask]
 
-    uniqueb = unique_bvals(bvals, bmag)
+    uniqueb = unique_bvals(bvals, bmag=bmag)
     if uniqueb.shape[0] < n_bvals:
         return False
     else:
