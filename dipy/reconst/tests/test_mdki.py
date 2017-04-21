@@ -76,19 +76,19 @@ def test_dki_predict():
 def test_mdki_statistics():
     # tests if MD and MK are equal to expected values of a spherical
     # tensors
-
-    # Define multi voxel spherical kurtosis simulations
-    MParam = np.zeros((2, 2, 2, 27))
-    MParam[0, 0, 0] = MParam[0, 0, 1] = MParam[0, 1, 0] = params_sph
-    MParam[0, 1, 1] = MParam[1, 1, 0] = params_sph
-    # MParam[1, 1, 1], MParam[1, 0, 0], and MParam[1, 0, 1] remains zero
+    a = 0
 
 
 def test_dki_errors():
+    # first error raises if MeanDiffusionKurtosisModel is called for
+    # data will only one non-zero b-value
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
 
-    # second error of MDKI module is if a min_signal is defined as negative
+    # second error raises if negative signal is given to MeanDiffusionKurtosis
+    # model
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
                   min_signal=-1)
+
     # try case with correct min_signal
     # dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
     # dkiF = dkiM.fit(DWI)

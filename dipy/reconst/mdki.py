@@ -8,7 +8,6 @@ import numpy as np
 from dipy.core.gradients import (check_multi_b, round_bvals)
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL, iter_fit_tensor)
-from dipy.reconst.multi_voxel import multi_voxel_fit
 
 
 def mdki_prediction(dti_params, gtab, S0):
@@ -52,8 +51,10 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ----------
         .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
                changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28 
+               Meeting of the ISMRM; Honolulu. April 22-28
         """
+        ReconstModel.__init__(self, gtab)
+
         self.return_S0_hat = return_S0_hat
         self.args = args
         self.kwargs = kwargs
@@ -62,6 +63,12 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
             raise ValueError(e_s)
+
+        # Check if at least three b-values are given
+        enough_b = check_multi_b(self.gtab, 3, non_zero=False)
+        if not enough_b:
+            mes = "MDKI requires at least 3 b-values (which can include b=0)"
+            raise ValueError(mes)
 
     def fit(self, data, mask=None):
         """ Fit method of the DTI model class
@@ -153,7 +160,7 @@ class MeanDiffusionKurtosisFit(object):
     def S0_hat(self):
         return self.model_S0
 
-    @auto_attr
+    @property
     def md(self):
         r"""
         Spherical Mean diffusitivity (MD) calculated from the mean spherical
@@ -172,7 +179,7 @@ class MeanDiffusionKurtosisFit(object):
         """
         return model_params[..., 0]
     
-    @auto_attr
+    @property
     def mk(self):
         r"""
         Spherical Mean Kurtosis (MK) calculated from the mean spherical
