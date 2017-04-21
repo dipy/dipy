@@ -1662,6 +1662,9 @@ class DiskSlider2D(UI):
         self.handle_outer_radius = handle_outer_radius
         self.slider_radius = (slider_inner_radius + slider_outer_radius) / 2.
 
+        self.handle = None
+        self.base_disk = None
+
         self.text = None
         self.text_size = text_size
         self.text_template = text_template
@@ -1676,7 +1679,6 @@ class DiskSlider2D(UI):
         """ Builds actors for the system.
 
         """
-        # Base Disk
         base_disk = vtk.vtkDiskSource()
         base_disk.SetInnerRadius(self.slider_inner_radius)
         base_disk.SetOuterRadius(self.slider_outer_radius)
@@ -1691,9 +1693,7 @@ class DiskSlider2D(UI):
         self.base_disk.SetMapper(base_disk_mapper)
         self.base_disk.GetProperty().SetColor(1, 0, 0)
         self.base_disk.SetPosition(self.center)
-        # /Base Disk
 
-        # Slider handle
         handle = vtk.vtkDiskSource()
         handle.SetInnerRadius(self.handle_inner_radius)
         handle.SetOuterRadius(self.handle_outer_radius)
@@ -1707,22 +1707,10 @@ class DiskSlider2D(UI):
         self.handle = vtk.vtkActor2D()
         self.handle.SetMapper(handle_mapper)
 
-        # self.probe.GetProperty().SetColor(1, 1, 1)
-        # self.probe.SetPosition((
-        #     self.base_disk_center[0] + self.base_disk_radius,
-        #     self.base_disk_center[1]))
-        # # /Probe
-
-        # Text
         self.text = TextActor2D()
         offset = np.array((16., 8.))
         self.text.position = self.center - offset
         self.text.font_size = self.text_size
-
-        #percentage = self.calculate_percentage(current_val=0)
-        #self.text.message = percentage
-        #self.text.font_size = 16
-        ## /Text
 
     @property
     def value(self):
