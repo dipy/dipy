@@ -25,7 +25,7 @@ def localpca(arr, sigma, patch_radius=1):
         Standard deviation of the noise estimated from the data.
     patch_radius : int
         The radius of the local patch to be taken around each voxel (in
-        voxels).
+        voxels). Default: 1 (denoise in blocks of 3x3x3 voxels).
 
     Returns
     -------
@@ -59,9 +59,9 @@ def localpca(arr, sigma, patch_radius=1):
     theta = np.zeros(arr.shape, dtype=np.float64)
     thetax = np.zeros(arr.shape, dtype=np.float64)
 
-    for k in range(patch_radius, arr.shape[2] - patch_radius, 1):
-        for j in range(patch_radius, arr.shape[1] - patch_radius, 1):
-            for i in range(patch_radius, arr.shape[0] - patch_radius, 1):
+    for k in range(patch_radius, arr.shape[2] - patch_radius):
+        for j in range(patch_radius, arr.shape[1] - patch_radius):
+            for i in range(patch_radius, arr.shape[0] - patch_radius):
 
                 X = np.zeros(
                     (patch_size * patch_size * patch_size, arr.shape[3]))
