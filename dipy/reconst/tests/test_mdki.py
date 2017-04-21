@@ -97,6 +97,11 @@ def test_dki_errors():
     mask_wrong = np.ones((2, 3, 1))
     mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_2s)
     assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
+
+    # Error raises if None ng is given in the helper function _wls_fit_mdki
+    ub = unique_bvals(bvals_2s)
+    D = mdki.design_matrix(ub)
+    assert_raises(ValueError, mdki._wls_fit_mdki, D, signal_sph)
     # try case with correct min_signal
     # dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
     # dkiF = dkiM.fit(DWI)

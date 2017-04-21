@@ -152,8 +152,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         mdata_in_mask = np.maximum(mdata_in_mask, min_signal)
 
-        params_in_mask = _wls_fit_mdki(self.design_matrix, mdata_in_mask, ng,
-                                       *self.args, **self.kwargs)
+        params_in_mask = _wls_fit_mdki(self.design_matrix, mdata_in_mask,
+                                       ng=ng, *self.args, **self.kwargs)
         if self.return_S0_hat:
             params_in_mask, model_S0 = params_in_mask
 
@@ -285,7 +285,7 @@ class MeanDiffusionKurtosisFit(object):
 
 
 @iter_fit_tensor()
-def _wls_fit_mdki(design_matrix, msignal, ng, return_S0_hat=False):
+def _wls_fit_mdki(design_matrix, msignal, ng=None, return_S0_hat=False):
     r"""
     Helper function that fits the mean spherical diffusion kurtosis imaging
     based on a weighted least square solution [1]_.
@@ -317,22 +317,32 @@ def _wls_fit_mdki(design_matrix, msignal, ng, return_S0_hat=False):
            changes based on the mean signal diffusion kurtosis. 25th Annual
            Meeting of the ISMRM; Honolulu. April 22-28
     """
-    # Define weights as diag(sqrt(ng) * msignal ** 2)
-    W = np.diag(ng * msignal ** 2)
+    # Check ng
+    if ng is None:
+        ms = "The array ng containing the number of gradient directions used"
+        ms += " to compute the mean signal for each unique b-value is"
+        ms += " required. Please set this function parameter propertly"
+        raise ValueError(ms)
+
+    # Define weights as diag(ng * msignal ** 2)
+    w = ng * msignal ** 2
+
+    # BTW = (Bw).T, where w are diag of W
+    BTW = (w[..., None] * design_matrix).T
+    inv_BT_W_B = np.linalg.pinv(np.einsum('...ij,jk->...ik', BTW,
+                                          design_matrix))  # dot product
+    invBTWB_BTW = np.einsum('...ij,...jk->...ik', inv_BT_W_B, BTW)
 
     # WLS solution
-    BTW = np.dot(design_matrix.T, W)
-    inv_BT_W_B = np.linalg.pinv(np.dot(BTW, design_matrix))
-    invBTWB_BTW = np.dot(inv_BT_W_B, BTW)
-    params = np.dot(invBTWB_BTW, np.log(msignal))
+    params = np.einsum('...ij,...j', invBTWB_BTW, np.log(msignal))
 
     # Convert 2nd parameter to MK
-    params[1] = params[1] / (params[0]**2)
+    params[..., 1] = params[..., 1] / (params[..., 0]**2)
 
     if return_S0_hat:
-        return (params[:2], np.exp(params[2]))
+        return (params[..., :2], np.exp(params[..., 2]))
     else:
-        return params[:2]
+        return params[..., :2]
 
 
 def design_matrix(ubvals):
