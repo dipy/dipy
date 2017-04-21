@@ -25,9 +25,9 @@ bvals = round_bvals(bvals)
 gtab = gradient_table(bvals, bvecs)
 
 # 2 shells for techniques that requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+bvals_3s = np.concatenate((bvals, bvals*1.5, bvals * 2), axis=0)
+bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
+gtab_3s = gradient_table(bvals_3s, bvecs_3s)
 
 # Simulation 1. Spherical kurtosis tensor - MK and MD from the MDKI model
 # should be equa to the MK and MD of the DKI tensor for cases of
@@ -37,21 +37,22 @@ De = 0.00226
 mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
 f = 0.5
 frac_sph = [f * 100, (1.0 - f) * 100]
-signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
+signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals_sph, S0=100,
                                               fractions=frac_sph,
                                               snr=None)
 # Compute ground truth values
 MDgt = f*Di + (1-f)*De
 MKgt = 3 * f * (1-f) * ((Di-De) / MDgt) ** 2
 params = np.array([MDgt, MKgt])
-msignal_sph = np.zeros(3)
+msignal_sph = np.zeros(4)
 msignal_sph[0] = signal_sph[0]
 msignal_sph[1] = signal_sph[1]
 msignal_sph[2] = signal_sph[100]
+msignal_sph[3] = signal_sph[180]
 
 # Simulation 2. Multi-voxel simulations
-DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
-MDWI = np.zeros((2, 2, 2, 3))
+DWI = np.zeros((2, 2, 2, len(gtab_3s.bvals)))
+MDWI = np.zeros((2, 2, 2, 4))
 MDgt_multi = np.zeros((2, 2, 2))
 MKgt_multi = np.zeros((2, 2, 2))
 S0gt_multi = np.zeros((2, 2, 2))
@@ -62,7 +63,7 @@ for i in range(2):
         for k in range(1):  # Only one k to have some zero voxels
             f = random.uniform(0.0, 0.1)
             frac = [f * 100, (1.0 - f) * 100]
-            signal_i, dt_i, kt_i = multi_tensor_dki(gtab_2s, mevals_sph,
+            signal_i, dt_i, kt_i = multi_tensor_dki(gtab_3s, mevals_sph,
                                                     S0=100, fractions=frac,
                                                     snr=None)
             DWI[i, j, k] = signal_i
@@ -75,12 +76,13 @@ for i in range(2):
             params_multi[i, j, k, 1] = mk_i
             MDWI[i, j, k, 0] = signal_i[0] 
             MDWI[i, j, k, 1] = signal_i[1] 
-            MDWI[i, j, k, 2] = signal_i[100] 
+            MDWI[i, j, k, 2] = signal_i[100]
+            MDWI[i, j, k, 3] = signal_i[180]
             
 
 
 def test_dki_predict():
-    dkiM = mdki.MeanDiffusionKurtosisModel(gtab_2s)
+    dkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
 
 
 def test_dki_errors():
@@ -90,16 +92,16 @@ def test_dki_errors():
 
     # second error raises if negative signal is given to MeanDiffusionKurtosis
     # model
-    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_2s,
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_3s,
                   min_signal=-1)
 
     # third error raises if wrong mask is given to fit
     mask_wrong = np.ones((2, 3, 1))
-    mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_2s)
+    mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
 
     # Error raises if None ng is given in the helper function _wls_fit_mdki
-    ub = unique_bvals(bvals_2s)
+    ub = unique_bvals(bvals_3s)
     D = mdki.design_matrix(ub)
     assert_raises(ValueError, mdki._wls_fit_mdki, D, signal_sph)
     # try case with correct min_signal
@@ -126,9 +128,9 @@ def test_dki_errors():
 
 
 def test_design_matrix():
-    ub = unique_bvals(bvals_2s)
+    ub = unique_bvals(bvals_3s)
     D = mdki.design_matrix(ub)
-    Dgt = np.ones((3, 3))
+    Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
     Dgt[:, 1] = 1.0/6 * ub ** 2
     assert_array_almost_equal(D, Dgt)
@@ -136,13 +138,13 @@ def test_design_matrix():
 
 def test_msignal():
     # Multi-voxel case
-    ms, ng = mdki.mean_signal_bvalue(DWI, gtab_2s)
+    ms, ng = mdki.mean_signal_bvalue(DWI, gtab_3s)
     assert_array_almost_equal(ms, MDWI)
-    assert_array_almost_equal(ng, np.array([2, 64, 64]))
+    assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
 
     # Single-voxel case
-    ms, ng = mdki.mean_signal_bvalue(signal_sph, gtab_2s)
-    assert_array_almost_equal(ng, np.array([2, 64, 64]))
+    ms, ng = mdki.mean_signal_bvalue(signal_sph, gtab_3s)
+    assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
     assert_array_almost_equal(ms, msignal_sph)
 
 
@@ -151,7 +153,7 @@ def test_mdki_statistics():
     # tensors
 
     # Multi-tensors
-    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_2s)
+    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     mk = mdkiF.mk
     assert_array_almost_equal(MKgt_multi, mk)
