@@ -122,12 +122,13 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
                         for j0 in range(-pr, pr + 1):
                             for k0 in range(-pr, pr + 1):
                                 sigma_sq[i + i0, j +j0, k + k0] += (
-                                    I[i + i0, j + j0, k + k0] - sum_reg)**2
+                                    I[i + i0, j + j0, k + k0] - sum_reg) ** 2
                                 mean[i + i0, j + j0, k + k0] += temp1
                                 count[i + i0, j +j0, k + k0] += 1
 
     sigma_sq = np.divide(sigma_sq, count)
     # find the SNR and make the correction for bias due to Rician noise:
+    sigma_corr = sigma_sq
     if correct_bias:
       mean = np.divide(mean, count)
       snr = np.divide(mean, np.sqrt(sigma_sq))
@@ -138,10 +139,8 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
       # Zeta is practically equal to 1 above 37.4, and we overflow, creating
       # Not-a-numbers. Instead, replace these values with 1:
       zeta[snr > 37.4] = 1
-      sigma_corr = sigma_sq / zeta
-      sigma_corr[np.isnan(sigma_corr)] = 0
+      sigma_corr[zeta > 0] = sigma_sq[zeta > 0] / zeta[zeta > 0]
     else:
-      sigma_corr = sigma_sq
 
     if smooth is not None:
       sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
