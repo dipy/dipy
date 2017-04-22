@@ -4,6 +4,7 @@
 import cython
 import numpy as np
 from libc.math cimport sqrt
+from libc.stdlib cimport malloc, free
 
 cimport numpy as np
 
@@ -12,11 +13,6 @@ from dipy.tracking import Streamlines
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
-
-cdef extern from "stdlib.h" nogil:
-    ctypedef unsigned long size_t
-    void free(void * ptr)
-    void * malloc(size_t size)
 
 
 cdef double c_length(Streamline streamline) nogil:
