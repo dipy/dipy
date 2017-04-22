@@ -74,11 +74,10 @@ for i in range(2):
             S0gt_multi = 100
             params_multi[i, j, k, 0] = md_i
             params_multi[i, j, k, 1] = mk_i
-            MDWI[i, j, k, 0] = signal_i[0] 
-            MDWI[i, j, k, 1] = signal_i[1] 
+            MDWI[i, j, k, 0] = signal_i[0]
+            MDWI[i, j, k, 1] = signal_i[1]
             MDWI[i, j, k, 2] = signal_i[100]
             MDWI[i, j, k, 3] = signal_i[180]
-            
 
 
 def test_dki_predict():
@@ -100,10 +99,6 @@ def test_dki_errors():
     mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
 
-    # Error raises if None ng is given in the helper function _wls_fit_mdki
-    ub = unique_bvals(bvals_3s)
-    D = mdki.design_matrix(ub)
-    assert_raises(ValueError, mdki._wls_fit_mdki, D, signal_sph)
     # try case with correct min_signal
     # dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
     # dkiF = dkiM.fit(DWI)
@@ -129,7 +124,7 @@ def test_dki_errors():
 
 def test_design_matrix():
     ub = unique_bvals(bvals_3s)
-    D = mdki.design_matrix(ub)
+    D = mdki.design_matrix(gtab_3s)
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
     Dgt[:, 1] = 1.0/6 * ub ** 2
@@ -153,7 +148,22 @@ def test_mdki_statistics():
     # tensors
 
     # Multi-tensors
+    design_matrix = mdki.design_matrix(gtab_3s)
+    msignal, ng = mdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
+    params = mdki.wls_fit_mdki(design_matrix, msignal, ng)
+    assert_array_almost_equal(params[..., 1], MKgt_multi)
+    assert_array_almost_equal(params[..., 0], MDgt_multi)
+
     mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     mk = mdkiF.mk
+    md = mdkiF.md
     assert_array_almost_equal(MKgt_multi, mk)
+    assert_array_almost_equal(MDgt_multi, md)
+
+    # Single-tensors
+    mdkiF = mdkiM.fit(signal_sph)
+    mk = mdkiF.mk
+    md = mdkiF.md
+    assert_array_almost_equal(MKgt, mk)
+    assert_array_almost_equal(MDgt, md)
