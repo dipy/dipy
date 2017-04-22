@@ -12,12 +12,7 @@ from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
 from dipy.data import get_data
-from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 import dipy.reconst.mdki as mdki
-
-from dipy.core.sphere import Sphere
-from dipy.data import get_sphere
-from dipy.core.geometry import (sphere2cart, perpendicular_directions)
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -43,7 +38,7 @@ signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals_sph, S0=100,
 # Compute ground truth values
 MDgt = f*Di + (1-f)*De
 MKgt = 3 * f * (1-f) * ((Di-De) / MDgt) ** 2
-params = np.array([MDgt, MKgt])
+params_single = np.array([MDgt, MKgt])
 msignal_sph = np.zeros(4)
 msignal_sph[0] = signal_sph[0]
 msignal_sph[1] = signal_sph[1]
@@ -83,6 +78,35 @@ for i in range(2):
 def test_dki_predict():
     dkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
 
+    # single voxel
+    pred = dkiM.predict(params_single, S0=100)
+    assert_array_almost_equal(pred, signal_sph)
+
+    # multi-voxel
+    pred = dkiM.predict(params_multi, S0=100)
+    assert_array_almost_equal(pred[:, :, 0, :], DWI[:, :, 0, :])
+
+    # check the function predict of the DiffusionKurtosisFit object
+    dkiF = dkiM.fit(signal_sph)
+    pred_single = dkiF.predict(gtab_3s, S0=100)
+    assert_array_almost_equal(pred_single, signal_sph)
+    dkiF = dkiM.fit(DWI)
+    pred_multi = dkiF.predict(gtab_3s, S0=100)
+    assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+
+    # No S0
+    dkiF = dkiM.fit(signal_sph)
+    pred_single = dkiF.predict(gtab_3s)
+    assert_array_almost_equal(100 * pred_single, signal_sph)
+    dkiF = dkiM.fit(DWI)
+    pred_multi = dkiF.predict(gtab_3s)
+    assert_array_almost_equal(100 * pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+
+    # SO volume
+    dkiF = dkiM.fit(DWI)
+    pred_multi = dkiF.predict(gtab_3s, 100 * np.ones(DWI.shape[:-1]))
+    assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
+
 
 def test_dki_errors():
     # first error raises if MeanDiffusionKurtosisModel is called for
@@ -99,32 +123,10 @@ def test_dki_errors():
     mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
 
-    # try case with correct min_signal
-    # dkiM = dki.DiffusionKurtosisModel(gtab_2s, min_signal=1)
-    # dkiF = dkiM.fit(DWI)
-    # assert_array_almost_equal(dkiF.model_params, multi_params)
-
-    # third error is if a given mask do not have same shape as data
-    # dkiM = dki.DiffusionKurtosisModel(gtab_2s)
-
-    # test a correct mask
-    # dkiF = dkiM.fit(DWI)
-    # mask_correct = dkiF.fa > 0
-    # mask_correct[1, 1] = False
-    # multi_params[1, 1] = np.zeros(27)
-    # mask_not_correct = np.array([[True, True, False], [True, False, False]])
-    # dkiF = dkiM.fit(DWI, mask=mask_correct)
-    # assert_array_almost_equal(dkiF.model_params, multi_params)
-    # test a incorrect mask
-    # assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
-
-    # error if data with only one non zero b-value is given
-    # assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
-
 
 def test_design_matrix():
     ub = unique_bvals(bvals_3s)
-    D = mdki.design_matrix(gtab_3s)
+    D = mdki.design_matrix(ub)
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
     Dgt[:, 1] = 1.0/6 * ub ** 2
@@ -148,7 +150,8 @@ def test_mdki_statistics():
     # tensors
 
     # Multi-tensors
-    design_matrix = mdki.design_matrix(gtab_3s)
+    ub = unique_bvals(bvals_3s)
+    design_matrix = mdki.design_matrix(ub)
     msignal, ng = mdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
     params = mdki.wls_fit_mdki(design_matrix, msignal, ng)
     assert_array_almost_equal(params[..., 1], MKgt_multi)
@@ -167,3 +170,10 @@ def test_mdki_statistics():
     md = mdkiF.md
     assert_array_almost_equal(MKgt, mk)
     assert_array_almost_equal(MDgt, md)
+
+    # Test with given mask
+    mdkiF = mdkiM.fit(DWI, mask=np.ones(DWI.shape[:-1]))
+    mk = mdkiF.mk
+    md = mdkiF.md
+    assert_array_almost_equal(MKgt_multi, mk)
+    assert_array_almost_equal(MDgt_multi, md)
