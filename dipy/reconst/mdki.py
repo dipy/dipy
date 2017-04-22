@@ -5,7 +5,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
-from dipy.core.gradients import (check_multi_b, unique_bvals)
+from dipy.core.gradients import (check_multi_b, unique_bvals, round_bvals)
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL)
 from dipy.core.ndindex import ndindex
@@ -72,36 +72,30 @@ def mdki_prediction(mdki_params, gtab, S0=1.0):
     -----
     The predicted signal is given by:
         $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
-        mean spherical diffusivity and mean spherical kurtosis.  
+        mean spherical diffusivity and mean spherical kurtosis.
+
+    References
+    ----------
+    .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
+           changes based on the mean signal diffusion kurtosis. 25th Annual
+           Meeting of the ISMRM; Honolulu. April 22-28
     """
     # Define MDKI design matrix given gtab.bvals
-    A = design_matrix(gtab)
+    A = design_matrix(round_bvals(gtab.bvals))
 
-    # Flat parameters and initialize pred_sig
-    fevals = evals.reshape((-1, evals.shape[-1]))
-    fevecs = evecs.reshape((-1,) + evecs.shape[-2:])
-    fkt = kt.reshape((-1, kt.shape[-1]))
-    pred_sig = np.zeros((len(fevals), len(gtab.bvals)))
-    if isinstance(S0, np.ndarray):
-        S0_vol = np.reshape(S0, (len(fevals)))
-    else:
-        S0_vol = S0
+    # Initialize pred_sig
+    pred_sig = np.zeros(mdki_params.shape[:-1] + gtab.bvals.shape)
+
     # looping for all voxels
-    for v in range(len(pred_sig)):
-        DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
-        dt = lower_triangular(DT)
-        MD = (dt[0] + dt[2] + dt[5]) / 3
-        if isinstance(S0_vol, np.ndarray):
-            this_S0 = S0_vol[v]
+    index = ndindex(mdki_params.shape[:-1])
+    for v in index:
+        params = mdki_params[v].copy()
+        params[1] = params[1] * params[0] ** 2
+        if isinstance(S0, np.ndarray):
+            S0v = S0[v]
         else:
-            this_S0 = S0_vol
-        X = np.concatenate((dt, fkt[v] * MD * MD,
-                            np.array([np.log(this_S0)])),
-                           axis=0)
-        pred_sig[v] = np.exp(np.dot(A, X))
-
-    # Reshape data according to the shape of dki_params
-    pred_sig = pred_sig.reshape(dki_params.shape[:-1] + (pred_sig.shape[-1],))
+            S0v = S0
+        pred_sig[v] = S0v * np.exp(np.dot(A[:, :2], params))
 
     return pred_sig
 
@@ -141,7 +135,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
         self.return_S0_hat = return_S0_hat
-        self.design_matrix = design_matrix(self.gtab)
+        self.ubvals = unique_bvals(gtab.bvals, bmag=bmag)
+        self.design_matrix = design_matrix(self.ubvals)
         self.bmag = bmag
         self.args = args
         self.kwargs = kwargs
@@ -168,7 +163,6 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         mask : array
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
-
         """
         S0_params = None
 
@@ -190,19 +184,37 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, dti_params, S0=1.):
+    def predict(self, mdki_params, S0=1.):
         """
-        Predict a signal for this TensorModel class instance given parameters.
+        Predict a signal for this MeanDiffusionKurtosisModel class instance
+        given parameters.
 
         Parameters
         ----------
-        params : ndarray
+        mdki_params : ndarray
             The parameters of the mean spherical diffusion kurtosis model
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
+
+        Returns
+        --------
+        S : (..., N) ndarray
+            Simulated mean signal based on the mean spherical kurtosis model
+
+        Notes
+        -----
+        The predicted signal is given by:
+            $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
+            mean spherical diffusivity and mean spherical kurtosis.
+
+        References
+        ----------
+        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
+               changes based on the mean signal diffusion kurtosis. 25th Annual
+               Meeting of the ISMRM; Honolulu. April 22-28
         """
-        return mdki_prediction(dti_params, self.gtab, S0)
+        return mdki_prediction(mdki_params, self.gtab, S0)
 
 
 class MeanDiffusionKurtosisFit(object):
@@ -269,7 +281,7 @@ class MeanDiffusionKurtosisFit(object):
         """
         return self.model_params[..., 1]
 
-    def predict(self, gtab, S0=None, step=None):
+    def predict(self, gtab, S0=1.):
         r"""
         Given a mean spherical diffusion kurtosis model fit, predict the signal
         on the vertices of a sphere
@@ -284,23 +296,24 @@ class MeanDiffusionKurtosisFit(object):
            The fitted S0 value in all voxels if it was fitted. Otherwise 1 in
            all voxels.
 
-        step : int
-            The chunk size as a number of voxels. Optional parameter with
-            default value 10,000.
-
-            In order to increase speed of processing, tensor fitting is done
-            simultaneously over many voxels. This parameter sets the number of
-            voxels that will be fit at once in each iteration. A larger step
-            value should speed things up, but it will also take up more memory.
-            It is advisable to keep an eye on memory consumption as this value
-            is increased.
+        Returns
+        --------
+        S : (..., N) ndarray
+            Simulated mean signal based on the mean spherical kurtosis model
 
         Notes
         -----
-        """
-        predict = 0
+        The predicted signal is given by:
+        $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
+        mean spherical diffusivity and mean spherical kurtosis.
 
-        return predict
+        References
+        ----------
+        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
+               changes based on the mean signal diffusion kurtosis. 25th Annual
+               Meeting of the ISMRM; Honolulu. April 22-28
+        """
+        return mdki_prediction(self.model_params, gtab, S0=S0)
 
 
 def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
@@ -319,15 +332,15 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
         Mean signal along all gradient direction for each unique b-value
         Note that the last dimension should contain the signal means and nub
         is the number of unique b-values.
+    ng : ndarray(nub)
+        Number of gradient directions used to compute the mean signal for
+        all unique b-values
     mask : array
         A boolean array used to mark the coordinates in the data that
         should be analyzed that has the shape data.shape[:-1]
     min_signal : float, optional
         Voxel with mean signal intensities lower than the min positive signal
         are not processed. Default: 0.0001
-    ng : ndarray(nub)
-        Number of gradient directions used to compute the mean signal for
-        all unique b-values
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
 
@@ -380,21 +393,14 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
         return params[..., :2]
 
 
-def design_matrix(gtab, bmag=None):
+def design_matrix(ubvals):
     """  Constructs design matrix for the mean spherical diffusion kurtosis
     model
 
     Parameters
     ----------
-    gtab : a GradientTable class instance
-        The gradient table containing diffusion acquisition parameters.
-
-    bmag : The order of magnitude that the bvalues have to differ to be
-        considered an unique b-value. Default: derive this value from the
-        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
-
-    dtype : string
-        Parameter to control the dtype of returned designed matrix
+    ubvals : array
+        Containing the unique b-values of the data.
 
     Returns
     -------
@@ -403,7 +409,6 @@ def design_matrix(gtab, bmag=None):
         model assuming that parameters are in the following order:
         design_matrix[j, :] = (MD, MK, S0)
     """
-    ubvals = unique_bvals(gtab.bvals, bmag=bmag)
     nb = ubvals.shape
     B = np.zeros(nb + (3,))
     B[:, 0] = -ubvals
