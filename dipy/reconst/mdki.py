@@ -7,7 +7,9 @@ import numpy as np
 
 from dipy.core.gradients import (check_multi_b, unique_bvals)
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL, iter_fit_tensor)
+from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL)
+from dipy.core.ndindex import ndindex
+from dipy.core.onetime import auto_attr
 
 
 def mean_signal_bvalue(data, gtab, bmag=None):
@@ -50,20 +52,58 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     return msigma, ng
 
 
-def mdki_prediction(dti_params, gtab, S0):
+def mdki_prediction(mdki_params, gtab, S0=1.0):
     """
-    Predict a signal given the mean dki parameters.
+    Predict the mean signal given the parameters of the mean spherical DKI, an
+    GradientTable Object and S0 signal.
 
     Parameters
     ----------
-
+    params : ndarray ([X, Y, Z, ...], 2)
+        Array containing in the last axis the mean spherical diffusivity and
+        mean spherical kurtosis
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+    S0 : float or ndarray (optional)
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
 
     Notes
     -----
-    The predicted signal is given by: $MS(b) = S_0 * e^{-b ADC}$
+    The predicted signal is given by:
+        $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
+        mean spherical diffusivity and mean spherical kurtosis.  
     """
-    prediction = 0
-    return prediction
+    # Define MDKI design matrix given gtab.bvals
+    A = design_matrix(gtab)
+
+    # Flat parameters and initialize pred_sig
+    fevals = evals.reshape((-1, evals.shape[-1]))
+    fevecs = evecs.reshape((-1,) + evecs.shape[-2:])
+    fkt = kt.reshape((-1, kt.shape[-1]))
+    pred_sig = np.zeros((len(fevals), len(gtab.bvals)))
+    if isinstance(S0, np.ndarray):
+        S0_vol = np.reshape(S0, (len(fevals)))
+    else:
+        S0_vol = S0
+    # looping for all voxels
+    for v in range(len(pred_sig)):
+        DT = np.dot(np.dot(fevecs[v], np.diag(fevals[v])), fevecs[v].T)
+        dt = lower_triangular(DT)
+        MD = (dt[0] + dt[2] + dt[5]) / 3
+        if isinstance(S0_vol, np.ndarray):
+            this_S0 = S0_vol[v]
+        else:
+            this_S0 = S0_vol
+        X = np.concatenate((dt, fkt[v] * MD * MD,
+                            np.array([np.log(this_S0)])),
+                           axis=0)
+        pred_sig[v] = np.exp(np.dot(A, X))
+
+    # Reshape data according to the shape of dki_params
+    pred_sig = pred_sig.reshape(dki_params.shape[:-1] + (pred_sig.shape[-1],))
+
+    return pred_sig
 
 
 class MeanDiffusionKurtosisModel(ReconstModel):
@@ -90,7 +130,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
-            number. Default: minimal signal in the data provided to `fit`.
+            number. Default: 0.0001.
 
         References
         ----------
@@ -101,8 +141,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
         self.return_S0_hat = return_S0_hat
-        self.ubvals = unique_bvals(gtab.bvals, bmag)
-        self.design_matrix = design_matrix(self.ubvals)
+        self.design_matrix = design_matrix(self.gtab)
         self.bmag = bmag
         self.args = args
         self.kwargs = kwargs
@@ -136,38 +175,18 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         # Compute mean signal for each unique b-value
         mdata, ng = mean_signal_bvalue(data, self.gtab, bmag=self.bmag)
 
-        # Select voxels in mask
-        if mask is not None:
-            # Check for valid shape of the mask
-            if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
-        mdata_in_mask = np.reshape(mdata[mask], (-1, mdata.shape[-1]))
-
         # Remove mdata zeros
         if self.min_signal is None:
             min_signal = MIN_POSITIVE_SIGNAL
         else:
             min_signal = self.min_signal
 
-        mdata_in_mask = np.maximum(mdata_in_mask, min_signal)
+        mdata = np.maximum(mdata, min_signal)
 
-        params_in_mask = _wls_fit_mdki(self.design_matrix, mdata_in_mask,
-                                       ng=ng, *self.args, **self.kwargs)
+        params = wls_fit_mdki(self.design_matrix, mdata, ng, mask=mask,
+                              *self.args, **self.kwargs)
         if self.return_S0_hat:
-            params_in_mask, model_S0 = params_in_mask
-
-        if mask is None:
-            out_shape = mdata.shape[:-1] + (-1, )
-            params = params_in_mask.reshape(out_shape)
-            if self.return_S0_hat:
-                S0_params = model_S0.reshape(out_shape[:-1])
-        else:
-            params = np.zeros(mdata.shape[:-1] + (2,))
-            params[mask, :] = params_in_mask
-            if self.return_S0_hat:
-                S0_params = np.zeros(data.shape[:-1] + (1,))
-                S0_params[mask] = model_S0
+            params, S0_params = params
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
@@ -212,7 +231,7 @@ class MeanDiffusionKurtosisFit(object):
     def S0_hat(self):
         return self.model_S0
 
-    @property
+    @auto_attr
     def md(self):
         r"""
         Spherical Mean diffusitivity (MD) calculated from the mean spherical
@@ -231,7 +250,7 @@ class MeanDiffusionKurtosisFit(object):
         """
         return self.model_params[..., 0]
 
-    @property
+    @auto_attr
     def mk(self):
         r"""
         Spherical Mean Kurtosis (MK) calculated from the mean spherical
@@ -284,11 +303,11 @@ class MeanDiffusionKurtosisFit(object):
         return predict
 
 
-@iter_fit_tensor()
-def _wls_fit_mdki(design_matrix, msignal, ng=None, return_S0_hat=False):
+def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
+                 min_signal=MIN_POSITIVE_SIGNAL, return_S0_hat=False):
     r"""
-    Helper function that fits the mean spherical diffusion kurtosis imaging
-    based on a weighted least square solution [1]_.
+    Fits the mean spherical diffusion kurtosis imaging based on a weighted
+    least square solution [1]_.
 
     Parameters
     ----------
@@ -300,6 +319,12 @@ def _wls_fit_mdki(design_matrix, msignal, ng=None, return_S0_hat=False):
         Mean signal along all gradient direction for each unique b-value
         Note that the last dimension should contain the signal means and nub
         is the number of unique b-values.
+    mask : array
+        A boolean array used to mark the coordinates in the data that
+        should be analyzed that has the shape data.shape[:-1]
+    min_signal : float, optional
+        Voxel with mean signal intensities lower than the min positive signal
+        are not processed. Default: 0.0001
     ng : ndarray(nub)
         Number of gradient directions used to compute the mean signal for
         all unique b-values
@@ -317,41 +342,56 @@ def _wls_fit_mdki(design_matrix, msignal, ng=None, return_S0_hat=False):
            changes based on the mean signal diffusion kurtosis. 25th Annual
            Meeting of the ISMRM; Honolulu. April 22-28
     """
-    # Check ng
-    if ng is None:
-        ms = "The array ng containing the number of gradient directions used"
-        ms += " to compute the mean signal for each unique b-value is"
-        ms += " required. Please set this function parameter propertly"
-        raise ValueError(ms)
+    params = np.zeros(msignal.shape[:-1] + (3,))
 
-    # Define weights as diag(ng * msignal ** 2)
-    w = ng * msignal ** 2
+    # Prepare mask
+    if mask is None:
+        mask = np.ones(msignal.shape[:-1], dtype=bool)
+    else:
+        if mask.shape != msignal.shape[:-1]:
+            raise ValueError("Mask is not the same shape as data.")
+        mask = np.array(mask, dtype=bool, copy=False)
 
-    # BTW = (Bw).T, where w are diag of W
-    BTW = (w[..., None] * design_matrix).T
-    inv_BT_W_B = np.linalg.pinv(np.einsum('...ij,jk->...ik', BTW,
-                                          design_matrix))  # dot product
-    invBTWB_BTW = np.einsum('...ij,...jk->...ik', inv_BT_W_B, BTW)
+    index = ndindex(mask.shape)
+    for v in index:
+        # Skip if out of mask
+        if not mask[v]:
+            continue
+        # Skip if no signal is present
+        if np.mean(msignal[v]) <= min_signal:
+            continue
+        # Define weights as diag(sqrt(ng) * yn**2)
+        W = np.diag(ng * msignal[v]**2)
 
-    # WLS solution
-    params = np.einsum('...ij,...j', invBTWB_BTW, np.log(msignal))
+        # WLS fitting
+        BTW = np.dot(design_matrix.T, W)
+        inv_BT_W_B = np.linalg.pinv(np.dot(BTW, design_matrix))
+        invBTWB_BTW = np.dot(inv_BT_W_B, BTW)
+        p = np.dot(invBTWB_BTW, np.log(msignal[v]))
 
-    # Convert 2nd parameter to MK
-    params[..., 1] = params[..., 1] / (params[..., 0]**2)
+        # Process parameters
+        p[1] = p[1] / (p[0]**2)
+        p[2] = np.exp(p[2])
+        params[v] = p
 
     if return_S0_hat:
-        return (params[..., :2], np.exp(params[..., 2]))
+        return params[..., :2], params[..., 2]
     else:
         return params[..., :2]
 
 
-def design_matrix(ubvals):
+def design_matrix(gtab, bmag=None):
     """  Constructs design matrix for the mean spherical diffusion kurtosis
     model
 
     Parameters
     ----------
-    ubals : Unique b-values
+    gtab : a GradientTable class instance
+        The gradient table containing diffusion acquisition parameters.
+
+    bmag : The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
     dtype : string
         Parameter to control the dtype of returned designed matrix
@@ -363,6 +403,7 @@ def design_matrix(ubvals):
         model assuming that parameters are in the following order:
         design_matrix[j, :] = (MD, MK, S0)
     """
+    ubvals = unique_bvals(gtab.bvals, bmag=bmag)
     nb = ubvals.shape
     B = np.zeros(nb + (3,))
     B[:, 0] = -ubvals

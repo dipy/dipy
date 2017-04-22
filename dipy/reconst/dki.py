@@ -1224,7 +1224,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
         The gradient table for this prediction
     S0 : float or ndarray (optional)
         The non diffusion-weighted signal in every voxel, or across all
-        voxels. Default: 150
+        voxels. Default: 1
 
     Returns
     --------
