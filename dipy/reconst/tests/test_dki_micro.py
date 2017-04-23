@@ -128,7 +128,7 @@ def test_single_fiber_model():
     assert_almost_equal(wmtiF.hindered_ad, ADe)
     assert_almost_equal(wmtiF.hindered_rd, RDe)
     assert_almost_equal(wmtiF.axonal_diffusivity, ADi)
-    assert_almost_equal(wmtiF.tortuosity, ADe/RDe)
+    assert_almost_equal(wmtiF.tortuosity, ADe/RDe, decimal=5)
 
     # Test diffusion_components when a kurtosis tensors is associated with
     # negative kurtosis values. E.g of this cases is given below:
