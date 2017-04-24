@@ -368,7 +368,7 @@ References:
                 axonal loss and demyelination in brain white matter.
                 Proceedings of the 20th Annual Meeting of the International
                 Society for Magnetic Resonance Medicine; Melbourne, Australia.
-                May 5–11.
+                May 5-11.
 .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
                 kurtosis strategies, b-value optimization and exploration of
                 diffusion MRI contrast. Scientific Data 3: 160072
