@@ -23,7 +23,10 @@ else:
 
 
 # Set a user-writeable file-system location to put files:
-dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+if 'DIPY_HOME' in os.environ:
+    dipy_home = os.environ['DIPY_HOME']
+else:
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
 
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
