@@ -1,6 +1,6 @@
 """
 ==============
-User Interface 
+User Interface
 ==============
 
 This example shows how to use the UI API.
@@ -16,7 +16,7 @@ from dipy.viz import ui, window
 
 
 """
-3D Elements 
+3D Elements
 ===========
 
 Let's have some cubes in 3D.
@@ -99,7 +99,7 @@ Let's have another button.
 second_button_example = ui.Button2D(icon_fnames=icon_files)
 
 """
-This time, we will call the built in `next_icon` method 
+This time, we will call the built in `next_icon` method
 via a callback that is triggered on left click.
 """
 
@@ -120,7 +120,8 @@ Panels
 Simply create a panel and add elements to it.
 """
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), align="right")
+panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
+                   align="right")
 panel.add_element(button_example, 'relative', (0.2, 0.2))
 panel.add_element(second_button_example, 'absolute', (480, 100))
 
@@ -132,7 +133,7 @@ TextBox
 text = ui.TextBox2D(height=3, width=10)
 
 """
-2D Line Slider 
+2D Line Slider
 ==============
 """
 
@@ -140,10 +141,18 @@ line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
 
 """
+2D Disk Slider
+==============
+"""
+
+disk_slider = ui.DiskSlider2D()
+disk_slider.set_center((200, 200))
+
+"""
 Adding Elements to the ShowManager
 ==================================
 
-Once all elements have been initialised, they have 
+Once all elements have been initialised, they have
 to be added to the show manager in the following manner.
 """
 
@@ -155,6 +164,7 @@ show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
+show_manager.ren.add(disk_slider)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
