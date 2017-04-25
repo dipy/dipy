@@ -2120,7 +2120,7 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
                 warnings.warn("Cannot determine number of cpus.",
                               "returns quantize_evecs(...,",
                               "nbr_processes=1).")
-                return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
+                return quantize_evecs(evecs, odf_vertices, v, nbr_processes=1)
 
     evecs = evecs[..., :, v]
     shape = list(evecs.shape)
