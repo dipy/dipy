@@ -17,6 +17,7 @@ if have_vtk:
 else:
     vtkTextActor = object
 
+TWO_PI = 2 * np.pi
 
 class UI(object):
     """ An umbrella class for all UI elements.
@@ -635,10 +636,12 @@ class Panel2D(UI):
     @staticmethod
     def left_button_press(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] - panel2d_object.panel.actor.GetPosition()[0]
-                                   - panel2d_object.panel.size[0] / 2,
-                                   click_position[1] - panel2d_object.panel.actor.GetPosition()[1]
-                                   - panel2d_object.panel.size[1] / 2)
+        panel2d_object.ui_param = (click_position[0] -
+                                   panel2d_object.panel.actor.GetPosition()[0] -
+                                   panel2d_object.panel.size[0] / 2,
+                                   click_position[1] -
+                                   panel2d_object.panel.actor.GetPosition()[1] -
+                                   panel2d_object.panel.size[1] / 2)
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
@@ -1168,9 +1171,12 @@ class TextBox2D(UI):
             return
         if character.lower() == "space":
             character = " "
-        self.text = self.text[:self.caret_pos] + character + self.text[self.caret_pos:]
+        self.text = (self.text[:self.caret_pos] +
+                     character +
+                     self.text[self.caret_pos:])
         self.move_caret_right()
-        if self.window_right - self.window_left == self.height * self.width - 1:
+        if (self.window_right -
+                self.window_left == self.height * self.width - 1):
             self.left_move_right()
         self.right_move_right()
 
@@ -1184,7 +1190,8 @@ class TextBox2D(UI):
         self.move_caret_left()
         if len(self.text) < self.height * self.width - 1:
             self.right_move_left()
-        if self.window_right - self.window_left == self.height * self.width - 1:
+        if (self.window_right -
+                self.window_left == self.height * self.width - 1):
             if self.window_left > 0:
                 self.left_move_left()
                 self.right_move_left()
@@ -1195,7 +1202,8 @@ class TextBox2D(UI):
         """
         self.move_caret_left()
         if self.caret_pos == self.window_left - 1:
-            if self.window_right - self.window_left == self.height * self.width - 1:
+            if (self.window_right -
+                    self.window_left == self.height * self.width - 1):
                 self.left_move_left()
                 self.right_move_left()
 
@@ -1205,7 +1213,8 @@ class TextBox2D(UI):
         """
         self.move_caret_right()
         if self.caret_pos == self.window_right + 1:
-            if self.window_right - self.window_left == self.height * self.width - 1:
+            if (self.window_right -
+                    self.window_left == self.height * self.width - 1):
                 self.left_move_right()
                 self.right_move_right()
 
@@ -1219,7 +1228,9 @@ class TextBox2D(UI):
 
         """
         if show_caret:
-            ret_text = self.text[:self.caret_pos] + "_" + self.text[self.caret_pos:]
+            ret_text = (self.text[:self.caret_pos] +
+                        "_" +
+                        self.text[self.caret_pos:])
         else:
             ret_text = self.text
         ret_text = ret_text[self.window_left:self.window_right + 1]
@@ -1573,7 +1584,283 @@ class LineSlider2D(UI):
         Base method needs to be overridden due to multiple actors.
 
         """
-        self.add_callback(self.slider_line, "LeftButtonPressEvent", self.line_click_callback)
-        self.add_callback(self.slider_disk, "LeftButtonPressEvent", self.disk_press_callback)
-        self.add_callback(self.slider_disk, "MouseMoveEvent", self.disk_move_callback)
-        self.add_callback(self.slider_line, "MouseMoveEvent", self.disk_move_callback)
+        self.add_callback(self.slider_line, "LeftButtonPressEvent",
+                          self.line_click_callback)
+        self.add_callback(self.slider_disk, "LeftButtonPressEvent",
+                          self.disk_press_callback)
+        self.add_callback(self.slider_disk, "MouseMoveEvent",
+                          self.disk_move_callback)
+        self.add_callback(self.slider_line, "MouseMoveEvent",
+                          self.disk_move_callback)
+
+
+class DiskSlider2D(UI):
+    """ A disk slider.
+
+    A disk moves along the boundary of a ring.
+    Goes from 0-360 degrees.
+
+    Attributes
+    ----------
+    base_disk_center: (float, float)
+        Position of the system.
+    slider_inner_radius: int
+        Inner radius of the base disk.
+    slider_outer_radius: int
+        Outer radius of the base disk.
+    slider_radius: float
+        Average radius of the base disk.
+    handle_outer_radius: int
+        Outer radius of the slider's handle.
+    handle_inner_radius: int
+        Inner radius of the slider's handle.
+
+    """
+    def __init__(self, position=(0, 0),
+                 initial_value=180, min_value=0, max_value=360,
+                 slider_inner_radius=40, slider_outer_radius=44,
+                 handle_inner_radius=10, handle_outer_radius=0,
+                 text_size=16,
+                 text_template="{ratio:.0%}"):
+
+        """
+        Parameters
+        ----------
+        position : (float, float)
+            Position (x, y) of the slider's center.
+        initial_value : float
+            Initial value of the slider.
+        min_value : float
+            Minimum value of the slider.
+        max_value : float
+            Maximum value of the slider.
+        slider_inner_radius : int
+            Inner radius of the base disk.
+        slider_outer_radius : int
+            Outer radius of the base disk.
+        handle_outer_radius : int
+            Outer radius of the slider's handle.
+        handle_inner_radius : int
+            Inner radius of the slider's handle.
+        text_size : int
+            Size of the text to display alongside the slider (pt).
+        text_template : str, callable
+            If str, text template can contain one or multiple of the
+            replacement fields: `{value:}`, `{ratio:}`, `{angle:}`.
+            If callable, this instance of `:class:DiskSlider2D` will be
+            passed as argument to the text template function.
+
+        """
+        super(DiskSlider2D, self).__init__()
+        self.center = np.array(position)
+        self.min_value = min_value
+        self.max_value = max_value
+
+        self.slider_inner_radius = slider_inner_radius
+        self.slider_outer_radius = slider_outer_radius
+        self.handle_inner_radius = handle_inner_radius
+        self.handle_outer_radius = handle_outer_radius
+        self.slider_radius = (slider_inner_radius + slider_outer_radius) / 2.
+
+        self.handle = None
+        self.base_disk = None
+
+        self.text = None
+        self.text_size = text_size
+        self.text_template = text_template
+
+        self.build_actors()
+
+        # By setting the value, it also updates everything.
+        self.value = initial_value
+        self.handle_events(None)
+
+    def build_actors(self):
+        """ Builds actors for the system.
+
+        """
+        base_disk = vtk.vtkDiskSource()
+        base_disk.SetInnerRadius(self.slider_inner_radius)
+        base_disk.SetOuterRadius(self.slider_outer_radius)
+        base_disk.SetRadialResolution(10)
+        base_disk.SetCircumferentialResolution(50)
+        base_disk.Update()
+
+        base_disk_mapper = vtk.vtkPolyDataMapper2D()
+        base_disk_mapper.SetInputConnection(base_disk.GetOutputPort())
+
+        self.base_disk = vtk.vtkActor2D()
+        self.base_disk.SetMapper(base_disk_mapper)
+        self.base_disk.GetProperty().SetColor(1, 0, 0)
+        self.base_disk.SetPosition(self.center)
+
+        handle = vtk.vtkDiskSource()
+        handle.SetInnerRadius(self.handle_inner_radius)
+        handle.SetOuterRadius(self.handle_outer_radius)
+        handle.SetRadialResolution(10)
+        handle.SetCircumferentialResolution(50)
+        handle.Update()
+
+        handle_mapper = vtk.vtkPolyDataMapper2D()
+        handle_mapper.SetInputConnection(handle.GetOutputPort())
+
+        self.handle = vtk.vtkActor2D()
+        self.handle.SetMapper(handle_mapper)
+
+        self.text = TextActor2D()
+        offset = np.array((16., 8.))
+        self.text.position = self.center - offset
+        self.text.font_size = self.text_size
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        value_range = self.max_value - self.min_value
+        self.ratio = (value - self.min_value) / value_range
+
+    @property
+    def ratio(self):
+        return self._ratio
+
+    @ratio.setter
+    def ratio(self, ratio):
+        self.angle = ratio * TWO_PI
+
+    @property
+    def angle(self):
+        """ Angle (in rad) the handle makes with x-axis """
+        return self._angle
+
+    @angle.setter
+    def angle(self, angle):
+        self._angle = angle % TWO_PI  # Wraparound
+        self.update()
+
+    def format_text(self):
+        """ Returns formatted text to display along the slider. """
+        if callable(self.text_template):
+            return self.text_template(self)
+
+        return self.text_template.format(ratio=self.ratio, value=self.value,
+                                         angle=np.rad2deg(self.angle))
+
+    def update(self):
+        """ Updates the slider. """
+
+        # Compute the ratio determined by the position of the slider disk.
+        self._ratio = self.angle / TWO_PI
+
+        # Compute the selected value considering min_value and max_value.
+        value_range = self.max_value - self.min_value
+        self._value = self.min_value + self.ratio*value_range
+
+        # Update text disk actor.
+        x = self.slider_radius * np.cos(self.angle) + self.center[0]
+        y = self.slider_radius * np.sin(self.angle) + self.center[1]
+        self.handle.SetPosition(x, y)
+
+        # Update text.
+        text = self.format_text()
+        self.text.message = text
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        return [self.base_disk, self.handle, self.text.get_actor()]
+
+    def move_handle(self, click_position):
+        """Moves the slider's handle.
+
+        Parameters
+        ----------
+        click_position: (float, float)
+            Position of the mouse click.
+
+        """
+        x, y = np.array(click_position) - self.center
+        angle = np.arctan2(y, x)
+        if angle < 0:
+            angle += TWO_PI
+
+        self.angle = angle
+
+    def set_center(self, position):
+        """ Changes the slider's center position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            New position (x, y).
+
+        """
+        position = np.array(position)
+        offset = position - self.center
+        self.base_disk.SetPosition(position)
+        self.handle.SetPosition(*(offset + self.handle.GetPosition()))
+        self.text.position += offset
+        self.center = position
+
+    @staticmethod
+    def base_disk_click_callback(i_ren, obj, slider):
+        """ Update disk position and grab the focus.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+
+        """
+        click_position = i_ren.event.position
+        slider.move_handle(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def handle_move_callback(i_ren, obj, slider):
+        """ Move the slider's handle.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+
+        """
+        click_position = i_ren.event.position
+        slider.move_handle(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    @staticmethod
+    def handle_press_callback(i_ren, obj, slider):
+        """ This is only needed to grab the focus.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`DiskSlider2D`
+
+        """
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_events(self, actor):
+        """ Handle all default slider events.
+
+        """
+        self.add_callback(self.base_disk, "LeftButtonPressEvent",
+                          self.base_disk_click_callback)
+        self.add_callback(self.handle, "LeftButtonPressEvent",
+                          self.handle_press_callback)
+        self.add_callback(self.base_disk, "MouseMoveEvent",
+                          self.handle_move_callback)
+        self.add_callback(self.handle, "MouseMoveEvent",
+                          self.handle_move_callback)
