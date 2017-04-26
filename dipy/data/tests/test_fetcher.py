@@ -120,3 +120,7 @@ def test_fetch_data():
         os.environ['DIPY_HOME'] = test_path
         reload(fetcher)
         npt.assert_string_equal(fetcher.dipy_home, test_path)
+
+        # return to previous state
+        if old_home:
+            os.environ['DIPY_HOME'] = old_home
