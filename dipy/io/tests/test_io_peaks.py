@@ -23,8 +23,7 @@ if have_tables:
 from dipy.data import get_sphere
 from dipy.core.sphere import Sphere
 
-# Make sure not to carry across setup module from * import
-# __all__ = ['']
+from dipy.io.peaks import load_peaks, save_peaks
 
 
 def test_io_peaks():
@@ -33,17 +32,11 @@ def test_io_peaks():
 
         fname = 'test.pam'
 
-        if TABLES_LESS_3_0:
-            func_open_file = tables.openFile
-        else:
-            func_open_file = tables.open_file
-
         sphere = get_sphere('repulsion724')
-        verbose = True
 
         pam = PeaksAndMetrics()
         pam.affine = np.eye(4)
-        pam.peak_dirs = np.zeros((10, 10, 10, 5, 3))
+        pam.peak_dirs = np.random.rand(10, 10, 10, 5, 3)
         pam.peak_values = np.zeros((10, 10, 10, 5))
         pam.peak_indices = np.zeros((10, 10, 10, 5))
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
@@ -55,62 +48,19 @@ def test_io_peaks():
         pam.qa = np.zeros((10, 10, 10, 5))
         pam.odf = np.zeros((10, 10, 10, sphere.vertices.shape[0]))
 
-        f = func_open_file(fname, 'w')
+        save_peaks(fname, pam)
+        pam2 = load_peaks(fname, verbose=True)
+        npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
 
-        if TABLES_LESS_3_0:
-            func_create_group = f.createGroup
-            func_create_array = f.createArray
-            func_create_carray = f.createCArray
-            func_create_earray = f.createEArray
-        else:
-            func_create_group = f.create_group
-            func_create_array = f.create_array
-            func_create_carray = f.create_carray
-            func_create_earray = f.create_earray
+        pam2.affine = None
 
-        group = func_create_group(f.root, 'pam')
+        fname2 = 'test2.pam'
+        save_peaks(fname2, pam2)
+        pam3 = load_peaks(fname2, verbose=True)
 
-        def save_array(group, x, name):
 
-            if x is not None:
-                atom = tables.Atom.from_dtype(x.dtype)
-                ds = func_create_carray(group, name, atom, x.shape)
-                ds[:] = x
 
-        save_array(group, pam.affine, 'affine')
-        save_array(group, pam.peak_dirs, 'peak_dirs')
-        save_array(group, pam.peak_values, 'peak_values')
-        save_array(group, pam.peak_indices, 'peak_indices')
-        save_array(group, pam.shm_coeff, 'shm_coeff')
-        save_array(group, pam.sphere.vertices, 'sphere_vertices')
-        save_array(group, pam.B, 'B')
-        save_array(group, np.array([pam.total_weight]), 'total_weight')
-        save_array(group, np.array([pam.ang_thr]), 'ang_thr')
-        save_array(group, pam.B, 'gfa')
-        save_array(group, pam.B, 'qa')
-        save_array(group, pam.B, 'odf')
 
-        f.close()
 
-        f2 = func_open_file(fname, 'r')
-
-        print(f2.root.pam.affine)
-        f2.close()
-
-        if verbose:
-            print('Affine')
-            print(pam.affine)
-            print('Dirs Shape')
-            print(pam.peak_dirs.shape)
-            print('SH Shape')
-            print(pam.shm_coeff.shape)
-            print('ODF')
-            print(pam.odf.shape)
-            print('Total weight')
-            print(pam.total_weight)
-            print('Angular threshold')
-            print(pam.ang_thr)
-            print('Sphere vertices shape')
-            print(pam.sphere.vertices.shape)
 
 test_io_peaks()
