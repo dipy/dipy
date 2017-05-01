@@ -47,8 +47,15 @@ def _safe_save(f, group, array, name):
         ds[:] = array
 
 
-def load_peaks(fname, verbose=True):
-    """ Load PeaksAndMetrics PAM file (HDF5)
+def load_peaks(fname, verbose=False):
+    """ Load PeaksAndMetrics PAM5 file (HDF5)
+
+    Parameters
+    ----------
+    fname : string
+        Filename of PAM5 file.
+    verbose : bool
+        Print summary information about the loaded file.
     """
 
     if TABLES_LESS_3_0:
@@ -133,7 +140,15 @@ def load_peaks(fname, verbose=True):
 
 
 def save_peaks(fname, pam):
-    """ Save NPZ file with all important attributes of object PeaksAndMetrics
+    """ Save PAM5 file (HDF5) with all important attributes of object
+    PeaksAndMetrics
+
+    Parameters
+    ----------
+    fname : string
+        Filenam of PAM5 file
+    pam : PeakAndMetrics
+        Object holding peak_dirs, shm_coeffs and other attributes
     """
 
     if TABLES_LESS_3_0:
