@@ -38,7 +38,7 @@ def test_io_peaks():
         pam.peak_values = np.zeros((10, 10, 10, 5))
         pam.peak_indices = np.zeros((10, 10, 10, 5))
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
-        pam.sphere = Sphere(xyz=sphere.vertices)
+        pam.sphere = sphere
         pam.B = np.zeros((45, sphere.vertices.shape[0]))
         pam.total_weight = 0.5
         pam.ang_thr = 60
@@ -55,12 +55,21 @@ def test_io_peaks():
         fname2 = 'test2.pam'
         save_peaks(fname2, pam2)
 
-        pam3 = load_peaks(fname2, verbose=True)
+        pam3 = load_peaks(fname2, verbose=False)
         npt.assert_equal(pam3.total_weight, pam.total_weight)
+        npt.assert_equal(pam3.ang_thr, pam.ang_thr)
+        npt.assert_equal(pam3.gfa, pam.gfa)
+        npt.assert_equal(pam3.qa, pam.qa)
+        npt.assert_equal(pam3.odf, pam.odf)
 
         fname3 = 'test3.pam'
-        #pam4 = PeaksAndMetrics()
-        #save_peaks(fname3, pam4)
+        pam4 = PeaksAndMetrics()
+        npt.assert_raises(ValueError, save_peaks, fname3, pam4)
+
+        fname4 = 'test4.pam'
+        del pam.affine
+        save_peaks(fname4, pam, affine=None)
+
 
 
 if __name__ == '__main__':
