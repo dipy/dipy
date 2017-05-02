@@ -71,8 +71,6 @@ def test_io_peaks():
         save_peaks(fname4, pam, affine=None)
 
 
-
 if __name__ == '__main__':
 
-    #npt.run_module_suite()
-    test_io_peaks()
+    npt.run_module_suite()
