@@ -3,13 +3,8 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 from dipy.core.sphere import Sphere
-from dipy.direction.peaks import (PeaksAndMetrics,
-                                  reshape_peaks_for_visualization)
+from dipy.direction.peaks import PeaksAndMetrics
 from distutils.version import LooseVersion
-from dipy.reconst.peaks import PeaksAndMetrics
-
-# Conditional testing machinery for pytables
-from dipy.testing import doctest_skip_parser
 
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
@@ -165,6 +160,14 @@ def save_peaks(fname, pam, affine=None):
         provided here. Default None.
     """
 
+    if not (hasattr(pam, 'peak_dirs') \
+        and hasattr(pam, 'peak_values') \
+        and hasattr(pam, 'peak_indices')):
+
+        raise ValueError('Cannot save object without peak_dirs/values/indices')
+        return
+
+
     if TABLES_LESS_3_0:
         func_open_file = tables.openFile
     else:
@@ -183,30 +186,24 @@ def save_peaks(fname, pam, affine=None):
     version = func_create_array(f.root, 'version',
                                 [b"0.0.1"], 'PAM5 version number')
 
-    if affine is None:
-        _safe_save(f, group, pam.affine, 'affine')
-    else:
-        _safe_save(f, group, affine, 'affine')
+    try:
+        affine = pam.affine
+    except AttributeError:
+        pass
 
-    if hasattr(pam, 'peak_dirs') \
-        and hasattr(pam, 'peak_values') \
-        and hasattr(pam, 'peak_indices'):
 
-        _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
-        _safe_save(f, group, pam.peak_values, 'peak_values')
-        _safe_save(f, group, pam.peak_indices, 'peak_indices')
-        _safe_save(f, group, pam.shm_coeff, 'shm_coeff')
-        _safe_save(f, group, pam.sphere.vertices, 'sphere_vertices')
-        _safe_save(f, group, pam.B, 'B')
-        _safe_save(f, group, np.array([pam.total_weight]), 'total_weight')
-        _safe_save(f, group, np.array([pam.ang_thr]), 'ang_thr')
-        _safe_save(f, group, pam.B, 'gfa')
-        _safe_save(f, group, pam.B, 'qa')
-        _safe_save(f, group, pam.B, 'odf')
-
-    else:
-        f.close()
-        raise ValueError('Cannot save object without peak_dirs/values/indices')
+    _safe_save(f, group, affine, 'affine')
+    _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
+    _safe_save(f, group, pam.peak_values, 'peak_values')
+    _safe_save(f, group, pam.peak_indices, 'peak_indices')
+    _safe_save(f, group, pam.shm_coeff, 'shm_coeff')
+    _safe_save(f, group, pam.sphere.vertices, 'sphere_vertices')
+    _safe_save(f, group, pam.B, 'B')
+    _safe_save(f, group, np.array([pam.total_weight]), 'total_weight')
+    _safe_save(f, group, np.array([pam.ang_thr]), 'ang_thr')
+    _safe_save(f, group, pam.gfa, 'gfa')
+    _safe_save(f, group, pam.qa, 'qa')
+    _safe_save(f, group, pam.odf, 'odf')
 
     f.close()
 
