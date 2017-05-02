@@ -56,6 +56,10 @@ def load_peaks(fname, verbose=False):
         Filename of PAM5 file.
     verbose : bool
         Print summary information about the loaded file.
+
+    Returns
+    -------
+    pam : PeaksAndMetrics object
     """
 
     if TABLES_LESS_3_0:
@@ -68,6 +72,9 @@ def load_peaks(fname, verbose=False):
     pam = PeaksAndMetrics()
 
     pamh = f.root.pam
+
+    version = f.root.version[0].decode()
+    print(version[0].decode())
 
     try:
         affine = pamh.affine[:]
@@ -104,13 +111,13 @@ def load_peaks(fname, verbose=False):
     except tables.NoSuchNodeError:
         odf = None
 
-
+    pam.version = version
     pam.affine = affine
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
     pam.shm_coeff = shm_coeff
-    pam.sphere = Sphere(xyz=pamh.sphere_vertices)
+    pam.sphere = Sphere(xyz=sphere_vertices)
     pam.B = pamh.B[:]
     pam.total_weight = pamh.total_weight[:][0]
     pam.ang_thr = pamh.ang_thr[:][0]
@@ -121,6 +128,8 @@ def load_peaks(fname, verbose=False):
     f.close()
 
     if verbose:
+        print('PAM5 version')
+        print(pam.version)
         print('Affine')
         print(pam.affine)
         print('Dirs shape')
@@ -139,16 +148,21 @@ def load_peaks(fname, verbose=False):
     return pam
 
 
-def save_peaks(fname, pam):
+def save_peaks(fname, pam, affine=None):
     """ Save PAM5 file (HDF5) with all important attributes of object
+
     PeaksAndMetrics
 
     Parameters
     ----------
     fname : string
         Filenam of PAM5 file
-    pam : PeakAndMetrics
+    pam : PeaksAndMetrics
         Object holding peak_dirs, shm_coeffs and other attributes
+    affine : array
+        The 4x4 matrix transforming the date from native to world coordinates.
+        PeaksAndMetrics should have that attribute but if not it can be
+        provided here. Default None.
     """
 
     if TABLES_LESS_3_0:
@@ -160,23 +174,39 @@ def save_peaks(fname, pam):
 
     if TABLES_LESS_3_0:
         func_create_group = f.createGroup
+        func_create_array = f.createArray
     else:
         func_create_group = f.create_group
+        func_create_array = f.create_array
 
     group = func_create_group(f.root, 'pam')
+    version = func_create_array(f.root, 'version',
+                                [b"0.0.1"], 'PAM5 version number')
 
-    _safe_save(f, group, pam.affine, 'affine')
-    _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
-    _safe_save(f, group, pam.peak_values, 'peak_values')
-    _safe_save(f, group, pam.peak_indices, 'peak_indices')
-    _safe_save(f, group, pam.shm_coeff, 'shm_coeff')
-    _safe_save(f, group, pam.sphere.vertices, 'sphere_vertices')
-    _safe_save(f, group, pam.B, 'B')
-    _safe_save(f, group, np.array([pam.total_weight]), 'total_weight')
-    _safe_save(f, group, np.array([pam.ang_thr]), 'ang_thr')
-    _safe_save(f, group, pam.B, 'gfa')
-    _safe_save(f, group, pam.B, 'qa')
-    _safe_save(f, group, pam.B, 'odf')
+    if affine is None:
+        _safe_save(f, group, pam.affine, 'affine')
+    else:
+        _safe_save(f, group, affine, 'affine')
+
+    if hasattr(pam, 'peak_dirs') \
+        and hasattr(pam, 'peak_values') \
+        and hasattr(pam, 'peak_indices'):
+
+        _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
+        _safe_save(f, group, pam.peak_values, 'peak_values')
+        _safe_save(f, group, pam.peak_indices, 'peak_indices')
+        _safe_save(f, group, pam.shm_coeff, 'shm_coeff')
+        _safe_save(f, group, pam.sphere.vertices, 'sphere_vertices')
+        _safe_save(f, group, pam.B, 'B')
+        _safe_save(f, group, np.array([pam.total_weight]), 'total_weight')
+        _safe_save(f, group, np.array([pam.ang_thr]), 'ang_thr')
+        _safe_save(f, group, pam.B, 'gfa')
+        _safe_save(f, group, pam.B, 'qa')
+        _safe_save(f, group, pam.B, 'odf')
+
+    else:
+        f.close()
+        raise ValueError('Cannot save object without peak_dirs/values/indices')
 
     f.close()
 

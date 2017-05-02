@@ -54,10 +54,16 @@ def test_io_peaks():
 
         fname2 = 'test2.pam'
         save_peaks(fname2, pam2)
+
         pam3 = load_peaks(fname2, verbose=True)
         npt.assert_equal(pam3.total_weight, pam.total_weight)
+
+        fname3 = 'test3.pam'
+        #pam4 = PeaksAndMetrics()
+        #save_peaks(fname3, pam4)
 
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    #npt.run_module_suite()
+    test_io_peaks()
