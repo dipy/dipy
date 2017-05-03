@@ -69,7 +69,6 @@ def load_peaks(fname, verbose=False):
     pamh = f.root.pam
 
     version = f.root.version[0].decode()
-    print(version[0].decode())
 
     try:
         affine = pamh.affine[:]
