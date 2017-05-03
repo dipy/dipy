@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
+import os
 import numpy as np
 
 from dipy.core.sphere import Sphere
@@ -56,6 +57,9 @@ def load_peaks(fname, verbose=False):
     -------
     pam : PeaksAndMetrics object
     """
+
+    if os.path.splitext(fname)[1] != '.pam5':
+        raise IOError('This function supports only PAM5 (HDF5) files')
 
     if TABLES_LESS_3_0:
         func_open_file = tables.openFile
@@ -142,7 +146,7 @@ def load_peaks(fname, verbose=False):
     return pam
 
 
-def save_peaks(fname, pam, affine=None):
+def save_peaks(fname, pam, affine=None, verbose=False):
     """ Save PAM5 file (HDF5) with all important attributes of object
 
     PeaksAndMetrics
@@ -157,15 +161,18 @@ def save_peaks(fname, pam, affine=None):
         The 4x4 matrix transforming the date from native to world coordinates.
         PeaksAndMetrics should have that attribute but if not it can be
         provided here. Default None.
+    verbose : bool
+        Print summary information about the saved file.
     """
 
-    if not (hasattr(pam, 'peak_dirs') \
-        and hasattr(pam, 'peak_values') \
-        and hasattr(pam, 'peak_indices')):
+    if os.path.splitext(fname)[1] != '.pam5':
+        raise IOError('This function saves only PAM5 (HDF5) files')
+
+    if not (hasattr(pam, 'peak_dirs') and hasattr(pam, 'peak_values') and
+            hasattr(pam, 'peak_indices')):
 
         raise ValueError('Cannot save object without peak_dirs/values/indices')
         return
-
 
     if TABLES_LESS_3_0:
         func_open_file = tables.openFile
@@ -190,7 +197,6 @@ def save_peaks(fname, pam, affine=None):
     except AttributeError:
         pass
 
-
     _safe_save(f, group, affine, 'affine')
     _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
     _safe_save(f, group, pam.peak_values, 'peak_values')
@@ -205,4 +211,22 @@ def save_peaks(fname, pam, affine=None):
     _safe_save(f, group, pam.odf, 'odf')
 
     f.close()
+
+    if verbose:
+        print('PAM5 version')
+        print(pam.version)
+        print('Affine')
+        print(pam.affine)
+        print('Dirs shape')
+        print(pam.peak_dirs.shape)
+        print('SH shape')
+        print(pam.shm_coeff.shape)
+        print('ODF shape')
+        print(pam.odf.shape)
+        print('Total weight')
+        print(pam.total_weight)
+        print('Angular threshold')
+        print(pam.ang_thr)
+        print('Sphere vertices shape')
+        print(pam.sphere.vertices.shape)
 
