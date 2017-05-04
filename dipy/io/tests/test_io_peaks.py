@@ -28,7 +28,7 @@ def test_io_peaks():
 
     with InTemporaryDirectory():
 
-        fname = 'test.pam'
+        fname = 'test.pam5'
 
         sphere = get_sphere('repulsion724')
 
@@ -52,7 +52,7 @@ def test_io_peaks():
 
         pam2.affine = None
 
-        fname2 = 'test2.pam'
+        fname2 = 'test2.pam5'
         save_peaks(fname2, pam2)
 
         pam3 = load_peaks(fname2, verbose=False)
@@ -62,13 +62,27 @@ def test_io_peaks():
         npt.assert_equal(pam3.qa, pam.qa)
         npt.assert_equal(pam3.odf, pam.odf)
 
-        fname3 = 'test3.pam'
+        fname3 = 'test3.pam5'
         pam4 = PeaksAndMetrics()
         npt.assert_raises(ValueError, save_peaks, fname3, pam4)
 
-        fname4 = 'test4.pam'
+        fname4 = 'test4.pam5'
         del pam.affine
         save_peaks(fname4, pam, affine=None)
+
+        fname5 = 'test5.pkm'
+        npt.assert_raises(IOError, save_peaks, fname5, pam)
+
+        pam.affine = np.eye(4)
+        fname6 = 'test6.pam5'
+        save_peaks(fname6, pam, verbose=True)
+
+        del pam.shm_coeff
+        save_peaks(fname6, pam, verbose=False)
+
+        pam.shm_coeff = np.zeros((10, 10, 10, 45))
+        del pam.odf
+        save_peaks(fname6, pam)
 
 
 if __name__ == '__main__':
