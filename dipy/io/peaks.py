@@ -79,37 +79,22 @@ def load_peaks(fname, verbose=False):
     except tables.NoSuchNodeError:
         affine = None
 
-    try:
-        peak_dirs = pamh.peak_dirs[:]
-    except tables.NoSuchNodeError:
-        peak_dirs = None
-
-    try:
-        peak_values = pamh.peak_values[:]
-    except tables.NoSuchNodeError:
-        peak_values = None
-
-    try:
-        peak_indices = pamh.peak_indices[:]
-    except tables.NoSuchNodeError:
-        peak_indices = None
+    peak_dirs = pamh.peak_dirs[:]
+    peak_values = pamh.peak_values[:]
+    peak_indices = pamh.peak_indices[:]
 
     try:
         shm_coeff = pamh.shm_coeff[:]
     except tables.NoSuchNodeError:
         shm_coeff = None
 
-    try:
-        sphere_vertices = pamh.sphere_vertices[:]
-    except tables.NoSuchNodeError:
-        sphere_vertices = None
+    sphere_vertices = pamh.sphere_vertices[:]
 
     try:
         odf = pamh.odf[:]
     except tables.NoSuchNodeError:
         odf = None
 
-    pam.version = version
     pam.affine = affine
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
@@ -127,7 +112,7 @@ def load_peaks(fname, verbose=False):
 
     if verbose:
         print('PAM5 version')
-        print(pam.version)
+        print(version)
         print('Affine')
         print(pam.affine)
         print('Dirs shape')
@@ -214,7 +199,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
 
     if verbose:
         print('PAM5 version')
-        print(pam.version)
+        print(version)
         print('Affine')
         print(pam.affine)
         print('Dirs shape')
