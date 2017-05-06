@@ -83,6 +83,8 @@ def test_io_peaks():
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
         del pam.odf
         save_peaks(fname6, pam)
+        pam_tmp = load_peaks(fname6, True)
+        npt.assert_equal(pam_tmp.odf, None)
 
 
 if __name__ == '__main__':
