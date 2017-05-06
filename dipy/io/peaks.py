@@ -229,7 +229,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
         if pam.odf is not None:
             print(pam.odf.shape)
         else:
-            print('None)
+            print('None')
         print('Total weight')
         print(pam.total_weight)
         print('Angular threshold')
