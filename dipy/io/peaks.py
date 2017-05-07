@@ -162,7 +162,6 @@ def save_peaks(fname, pam, affine=None, verbose=False):
             hasattr(pam, 'peak_indices')):
 
         raise ValueError('Cannot save object without peak_dirs/values/indices')
-        return
 
     if TABLES_LESS_3_0:
         func_open_file = tables.openFile
