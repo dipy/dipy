@@ -217,16 +217,16 @@ def save_peaks(fname, pam, affine=None, verbose=False):
         print('PAM5 version')
         print(version_string)
         print('Affine')
-        print(pam.affine)
+        print(affine)
         print('Dirs shape')
         print(pam.peak_dirs.shape)
         print('SH shape')
-        if pam.shm_coeff is not None:
-            print(pam.shm_coeff.shape)
+        if shm_coeff is not None:
+            print(shm_coeff.shape)
         else:
             print('None')
         print('ODF shape')
-        if pam.odf is not None:
+        if odf is not None:
             print(pam.odf.shape)
         else:
             print('None')
