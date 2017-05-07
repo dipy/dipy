@@ -86,6 +86,13 @@ def test_io_peaks():
         pam_tmp = load_peaks(fname6, True)
         npt.assert_equal(pam_tmp.odf, None)
 
+        fname7 = 'test7.paw'
+        npt.assert_raises(IOError, load_peaks, fname7)
+
+        del pam.shm_coeff
+        save_peaks(fname6, pam, verbose=True)
+        pam_tmp = load_peaks(fname6, True)
+
 
 if __name__ == '__main__':
 
