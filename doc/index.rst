@@ -56,36 +56,47 @@ See some of our :ref:`past announcements <old_news>`
 Getting Started
 ***************
 
-Here is a simple example showing how to calculate `color FA`. We
-use a single Tensor model to reconstruct the datasets which are saved in a
-Nifti file along with the b-values and b-vectors which are saved as text files.
-In this example we use only a few voxels with 101 gradient directions::
+Here is a simple example showing how to fit a DTI model to diffusion MRI data::
 
-    from dipy.data import get_data
-    fimg, fbval, fbvec = get_data('small_101D')
+    # The dipy.data module includes example data-sets:
+    import dipy.data as dpd
+    fimg, fbval, fbvec = dpd.get_data('small_101D')
 
+    # Print fimg, fbval and fbvec to the console:
+    print(fimg, fbval, fbvec)
+
+    # Read the data in, using nibabel
     import nibabel as nib
     img = nib.load(fimg)
     data = img.get_data()
 
-    from dipy.io import read_bvals_bvecs
-    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    # Create a gradient table object from the b-values and b-vectors:
+    import dipy.core.gradients as dpg
+    gtab = dpg.gradient_table(fbval, fbvec)
 
-    from dipy.core.gradients import gradient_table
-    gtab = gradient_table(bvals, bvecs)
+    # We will use DTI as the model for the data:
+    import dipy.reconst.dti as dti
 
-    from dipy.reconst.dti import TensorModel
-    ten = TensorModel(gtab)
-    tenfit = ten.fit(data)
+    # We initialize a model object:
+    ten = dti.TensorModel(gtab)
 
-    from dipy.reconst.dti import fractional_anisotropy
-    fa = fractional_anisotropy(tenfit.evals)
+    # Fitting the model to the data:
+    fit = ten.fit(data)
 
-    from dipy.reconst.dti import color_fa
-    cfa = color_fa(fa, tenfit.evecs)
+    # We calculate the FA from the model fit:
+    fa = dti.fractional_anisotropy(fit.evals)
 
-As an exercise try to calculate the `color FA` with your datasets. Here is what
-a slice should look like.
+    # An RGB map of the principal diffusion direction can be computed:
+    cfa = dti.color_fa(fa, fit.evecs)
+
+    # And displayed using Matplotlib:
+    import matplotlib.pyplot as plt
+    plt.imshow(cfa[cfa.shape[0]//2])
+    plt.show()
+
+As an exercise try to calculate the `color FA` with your datasets, by replacing
+fimg, fbval, and fbvec with the names of files with your data. Here is what an
+image of a middle slice through the brain should look like.
 
 .. image:: _static/colorfa.png
     :align: center
