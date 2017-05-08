@@ -158,21 +158,19 @@ def test_lpca_dtype():
 
 
 def test_lpca_wrong():
-
     S0 = np.ones((20, 20))
     assert_raises(ValueError, localpca, S0, sigma=1)
 
 
 def test_phantom():
-
     gtab = gen_gtab()
     DWI_clean = rfiw_phantom(gtab, snr=None)
-    [DWI, sigma] = rfiw_phantom(gtab, snr=30)
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
     # To test without rician correction
     temp = (DWI_clean / sigma)**2
-    DWI_clean_wrc = sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) * (
-        (1 + 0.5 * temp) * sps.iv(
-            0, 0.25 * temp) + 0.5 * temp * sps.iv(1, 0.25 * temp))**2
+    DWI_clean_wrc = (sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) *
+                     ((1 + 0.5 * temp) * sps.iv(0, 0.25 * temp) + 0.5 * temp *
+                     sps.iv(1, 0.25 * temp))**2)
 
     DWI_den = localpca(DWI, sigma, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
@@ -188,6 +186,12 @@ def test_phantom():
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
-if __name__ == '__main__':
 
+def test_lpca_ill_conditioned():
+    gtab = gen_gtab()
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
+
+
+if __name__ == '__main__':
     run_module_suite()
