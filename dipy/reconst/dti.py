@@ -2077,23 +2077,12 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
 
 
 def _quantize_evecs_parallel_sub(args):
-    (start_pos, end_pos) = args[0]
-    data = np.ctypeslib.as_array(arr)[start_pos:end_pos]
-    odf_vertices = args[1]
-    v = args[2]
-    return quantize_evecs(data, odf_vertices, v, nbr_processes=1)
-
-
-def _mp_init(in_data):
-    """ For multiprocessing: each pool process calls this initializer, which
-        loads the global data array into the global namespace of that process,
-        allowing it to be referred elsewhere in that process, specifically by
-        `_quantize_evecs_parallel_sub`
-
-    See: http://thousandfold.net/cz/2014/05/01/sharing-numpy-arrays-between-processes-using-multiprocessing-and-ctypes/
-    """
-    global arr
-    arr = in_data
+    evecs_fname = args[0]
+    (start_pos, end_pos) = args[1]
+    odf_vertices = args[2]
+    v = args[3]
+    evecs = np.load(evecs_fname, mmap_mode='r')[start_pos:end_pos]
+    return quantize_evecs(evecs, odf_vertices, v, nbr_processes=1)
 
 
 def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
@@ -2131,21 +2120,18 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
     indices = list(zip(np.arange(0, n, chunk_size),
                        np.arange(0, n, chunk_size) + chunk_size))
 
-    # An array can be intepreted as a ctype, only if it is C contiguous
-    tmp = np.ctypeslib.as_ctypes(np.ascontiguousarray(evecs))
-    shared_evecs = sharedctypes.Array(tmp._type_, tmp, lock=False)
-    # We initilize the pool with the shared data as a globally accessible
-    # variable:
-    pool = Pool(nbr_processes, initializer=_mp_init,
-                initargs=(shared_evecs, ))
-
-    peaks_res = pool.map(_quantize_evecs_parallel_sub,
-                         zip(indices,
-                             repeat(odf_vertices),
-                             repeat(v)))
-    pool.close()
-
     with InTemporaryDirectory() as tmpdir:
+        evecs_fname = path.join(tmpdir, 'evecs.npy')
+        np.save(evecs_fname, evecs)
+        pool = Pool(nbr_processes)
+
+        peaks_res = pool.map(_quantize_evecs_parallel_sub,
+                             zip(repeat(evecs_fname),
+                                 indices,
+                                 repeat(odf_vertices),
+                                 repeat(v)))
+        pool.close()
+
         peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
                                  dtype=peaks_res[0].dtype,
                                  mode='w+',
