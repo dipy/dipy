@@ -44,6 +44,14 @@ def localpca(arr, sigma, patch_radius=1):
                          arr.shape)
 
     patch_size = 2 * patch_radius + 1
+
+    if patch_size ** 3 < arr.shape[-1]:
+        e_s = "You asked for PCA denoising with a patch_radius of {0} "
+        e_s += "for data with {1} directions. This would result in an "
+        e_s += "ill-conditioned PCA matrix. Please increase the patch_radius."
+        e_s.format(patch_radius, arr.shape[-1])
+        raise ValueError(e_s)
+
     tau = 2.3 * 2.3 * sigma * sigma
     if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
         sigma = (np.ones(arr.shape, dtype=np.float64) *
