@@ -119,9 +119,11 @@ if use_xvfb:
     display = Xvfb(width=1920, height=1080)
     display.start()
 
+if use_memprof:
+    import memory_profiler
+
 
 name = ''
-
 
 def run_script(script_name=name):
     namespace = {}
@@ -129,18 +131,13 @@ def run_script(script_name=name):
     plt.close('all')
     del namespace
 
-if use_memprof:
-    import memory_profiler
-
-    def memprof():
-        run_script(name)
 
 for script in validated_examples:
     figure_basename = op.join('fig', op.splitext(script)[0])
     if use_memprof:
         print("memory profiling ", script)
         name = script
-        memory_profiler.profile(memprof)()
+        memory_profiler.profile(run_script)()
     else:
         print(script)
         run_script(script)
