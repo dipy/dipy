@@ -13,7 +13,7 @@ Steps are:
 
 # Stdlib imports
 import os
-from os.path import join as pjoin, abspath
+import os.path as op
 import sys
 import shutil
 from subprocess import check_call
@@ -21,11 +21,14 @@ from glob import glob
 
 # Third-party imports
 
+
 # We must configure the mpl backend before making any further mpl imports
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib._pylab_helpers import Gcf
+
+import dipy
 
 # -----------------------------------------------------------------------------
 # Function defintions
@@ -35,7 +38,6 @@ from matplotlib._pylab_helpers import Gcf
 # manner, but when generating examples, we override it to write the figures to
 # files with a known name (derived from the script name) plus a counter
 figure_basename = None
-
 
 # We must change the show command to save instead
 def show():
@@ -52,13 +54,14 @@ plt.show = show
 # -----------------------------------------------------------------------------
 
 # Where things are
-EG_INDEX_FNAME = abspath('examples_index.rst')
-EG_SRC_DIR = abspath('examples')
+DOC_PATH = op.join(op.split(dipy.__path__[0])[0], 'doc')
+EG_INDEX_FNAME = op.join(DOC_PATH, 'examples_index.rst')
+EG_SRC_DIR = op.join(DOC_PATH, 'examples')
 
 # Work in examples directory
-os.chdir('examples_built')
+os.chdir(op.join(DOC_PATH, 'examples_built'))
 
-if not os.getcwd().endswith(pjoin('doc', 'examples_built')):
+if not os.getcwd().endswith(op.join('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
@@ -68,7 +71,7 @@ eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 # also to be added in the following file (valid_examples.txt). This helps
 # with debugging the examples and the documentation only a few examples at
 # the time.
-flist_name = pjoin(os.path.dirname(os.getcwd()), 'examples',
+flist_name = op.join(op.dirname(os.getcwd()), 'examples',
                    'valid_examples.txt')
 flist = open(flist_name, "r")
 validated_examples = flist.readlines()
@@ -82,11 +85,11 @@ validated_examples = [line.strip() for line in validated_examples]
 validated_examples = list(filter(None, validated_examples))
 
 for example in validated_examples:
-    fullpath = pjoin(EG_SRC_DIR, example)
+    fullpath = op.join(EG_SRC_DIR, example)
     if not example.endswith(".py"):
         print("%s not a python file, skipping." % example)
         continue
-    elif not os.path.isfile(fullpath):
+    elif not op.isfile(fullpath):
         print("Cannot find file, %s, skipping." % example)
         continue
     shutil.copyfile(fullpath, example)
@@ -105,23 +108,38 @@ check_call('python ../../tools/ex2rst --project dipy --outdir . .', shell=True)
 sys.path.insert(0, os.getcwd())
 
 # Execute each python script in the directory.
-if not os.path.isdir('fig'):
+if not op.isdir('fig'):
     os.mkdir('fig')
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+use_memprof = os.environ.get('TEST_WITH_MEMPROF', False)
 
 if use_xvfb:
     from xvfbwrapper import Xvfb
     display = Xvfb(width=1920, height=1080)
     display.start()
 
-for script in validated_examples:
+name = ''
+def run_script(script_name=name):
     namespace = {}
-    figure_basename = os.path.join('fig', os.path.splitext(script)[0])
-    print(script)
     exec(open(script).read(), namespace)
     plt.close('all')
     del namespace
+
+if use_memprof:
+    import memory_profiler
+    def memprof():
+        run_script(name)
+
+for script in validated_examples:
+    figure_basename = op.join('fig', op.splitext(script)[0])
+    if use_memprof:
+        print("memory profiling ", script)
+        name = script
+        memory_profiler.profile(memprof)()
+    else:
+        print(script)
+        run_script(script)
 
 if use_xvfb:
     display.stop()
