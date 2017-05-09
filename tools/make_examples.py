@@ -54,7 +54,7 @@ plt.show = show
 # -----------------------------------------------------------------------------
 
 # Where things are
-DOC_PATH = op.join(dipy.__path__[0], 'doc')
+DOC_PATH = op.abspath(op.join('..', 'doc'))
 EG_INDEX_FNAME = op.join(DOC_PATH, 'examples_index.rst')
 EG_SRC_DIR = op.join(DOC_PATH, 'examples')
 
@@ -72,7 +72,7 @@ eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 # with debugging the examples and the documentation only a few examples at
 # the time.
 flist_name = op.join(op.dirname(os.getcwd()), 'examples',
-                   'valid_examples.txt')
+                     'valid_examples.txt')
 flist = open(flist_name, "r")
 validated_examples = flist.readlines()
 flist.close()
@@ -119,7 +119,10 @@ if use_xvfb:
     display = Xvfb(width=1920, height=1080)
     display.start()
 
+
 name = ''
+
+
 def run_script(script_name=name):
     namespace = {}
     exec(open(script).read(), namespace)
@@ -128,6 +131,7 @@ def run_script(script_name=name):
 
 if use_memprof:
     import memory_profiler
+
     def memprof():
         run_script(name)
 
