@@ -54,7 +54,7 @@ plt.show = show
 # -----------------------------------------------------------------------------
 
 # Where things are
-DOC_PATH = op.join(op.split(dipy.__path__[0])[0], 'doc')
+DOC_PATH = op.join(dipy.__path__[0], 'doc')
 EG_INDEX_FNAME = op.join(DOC_PATH, 'examples_index.rst')
 EG_SRC_DIR = op.join(DOC_PATH, 'examples')
 
