@@ -447,6 +447,12 @@ def test_degenerative_cases():
     assert_equal(len(values), 1)
 
 
+def test_gfa_nan():
+    all_zeros = np.zeros(_odf.shape)
+    assert_(np.isnan(gfa(all_zeros)))
+    one_is_a_zero = np.copy(_odf)
+
+
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
