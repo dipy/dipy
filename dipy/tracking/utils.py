@@ -240,11 +240,8 @@ def ndbincount(x, weights=None, shape=None):
         shape = x.max(1) + 1
 
     x = ravel_multi_index(x, shape)
-    # out = np.bincount(x, weights, minlength=np.prod(shape))
-    # out.shape = shape
-    # Use resize to be compatible with numpy < 1.6, minlength new in 1.6
-    out = np.bincount(x, weights)
-    out.resize(shape)
+    out = np.bincount(x, weights, minlength=np.prod(shape))
+    out.shape = shape
 
     return out
 
