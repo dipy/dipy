@@ -422,8 +422,10 @@ class SparseFascicleModel(ReconstModel, Cache):
             # parameters at all-zeros, and avoid nasty sklearn errors:
             if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
                 fit_it = vox_data - isopredict[vox]
-                flat_params[vox] = self.solver.fit(self.design_matrix,
-                                                   fit_it).coef_
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    flat_params[vox] = self.solver.fit(self.design_matrix,
+                                                       fit_it).coef_
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
