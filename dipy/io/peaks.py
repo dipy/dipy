@@ -74,6 +74,9 @@ def load_peaks(fname, verbose=False):
 
     version = f.root.version[0].decode()
 
+    if version != '0.0.1':
+        raise IOError('Incorrect PAM5 file version')
+
     try:
         affine = pamh.affine[:]
     except tables.NoSuchNodeError:
