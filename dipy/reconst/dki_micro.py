@@ -63,6 +63,93 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
     return awf
 
 
+def exact_axonal_water_fraction(self, dki_params, sphere='repulsion100', gtol=1e-2,
+                          mask=None):
+    """ Computes the exact axonal water fraction from DKI [1]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance, optional
+        The sphere providing sample directions for the initial search of the
+        maximal value of kurtosis.
+    gtol : float, optional
+        This input is to refine kurtosis maxima under the precision of the
+        directions sampled on the sphere class instance. The gradient of the
+        convergence procedure must be less than gtol before successful
+        termination. If gtol is None, fiber direction is directly taken from
+        the initial sampled directions of the given sphere object
+    mask : ndarray
+        A boolean array used to mark the coordinates in the data that should be
+        analyzed that has the shape dki_params.shape[:-1]
+
+    Returns
+    --------
+    eawf : ndarray (x, y, z) or (n)
+        Exact Axonal Water Fraction
+
+    References
+    ----------
+    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
+           characterization with diffusional kurtosis imaging.
+           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
+    """
+
+    kt_max = kurtosis_maximum(dki_params, sphere=sphere, gtol=gtol, mask=mask)
+
+    # compute the intra-axonal diffusivity
+    da = self.axonal_diffusivity()
+
+    da_min = min_axonal_diffusion_coefficient(self, dki_params, kt_max)
+
+    eawf = kt_max / (kt_max + \
+        3 * np.power(1 - \
+        ((np.sqrt(kt_max) * (da - da_min)) / (d1 * np.sqrt(k1) + d2 * np.sqrt(k2) + d3 * np.sqrt(k3)), 2) )
+
+    return eawf
+
+
+def min_axonal_diffusion_coefficient(self, dki_params, kt_max):
+
+    """ Computes the minimum axonal diffusiona coefficient from DKI [1]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    kt_max : float
+        maximum kurtosis over all diffusion directions
+
+    Returns
+    -------
+    da_min : ndarray (x, y, z) or (n)
+        lower bound for the axonal diffusion coefficient
+
+    References
+    ----------
+    .. [1] Fieremans E, Jensen JH, Helpern JA, 2011. White matter
+           characterization with diffusional kurtosis imaging.
+           Neuroimage 58(1):177-88. doi: 10.1016/j.neuroimage.2011.06.006
+    """
+
+    evals, evecs, kt = split_dki_param(dki_params)
+    md = mean_diffusivity(evals)
+
+    da_min = 3 * md - (d1 * np.sqrt(k1) + d2 * np.sqrt(k2) + d3 * np.sqrt(k3)) / kt_max
+
+    return da_min
+
 def diffusion_components(dki_params, sphere='repulsion100', awf=None,
                          mask=None):
     """ Extracts the restricted and hindered diffusion tensors of well aligned
