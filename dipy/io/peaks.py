@@ -147,7 +147,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     Parameters
     ----------
     fname : string
-        Filenam of PAM5 file
+        Filename of PAM5 file
     pam : PeaksAndMetrics
         Object holding peak_dirs, shm_coeffs and other attributes
     affine : array
@@ -164,7 +164,9 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     if not (hasattr(pam, 'peak_dirs') and hasattr(pam, 'peak_values') and
             hasattr(pam, 'peak_indices')):
 
-        raise ValueError('Cannot save object without peak_dirs/values/indices')
+        msg = 'Cannot save object without peak_dirs, peak_values'
+        msg += ' and peak_indices'
+        raise ValueError(msg)
 
     if TABLES_LESS_3_0:
         func_open_file = tables.openFile
