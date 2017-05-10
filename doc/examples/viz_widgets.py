@@ -118,13 +118,12 @@ renderer.roll(10.)
 renderer.reset_clipping_range()
 
 """
-Uncomment the line with method start() to begin the interaction.
+Uncomment the lines below to begin the interaction.
 """
 
-show_manager.initialize()
-show_manager.render()
+# show_manager.initialize()
+# show_manager.render()
 # show_manager.start()
-
 
 window.record(renderer, out_path='mini_ui.png', size=(800, 800),
               reset_camera=False)
