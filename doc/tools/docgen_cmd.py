@@ -86,7 +86,8 @@ if __name__ == '__main__':
     for f in listdir(bin_folder):
         if f.startswith("dipy_"):
             try:
-                help_string, err = sh3("%s -h" % (f,))
+                help_string, err = sh3("python %s -h" % (
+                    pjoin(bin_folder, f),))
             except CalledProcessError:
                 print("Could not execute command %s" % (f))
                 continue
