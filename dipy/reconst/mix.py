@@ -72,12 +72,12 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    The estimated dMRI normalized signal SActiveAx is assumed to be
     coming from the following four compartments:
 
     .. math::
 
-        S_hat_𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{exp(-yhat_cylinder)}+
+        S_hat_ActiveAx = {f1}{exp(-yhat_cylinder)}+
                     {f2}{exp(-yhat_zeppelin)}+
                     {f3}{exp(-yhat_ball)}+
                     {f4}{exp(-yhat_dot)}
@@ -202,12 +202,12 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    The estimated dMRI normalized signal SActiveAx is assumed to be
     coming from the following four compartments:
 
     .. math::
 
-        S_hat_𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{S_cylinder(R,theta,phi)}+
+        S_hat_ActiveAx = {f1}{S_cylinder(R,theta,phi)}+
                     {f2}{S_zeppelin(d_perp,theta,phi)}+
                     {f3}{S_ball}+
                     {f4}{S_dot}
@@ -619,12 +619,12 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    The estimated dMRI normalized signal SActiveAx is assumed to be
     coming from the following four compartments:
 
     .. math::
 
-        S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 = {f1}{S_cylinder(R,theta,phi)}+
+        SActiveAx = {f1}{S_cylinder(R,theta,phi)}+
                     {f2}{S_zeppelin(d_perp,theta,phi)}+
                     {f3}{S_ball}+
                     {f4}{S_dot}
