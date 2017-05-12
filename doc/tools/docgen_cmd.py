@@ -18,6 +18,7 @@ def sh3(cmd):
     """
     Execute command in a subshell, return stdout, stderr
     If anything appears in stderr, print it out to sys.stderr
+    https://github.com/scikit-image/scikit-image/blob/master/doc/gh-pages.py
     """
     p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
     out, err = p.communicate()
