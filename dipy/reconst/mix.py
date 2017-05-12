@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Mar 02 15:37:46 2017
-@author: elef
-"""
+
 import numpy as np
 # import nibabel as nib
 # from dipy.core.gradients import gradient_table
@@ -417,18 +414,15 @@ def estimate_x_and_f(x_fe, signal_param):
 
 def final(signal, x, fe):
 
-    """
-    lease square fitting
+    """ Nonlinear least squares fitting
 
     Parameters
     ----------
     fe : array
-    fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
+        fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
 
     x : array
-    x(0) theta
-    x(1) phi
-    x(2) R
+        x(0) theta, x(1) phi, x(2) R
 
     signal:
         signal.shape = number of data points x 1

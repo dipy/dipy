@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 07 15:37:46 2017
-@author: Maryam
-"""
+
 import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
