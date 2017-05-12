@@ -43,10 +43,7 @@ def get_rst_string(module_name, help_string):
     rst_text += dashes
     rst_text += module_name + "\n"
     rst_text += dashes + "\n"
-    rst_text += "::\n\n"
-    for line in help_string.split("\n"):
-        rst_text += "  " + line + "\n"
-    rst_text += "\n\n"
+    rst_text += help_string
     return rst_text
 
 
