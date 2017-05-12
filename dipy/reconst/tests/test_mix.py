@@ -7,8 +7,7 @@ import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
 from numpy.testing import assert_equal, assert_almost_equal
-from scipy.optimize import  least_squares
-
+from scipy.optimize import least_squares
 from dipy.data import get_data
 import dipy.reconst.mix as mix
 
@@ -31,7 +30,8 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       b0_threshold=0, atol=1e-2)
 signal = np.array(data[0, 0, 0])
 
-signal_param = mix.make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta)
+signal_param = mix.make_signal_param(signal, bvals, bvecs, G, small_delta,
+                                     big_delta)
 
 
 def norm_meas_Aax(signal):
@@ -55,16 +55,14 @@ def norm_meas_Aax(signal):
 """
 normalizing the signal based on the b0 values of each shell
 """
-signal = mix.norm_meas_Aax(signal)
-
-
-
+signal = norm_meas_Aax(signal)
 
 
 def test_activax_exvivo_model():
 
     x = np.array([0.5, 0.5, 10, 0.8])
-    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
+    x_fe = np.array([0.44623926,  0.2855913,  0.15918695,  2.68329756,
+                     2.89085876, 3.40398589,  0.10898249])
 #    sigma = 0.05
     L1, summ, summ_rows, gper, L2, yhat_cylinder, \
         yhat_zeppelin, yhat_ball, yhat_one = mix.activax_exvivo_compartments(
@@ -100,37 +98,38 @@ def test_activax_exvivo_model():
     assert_almost_equal(yhat_ball[25], 26.3995293508)
 
 #    sigma = 0.05 # offset gaussian constant (not really needed)
-    phi = mix.activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
+    phi = mix.activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta)
     print(phi.shape)
     assert_equal(phi.shape, (372, 4))
-    error_one =  mix.activeax_cost_one(phi, data[0, 0, 0])
+    error_one = mix.activeax_cost_one(phi, data[0, 0, 0])
 
     assert_almost_equal(error_one, 0.00037568453377497451)
 
     yhat2_cylinder, yhat2_zeppelin, yhat2_ball, yhat2_dot = \
-    mix.activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                          gamma=gamma,
-                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                          debug=False)
+        mix.activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta,
+                                         big_delta, gamma=gamma,
+                                         D_intra=0.6 * 10 ** 3,
+                                         D_iso=2 * 10 ** 3, debug=False)
     assert_almost_equal(yhat2_zeppelin[6], 3.0918316084156565)
     assert_almost_equal(yhat2_cylinder[6], 0.56056900197243242)
     assert_almost_equal(yhat2_ball[6], 26.399529350756438)
     assert_almost_equal(yhat2_dot[6], 0)
 
-    exp_phi = mix.activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                         gamma=gamma,
-                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                         debug=False)
+    exp_phi = mix.activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta,
+                                        big_delta, gamma=gamma,
+                                        D_intra=0.6 * 10 ** 3,
+                                        D_iso=2 * 10 ** 3,
+                                        debug=False)
 
-    assert_almost_equal(exp_phi[6,0],0.57088413721552789)
-    assert_almost_equal(exp_phi[6,1],0.04541868892016445)
-    assert_almost_equal(exp_phi[6,2],3.426337015990705e-12)
-    assert_almost_equal(exp_phi[6,3],1)
+    assert_almost_equal(exp_phi[6, 0], 0.57088413721552789)
+    assert_almost_equal(exp_phi[6, 1], 0.04541868892016445)
+    assert_almost_equal(exp_phi[6, 2], 3.426337015990705e-12)
+    assert_almost_equal(exp_phi[6, 3], 1)
 
 
 def test_estimate_x_and_f():
-    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
+    x_fe = np.array([0.44623926,  0.2855913,  0.15918695,  2.68329756,
+                     2.89085876, 3.40398589,  0.10898249])
     x_fe = np.squeeze(x_fe)
     cost = mix.estimate_x_and_f(x_fe, signal_param)
     """
@@ -139,11 +138,12 @@ def test_estimate_x_and_f():
     """
     return cost
 
+
 def test_activax_exvivo_estimate():
     x = np.array([0.5, 0.5, 10, 0.8])
 #    sigma = 0.05 # offset gaussian constant (not really needed)
     phi = mix.activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
+                                   small_delta, big_delta)
     fe = mix.estimate_f(np.array(data[0, 0, 0]), phi)
 
     """
@@ -155,10 +155,14 @@ def test_activax_exvivo_estimate():
     """
     return fe
 
+
 def test_final():
-    x_fe = np.array([ 0.44623926,  0.2855913 ,  0.15918695,  2.68329756,  2.89085876, 3.40398589,  0.10898249])
-    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01],[0.9,  0.9,  0.9,   np.pi, np.pi, 11, 0.9])
-    res = least_squares(mix.estimate_x_and_f, x_fe, bounds = (bounds), args=(signal_param,))
+    x_fe = np.array([0.44623926,  0.2855913,  0.15918695,  2.68329756,
+                     2.89085876, 3.40398589,  0.10898249])
+    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
+              np.pi, np.pi, 11, 0.9])
+    res = least_squares(mix.estimate_x_and_f, x_fe, bounds=(bounds),
+                        args=(signal_param,))
 
     """
     assert_array_equal()
@@ -166,6 +170,7 @@ def test_final():
         3.40282779,  0.10902618]]
     """
     return res
+
 
 def test_dif_evol():
     res_one = mix.dif_evol(signal, bvals, bvecs, G, small_delta, big_delta)
