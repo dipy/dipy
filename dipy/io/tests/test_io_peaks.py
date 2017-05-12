@@ -56,11 +56,16 @@ def test_io_peaks():
         save_peaks(fname2, pam2)
 
         pam3 = load_peaks(fname2, verbose=False)
+
+        for attr in ['peak_dirs', 'peak_values', 'peak_indices',
+                     'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
+            npt.assert_array_equal(getattr(pam3, attr),
+                                   getattr(pam, attr))
+
         npt.assert_equal(pam3.total_weight, pam.total_weight)
         npt.assert_equal(pam3.ang_thr, pam.ang_thr)
-        npt.assert_equal(pam3.gfa, pam.gfa)
-        npt.assert_equal(pam3.qa, pam.qa)
-        npt.assert_equal(pam3.odf, pam.odf)
+        npt.assert_array_almost_equal(pam3.sphere.vertices,
+                                      pam.sphere.vertices)
 
         fname3 = 'test3.pam5'
         pam4 = PeaksAndMetrics()
