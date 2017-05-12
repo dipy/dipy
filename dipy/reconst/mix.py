@@ -13,24 +13,6 @@ D_intra = 0.6 * 10 ** 3
 D_iso = 2 * 10 ** 3
 
 
-def norm_meas_Aax(signal):
-
-    """
-    normalizing the signal based on the b0 values of each shell
-    """
-    y = signal
-    y01 = (y[0] + y[1] + y[2])/3
-    y02 = (y[93] + y[94] + y[95])/3
-    y03 = (y[186] + y[187] + y[188])/3
-    y04 = (y[279] + y[280] + y[281])/3
-    y1 = y[0:93]/y01
-    y2 = y[93:186]/y02
-    y3 = y[186:279]/y03
-    y4 = y[279:372]/y04
-    f = np.concatenate((y1, y2, y3, y4))
-    return f
-
-
 def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
 
     signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
