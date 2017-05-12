@@ -4,11 +4,11 @@ Created on Thu Mar 02 15:37:46 2017
 @author: elef
 """
 import numpy as np
-#import nibabel as nib
-#from dipy.core.gradients import gradient_table
-from scipy.optimize import  least_squares
+# import nibabel as nib
+# from dipy.core.gradients import gradient_table
+from scipy.optimize import least_squares
 import cvxpy as cvx
-#from dipy.data import get_data
+# from dipy.data import get_data
 from scipy.optimize import differential_evolution
 
 gamma = 2.675987 * 10 ** 8
@@ -16,18 +16,36 @@ D_intra = 0.6 * 10 ** 3
 D_iso = 2 * 10 ** 3
 
 
+def norm_meas_Aax(signal):
+
+    """
+    normalizing the signal based on the b0 values of each shell
+    """
+    y = signal
+    y01 = (y[0] + y[1] + y[2])/3
+    y02 = (y[93] + y[94] + y[95])/3
+    y03 = (y[186] + y[187] + y[188])/3
+    y04 = (y[279] + y[280] + y[281])/3
+    y1 = y[0:93]/y01
+    y2 = y[93:186]/y02
+    y3 = y[186:279]/y03
+    y4 = y[279:372]/y04
+    f = np.concatenate((y1, y2, y3, y4))
+    return f
+
+
 def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
 
-    signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs, G[:, None], \
-                          small_delta[:, None], big_delta[:, None]])
+    signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
+                              G[:, None], small_delta[:, None],
+                              big_delta[:, None]])
 
     return signal_param
 
 
 def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
-                          gamma=gamma,
-                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                          debug=False):
+                                gamma=gamma, D_intra=0.6 * 10 ** 3,
+                                D_iso=2 * 10 ** 3, debug=False):
 
     """
     Aax_exvivo_nlin
@@ -57,8 +75,8 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
-    the following four compartments:
+    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    coming from the following four compartments:
 
     .. math::
 
@@ -119,7 +137,7 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
     summ = np.zeros((len(bvals), len(am)))
 
     for i in range(len(am)):
-        num = (2 * D_intra * am2[i] * small_delta) -2 + \
+        num = (2 * D_intra * am2[i] * small_delta) - 2 + \
               (2 * np.exp(-(D_intra * am2[i] * small_delta))) + \
               (2 * np.exp(-(D_intra * am2[i] * big_delta))) - \
               (np.exp(-(D_intra * am2[i] * (big_delta - small_delta)))) - \
@@ -140,7 +158,8 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
     yhat_cylinder = L1 + L2
 
     # zeppelin
-    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - x[3]))) * (np.dot(bvecs, n) ** 2) + (D_intra * (1 - x[3])))
+    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - x[3]))) *
+                             (np.dot(bvecs, n) ** 2) + (D_intra * (1 - x[3])))
 
     # ball
     yhat_ball = (D_iso * bvals)
@@ -152,6 +171,7 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
         return L1, summ, summ_rows, g_per, L2, yhat_cylinder, yhat_zeppelin, \
             yhat_ball, yhat_dot
     return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot
+
 
 def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
                          gamma=gamma,
@@ -185,8 +205,8 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
-    the following four compartments:
+    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    coming from the following four compartments:
 
     .. math::
 
@@ -202,10 +222,10 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
         S_dot = exp(-yhat_dot)
 
     """
-    res = activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
-                                gamma=gamma,
-                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                                debug=False)
+    res = activax_exvivo_compartments(x, bvals, bvecs, G, small_delta,
+                                      big_delta, gamma=gamma,
+                                      D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                                      debug=False)
 
     yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot = res
 
@@ -215,7 +235,7 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
     return np.exp(-phi)
 
 
-def activeax_cost_one(phi, signal): # sigma
+def activeax_cost_one(phi, signal):  # sigma
 
     """
     Aax_exvivo_nlin
@@ -243,10 +263,11 @@ def activeax_cost_one(phi, signal): # sigma
 
     """
 
-    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T) # moore-penrose
+    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
     f = np.dot(phi_mp, signal)
-    yhat = np.dot(phi, f) # - sigma
+    yhat = np.dot(phi, f)  # - sigma
     return np.dot((signal - yhat).T, signal - yhat)
+
 
 def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
     phi = activax_exvivo_model(x, bvals, bvecs, G,
@@ -288,7 +309,7 @@ def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
         (signal -  S)^T(signal -  S)
     """
 
-    error_one =  activeax_cost_one(phi, signal)
+    error_one = activeax_cost_one(phi, signal)
     return error_one
 
 
@@ -339,6 +360,7 @@ def estimate_f(signal, phi):
 
     return np.array(fe.value)
 
+
 def estimate_x_and_f(x_fe, signal_param):
 
     """
@@ -358,8 +380,8 @@ def estimate_x_and_f(x_fe, signal_param):
     signal_param : array
         signal_param.shape = number of data points x 7
 
-        signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs, G[:, None], \
-                          small_delta[:, None], big_delta[:, None]])
+        signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
+                        G[:, None], small_delta[:, None], big_delta[:, None]])
 
     Returns
     -------
@@ -374,24 +396,24 @@ def estimate_x_and_f(x_fe, signal_param):
         sum{(signal -  phi*fe)^2}
     """
 
-    fe = np.zeros((1,4))
+    fe = np.zeros((1, 4))
     fe = np.squeeze(fe)
     fe[0:3] = x_fe[0:3]
     fe[3] = x_fe[6]
 
-    signal = signal_param[:,0]
-    bvals = signal_param[:,1]
-    bvecs = signal_param[:,2:5]
-    G = signal_param[:,5]
-    small_delta = signal_param[:,6]
-    big_delta = signal_param[:,7]
+    signal = signal_param[:, 0]
+    bvals = signal_param[:, 1]
+    bvecs = signal_param[:, 2:5]
+    G = signal_param[:, 5]
+    small_delta = signal_param[:, 6]
+    big_delta = signal_param[:, 7]
 
     phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                               gamma=gamma,
-                               D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                               debug=False)
+                                gamma=gamma, D_intra=0.6 * 10 ** 3,
+                                D_iso=2 * 10 ** 3, debug=False)
 
     return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
+
 
 def final(signal, x, fe):
 
@@ -423,9 +445,9 @@ def final(signal, x, fe):
 
     Notes
     --------
-    in this step we take the estimated volume fractions from convex optimization
-    and theta, phi and R from genetic algorithm to find all 7 unknown parameters
-    using bounded non-linear least square fitting
+    in this step we take the estimated volume fractions from convex
+    optimization and theta, phi and R from genetic algorithm to find all 7
+    unknown parameters using bounded non-linear least square fitting
 
     """
 
@@ -433,15 +455,16 @@ def final(signal, x, fe):
     x_fe[:3] = fe[:3]
     x_fe[3:6] = x[:3]
     x_fe[6] = fe[3]
-    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01],[0.9,  0.9,  0.9,   np.pi, np.pi, 11, 0.9])
-    res = least_squares(estimate_x_and_f, x_fe, bounds = (bounds), args=(signal,))
+    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
+              np.pi, np.pi, 11, 0.9])
+    res = least_squares(estimate_x_and_f, x_fe, bounds=(bounds),
+                        args=(signal,))
     return res
 
-def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                          gamma=gamma,
-                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                          debug=False):
 
+def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
+                                 gamma=gamma, D_intra=0.6 * 10 ** 3,
+                                 D_iso=2 * 10 ** 3, debug=False):
 
     """
     Aax_exvivo_eval
@@ -471,8 +494,8 @@ def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal Ŝ𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
-    the following four compartments:
+    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    coming from the following four compartments:
 
     .. math::
 
@@ -533,7 +556,7 @@ def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
     summ = np.zeros((len(bvals), len(am)))
 
     for i in range(len(am)):
-        num = (2 * D_intra * am2[i] * small_delta) -2 + \
+        num = (2 * D_intra * am2[i] * small_delta) - 2 + \
               (2 * np.exp(-(D_intra * am2[i] * small_delta))) + \
               (2 * np.exp(-(D_intra * am2[i] * big_delta))) - \
               (np.exp(-(D_intra * am2[i] * (big_delta - small_delta)))) - \
@@ -554,8 +577,9 @@ def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
     yhat_cylinder = L1 + L2
 
     # zeppelin
-    v=x_fe[0]/(x_fe[0]+x_fe[1])
-    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - v))) * (np.dot(bvecs, n) ** 2) + (D_intra * (1 - v)))
+    v = x_fe[0]/(x_fe[0] + x_fe[1])
+    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - v))) *
+                             (np.dot(bvecs, n) ** 2) + (D_intra * (1 - v)))
 
     # ball
     yhat_ball = (D_iso * bvals)
@@ -570,9 +594,8 @@ def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
 
 def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                         gamma=gamma,
-                         D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                         debug=False):
+                          gamma=gamma, D_intra=0.6 * 10 ** 3,
+                          D_iso=2 * 10 ** 3, debug=False):
 
     """
     Aax_exvivo_eval
@@ -602,8 +625,8 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     Notes
     --------
-    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be coming from
-    the following four compartments:
+    The estimated dMRI normalized signal S𝐴𝑐𝑡𝑖𝑣𝑒𝐴𝑥 is assumed to be
+    coming from the following four compartments:
 
     .. math::
 
@@ -620,10 +643,10 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     """
 
-    res = activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                                gamma=gamma,
-                                D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
-                                debug=False)
+    res = activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta,
+                                       big_delta, gamma=gamma,
+                                       D_intra=0.6 * 10 ** 3,
+                                       D_iso=2 * 10 ** 3, debug=False)
 
     yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot = res
 
@@ -631,6 +654,7 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
     phi = np.ascontiguousarray(phi)
 
     return np.exp(-phi)
+
 
 def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 
@@ -660,6 +684,9 @@ def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 
     """
 
-    bounds = [(0.01,np.pi), (0.01,np.pi), (0.1,11), (0.1,0.8)]
-    res_one = differential_evolution(cost_one, bounds, args=(signal, bvals, bvecs, G, small_delta, big_delta))
+    bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
+    res_one = differential_evolution(cost_one, bounds, args=(signal, bvals,
+                                                             bvecs, G,
+                                                             small_delta,
+                                                             big_delta))
     return res_one.x
