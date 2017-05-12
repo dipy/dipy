@@ -232,230 +232,6 @@ def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
     return np.exp(-phi)
 
 
-def activeax_cost_one(phi, signal):  # sigma
-
-    """
-    Aax_exvivo_nlin
-
-    to make cost function for genetic algorithm
-
-    Parameters
-    ----------
-    phi:
-        phi.shape = number of data points x 4
-    signal:
-        signal.shape = number of data points x 1
-
-    Returns
-    -------
-    (signal -  S)^T(signal -  S)
-
-    Notes
-    --------
-    to make cost function for genetic algorithm:
-
-    .. math::
-
-        (signal -  S)^T(signal -  S)
-
-    """
-
-    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
-    f = np.dot(phi_mp, signal)
-    yhat = np.dot(phi, f)  # - sigma
-    return np.dot((signal - yhat).T, signal - yhat)
-
-
-def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
-    phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
-
-    """
-    Aax_exvivo_nlin
-
-    Cost function for genetic algorithm
-
-    Parameters
-    ----------
-    x : array
-        x.shape = 4x1
-        x(0) theta (radian)
-        x(1) phi (radian)
-        x(2) R (micrometers)
-        x(3) v=f1/(f1+f2) (0.1 - 0.8)
-
-    bvals
-    bvecs
-    G: gradient strength
-    small_delta
-    big_delta
-    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
-    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
-    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
-
-    Returns
-    -------
-    (signal -  S)^T(signal -  S)
-
-    Notes
-    --------
-    cost function for genetic algorithm:
-
-    .. math::
-
-        (signal -  S)^T(signal -  S)
-    """
-
-    error_one = activeax_cost_one(phi, signal)
-    return error_one
-
-
-def estimate_f(signal, phi):
-
-    """
-    Linear parameters fit using cvx
-
-    Parameters
-    ----------
-    phi : array
-        phi.shape = number of data points x 4
-    signal : array
-        signal.shape = number of data points x 1
-
-    Returns
-    -------
-    f1, f2, f3, f4 (volume fractions)
-    f1 = fe[0]
-    f2 = fe[1]
-    f3 = fe[2]
-    f4 = fe[3]
-
-    Notes
-    --------
-    cost function for genetic algorithm:
-
-    .. math::
-
-        minimize(norm((signal)- (phi*fe)))
-    """
-
-    # Create four scalar optimization variables.
-    fe = cvx.Variable(4)
-    # Create four constraints.
-    constraints = [cvx.sum_entries(fe) == 1,
-                   fe[0] >= 0,
-                   fe[1] >= 0,
-                   fe[2] >= 0,
-                   fe[3] >= 0]
-
-    # Form objective.
-    obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal[:, None])))
-
-    # Form and solve problem.
-    prob = cvx.Problem(obj, constraints)
-    prob.solve()  # Returns the optimal value.
-
-    return np.array(fe.value)
-
-
-def estimate_x_and_f(x_fe, signal_param):
-
-    """
-    Aax_exvivo_eval
-
-    cost function for the least square problem
-
-    Parameters
-    ----------
-    x_fe : array
-        x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
-        x_fe(3) theta
-        x_fe(4) phi
-        x_fe(5) R
-        x_fe(6) as f4
-
-    signal_param : array
-        signal_param.shape = number of data points x 7
-
-        signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
-                        G[:, None], small_delta[:, None], big_delta[:, None]])
-
-    Returns
-    -------
-    sum{(signal -  phi*fe)^2}
-
-    Notes
-    --------
-    cost function for the least square problem
-
-    .. math::
-
-        sum{(signal -  phi*fe)^2}
-    """
-
-    fe = np.zeros((1, 4))
-    fe = np.squeeze(fe)
-    fe[0:3] = x_fe[0:3]
-    fe[3] = x_fe[6]
-
-    signal = signal_param[:, 0]
-    bvals = signal_param[:, 1]
-    bvecs = signal_param[:, 2:5]
-    G = signal_param[:, 5]
-    small_delta = signal_param[:, 6]
-    big_delta = signal_param[:, 7]
-
-    phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
-                                gamma=gamma, D_intra=0.6 * 10 ** 3,
-                                D_iso=2 * 10 ** 3, debug=False)
-
-    return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
-
-
-def final(signal, x, fe):
-
-    """ Nonlinear least squares fitting
-
-    Parameters
-    ----------
-    fe : array
-        fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
-
-    x : array
-        x(0) theta, x(1) phi, x(2) R
-
-    signal:
-        signal.shape = number of data points x 1
-
-    Returns
-    -------
-    volume fractions (f1, f2, f3, f4), theta, phi, R
-
-    res.x(0) res.x(1) res.x(2)  are f1 f2 f3
-    res.x(3) theta
-    res.x(4) phi
-    res.x(5) R
-    res.x(6) as f4
-
-    Notes
-    --------
-    in this step we take the estimated volume fractions from convex
-    optimization and theta, phi and R from genetic algorithm to find all 7
-    unknown parameters using bounded non-linear least square fitting
-
-    """
-
-    x_fe = np.zeros([7])
-    x_fe[:3] = fe[:3]
-    x_fe[3:6] = x[:3]
-    x_fe[6] = fe[3]
-    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
-              np.pi, np.pi, 11, 0.9])
-    res = least_squares(estimate_x_and_f, x_fe, bounds=(bounds),
-                        args=(signal,))
-    return res
-
-
 def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
                                  gamma=gamma, D_intra=0.6 * 10 ** 3,
                                  D_iso=2 * 10 ** 3, debug=False):
@@ -650,6 +426,84 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
     return np.exp(-phi)
 
 
+def activeax_cost_one(phi, signal):  # sigma
+
+    """
+    Aax_exvivo_nlin
+
+    to make cost function for genetic algorithm
+
+    Parameters
+    ----------
+    phi:
+        phi.shape = number of data points x 4
+    signal:
+        signal.shape = number of data points x 1
+
+    Returns
+    -------
+    (signal -  S)^T(signal -  S)
+
+    Notes
+    --------
+    to make cost function for genetic algorithm:
+
+    .. math::
+
+        (signal -  S)^T(signal -  S)
+
+    """
+
+    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
+    f = np.dot(phi_mp, signal)
+    yhat = np.dot(phi, f)  # - sigma
+    return np.dot((signal - yhat).T, signal - yhat)
+
+
+def cost_one(x, signal, bvals, bvecs, G, small_delta, big_delta):
+    phi = activax_exvivo_model(x, bvals, bvecs, G,
+                               small_delta, big_delta)
+
+    """
+    Aax_exvivo_nlin
+
+    Cost function for genetic algorithm
+
+    Parameters
+    ----------
+    x : array
+        x.shape = 4x1
+        x(0) theta (radian)
+        x(1) phi (radian)
+        x(2) R (micrometers)
+        x(3) v=f1/(f1+f2) (0.1 - 0.8)
+
+    bvals
+    bvecs
+    G: gradient strength
+    small_delta
+    big_delta
+    gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+    D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+    D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+
+    Returns
+    -------
+    (signal -  S)^T(signal -  S)
+
+    Notes
+    --------
+    cost function for genetic algorithm:
+
+    .. math::
+
+        (signal -  S)^T(signal -  S)
+    """
+
+    error_one = activeax_cost_one(phi, signal)
+    return error_one
+
+
 def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 
     """
@@ -684,3 +538,149 @@ def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
                                                              small_delta,
                                                              big_delta))
     return res_one.x
+
+
+def estimate_f(signal, phi):
+
+    """
+    Linear parameters fit using cvx
+
+    Parameters
+    ----------
+    phi : array
+        phi.shape = number of data points x 4
+    signal : array
+        signal.shape = number of data points x 1
+
+    Returns
+    -------
+    f1, f2, f3, f4 (volume fractions)
+    f1 = fe[0]
+    f2 = fe[1]
+    f3 = fe[2]
+    f4 = fe[3]
+
+    Notes
+    --------
+    cost function for genetic algorithm:
+
+    .. math::
+
+        minimize(norm((signal)- (phi*fe)))
+    """
+
+    # Create four scalar optimization variables.
+    fe = cvx.Variable(4)
+    # Create four constraints.
+    constraints = [cvx.sum_entries(fe) == 1,
+                   fe[0] >= 0,
+                   fe[1] >= 0,
+                   fe[2] >= 0,
+                   fe[3] >= 0]
+
+    # Form objective.
+    obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal[:, None])))
+
+    # Form and solve problem.
+    prob = cvx.Problem(obj, constraints)
+    prob.solve()  # Returns the optimal value.
+
+    return np.array(fe.value)
+
+
+def estimate_x_and_f(x_fe, signal_param):
+
+    """
+    Aax_exvivo_eval
+
+    cost function for the least square problem
+
+    Parameters
+    ----------
+    x_fe : array
+        x_fe(0) x_fe(1) x_fe(2)  are f1 f2 f3
+        x_fe(3) theta
+        x_fe(4) phi
+        x_fe(5) R
+        x_fe(6) as f4
+
+    signal_param : array
+        signal_param.shape = number of data points x 7
+
+        signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
+                        G[:, None], small_delta[:, None], big_delta[:, None]])
+
+    Returns
+    -------
+    sum{(signal -  phi*fe)^2}
+
+    Notes
+    --------
+    cost function for the least square problem
+
+    .. math::
+
+        sum{(signal -  phi*fe)^2}
+    """
+
+    fe = np.zeros((1, 4))
+    fe = np.squeeze(fe)
+    fe[0:3] = x_fe[0:3]
+    fe[3] = x_fe[6]
+
+    signal = signal_param[:, 0]
+    bvals = signal_param[:, 1]
+    bvecs = signal_param[:, 2:5]
+    G = signal_param[:, 5]
+    small_delta = signal_param[:, 6]
+    big_delta = signal_param[:, 7]
+
+    phi = activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
+                                gamma=gamma, D_intra=0.6 * 10 ** 3,
+                                D_iso=2 * 10 ** 3, debug=False)
+
+    return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
+
+
+def final(signal, x, fe):
+
+    """ Nonlinear least squares fitting
+
+    Parameters
+    ----------
+    fe : array
+        fe(0) fe(1) fe(2) fe(3)  are f1 f2 f3 f4
+
+    x : array
+        x(0) theta, x(1) phi, x(2) R
+
+    signal:
+        signal.shape = number of data points x 1
+
+    Returns
+    -------
+    volume fractions (f1, f2, f3, f4), theta, phi, R
+
+    res.x(0) res.x(1) res.x(2)  are f1 f2 f3
+    res.x(3) theta
+    res.x(4) phi
+    res.x(5) R
+    res.x(6) as f4
+
+    Notes
+    --------
+    in this step we take the estimated volume fractions from convex
+    optimization and theta, phi and R from genetic algorithm to find all 7
+    unknown parameters using bounded non-linear least square fitting
+
+    """
+
+    x_fe = np.zeros([7])
+    x_fe[:3] = fe[:3]
+    x_fe[3:6] = x[:3]
+    x_fe[6] = fe[3]
+    bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
+              np.pi, np.pi, 11, 0.9])
+    res = least_squares(estimate_x_and_f, x_fe, bounds=(bounds),
+                        args=(signal,))
+    return res
