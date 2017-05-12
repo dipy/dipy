@@ -7,6 +7,8 @@ from os import listdir
 import re
 from subprocess import Popen, PIPE, CalledProcessError
 import sys
+import importlib
+import inspect
 
 # version comparison
 from distutils.version import LooseVersion as V
@@ -80,30 +82,36 @@ if __name__ == '__main__':
         abort("Installed version does not match source version")
 
     # generate docs
-    bin_folder = pjoin('..', 'bin')
-
     command_list = []
-    for f in listdir(bin_folder):
-        if f.startswith("dipy_"):
-            try:
-                help_string, err = sh3("python %s -h" % (
-                    pjoin(bin_folder, f),))
-            except CalledProcessError:
-                print("Could not execute command %s" % (f))
-                continue
-            print("Generating docs for %s..." % (f,))
-            help_string = help_string.decode("utf-8")
-            err = err.decode("utf-8")
-            if help_string == "":
-                help_string = err
 
-            doc_string = get_rst_string(f, help_string)
-            out_f = f + ".rst"
-            output_file = open(pjoin(outdir, out_f), "w")
-            output_file.write(doc_string)
-            output_file.close()
-            command_list.append(out_f)
-            print("Done")
+    workflows_folder = pjoin('..', 'dipy', 'workflows')
+    workflow_class = module = importlib.import_module(
+        "dipy.workflows.workflow")
+
+    for f in listdir(workflows_folder):
+        fpath = pjoin(workflows_folder, f)
+        module_name = inspect.getmodulename(fpath)
+        if module_name is not None:
+            module = importlib.import_module(
+                "dipy.workflows." + module_name)
+            members = inspect.getmembers(module)
+            for member_name, member_obj in members:
+                if(inspect.isclass(member_obj)):
+                    if (issubclass(member_obj, workflow_class.Workflow) and
+                            not member_obj == workflow_class.Workflow):
+                        # member_obj is a workflow
+                        print("Generating docs for: ", member_name)
+                        if hasattr(member_obj, 'run'):
+                            help_string = inspect.getdoc(member_obj.run)
+
+                            doc_string = get_rst_string(member_name,
+                                                        help_string)
+                            out_f = member_name + ".rst"
+                            output_file = open(pjoin(outdir, out_f), "w")
+                            output_file.write(doc_string)
+                            output_file.close()
+                            command_list.append(out_f)
+                            print("Done")
 
     # generate index.rst
     print("Generating index.rst")
