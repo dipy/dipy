@@ -42,6 +42,7 @@ matrix:
         - DEPENDS="$DEPENDS scikit_learn tables"
     - python: 3.5
       env:
+        - COVERAGE=1
         - DEPENDS="$DEPENDS scikit_learn tables"
     # To test vtk functionality
     - python: 2.7
@@ -53,6 +54,8 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
+        - DEPENDS="$DEPENDS scikit_learn tables"
+
     - python: 2.7
       env:
         - INSTALL_TYPE=sdist
