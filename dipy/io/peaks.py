@@ -246,30 +246,6 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     return pam
 
 
-def save_peaks(fname, pam, compressed=True):
-    """ Save NPZ file with all important attributes of object PeaksAndMetrics
-    """
-
-    if compressed:
-        save_func = np.savez_compressed
-    else:
-        save_func = np.savez
-
-    save_func(fname,
-              affine=pam.affine,
-              peak_dirs=pam.peak_dirs,
-              peak_values=pam.peak_values,
-              peak_indices=pam.peak_indices,
-              shm_coeff=pam.shm_coeff,
-              sphere_vertices=pam.sphere.vertices,
-              B=pam.B,
-              total_weight=pam.total_weight,
-              ang_thr=pam.ang_thr,
-              gfa=pam.gfa,
-              qa=pam.qa,
-              odf=pam.odf)
-
-
 def peaks_to_niftis(pam,
                     fname_shm,
                     fname_dirs,
