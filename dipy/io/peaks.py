@@ -20,6 +20,7 @@ if have_tables:
 
 from dipy.data import get_sphere
 from dipy.core.sphere import Sphere
+from dipy.io.image import save_nifti
 
 
 def _safe_save(f, group, array, name):
