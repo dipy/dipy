@@ -271,7 +271,7 @@ class ReconstCSDFlow(Workflow):
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0,
             frf=[15.0, 4.0, 4.0], extract_pam_values=False, out_dir='',
-            out_pam='pam.npz', out_shm='shm.nii.gz',
+            out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
@@ -302,7 +302,7 @@ class ReconstCSDFlow(Workflow):
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.npz')
+            Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
             Name of the shperical harmonics volume to be saved
             (default 'shm.nii.gz')
@@ -396,7 +396,7 @@ class ReconstCSAFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0, extract_pam_values=False, out_dir='',
-            out_pam='pam.npz', out_shm='shm.nii.gz',
+            out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
@@ -426,7 +426,7 @@ class ReconstCSAFlow(Workflow):
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.npz')
+            Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
             Name of the shperical harmonics volume to be saved
             (default 'shm.nii.gz')
