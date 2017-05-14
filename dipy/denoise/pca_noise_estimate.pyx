@@ -128,7 +128,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
 
       sigma_sq = np.divide(sigma_sq, count)
     else:
-    sigma_sq = I
+      sigma_sq = I
 
     # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
