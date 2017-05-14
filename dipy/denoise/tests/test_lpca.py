@@ -128,11 +128,12 @@ def test_lpca_boundary_behaviour():
 
 
 def test_lpca_rmse():
-    S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
-    S0ns = localpca(S0, sigma=np.std(S0))
-    rmses = np.sum(np.abs(S0ns - 100) / np.sum(100 * np.ones(S0.shape)))
-    # error should be less than 5%
-    assert_(rmses < 0.05)
+    S0_w_noise = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
+    rmse_w_noise = np.sqrt(np.mean((S0_w_noise - 100) ** 2))
+    S0_denoised = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
+    rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
+    # Denoising should always improve the RMSE:
+    assert_(rmse_denoised < rmse_w_noise)
 
 
 def test_lpca_sharpness():
