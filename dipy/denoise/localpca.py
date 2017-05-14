@@ -55,6 +55,12 @@ def localpca(arr, sigma, patch_radius=2):
 
     tau = 2.3 * 2.3 * sigma * sigma
     if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+        if not sigma.shape == arr.shape[:-1]:
+            e_s = "You provided a sigma array with a shape {0} for data with "
+            e_s = "shape {1}. Please provide a sigma array that matches the "
+            e_s = "spatial dimensions of the data."
+            e_s.format(sigma.shape, arr.shape)
+            raise ValueError(e_s)
         sigma = (np.ones(arr.shape, dtype=np.float64) *
                  sigma[..., np.newaxis])
         tau = (np.ones(arr.shape, dtype=np.float64) * tau[..., np.newaxis])
