@@ -87,8 +87,9 @@ def localpca(arr, sigma, patch_radius=2):
                     patch_size *
                     patch_size,
                     arr.shape[-1])
-                # Demean:
-                X = X - np.mean(X, axis=0)
+                # compute the mean and normalize
+                M = np.mean(X, axis=0)
+                X = X - M
                 # PCA using an SVD
                 U, S, Vt = svd(X, *svd_args)[:3]
                 # Items in S are the eigenvalues, but in ascending order
@@ -102,13 +103,13 @@ def localpca(arr, sigma, patch_radius=2):
                 W_hat = np.zeros_like(W)
                 W_hat[:, d > 0] = W[:, d > 0]
                 Y = X.dot(W_hat)
-                X_est = Y.dot(np.transpose(W_hat))
+                X_est = Y.dot(W_hat.T)
 
-                # theta value
-                temp = X_est + \
-                    np.array([M, ] * X_est.shape[0], dtype=np.float64)
-                temp = temp.reshape(
-                    patch_size, patch_size, patch_size, arr.shape[-1])
+                # Add back the mean:
+                temp = X_est + M
+                temp = temp.reshape(patch_size,
+                                    patch_size,
+                                    patch_size, arr.shape[-1])
                 # Also update the estimate matrix which is X_est * theta
 
                 theta[i - patch_radius: i + patch_radius + 1,
