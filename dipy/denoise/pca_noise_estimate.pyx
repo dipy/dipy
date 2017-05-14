@@ -64,14 +64,12 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
     K = gtab.b0s_mask[gtab.b0s_mask].size
 
     if(K > 1):
-        # If multiple b0 values then
+        # If multiple b0 values then use MUBE noise estimate
         data0 = data[..., gtab.b0s_mask]
 
     else:
-        # if only one b0 value then
-        # SIBE Noise Estimate
+        # if only one b0 value then SIBE noise estimate
         data0 = data[..., ~gtab.b0s_mask]
-        # MUBE Noise Estimate
 
     cdef:
         cnp.npy_intp n0 = data0.shape[0]
