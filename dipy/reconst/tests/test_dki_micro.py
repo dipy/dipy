@@ -260,14 +260,14 @@ def test_dki_micro_predict_single_voxel():
 
     # Check predict of KurtosisMicrostruturalModel
     pred = dkiM.predict(dkiF.model_params)
-    assert_array_almost_equal(pred, signal_gt)
+    assert_array_almost_equal(pred, signal_gt, decimal=4)
 
     pred = dkiM.predict(dkiF.model_params, S0=100)
-    assert_array_almost_equal(pred, signal_gt * 100)
+    assert_array_almost_equal(pred, signal_gt * 100, decimal=4)
 
     # Check predict of KurtosisMicrostruturalFit
     pred = dkiF.predict(gtab_2s, S0=100)
-    assert_array_almost_equal(pred, signal_gt * 100)
+    assert_array_almost_equal(pred, signal_gt * 100, decimal=4)
 
 
 def test_dki_micro_predict_multi_voxel():
