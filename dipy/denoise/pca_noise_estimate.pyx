@@ -66,10 +66,12 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
     if(K > 1):
         # If multiple b0 values then use MUBE noise estimate
         data0 = data[..., gtab.b0s_mask]
+        sibe = False
 
     else:
         # if only one b0 value then SIBE noise estimate
         data0 = data[..., ~gtab.b0s_mask]
+        sibe = True
 
     cdef:
         cnp.npy_intp n0 = data0.shape[0]
@@ -102,28 +104,32 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
     # Grab the column corresponding to the smallest eigen-vector/-value:
     I = V[:, -1].reshape(data0.shape[0], data0.shape[1], data0.shape[2])
 
-    with nogil:
-        for i in range(pr, n0 - pr):
-            for j in range(pr, n1 - pr):
-                for k in range(pr, n2 - pr):
-                    sum_reg = 0
-                    temp1 = 0
-                    for i0 in range(-pr, pr + 1):
-                        for j0 in range(-pr, pr + 1):
-                            for k0 in range(-pr, pr + 1):
-                                sum_reg += I[i + i0, j + j0, k + k0] / norm
-                                for l0 in range(n3):
-                                    temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (norm * n3)
+    if sibe:
+      with nogil:
+          for i in range(pr, n0 - pr):
+              for j in range(pr, n1 - pr):
+                  for k in range(pr, n2 - pr):
+                      sum_reg = 0
+                      temp1 = 0
+                      for i0 in range(-pr, pr + 1):
+                          for j0 in range(-pr, pr + 1):
+                              for k0 in range(-pr, pr + 1):
+                                  sum_reg += I[i + i0, j + j0, k + k0] / norm
+                                  for l0 in range(n3):
+                                      temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (norm * n3)
 
-                    for i0 in range(-pr, pr + 1):
-                        for j0 in range(-pr, pr + 1):
-                            for k0 in range(-pr, pr + 1):
-                                sigma_sq[i + i0, j +j0, k + k0] += (
-                                    I[i + i0, j + j0, k + k0] - sum_reg) ** 2
-                                mean[i + i0, j + j0, k + k0] += temp1
-                                count[i + i0, j +j0, k + k0] += 1
+                      for i0 in range(-pr, pr + 1):
+                          for j0 in range(-pr, pr + 1):
+                              for k0 in range(-pr, pr + 1):
+                                  sigma_sq[i + i0, j +j0, k + k0] += (
+                                      I[i + i0, j + j0, k + k0] - sum_reg) ** 2
+                                  mean[i + i0, j + j0, k + k0] += temp1
+                                  count[i + i0, j +j0, k + k0] += 1
 
-    sigma_sq = np.divide(sigma_sq, count)
+      sigma_sq = np.divide(sigma_sq, count)
+    else:
+    sigma_sq = I
+
     # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
       mean = np.divide(mean, count)
