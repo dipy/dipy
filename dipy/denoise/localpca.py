@@ -14,18 +14,19 @@ except ImportError:
     svd_args = [False]
 
 
-def localpca(arr, sigma, patch_radius=1):
+def localpca(arr, sigma, patch_radius=2):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
     ----------
     arr : 4D array
-        Array of data to be denoised.
+        Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+        are the different diffusion gradient directions.
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
     patch_radius : int
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 1 (denoise in blocks of 3x3x3 voxels).
+        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
 
     Returns
     -------
