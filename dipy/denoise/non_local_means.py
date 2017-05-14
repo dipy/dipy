@@ -5,7 +5,7 @@ from dipy.denoise.nlmeans_block import nlmeans_block
 
 
 def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-                    rician=True):
+                    lmean_radius=1, rician=True):
     r""" Non-local means for denoising 3D and 4D images, using
         blockwise averaging approach
 
@@ -20,6 +20,10 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         patch size is ``2 x patch_radius + 1``. Default is 1.
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
+    lmean_radius : int
+        patch radius for finding local mean and variances,
+        the patch size (local mean) is ``2 x lmean_radius + 1``.
+        The default (recommended value) is 1.
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
@@ -60,13 +64,14 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             patch_radius,
             block_radius,
             sigma,
+            lmean_radius,
             np.int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = np.array(nlmeans_block(np.double(
                 arr[..., i]), mask, patch_radius, block_radius, sigma,
-                np.int(rician))).astype(arr.dtype)
+                lmean_radius, np.int(rician))).astype(arr.dtype)
 
         return denoised_arr
 

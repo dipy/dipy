@@ -257,18 +257,19 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
+cdef double _local_mean(double[:, :, :]ima, int x, int y, int z, int p) nogil:
     """
-    local mean of a 3x3x3 patch centered at x,y,z
+    local mean of a patch with patch radius = p centered at x,y,z
     """
     cdef int dims0 = ima.shape[0]
     cdef int dims1 = ima.shape[1]
     cdef int dims2 = ima.shape[2]
     cdef double ss = 0
+    cdef double vol = (2 * p + 1) * (2 * p + 1) * (2 * p + 1)
     cdef int px, py, pz, dx, dy, dz, nx, ny, nz
-    for px in range(x - 1, x + 2):
-        for py in range(y - 1, y + 2):
-            for pz in range(z - 1, z + 2):
+    for px in range(x - p, x + p + 1):
+        for py in range(y - p, y + p + 1):
+            for pz in range(z - p, z + p + 1):
                 px = (-px if px < 0 else (2 * dims0 -
                                           px - 1 if px >= dims0 else px))
                 py = (-py if py < 0 else (2 * dims1 -
@@ -277,15 +278,15 @@ cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
                                           pz - 1 if pz >= dims2 else pz))
                 ss += ima[px, py, pz]
 
-    return ss / 27.0
+    return ss / vol
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int z) nogil:
+cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int z, int p) nogil:
     """
-    local variance of a 3x3x3 patch centered at x,y,z
+    local variance of a patch with patch radius = p centered at x,y,z
     """
     dims0 = ima.shape[0]
     dims1 = ima.shape[1]
@@ -293,9 +294,9 @@ cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int 
     cdef int cnt = 0
     cdef double ss = 0
     cdef int dx, dy, dz, nx, ny, nz
-    for px in range(x - 1, x + 2):
-        for py in range(y - 1, y + 2):
-            for pz in range(z - 1, z + 2):
+    for px in range(x - p, x + p + 1):
+        for py in range(y - p, y + p + 1):
+            for pz in range(z - p, z + p + 1):
                 if ((px >= 0 and py >= 0 and pz > 0) and
                         (px < dims0 and py < dims1 and pz < dims2)):
                     ss += (ima[px, py, pz] - mean) * (ima[px, py, pz] - mean)
@@ -346,7 +347,7 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
+def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int lmean_radius, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
 
     Parameters
@@ -367,6 +368,10 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
         sqrt((f+x)^2 + (y)^2) where f is the pixel value and x and y are
         independent realizations of a random variable with Normal
         distribution, with mean=0 and standard deviation=h
+    lmean_radius : int
+        the patch radius for computing local mean and variance required
+        for the algorithm, this can be different from the patch_radius
+        or block_radius
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
@@ -414,9 +419,9 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
         for k in range(dims[2]):
             for i in range(dims[1]):
                 for j in range(dims[0]):
-                    means[j, i, k] = _local_mean(image, j, i, k)
+                    means[j, i, k] = _local_mean(image, j, i, k, lmean_radius)
                     variances[j, i, k] = _local_variance(
-                        image, means[j, i, k], j, i, k)
+                        image, means[j, i, k], j, i, k, lmean_radius)
         for k in range(0, dims[2], 2):
             for i in range(0, dims[1], 2):
                 for j in range(0, dims[0], 2):

@@ -55,15 +55,15 @@ den = non_local_means(
     patch_radius=1,
     block_radius=1,
     rician=True)
-print("total time", time() - t)
+print("total time (non_local_means)", time() - t)
 
 t = time()
 
-den = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1, block_radius = 1, rician= True)
+den_old = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1, block_radius = 1, rician= True)
 
-print("total time", time() - t)
+print("total time (nlmeans)", time() - t)
 """
-Let us plot the axial slice of the denoised output
+Let us plot the axial slice of the denoised (non_local_means) output
 """
 
 axial_middle = data.shape[2] // 2
