@@ -1,6 +1,7 @@
 import numpy as np
 from nose.tools import assert_true
 from os.path import join
+import numpy.testing as npt
 
 import nibabel as nib
 from dipy.io.peaks import load_peaks
@@ -9,15 +10,26 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
 
+# Conditional import machinery for pytables
+from dipy.utils.optpkg import optional_package
 
+# Allow import, but disable doctests, if we don't have pytables
+tables, have_tables, _ = optional_package('tables')
+
+# Decorator to protect tests from being run without pytables present
+iftables = npt.dec.skipif(not have_tables,
+                          'Pytables does not appear to be installed')
+
+
+@iftables
 def test_reconst_csa():
     reconst_flow_core(ReconstCSAFlow)
 
-
+@iftables
 def test_reconst_csd():
     reconst_flow_core(ReconstCSDFlow)
 
-
+@iftables
 def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_data('small_64D')
@@ -60,13 +72,13 @@ def reconst_flow_core(flow):
         assert_true(shm_data.shape[:-1] == volume.shape[:-1])
 
         pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])
-        np.testing.assert_allclose(pam.peak_dirs.reshape(peaks_dir_data.shape),
+        npt.assert_allclose(pam.peak_dirs.reshape(peaks_dir_data.shape),
                                    peaks_dir_data)
-        np.testing.assert_allclose(pam.peak_values, peaks_vals_data)
-        np.testing.assert_allclose(pam.peak_indices, peaks_idx_data)
-        np.testing.assert_allclose(pam.shm_coeff, shm_data)
-        np.testing.assert_allclose(pam.gfa, gfa_data)
+        npt.assert_allclose(pam.peak_values, peaks_vals_data)
+        npt.assert_allclose(pam.peak_indices, peaks_idx_data)
+        npt.assert_allclose(pam.shm_coeff, shm_data)
+        npt.assert_allclose(pam.gfa, gfa_data)
+
 
 if __name__ == '__main__':
-    test_reconst_csa()
-    test_reconst_csd()
+    npt.run_module_suite()
