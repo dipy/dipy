@@ -54,7 +54,7 @@ def localpca(arr, sigma, patch_radius=2):
         raise ValueError(e_s)
 
     tau = 2.3 * 2.3 * sigma * sigma
-    if isinstance(sigma, np.ndarray) and sigma.ndim == 3:
+    if isinstance(sigma, np.ndarray):
         if not sigma.shape == arr.shape[:-1]:
             e_s = "You provided a sigma array with a shape {0} for data with "
             e_s = "shape {1}. Please provide a sigma array that matches the "
@@ -63,10 +63,7 @@ def localpca(arr, sigma, patch_radius=2):
             raise ValueError(e_s)
         sigma = (np.ones(arr.shape, dtype=np.float64) *
                  sigma[..., np.newaxis])
-        tau = (np.ones(arr.shape, dtype=np.float64) * tau[..., np.newaxis])
-    else:
-        sigma = np.ones(arr.shape, dtype=np.float64) * sigma
-        tau = np.ones(arr.shape, dtype=np.float64) * tau
+    tau = np.ones(arr.shape[:-1], dtype=np.float64) * tau
 
     # loop around and find the 3D patch for each direction at each pixel
 
@@ -89,7 +86,7 @@ def localpca(arr, sigma, patch_radius=2):
                     patch_size *
                     patch_size *
                     patch_size,
-                    arr.shape[3])
+                    arr.shape[-1])
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
                 X = X - M
@@ -110,7 +107,7 @@ def localpca(arr, sigma, patch_radius=2):
                 # Rows of Vt are eigenvectors, but also in ascending eigenvalue
                 # order:
                 W = Vt[::-1].T
-                d[d < tau[i, j, k, :]] = 0
+                d[d < tau[i, j, k]] = 0
                 W_hat = np.zeros_like(W)
                 W_hat[:, d > 0] = W[:, d > 0]
                 Y = X.dot(W_hat)
@@ -120,7 +117,7 @@ def localpca(arr, sigma, patch_radius=2):
                 temp = X_est + \
                     np.array([M, ] * X_est.shape[0], dtype=np.float64)
                 temp = temp.reshape(
-                    patch_size, patch_size, patch_size, arr.shape[3])
+                    patch_size, patch_size, patch_size, arr.shape[-1])
                 # Also update the estimate matrix which is X_est * theta
 
                 theta[i - patch_radius: i + patch_radius + 1,
