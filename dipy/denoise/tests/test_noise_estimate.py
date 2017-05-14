@@ -153,17 +153,17 @@ def test_pca_noise_estimate():
                     # High signal for no bias correction
                     signal = signal * 100
 
-            sigma = 1
-            noise1 = np.random.normal(0, sigma, size=signal.shape)
-            noise2 = np.random.normal(0, sigma, size=signal.shape)
+                sigma = 1
+                noise1 = np.random.normal(0, sigma, size=signal.shape)
+                noise2 = np.random.normal(0, sigma, size=signal.shape)
 
-            # Rician noise:
-            data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
+                # Rician noise:
+                data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
 
-            sigma_est = pca_noise_estimate(data, gtab,
-                                           correct_bias=correct_bias,
-                                           patch_radius=patch_radius)
-            assert_array_almost_equal(np.mean(sigma_est), sigma, decimal=1)
+                sigma_est = pca_noise_estimate(data, gtab,
+                                               correct_bias=correct_bias,
+                                               patch_radius=patch_radius)
+                assert_array_almost_equal(np.mean(sigma_est), sigma, decimal=1)
 
     sigma = 1
     noise1 = np.random.normal(0, sigma, size=signal.shape)
