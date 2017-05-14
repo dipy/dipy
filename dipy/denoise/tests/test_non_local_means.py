@@ -72,7 +72,6 @@ def test_nlmeans_4D_and_mask():
 
 
 def test_nlmeans_dtype():
-
     S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
@@ -84,6 +83,15 @@ def test_nlmeans_dtype():
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
 
+def test_lmean_patch_variation():
+    S0 = 100 + np.zeros((22, 23, 30))
+    S0n = 100 + 2 * np.random.standard_normal((22, 23, 30))
+    S0n1 = non_local_means(S0n, sigma=np.std(S0n), lmean_radius=1, rician=False)
+    S0n2 = non_local_means(S0n, sigma=np.std(S0n), lmean_radius=2, rician=False)
+    assert_(np.sum(np.abs(S0 - S0n1)) / np.sum(S0) <
+            np.sum(np.abs(S0 - S0n)) / np.sum(S0))
+    assert_(np.sum(np.abs(S0 - S0n2)) / np.sum(S0) <
+            np.sum(np.abs(S0 - S0n)) / np.sum(S0))
 
 if __name__ == '__main__':
     run_module_suite()
