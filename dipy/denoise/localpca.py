@@ -21,7 +21,7 @@ def localpca(arr, sigma, patch_radius=2):
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the different diffusion gradient directions.
+        are the diffusion gradient directions.
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
     patch_radius : int
