@@ -59,7 +59,8 @@ print("total time (non_local_means)", time() - t)
 
 t = time()
 
-den_old = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1, block_radius = 1, rician= True)
+den_old = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1,
+  block_radius = 1, rician= True)
 
 print("total time (nlmeans)", time() - t)
 """

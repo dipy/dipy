@@ -118,8 +118,9 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, int y,
-                       int z, double[:, :, :] average, double global_sum, double hh, int rician_int) nogil:
+cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x,
+    int y, int z, double[:, :, :] average, double global_sum, double hh,
+    int rician_int) nogil:
 
     """
     Computes the final estimate of the denoised image
@@ -284,7 +285,8 @@ cdef double _local_mean(double[:, :, :]ima, int x, int y, int z, int p) nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y, int z, int p) nogil:
+cdef double _local_variance(double[:, :, :] ima, double mean, int x, int y,
+    int z, int p) nogil:
     """
     local variance of a patch with patch radius = p centered at x,y,z
     """
@@ -347,7 +349,8 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int lmean_radius, int rician):
+def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius,
+int block_radius, double h, int lmean_radius, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
 
     Parameters
@@ -401,7 +404,8 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
     cdef double hh = 2 * h * h
     cdef int Ndims = (2 * block_radius + 1)**3
     cdef int nvox = dims[0] * dims[1] * dims[2]
-    cdef double[:, :, :] average = np.zeros((2 * block_radius + 1, 2 * block_radius + 1, 2 * block_radius + 1), dtype=np.float64)
+    cdef double[:, :, :] average = np.zeros((2 * block_radius + 1,
+    2 * block_radius + 1, 2 * block_radius + 1), dtype=np.float64)
     cdef double[:, :, :] fima = np.zeros_like(image)
     cdef double[:, :, :] means = np.zeros_like(image)
     cdef double[:, :, :] variances = np.zeros_like(image)
@@ -443,7 +447,8 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                                     if((ni == i)and(nj == j)and(nk == k)):
                                         continue
                                     if ((ni < 0) or (nj < 0) or (nk < 0) or (
-                                            nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
+                                            nj >= dims[0]) or (ni >= dims[1]) 
+                                            or (nk >= dims[2])):
                                         continue
                                     if ((means[nj, ni, nk] <= epsilon) or (
                                             variances[nj, ni, nk] <= epsilon)):
