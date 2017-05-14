@@ -193,5 +193,13 @@ def test_lpca_ill_conditioned():
     assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
 
 
+def test_lpca_sigma_wrong_shape():
+    gtab = gen_gtab()
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
+    sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
+    assert_raises(ValueError, localpca, DWI, sigma)
+
+
 if __name__ == '__main__':
     run_module_suite()
