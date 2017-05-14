@@ -87,18 +87,9 @@ def localpca(arr, sigma, patch_radius=2):
                     patch_size *
                     patch_size,
                     arr.shape[-1])
-                # compute the mean and normalize
-                M = np.mean(X, axis=0)
-                X = X - M
-                # PCA. There are two ways to do this:
-                # # 1. Compute the covariance matrix C = X_transpose X
-                # C = np.dot(X.T, X)
-                # C = C / X.shape[0]
-                # # and then decompose it:
-                # d, W = sla.eigh(C)
-
-                # 2. Alternatively, calculate the eigenvalues and
-                #  eigenvectors of the covariance matrix through an SVD:
+                # Demean:
+                X = X - np.mean(X, axis=0)
+                # PCA using an SVD
                 U, S, Vt = svd(X, *svd_args)[:3]
                 # Items in S are the eigenvalues, but in ascending order
                 # We invert the order (=> descending), square and normalize
