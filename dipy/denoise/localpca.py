@@ -74,19 +74,16 @@ def localpca(arr, sigma, patch_radius=2):
     for k in range(patch_radius, arr.shape[2] - patch_radius):
         for j in range(patch_radius, arr.shape[1] - patch_radius):
             for i in range(patch_radius, arr.shape[0] - patch_radius):
+                # Shorthand for indexing variables:
+                ix1 = i - patch_radius
+                ix2 = i + patch_radius + 1
+                jx1 = j - patch_radius
+                jx2 = j + patch_radius + 1
+                kx1 = k - patch_radius
+                kx2 = k + patch_radius + 1
 
-                X = np.zeros(
-                    (patch_size * patch_size * patch_size, arr.shape[3]))
-                M = np.zeros(arr.shape[3])
-
-                temp = arr[i - patch_radius: i + patch_radius + 1,
-                           j - patch_radius: j + patch_radius + 1,
-                           k - patch_radius: k + patch_radius + 1, :]
-                X = temp.reshape(
-                    patch_size *
-                    patch_size *
-                    patch_size,
-                    arr.shape[-1])
+                X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
+                                patch_size ** 3, arr.shape[-1])
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
                 X = X - M
@@ -103,31 +100,15 @@ def localpca(arr, sigma, patch_radius=2):
                 W_hat = np.zeros_like(W)
                 W_hat[:, d > 0] = W[:, d > 0]
                 Y = X.dot(W_hat)
-                X_est = Y.dot(W_hat.T)
+                # Multiply out to estimate the data (and add back the mean)
+                Xest = Y.dot(W_hat.T) + M
 
-                # Add back the mean:
-                temp = X_est + M
-                temp = temp.reshape(patch_size,
+                Xest = Xest.reshape(patch_size,
                                     patch_size,
                                     patch_size, arr.shape[-1])
-                # Also update the estimate matrix which is X_est * theta
 
-                theta[i - patch_radius: i + patch_radius + 1,
-                      j - patch_radius: j + patch_radius + 1,
-                      k - patch_radius: k + patch_radius + 1,
-                      :] = theta[i - patch_radius: i + patch_radius + 1,
-                                 j - patch_radius: j + patch_radius + 1,
-                                 k - patch_radius: k + patch_radius + 1,
-                                 :] + 1.0 / (1.0 + np.linalg.norm(d,
-                                                                  ord=0))
+                theta[ix1:ix2, jx1:jx2, kx1:kx2] += 1.0 / (1.0 + np.sum(d > 0))
+                thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest / (1 + np.sum(d > 0))
 
-                thetax[i - patch_radius: i + patch_radius + 1,
-                       j - patch_radius: j + patch_radius + 1,
-                       k - patch_radius: k + patch_radius + 1,
-                       :] = thetax[i - patch_radius: i + patch_radius + 1,
-                                   j - patch_radius: j + patch_radius + 1,
-                                   k - patch_radius: k + patch_radius + 1,
-                                   :] + temp / (1 + np.linalg.norm(d,
-                                                                   ord=0))
     denoised_arr = thetax / theta
     return denoised_arr.astype(arr.dtype)
