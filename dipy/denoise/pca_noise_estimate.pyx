@@ -73,6 +73,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
         data0 = data[..., ~gtab.b0s_mask]
         sibe = True
 
+    data0 = data0.astype(np.float64)
     cdef:
         cnp.npy_intp n0 = data0.shape[0]
         cnp.npy_intp n1 = data0.shape[1]
@@ -85,16 +86,11 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
         double norm = patch_size ** 3
         double sum_reg, temp1
         double[:, :, :] I = np.zeros((n0, n1, n2))
-        double[:, :, :] count = np.zeros((n0, n1, n2))
-        double[:, :, :] mean = np.zeros((n0, n1, n2))
-        double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
-        double[:, :, :, :] data0temp = data0
 
     X = data0.reshape(nsamples, n3)
     # Demean:
     M = np.mean(X, axis=0)
     X = X - M
-
     U, S, Vt = svd(X, *svd_args)[:3]
     # Rows of Vt are the eigenvectors, in ascending eigenvalue order:
     W = Vt.T
@@ -102,7 +98,16 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
     V = X.dot(W)
 
     # Grab the column corresponding to the smallest eigen-vector/-value:
-    I = V[:, -1].reshape(data0.shape[0], data0.shape[1], data0.shape[2])
+    I = V[:, -1].reshape(n0, n1, n2)
+    del V, W, X, U, S, Vt
+
+    cdef:
+      double[:, :, :] count = np.zeros((n0, n1, n2))
+      double[:, :, :] mean = np.zeros((n0, n1, n2))
+      double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
+      double[:, :, :, :] data0temp = data0
+
+
 
     with nogil:
         for i in range(pr, n0 - pr):
