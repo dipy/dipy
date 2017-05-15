@@ -53,7 +53,6 @@ def localpca(arr, sigma, patch_radius=2):
         e_s.format(patch_radius, arr.shape[-1])
         raise ValueError(e_s)
 
-    tau = 2.3 * 2.3 * sigma * sigma
     if isinstance(sigma, np.ndarray):
         if not sigma.shape == arr.shape[:-1]:
             e_s = "You provided a sigma array with a shape {0} for data with "
@@ -61,16 +60,14 @@ def localpca(arr, sigma, patch_radius=2):
             e_s = "spatial dimensions of the data."
             e_s.format(sigma.shape, arr.shape)
             raise ValueError(e_s)
-        sigma = (np.ones(arr.shape, dtype=np.float64) *
-                 sigma[..., np.newaxis])
-    tau = np.ones(arr.shape[:-1], dtype=np.float64) * tau
 
-    # loop around and find the 3D patch for each direction at each pixel
+    tau = np.ones(arr.shape) * 2.3 * 2.3 * sigma * sigma
 
     # declare arrays for theta and thetax
     theta = np.zeros(arr.shape, dtype=np.float64)
     thetax = np.zeros(arr.shape, dtype=np.float64)
 
+    # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius, arr.shape[2] - patch_radius):
         for j in range(patch_radius, arr.shape[1] - patch_radius):
             for i in range(patch_radius, arr.shape[0] - patch_radius):
