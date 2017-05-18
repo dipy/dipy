@@ -171,7 +171,7 @@ def test_surface():
     data[25, 20:30, 25] = 1.
     affine = np.eye(4)
     surface = actor.surface_actor(data, affine,
-                                  colors=np.array([1, 0, 1]),
+                                  color=np.array([1, 0, 1]),
                                   opacity=.5)
     renderer.add(surface)
 
@@ -186,7 +186,7 @@ def test_surface():
     data2[35:40, 25, 25] = 1.
     affine = np.eye(4)
     surface2 = actor.surface_actor(data2, affine,
-                                  colors=np.array([0, 1, 1]),
+                                  color=np.array([0, 1, 1]),
                                   opacity=.5)
     renderer2.add(surface2)
 
