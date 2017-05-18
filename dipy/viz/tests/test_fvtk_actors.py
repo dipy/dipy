@@ -214,7 +214,6 @@ def test_surface():
     from dipy.tracking.local import ThresholdTissueClassifier
     from dipy.tracking import utils
     from dipy.tracking.local import LocalTracking
-    from dipy.viz import fvtk
     from dipy.viz.colormap import line_colors
 
 
@@ -244,24 +243,24 @@ def test_surface():
     streamlines = list(streamlines)
 
     # Prepare the display objects.
-    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
     seedroi_actor = actor.surface_actor(seed_mask, affine, [0, 1, 1], 0.5)
 
     # Create the 3d display.
-    r = fvtk.ren()
-    r2 = fvtk.ren()
-    fvtk.add(r, streamlines_actor)
+    r = window.ren()
+    r2 = window.ren()
+    r.add(streamlines_actor)
     arr3 = window.snapshot(r, 'test_surface3.png', offscreen=False)
     report3 = window.analyze_snapshot(arr3, find_objects=True)
-    fvtk.add(r2, streamlines_actor)
-    fvtk.add(r2, seedroi_actor)
+    r2.add(streamlines_actor)
+    r2.add(seedroi_actor)
     arr4 = window.snapshot(r2, 'test_surface4.png', offscreen=False)
     report4 = window.analyze_snapshot(arr4, find_objects=True)
 
     #assert that the seed ROI rendering isn't far away from the streamlines (affine error)
     npt.assert_equal(report3.objects,report4.objects)
-    #fvtk.show(r)
-    #fvtk.show(r2)
+    #window.show(r)
+    #window.show(r2)
 
 
 
