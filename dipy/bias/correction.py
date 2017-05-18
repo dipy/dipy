@@ -312,4 +312,4 @@ t1 = nib.load(ft1).get_data()
 
 #t1_slic = t1[:, :, 10]
 
-logSharpenedImage, logUncorrectedImage, newlogbiasfield = GenerateData(t1)
+#logSharpenedImage, logUncorrectedImage, newlogbiasfield = GenerateData(t1)
