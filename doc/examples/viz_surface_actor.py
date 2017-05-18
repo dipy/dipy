@@ -16,7 +16,7 @@ from dipy.direction import peaks_from_model
 from dipy.tracking.local import ThresholdTissueClassifier
 from dipy.tracking import utils
 from dipy.tracking.local import LocalTracking
-from dipy.viz import fvtk
+from dipy.viz import actor, window
 from dipy.viz.colormap import line_colors
 
 """
@@ -53,7 +53,7 @@ streamlines = list(streamlines)
 We will create a streamline actor from the streamlines
 """
 
-streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, line_colors(streamlines))
 
 """
 Next, we create a surface actor from the corpus callosum seed ROI. We
@@ -64,7 +64,7 @@ a decimal between zero and one. Here, we set the color as blue/green with
 surface_opacity = 0.5
 surface_color = [0,1,1]
 
-seedroi_actor = fvtk.actor.surface_actor(seed_mask, affine,
+seedroi_actor = actor.surface_actor(seed_mask, affine,
                                          surface_color, surface_opacity)
 
 """
@@ -72,16 +72,16 @@ Next, we initialize a ''Renderer'' object and add both of the actors
 to the rendering.
 """
 
-ren = fvtk.ren()
-fvtk.add(ren, streamlines_actor)
-fvtk.add(ren, seedroi_actor)
+ren = window.ren()
+ren.add(streamlines_actor)
+ren.add(seedroi_actor)
 
 """
 If you uncomment the following line, the rendering will pop up in an interactive
 window.
 """
 
-#fvtk.show(ren)
+#window.show(ren)
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
