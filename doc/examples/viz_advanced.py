@@ -12,7 +12,7 @@ the main functions using the following modules.
 """
 
 import numpy as np
-from dipy.viz import actor, window, widget
+from dipy.viz import actor, window, widget, ui
 
 """
 In ``window`` we have all the objects that connect what needs to be rendered
@@ -111,7 +111,7 @@ visualization pipeline and therefore we don't recommend using them with
 object which allows accessing the pipeline in different areas. Here is how:
 """
 
-show_m = window.ShowManager(ren, size=(1200, 900))
+show_m = window.ShowManager(ren, size=(600, 600))
 show_m.initialize()
 
 """
@@ -119,22 +119,51 @@ After we have initialized the ``ShowManager`` we can go ahead and create a
 callback which will be given to the ``slider`` function.
 """
 
-
+"""
 def change_slice(obj, event):
     z = int(np.round(obj.get_value()))
     image_actor.display_extent(0, shape[0] - 1,
                                0, shape[1] - 1, z, z)
 
-slider = widget.slider(show_m.iren, show_m.ren,
-                       callback=change_slice,
-                       min_value=0,
-                       max_value=shape[2] - 1,
-                       value=shape[2] / 2,
-                       label="Move slice",
-                       right_normalized_pos=(.98, 0.6),
-                       size=(120, 0), label_format="%0.lf",
-                       color=(1., 1., 1.),
-                       selected_color=(0.86, 0.33, 1.))
+"""
+"""
+def right_mouse_button_drag(i_ren, obj, button):
+    print("Right Button Dragged")
+
+
+def right_mouse_button_click(i_ren, obj, button):
+    print ("Right Button Clicked")
+
+button_example.on_right_mouse_button_drag = right_mouse_button_drag
+button_example.on_right_mouse_button_pressed = right_mouse_button_click
+"""
+
+line_slider = ui.LineSlider2D(min_value=0,
+                              max_value=shape[2] - 1,
+                              initial_value=shape[2] / 2)
+
+
+def right_mouse_button_drag(i_ren, obj, button):
+    print("Right Button Dragged")
+
+
+def right_mouse_button_click(i_ren, obj, button):
+    print ("Right Button Clicked")
+
+line_slider.on_right_mouse_button_drag = right_mouse_button_drag
+line_slider.on_right_mouse_button_pressed = right_mouse_button_click
+
+
+
+
+
+
+panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(.1, 1, 1),
+                   align="right")
+
+panel.add_element(line_slider, 'relative', (0.5, 0.5))
+
+show_m.ren.add(panel)
 
 """
 Then, we can render all the widgets and everything else in the screen and
@@ -149,14 +178,14 @@ using its ``place`` method every time the window size changes.
 global size
 size = ren.GetSize()
 
-
+"""
 def win_callback(obj, event):
     global size
     if size != obj.GetSize():
 
         slider.place(ren)
         size = obj.GetSize()
-
+"""
 show_m.initialize()
 
 """
@@ -164,15 +193,15 @@ Finally, please uncomment the following 3 lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-# show_m.add_window_callback(win_callback)
-# show_m.render()
-# show_m.start()
+#show_m.add_window_callback(win_callback)
+show_m.render()
+show_m.start()
 
-ren.zoom(1.5)
-ren.reset_clipping_range()
+#ren.zoom(1.5)
+#ren.reset_clipping_range()
 
-window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
-              reset_camera=False)
+#window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
+#              reset_camera=False)
 
 """
 .. figure:: bundles_and_a_slice.png
