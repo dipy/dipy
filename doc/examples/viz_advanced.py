@@ -118,45 +118,17 @@ show_m.initialize()
 After we have initialized the ``ShowManager`` we can go ahead and create a
 callback which will be given to the ``slider`` function.
 """
-
-"""
-def change_slice(obj, event):
-    z = int(np.round(obj.get_value()))
+def change_slice(i_ren, obj, slider):
+    z = int(np.round(slider.value))
     image_actor.display_extent(0, shape[0] - 1,
-                               0, shape[1] - 1, z, z)
-
-"""
-"""
-def right_mouse_button_drag(i_ren, obj, button):
-    print("Right Button Dragged")
-
-
-def right_mouse_button_click(i_ren, obj, button):
-    print ("Right Button Clicked")
-
-button_example.on_right_mouse_button_drag = right_mouse_button_drag
-button_example.on_right_mouse_button_pressed = right_mouse_button_click
-"""
+                                0, shape[1] - 1, z, z)
 
 line_slider = ui.LineSlider2D(min_value=0,
                               max_value=shape[2] - 1,
                               initial_value=shape[2] / 2)
 
-
-def right_mouse_button_drag(i_ren, obj, button):
-    print("Right Button Dragged")
-
-
-def right_mouse_button_click(i_ren, obj, button):
-    print ("Right Button Clicked")
-
-line_slider.on_right_mouse_button_drag = right_mouse_button_drag
-line_slider.on_right_mouse_button_pressed = right_mouse_button_click
-
-
-
-
-
+line_slider.add_callback(line_slider.slider_disk, "MouseMoveEvent",
+                          change_slice)
 
 panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(.1, 1, 1),
                    align="right")
