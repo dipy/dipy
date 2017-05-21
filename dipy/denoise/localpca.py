@@ -14,7 +14,7 @@ except ImportError:
     svd_args = [False]
 
 
-def localpca(arr, sigma, patch_radius=2):
+def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -24,9 +24,18 @@ def localpca(arr, sigma, patch_radius=2):
         are the diffusion gradient directions.
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
-    patch_radius : int
+    patch_radius : int, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    tau_factor : float, optional
+        Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
+        are smaller than:
+
+        .. math ::
+
+                \tau = (\tau_{factor} \sigma)^2
+
+        Default: 2.3, based on the results described in [Manjon13]_.
 
     Returns
     -------
@@ -62,8 +71,8 @@ def localpca(arr, sigma, patch_radius=2):
             e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
 
-    tau = np.ones(arr.shape[:-1]) * 2.3 * 2.3 * sigma * sigma
-
+    tau = np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2)
+    del sigma
     # declare arrays for theta and thetax
     theta = np.zeros(arr.shape, dtype=np.float64)
     thetax = np.zeros(arr.shape, dtype=np.float64)
