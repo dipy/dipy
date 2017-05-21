@@ -103,13 +103,8 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 # Rows of Vt are eigenvectors, but also in ascending eigenvalue
                 # order:
                 W = Vt[::-1].T
-                d[d < tau[i, j, k]] = 0
-                W_hat = np.zeros_like(W)
-                W_hat[:, d > 0] = W[:, d > 0]
-                Y = X.dot(W_hat)
-                # Multiply out to estimate the data (and add back the mean)
-                Xest = Y.dot(W_hat.T) + M
-
+                W[:, d < tau[i, j, k]] = 0
+                Xest = X.dot(W).dot(W.T) + M
                 Xest = Xest.reshape(patch_size,
                                     patch_size,
                                     patch_size, arr.shape[-1])
