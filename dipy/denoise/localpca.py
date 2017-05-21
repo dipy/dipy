@@ -103,12 +103,14 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 # Rows of Vt are eigenvectors, but also in ascending eigenvalue
                 # order:
                 W = Vt[::-1].T
+                # Threshold by tau:
                 W[:, d < tau[i, j, k]] = 0
+                # This is equations 1 and 2 in Manjon 2013:
                 Xest = X.dot(W).dot(W.T) + M
                 Xest = Xest.reshape(patch_size,
                                     patch_size,
                                     patch_size, arr.shape[-1])
-
+                # This is equation 3 in Manjon 2013: 
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += 1.0 / (1.0 + np.sum(d > 0))
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest / (1 + np.sum(d > 0))
 
