@@ -26,7 +26,8 @@ except ImportError:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
+def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
+                       smooth=2):
     """ PCA based local noise estimation.
 
     Parameters
@@ -47,7 +48,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True, smooth=2):
 
     smooth : int
       Radius of a Gaussian smoothing filter to apply to the noise estimate
-      before returning. Default: no smoothing.
+      before returning. Default: 2.
 
     Returns
     -------
