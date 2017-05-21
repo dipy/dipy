@@ -47,21 +47,22 @@ def localpca(arr, sigma, patch_radius=2):
     patch_size = 2 * patch_radius + 1
 
     if patch_size ** 3 < arr.shape[-1]:
-        e_s = "You asked for PCA denoising with a patch_radius of {0} "
-        e_s += "for data with {1} directions. This would result in an "
-        e_s += "ill-conditioned PCA matrix. Please increase the patch_radius."
-        e_s.format(patch_radius, arr.shape[-1])
+        e_s = "You asked for PCA denoising with a "
+        e_s += "patch_radius of {0} ".format(patch_radius)
+        e_s += "for data with {0} directions. ".format(arr.shape[-1])
+        e_s += "This would result in an ill-conditioned PCA matrix. "
+        e_s += "Please increase the patch_radius."
         raise ValueError(e_s)
 
     if isinstance(sigma, np.ndarray):
         if not sigma.shape == arr.shape[:-1]:
-            e_s = "You provided a sigma array with a shape {0} for data with "
-            e_s = "shape {1}. Please provide a sigma array that matches the "
-            e_s = "spatial dimensions of the data."
-            e_s.format(sigma.shape, arr.shape)
+            e_s = "You provided a sigma array with a shape"
+            e_s += "{0} for data with".format(sigma.shape)
+            e_s += "shape {0}. Please provide a sigma array".format(arr.shape)
+            e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
 
-    tau = np.ones(arr.shape) * 2.3 * 2.3 * sigma * sigma
+    tau = np.ones(arr.shape[:-1]) * 2.3 * 2.3 * sigma * sigma
 
     # declare arrays for theta and thetax
     theta = np.zeros(arr.shape, dtype=np.float64)

@@ -16,7 +16,7 @@ from dipy.sims.voxel import multi_tensor
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
     # define voxel index
-    slice_ind = np.zeros((10, 10, 10))
+    slice_ind = np.zeros((10, 10, 8))
     slice_ind[4:7, 4:7, :] = 1
     slice_ind[4:7, 7, :] = 2
     slice_ind[7, 7, :] = 3
@@ -60,7 +60,7 @@ def rfiw_phantom(gtab, snr=None):
     mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh],
                        [Dwater, Dwater, Dwater]])
     angles = [(0, 0, 1), (0, 0, 1), (0, 0, 1)]
-    DWI = np.zeros((10, 10, 10, gtab.bvals.size))
+    DWI = np.zeros(slice_ind.shape + (gtab.bvals.size, ))
     for i in range(10):
         fractions = [f1[i] * fia * 100, f1[i] *
                      (1 - fia) * 100, (1 - f1[i]) * 100]
@@ -119,6 +119,17 @@ def test_lpca_boundary_behaviour():
     S0_first = S0[:, :, 0, :]
     S0ns = localpca(S0, sigma=np.std(S0))
     S0ns_first = S0ns[:, :, 0, :]
+    rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
+        (100.0 * 20.0 * 20.0 * 20.0)
+
+    # shows that S0n_first is not very close to S0_first
+    assert_(rmses > 0.0001)
+    assert_equal(np.round(S0ns_first.mean()), 100)
+
+    # Use a volume of sigma, instead of a scalar:
+    sigma_vol = np.ones(S0.shape[:-1]) * np.std(S0)
+    S0ns = localpca(S0, sigma=sigma_vol)
+
     rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
         (100.0 * 20.0 * 20.0 * 20.0)
 
@@ -186,6 +197,23 @@ def test_phantom():
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
+
+    # Try this with a sigma volume, instead of a scalar
+    sigma_vol = sigma * np.ones(DWI.shape[:-1])
+    DWI_den = localpca(DWI, sigma_vol, patch_radius=3)
+    rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
+    rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
+
+    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc - DWI_den)
+                          ) / np.sum(np.abs(DWI_clean_wrc))
+    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
+        np.sum(np.abs(DWI_clean_wrc))
+
+    assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
+    assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
+    assert_(rmse_den < rmse_noisy)
+    assert_(rmse_den_wrc < rmse_noisy_wrc)
+
 
 
 def test_lpca_ill_conditioned():
