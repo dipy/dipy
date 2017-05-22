@@ -138,15 +138,15 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
       mean = np.divide(mean, count)
       snr = np.divide(mean, np.sqrt(sigma_sq))
       snr_sq = (snr ** 2)
-      # Zeta is practically equal to 1 above 37.4, and we overflow, raising
+      # xi is practically equal to 1 above 37.4, and we overflow, raising
       # warnings and creating ot-a-numbers.
       # Instead, we will replace these values with 1 below
       with np.errstate(over='ignore', invalid='ignore'):
-          zeta = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
+          xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
                   ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
                   (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2).astype(float)
-      zeta[snr > 37.4] = 1
-      sigma_corr = sigma_sq / zeta
+      xi[snr > 37.4] = 1
+      sigma_corr = sigma_sq / xi
       sigma_corr[np.isnan(sigma_corr)] = 0
     else:
       sigma_corr = sigma_sq
