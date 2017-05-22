@@ -1,7 +1,11 @@
 import numpy as np
 import scipy as sp
 import scipy.linalg as sla
+import scipy.special as sps
+from scipy.interpolate import interp1d
 from warnings import warn
+
+from dipy.core.ndindex import ndindex
 
 # Try to get the SVD through direct API to lapack:
 try:
@@ -14,7 +18,54 @@ except ImportError:
     svd_args = [False]
 
 
-def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
+def inv_eta(phi):
+    """
+    The inverse of eta, which corrects for Rician bias at the end of the
+    denoising process (see eqs. 4,5,6 in [Manjon13]_).
+
+    Parameters
+    ----------
+    phi : float
+       signal to noise ratio
+
+    Returns
+    -------
+    inv_eta : float
+        The inverse of the eta function
+    """
+    phi_sq = phi ** 2
+    inv_eta1 = np.log(np.sqrt(np.pi/2)) - phi_sq / 2
+    inv_eta2 = 2 * np.log((((1 + (phi_sq / 2)) * sps.iv(0, phi_sq/4)) +
+                          ((phi_sq / 2) * sps.iv(1, (phi_sq/4)))))
+    return np.exp(inv_eta1 + inv_eta2)
+
+
+def get_eta(start=0, stop=37.4, step=0.01):
+    """
+    Get's an eta function: an interpolated lookup table between SNR
+    and bias corrected.
+    """
+    x = np.arange(start, stop, step)
+    y = inv_eta(x)
+    return interp1d(y, x)
+
+
+def eta(phi, f=None):
+    """
+    A lookup table for correction of Rician bias after denoising (see eqs.
+    4,5,6 in [Manjon13]_).
+
+    Parameters
+    ----------
+    phi : float
+    """
+    if phi < 1.25:
+        return 0
+    else:
+        return f(phi)
+
+
+def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, correct_bias=False):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -72,7 +123,6 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
             raise ValueError(e_s)
 
     tau = np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2)
-    del sigma
     # declare arrays for theta and thetax
     theta = np.zeros(arr.shape, dtype=np.float64)
     thetax = np.zeros(arr.shape, dtype=np.float64)
@@ -103,9 +153,12 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 # Rows of Vt are eigenvectors, but also in ascending eigenvalue
                 # order:
                 W = Vt[::-1].T
-                # Threshold by tau:
+                # Threshold by tau in W, this replaces \hat{D} in the Manjon et
+                # al. (2013) formulation:
                 W[:, d < tau[i, j, k]] = 0
-                # This is equations 1 and 2 in Manjon 2013:
+                # This is equations 1 and 2 in Manjon 2013 (\hat{D} is subsumed
+                # in the above nulling of eigenvectors corresponding to
+                # eigenvalues smaller than tau:
                 Xest = X.dot(W).dot(W.T) + M
                 Xest = Xest.reshape(patch_size,
                                     patch_size,
@@ -115,4 +168,18 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest / (1 + np.sum(d > 0))
 
     denoised_arr = thetax / theta
+
+    if correct_bias:
+        func = get_eta()
+        # Prepare to iterate over the entire thing:
+        index = ndindex(denoised_arr.shape)
+        if isinstance(sigma, np.ndarray):
+            for idx in index:
+                denoised_arr[idx] = (sigma[idx] /
+                                     func(denoised_arr[idx]))
+        else:
+            for idx in index:
+                denoised_arr[idx] = (sigma /
+                                     func(denoised_arr[idx]))
+
     return denoised_arr.astype(arr.dtype)

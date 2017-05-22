@@ -6,7 +6,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.localpca import localpca
+from dipy.denoise.localpca import localpca, inv_eta
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.core.sphere import disperse_charges, HemiSphere
@@ -141,10 +141,16 @@ def test_lpca_boundary_behaviour():
 def test_lpca_rmse():
     S0_w_noise = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
     rmse_w_noise = np.sqrt(np.mean((S0_w_noise - 100) ** 2))
-    S0_denoised = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
-    rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
-    # Denoising should always improve the RMSE:
-    assert_(rmse_denoised < rmse_w_noise)
+    for correct_bias in [True, False]:
+        for sigma in [np.std(S0_w_noise),
+                      np.std(S0_w_noise) * np.ones(S0_w_noise.shape[:-1])]:
+            S0_denoised = localpca(S0_w_noise, sigma=sigma,
+                                   correct_bias=correct_bias)
+            rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
+            # Denoising should always improve the RMSE:
+            assert_(rmse_denoised < rmse_w_noise)
+
+
 
 
 def test_lpca_sharpness():
@@ -228,6 +234,39 @@ def test_lpca_sigma_wrong_shape():
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
     sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
     assert_raises(ValueError, localpca, DWI, sigma)
+
+
+def inv_eta_original(phi):
+    """
+
+    This is the explicit form of the inverse of eta, which corrects for Rician
+    bias at the end of the denoising process (see eqs. 4,5,6 in [Manjon13]_).
+
+    We implement a slightly different version of this in the localpca module,
+    to avoid overflow, but we test here against this original form.
+
+    Parameters
+    ----------
+    phi : float
+       signal to noise ratio
+
+    Returns
+    -------
+    inv_eta : float
+        The inverse
+
+    """
+    phi_sq = phi ** 2
+    return (np.sqrt(np.pi/2) * np.exp(-phi_sq / 2) *
+            (((1 + (phi_sq / 2)) * sps.iv(0, phi_sq/4)) +
+             ((phi_sq / 2) * sps.iv(1, (phi_sq/4)))) ** 2)
+
+
+def test_inv_eta():
+    # This is the range of values within which this works without overflow,
+    # even for the naive implementation:
+    x = np.arange(0, 37, 0.01)
+    assert_array_almost_equal(inv_eta(x), inv_eta_original(x))
 
 
 if __name__ == '__main__':
