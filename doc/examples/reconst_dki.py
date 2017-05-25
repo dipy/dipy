@@ -103,16 +103,16 @@ of parameters [TaxCMW2015]_ and since the non-Gaussian components of the
 diffusion signal are more sensitive to artefacts [NetoHe2012]_, it might be
 favorable to suppress the effects of noise and artefacts before diffusion
 kurtosis fitting. In this example the effects of noise and artefacts are
-suppress by using 3D gaussian smothing (with a Gaussian kernel with
-fwhm=1.25) as suggested by pioner DKI studies (e.g. [Jensen2005]_,
+suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
+fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
 [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
-are comparable these studies, it is important to note that more advanced noise
-and artifact suppression algorithms are available in Dipy (e.g. the non-local
-mean filter :ref:`example-denoise-nlmeans`).
+are comparable to these studies, it is important to note that more advanced
+noise and artifact suppression algorithms are available in Dipy (e.g. the
+non-local means filter :ref:`example-denoise-nlmeans`).
 """
 
 fwhm = 1.25
-gauss_std = fwhm / np.sqrt(8 * np.log(2))  # converting fwhm to gaussian std
+gauss_std = fwhm / np.sqrt(8 * np.log(2))  # converting fwhm to Gaussian std
 data_smooth = np.zeros(data.shape)
 for v in range(data.shape[-1]):
     data_smooth[..., v] = gaussian_filter(data[..., v], sigma=gauss_std)
@@ -166,9 +166,10 @@ dti_AD = tenfit.ad
 dti_RD = tenfit.rd
 
 """
-The DT based measures can be easly visualized using matplotlib. For example,
-the FA, MD, AD, and RD obtain from the diffusion kurtosis model (upper panels)
-and the tensor model (lower panels) are plotted for a selected axial slice.
+The DT based measures can be easily visualized using matplotlib. For example,
+the FA, MD, AD, and RD obtained from the diffusion kurtosis model (upper
+panels) and the tensor model (lower panels) are plotted for a selected axial
+slice.
 """
 
 axial_slice = 9
@@ -203,8 +204,8 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
    :align: center
 
-   **Diffusion tensor measures obtain from the diffusion tensor estimated from
-   DKI (upper panels) and DTI (lower panels).**.
+   **Diffusion tensor measures obtained from the diffusion tensor estimated
+    from DKI (upper panels) and DTI (lower panels).**.
 
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 instance can be used to estimate the non-Gaussian measures of mean kurtosis
@@ -243,10 +244,10 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
 
-   **Kurtosis tensor standard measures obtain from the kurtosis tensor.**.
+   **Kurtosis tensor standard measures obtained from the kurtosis tensor.**.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
-diffusion is restrited by compartments and barriers (e.g., myelin sheath).
+diffusion is restricted by compartments and barriers (e.g., myelin sheath).
 Therefore, as the figure above shows, white matter kurtosis values are smaller
 along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
@@ -258,24 +259,24 @@ the contribution of hindered and restricted diffusion for well-aligned fibers.
 These tensors can be also interpreted as the influences of intra- and
 extra-cellular compartments and can be used to estimate the axonal volume
 fraction and diffusion extra-cellular tortuosity. According to recent studies,
-these later measures can be used to distinguish processes of axonal loss from
+these latter measures can be used to distinguish processes of axonal loss from
 processes of myelin degeneration [Fieremans2012]_.
 
 The model proposed by Fieremans and colleagues can be defined in dipy by
-instantiating the 'KurtosisMicrostructureModel' Object in the following way:
+instantiating the 'KurtosisMicrostructureModel' object in the following way:
 """
 
 dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
 
 """
-Before fitting this microstructural model, it is usefull to indicate the
-regions in which this model provides meanfully information (i.e. voxels of
+Before fitting this microstructural model, it is useful to indicate the
+regions in which this model provides meaningful information (i.e. voxels of
 well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple way
 to select this region is to generate a well-aligned fiber mask based on the
 values of diffusion sphericity, planarity and linearity. Here we will follow
-this selection criteria for a better comparision of our figures with the
-original article publised by Fieremans et al. [Fieremans2011]_. Nevertheless,
-it is important to note that voxels with well-aligned fiber can be selected
+these selection criteria for a better comparision of our figures with the
+original article published by Fieremans et al. [Fieremans2011]_. Nevertheless,
+it is important to note that voxels with well-aligned fibers can be selected
 based on other approaches such as using predefined regions of interest.
 """
 
@@ -302,7 +303,7 @@ well_aligned_mask[np.isnan(cp)] = False
 well_aligned_mask[np.isnan(cs)] = False
 
 """
-Analgous to DKI, the data fit can be done by calling the ``fit`` function of
+Analogous to DKI, the data fit can be done by calling the ``fit`` function of
 the model's object as follows:
 """
 
@@ -318,7 +319,7 @@ AWF = dki_micro_fit.awf
 TORT = dki_micro_fit.tortuosity
 
 
-""" Below these parameters are ploted in top of the mean kurtosis maps: """
+""" These parameters are plotted below on top of the mean kurtosis maps: """
 
 fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
                         subplot_kw={'xticks': [], 'yticks': []})
@@ -343,7 +344,7 @@ fig3.savefig('Kurtosis_Microstructural_measures.png')
    :align: center
 
    ** Axonal water fraction (left panel) and tortuosity (right panel) values
-   of well-aligned fiber regions overlayed in a mean kurtosis all-brain
+   of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
    image.**.
 
 
