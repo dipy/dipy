@@ -346,6 +346,8 @@ def test_odf_slicer(interactive=False):
         renderer.clear()
         renderer.add(fa_actor)
         renderer.add(odf_actor)
+        renderer.reset_camera()
+        renderer.reset_clipping_range()
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
         npt.assert_equal(report.objects, 2)
@@ -382,6 +384,8 @@ def test_odf_slicer(interactive=False):
                                      norm=False, global_cm=True)
         renderer.clear()
         renderer.add(odf_actor)
+        renderer.reset_camera()
+        renderer.reset_clipping_range()
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, colors=(0, 0, 0),
                                          find_objects=True)
