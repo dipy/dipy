@@ -328,6 +328,7 @@ def test_odf_slicer(interactive=False):
         renderer.clear()
         renderer.add(fa_actor)
         renderer.reset_camera()
+        renderer.reset_clipping_range()
         # window.show(renderer)
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
@@ -389,4 +390,5 @@ def test_odf_slicer(interactive=False):
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    # npt.run_module_suite()
+    test_odf_slicer()
