@@ -14,6 +14,8 @@ from scipy import interpolate
 from dipy.core.ndindex import ndindex
 from scipy import signal
 from sklearn.neighbors import KernelDensity
+from bspline_fit import cubic_bspline
+import matplotlib.pyplot as plt
 
 
 class n3_correction(object):
@@ -31,7 +33,7 @@ class n3_correction(object):
         self.bin_lengh = self.bins[1] - self.bins[0]
         self.h = self.h_scale * self.bin_lengh
         self.sample_f = self.gaussian_init(5, self.num_of_bins)
-        self.kernel_dhist = self.kernel_density_estimate()
+        self.kernel_dhist = self.kernel_density_estimate(self.hist)
         if init_u == "deconv":
             self.estimate_u = self.wiener_decon_filter()
         if init_u == "init_v":
@@ -113,15 +115,32 @@ class n3_correction(object):
                                int(round((self.num_of_bins/2))) + \
                                           self.num_of_bins]
 
+        expect_p = expect[0:self.num_of_bins:4]
+        expect_obj = cubic_bspline(expect_p, self.num_of_bins + 15,
+                                   spacing="uniform")
+        expect_smooth = expect_obj.cubicbspline_2d()
+#        kernel_estimate_expect = self.kernel_density_estimate(expect)
+
         for index in ndindex(self.data.shape):
             i, j, k = index
             idx = int(np.floor((self.data[i, j, k] - self.bins[0]) / \
                                 self.bin_lengh))
             if idx > 200 or idx == 200:
                 idx = 199
-            self.sharpened_data[i, j, k] = expect[idx]
+            self.sharpened_data[i, j, k] = expect_smooth[idx]
 
-        return expect
+        return expect_smooth[7:self.num_of_bins+7]
+
+    def optimization_converge(self):
+        expect_smooth = self.update_stratergy()
+        hist, h = np.histogram(self.data - expect_smooth,
+                               bins=self.num_of_bins)
+        new_f = self.kernel_density_estimate(hist)
+        plt.plot(np.array(range(200)), self.sample_f)
+        plt.figure()
+        plt.plot(np.array(range(200)), new_f)
+        print(np.sum(new_f-self.sample_f))
+        self.sample_f = new_f
 
     def kernel_density_estimate(self, dist):
         """Doing a kernel density estimation
@@ -142,16 +161,16 @@ class n3_correction(object):
                     if(left_bin < 0):
                         left_bin_num = 0
                     else:
-                        left_bin_num = self.hist[left_bin]
+                        left_bin_num = dist[left_bin]
                     if(right_bin > self.num_of_bins - 1):
                         right_bin_num = 0
                     else:
-                        right_bin_num = self.hist[right_bin]
+                        right_bin_num = dist[right_bin]
                     scale_factor += (j + 1) * self.bin_lengh * \
                                     (left_bin_num + right_bin_num)
-                density[i] += (np.sum(self.hist[left:right]) / self.h - \
+                density[i] += (np.sum(dist[left:right]) / self.h - \
                                      (1 / self.h * self.h) * scale_factor) / \
-                                      np.sum(self.hist)
+                                      np.sum(dist)
         return density
 
 #    def triangle_estimate(self):
