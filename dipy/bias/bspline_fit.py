@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.bias import correction
+from dipy.bias.correction import sharpen_image
 import nibabel as nib
 
 
@@ -135,9 +135,9 @@ ft1 = dname + t1_input
 
 t1 = nib.load(ft1).get_data()
 
-logUncorrectedImage = np.log(t1)
+#logUncorrectedImage = np.log(t1)
 
-sharpenedimg = correction.sharpenImage(logUncorrectedImage)
+#sharpenedimg = sharpen_image(logUncorrectedImage)
 
 """
 P = np.array([1, 4, 10, 20, 15, 10, 20, 30, 25])
