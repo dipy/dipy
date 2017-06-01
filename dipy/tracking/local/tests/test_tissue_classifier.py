@@ -157,9 +157,9 @@ def test_cmc_tissue_classifier():
      tissue types.
     """
 
-    gm = np.array([[[1,1],[0,0],[0,0]]])
-    wm = np.array([[[0,0],[1,1],[0,0]]])
-    csf = np.array([[[0,0],[0,0],[1,1]]])
+    gm = np.array([[[1, 1], [0, 0], [0, 0]]])
+    wm = np.array([[[0, 0], [1, 1], [0, 0]]])
+    csf = np.array([[[0, 0], [0, 0], [1, 1]]])
 
     cmc_tc = CmcTissueClassifier(include_map=gm,
                                  exclude_map=csf,
