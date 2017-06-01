@@ -96,7 +96,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
 cdef class ConstrainedTissueClassifier(TissueClassifier):
     r"""
-    Abstract class that takes as input inclued and excluded tissue maps.
+    Abstract class that takes as input included and excluded tissue maps.
 
     cdef:
         double interp_out_double[1]
@@ -104,19 +104,10 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         double[:, :, :] include_map, exclude_map
 
     """
-    def __cinit__(self, include_map, exclude_map, **kw):
+    def __cinit__(self, include_map, exclude_map, *args, **kw):
         self.interp_out_view = self.interp_out_double
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
-
-    #@cython.boundscheck(False)
-    #@cython.wraparound(False)
-    #@cython.initializedcheck(False)
-    #cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
-#        cdef:
-#            double include_result, exclude_result
-#            int include_err, exclude_err
-#        return ENDPOINT
 
 
 cdef class ActTissueClassifier(ConstrainedTissueClassifier):
@@ -231,7 +222,10 @@ cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
             raise RuntimeError("Unexpected interpolation error " +
                                "(exclude_map - code:%i)" % exclude_err)
 
-        # test if the tracking contiues
+        # test if the tracking continues
+        if include_result + exclude_result <= 0:
+            return TRACKPOINT
+
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
