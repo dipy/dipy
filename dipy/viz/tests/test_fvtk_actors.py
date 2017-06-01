@@ -328,6 +328,7 @@ def test_odf_slicer(interactive=False):
         renderer.clear()
         renderer.add(fa_actor)
         renderer.reset_camera()
+        renderer.reset_clipping_range()
         # window.show(renderer)
         arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
