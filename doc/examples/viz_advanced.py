@@ -97,11 +97,27 @@ slicer_opacity = .6
 image_actor.opacity(slicer_opacity)
 
 """
+We can add additonal slicers by copying
+"""
+
+image_actor_2 = image_actor.copy()
+image_actor_2.opacity(slicer_opacity)  # does copy not include opacity?
+x_midpoint = int(np.round(shape[0] / 2))
+image_actor_2.display_extent(x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
+
+image_actor_3 = image_actor.copy()
+image_actor_3.opacity(slicer_opacity)  # does copy not include opacity?
+y_midpoint = int(np.round(shape[1] / 2))
+image_actor_3.display_extent(0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
+
+"""
 Connect the actors with the Renderer.
 """
 
 ren.add(stream_actor)
 ren.add(image_actor)
+ren.add(image_actor_2)
+ren.add(image_actor_3)
 
 """
 Now we would like to change the position of the ``image_actor`` using a slider.
@@ -118,22 +134,44 @@ show_m.initialize()
 After we have initialized the ``ShowManager`` we can go ahead and create a
 callback which will be given to the ``slider`` function.
 """
+
+
 def change_slice(i_ren, obj, slider):
     z = int(np.round(slider.value))
-    image_actor.display_extent(0, shape[0] - 1,
-                                0, shape[1] - 1, z, z)
+    image_actor.display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
+
+
+def change_slice_2(i_ren, obj, slider):
+    x = int(np.round(slider.value))
+    image_actor_2.display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
+
+
+def change_slice_3(i_ren, obj, slider):
+    y = int(np.round(slider.value))
+    image_actor_3.display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
 
 line_slider = ui.LineSlider2D(min_value=0,
                               max_value=shape[2] - 1,
                               initial_value=shape[2] / 2)
 
-line_slider.add_callback(line_slider.slider_disk, "MouseMoveEvent",
-                          change_slice)
+line_slider_2 = ui.LineSlider2D(min_value=0,
+                                max_value=shape[0] - 1,
+                                initial_value=shape[0] / 2)
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(.1, 1, 1),
+line_slider_3 = ui.LineSlider2D(min_value=0,
+                                max_value=shape[1] - 1,
+                                initial_value=shape[1] / 2)
+
+line_slider.add_callback(line_slider.slider_disk, "MouseMoveEvent", change_slice)
+line_slider_2.add_callback(line_slider_2.slider_disk, "MouseMoveEvent", change_slice_2)
+line_slider_3.add_callback(line_slider_3.slider_disk, "MouseMoveEvent", change_slice_3)
+
+panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), opacity=0.2,
                    align="right")
 
-panel.add_element(line_slider, 'relative', (0.5, 0.5))
+panel.add_element(line_slider, 'relative', (0.5, 0.25))
+panel.add_element(line_slider_2, 'relative', (0.5, 0.5))
+panel.add_element(line_slider_3, 'relative', (0.5, 0.75))
 
 show_m.ren.add(panel)
 
@@ -165,14 +203,14 @@ Finally, please uncomment the following 3 lines so that you can interact with
 the available 3D and 2D objects.
 """
 
-#show_m.add_window_callback(win_callback)
+# show_m.add_window_callback(win_callback)
 show_m.render()
 show_m.start()
 
-#ren.zoom(1.5)
-#ren.reset_clipping_range()
+# ren.zoom(1.5)
+# ren.reset_clipping_range()
 
-#window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
+# window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
 #              reset_camera=False)
 
 """
