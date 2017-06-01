@@ -4,20 +4,11 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
                                  DirectionGetter, TissueClassifier,
                                  BinaryTissueClassifier)
-=======
-
-from dipy.tracking.local import (ActTissueClassifier, CmcTissueClassifier,
-                                 DirectionGetter,
-                                 LocalTracking, ParticleFilteringTracking,
-                                 ThresholdTissueClassifier,
-                                 TissueClassifier)
->>>>>>> WIP
 from dipy.direction import (ProbabilisticDirectionGetter,
                             DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
@@ -323,14 +314,10 @@ def test_MaximumDeterministicTracker():
                           [1., 1., 0.],
                           [2., 1., 0.],
                           [3., 1., 0.],
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
                           [4., 1., 0.]]),
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.]])]
-=======
-                          [4., 1., 0.]])]
->>>>>>> WIP
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
@@ -347,7 +334,6 @@ def test_MaximumDeterministicTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
     # Both path are not possible if 90 degree turns are exclude and
     # if pmf_threhold is larger than 0.4. Streamlines should stop at
     # the crossing
@@ -364,10 +350,6 @@ def test_affine_transformations():
     """This tests that the input affine is properly handled by
     LocalTracking and produces reasonable streamlines in a simple example.
     """
-=======
-def test_particleFilteringTracking():
-
->>>>>>> WIP
     sphere = HemiSphere.from_sphere(unit_octahedron)
 
     # A simple image with three possible configurations, a vertical tract,
@@ -376,42 +358,22 @@ def test_particleFilteringTracking():
                            [1., 0., 0.],
                            [0., 1., 0.],
                            [.4, .6, 0.]])
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
     simple_image = np.array([[0, 0, 0, 0, 0, 0],
                              [0, 1, 0, 0, 0, 0],
                              [0, 3, 2, 2, 2, 0],
                              [0, 1, 0, 0, 0, 0],
                              [0, 0, 0, 0, 0, 0],
-=======
-    simple_image = np.array([[0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [0, 3, 2, 2, 2, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
->>>>>>> WIP
                              ])
 
     simple_image = simple_image[..., None]
     pmf = pmf_lookup[simple_image]
 
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
     seeds = [np.array([1., 1., 0.]),
              np.array([2., 4., 0.])]
-=======
-    seeds = [np.array([1., 1., 0.])] * 30
-
-    mask = (simple_image > 0).astype(float)
-    tc = ActTissueClassifier(simple_image, np.zeros(mask.shape))
-
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere)
-    streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 1.)
-    #streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
->>>>>>> WIP
 
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
-<<<<<<< 5e86299a19d4b80f2e5cd149e017b7374e6ab680
                           [3., 1., 0.],
                           [4., 1., 0.]]),
                 np.array([[2., 0., 0.],
@@ -488,30 +450,6 @@ def test_particleFilteringTracking():
         npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
         npt.assert_equal(len(streamlines_inv[1]), len(expected[1]))
         npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
-=======
-                          [2., 2., 0.],
-                          [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]]),
-                np.array([[0., 1., 0.],
-                          [1., 1., 0.],
-                          [2., 1., 0.],
-                          [3., 1., 0.],
-                          [4., 1., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
-
-    path = [False, False]
-    for sl in streamlines:
-        if allclose(sl, expected[0]):
-            path[0] = True
-        elif allclose(sl, expected[1]):
-            path[1] = True
-        else:
-            raise AssertionError()
-    npt.assert_(all(path))
->>>>>>> WIP
 
 
 if __name__ == "__main__":
