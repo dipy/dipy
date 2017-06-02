@@ -1,3 +1,5 @@
+from __future__ import division, print_function
+
 import numpy as np
 import math
 import scipy
@@ -46,7 +48,7 @@ class n3_correction(object):
     def gaussian_init(self, phi, histogramsize):
         """This function initialize a normal distribution field
         """
-        pi = 3.1415926
+        pi = np.pi
         expfactor = 1 / (2.0 * phi * phi)
         scalefactor = 1 / math.sqrt(2 * pi * phi * phi)
         sample_f = np.zeros(histogramsize, dtype=complex)
@@ -220,5 +222,14 @@ t1 = nib.load(ft1).get_data()
 
 N3_correct = n3_correction(np.log(t1))
 N3_correct.optimization_converge()
+
+
+figure()
+imshow(np.exp(N3_correct.data[:, :, 10]), cmap="gray")
+figure()
+imshow(np.exp(N3_correct.estimate_img[:, :, 10]), cmap="gray")
+figure()
+imshow(N3_correct.field[:, :, 10], cmap="gray")
+
 
 
