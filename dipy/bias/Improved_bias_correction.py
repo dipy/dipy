@@ -176,9 +176,14 @@ class n3_correction(object):
 #    def triangle_estimate(self):
 
 
-dname = "/Users/tiwanyan/ANTs/Images"
-t1_input = "/Raw/Q_0001_T1.nii.gz"
-
-ft1 = dname + t1_input
+#dname = "/Users/tiwanyan/ANTs/Images"
+dname = "/home/elef/Dropbox/Tingyi/Images/Raw/"
+#t1_input = "/Raw/Q_0001_T1.nii.gz"
+ft1 = dname + "Q_0001_T1.nii.gz"
 
 t1 = nib.load(ft1).get_data()
+
+N3_correct = n3_correction(np.log(t1))
+N3_correct.optimization_converge()
+
+

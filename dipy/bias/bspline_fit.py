@@ -1,5 +1,4 @@
 import numpy as np
-from dipy.bias.correction import sharpen_image
 import nibabel as nib
 
 
@@ -123,17 +122,17 @@ for i in np.array(range(100)):
 
 #Control_points = Setfieldpoints(test_subject, 20, 20, 20)
 
-A = np.array([[100, 75, 50, 15, 10],
-              [5, 20, 40, 75, 95],
-              [10, 30, 50, 70, 100],
-              [15, 20, 45, 80, 120]])
-
-dname = "/Users/tiwanyan/ANTs/Images"
-t1_input = "/Raw/Q_0001_T1.nii.gz"
-
-ft1 = dname + t1_input
-
-t1 = nib.load(ft1).get_data()
+#A = np.array([[100, 75, 50, 15, 10],
+#              [5, 20, 40, 75, 95],
+#              [10, 30, 50, 70, 100],
+#              [15, 20, 45, 80, 120]])
+#
+#dname = "/Users/tiwanyan/ANTs/Images"
+#t1_input = "/Raw/Q_0001_T1.nii.gz"
+#
+#ft1 = dname + t1_input
+#
+#t1 = nib.load(ft1).get_data()
 
 #logUncorrectedImage = np.log(t1)
 
