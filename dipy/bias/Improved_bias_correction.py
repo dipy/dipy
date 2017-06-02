@@ -16,6 +16,7 @@ from scipy import signal
 from sklearn.neighbors import KernelDensity
 from bspline_fit import cubic_bspline
 import matplotlib.pyplot as plt
+from scipy.ndimage import zoom
 
 
 class n3_correction(object):
@@ -25,6 +26,8 @@ class n3_correction(object):
 
         self.data = data
         self.sharpened_data = np.zeros((self.data.shape))
+        self.field = np.zeros((self.data.shape))
+        self.estimate_img = np.zeros((self.data.shape))
         self.kernel = kernel
         self.data_shape = data.shape
         self.num_of_bins = 200
@@ -118,7 +121,7 @@ class n3_correction(object):
         expect_p = expect[0:self.num_of_bins:4]
         expect_obj = cubic_bspline(expect_p, self.num_of_bins + 15,
                                    spacing="uniform")
-        expect_smooth = expect_obj.cubicbspline_2d()
+        expect_smooth = expect_obj.cubicbspline_2d()[7:self.num_of_bins+7]
 #        kernel_estimate_expect = self.kernel_density_estimate(expect)
 
         for index in ndindex(self.data.shape):
@@ -129,18 +132,28 @@ class n3_correction(object):
                 idx = 199
             self.sharpened_data[i, j, k] = expect_smooth[idx]
 
-        return expect_smooth[7:self.num_of_bins+7]
+        return expect_smooth
 
     def optimization_converge(self):
         expect_smooth = self.update_stratergy()
-        hist, h = np.histogram(self.data - expect_smooth,
+        field = self.data - self.sharpened_data
+        field_extract = Setfieldpoints(field, 4, 6, 5)
+        #np.exp(field[0:160:10, 0:239:10, 0:200:10])
+        self.field = Smoothfield_3D(field_extract, 160/4, 239/6, 200/5)
+        hist, h = np.histogram(self.field,
                                bins=self.num_of_bins)
+        self.estimate_img = self.data - self.field
+        hist_u, h_u = np.histogram(self.estimate_img, bins=self.num_of_bins)
         new_f = self.kernel_density_estimate(hist)
         plt.plot(np.array(range(200)), self.sample_f)
         plt.figure()
         plt.plot(np.array(range(200)), new_f)
-        print(np.sum(new_f-self.sample_f))
+        plt.figure()
+        plt.plot(np.array(range(200)), hist_u)
+        print(np.sum(np.abs(new_f-self.sample_f)))
         self.sample_f = new_f
+        self.estimate_u = self.kernel_density_estimate(hist_u)
+        #self.estimate_u = self.wiener_decon_filter()
 
     def kernel_density_estimate(self, dist):
         """Doing a kernel density estimation
@@ -173,8 +186,30 @@ class n3_correction(object):
                                       np.sum(dist)
         return density
 
-#    def triangle_estimate(self):
 
+def Smoothfield_3D(inputimg, xscale, yscale, zscale):
+    output = zoom(inputimg, (xscale, yscale, zscale))
+    return output
+
+
+def Setfieldpoints(inputimg, xscale, yscale, zscale):
+    xsize = inputimg.shape[0]
+    ysize = inputimg.shape[1]
+    zsize = inputimg.shape[2]
+    output = np.zeros(shape=(xscale, yscale, zscale))
+    xsubsize = np.floor(xsize / xscale)
+    ysubsize = np.floor(ysize / yscale)
+    zsubsize = np.floor(zsize / zscale)
+    xsubsize = xsubsize.astype(int)
+    ysubsize = ysubsize.astype(int)
+    zsubsize = zsubsize.astype(int)
+    for i in np.array(range(zscale)):
+        for j in np.array(range(xscale)):
+            for k in np.array(range(yscale)):
+                output[j, k, i] = np.mean(inputimg[j*xsubsize:(j+1)*xsubsize,
+                                                   k*ysubsize:(k+1)*ysubsize,
+                                                   i*zsubsize:(i+1)*zsubsize])
+    return output
 
 #dname = "/Users/tiwanyan/ANTs/Images"
 dname = "/home/elef/Dropbox/Tingyi/Images/Raw/"
