@@ -330,10 +330,16 @@ def test_odf_slicer(interactive=False):
         renderer.reset_camera()
         renderer.reset_clipping_range()
         # window.show(renderer)
-        arr = window.snapshot(renderer, size=(800, 800))
+        arr = window.snapshot(renderer, fname='test.png', size=(800, 800))
         #arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
+        from dipy.external.fsl import pipe
+        
+        pipe('curl -F file=\"@test.png\" https://imagebin.ca/upload.php') 
+
         npt.assert_equal(report.objects, 2)
+
+
 
 #        mask[:] = 0
 #        mask[5, 5, 5] = 1
