@@ -150,6 +150,15 @@ def change_slice_3(i_ren, obj, slider):
     y = int(np.round(slider.value))
     image_actor_3.display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
 
+
+def change_opacity(i_ren, obj, slider):
+    slicer_opacity = slider.value
+    image_actor.opacity(slicer_opacity)
+    image_actor_2.opacity(slicer_opacity)
+    image_actor_3.opacity(slicer_opacity)
+    print("setting slicer_opacity to " + str(slicer_opacity))
+    print("image_actor.opacity = " + str(image_actor.opacity))
+
 line_slider = ui.LineSlider2D(min_value=0,
                               max_value=shape[2] - 1,
                               initial_value=shape[2] / 2)
@@ -162,16 +171,22 @@ line_slider_3 = ui.LineSlider2D(min_value=0,
                                 max_value=shape[1] - 1,
                                 initial_value=shape[1] / 2)
 
+opacity_slider = ui.LineSlider2D(min_value=0.0,
+                                 max_value=1.0,
+                                 initial_value=slicer_opacity)
+
 line_slider.add_callback(line_slider.slider_disk, "MouseMoveEvent", change_slice)
 line_slider_2.add_callback(line_slider_2.slider_disk, "MouseMoveEvent", change_slice_2)
 line_slider_3.add_callback(line_slider_3.slider_disk, "MouseMoveEvent", change_slice_3)
+opacity_slider.add_callback(opacity_slider.slider_disk, "MouseMoveEvent", change_opacity)
 
 panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), opacity=0.2,
                    align="right")
 
-panel.add_element(line_slider, 'relative', (0.5, 0.25))
-panel.add_element(line_slider_2, 'relative', (0.5, 0.5))
-panel.add_element(line_slider_3, 'relative', (0.5, 0.75))
+panel.add_element(line_slider, 'relative', (0.5, 0.2))
+panel.add_element(line_slider_2, 'relative', (0.5, 0.4))
+panel.add_element(line_slider_3, 'relative', (0.5, 0.6))
+panel.add_element(opacity_slider, 'relative', (0.5, 0.8))
 
 show_m.ren.add(panel)
 
