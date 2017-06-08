@@ -335,6 +335,8 @@ def test_odf_slicer(interactive=False):
         #arr = window.snapshot(renderer)
         report = window.analyze_snapshot(arr, find_objects=True)
         from dipy.external.fsl import pipe
+        import dipy
+        print(dipy.viz.window.vtk.vtkVersion().GetVTKVersion())
         
         pipe('curl -F file=\"@test.png\" https://imagebin.ca/upload.php') 
 
