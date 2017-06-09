@@ -180,13 +180,24 @@ line_slider_2.add_callback(line_slider_2.slider_disk, "MouseMoveEvent", change_s
 line_slider_3.add_callback(line_slider_3.slider_disk, "MouseMoveEvent", change_slice_3)
 opacity_slider.add_callback(opacity_slider.slider_disk, "MouseMoveEvent", change_opacity)
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1), opacity=0.2,
+# line_slider_label = ui.TextActor2D()
+# line_slider_label.message("X Slider")
+line_slider_label = ui.TextBox2D(text="X Slice", width=50, height=20)
+line_slider_label_2 = ui.TextBox2D(text="Y Slice", width=50, height=20)
+line_slider_label_3 = ui.TextBox2D(text="Z Slicer", width=50, height=20)
+opacity_slider_label = ui.TextBox2D(text="Opacity", width=50, height=20)
+
+panel = ui.Panel2D(center=(440, 90), size=(300, 200), color=(1, 1, 1), opacity=0.2,
                    align="right")
 
-panel.add_element(line_slider, 'relative', (0.5, 0.2))
-panel.add_element(line_slider_2, 'relative', (0.5, 0.4))
-panel.add_element(line_slider_3, 'relative', (0.5, 0.6))
-panel.add_element(opacity_slider, 'relative', (0.5, 0.8))
+panel.add_element(line_slider_label, 'relative', (0.1, 0.8))
+panel.add_element(line_slider, 'relative', (0.5, 0.8))
+panel.add_element(line_slider_label_2, 'relative', (0.1, 0.6))
+panel.add_element(line_slider_2, 'relative', (0.5, 0.6))
+panel.add_element(line_slider_label_3, 'relative', (0.1, 0.4))
+panel.add_element(line_slider_3, 'relative', (0.5, 0.4))
+panel.add_element(opacity_slider_label, 'relative', (0.1, 0.2))
+panel.add_element(opacity_slider, 'relative', (0.5, 0.2))
 
 show_m.ren.add(panel)
 
