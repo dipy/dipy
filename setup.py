@@ -218,6 +218,8 @@ def main(**extra_args):
           scripts      = [pjoin('bin', 'dipy_reconst_dti'),
                           pjoin('bin', 'dipy_reconst_dti_restore'),
                           pjoin('bin', 'dipy_mask'),
+                          pjoin('bin', 'dipy_reconst_csa'),
+                          pjoin('bin', 'dipy_reconst_csd'),
                           pjoin('bin', 'dipy_median_otsu'),
                           pjoin('bin', 'dipy_nlmeans'),
                           ],
