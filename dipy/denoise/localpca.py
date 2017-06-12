@@ -111,8 +111,9 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                                     patch_size,
                                     patch_size, arr.shape[-1])
                 # This is equation 3 in Manjon 2013:
-                theta[ix1:ix2, jx1:jx2, kx1:kx2] += 1.0 / (1.0 + np.sum(d > 0))
-                thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest / (1 + np.sum(d > 0))
+                this_theta = 1.0 / (1.0 + np.sum(d > 0))
+                theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
+                thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
     return denoised_arr.astype(arr.dtype)
