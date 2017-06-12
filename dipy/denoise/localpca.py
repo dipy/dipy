@@ -71,7 +71,7 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
             e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
 
-    tau = np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2)
+    tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
     del sigma
     # declare arrays for theta and thetax
     theta = np.zeros(arr.shape, dtype=np.float64)
@@ -104,7 +104,7 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 # order:
                 W = Vt[::-1].T
                 # Threshold by tau:
-                W[:, d < tau[i, j, k]] = 0
+                W[:, d < tau] = 0
                 # This is equations 1 and 2 in Manjon 2013:
                 Xest = X.dot(W).dot(W.T) + M
                 Xest = Xest.reshape(patch_size,
