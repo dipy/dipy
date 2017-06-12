@@ -171,6 +171,8 @@ def main(**extra_args):
                           'dipy.core.tests',
                           'dipy.direction',
                           'dipy.direction.tests',
+                          'dipy.parallel',
+                          'dipy.parallel.tests',
                           'dipy.tracking',
                           'dipy.tracking.local',
                           'dipy.tracking.local.tests',
