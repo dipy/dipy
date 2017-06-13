@@ -1,5 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
+import os
 import numpy as np
 import numpy.testing as npt
 
@@ -16,7 +17,7 @@ tables, have_tables, _ = optional_package('tables')
 from dipy.data import get_sphere
 from dipy.core.sphere import Sphere
 
-from dipy.io.peaks import load_peaks, save_peaks
+from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
 
 # Decorator to protect tests from being run without pytables present
 iftables = npt.dec.skipif(not have_tables,
@@ -97,6 +98,22 @@ def test_io_peaks():
         del pam.shm_coeff
         save_peaks(fname6, pam, verbose=True)
         pam_tmp = load_peaks(fname6, True)
+
+        fname_shm = 'shm.nii.gz'
+        fname_dirs = 'dirs.nii.gz'
+        fname_values = 'values.nii.gz'
+        fname_indices = 'indices.nii.gz'
+        fname_gfa = 'gfa.nii.gz'
+
+        pam.shm_coeff = np.ones((10, 10, 10, 45))
+        peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values,
+                        fname_indices, fname_gfa, reshape_dirs=False)
+
+        os.path.isfile(fname_shm)
+        os.path.isfile(fname_dirs)
+        os.path.isfile(fname_values)
+        os.path.isfile(fname_indices)
+        os.path.isfile(fname_gfa)
 
 
 if __name__ == '__main__':
