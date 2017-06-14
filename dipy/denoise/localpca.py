@@ -41,6 +41,7 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
     -------
     denoised_arr : 4D array
         This is the denoised array of the same size as that of the input data.
+        Returned as float64.
 
     References
     ----------
@@ -116,4 +117,4 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
-    return denoised_arr.astype(arr.dtype)
+    return denoised_arr
