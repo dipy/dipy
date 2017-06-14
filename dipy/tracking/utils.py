@@ -21,7 +21,7 @@ As an example, lets take a 2d image where the affine is::
      [0., 2., 0.],
      [0., 0., 1.]]
 
-The pixels of an image with this affine would look something like:
+The pixels of an image with this affine would look something like::
 
     A------------
     |   |   |   |
