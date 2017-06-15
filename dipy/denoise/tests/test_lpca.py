@@ -158,17 +158,6 @@ def test_lpca_sharpness():
     assert_(edgs < 2)
 
 
-def test_lpca_dtype():
-
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
-    S0ns = localpca(S0, sigma=1)
-    assert_equal(S0.dtype, S0ns.dtype)
-
-    S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)))
-    assert_equal(S0.dtype, S0ns.dtype)
-
-
 def test_lpca_wrong():
     S0 = np.ones((20, 20))
     assert_raises(ValueError, localpca, S0, sigma=1)
