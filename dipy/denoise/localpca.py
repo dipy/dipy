@@ -41,7 +41,8 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
     -------
     denoised_arr : 4D array
         This is the denoised array of the same size as that of the input data.
-        Returned as float64.
+        Output is given in float32, except if the input had float64 precision,
+        in which case, float64 precision output is provided.
 
     References
     ----------
@@ -50,6 +51,14 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                   PCA. PLoS ONE 8(9): e73021.
                   https://doi.org/10.1371/journal.pone.0073021
     """
+    # We retain float64 precision, iff the input is in this precision
+    if arr.dtype == np.float64:
+        out_dtype = np.float64
+
+    # Otherwise, we'll give you float32 output (saving memory)
+    else:
+        out_dtype = np.float32
+
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
                          arr.shape)
@@ -75,8 +84,8 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
     tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
     del sigma
     # declare arrays for theta and thetax
-    theta = np.zeros(arr.shape, dtype=np.float64)
-    thetax = np.zeros(arr.shape, dtype=np.float64)
+    theta = np.zeros(arr.shape, dtype=out_dtype)
+    thetax = np.zeros(arr.shape, dtype=out_dtype)
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius, arr.shape[2] - patch_radius):
@@ -94,6 +103,7 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                                 patch_size ** 3, arr.shape[-1])
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
+                # Upcast the dtype for precision in the SVD
                 X = X - M
                 # PCA using an SVD
                 U, S, Vt = svd(X, *svd_args)[:3]
