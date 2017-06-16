@@ -78,11 +78,6 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
-    S0 = 200 * np.ones((20, 20, 20), dtype=np.uint16)
-    mask = np.zeros((20, 20, 20))
-    mask[10:14, 10:14, 10:14] = 1
-    S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
-    assert_equal(S0.dtype, S0n.dtype)
 
 
 if __name__ == '__main__':
