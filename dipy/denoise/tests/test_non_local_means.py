@@ -56,6 +56,8 @@ def test_nlmeans_boundary():
     S0n = non_local_means(S0, sigma=np.std(noise), rician=False)
     assert_(S0[9, 9, 9] > 290)
     assert_(S0[10, 10, 10] < 110)
+    assert_(S0n[9, 9, 9] > 290)
+    assert_(S0n[10, 10, 10] < 110)
 
 
 def test_nlmeans_wrong():
