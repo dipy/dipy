@@ -36,12 +36,6 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                  Barillot, An Optimized Blockwise Non Local Means Denoising
                  Filter for 3D Magnetic Resonance Images, IEEE Transactions on
                  Medical Imaging, 27(4):425-441, 2008
-
-    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-                Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
-                Denoising IET Image Processing, Institution of Engineering and
-                Technology, 2011
-
     """
     if not np.isscalar(sigma) and not sigma.shape == (1, ):
         raise ValueError("Sigma input needs to be of type float", sigma)
