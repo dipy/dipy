@@ -380,11 +380,6 @@ def nlmeans_block(double[:, :, :]image, int[:, :, :] mask, int patch_radius, int
         "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
         Resonance Images"
         IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-
-    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
-
     """
 
     cdef int[:] dims = cvarray((3,), itemsize=sizeof(int), format="i")
