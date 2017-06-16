@@ -9,9 +9,11 @@
  reconst_dsi_metrics.py
  reconst_dsi.py
  reconst_dti.py
+ reconst_fwdti.py
  reconst_gqi.py
  reconst_dsid.py
  reconst_ivim.py
+ reconst_mapmri.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
@@ -40,6 +42,7 @@
  affine_registration_3d.py
  syn_registration_2d.py
  syn_registration_3d.py
+ tissue_classification.py
  bundle_registration.py
  tracking_tissue_classifier.py
  piesno.py
