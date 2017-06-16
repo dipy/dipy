@@ -14,7 +14,7 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     arr : 3D or 4D ndarray
         The array to be denoised
     mask : 3D ndarray
-    sigma : float
+    sigma : double
         standard deviation of the noise estimated from the data
     patch_radius : int
         patch size is ``2 x patch_radius + 1``. Default is 1.
@@ -36,39 +36,40 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                  Barillot, An Optimized Blockwise Non Local Means Denoising
                  Filter for 3D Magnetic Resonance Images, IEEE Transactions on
                  Medical Imaging, 27(4):425-441, 2008
-
-    .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-                Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
-                Denoising IET Image Processing, Institution of Engineering and
-                Technology, 2011
-
     """
     if not np.isscalar(sigma) and not sigma.shape == (1, ):
-        raise ValueError("Sigma input needs to be of type float", sigma)
+        raise ValueError("Sigma input needs to be of type double", sigma)
     if mask is None and arr.ndim > 2:
-        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype='f8')
+        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype=np.int32)
     else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = mask.astype(np.int32)
 
     if mask.ndim != 3:
         raise ValueError('mask needs to be a 3D ndarray', mask.shape)
 
+    denoised_arr = np.zeros_like(arr, dtype=np.float32)
+
+    # the cython part expects an array of double
+    arr = arr.astype(np.float64)
+    # it also does not recognize bool dtype
+    rician = int(rician)
+
     if arr.ndim == 3:
-        return np.array(nlmeans_block(
-            np.double(arr),
-            mask,
-            patch_radius,
-            block_radius,
-            sigma,
-            np.int(rician))).astype(arr.dtype)
+        denoised_arr[:] = nlmeans_block(arr,
+                                        mask,
+                                        patch_radius,
+                                        block_radius,
+                                        sigma,
+                                        rician)
     elif arr.ndim == 4:
-        denoised_arr = np.zeros_like(arr)
-        for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = np.array(nlmeans_block(np.double(
-                arr[..., i]), mask, patch_radius, block_radius, sigma,
-                np.int(rician))).astype(arr.dtype)
-
-        return denoised_arr
-
+            for i in range(arr.shape[-1]):
+                denoised_arr[..., i] = nlmeans_block(arr[..., i],
+                                                     mask,
+                                                     patch_radius,
+                                                     block_radius,
+                                                     sigma,
+                                                     rician)
     else:
         raise ValueError("Only 3D or 4D array are supported!", arr.shape)
+
+    return np.asarray(denoised_arr)

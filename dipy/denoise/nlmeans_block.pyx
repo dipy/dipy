@@ -181,7 +181,6 @@ cdef void _value_block(double[:, :, :] estimate, double[:, :, :] Label, int x, i
 
 
 @cython.boundscheck(False)
-@cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _distance(double[:, :, :] image, int x, int y, int z,
                       int nx, int ny, int nz, int block_radius) nogil:
@@ -210,11 +209,11 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
         block radius for which the distince is computed for
     """
 
-    cdef double acu, distancetotal
+    cdef int acu = 0
+    cdef double distancetotal = 0.0
     cdef int i, j, k, ni1, nj1, ni2, nj2, nk1, nk2
-    cdef int sx = image.shape[1], sy = image.shape[0], sz = image.shape[2]
-    acu = 0
-    distancetotal = 0
+    cdef int sx = image.shape[0], sy = image.shape[1], sz = image.shape[2]
+
     for i in range(-block_radius, block_radius + 1):
         for j in range(-block_radius, block_radius + 1):
             for k in range(-block_radius, block_radius + 1):
@@ -248,14 +247,13 @@ cdef double _distance(double[:, :, :] image, int x, int y, int z,
                     nj2 = 2 * sy - nj2 - 1
                 if(nk2 >= sz):
                     nk2 = 2 * sz - nk2 - 1
-                distancetotal += (image[nj1, ni1, nk1] -
-                                  image[nj2, ni2, nk2])**2
-                acu = acu + 1
+                distancetotal += (image[ni1, nj1, nk1] -
+                                  image[ni2, nj2, nk2])**2
+                acu += 1
     return distancetotal / acu
 
 
 @cython.boundscheck(False)
-@cython.wraparound(False)
 @cython.cdivision(True)
 cdef double _local_mean(double[:, :, :]ima, int x, int y, int z) nogil:
     """
@@ -346,14 +344,14 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
+def nlmeans_block(double[:, :, :]image, int[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
 
     Parameters
     ----------
     image : 3D array of doubles
         the input image, corrupted with rician noise
-    mask : 3D array of doubles
+    mask : 3D array of int
         the input mask
     patch_radius :  int
         similar patches in the non-local means are searched for locally,
@@ -382,11 +380,6 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
         "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
         Resonance Images"
         IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
-
-    [2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-        "Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
-        IET Image Processing, Institution of Engineering and Technology, 2011
-
     """
 
     cdef int[:] dims = cvarray((3,), itemsize=sizeof(int), format="i")
@@ -412,19 +405,19 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
 
     with nogil:
         for k in range(dims[2]):
-            for i in range(dims[1]):
-                for j in range(dims[0]):
-                    means[j, i, k] = _local_mean(image, j, i, k)
-                    variances[j, i, k] = _local_variance(
-                        image, means[j, i, k], j, i, k)
+            for j in range(dims[1]):
+                for i in range(dims[0]):
+                    means[i, j, k] = _local_mean(image, i, j, k)
+                    variances[i, j, k] = _local_variance(
+                        image, means[i, j, k], i, j, k)
         for k in range(0, dims[2], 2):
-            for i in range(0, dims[1], 2):
-                for j in range(0, dims[0], 2):
+            for j in range(0, dims[1], 2):
+                for i in range(0, dims[0], 2):
                     with gil:
                         average[...] = 0
                     totalWeight = 0
-                    if (means[j, i, k] <= epsilon) or (
-                            variances[j, i, k] <= epsilon):
+                    if (means[i, j, k] <= epsilon) or (
+                            variances[i, j, k] <= epsilon):
                         wmax = 1.0
                         _average_block(image, i, j, k, average, wmax)
                         totalWeight += wmax
@@ -433,19 +426,19 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                     else:
                         wmax = 0
                         for nk in range(k - patch_radius, k + patch_radius + 1):
-                            for ni in range(i - patch_radius, i + patch_radius + 1):
-                                for nj in range(j - patch_radius, j + patch_radius + 1):
+                            for nj in range(j - patch_radius, j + patch_radius + 1):
+                                for ni in range(i - patch_radius, i + patch_radius + 1):
                                     if((ni == i)and(nj == j)and(nk == k)):
                                         continue
                                     if ((ni < 0) or (nj < 0) or (nk < 0) or (
                                             nj >= dims[0]) or (ni >= dims[1]) or (nk >= dims[2])):
                                         continue
-                                    if ((means[nj, ni, nk] <= epsilon) or (
-                                            variances[nj, ni, nk] <= epsilon)):
+                                    if ((means[ni, nj, nk] <= epsilon) or (
+                                            variances[ni, nj, nk] <= epsilon)):
                                         continue
-                                    t1 = (means[j, i, k]) / (means[nj, ni, nk])
-                                    t2 = (variances[j, i, k]) / \
-                                        (variances[nj, ni, nk])
+                                    t1 = (means[i, j, k]) / (means[ni, nj, nk])
+                                    t2 = (variances[i, j, k]) / \
+                                        (variances[ni, nj, nk])
                                     if ((t1 > mu1) and (t1 < (1 / mu1)) and
                                             (t2 > var1) and (t2 < (1 / var1))):
                                         d = _distance(
@@ -462,16 +455,13 @@ def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, 
                                          average, totalWeight, hh, rician)
 
         for k in range(0, dims[2]):
-            for i in range(0, dims[1]):
-                for j in range(0, dims[0]):
-
-                    if mask[j, i, k] == 0:
-                        fima[j, i, k] = 0
-
-                    else:
-                        if(Label[j, i, k] == 0.0):
-                            fima[j, i, k] = image[j, i, k]
+            for j in range(0, dims[1]):
+                for i in range(0, dims[0]):
+                    # fima is initialized to zero, so we only put stuff where the mask is
+                    if mask[i, j, k]:
+                        if(Label[i, j, k] == 0.0):
+                            fima[i, j, k] = image[i, j, k]
                         else:
-                            fima[j, i, k] = Estimate[j, i, k] / Label[j, i, k]
+                            fima[i, j, k] = Estimate[i, j, k] / Label[i, j, k]
 
     return fima

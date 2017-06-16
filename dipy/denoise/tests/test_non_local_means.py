@@ -16,20 +16,25 @@ def test_nlmeans_static():
 def test_nlmeans_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
 
-    masker = np.zeros(S0.shape[:3]).astype(bool)
+    masker = np.zeros(S0.shape[:3]).astype(np.bool)
     masker[8:15, 8:15, 8:15] = 1
     for mask in [None, masker]:
+        # if mask is None, then we have to create a blank one for the comparisons
+        if mask is None:
+            m = np.ones_like(S0, dtype=np.bool)
+        else:
+            m = masker.copy()
+
+        S0nb = non_local_means(S0, sigma=np.std(S0), rician=False, mask=mask)
+        assert_(S0nb[m].min() > S0[m].min())
+        assert_(S0nb[m].max() < S0[m].max())
+        assert_equal(np.round(S0nb[m].mean()), 100)
+
         S0nb = non_local_means(S0, sigma=np.std(S0), rician=False, mask=mask)
 
-        assert_(S0nb[mask].min() > S0[mask].min())
-        assert_(S0nb[mask].max() < S0[mask].max())
-        assert_equal(np.round(S0nb[mask].mean()), 100)
-
-        S0nb = non_local_means(S0, sigma=np.std(S0), rician=False, mask=mask)
-
-        assert_(S0nb[mask].min() > S0[mask].min())
-        assert_(S0nb[mask].max() < S0[mask].max())
-        assert_equal(np.round(S0nb[mask].mean()), 100)
+        assert_(S0nb[m].min() > S0[m].min())
+        assert_(S0nb[m].max() < S0[m].max())
+        assert_equal(np.round(S0nb[m].mean()), 100)
 
 
 def test_scalar_sigma():
@@ -51,6 +56,8 @@ def test_nlmeans_boundary():
     S0n = non_local_means(S0, sigma=np.std(noise), rician=False)
     assert_(S0[9, 9, 9] > 290)
     assert_(S0[10, 10, 10] < 110)
+    assert_(S0n[9, 9, 9] > 290)
+    assert_(S0n[10, 10, 10] < 110)
 
 
 def test_nlmeans_wrong():
@@ -74,11 +81,6 @@ def test_nlmeans_4D_and_mask():
 def test_nlmeans_dtype():
 
     S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
-    mask = np.zeros((20, 20, 20))
-    mask[10:14, 10:14, 10:14] = 1
-    S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
-    assert_equal(S0.dtype, S0n.dtype)
-    S0 = 200 * np.ones((20, 20, 20), dtype=np.uint16)
     mask = np.zeros((20, 20, 20))
     mask[10:14, 10:14, 10:14] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
