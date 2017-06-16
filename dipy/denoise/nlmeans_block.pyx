@@ -457,11 +457,8 @@ def nlmeans_block(double[:, :, :]image, int[:, :, :] mask, int patch_radius, int
         for k in range(0, dims[2]):
             for j in range(0, dims[1]):
                 for i in range(0, dims[0]):
-
-                    if mask[i, j, k] == 0:
-                        fima[i, j, k] = 0
-
-                    else:
+                    # fima is initialized to zero, so we only put stuff where the mask is
+                    if mask[i, j, k]:
                         if(Label[i, j, k] == 0.0):
                             fima[i, j, k] = image[i, j, k]
                         else:
