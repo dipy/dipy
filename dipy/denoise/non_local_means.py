@@ -40,28 +40,27 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     if not np.isscalar(sigma) and not sigma.shape == (1, ):
         raise ValueError("Sigma input needs to be of type float", sigma)
     if mask is None and arr.ndim > 2:
-        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype='f8')
-    else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
+        mask = np.ones((arr.shape[0], arr.shape[1], arr.shape[2]), dtype=np.bool)
 
     if mask.ndim != 3:
         raise ValueError('mask needs to be a 3D ndarray', mask.shape)
 
     if arr.ndim == 3:
-        return np.array(nlmeans_block(
-            np.double(arr),
-            mask,
-            patch_radius,
-            block_radius,
-            sigma,
-            np.int(rician))).astype(arr.dtype)
+        return nlmeans_block(arr,
+                             mask,
+                             patch_radius,
+                             block_radius,
+                             sigma,
+                             rician)
     elif arr.ndim == 4:
-        denoised_arr = np.zeros_like(arr)
+        denoised_arr = np.zeros_like(arr, dtype=np.float32)
         for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = np.array(nlmeans_block(np.double(
-                arr[..., i]), mask, patch_radius, block_radius, sigma,
-                np.int(rician))).astype(arr.dtype)
-
+            denoised_arr[..., i] = nlmeans_block(arr[..., i],
+                                                 mask,
+                                                 patch_radius,
+                                                 block_radius,
+                                                 sigma,
+                                                 rician)
         return denoised_arr
 
     else:
