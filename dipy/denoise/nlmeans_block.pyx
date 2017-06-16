@@ -351,7 +351,7 @@ def nlmeans_block(double[:, :, :]image, int[:, :, :] mask, int patch_radius, int
     ----------
     image : 3D array of doubles
         the input image, corrupted with rician noise
-    mask : 3D array of doubles
+    mask : 3D array of int
         the input mask
     patch_radius :  int
         similar patches in the non-local means are searched for locally,
