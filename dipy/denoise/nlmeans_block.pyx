@@ -344,7 +344,7 @@ cpdef upfir(double[:, :] image, double[:] h):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def nlmeans_block(double[:, :, :]image, double[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
+def nlmeans_block(double[:, :, :]image, int[:, :, :] mask, int patch_radius, int block_radius, double h, int rician):
     """Non-Local Means Denoising Using Blockwise Averaging
 
     Parameters

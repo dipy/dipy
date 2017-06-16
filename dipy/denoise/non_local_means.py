@@ -45,6 +45,9 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     if mask.ndim != 3:
         raise ValueError('mask needs to be a 3D ndarray', mask.shape)
 
+    # the cython part expects an array of double
+    arr = arr.astype(np.float64)
+
     if arr.ndim == 3:
         return nlmeans_block(arr,
                              mask,
@@ -62,6 +65,5 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
                                                  sigma,
                                                  rician)
         return denoised_arr
-
     else:
         raise ValueError("Only 3D or 4D array are supported!", arr.shape)
