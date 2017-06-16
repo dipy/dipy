@@ -166,5 +166,16 @@ show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
 
+show_manager.ren.azimuth(30)
+
 # Uncomment this to start the visualisation
-show_manager.start()
+# show_manager.start()
+
+window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
+
+"""
+.. figure:: viz_ui.png
+   :align: center
+
+   **User interface example**.
+"""

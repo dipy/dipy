@@ -276,7 +276,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
 
     See Also
     --------
-    :func:``dipy.viz.actor.line``
+    :func:`dipy.viz.actor.line`
     """
     # Poly data with lines and colors
     poly_data, is_colormap = lines_to_vtk_polydata(lines, colors)
