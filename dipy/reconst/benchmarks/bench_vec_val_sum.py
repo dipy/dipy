@@ -12,7 +12,7 @@ run the doctests, let's hope they pass.
 import numpy as np
 from numpy.random import randn
 
-from ..vec_val_sum import vec_val_vect
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 from numpy.testing import measure, dec
 

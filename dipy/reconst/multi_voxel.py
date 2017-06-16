@@ -2,9 +2,9 @@
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
-from ..core.ndindex import ndindex
-from .quick_squash import quick_squash as _squash
-from .base import ReconstFit
+from dipy.core.ndindex import ndindex
+from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.reconst.base import ReconstFit
 
 
 def multi_voxel_fit(single_voxel_fit):
