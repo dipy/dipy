@@ -13,7 +13,7 @@ from dipy.reconst.shm import real_sph_harm, sph_harm_ind_list
 import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")

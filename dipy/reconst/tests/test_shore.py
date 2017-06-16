@@ -5,16 +5,16 @@ import numpy as np
 
 from scipy.special import genlaguerre, gamma
 
-from ...data import get_gtab_taiwan_dsi
-from ..shore import ShoreModel
-from ...sims.voxel import MultiTensor
+from dipy.data import get_gtab_taiwan_dsi
+from dipy.reconst.shore import ShoreModel
+from dipy.sims.voxel import MultiTensor
 
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite,
                            dec)
 
-from ...utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 needs_cvxopt = dec.skipif(not have_cvxopt)
