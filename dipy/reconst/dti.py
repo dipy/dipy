@@ -13,11 +13,11 @@ import scipy.optimize as opt
 from dipy.utils.six.moves import range
 from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
-from ..core.gradients import gradient_table
-from ..core.geometry import vector_norm
-from .vec_val_sum import vec_val_vect
-from ..core.onetime import auto_attr
-from .base import ReconstModel
+from dipy.core.gradients import gradient_table
+from dipy.core.geometry import vector_norm
+from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.core.onetime import auto_attr
+from dipy.reconst.base import ReconstModel
 
 
 MIN_POSITIVE_SIGNAL = 0.0001

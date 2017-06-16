@@ -1,10 +1,10 @@
 """ Classes and functions for generalized q-sampling """
 import numpy as np
-from .odf import OdfModel, OdfFit, gfa
-from .cache import Cache
+from dipy.reconst.odf import OdfModel, OdfFit, gfa
+from dipy.reconst.cache import Cache
 import warnings
-from .multi_voxel import multi_voxel_fit
-from .recspeed import local_maxima, remove_similar_vertices
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
