@@ -33,14 +33,16 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     -----------
     data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
-        same realisation of the volume, such as dMRI or fMRI data.
+        same realisation of the volume under different noise condition,
+        e.g. volumes collected during dMRI or fMRI acquisitions.
 
     N : int
         The number of phase array coils of the MRI scanner.
-        If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the
-        noise profile is always Rician.
+        If your scanner does a SENSE or adaptive combine reconstruction, N=1,
+        is preferred as they yield Rician noise profile.
         If your scanner does a GRAPPA reconstruction, set N as the number
-        of phase array coils.
+        of phase array coils or a slightly lower number depending
+        on the coil correlation.
 
     alpha : float
         Probabilistic estimation threshold for the gamma function.
@@ -57,7 +59,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         reached if two subsequent estimates are smaller than eps.
 
     return_mask : bool
-        If True, return a mask identyfing all the pure noise voxel
+        If True, return a mask identifying all the pure noise voxel
         that were found.
 
     Returns
@@ -72,8 +74,8 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     ------
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
-    along the last axis, i.e. dMRI or fMRI data, not structural data like
-    T1/T2.
+    along the last axis, i.e. dMRI or fMRI data, which makes it unsuitable
+    for structural data acquisition such as T1w/T2w images.
 
     This function processes the data slice by slice, as originally designed in
     the paper. Use it to get a slice by slice estimation of the noise, as in
@@ -86,11 +88,6 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     "Probabilistic Identification and Estimation of Noise (PIESNO):
     A self-consistent approach and its applications in MRI."
     Journal of Magnetic Resonance 2009; 199: 94-103.
-
-    .. [2] Koay CG, Ozarslan E and Basser PJ.
-    "A signal transformational framework for breaking the noise floor
-    and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 197: 108-119.
     """
 
     # This method works on a 2D array with repetitions as the third dimension,
@@ -105,7 +102,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         q = 0.5
 
     # Initial estimation of sigma
-    initial_estimation = (np.percentile(data, q * 100) / 
+    initial_estimation = (np.percentile(data, q * 100) /
                           np.sqrt(2 * _inv_nchi_cdf(N, 1, q)))
 
     if data.ndim == 4:
@@ -114,7 +111,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], 
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
                                                           N,
                                                           alpha=alpha,
                                                           l=l,
@@ -149,10 +146,11 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     -----------
     data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
-        same realisation of the volume, such as dMRI or fMRI data.
+        same realisation of the volume.
 
     N : int
-        The number of phase array coils of the MRI scanner.
+        2N is the degree of freedoms of the identified noncentral chi distribution.
+        N is usually close to the number of phase array coils of the MRI scanner.
 
     alpha : float (optional)
         Probabilistic estimation threshold for the gamma function.
@@ -190,8 +188,8 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     ------
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
-    along the last axis, i.e. dMRI or fMRI data, not structural data like
-    T1/T2.
+    along the last axis, i.e. dMRI or fMRI data, which makes it unsuitable
+    for structural data acquisition such as T1w/T2w images.
 
     References
     ------------
@@ -200,11 +198,6 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     "Probabilistic Identification and Estimation of Noise (PIESNO):
     A self-consistent approach and its applications in MRI."
     Journal of Magnetic Resonance 2009; 199: 94-103.
-
-    .. [2] Koay CG, Ozarslan E and Basser PJ.
-    "A signal transformational framework for breaking the noise floor
-    and its applications in MRI."
-    Journal of Magnetic Resonance 2009; 197: 108-119.
     """
 
     if np.all(data == 0):
