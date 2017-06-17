@@ -1,8 +1,11 @@
 from __future__ import division
 from _warnings import warn
 
+import os
+import glob
 import numpy as np
 
+from dipy.data import read_viz_icons
 from dipy.viz.interactor import CustomInteractorStyle
 
 from dipy.utils.optpkg import optional_package
@@ -18,6 +21,7 @@ else:
     vtkTextActor = object
 
 TWO_PI = 2 * np.pi
+
 
 class UI(object):
     """ An umbrella class for all UI elements.
@@ -1864,3 +1868,429 @@ class DiskSlider2D(UI):
                           self.handle_move_callback)
         self.add_callback(self.handle, "MouseMoveEvent",
                           self.handle_move_callback)
+
+
+class FileSelectMenu2D(UI):
+    """ A menu to select files in the current folder.
+
+    Can go to new folder, previous folder and select a file and keep in a variable.
+
+    Attributes
+    ----------
+    n_text_actors: int
+        The number of text actors. Calculated dynamically.
+    selected_file: string
+        Current selected file.
+    text_item_list: list(:class:`FileSelectMenuText2D`)
+        List of FileSelectMenuText2Ds - both visible and invisible.
+    window: int
+        Used for scrolling. Basically, tells you the index of the first visible
+        FileSelectMenuText2D object.
+    size: (float, float)
+        The size of the system (x, y) in pixels.
+    font_size: int
+        The font size in pixels.
+    line_spacing: float
+        Distance between menu text items in pixels.
+    parent_ui: :class:`UI`
+        The UI component this object belongs to.
+
+    """
+
+    def __init__(self, size, font_size, position, parent, line_spacing=1.4):
+        """
+        Parameters
+        ----------
+        size: (float, float)
+            The size of the system (x, y) in pixels.
+        font_size: int
+            The font size in pixels.
+        parent: :class:`UI`
+            The UI component this object belongs to.
+        position: (float, float)
+            The initial position (x, y) in pixels.
+        line_spacing: float
+            Distance between menu text items in pixels.
+
+        """
+        super(FileSelectMenu2D, self).__init__()
+
+        self.size = size
+        self.font_size = font_size
+        self.parent_ui = parent
+        self.line_spacing = line_spacing
+
+        self.n_text_actors = 0  # Initialisation Value
+        self.text_item_list = []
+        self.selected_file = ""
+        self.window = 0
+
+        self.menu = self.build_actors(position)
+
+        self.fill_text_actors()
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        actors = self.text_item_list[:]
+        actors.extend(self.menu.get_actors())
+        return actors
+
+    def build_actors(self, position):
+        """ Builds the number of text actors that will fit in the given size.
+
+        Allots them positions in the panel, which is only there to allot positions,
+        otherwise the panel itself is invisible.
+
+        Parameters
+        ----------
+        position: (float, float)
+            Position of the panel (x, y) in pixels.
+
+        """
+        # Calculating the number of text actors.
+        self.n_text_actors = int(self.size[1]/(self.font_size*self.line_spacing))
+
+        # This panel is just to facilitate the addition of actors at the right positions
+        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))
+        self.ui_list.append(panel.panel)
+
+        # Initialisation of empty text actors
+        for i in range(self.n_text_actors):
+
+            text = FileSelectMenuText2D(position=(0, 0), font_size=self.font_size,
+                                        file_select=self)
+            text.parent_UI = self.parent_ui
+            self.ui_list.append(text)
+            self.text_item_list.append(text)
+
+            panel.add_element(text, 'relative',
+                              (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
+
+        up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
+        # ToDo: up_button.add_callback("LeftButtonPressEvent", self.up_button_callback)
+        panel.add_element(up_button, 'relative', (0.95, 0.9))
+
+        down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
+        # ToDo: down_button.add_callback("LeftButtonPressEvent", self.down_button_callback)
+        panel.add_element(down_button, 'relative', (0.95, 0.1))
+
+        return panel
+
+    @staticmethod
+    def up_button_callback(i_ren, obj, file_select_menu):
+        """ Pressing up button scrolls up in the menu.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        file_select_menu: :class:`FileSelectMenu2D`
+
+        """
+        all_file_names = file_select_menu.get_all_file_names()
+
+        if (file_select_menu.n_text_actors +
+                file_select_menu.window) <= len(all_file_names):
+            if file_select_menu.window > 0:
+                file_select_menu.window -= 1
+                file_select_menu.fill_text_actors()
+
+        return False
+
+    @staticmethod
+    def down_button_callback(i_ren, obj, file_select_menu):
+        """ Pressing down button scrolls down in the menu.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        file_select_menu: :class:`FileSelectMenu2D`
+
+        """
+        all_file_names = file_select_menu.get_all_file_names()
+
+        if (file_select_menu.n_text_actors +
+                file_select_menu.window) < len(all_file_names):
+            file_select_menu.window += 1
+            file_select_menu.fill_text_actors()
+
+        return False
+
+    def fill_text_actors(self):
+        """ Fills file/folder names to text actors.
+
+        The list is truncated if the number of file/folder names is greater
+        than the available number of text actors.
+
+        """
+        # Flush all the text actors
+        for text_item in self.text_item_list:
+            text_item.text_actor.message = ""
+            text_item.text_actor.actor.SetVisibility(False)
+
+        all_file_names = self.get_all_file_names()
+
+        clipped_file_names = all_file_names[self.window:self.n_text_actors+self.window]
+
+        # Allot file names as in the above list
+        i = 0
+        for file_name in clipped_file_names:
+            self.text_item_list[i].text_actor.actor.SetVisibility(True)
+            self.text_item_list[i].set_attributes(file_name[0], file_name[1])
+            i += 1
+
+    def get_all_file_names(self):
+        """ Gets file and directory names.
+
+        Returns
+        -------
+        all_file_names: list(string)
+            List of all file and directory names as string.
+
+        """
+        all_file_names = []
+
+        directory_names = self.get_directory_names()
+        for directory_name in directory_names:
+            all_file_names.append((directory_name, "directory"))
+
+        file_names = self.get_file_names("png")
+        for file_name in file_names:
+            all_file_names.append((file_name, "file"))
+
+        return all_file_names
+
+    @staticmethod
+    def get_directory_names():
+        """ Re-allots file names to the text actors.
+
+        Uses FileSelectMenuText2D for selecting files and folders.
+
+        Returns
+        -------
+        directory_names: list(string)
+            List of all directory names as string.
+
+        """
+        # A list of directory names in the current directory
+        directory_names = ["../"]
+        directory_names += glob.glob("*/")
+
+        return directory_names
+
+    @staticmethod
+    def get_file_names(extension):
+        """ Re-allots file names to the text actors.
+
+        Uses FileSelectMenuText2D for selecting files and folders.
+
+        Parameters
+        ----------
+        extension: string
+            Examples: png, jpg, etc.
+
+        Returns
+        -------
+        file_names: list(string)
+            List of all file names as string.
+
+        """
+        # A list of file names with extension in the current directory
+        file_names = glob.glob("*." + extension)
+
+        return file_names
+
+    def select_file(self, file_name):
+        """ Changes the selected file name.
+
+        Parameters
+        ----------
+        file_name: string
+            Name of the file.
+
+        """
+        self.selected_file = file_name
+
+    def set_center(self, position):
+        """ Sets the elements center.
+
+        Parameters
+        ----------
+        position: (float, float)
+            New position (x, y) in pixels.
+
+        """
+        self.menu.set_center(position=position)
+
+
+class FileSelectMenuText2D(UI):
+    """ The text to select folder in a file select menu.
+
+    Provides a callback to change the directory.
+
+    Attributes
+    ----------
+    file_name: string
+        The name of the file the text is displaying.
+    file_type: string
+        Whether the file is a file or directory.
+    file_select: :class:`FileSelect2D`
+        The FileSelectMenu2D reference this text belongs to.
+
+    """
+
+    def __init__(self, font_size, position, file_select):
+        """
+        Parameters
+        ----------
+        font_size: int
+            The font size of the text in pixels.
+        position: (float, float)
+            Absolute text position (x, y) in pixels.
+        file_select: :class:`FileSelect2D`
+            The FileSelectMenu2D reference this text belongs to.
+
+        """
+        super(FileSelectMenuText2D, self).__init__()
+
+        self.file_name = ""
+        self.file_type = ""
+
+        self.file_select = file_select
+
+        self.text_actor = self.build_actor(position=position, font_size=font_size)
+
+        # ToDo: self.add_callback("LeftButtonPressEvent", self.click_callback)
+
+    def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
+                    justification='left', bold=False, italic=False,
+                    shadow=False, font_size='14'):
+        """ Builds a text actor.
+
+        Parameters
+        ----------
+        text: string
+            The initial text while building the actor.
+        position: (float, float)
+            The text position (x, y) in pixels.
+        color: (float, float, float)
+            Values must be between 0-1.
+        font_family: string
+            Currently only supports Arial.
+        justification: string
+            Text justification - left, right or center.
+        bold: bool
+            Whether or not the text is bold.
+        italic: bool
+            Whether or not the text is italicized.
+        shadow: bool
+            Whether or not the text has shadow.
+        font_size: int
+            The font size of the text in pixels.
+
+        Returns
+        -------
+        text_actor: :class:`TextActor2D`
+            The base text actor.
+
+        """
+        text_actor = TextActor2D()
+        text_actor.position = position
+        text_actor.message = text
+        text_actor.font_size = font_size
+        text_actor.font_family = font_family
+        text_actor.justification = justification
+        text_actor.bold = bold
+        text_actor.italic = italic
+        text_actor.shadow = shadow
+        text_actor.color = color
+
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+
+        text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
+        text_actor.actor.GetTextProperty().SetLineSpacing(1)
+
+        return text_actor
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        return [self.text_actor]
+
+    def set_attributes(self, file_name, file_type):
+        """ This function is for use by a FileSelectMenu2D to set the
+        current file_name and file_type for this FileSelectMenuText2D
+        component.
+
+        Parameters
+        ----------
+        file_name: string
+            The name of the file.
+        file_type: string
+            File type = directory or file.
+
+        """
+        self.file_name = file_name
+        self.file_type = file_type
+        self.text_actor.message = file_name
+
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            if file_type == "file":
+                self.text_actor.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+                self.text_actor.actor.GetTextProperty().SetColor(1, 1, 1)
+            else:
+                self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+                self.text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
+
+    @staticmethod
+    def handle_click_callback(i_ren, obj, file_select_text):
+        """ A callback to handle click for this UI element.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        file_select_text: :class:`FileSelectMenuText2D`
+
+        """
+        if file_select_text.file_type == "directory":
+            os.chdir(file_select_text.text_actor.message)
+
+            file_select_text.file_select.window = 0
+            file_select_text.file_select.fill_text_actors()
+            file_select_text.file_select.select_file(file_name="")
+
+            # if isinstance(self.parent_UI, FileSaveMenu):
+            #     self.parent_UI.handle_folder_change()
+            #     self.parent_UI.handle_file_click(file_name="FileName")
+        else:
+            file_select_text.file_select.select_file(file_name=file_select_text.file_name)
+
+            # if isinstance(self.parent_UI, FileSaveMenu):
+            #     self.parent_UI.handle_file_click(file_name=self.file_name)
+            pass
+
+        return False
+
+    def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position: (float, float)
+            The new position (x, y) in pixels.
+        """
+        self.text_actor.position = position
