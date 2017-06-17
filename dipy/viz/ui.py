@@ -1924,11 +1924,12 @@ class FileSelectMenu2D(UI):
         self.text_item_list = []
         self.selected_file = ""
         self.window = 0
-        self.buttons = []
+        self.buttons = dict()
 
         self.menu = self.build_actors(position)
 
         self.fill_text_actors()
+        self.handle_events(None)
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
@@ -1936,8 +1937,8 @@ class FileSelectMenu2D(UI):
         """
         actors = [text_item.text_actor.actor for text_item in self.text_item_list]
         actors.extend(self.menu.get_actors())
-        button_actors = [button.actor for button in self.buttons]
-        actors.extend(button_actors)
+        actors.append(self.buttons["up"])
+        actors.append(self.buttons["down"])
         return actors
 
     def build_actors(self, position):
@@ -1971,14 +1972,12 @@ class FileSelectMenu2D(UI):
                               (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
 
         up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
-        # ToDo: up_button.add_callback("LeftButtonPressEvent", self.up_button_callback)
         panel.add_element(up_button, 'relative', (0.95, 0.95))
-        self.buttons.append(up_button)
+        self.buttons["up"] = up_button
 
         down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
-        # ToDo: down_button.add_callback("LeftButtonPressEvent", self.down_button_callback)
         panel.add_element(down_button, 'relative', (0.95, 0.05))
-        self.buttons.append(down_button)
+        self.buttons["down"] = down_button
 
         return panel
 
@@ -2002,8 +2001,6 @@ class FileSelectMenu2D(UI):
                 file_select_menu.window -= 1
                 file_select_menu.fill_text_actors()
 
-        return False
-
     @staticmethod
     def down_button_callback(i_ren, obj, file_select_menu):
         """ Pressing down button scrolls down in the menu.
@@ -2022,8 +2019,6 @@ class FileSelectMenu2D(UI):
                 file_select_menu.window) < len(all_file_names):
             file_select_menu.window += 1
             file_select_menu.fill_text_actors()
-
-        return False
 
     def fill_text_actors(self):
         """ Fills file/folder names to text actors.
@@ -2131,6 +2126,12 @@ class FileSelectMenu2D(UI):
         """
         self.menu.set_center(position=position)
 
+    def handle_events(self, actor):
+        self.add_callback(self.buttons["up"].actor, "LeftButtonPressEvent",
+                          self.up_button_callback)
+        self.add_callback(self.buttons["down"].actor, "LeftButtonPressEvent",
+                          self.down_button_callback)
+
 
 class FileSelectMenuText2D(UI):
     """ The text to select folder in a file select menu.
@@ -2170,8 +2171,6 @@ class FileSelectMenuText2D(UI):
         self.text_actor = self.build_actor(position=position, font_size=font_size)
 
         self.handle_events(None)
-
-        # ToDo: self.add_callback("LeftButtonPressEvent", self.click_callback)
 
     def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
                     justification='left', bold=False, italic=False,
@@ -2279,6 +2278,8 @@ class FileSelectMenuText2D(UI):
             file_select_text.file_select.fill_text_actors()
             file_select_text.file_select.select_file(file_name="")
 
+            # ToDo: Add this for file save menu,
+            # probably explore a more abstract way of doing this
             # if isinstance(self.parent_UI, FileSaveMenu):
             #     self.parent_UI.handle_folder_change()
             #     self.parent_UI.handle_file_click(file_name="FileName")
@@ -2287,9 +2288,6 @@ class FileSelectMenuText2D(UI):
 
             # if isinstance(self.parent_UI, FileSaveMenu):
             #     self.parent_UI.handle_file_click(file_name=self.file_name)
-            pass
-
-        return False
 
     def set_center(self, position):
         """ Sets the text center to position.
@@ -2302,4 +2300,8 @@ class FileSelectMenuText2D(UI):
         self.text_actor.position = position
 
     def handle_events(self, actor):
-        pass
+        """ Handle default click event.
+
+        """
+        self.add_callback(self.text_actor.actor, "LeftButtonPressEvent",
+                          self.handle_click_callback)
