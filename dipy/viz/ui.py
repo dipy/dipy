@@ -1924,6 +1924,7 @@ class FileSelectMenu2D(UI):
         self.text_item_list = []
         self.selected_file = ""
         self.window = 0
+        self.buttons = []
 
         self.menu = self.build_actors(position)
 
@@ -1933,8 +1934,10 @@ class FileSelectMenu2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
-        actors = self.text_item_list[:]
+        actors = [text_item.text_actor.actor for text_item in self.text_item_list]
         actors.extend(self.menu.get_actors())
+        button_actors = [button.actor for button in self.buttons]
+        actors.extend(button_actors)
         return actors
 
     def build_actors(self, position):
@@ -1954,7 +1957,6 @@ class FileSelectMenu2D(UI):
 
         # This panel is just to facilitate the addition of actors at the right positions
         panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))
-        self.ui_list.append(panel.panel)
 
         # Initialisation of empty text actors
         for i in range(self.n_text_actors):
@@ -1970,11 +1972,13 @@ class FileSelectMenu2D(UI):
 
         up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
         # ToDo: up_button.add_callback("LeftButtonPressEvent", self.up_button_callback)
-        panel.add_element(up_button, 'relative', (0.95, 0.9))
+        panel.add_element(up_button, 'relative', (0.95, 0.95))
+        self.buttons.append(up_button)
 
         down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
         # ToDo: down_button.add_callback("LeftButtonPressEvent", self.down_button_callback)
-        panel.add_element(down_button, 'relative', (0.95, 0.1))
+        panel.add_element(down_button, 'relative', (0.95, 0.05))
+        self.buttons.append(down_button)
 
         return panel
 
@@ -2059,7 +2063,7 @@ class FileSelectMenu2D(UI):
         for directory_name in directory_names:
             all_file_names.append((directory_name, "directory"))
 
-        file_names = self.get_file_names("png")
+        file_names = self.get_file_names("py")
         for file_name in file_names:
             all_file_names.append((file_name, "file"))
 
@@ -2164,6 +2168,8 @@ class FileSelectMenuText2D(UI):
         self.file_select = file_select
 
         self.text_actor = self.build_actor(position=position, font_size=font_size)
+
+        self.handle_events(None)
 
         # ToDo: self.add_callback("LeftButtonPressEvent", self.click_callback)
 
@@ -2294,3 +2300,6 @@ class FileSelectMenuText2D(UI):
             The new position (x, y) in pixels.
         """
         self.text_actor.position = position
+
+    def handle_events(self, actor):
+        pass
