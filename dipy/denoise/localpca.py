@@ -14,7 +14,7 @@ except ImportError:
     svd_args = [False]
 
 
-def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
+def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -36,13 +36,14 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 \tau = (\tau_{factor} \sigma)^2
 
         Default: 2.3, based on the results described in [Manjon13]_.
+    out_dtype : str or dtype, optional
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
 
     Returns
     -------
     denoised_arr : 4D array
         This is the denoised array of the same size as that of the input data.
-        Output is given in float32, except if the input had float64 precision,
-        in which case, float64 precision output is provided.
 
     References
     ----------
@@ -51,13 +52,16 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                   PCA. PLoS ONE 8(9): e73021.
                   https://doi.org/10.1371/journal.pone.0073021
     """
-    # We retain float64 precision, iff the input is in this precision
-    if arr.dtype == np.float64:
-        out_dtype = np.float64
+    if out_dtype is None:
+        out_dtype = arr.dtype
 
-    # Otherwise, we'll give you float32 output (saving memory)
+    # We retain float64 precision, iff the input is in this precision:
+    if arr.dtype == np.float64:
+        calc_dtype = np.float64
+
+    # Otherwise, we'll calculate things in float32 (saving memory)
     else:
-        out_dtype = np.float32
+        calc_dtype = np.float32
 
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
@@ -83,9 +87,9 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
 
     tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
     del sigma
-    # declare arrays for theta and thetax
-    theta = np.zeros(arr.shape, dtype=out_dtype)
-    thetax = np.zeros(arr.shape, dtype=out_dtype)
+
+    theta = np.zeros(arr.shape, dtype=calc_dtype)
+    thetax = np.zeros(arr.shape, dtype=calc_dtype)
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius, arr.shape[2] - patch_radius):
@@ -127,4 +131,4 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3):
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
-    return denoised_arr
+    return denoised_arr.astype(out_dtype)
