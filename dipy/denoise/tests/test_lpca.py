@@ -159,14 +159,18 @@ def test_lpca_sharpness():
 
 
 def test_lpca_dtype():
-    # If the input is float64, we retain that precision:
+    # If out_dtype is not specified, we retain the original precision:
     S0 = 200 * np.ones((20, 20, 20, 3), dtype=np.float64)
     S0ns = localpca(S0, sigma=1)
     assert_equal(S0.dtype, S0ns.dtype)
 
-    # If the input has any dtype except float64, it's returned as float32
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
     S0ns = localpca(S0, sigma=np.ones((20, 20, 20)))
+    assert_equal(S0.dtype, S0ns.dtype)
+
+    # If set out_dtype, we get what we asked for:
+    S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
+    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.float32)
     assert_equal(np.float32, S0ns.dtype)
 
 
