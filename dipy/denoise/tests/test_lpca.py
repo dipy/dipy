@@ -168,10 +168,23 @@ def test_lpca_dtype():
     S0ns = localpca(S0, sigma=np.ones((20, 20, 20)))
     assert_equal(S0.dtype, S0ns.dtype)
 
-    # If set out_dtype, we get what we asked for:
+    # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
     S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.float32)
     assert_equal(np.float32, S0ns.dtype)
+
+    # If we set a few entries to zero, this induces negative entries in the
+    # Resulting denoised array:
+    S0[5:8, 5:8, 5:8] = 0
+    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.float32)
+    assert_(~np.all(S0ns >= 0))
+    # But if we ask for uint16 output, we should get all non-negative results:
+    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.uint16)
+    assert_(np.all(S0ns >= 0))
+    # And no wrap-around to crazy high values:
+    assert_(np.all(S0ns <= 200))
+
+
 
 
 def test_lpca_wrong():

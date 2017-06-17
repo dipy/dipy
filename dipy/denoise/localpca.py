@@ -131,4 +131,10 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
+    # If the input is an unsigned integer dtype, we make sure that all
+    # entries in the array are non-negative before casting, so that we avoid
+    # overflowing
+    if np.issubdtype(out_dtype, np.unsignedinteger):
+        denoised_arr[denoised_arr < 0] = 0
+
     return denoised_arr.astype(out_dtype)
