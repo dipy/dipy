@@ -149,6 +149,13 @@ disk_slider = ui.DiskSlider2D()
 disk_slider.set_center((200, 200))
 
 """
+2D File Select Menu
+==============
+"""
+
+file_select_menu = ui.FileSelectMenu2D(size=(500, 500), position=(300, 300), font_size=16, parent=None)
+
+"""
 Adding Elements to the ShowManager
 ==================================
 
@@ -165,11 +172,12 @@ show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
+show_manager.ren.add(file_select_menu)
 
-show_manager.ren.azimuth(30)
+# show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
 
 window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 
