@@ -176,15 +176,11 @@ def test_lpca_dtype():
     # If we set a few entries to zero, this induces negative entries in the
     # Resulting denoised array:
     S0[5:8, 5:8, 5:8] = 0
-    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.float32)
-    assert_(~np.all(S0ns >= 0))
-    # But if we ask for uint16 output, we should get all non-negative results:
+    # But if we should always get all non-negative results:
     S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.uint16)
     assert_(np.all(S0ns >= 0))
     # And no wrap-around to crazy high values:
     assert_(np.all(S0ns <= 200))
-
-
 
 
 def test_lpca_wrong():

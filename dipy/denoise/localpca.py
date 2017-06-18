@@ -43,7 +43,8 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
     Returns
     -------
     denoised_arr : 4D array
-        This is the denoised array of the same size as that of the input data.
+        This is the denoised array of the same size as that of the input data,
+        clipped to non-negative values
 
     References
     ----------
@@ -131,10 +132,5 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
-    # If the input is an unsigned integer dtype, we make sure that all
-    # entries in the array are non-negative before casting, so that we avoid
-    # overflowing
-    if np.issubdtype(out_dtype, np.unsignedinteger):
-        denoised_arr[denoised_arr < 0] = 0
-
+    denoised_arr.clip(min=0, out=denoised_arr)
     return denoised_arr.astype(out_dtype)
