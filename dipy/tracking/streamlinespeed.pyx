@@ -104,14 +104,14 @@ def length(streamlines):
         if streamlines.data.dtype == np.float32:
             c_arclengths_from_arraysequence[float2d](
                                     streamlines.data,
-                                    streamlines._offsets.astype(np.int),
-                                    streamlines._lengths.astype(np.int),
+                                    streamlines._offsets.astype(np.intp),
+                                    streamlines._lengths.astype(np.intp),
                                     arclengths)
         else:
             c_arclengths_from_arraysequence[double2d](
                                       streamlines.data,
-                                      streamlines._offsets.astype(np.int),
-                                      streamlines._lengths.astype(np.int),
+                                      streamlines._offsets.astype(np.intp),
+                                      streamlines._lengths.astype(np.intp),
                                       arclengths)
 
 
