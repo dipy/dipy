@@ -136,16 +136,19 @@ sliders to move the slices and change their opacity.
 """
 
 line_slider_z = ui.LineSlider2D(min_value=0,
-                              max_value=shape[2] - 1,
-                              initial_value=shape[2] / 2)
+                                max_value=shape[2] - 1,
+                                initial_value=shape[2] / 2,
+                                text_template="{value:.0f}")
 
 line_slider_x = ui.LineSlider2D(min_value=0,
                                 max_value=shape[0] - 1,
-                                initial_value=shape[0] / 2)
+                                initial_value=shape[0] / 2,
+                                text_template="{value:.0f}")
 
 line_slider_y = ui.LineSlider2D(min_value=0,
                                 max_value=shape[1] - 1,
-                                initial_value=shape[1] / 2)
+                                initial_value=shape[1] / 2,
+                                text_template="{value:.0f}")
 
 opacity_slider = ui.LineSlider2D(min_value=0.0,
                                  max_value=1.0,
@@ -196,8 +199,8 @@ Now we will create a ``panel`` to contain the sliders and labels.
 """
 
 
-panel = ui.Panel2D(center=(170, 120), size=(300, 200), color=(1, 1, 1), opacity=0.2,
-                   align="left")
+panel = ui.Panel2D(center=(1030, 120), size=(300, 200), color=(1, 1, 1), opacity=0.1,
+                   align="right")
 
 panel.add_element(line_slider_label_x, 'relative', (0.1, 0.8))
 panel.add_element(line_slider_x, 'relative', (0.5, 0.8))
@@ -220,17 +223,19 @@ properly. The solution to this issue is to update the position of the slider
 using its ``place`` method every time the window size changes.
 """
 
-"""
+
 global size
 size = ren.GetSize()
+
 
 def win_callback(obj, event):
     global size
     if size != obj.GetSize():
-
-        slider.place(ren)
+        size_old = size
         size = obj.GetSize()
-"""
+        size_change = [size[0] - size_old[0], 0]
+        panel.re_align(size_change)
+
 show_m.initialize()
 
 """
@@ -239,14 +244,14 @@ the available 3D and 2D objects.
 """
 
 # show_m.add_window_callback(win_callback)
-show_m.render()
-show_m.start()
+# show_m.render()
+# show_m.start()
 
-# ren.zoom(1.5)
-# ren.reset_clipping_range()
+ren.zoom(1.5)
+ren.reset_clipping_range()
 
-# window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
-#              reset_camera=False)
+window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
+              reset_camera=False)
 
 """
 .. figure:: bundles_and_a_slice.png
