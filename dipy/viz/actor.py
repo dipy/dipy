@@ -1,8 +1,9 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+from nibabel.affines import apply_affine
 
-from dipy.viz.colormap import colormap_lookup_table
+from dipy.viz.colormap import colormap_lookup_table, create_colormap
 from dipy.viz.utils import lines_to_vtk_polydata
 from dipy.viz.utils import set_input
 
@@ -176,6 +177,12 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             im_actor.input_connection(self.output)
             im_actor.SetDisplayExtent(*self.GetDisplayExtent())
             im_actor.opacity(opacity)
+            if interpolation == 'nearest':
+                im_actor.SetInterpolate(False)
+            else:
+                im_actor.SetInterpolate(True)
+            if major_version >= 6:
+                im_actor.GetMapper().BorderOn()
             return im_actor
 
     image_actor = ImageActor()
@@ -539,3 +546,206 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
     ass.AddPart(arrowz)
 
     return ass
+
+
+def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+               norm=True, radial_scale=True, opacity=1.,
+               colormap='plasma', global_cm=False):
+    """ Slice spherical fields in native or world coordinates
+
+    Parameters
+    ----------
+    odfs : ndarray
+        4D array of spherical functions
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    radial_scale : bool
+        Scale sphere points according to odf values.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque)
+    colormap : None or str
+        If None then white color is used. Otherwise the name of colormap is
+        given. Matplotlib colormaps are also supported. Try 'inferno' :).
+    global_cm : bool
+        If True the colormap will be applied in all ODFs. If False
+        it will be applied individually at each voxel (default False).
+    """
+
+    if mask is None:
+        mask = np.ones(odfs.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
+    I, J, K = odfs.shape[:3]
+
+    class OdfSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+            tmp_mask = np.zeros(odfs.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2 + 1, y1:y2 + 1, z1:z2 + 1] = True
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
+
+            self.mapper = _odf_slicer_mapper(odfs=odfs,
+                                             affine=affine,
+                                             mask=tmp_mask,
+                                             sphere=sphere,
+                                             scale=scale,
+                                             norm=norm,
+                                             radial_scale=radial_scale,
+                                             opacity=opacity,
+                                             colormap=colormap,
+                                             global_cm=global_cm)
+            self.SetMapper(self.mapper)
+
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(0, I - 1, 0, J - 1,
+                                    int(np.floor(K/2)), int(np.floor(K/2)))
+            if x is not None:
+                self.display_extent(x, x, 0, J - 1, 0, K - 1)
+            if y is not None:
+                self.display_extent(0, I - 1, y, y, 0, K - 1)
+            if z is not None:
+                self.display_extent(0, I - 1, 0, J - 1, z, z)
+
+    odf_actor = OdfSlicerActor()
+    odf_actor.display_extent(0, I - 1, 0, J - 1,
+                             int(np.floor(K/2)), int(np.floor(K/2)))
+
+    return odf_actor
+
+
+def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
+                       norm=True, radial_scale=True, opacity=1.,
+                       colormap='plasma', global_cm=False):
+    """ Helper function for slicing spherical fields
+
+    Parameters
+    ----------
+    odfs : ndarray
+        4D array of spherical functions
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    radial_scale : bool
+        Scale sphere points according to odf values.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque)
+    colormap : None or str
+        If None then white color is used. Otherwise the name of colormap is
+        given. Matplotlib colormaps are also supported. Try 'inferno' :).
+    global_cm : bool
+        If True the colormap will be applied in all ODFs. If False
+        it will be applied individually at each voxel (default False).
+    """
+    if mask is None:
+        mask = np.ones(odfs.shape[:3])
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+
+    # from ipdb import set_trace
+    # set_trace()
+
+    if len(ijk) == 0:
+        return None
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    all_xyz = []
+    all_faces = []
+    all_ms = []
+    for (k, center) in enumerate(ijk):
+
+        m = odfs[tuple(center.astype(np.int))].copy()
+
+        if norm:
+            m /= abs(m).max()
+
+        if radial_scale:
+            xyz = vertices * m[:, None]
+        else:
+            xyz = vertices.copy()
+
+        all_xyz.append(scale * xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
+        all_ms.append(m)
+
+    # from ipdb import set_trace
+    # set_trace()
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
+    if global_cm:
+        all_ms = np.ascontiguousarray(
+            np.concatenate(all_ms), dtype='f4')
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(ncells, all_faces_vtk)
+
+    if colormap is not None:
+        if global_cm:
+            cols = create_colormap(all_ms.ravel(), colormap)
+        else:
+            cols = np.zeros((ijk.shape[0],) + sphere.vertices.shape,
+                            dtype='f4')
+            for k in range(ijk.shape[0]):
+                tmp = create_colormap(all_ms[k].ravel(), colormap)
+                cols[k] = tmp.copy()
+
+            cols = np.ascontiguousarray(
+                np.reshape(cols, (cols.shape[0] * cols.shape[1],
+                           cols.shape[2])), dtype='f4')
+        # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
+        # vtk_colors = numpy_to_vtk_colors(255 * cols)
+
+        vtk_colors = numpy_support.numpy_to_vtk(
+            np.asarray(255 * cols),
+            deep=True,
+            array_type=vtk.VTK_UNSIGNED_CHAR)
+
+        vtk_colors.SetName("Colors")
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+
+    if colormap is not None:
+        polydata.GetPointData().SetScalars(vtk_colors)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    return mapper
