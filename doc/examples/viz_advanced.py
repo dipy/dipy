@@ -223,10 +223,8 @@ properly. The solution to this issue is to update the position of the slider
 using its ``place`` method every time the window size changes.
 """
 
-
 global size
 size = ren.GetSize()
-
 
 def win_callback(obj, event):
     global size
