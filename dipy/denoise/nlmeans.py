@@ -2,12 +2,12 @@ from __future__ import division, print_function
 
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
-from warnings import warn
-import warnings
+# from warnings import warn
+# import warnings
 
-warnings.simplefilter('always', DeprecationWarning)
-warn(DeprecationWarning("Module 'dipy.denoise.nlmeans' is deprecated,"
-                        " use module 'dipy.denoise.non_local_means' instead"))
+# warnings.simplefilter('always', DeprecationWarning)
+# warn(DeprecationWarning("Module 'dipy.denoise.nlmeans' is deprecated,"
+#                         " use module 'dipy.denoise.non_local_means' instead"))
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
@@ -46,10 +46,10 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
 
     """
 
-    warn(DeprecationWarning("function 'dipy.denoise.nlmeans'"
-                            " is deprecated, use module "
-                            "'dipy.denoise.non_local_means'"
-                            " instead"))
+    # warn(DeprecationWarning("function 'dipy.denoise.nlmeans'"
+    #                        " is deprecated, use module "
+    #                        "'dipy.denoise.non_local_means'"
+    #                        " instead"))
 
     if arr.ndim == 3:
         sigma = np.ones(arr.shape, dtype=np.float64) * sigma
