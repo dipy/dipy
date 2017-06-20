@@ -307,7 +307,6 @@ def test_odf_slicer(interactive=False):
     odf_actor = actor.odf_slicer(odfs, affine,
                                  mask=mask, sphere=sphere, scale=.25,
                                  colormap='jet')
-    """
     fa = 0. * np.zeros(odfs.shape[:3])
     fa[:, 0, :] = 1.
     fa[:, -1, :] = 1.
@@ -324,23 +323,21 @@ def test_odf_slicer(interactive=False):
     renderer.reset_camera()
     renderer.reset_clipping_range()
     
-
     odf_actor.display_extent(0, I, 0, J, k, k)
     odf_actor.GetProperty().SetOpacity(1.0)
     if interactive:
         window.show(renderer, reset_camera=False)
-    #arr = window.snapshot(renderer)
-    #report = window.analyze_snapshot(arr, find_objects=True)
-    #npt.assert_equal(report.objects, 11 * 11)
+    
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 11 * 11)
+    
     renderer.clear()
     renderer.add(fa_actor)
     renderer.reset_camera()
     renderer.reset_clipping_range()
     if interactive:
         window.show(renderer)
-    #arr = window.snapshot(renderer)
-    #report = window.analyze_snapshot(arr, find_objects=True)
-    #npt.assert_equal(report.objects, 2)
 
     mask[:] = 0
     mask[5, 5, 5] = 1
@@ -358,9 +355,6 @@ def test_odf_slicer(interactive=False):
     renderer.reset_clipping_range()
     if interactive:
         window.show(renderer)
-    #arr = window.snapshot(renderer)
-    #report = window.analyze_snapshot(arr, find_objects=True)
-    #npt.assert_equal(report.objects, 2)
 
     renderer.clear()
     renderer.add(odf_actor)
@@ -398,22 +392,19 @@ def test_odf_slicer(interactive=False):
     renderer.reset_clipping_range()
     if interactive:
         window.show(renderer)
-    #arr = window.snapshot(renderer)
-    #report = window.analyze_snapshot(arr, colors=(0, 0, 0),
-    #                                 find_objects=True)
-    #npt.assert_equal(report.objects, 0)
-    #npt.assert_equal(report.colors_found[0], True)
 
-    #import gc
-    """
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.actors, 1)
+    npt.assert_equal(report.actors_classnames[0], 'vtkLODActor')
+        
     del odf_actor
     odfs._mmap.close()
     del odfs
     os.close(fid)
-    #gc.collect()
+    
     os.remove(fname)
 
 
 if __name__ == "__main__":
-    # npt.run_module_suite()
-    test_odf_slicer(interactive=False)
+    npt.run_module_suite()
+    # test_odf_slicer(interactive=False)
