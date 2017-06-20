@@ -41,9 +41,14 @@ class TripWire(object):
         ...
     TripWireError: We do not have silly_module_name
     """
+
     def __init__(self, msg):
         self._msg = msg
 
     def __getattr__(self, attr_name):
         ''' Raise informative error accessing attributes '''
+        raise TripWireError(self._msg)
+
+    def __call__(self, *args, **kwargs):
+        ''' Raise informative error while calling '''
         raise TripWireError(self._msg)
