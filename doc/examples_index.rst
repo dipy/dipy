@@ -39,16 +39,11 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Robust noise estimation with PIESNO
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :ref:`example_piesno`
 
 Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
-- :ref:`example_denoise_ascm`
 
 Reslice
 ~~~~~~~

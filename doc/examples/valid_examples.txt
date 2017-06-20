@@ -35,7 +35,7 @@
  streamline_tools.py
  linear_fascicle_evaluation.py
  denoise_nlmeans.py
- denoise_ascm.py
+# denoise_ascm.py
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
  deterministic_fiber_tracking.py
@@ -45,7 +45,7 @@
  tissue_classification.py
  bundle_registration.py
  tracking_tissue_classifier.py
- piesno.py
+# piesno.py
  viz_advanced.py
  viz_slice.py
  viz_bundles.py
