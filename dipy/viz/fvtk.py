@@ -79,6 +79,9 @@ else:
     msg = "Python VTK is not installed"
     warn(msg)
 
+    ren, have_ren, _ = optional_package('dipy.viz.window.ren',
+                                        'Python VTK is not installed')
+
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     """ Create one or more 3d points
