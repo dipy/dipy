@@ -9,6 +9,8 @@ from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.testing.decorators import xvfb_it
 from dipy.data import get_sphere
+from tempfile import mkstemp
+
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -285,114 +287,133 @@ def test_odf_slicer(interactive=False):
 
     shape = (11, 11, 11, sphere.vertices.shape[0])
 
-    with TemporaryDirectory() as tmpdir:
-        fname = os.path.join(tmpdir, 'odf_slicer.mmap')
-        odfs = np.memmap(fname, dtype='float64', mode='w+',
-                         shape=shape)
-        odfs[:] = 1
+    fid, fname = mkstemp(suffix='_odf_slicer.mmap')
+    print(fid)
+    print(fname)
+    
+    odfs = np.memmap(fname, dtype=np.float64, mode='w+',
+                     shape=shape)
+    
+    odfs[:] = 1
 
-        affine = np.eye(4)
-        renderer = window.renderer()
+    affine = np.eye(4)
+    renderer = window.Renderer()
 
-        mask = np.ones(odfs.shape[:3])
-        mask[:4, :4, :4] = 0
+    mask = np.ones(odfs.shape[:3])
+    mask[:4, :4, :4] = 0
 
-        odfs[..., 0] = 1
+    odfs[..., 0] = 1
 
-        odf_actor = actor.odf_slicer(odfs, affine,
-                                     mask=mask, sphere=sphere, scale=.25,
-                                     colormap='jet')
+    odf_actor = actor.odf_slicer(odfs, affine,
+                                 mask=mask, sphere=sphere, scale=.25,
+                                 colormap='jet')
+    """
+    fa = 0. * np.zeros(odfs.shape[:3])
+    fa[:, 0, :] = 1.
+    fa[:, -1, :] = 1.
+    fa[0, :, :] = 1.
+    fa[-1, :, :] = 1.
+    fa[5, 5, 5] = 1
 
-        fa = 0. * np.zeros(odfs.shape[:3])
-        fa[:, 0, :] = 1.
-        fa[:, -1, :] = 1.
-        fa[0, :, :] = 1.
-        fa[-1, :, :] = 1.
-        fa[5, 5, 5] = 1
+    k = 5
+    I, J, K = odfs.shape[:3]
 
-        k = 5
-        I, J, K = odfs.shape[:3]
+    fa_actor = actor.slicer(fa, affine)
+    fa_actor.display_extent(0, I, 0, J, k, k)
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    
 
-        fa_actor = actor.slicer(fa, affine)
-        fa_actor.display_extent(0, I, 0, J, k, k)
-        renderer.add(odf_actor)
-        renderer.reset_camera()
-        renderer.reset_clipping_range()
+    odf_actor.display_extent(0, I, 0, J, k, k)
+    odf_actor.GetProperty().SetOpacity(1.0)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+    #arr = window.snapshot(renderer)
+    #report = window.analyze_snapshot(arr, find_objects=True)
+    #npt.assert_equal(report.objects, 11 * 11)
+    renderer.clear()
+    renderer.add(fa_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+    #arr = window.snapshot(renderer)
+    #report = window.analyze_snapshot(arr, find_objects=True)
+    #npt.assert_equal(report.objects, 2)
 
-        odf_actor.display_extent(0, I, 0, J, k, k)
-        odf_actor.GetProperty().SetOpacity(1.0)
-        # window.show(renderer, reset_camera=False)
-        arr = window.snapshot(renderer)
-        report = window.analyze_snapshot(arr, find_objects=True)
-        npt.assert_equal(report.objects, 11 * 11)
-        renderer.clear()
-        renderer.add(fa_actor)
-        renderer.reset_camera()
-        renderer.reset_clipping_range()
-        # window.show(renderer)
-        arr = window.snapshot(renderer)
-        report = window.analyze_snapshot(arr, find_objects=True)
-        npt.assert_equal(report.objects, 2)
+    mask[:] = 0
+    mask[5, 5, 5] = 1
+    fa[5, 5, 5] = 0
+    fa_actor = actor.slicer(fa, None)
+    fa_actor.display(None, None, 5)
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='jet',
+                                 norm=False, global_cm=True)
+    renderer.clear()
+    renderer.add(fa_actor)
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+    #arr = window.snapshot(renderer)
+    #report = window.analyze_snapshot(arr, find_objects=True)
+    #npt.assert_equal(report.objects, 2)
 
-        mask[:] = 0
-        mask[5, 5, 5] = 1
-        fa[5, 5, 5] = 0
-        fa_actor = actor.slicer(fa, None)
-        fa_actor.display(None, None, 5)
-        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
-                                     sphere=sphere, scale=.25,
-                                     colormap='jet',
-                                     norm=False, global_cm=True)
-        renderer.clear()
-        renderer.add(fa_actor)
-        renderer.add(odf_actor)
-        renderer.reset_camera()
-        renderer.reset_clipping_range()
-        arr = window.snapshot(renderer)
-        report = window.analyze_snapshot(arr, find_objects=True)
-        npt.assert_equal(report.objects, 2)
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.add(fa_actor)
+    odfs[:, :, :] = 1
+    mask = np.ones(odfs.shape[:3])
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='jet',
+                                 norm=False, global_cm=True)
 
-        renderer.clear()
-        renderer.add(odf_actor)
-        renderer.add(fa_actor)
-        odfs[:, :, :] = 1
-        mask = np.ones(odfs.shape[:3])
-        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
-                                     sphere=sphere, scale=.25,
-                                     colormap='jet',
-                                     norm=False, global_cm=True)
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.add(fa_actor)
+    renderer.add(actor.axes((11, 11, 11)))
+    for i in range(11):
+        odf_actor.display(i, None, None)
+        fa_actor.display(i, None, None)
+        if interactive:
+            window.show(renderer)
+    for j in range(11):
+        odf_actor.display(None, j, None)
+        fa_actor.display(None, j, None)
+        if interactive:
+            window.show(renderer)
+    # with mask equal to zero everything should be black
+    mask = np.zeros(odfs.shape[:3])
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='plasma',
+                                 norm=False, global_cm=True)
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+    #arr = window.snapshot(renderer)
+    #report = window.analyze_snapshot(arr, colors=(0, 0, 0),
+    #                                 find_objects=True)
+    #npt.assert_equal(report.objects, 0)
+    #npt.assert_equal(report.colors_found[0], True)
 
-        renderer.clear()
-        renderer.add(odf_actor)
-        renderer.add(fa_actor)
-        renderer.add(actor.axes((11, 11, 11)))
-        for i in range(11):
-            odf_actor.display(i, None, None)
-            fa_actor.display(i, None, None)
-            if interactive:
-                window.show(renderer)
-        for j in range(11):
-            odf_actor.display(None, j, None)
-            fa_actor.display(None, j, None)
-            if interactive:
-                window.show(renderer)
-        # with mask equal to zero everything should be black
-        mask = np.zeros(odfs.shape[:3])
-        odf_actor = actor.odf_slicer(odfs, None, mask=mask,
-                                     sphere=sphere, scale=.25,
-                                     colormap='plasma',
-                                     norm=False, global_cm=True)
-        renderer.clear()
-        renderer.add(odf_actor)
-        renderer.reset_camera()
-        renderer.reset_clipping_range()
-        arr = window.snapshot(renderer)
-        report = window.analyze_snapshot(arr, colors=(0, 0, 0),
-                                         find_objects=True)
-        npt.assert_equal(report.objects, 0)
-        npt.assert_equal(report.colors_found[0], True)
+    #import gc
+    """
+    del odf_actor
+    odfs._mmap.close()
+    del odfs
+    os.close(fid)
+    #gc.collect()
+    os.remove(fname)
 
 
 if __name__ == "__main__":
     # npt.run_module_suite()
-    test_odf_slicer()
+    test_odf_slicer(interactive=False)
