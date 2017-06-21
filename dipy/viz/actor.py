@@ -826,11 +826,14 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                 self.SetMapper(None)
                 return
             if affine is not None:
-                ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+                ijk_trans = np.ascontiguousarray(apply_affine(affine, ijk))
             list_dirs = []
-            for center in ijk:
+            for index, center in enumerate(ijk):
                 # center = tuple(center)
-                xyz = center[:, None]
+                if affine is None:
+                    xyz = center[:, None]
+                else:
+                    xyz = ijk_trans[index][:, None]
                 xyz = xyz.T
                 for i in range(peaks_dirs[tuple(center)].shape[-2]):
                     # from ipdb import set_trace
