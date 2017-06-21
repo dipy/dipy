@@ -658,9 +658,6 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
     ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
 
-    # from ipdb import set_trace
-    # set_trace()
-
     if len(ijk) == 0:
         return None
 
@@ -689,8 +686,6 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         all_faces.append(faces + k * xyz.shape[0])
         all_ms.append(m)
 
-    # from ipdb import set_trace
-    # set_trace()
     all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
     all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
 
@@ -836,8 +831,7 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                     xyz = ijk_trans[index][:, None]
                 xyz = xyz.T
                 for i in range(peaks_dirs[tuple(center)].shape[-2]):
-                    # from ipdb import set_trace
-                    # set_trace()
+
                     if peaks_values is not None:
                         pv = peaks_values[tuple(center)][i]
                     else:
@@ -845,8 +839,7 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                     symm = np.vstack((-peaks_dirs[tuple(center)][i] * pv + xyz,
                                       peaks_dirs[tuple(center)][i] * pv + xyz))
                     list_dirs.append(symm)
-            # from ipdb import set_trace
-            # set_trace()
+
             self.mapper = line(list_dirs, colors=colors,
                                opacity=opacity, linewidth=linewidth,
                                lod=lod, lod_points=lod_points,
