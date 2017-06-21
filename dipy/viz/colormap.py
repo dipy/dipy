@@ -267,7 +267,7 @@ def line_colors(streamlines, cmap='rgb_standard'):
 lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
 
 
-def create_colormap(v, name='jet', auto=True):
+def create_colormap(v, name='plasma', auto=True):
     """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
     r,g,b value. The colormaps we use are similar with those of matplotlib.
