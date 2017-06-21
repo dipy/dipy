@@ -573,7 +573,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         Takes values from 0 (fully transparent) to 1 (opaque)
     colormap : None or str
         If None then white color is used. Otherwise the name of colormap is
-        given. Matplotlib colormaps are also supported. Try 'inferno' :).
+        given. Matplotlib colormaps are supported (e.g., 'inferno').
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
@@ -584,7 +584,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     else:
         mask = mask.astype(np.bool)
 
-    I, J, K = odfs.shape[:3]
+    szx, szy, szz = odfs.shape[:3]
 
     class OdfSlicerActor(vtk.vtkLODActor):
 
@@ -607,18 +607,18 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
 
         def display(self, x=None, y=None, z=None):
             if x is None and y is None and z is None:
-                self.display_extent(0, I - 1, 0, J - 1,
-                                    int(np.floor(K/2)), int(np.floor(K/2)))
+                self.display_extent(0, szx - 1, 0, szy - 1,
+                                    int(np.floor(szz/2)), int(np.floor(szz/2)))
             if x is not None:
-                self.display_extent(x, x, 0, J - 1, 0, K - 1)
+                self.display_extent(x, x, 0, szy - 1, 0, szz - 1)
             if y is not None:
-                self.display_extent(0, I - 1, y, y, 0, K - 1)
+                self.display_extent(0, szx - 1, y, y, 0, szz - 1)
             if z is not None:
-                self.display_extent(0, I - 1, 0, J - 1, z, z)
+                self.display_extent(0, szx - 1, 0, szy - 1, z, z)
 
     odf_actor = OdfSlicerActor()
-    odf_actor.display_extent(0, I - 1, 0, J - 1,
-                             int(np.floor(K/2)), int(np.floor(K/2)))
+    odf_actor.display_extent(0, szx - 1, 0, szy - 1,
+                             int(np.floor(szz/2)), int(np.floor(szz/2)))
 
     return odf_actor
 
@@ -848,19 +848,19 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
 
         def display(self, x=None, y=None, z=None):
             if x is None and y is None and z is None:
-                self.display_extent(0, I - 1, 0, J - 1,
-                                    int(np.floor(K/2)), int(np.floor(K/2)))
+                self.display_extent(0, szx - 1, 0, szy - 1,
+                                    int(np.floor(szz/2)), int(np.floor(szz/2)))
             if x is not None:
-                self.display_extent(x, x, 0, J - 1, 0, K - 1)
+                self.display_extent(x, x, 0, szy - 1, 0, szz - 1)
             if y is not None:
-                self.display_extent(0, I - 1, y, y, 0, K - 1)
+                self.display_extent(0, szx - 1, y, y, 0, szz - 1)
             if z is not None:
-                self.display_extent(0, I - 1, 0, J - 1, z, z)
+                self.display_extent(0, szx - 1, 0, szy - 1, z, z)
 
     peak_actor = PeakSlicerActor()
 
-    I, J, K = grid_shape
-    peak_actor.display_extent(0, I - 1, 0, J - 1,
-                              int(np.floor(K / 2)), int(np.floor(K / 2)))
+    szx, szy, szz = grid_shape
+    peak_actor.display_extent(0, szx - 1, 0, szy - 1,
+                              int(np.floor(szz / 2)), int(np.floor(szz / 2)))
 
     return peak_actor
