@@ -49,7 +49,6 @@
  viz_advanced.py
  viz_slice.py
  viz_bundles.py
- viz_widgets.py
  contextual_enhancement.py
  workflow_creation.py
  combined_workflow_creation.py
