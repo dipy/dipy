@@ -675,7 +675,7 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
         m = odfs[tuple(center.astype(np.int))].copy()
 
         if norm:
-            m /= abs(m).max()
+            m /= np.abs(m).max()
 
         if radial_scale:
             xyz = vertices * m[:, None]
@@ -720,8 +720,6 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
             cols = np.ascontiguousarray(
                 np.reshape(cols, (cols.shape[0] * cols.shape[1],
                            cols.shape[2])), dtype='f4')
-        # cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
-        # vtk_colors = numpy_to_vtk_colors(255 * cols)
 
         vtk_colors = numpy_support.numpy_to_vtk(
             np.asarray(255 * cols),
