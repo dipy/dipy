@@ -16,10 +16,10 @@ from dipy.viz import actor, window, ui
 
 """
 In ``window`` we have all the objects that connect what needs to be rendered
-to the display or the disk e.g., for saving screenshots. So, there you will find
-key objects and functions like the ``Renderer`` class which holds and provides
-access to all the actors and the ``show`` function which displays what is
-in the renderer on a window. Also, this module provides access to functions
+to the display or the disk e.g., for saving screenshots. So, there you will
+find key objects and functions like the ``Renderer`` class which holds and
+provides access to all the actors and the ``show`` function which displays what
+is in the renderer on a window. Also, this module provides access to functions
 for opening/saving dialogs and printing screenshots (see ``snapshot``).
 
 In the ``actor`` module we can find all the different primitives e.g.,
@@ -97,32 +97,28 @@ slicer_opacity = 0.6
 image_actor_z.opacity(slicer_opacity)
 
 """
-We can add additonal slicers by copying the original and adjusting the ``display_extent``. 
+We can add additonal slicers by copying the original and adjusting the
+``display_extent``.
 """
 
 image_actor_x = image_actor_z.copy()
 image_actor_x.opacity(slicer_opacity)
 x_midpoint = int(np.round(shape[0] / 2))
-image_actor_x.display_extent(x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
+image_actor_x.display_extent(x_midpoint,
+                             x_midpoint, 0,
+                             shape[1] - 1,
+                             0,
+                             shape[2] - 1)
 
 image_actor_y = image_actor_z.copy()
 image_actor_y.opacity(slicer_opacity)
 y_midpoint = int(np.round(shape[1] / 2))
-image_actor_y.display_extent(0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
-
-"""
-We can add additonal slicers by copying the original and adjusting the ``display_extent``. 
-"""
-
-image_actor_x = image_actor_z.copy()
-image_actor_x.opacity(slicer_opacity)
-x_midpoint = int(np.round(shape[0] / 2))
-image_actor_x.display_extent(x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
-
-image_actor_y = image_actor_z.copy()
-image_actor_y.opacity(slicer_opacity)
-y_midpoint = int(np.round(shape[1] / 2))
-image_actor_y.display_extent(0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
+image_actor_y.display_extent(0,
+                             shape[0] - 1,
+                             y_midpoint,
+                             y_midpoint,
+                             0,
+                             shape[2] - 1)
 
 """
 Connect the actors with the Renderer.
@@ -134,8 +130,8 @@ ren.add(image_actor_x)
 ren.add(image_actor_y)
 
 """
-Now we would like to change the position of each ``image_actor`` using a slider.
-The sliders are widgets which require access to different areas of the
+Now we would like to change the position of each ``image_actor`` using a
+slider. The sliders are widgets which require access to different areas of the
 visualization pipeline and therefore we don't recommend using them with
 ``show``. The more appropriate way is to use them with the ``ShowManager``
 object which allows accessing the pipeline in different areas. Here is how:
@@ -194,10 +190,18 @@ def change_opacity(i_ren, obj, slider):
     image_actor_x.opacity(slicer_opacity)
     image_actor_y.opacity(slicer_opacity)
 
-line_slider_z.add_callback(line_slider_z.slider_disk, "MouseMoveEvent", change_slice_z)
-line_slider_x.add_callback(line_slider_x.slider_disk, "MouseMoveEvent", change_slice_x)
-line_slider_y.add_callback(line_slider_y.slider_disk, "MouseMoveEvent", change_slice_y)
-opacity_slider.add_callback(opacity_slider.slider_disk, "MouseMoveEvent", change_opacity)
+line_slider_z.add_callback(line_slider_z.slider_disk,
+                           "MouseMoveEvent",
+                           change_slice_z)
+line_slider_x.add_callback(line_slider_x.slider_disk,
+                           "MouseMoveEvent",
+                           change_slice_x)
+line_slider_y.add_callback(line_slider_y.slider_disk,
+                           "MouseMoveEvent",
+                           change_slice_y)
+opacity_slider.add_callback(opacity_slider.slider_disk,
+                            "MouseMoveEvent",
+                            change_opacity)
 
 """
 We'll also create text labels to identify the sliders.
@@ -213,7 +217,10 @@ Now we will create a ``panel`` to contain the sliders and labels.
 """
 
 
-panel = ui.Panel2D(center=(1030, 120), size=(300, 200), color=(1, 1, 1), opacity=0.1,
+panel = ui.Panel2D(center=(1030, 120),
+                   size=(300, 200),
+                   color=(1, 1, 1),
+                   opacity=0.1,
                    align="right")
 
 panel.add_element(line_slider_label_x, 'relative', (0.1, 0.8))
@@ -232,9 +239,9 @@ Then, we can render all the widgets and everything else in the screen and
 start the interaction using ``show_m.start()``.
 
 
-However, if you change the window size, the slider will not update its position
-properly. The solution to this issue is to update the position of the slider
-using its ``place`` method every time the window size changes.
+However, if you change the window size, the panel will not update its position
+properly. The solution to this issue is to update the position of the panel
+using its ``re_align`` method every time the window size changes.
 """
 
 
