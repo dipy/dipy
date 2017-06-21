@@ -456,7 +456,10 @@ def test_peak_slicer(interactive=False):
     if interactive:
         window.show(renderer)
 
-
+    report = window.analyze_renderer(renderer)
+    ex = ['vtkLODActor', 'vtkOpenGLActor', 'vtkOpenGLActor', 'vtkOpenGLActor']
+    npt.assert_equal(report.actors_classnames, ex)
+    
+    
 if __name__ == "__main__":
-    #npt.run_module_suite()
-    test_peak_slicer(interactive=True)
+    npt.run_module_suite()
