@@ -8,6 +8,9 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.testing.decorators import xvfb_it
+from dipy.data import get_sphere
+from tempfile import mkstemp
+
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -276,6 +279,187 @@ def test_bundle_maps():
     actor.line(bundle, colors=colors)
 
 
-if __name__ == "__main__":
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_odf_slicer(interactive=False):
 
+    sphere = get_sphere('symmetric362')
+
+    shape = (11, 11, 11, sphere.vertices.shape[0])
+
+    fid, fname = mkstemp(suffix='_odf_slicer.mmap')
+    print(fid)
+    print(fname)
+    
+    odfs = np.memmap(fname, dtype=np.float64, mode='w+',
+                     shape=shape)
+    
+    odfs[:] = 1
+
+    affine = np.eye(4)
+    renderer = window.Renderer()
+
+    mask = np.ones(odfs.shape[:3])
+    mask[:4, :4, :4] = 0
+
+    odfs[..., 0] = 1
+
+    odf_actor = actor.odf_slicer(odfs, affine,
+                                 mask=mask, sphere=sphere, scale=.25,
+                                 colormap='jet')
+    fa = 0. * np.zeros(odfs.shape[:3])
+    fa[:, 0, :] = 1.
+    fa[:, -1, :] = 1.
+    fa[0, :, :] = 1.
+    fa[-1, :, :] = 1.
+    fa[5, 5, 5] = 1
+
+    k = 5
+    I, J, K = odfs.shape[:3]
+
+    fa_actor = actor.slicer(fa, affine)
+    fa_actor.display_extent(0, I, 0, J, k, k)
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    
+    odf_actor.display_extent(0, I, 0, J, k, k)
+    odf_actor.GetProperty().SetOpacity(1.0)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+    
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    npt.assert_equal(report.objects, 11 * 11)
+    
+    renderer.clear()
+    renderer.add(fa_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+
+    mask[:] = 0
+    mask[5, 5, 5] = 1
+    fa[5, 5, 5] = 0
+    fa_actor = actor.slicer(fa, None)
+    fa_actor.display(None, None, 5)
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='jet',
+                                 norm=False, global_cm=True)
+    renderer.clear()
+    renderer.add(fa_actor)
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.add(fa_actor)
+    odfs[:, :, :] = 1
+    mask = np.ones(odfs.shape[:3])
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='jet',
+                                 norm=False, global_cm=True)
+
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.add(fa_actor)
+    renderer.add(actor.axes((11, 11, 11)))
+    for i in range(11):
+        odf_actor.display(i, None, None)
+        fa_actor.display(i, None, None)
+        if interactive:
+            window.show(renderer)
+    for j in range(11):
+        odf_actor.display(None, j, None)
+        fa_actor.display(None, j, None)
+        if interactive:
+            window.show(renderer)
+    # with mask equal to zero everything should be black
+    mask = np.zeros(odfs.shape[:3])
+    odf_actor = actor.odf_slicer(odfs, None, mask=mask,
+                                 sphere=sphere, scale=.25,
+                                 colormap='plasma',
+                                 norm=False, global_cm=True)
+    renderer.clear()
+    renderer.add(odf_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    if interactive:
+        window.show(renderer)
+
+    report = window.analyze_renderer(renderer)
+    npt.assert_equal(report.actors, 1)
+    npt.assert_equal(report.actors_classnames[0], 'vtkLODActor')
+        
+    del odf_actor
+    odfs._mmap.close()
+    del odfs
+    os.close(fid)
+    
+    os.remove(fname)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_peak_slicer(interactive=False):
+
+    _peak_dirs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype='f4')
+    # peak_dirs.shape = (1, 1, 1) + peak_dirs.shape
+
+    peak_dirs = np.zeros((11, 11, 11, 3, 3))
+
+    peak_values = np.random.rand(11, 11, 11, 3)
+
+    peak_dirs[:, :, :] = _peak_dirs
+
+    renderer = window.Renderer()
+    peak_actor = actor.peak_slicer(peak_dirs)
+    renderer.add(peak_actor)
+    renderer.add(actor.axes((11, 11, 11)))
+    if interactive:
+        window.show(renderer)
+
+    renderer.clear()
+    renderer.add(peak_actor)
+    renderer.add(actor.axes((11, 11, 11)))
+    for k in range(11):
+        peak_actor.display_extent(0, 10, 0, 10, k, k)
+
+    for j in range(11):
+        peak_actor.display_extent(0, 10, j, j, 0, 10)
+
+    for i in range(11):
+        peak_actor.display(i, None, None)
+
+    renderer.rm_all()
+
+    peak_actor = actor.peak_slicer(
+        peak_dirs,
+        peak_values,
+        mask=None,
+        affine=np.diag([3, 2, 1, 1]),
+        colors=None,
+        opacity=1,
+        linewidth=3,
+        lod=True,
+        lod_points=10 ** 4,
+        lod_points_size=3)
+
+    renderer.add(peak_actor)
+    renderer.add(actor.axes((11, 11, 11)))
+    if interactive:
+        window.show(renderer)
+
+    report = window.analyze_renderer(renderer)
+    ex = ['vtkLODActor', 'vtkOpenGLActor', 'vtkOpenGLActor', 'vtkOpenGLActor']
+    npt.assert_equal(report.actors_classnames, ex)
+    
+    
+if __name__ == "__main__":
     npt.run_module_suite()
