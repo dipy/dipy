@@ -2001,6 +2001,9 @@ class FileSelectMenu2D(UI):
                 file_select_menu.window -= 1
                 file_select_menu.fill_text_actors()
 
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
     @staticmethod
     def down_button_callback(i_ren, obj, file_select_menu):
         """ Pressing down button scrolls down in the menu.
@@ -2019,6 +2022,9 @@ class FileSelectMenu2D(UI):
                 file_select_menu.window) < len(all_file_names):
             file_select_menu.window += 1
             file_select_menu.fill_text_actors()
+
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
 
     def fill_text_actors(self):
         """ Fills file/folder names to text actors.
@@ -2230,7 +2236,7 @@ class FileSelectMenuText2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
-        return [self.text_actor]
+        return [self.text_actor.get_actor()]
 
     def set_attributes(self, file_name, file_type):
         """ This function is for use by a FileSelectMenu2D to set the
@@ -2253,11 +2259,11 @@ class FileSelectMenuText2D(UI):
             pass
         else:
             if file_type == "file":
-                self.text_actor.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-                self.text_actor.actor.GetTextProperty().SetColor(1, 1, 1)
+                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(0, 0, 0)
+                self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
             else:
-                self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-                self.text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
+                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(1, 1, 1)
+                self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
 
     @staticmethod
     def handle_click_callback(i_ren, obj, file_select_text):
@@ -2277,17 +2283,11 @@ class FileSelectMenuText2D(UI):
             file_select_text.file_select.window = 0
             file_select_text.file_select.fill_text_actors()
             file_select_text.file_select.select_file(file_name="")
-
-            # ToDo: Add this for file save menu,
-            # probably explore a more abstract way of doing this
-            # if isinstance(self.parent_UI, FileSaveMenu):
-            #     self.parent_UI.handle_folder_change()
-            #     self.parent_UI.handle_file_click(file_name="FileName")
         else:
             file_select_text.file_select.select_file(file_name=file_select_text.file_name)
 
-            # if isinstance(self.parent_UI, FileSaveMenu):
-            #     self.parent_UI.handle_file_click(file_name=self.file_name)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
 
     def set_center(self, position):
         """ Sets the text center to position.
@@ -2303,5 +2303,5 @@ class FileSelectMenuText2D(UI):
         """ Handle default click event.
 
         """
-        self.add_callback(self.text_actor.actor, "LeftButtonPressEvent",
+        self.add_callback(self.text_actor.get_actor(), "LeftButtonPressEvent",
                           self.handle_click_callback)
