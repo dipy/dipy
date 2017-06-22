@@ -1935,8 +1935,10 @@ class FileSelectMenu2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
-        actors = [text_item.text_actor.actor for text_item in self.text_item_list]
+        actors = []
         actors.extend(self.menu.get_actors())
+        text_actors = [text_item.text_actor.actor for text_item in self.text_item_list]
+        actors.extend(text_actors)
         actors.append(self.buttons["up"])
         actors.append(self.buttons["down"])
         return actors
@@ -2277,6 +2279,7 @@ class FileSelectMenuText2D(UI):
         file_select_text: :class:`FileSelectMenuText2D`
 
         """
+
         if file_select_text.file_type == "directory":
             os.chdir(file_select_text.text_actor.message)
 
