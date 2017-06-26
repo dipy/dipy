@@ -2,6 +2,9 @@
  DIPY
 ======
 
+.. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/nipy/dipy
+
 DIPY is a python toolbox for analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
@@ -20,6 +23,8 @@ https://mail.python.org/mailman/listinfo/neuroimaging
 
 Please see the users' forum at
 https://neurostars.org
+
+Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
 
 Code
 ====

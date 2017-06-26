@@ -1,13 +1,12 @@
 ''' Utilities for testing '''
 from os.path import dirname, abspath, join as pjoin
+from dipy.testing.spherepoints import sphere_points
+from dipy.testing.decorators import doctest_skip_parser
+from numpy.testing import assert_array_equal
 
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
-
-from .spherepoints import sphere_points
-from .decorators import doctest_skip_parser
-from numpy.testing import assert_array_equal
 
 # Allow failed import of nose if not now running tests
 try:

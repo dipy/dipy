@@ -1,7 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 from os.path import splitext
-from ..utils.six import string_types
+from dipy.utils.six import string_types
 import numpy as np
 
 

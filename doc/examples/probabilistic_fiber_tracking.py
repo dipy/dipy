@@ -27,7 +27,7 @@ from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
@@ -106,4 +106,3 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 save_trk("probabilistic_peaks_from_model.trk", streamlines, affine,
          labels.shape)
-

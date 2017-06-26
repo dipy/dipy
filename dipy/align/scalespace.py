@@ -1,4 +1,4 @@
-from . import floating
+from dipy.align import floating
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage.filters as filters

@@ -4,6 +4,7 @@ from dipy.tracking import utils
 from dipy.tracking.propspeed import eudx_both_directions
 from dipy.data import get_sphere
 
+
 class EuDX(object):
 
     '''Euler Delta Crossings
@@ -62,11 +63,11 @@ class EuDX(object):
         ------------
         a : array,
             Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic
-            function e.g. QA (quantitative anisotropy) where Np is the number of
-            peaks or a different function of shape (I, J, K) e.g FA or GFA.
+            function e.g. QA (quantitative anisotropy) where Np is the number
+            of peaks or a different function of shape (I, J, K) e.g FA or GFA.
         ind : array, shape(x, y, z, Np)
-            indices of orientations of the scalar anisotropic peaks found on the
-            resampling sphere
+            indices of orientations of the scalar anisotropic peaks found on
+            the resampling sphere
         seeds : int or ndarray
             If an int is specified then that number of random seeds is
             generated in the volume. If an (N, 3) array of points is given,
@@ -76,12 +77,13 @@ class EuDX(object):
             white/gray matter interface or a specific ROI e.g. in the corpus
             callosum.
         odf_vertices : ndarray, shape (N, 3)
-            sphere points which define a discrete representation of orientations
-            for the peaks, the same for all voxels. Usually the same sphere is
-            used as an input for a reconstruction algorithm e.g. DSI.
+            sphere points which define a discrete representation of
+            orientations for the peaks, the same for all voxels. Usually the
+            same sphere is used as an input for a reconstruction algorithm
+            e.g. DSI.
         a_low : float, optional
-            low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
-            anisotropic function
+            low threshold for QA(typical 0.023)  or FA(typical 0.2) or any
+            other anisotropic function
         step_sz : float, optional
             euler propagation step size
         ang_thr : float, optional
@@ -113,7 +115,7 @@ class EuDX(object):
         >>> from dipy.core.gradients import gradient_table
         >>> fimg,fbvals,fbvecs = get_data('small_101D')
         >>> img = nib.load(fimg)
-        >>> affine = img.get_affine()
+        >>> affine = img.affine
         >>> data = img.get_data()
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)

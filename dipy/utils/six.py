@@ -9,8 +9,8 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -130,7 +130,6 @@ class MovedAttribute(_LazyDescr):
         return getattr(module, self.attr)
 
 
-
 class _MovedItems(types.ModuleType):
     """Lazy loading of moved objects"""
 
@@ -155,7 +154,8 @@ _moved_attributes = [
     MovedModule("html_entities", "htmlentitydefs", "html.entities"),
     MovedModule("html_parser", "HTMLParser", "html.parser"),
     MovedModule("http_client", "httplib", "http.client"),
-    MovedModule("email_mime_multipart", "email.MIMEMultipart", "email.mime.multipart"),
+    MovedModule("email_mime_multipart", "email.MIMEMultipart",
+                "email.mime.multipart"),
     MovedModule("email_mime_text", "email.MIMEText", "email.mime.text"),
     MovedModule("email_mime_base", "email.MIMEBase", "email.mime.base"),
     MovedModule("BaseHTTPServer", "BaseHTTPServer", "http.server"),
@@ -168,8 +168,10 @@ _moved_attributes = [
     MovedModule("tkinter", "Tkinter"),
     MovedModule("tkinter_dialog", "Dialog", "tkinter.dialog"),
     MovedModule("tkinter_filedialog", "FileDialog", "tkinter.filedialog"),
-    MovedModule("tkinter_scrolledtext", "ScrolledText", "tkinter.scrolledtext"),
-    MovedModule("tkinter_simpledialog", "SimpleDialog", "tkinter.simpledialog"),
+    MovedModule("tkinter_scrolledtext", "ScrolledText",
+                "tkinter.scrolledtext"),
+    MovedModule("tkinter_simpledialog", "SimpleDialog",
+                "tkinter.simpledialog"),
     MovedModule("tkinter_tix", "Tix", "tkinter.tix"),
     MovedModule("tkinter_constants", "Tkconstants", "tkinter.constants"),
     MovedModule("tkinter_dnd", "Tkdnd", "tkinter.dnd"),
@@ -287,13 +289,16 @@ def iterkeys(d, **kw):
     """Return an iterator over the keys of a dictionary."""
     return iter(getattr(d, _iterkeys)(**kw))
 
+
 def itervalues(d, **kw):
     """Return an iterator over the values of a dictionary."""
     return iter(getattr(d, _itervalues)(**kw))
 
+
 def iteritems(d, **kw):
     """Return an iterator over the (key, value) pairs of a dictionary."""
     return iter(getattr(d, _iteritems)(**kw))
+
 
 def iterlists(d, **kw):
     """Return an iterator over the (key, [values]) pairs of a dictionary."""
@@ -303,6 +308,7 @@ def iterlists(d, **kw):
 if PY3:
     def b(s):
         return s.encode("latin-1")
+
     def u(s):
         return s
     unichr = chr
@@ -321,14 +327,18 @@ if PY3:
 else:
     def b(s):
         return s
+
     def u(s):
         return unicode(s, "unicode_escape")
     unichr = unichr
     int2byte = chr
+
     def byte2int(bs):
         return ord(bs[0])
+
     def indexbytes(buf, i):
         return ord(buf[i])
+
     def iterbytes(buf):
         return (ord(byte) for byte in buf)
     import StringIO
@@ -341,12 +351,10 @@ if PY3:
     import builtins
     exec_ = getattr(builtins, "exec")
 
-
     def reraise(tp, value, tb=None):
         if value.__traceback__ is not tb:
             raise value.with_traceback(tb)
         raise value
-
 
     print_ = getattr(builtins, "print")
     del builtins
@@ -364,17 +372,16 @@ else:
             _locs_ = _globs_
         exec("""exec _code_ in _globs_, _locs_""")
 
-
     exec_("""def reraise(tp, value, tb=None):
     raise tp, value, tb
 """)
-
 
     def print_(*args, **kwargs):
         """The new-style print function."""
         fp = kwargs.pop("file", sys.stdout)
         if fp is None:
             return
+
         def write(data):
             if not isinstance(data, basestring):
                 data = str(data)

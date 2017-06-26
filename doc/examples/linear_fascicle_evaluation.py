@@ -106,7 +106,7 @@ need to transform them into this space. Otherwise, if the streamline coordinates
 were in the world space (relative to the scanner iso-center, or relative to the
 mid-point of the AC-PC-connecting line), we would use this::
 
-   inv_affine = np.linalg.inv(hardi_img.get_affine())
+   inv_affine = np.linalg.inv(hardi_img.affine)
 
 the inverse transformation from world space to the voxel space as the affine for
 the following model fit.

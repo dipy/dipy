@@ -4,6 +4,7 @@
 *.c
 *.cpp
 *.png
+*.vtk
 *.gz
 *.dpy
 *.npy
@@ -15,6 +16,7 @@
 build
 *~
 doc/_build
+doc/reference_cmd
 doc/*-stamp
 MANIFEST
 dist/
@@ -29,3 +31,5 @@ __config__.py
 .coverage
 .buildbot.patch
 .eggs/
+dipy/.idea/
+.idea/

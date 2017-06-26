@@ -22,13 +22,13 @@ def flirt2aff(mat, in_img, ref_img):
         Transform from voxel coordinates in ``in_img`` to voxel coordinates in
         ``ref_img``
     """
-    in_hdr = in_img.get_header()
-    ref_hdr = ref_img.get_header()
+    in_hdr = in_img.header
+    ref_hdr = ref_img.header
     # get_zooms gets the positive voxel sizes as returned in the header
     in_zoomer = np.diag(in_hdr.get_zooms() + (1,))
     ref_zoomer = np.diag(ref_hdr.get_zooms() + (1,))
     # The in_img voxels to ref_img voxels as recorded in the current affines
-    current_in2ref = np.dot(ref_img.get_affine(), in_img.get_affine())
+    current_in2ref = np.dot(ref_img.affine, in_img.affine)
     if npl.det(current_in2ref) < 0:
         raise ValueError('Negative determinant to current affine mapping - bailing out')
     return np.dot(npl.inv(ref_zoomer), np.dot(mat, in_zoomer))
@@ -95,7 +95,7 @@ print length(ntrack)/length(track)
 #print npl.det(im2im)**(1/3.)
 disimg=nib.load(fdis)
 ddata=disimg.get_data()
-daff=disimg.get_affine()
+daff=disimg.affine
 
 from scipy.ndimage.interpolation import map_coordinates as mc
 di=ddata[:,:,:,0]
@@ -112,7 +112,7 @@ print length(wtrack),length(ntrack),length(track)
 
 imgroi=nib.load(froi)    
 roidata=imgroi.get_data()
-roiaff=imgroi.get_affine()
+roiaff=imgroi.affine
 roiaff=daff
 I=np.array(np.where(roidata>0)).T    
 wI=np.dot(roiaff[:3,:3],I.T).T+roiaff[:3,3]
@@ -121,7 +121,7 @@ wI=wI.astype('f4')
 
 imgroi2=nib.load(froi2)    
 roidata2=imgroi2.get_data()
-roiaff2=imgroi2.get_affine()
+roiaff2=imgroi2.affine
 roiaff2=daff
 I2=np.array(np.where(roidata2>0)).T    
 wI2=np.dot(roiaff2[:3,:3],I2.T).T+roiaff2[:3,3]
@@ -130,7 +130,7 @@ wI2=wI2.astype('f4')
 
 imgroi3=nib.load(froi3)    
 roidata3=imgroi3.get_data()
-roiaff3=imgroi3.get_affine()
+roiaff3=imgroi3.affine
 roiaff3=daff
 I3=np.array(np.where(roidata3>0)).T    
 wI3=np.dot(roiaff3[:3,:3],I3.T).T+roiaff3[:3,3]
@@ -186,7 +186,7 @@ for i in range(len(offsets)-1):
 ref_fname = '/usr/share/fsl/data/standard/FMRIB58_FA-skeleton_1mm.nii.gz'
 imgref=nib.load(ref_fname)
 refdata=imgref.get_data()
-refaff=imgref.get_affine()
+refaff=imgref.affine
 
 '''
 refI=np.array(np.where(refdata>5000)).T    
@@ -203,7 +203,7 @@ froi='/home/eg309/Data/ICBM_Wmpm/ICBM_WMPM.nii'
 def get_roi(froi,no):
     imgroi=nib.load(froi)    
     roidata=imgroi.get_data()
-    roiaff=imgroi.get_affine()    
+    roiaff=imgroi.affine    
     I=np.array(np.where(roidata==no)).T    
     wI=np.dot(roiaff[:3,:3],I.T).T+roiaff[:3,3]
     wI=wI.astype('f4')
@@ -238,13 +238,13 @@ print daff
 ##load roi image
 #roiimg=ni.load(froi)
 #roidata=roiimg.get_data()
-#roiaff=roiimg.get_affine()
+#roiaff=roiimg.affine
 #print 'roiaff',roiaff,roidata.shape
 #
 ##load FA image
 #faimg=ni.load(ffa)
 #data=faimg.get_data()
-#aff=faimg.get_affine()
+#aff=faimg.affine
 ##aff[0,:]=-aff[0,:]
 ##aff[0,0]=-aff[0,0]
 ##aff=np.array([[2.5,0,0,-2.5*48],[0,2.5,0,-2.5*39],[0,0,2.5,-2.5*23],[0,0,0,1]])
@@ -273,7 +273,7 @@ print daff
 #
 #dis=ni.load(fdis)
 #disdata=dis.get_data()
-#mniaff=dis.get_affine()
+#mniaff=dis.affine
 #print 'mniaff',mniaff
 #
 ##invert disaff 
@@ -413,8 +413,8 @@ def test_flirt2aff():
     ref_img = nib.load(ref_fname)
     assert_true(np.all(res == flirt2aff(mat, in_img, ref_img)))
     # mm to mm transform
-    mm_in2mm_ref =  np.dot(ref_img.get_affine(),
-                           np.dot(res, npl.inv(in_img.get_affine())))
+    mm_in2mm_ref =  np.dot(ref_img.affine,
+                           np.dot(res, npl.inv(in_img.affine)))
     # make new in image thus transformed
     in_data = in_img.get_data()
     ires = npl.inv(res)
@@ -423,7 +423,7 @@ def test_flirt2aff():
                                          ires[:3,:3],
                                          ires[:3,3],
                                          ref_img.shape)
-    resliced_img = nib.Nifti1Image(resliced_data, ref_img.get_affine())
+    resliced_img = nib.Nifti1Image(resliced_data, ref_img.affine)
     nib.save(resliced_img, 'test.nii')
 
 

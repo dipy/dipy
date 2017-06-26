@@ -7,11 +7,11 @@ import numpy as np
 import numpy.linalg as npl
 import scipy as sp
 import nibabel as nib
-from . import vector_fields as vfu
-from . import floating
-from . import VerbosityLevels
-from . import Bunch
-from .scalespace import ScaleSpace
+from dipy.align import vector_fields as vfu
+from dipy.align import floating
+from dipy.align import VerbosityLevels
+from dipy.align import Bunch
+from dipy.align.scalespace import ScaleSpace
 
 RegistrationStages = Bunch(INIT_START=0,
                            INIT_END=1,
@@ -93,7 +93,7 @@ def get_direction_and_spacings(affine, dim):
     affine4x4[:dim, :dim] = affine[:dim, :dim]
     affine4x4[:dim, 3] = affine[:dim, dim-1]
     nib_nifti = nib.Nifti1Image(empty_volume, affine4x4)
-    scalings = np.asarray(nib_nifti.get_header().get_zooms())
+    scalings = np.asarray(nib_nifti.header.get_zooms())
     scalings = np.asarray(scalings[:dim], dtype=np.float64)
     A = affine[:dim, :dim]
     return A.dot(np.diag(1.0/scalings)), scalings

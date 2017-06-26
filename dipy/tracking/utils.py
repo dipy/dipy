@@ -21,7 +21,7 @@ As an example, lets take a 2d image where the affine is::
      [0., 2., 0.],
      [0., 0., 1.]]
 
-The pixels of an image with this affine would look something like:
+The pixels of an image with this affine would look something like::
 
     A------------
     |   |   |   |
@@ -57,15 +57,18 @@ from scipy.spatial.distance import cdist
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
-from ..utils.six.moves import xrange, map
+from dipy.utils.six.moves import xrange, map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
-from . import metrics
+from dipy.tracking import metrics
+from dipy.tracking.vox2track import _streamlines_in_mask
 
 # Import helper functions shared with vox2track
-from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from dipy.io.bvectxt import orientation_from_string
+import nibabel as nib
 
 
 def _rmi(index, dims):
@@ -93,7 +96,7 @@ except ImportError:
 
 
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
-    """Counts the number of unique streamlines that pass though each voxel.
+    """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
     ----------
@@ -120,9 +123,9 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 
     Notes
     -----
-    A streamline can pass though a voxel even if one of the points of the
+    A streamline can pass through a voxel even if one of the points of the
     streamline does not lie in the voxel. For example a step from [0,0,0] to
-    [0,0,2] passes though [0,0,1]. Consider subsegmenting the streamlines when
+    [0,0,2] passes through [0,0,1]. Consider subsegmenting the streamlines when
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
@@ -237,11 +240,8 @@ def ndbincount(x, weights=None, shape=None):
         shape = x.max(1) + 1
 
     x = ravel_multi_index(x, shape)
-    # out = np.bincount(x, weights, minlength=np.prod(shape))
-    # out.shape = shape
-    # Use resize to be compatible with numpy < 1.6, minlength new in 1.6
-    out = np.bincount(x, weights)
-    out.resize(shape)
+    out = np.bincount(x, weights, minlength=np.prod(shape))
+    out.shape = shape
 
     return out
 
@@ -436,16 +436,17 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, affine=None):
+def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
+                           affine=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
     which are ``True``.
     If ``seed_count_per_voxel`` is ``True``, this function is
-    similar to ``seeds_from_mask()``, with the difference that instead of evenly
-    distributing the seeds, it randomly places the seeds within the voxels
-    specified by the ``mask``. The initial random conditions can be set using
-    ``numpy.random.seed(...)``, prior to calling this function.
+    similar to ``seeds_from_mask()``, with the difference that instead of
+    evenly distributing the seeds, it randomly places the seeds within the
+    voxels specified by the ``mask``. The initial random conditions can be set
+    using ``numpy.random.seed(...)``, prior to calling this function.
 
     Parameters
     ----------
@@ -560,17 +561,17 @@ def target(streamlines, target_mask, affine, include=True):
     affine : array (4, 4)
         The affine transform from voxel indices to streamline points.
     include : bool, default True
-        If True, streamlines passing though `target_mask` are kept. If False,
-        the streamlines not passing thought `target_mask` are kept.
+        If True, streamlines passing through `target_mask` are kept. If False,
+        the streamlines not passing through `target_mask` are kept.
 
     Returns
     -------
     streamlines : generator
-        A sequence of streamlines that pass though `target_mask`.
+        A sequence of streamlines that pass through `target_mask`.
 
     Raises
     ------
-    IndexError
+    ValueError
         When the points of the streamlines lie outside of the `target_mask`.
 
     See Also
@@ -592,6 +593,57 @@ def target(streamlines, target_mask, affine, include=True):
             raise ValueError("streamlines points are outside of target_mask")
         if state.any() == include:
             yield sl
+
+
+@_with_initialize
+def target_line_based(streamlines, target_mask, affine=None, include=True):
+    """Filters streamlines based on whether or not they pass through a ROI,
+    using a line-based algorithm. Mostly used as a remplacement of `target`
+    for compressed streamlines.
+
+    This function never returns single-point streamlines, wathever the
+    value of `include`.
+
+    Parameters
+    ----------
+    streamlines : iterable
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
+    include : bool, default True
+        If True, streamlines passing through `target_mask` are kept. If False,
+        the streamlines not passing through `target_mask` are kept.
+
+    Returns
+    -------
+    streamlines : generator
+        A sequence of streamlines that pass through `target_mask`.
+
+    References
+    ----------
+    [Bresenham5] Bresenham, Jack Elton. "Algorithm for computer control of a
+                 digital plotter", IBM Systems Journal, vol 4, no. 1, 1965.
+    [Houde15] Houde et al. How to avoid biased streamlines-based metrics for
+              streamlines with variable step sizes, ISMRM 2015.
+
+    See Also
+    --------
+    dipy.tracking.utils.density_map
+    dipy.tracking.streamline.compress_streamlines
+    """
+    target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    streamline_index = _streamlines_in_mask(
+        streamlines, target_mask, lin_T, offset)
+    yield
+    # End of initialization
+
+    for idx in np.where(streamline_index == [0, 1][include])[0]:
+        yield streamlines[idx]
 
 
 def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
@@ -812,8 +864,8 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
         Mapping from the voxel indices of the reference image to trackvis
         space.
     """
-    if (voxel_order is not None or dim is not None or
-        ref_img_voxel_order is not None):
+    if ((voxel_order is not None or dim is not None or
+         ref_img_voxel_order is not None)):
         raise NotImplemented
 
     # Create affine
@@ -955,3 +1007,151 @@ def reduce_rois(rois, include):
             exclude_roi |= rois[i]
 
     return include_roi, exclude_roi
+
+
+def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
+    """ Computes the mapping from voxel indices to streamline points,
+        reconciling streamlines and grids with different voxel orders
+
+    Parameters
+    ----------
+    sl_vox_order : string of length 3
+        a string that describes the voxel order of the streamlines (ex: LPS)
+    grid_affine : array (4, 4),
+        An affine matrix describing the current space of the grid in relation
+        to RAS+ scanner space
+    dim : tuple of length 3
+        dimension of the grid
+    voxel_size : array (3,0)
+        voxel size of the grid
+
+    Returns
+    -------
+    flexi_tvis_aff : this affine maps between a grid and a trackvis space
+    """
+
+    sl_ornt = orientation_from_string(str(sl_vox_order))
+    grid_ornt = nib.io_orientation(grid_affine)
+    reorder_grid = reorder_voxels_affine(
+        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
+
+    tvis_aff = affine_for_trackvis(voxel_size)
+
+    flexi_tvis_aff = np.dot(tvis_aff, reorder_grid)
+
+    return flexi_tvis_aff
+
+
+def get_flexi_tvis_affine(tvis_hdr, nii_aff):
+    """ Computes the mapping from voxel indices to streamline points,
+        reconciling streamlines and grids with different voxel orders
+
+    Parameters
+    ----------
+    tvis_hdr : header from a trackvis file
+    nii_aff : array (4, 4),
+        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+    nii_data : nd array
+        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume.
+
+    Returns
+    -------
+    flexi_tvis_aff : array (4,4)
+        this affine maps between a grid and a trackvis space
+    """
+
+    sl_vox_order = tvis_hdr['voxel_order']
+    voxel_size = tvis_hdr['voxel_size']
+    dim = tvis_hdr['dim']
+
+    flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
+
+    return flexi_tvis_aff
+
+
+def _min_at(a, index, value):
+    index = np.asarray(index)
+    sort_keys = [value] + list(index)
+    order = np.lexsort(sort_keys)
+    index = index[:, order]
+    value = value[order]
+    uniq = np.ones(index.shape[1], dtype=bool)
+    uniq[1:] = (index[:, 1:] != index[:, :-1]).any(axis=0)
+
+    index = index[:, uniq]
+    value = value[uniq]
+
+    a[tuple(index)] = np.minimum(a[tuple(index)], value)
+
+try:
+    minimum_at = np.minimum.at
+except AttributeError:
+    minimum_at = _min_at
+
+
+def path_length(streamlines, aoi, affine, fill_value=-1):
+    """ Computes the shortest path, along any streamline, between aoi and
+    each voxel.
+
+    Parameters
+    ----------
+    streamlines : seq of (N, 3) arrays
+        A sequence of streamlines, path length is given in mm along the curve
+        of the streamline.
+    aoi : array, 3d
+        A mask (binary array) of voxels from which to start computing distance.
+    affine : array (4, 4)
+        The mapping from voxel indices to streamline points.
+    fill_value : float
+        The value of voxel in the path length map that are not connected to the
+        aoi.
+
+    Returns
+    -------
+    plm : array
+        Same shape as aoi. The minimum distance between every point and aoi
+        along the path of a streamline.
+    """
+    aoi = np.asarray(aoi, dtype=bool)
+
+    # path length map
+    plm = np.empty(aoi.shape, dtype=float)
+    plm[:] = np.inf
+    lin_T, offset = _mapping_to_voxel(affine, None)
+    for sl in streamlines:
+        seg_ind = _to_voxel_coordinates(sl, lin_T, offset)
+        i, j, k = seg_ind.T
+        # Get where streamlines passes through aoi
+        breaks = aoi[i, j, k]
+        # Where streamline passes aoi, dist is zero
+        i, j, k = seg_ind[breaks].T
+        plm[i, j, k] = 0
+
+        # If a streamline crosses aoi >1, re-start counting distance for each
+        for seg in _as_segments(sl, breaks):
+            i, j, k = _to_voxel_coordinates(seg[1:], lin_T, offset).T
+            # Get the distance, in mm, between streamline points
+            segment_length = np.sqrt(((seg[1:] - seg[:-1]) ** 2).sum(1))
+            dist = segment_length.cumsum()
+            # Updates path length map with shorter distances
+            minimum_at(plm, (i, j, k), dist)
+    if fill_value != np.inf:
+        plm = np.where(plm == np.inf, fill_value, plm)
+    return plm
+
+
+def _part_segments(streamline, break_points):
+    segments = np.split(streamline, break_points.nonzero()[0])
+    # Skip first segment, all points before first break
+    # first segment is empty when break_points[0] == 0
+    segments = segments[1:]
+    for each in segments:
+        if len(each) > 1:
+            yield each
+
+
+def _as_segments(streamline, break_points):
+    for seg in _part_segments(streamline, break_points):
+        yield seg
+    for seg in _part_segments(streamline[::-1], break_points[::-1]):
+        yield seg

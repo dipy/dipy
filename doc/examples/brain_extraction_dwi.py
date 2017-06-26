@@ -47,8 +47,8 @@ coordinates to the world coordinates is also needed. Here, we choose to save
 both images in float32.
 """
 
-mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
-b0_img = nib.Nifti1Image(b0_mask.astype(np.float32), img.get_affine())
+mask_img = nib.Nifti1Image(mask.astype(np.float32), img.affine)
+b0_img = nib.Nifti1Image(b0_mask.astype(np.float32), img.affine)
 
 fname = 'se_1.5t'
 nib.save(mask_img, fname + '_binary_mask.nii.gz')
@@ -61,7 +61,7 @@ Quick view of the results middle slice using matplotlib.
 import matplotlib.pyplot as plt
 from dipy.core.histeq import histeq
 
-sli = data.shape[2] / 2
+sli = data.shape[2] // 2
 plt.figure('Brain segmentation')
 plt.subplot(1, 2, 1).set_axis_off()
 plt.imshow(histeq(data[:, :, sli].astype('float')).T,
@@ -91,8 +91,8 @@ b0_mask_crop, mask_crop = median_otsu(data, 4, 4, autocrop=True)
 Saving cropped data using nibabel as demonstrated previously.
 """
 
-mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
+mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.affine)
 b0_img_crop = nib.Nifti1Image(
-    b0_mask_crop.astype(np.float32), img.get_affine())
+    b0_mask_crop.astype(np.float32), img.affine)
 nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
 nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')

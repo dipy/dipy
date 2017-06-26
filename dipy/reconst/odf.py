@@ -1,9 +1,10 @@
 from __future__ import division, print_function, absolute_import
-from .base import ReconstModel, ReconstFit
+from dipy.reconst.base import ReconstModel, ReconstFit
 import numpy as np
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
+
 
 class OdfModel(ReconstModel):
 
@@ -67,4 +68,3 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
-

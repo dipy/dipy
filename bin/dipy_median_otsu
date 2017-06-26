@@ -1,11 +1,9 @@
-#! /usr/bin/env python
+#!python
 
-from dipy.workflows.segment import median_otsu_flow
-from dipy.workflows.base import IntrospectiveArgumentParser
+from __future__ import division, print_function
 
-parser = IntrospectiveArgumentParser()
-parser.add_workflow(median_otsu_flow)
+from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.segment import MedianOtsuFlow
 
 if __name__ == "__main__":
-    args = parser.get_flow_args()
-    median_otsu_flow(**args)
+    run_flow(MedianOtsuFlow())

@@ -37,7 +37,7 @@ def eddy_current_correction(data,affine,target=None,target_affine=None):
         T=dp.volume_register(source,target,similarity,\
                                  interp,subsampling,search,optimizer)
         sourceT=dp.volume_transform(source, T.inv(), reference=target)
-        print i, sourceT.get_data().shape, sourceT.get_affine().shape
+        print i, sourceT.get_data().shape, sourceT.affine.shape
         result.append(sourceT)
 
     result.insert(0,target)

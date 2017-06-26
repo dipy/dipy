@@ -59,7 +59,8 @@ def test_recursive_response_calibration():
 
     S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
 
-    data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))),
+    data = np.concatenate((np.tile(S_cross, (8, 1)),
+                           np.tile(S_single, (2, 1))),
                           axis=0)
 
     odf_gt_cross = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
@@ -120,14 +121,15 @@ def test_response_from_mask():
     radius = 3
 
     for fa_thr in np.arange(0, 1, 0.1):
-        response_auto, ratio_auto, nvoxels = auto_response(gtab,
-                                                           data,
-                                                           roi_center=None,
-                                                           roi_radius=radius,
-                                                           fa_thr=fa_thr,
-                                                           return_number_of_voxels=True)
+        response_auto, ratio_auto, nvoxels = auto_response(
+            gtab,
+            data,
+            roi_center=None,
+            roi_radius=radius,
+            fa_thr=fa_thr,
+            return_number_of_voxels=True)
 
-        ci, cj, ck = np.array(data.shape[:3]) / 2
+        ci, cj, ck = np.array(data.shape[:3]) // 2
         mask = np.zeros(data.shape[:3])
         mask[ci - radius: ci + radius,
              cj - radius: cj + radius,
@@ -140,6 +142,7 @@ def test_response_from_mask():
         assert_array_almost_equal(response_mask[0], response_auto[0])
         assert_almost_equal(response_mask[1], response_auto[1])
         assert_almost_equal(ratio_mask, ratio_auto)
+
 
 def test_csdeconv():
     SNR = 100
@@ -292,7 +295,7 @@ def test_odf_sh_to_sharp():
     Z = np.linalg.norm(odf_gt)
 
     odfs_gt = np.zeros((3, 1, 1, odf_gt.shape[0]))
-    odfs_gt[:,:,:] = odf_gt[:]
+    odfs_gt[:, :, :] = odf_gt[:]
 
     odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type=None)
 
@@ -330,9 +333,9 @@ def test_forward_sdeconv_mat():
 def test_r2_term_odf_sharp():
     SNR = None
     S0 = 1
-    angle = 45 #45 degrees is a very tight angle to disentangle
+    angle = 45  # 45 degrees is a very tight angle to disentangle
 
-    _, fbvals, fbvecs = get_data('small_64D')  #get_data('small_64D')
+    _, fbvals, fbvecs = get_data('small_64D')  # get_data('small_64D')
 
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
@@ -370,6 +373,7 @@ def test_r2_term_odf_sharp():
     ang_sim = angular_similarity(directions_gt, directions)
     assert_equal(ang_sim > 1.9, True)
     assert_equal(directions.shape[0], 2)
+
 
 def test_csd_predict():
     """
@@ -413,6 +417,14 @@ def test_csd_predict():
     S = csd.predict(coeff)
     csd_fit = csd.fit(S)
     npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
+
+    # Test predict on nd-data set
+    S_nd = np.zeros((2, 3, 4, S.size))
+    S_nd[:] = S
+    fit = csd.fit(S_nd)
+    predict1 = fit.predict()
+    predict2 = csd.predict(fit.shm_coeff)
+    npt.assert_array_almost_equal(predict1, predict2)
 
 
 def test_csd_predict_multi():
@@ -460,15 +472,17 @@ def test_sphere_scaling_csdmodel():
 
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
     model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                reg_sphere=sphere)
+                                                 reg_sphere=sphere)
     model_hemi = ConstrainedSphericalDeconvModel(gtab, response,
-                                                reg_sphere=hemi)
+                                                 reg_sphere=hemi)
     csd_fit_full = model_full.fit(S)
     csd_fit_hemi = model_hemi.fit(S)
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
 
-expected_lambda = {4:27.5230088, 8:82.5713865, 16:216.0843135}
+expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
+
+
 def test_default_lambda_csdmodel():
     """We check that the default value of lambda is the expected value with
     the symmetric362 sphere. This value has empirically been found to work well
@@ -504,7 +518,8 @@ def test_csd_superres():
     evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
-    model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.), sh_order=16)
+    model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                              sh_order=16)
     fit16 = model16.fit(S)
 
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)

@@ -73,7 +73,8 @@ class Cluster(object):
         elif type(idx) is list:
             return [self[i] for i in idx]
 
-        raise TypeError("Index must be a int or a slice! Not " + str(type(idx)))
+        msg = "Index must be a int or a slice! Not '{0}'".format(type(idx))
+        raise TypeError(msg)
 
     def __iter__(self):
         return (self[i] for i in range(len(self)))
@@ -126,15 +127,16 @@ class ClusterCentroid(Cluster):
     A cluster does not contain actual data but instead knows how to
     retrieve them using its `ClusterMapCentroid` object.
     """
+
     def __init__(self, centroid, id=0, indices=None, refdata=Identity()):
         super(ClusterCentroid, self).__init__(id, indices, refdata)
         self.centroid = centroid.copy()
         self.new_centroid = centroid.copy()
 
     def __eq__(self, other):
-        return isinstance(other, ClusterCentroid) \
-            and np.all(self.centroid == other.centroid) \
-            and super(ClusterCentroid, self).__eq__(other)
+        return (isinstance(other, ClusterCentroid) and
+                np.all(self.centroid == other.centroid) and
+                super(ClusterCentroid, self).__eq__(other))
 
     def assign(self, id_datum, features):
         """ Assigns a data point to this cluster.
@@ -216,7 +218,8 @@ class ClusterMap(object):
             a list of `Cluster` objects.
         """
         if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
-            return [self.clusters[i] for i, take_it in enumerate(idx) if take_it]
+            return [self.clusters[i]
+                    for i, take_it in enumerate(idx) if take_it]
         elif type(idx) is slice:
             return [self.clusters[i] for i in range(*idx.indices(len(self)))]
         elif type(idx) is list:
@@ -264,12 +267,15 @@ class ClusterMap(object):
             elif op is operator.ne:
                 return not self == other
 
-            raise NotImplementedError("Can only check if two ClusterMap instances are equal or not.")
+            raise NotImplementedError(
+                "Can only check if two ClusterMap instances are equal or not.")
 
         elif isinstance(other, int):
             return np.array([op(len(cluster), other) for cluster in self])
 
-        raise NotImplementedError("ClusterMap only supports comparison with a int or another instance of Clustermap.")
+        msg = ("ClusterMap only supports comparison with a int or another"
+               " instance of Clustermap.")
+        raise NotImplementedError(msg)
 
     def __eq__(self, other):
         return self._richcmp(other, operator.eq)
@@ -401,7 +407,8 @@ class Clustering(object):
         `ClusterMap` object
             Result of the clustering.
         """
-        raise NotImplementedError("Subclass has to define method 'cluster(data, ordering)'!")
+        msg = "Subclass has to define method 'cluster(data, ordering)'!"
+        raise NotImplementedError(msg)
 
 
 class QuickBundles(Clustering):
@@ -422,7 +429,8 @@ class QuickBundles(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12 points.
+        used and streamlines are automatically resampled so they have
+        12 points.
     max_nb_clusters : int
         Limits the creation of bundles.
 
@@ -433,7 +441,8 @@ class QuickBundles(Clustering):
     >>> from nibabel import trackvis as tv
     >>> streams, hdr = tv.read(get_data('fornix'))
     >>> streamlines = [i[0] for i in streams]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled to 12 points.
+    >>> # Segment fornix with a treshold of 10mm and streamlines resampled
+    >>> # to 12 points.
     >>> qb = QuickBundles(threshold=10.)
     >>> clusters = qb.cluster(streamlines)
     >>> len(clusters)
@@ -460,7 +469,9 @@ class QuickBundles(Clustering):
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
     """
-    def __init__(self, threshold, metric="MDF_12points", max_nb_clusters=np.iinfo('i4').max):
+
+    def __init__(self, threshold, metric="MDF_12points",
+                 max_nb_clusters=np.iinfo('i4').max):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 

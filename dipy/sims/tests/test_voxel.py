@@ -8,7 +8,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              multi_tensor_odf, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
-                             kurtosis_element, DKI_signal)
+                             kurtosis_element, dki_signal)
 from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -259,13 +259,13 @@ def test_DKI_simulations_aligned_fibers():
                         [1, 0, 0], [0, 1, 0], [0, 0, 1]])
     gtab_axis = gradient_table(bvals, bvecs)
     # axis x
-    S_fx = DKI_signal(gtab_axis, dt_fx, kt_fx, S0=100)
+    S_fx = dki_signal(gtab_axis, dt_fx, kt_fx, S0=100)
     assert_array_almost_equal(S_fx[0:3], [100, 100, 100])  # test S f0r b=0
     # axis y
-    S_fy = DKI_signal(gtab_axis, dt_fy, kt_fy, S0=100)
+    S_fy = dki_signal(gtab_axis, dt_fy, kt_fy, S0=100)
     assert_array_almost_equal(S_fy[0:3], [100, 100, 100])  # test S f0r b=0
     # axis z
-    S_fz = DKI_signal(gtab_axis, dt_fz, kt_fz, S0=100)
+    S_fz = dki_signal(gtab_axis, dt_fz, kt_fz, S0=100)
     assert_array_almost_equal(S_fz[0:3], [100, 100, 100])  # test S f0r b=0
 
     # test S for b = 1000
@@ -307,7 +307,7 @@ def test_DKI_crossing_fibers_simulations():
     assert_array_almost_equal(dt, dt_ref)
     assert_array_almost_equal(kt, kt_ref)
     assert_array_almost_equal(signal,
-                              DKI_signal(gtab_2s, dt_ref, kt_ref, S0=100,
+                              dki_signal(gtab_2s, dt_ref, kt_ref, S0=1.,
                                          snr=None),
                               decimal=5)
 

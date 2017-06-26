@@ -6,6 +6,7 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.core.gradients import GradientTable
 from dipy.data import read_stanford_labels
 
+
 def num_grad(gtab):
     return (~gtab.b0s_mask).sum()
 

@@ -42,7 +42,7 @@ from dipy.reconst.dti import TensorModel
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 print('Computing brain mask...')
 b0_mask, mask = median_otsu(data)

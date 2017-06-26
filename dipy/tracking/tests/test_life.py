@@ -106,7 +106,7 @@ def test_FiberModel_init():
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
-    data_aff = data_ni.get_affine()
+    data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
@@ -130,7 +130,7 @@ def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
-    data_aff = data_ni.get_affine()
+    data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)

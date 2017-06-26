@@ -39,13 +39,13 @@ data.shape ``(96, 96, 60, 203)``
 This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
 """
 
-affine = img.get_affine()
+affine = img.affine
 
 """
 Read the voxel size from the image header.
 """
 
-voxel_size = img.get_header().get_zooms()[:3]
+voxel_size = img.header.get_zooms()[:3]
 
 """
 Instantiate the Model and apply it to the data.
@@ -59,7 +59,7 @@ The parameter `sampling_length` is used here to
 Lets just use one slice only from the data.
 """
 
-dataslice = data[:, :, data.shape[2] / 2]
+dataslice = data[:, :, data.shape[2] // 2]
 
 mask = dataslice[..., 0] > 50
 

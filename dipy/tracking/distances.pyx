@@ -7,6 +7,9 @@
 
 cimport cython
 
+from libc.stdlib cimport calloc, realloc, free
+from libc.string cimport memcpy
+
 import time
 import numpy as np
 cimport numpy as cnp
@@ -20,16 +23,6 @@ cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
     double dpy_log2(double x)
 
-#cdef extern from "stdio.h":
-#    void printf ( const char * format, ... )
-
-cdef extern from "stdlib.h" nogil:
-    ctypedef unsigned long size_t
-    void free(void *ptr)
-    void *malloc(size_t size)
-    void *calloc(size_t nelem, size_t elsize)
-    void *realloc (void *ptr, size_t size)
-    void *memcpy(void *str1, void *str2, size_t n)
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)

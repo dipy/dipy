@@ -5,7 +5,7 @@
 Reconstruction with the Sparse Fascicle Model
 ==============================================
 
-In this example, we will use the Sparse Fascicle Model [Rokem2014]_, to
+In this example, we will use the Sparse Fascicle Model [Rokem2015]_, to
 reconstruct the fiber orientation distribution function (fODF) in every voxel.
 
 First, we import the modules we will use in this example:
@@ -18,7 +18,7 @@ from dipy.viz import fvtk
 
 """
 For the purpose of this example, we will use the Stanford HARDI dataset (150
-directions, single b-value of 2000 s/mm$^2$) that can be automatically
+directions, single b-value of 2000 $s/mm^2$) that can be automatically
 downloaded. If you have not yet downloaded this data-set in one of the other
 examples, you will need to be connected to the internet the first time you run
 this example. The data will be stored for subsequent runs, and for use with
@@ -162,10 +162,10 @@ To see how to use this information in tracking, proceed to :ref:`sfm-track`.
 References
 ----------
 
-.. [Rokem2014] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+.. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2014). Evaluating the accuracy of diffusion MRI models in white
-   matter. http://arxiv.org/abs/1411.0721
+   (2015). Evaluating the accuracy of diffusion MRI models in white
+   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
 
 .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
    selection via the elastic net. J R Stat Soc B:301-320

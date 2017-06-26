@@ -4,3 +4,6 @@ source = dipy
 include = */dipy/*
 omit =
     */setup.py
+    */benchmarks/*
+[report]
+show_missing = True

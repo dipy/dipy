@@ -1,26 +1,14 @@
 """
 Read test or example data
 """
-
 from __future__ import division, print_function, absolute_import
 
 import sys
 import json
+import warnings
 
 from nibabel import load
 from os.path import join as pjoin, dirname
-
-if sys.version_info[0] < 3:
-    import cPickle
-
-    def loads_compat(bytes):
-        return cPickle.loads(bytes)
-else:  # Python 3
-    import pickle
-    # Need to load pickles saved in Python 2
-
-    def loads_compat(bytes):
-        return pickle.loads(bytes, encoding='latin1')
 
 import gzip
 import numpy as np
@@ -51,10 +39,29 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_cenir_multib,
                                read_cenir_multib,
                                fetch_mni_template,
-                               read_mni_template)
+                               read_mni_template,
+                               fetch_ivim,
+                               read_ivim,
+                               fetch_tissue_data,
+                               read_tissue_data,
+                               fetch_cfin_multib,
+                               read_cfin_dwi,
+                               read_cfin_t1)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
+
+if sys.version_info[0] < 3:
+    import cPickle
+
+    def loads_compat(bytes):
+        return cPickle.loads(bytes)
+else:  # Python 3
+    import pickle
+    # Need to load pickles saved in Python 2
+
+    def loads_compat(bytes):
+        return pickle.loads(bytes, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
@@ -63,7 +70,8 @@ SPHERE_FILES = {
     'symmetric642': pjoin(DATA_DIR, 'evenly_distributed_sphere_642.npz'),
     'symmetric724': pjoin(DATA_DIR, 'evenly_distributed_sphere_724.npz'),
     'repulsion724': pjoin(DATA_DIR, 'repulsion724.npz'),
-    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz')
+    'repulsion100': pjoin(DATA_DIR, 'repulsion100.npz'),
+    'repulsion200': pjoin(DATA_DIR, 'repulsion200.npz')
 }
 
 
@@ -157,6 +165,7 @@ def get_sphere(name='symmetric362'):
         * 'symmetric724'
         * 'repulsion724'
         * 'repulsion100'
+        * 'repulsion200'
 
     Returns
     -------
@@ -201,8 +210,10 @@ def get_data(name='small_64D'):
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions
         'aniso_vox' volume with anisotropic voxel size as Nifti
-        'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
-        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
+        'fornix' 300 tracks in Trackvis format (from Pittsburgh
+            Brain Competition)
+        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
+            of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
         'test_piesno' slice of N=8, K=14 diffusion data
         'reg_c' small 2D image used for validating registration
@@ -246,6 +257,8 @@ def get_data(name='small_64D'):
         return fimg, fbvals, fbvecs
     if name == 'aniso_vox':
         return pjoin(DATA_DIR, 'aniso_vox.nii.gz')
+    if name == 'ascm_test':
+        return pjoin(DATA_DIR, 'ascm_out_test.nii.gz')
     if name == 'fornix':
         return pjoin(DATA_DIR, 'tracks300.trk')
     if name == 'gqi_vectors':
@@ -311,7 +324,7 @@ def dsi_deconv_voxels():
             for iz in range(2):
                 data[ix, iy, iz], dirs = SticksAndBall(gtab,
                                                        d=0.0015,
-                                                       S0=100,
+                                                       S0=1.,
                                                        angles=[(0, 0),
                                                                (90, 0)],
                                                        fractions=[50, 50],
@@ -354,6 +367,11 @@ dipy_cmaps = None
 
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
+    if name.lower() == "accent":
+        warnings.warn("The `Accent` colormap is deprecated as of version" +
+                      " 0.12 of Dipy and will be removed in a future " +
+                      "version. Please use another colormap",
+                      DeprecationWarning)
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")

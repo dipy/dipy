@@ -14,7 +14,8 @@ from apigen import ApiDocWriter
 # version comparison
 from distutils.version import LooseVersion as V
 
-#*****************************************************************************
+# *****************************************************************************
+
 
 def abort(error):
     print('*WARNING* API documentation not generated: %s' % error)
@@ -36,7 +37,7 @@ if __name__ == '__main__':
 
     try:
         __import__(package)
-    except ImportError, e:
+    except ImportError as e:
         abort("Can not import " + package)
 
     module = sys.modules[package]
@@ -63,12 +64,10 @@ if __name__ == '__main__':
                              other_defines=other_defines)
     docwriter.package_skip_patterns += [r'\.fixes$',
                                         r'\.externals$',
-                                        r'\.reconst.eit$',
                                         r'\.tracking\.interfaces.*$',
                                         r'\.tracking\.gui_tools.*$',
                                         r'.*test.*$',
-                                        r'\.utils.*$',
-                                        r'\.viz.*$',
+                                        r'^\.utils.*',
                                         r'\.boots\.resampling.*$',
                                         r'\.fixes.*$',
                                         r'\.info.*$',

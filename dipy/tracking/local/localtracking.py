@@ -1,6 +1,6 @@
 import numpy as np
 
-from .localtrack import local_tracker
+from dipy.tracking.local.localtrack import local_tracker
 from dipy.align import Bunch
 from dipy.tracking import utils
 
@@ -25,7 +25,7 @@ class LocalTracking(object):
         lin = affine[:3, :3]
         dotlin = np.dot(lin.T, lin)
         # Check that the affine is well behaved
-        if not np.allclose(np.triu(dotlin, 1), 0.):
+        if not np.allclose(np.triu(dotlin, 1), 0., atol=1e-5):
             msg = ("The affine provided seems to contain shearing, data must "
                    "be acquired or interpolated on a regular grid to be used "
                    "with `LocalTracking`.")

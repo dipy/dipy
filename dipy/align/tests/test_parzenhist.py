@@ -1,6 +1,5 @@
 import numpy as np
 import scipy as sp
-import scipy.ndimage as ndimage
 from functools import reduce
 from operator import mul
 from dipy.core.ndindex import ndindex
@@ -8,9 +7,9 @@ from dipy.data import get_data
 from dipy.align import vector_fields as vf
 from dipy.align.transforms import regtransforms
 from dipy.align.parzenhist import (ParzenJointHistogram,
-                          cubic_spline,
-                          cubic_spline_derivative,
-                          sample_domain_regular)
+                                   cubic_spline,
+                                   cubic_spline_derivative,
+                                   sample_domain_regular)
 from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
@@ -55,11 +54,11 @@ def create_random_image_pair(sh, nvals, seed):
 
     # This is just a simple way of making  the distribution non-uniform
     moving = static.copy()
-    moving += np.random.randint(0, nvals//2, sz).reshape(sh) - nvals//4
+    moving += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     # This is just a simple way of making  the distribution non-uniform
     static = moving.copy()
-    static += np.random.randint(0, nvals//2, sz).reshape(sh) - nvals//4
+    static += np.random.randint(0, nvals // 2, sz).reshape(sh) - nvals // 4
 
     return static.astype(np.float64), moving.astype(np.float64)
 
@@ -316,26 +315,26 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
 
 def test_joint_pdf_gradients_dense():
-    # Compare the analytical and numerical (finite differences) gradient of the
-    # joint distribution (i.e. derivatives of each histogram cell) w.r.t. the
-    # transform parameters. Since the histograms are discrete partitions of the
-    # image intensities, the finite difference approximation is normally not
-    # very close to the analytical derivatives. Other sources of error are the
-    # interpolation used when transforming the images and the boundary intensities
-    # introduced when interpolating outside of the image (i.e. some "zeros" are
-    # introduced at the boundary which affect the numerical derivatives but is
-    # not taken into account by the analytical derivatives). Thus, we need to
-    # relax the verification. Instead of looking for the analytical and
-    # numerical gradients to be very close to each other, we will verify that
-    # they approximately point in the same direction by testing if the angle
-    # they form is close to zero.
+    # Compare the analytical and numerical (finite differences) gradient of
+    # the joint distribution (i.e. derivatives of each histogram cell) w.r.t.
+    # the transform parameters. Since the histograms are discrete partitions
+    # of the image intensities, the finite difference approximation is
+    # normally not very close to the analytical derivatives. Other sources of
+    # error are the interpolation used when transforming the images and the
+    # boundary intensities introduced when interpolating outside of the image
+    # (i.e. some "zeros" are introduced at the boundary which affect the
+    # numerical derivatives but is not taken into account by the analytical
+    # derivatives). Thus, we need to relax the verification. Instead of
+    # looking for the analytical and numerical gradients to be very close to
+    # each other, we will verify that they approximately point in the same
+    # direction by testing if the angle they form is close to zero.
     h = 1e-4
 
-    # Make sure dictionary entries are processed in the same order regardless of
-    # the platform. Otherwise any random numbers drawn within the loop would make
-    # the test non-deterministic even if we fix the seed before the loop.
-    # Right now, this test does not draw any samples, but we still sort the entries
-    # to prevent future related failures.
+    # Make sure dictionary entries are processed in the same order regardless
+    # of the platform. Otherwise any random numbers drawn within the loop
+    # would make the test non-deterministic even if we fix the seed before
+    # the loop. Right now, this test does not draw any samples, but we still
+    # sort the entries to prevent future related failures.
     for ttype in sorted(factors):
         dim = ttype[1]
         if dim == 2:
@@ -361,7 +360,7 @@ def test_joint_pdf_gradients_dense():
         moved = transform_method(moving.astype(np.float32), shape, M)
         moved = np.array(moved)
         parzen_hist.update_pdfs_dense(static.astype(np.float64),
-                                 moved.astype(np.float64))
+                                      moved.astype(np.float64))
         # Get the joint distribution evaluated at theta
         J0 = np.copy(parzen_hist.joint)
         grid_to_space = np.eye(dim + 1)
@@ -369,9 +368,10 @@ def test_joint_pdf_gradients_dense():
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
         id = transform.get_identity_parameters()
-        parzen_hist.update_gradient_dense(id, transform, static.astype(np.float64),
-                                     moved.astype(np.float64), grid_to_space,
-                                     mgrad, smask, mmask)
+        parzen_hist.update_gradient_dense(
+            id, transform, static.astype(np.float64),
+            moved.astype(np.float64), grid_to_space,
+            mgrad, smask, mmask)
         actual = np.copy(parzen_hist.joint_grad)
         # Now we have the gradient of the joint distribution w.r.t. the
         # transform parameters
@@ -413,11 +413,11 @@ def test_joint_pdf_gradients_dense():
 def test_joint_pdf_gradients_sparse():
     h = 1e-4
 
-    # Make sure dictionary entries are processed in the same order regardless of
-    # the platform. Otherwise any random numbers drawn within the loop would make
-    # the test non-deterministic even if we fix the seed before the loop.
-    # Right now, this test does not draw any samples, but we still sort the entries
-    # to prevent future related failures.
+    # Make sure dictionary entries are processed in the same order regardless
+    # of the platform. Otherwise any random numbers drawn within the loop
+    # would make the test non-deterministic even if we fix the seed before
+    # the loop.Right now, this test does not draw any samples, but we still
+    # sort the entries to prevent future related failures.
 
     for ttype in sorted(factors):
         dim = ttype[1]
@@ -469,9 +469,10 @@ def test_joint_pdf_gradients_sparse():
         spacing = np.ones(dim + 1, dtype=np.float64)
         mgrad, inside = vf.sparse_gradient(moving.astype(np.float32),
                                            sp_to_moving, spacing, samples)
-        parzen_hist.update_gradient_sparse(theta, transform, intensities_static,
-                                      intensities_moving, samples[..., :dim],
-                                      mgrad)
+        parzen_hist.update_gradient_sparse(
+            theta, transform, intensities_static,
+            intensities_moving, samples[..., :dim],
+            mgrad)
         # Get the gradient of the joint distribution w.r.t. the transform
         # parameters
         actual = np.copy(parzen_hist.joint_grad)
@@ -489,7 +490,8 @@ def test_joint_pdf_gradients_sparse():
             intensities_moving, inside = \
                 interp_method(moving.astype(np.float32), samples_moving_grid)
             intensities_moving = np.array(intensities_moving, dtype=np.float64)
-            parzen_hist.update_pdfs_sparse(intensities_static, intensities_moving)
+            parzen_hist.update_pdfs_sparse(
+                intensities_static, intensities_moving)
             J1 = np.copy(parzen_hist.joint)
             expected[..., i] = (J1 - J0) / h
 
@@ -498,7 +500,7 @@ def test_joint_pdf_gradients_sparse():
         P = (expected * actual).sum(2)
         enorms = np.sqrt((expected ** 2).sum(2))
         anorms = np.sqrt((actual ** 2).sum(2))
-        prodnorms = enorms*anorms
+        prodnorms = enorms * anorms
         # Cosine of angle between the expected and actual gradients.
         # Exclude very small gradients
         P[prodnorms > 1e-6] /= (prodnorms[prodnorms > 1e-6])
@@ -559,8 +561,8 @@ def test_sample_domain_regular():
 
 def test_exceptions():
     H = ParzenJointHistogram(32)
-    valid = np.empty((2,2,2), dtype=np.float64)
-    invalid = np.empty((2,2,2,2), dtype=np.float64)
+    valid = np.empty((2, 2, 2), dtype=np.float64)
+    invalid = np.empty((2, 2, 2, 2), dtype=np.float64)
 
     # Test exception from `ParzenJointHistogram.update_pdfs_dense`
     assert_raises(ValueError, H.update_pdfs_dense, valid, invalid)
@@ -568,17 +570,17 @@ def test_exceptions():
     assert_raises(ValueError, H.update_pdfs_dense, invalid, invalid)
 
     # Test exception from `ParzenJointHistogram.update_gradient_dense`
-    for shape in [(5,5), (5,5,5)]:
+    for shape in [(5, 5), (5, 5, 5)]:
         dim = len(shape)
-        grid2world=np.eye(dim + 1)
+        grid2world = np.eye(dim + 1)
         transform = regtransforms[('ROTATION', dim)]
         theta = transform.get_identity_parameters()
         valid_img = np.empty(shape, dtype=np.float64)
         valid_grad = np.empty(shape + (dim,), dtype=np.float64)
 
-        invalid_img = np.empty((2,2,2,2), dtype=np.float64)
+        invalid_img = np.empty((2, 2, 2, 2), dtype=np.float64)
         invalid_grad_type = valid_grad.astype(np.int32)
-        invalid_grad_dim = np.empty(shape + (dim+1,), dtype=np.float64)
+        invalid_grad_dim = np.empty(shape + (dim + 1,), dtype=np.float64)
 
         for s, m, g in [(valid_img, valid_img, invalid_grad_type),
                         (valid_img, valid_img, invalid_grad_dim),
@@ -594,23 +596,25 @@ def test_exceptions():
         transform = regtransforms[('ROTATION', dim)]
         theta = transform.get_identity_parameters()
         valid_vals = np.empty((nsamples,), dtype=np.float64)
-        valid_grad = np.empty((nsamples,dim), dtype=np.float64)
-        valid_points = np.empty((nsamples,dim), dtype=np.float64)
+        valid_grad = np.empty((nsamples, dim), dtype=np.float64)
+        valid_points = np.empty((nsamples, dim), dtype=np.float64)
 
-        invalid_grad_type = np.empty((nsamples,dim), dtype=np.int32)
-        invalid_grad_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
-        invalid_grad_len = np.empty((nsamples + 1,dim), dtype=np.float64)
+        invalid_grad_type = np.empty((nsamples, dim), dtype=np.int32)
+        invalid_grad_dim = np.empty((nsamples, dim + 2), dtype=np.float64)
+        invalid_grad_len = np.empty((nsamples + 1, dim), dtype=np.float64)
         invalid_vals = np.empty((nsamples + 1), dtype=np.float64)
-        invalid_points_dim = np.empty((nsamples,dim + 2), dtype=np.float64)
-        invalid_points_len = np.empty((nsamples+1,dim), dtype=np.float64)
+        invalid_points_dim = np.empty((nsamples, dim + 2), dtype=np.float64)
+        invalid_points_len = np.empty((nsamples + 1, dim), dtype=np.float64)
 
-        for s, m, p, g in [(invalid_vals, valid_vals, valid_points, valid_grad),
-                           (valid_vals, invalid_vals, valid_points, valid_grad),
-                           (valid_vals, valid_vals, invalid_points_dim, valid_grad),
-                           (valid_vals, valid_vals, invalid_points_dim, invalid_grad_dim),
-                           (valid_vals, valid_vals, invalid_points_len, valid_grad),
-                           (valid_vals, valid_vals, valid_points, invalid_grad_type),
-                           (valid_vals, valid_vals, valid_points, invalid_grad_dim),
-                           (valid_vals, valid_vals, valid_points, invalid_grad_len)]:
+        C = [(invalid_vals, valid_vals, valid_points, valid_grad),
+             (valid_vals, invalid_vals, valid_points, valid_grad),
+             (valid_vals, valid_vals, invalid_points_dim, valid_grad),
+             (valid_vals, valid_vals, invalid_points_dim, invalid_grad_dim),
+             (valid_vals, valid_vals, invalid_points_len, valid_grad),
+             (valid_vals, valid_vals, valid_points, invalid_grad_type),
+             (valid_vals, valid_vals, valid_points, invalid_grad_dim),
+             (valid_vals, valid_vals, valid_points, invalid_grad_len)]
+
+        for s, m, p, g in C:
             assert_raises(ValueError, H.update_gradient_sparse,
                           theta, transform, s, m, p, g)

@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import warnings
 
-from ..utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
@@ -561,12 +561,12 @@ def interp_rbf(data, sphere_origin, sphere_target,
     if epsilon is not None:
         kwargs = {'function': function,
                   'epsilon': epsilon,
-                  'smooth' : smooth,
-                  'norm' : norm}
+                  'smooth': smooth,
+                  'norm': norm}
     else:
         kwargs = {'function': function,
                   'smooth': smooth,
-                  'norm' : norm}
+                  'norm': norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)

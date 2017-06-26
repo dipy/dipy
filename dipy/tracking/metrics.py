@@ -1,7 +1,7 @@
 ''' Metrics for tracks, where tracks are arrays of points '''
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 import numpy as np
 from scipy.interpolate import splprep, splev
@@ -25,16 +25,17 @@ def winding(xyz):
 
     '''
 
-    U,s,V=np.linalg.svd(xyz-np.mean(xyz,axis=0),0)
-    proj=np.dot(U[:,0:2],np.diag(s[0:2]))
+    U, s, V = np.linalg.svd(xyz-np.mean(xyz, axis=0), 0)
+    proj = np.dot(U[:, 0:2], np.diag(s[0:2]))
 
-    turn=0
+    turn = 0
     for j in range(len(xyz)-1):
-        v0=proj[j]
-        v1=proj[j+1]
-        v=np.dot(v0,v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
-        tmp=np.arccos(v)
-        turn+=tmp
+        v0 = proj[j]
+        v1 = proj[j+1]
+        v = np.dot(v0, v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
+        v = np.clip(v, -1, 1)
+        tmp = np.arccos(v)
+        turn += tmp
 
     return np.rad2deg(turn)
 
@@ -85,6 +86,7 @@ def length(xyz, along=False):
         return np.cumsum(dists)
     return np.sum(dists)
 
+
 def bytes(xyz):
     '''Size of track in bytes.
 
@@ -100,7 +102,6 @@ def bytes(xyz):
 
     '''
     return xyz.nbytes
-
 
 
 def midpoint(xyz):
@@ -150,11 +151,11 @@ def midpoint(xyz):
         return xyz.copy().squeeze()
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)
-    midlen=cumlen[-1]/2.0
-    ind=np.where((cumlen-midlen)>0)[0][0]
-    len0=cumlen[ind-1]
-    len1=cumlen[ind]
-    Ds=midlen-len0
+    midlen = cumlen[-1]/2.0
+    ind = np.where((cumlen-midlen) > 0)[0][0]
+    len0 = cumlen[ind-1]
+    len1 = cumlen[ind]
+    Ds = midlen-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
@@ -188,19 +189,20 @@ def center_of_mass(xyz):
     xyz = np.asarray(xyz)
     if xyz.size == 0:
         raise ValueError('xyz array cannot be empty')
-    return np.mean(xyz,axis=0)
+    return np.mean(xyz, axis=0)
 
-def magn(xyz,n=1):
+
+def magn(xyz, n=1):
     ''' magnitude of vector
 
     '''
-    mag=np.sum(xyz**2,axis=1)**0.5
-    imag=np.where(mag==0)
-    mag[imag]=np.finfo(float).eps
+    mag = np.sum(xyz**2, axis=1)**0.5
+    imag = np.where(mag == 0)
+    mag[imag] = np.finfo(float).eps
 
-    if n>1:
-        return np.tile(mag,(n,1)).T
-    return mag.reshape(len(mag),1)
+    if n > 1:
+        return np.tile(mag, (n, 1)).T
+    return mag.reshape(len(mag), 1)
 
 
 def frenet_serret(xyz):
@@ -265,23 +267,24 @@ def frenet_serret(xyz):
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
 
-    dxyz=np.gradient(xyz)[0]
-    ddxyz=np.gradient(dxyz)[0]
-    #Tangent
-    T=np.divide(dxyz,magn(dxyz,3))
-    #Derivative of Tangent
-    dT=np.gradient(T)[0]
-    #Normal
-    N = np.divide(dT,magn(dT,3))
-    #Binormal
-    B = np.cross(T,N)
-    #Curvature
-    k = magn(np.cross(dxyz,ddxyz),1)/(magn(dxyz,1)**3)
-    #Torsion
-    #(In matlab was t=dot(-B,N,2))
-    t = np.sum(-B*N,axis=1)
-    #return T,N,B,k,t,dxyz,ddxyz,dT
-    return T,N,B,k,t
+    dxyz = np.gradient(xyz)[0]
+    ddxyz = np.gradient(dxyz)[0]
+    # Tangent
+    T = np.divide(dxyz, magn(dxyz, 3))
+    # Derivative of Tangent
+    dT = np.gradient(T)[0]
+    # Normal
+    N = np.divide(dT, magn(dT, 3))
+    # Binormal
+    B = np.cross(T, N)
+    # Curvature
+    k = magn(np.cross(dxyz, ddxyz), 1)/(magn(dxyz, 1)**3)
+    # Torsion
+    # (In matlab was t=dot(-B,N,2))
+    t = np.sum(-B*N, axis=1)
+    # return T,N,B,k,t,dxyz,ddxyz,dT
+    return T, N, B, k, t
+
 
 def mean_curvature(xyz):
     ''' Calculates the mean curvature of a curve
@@ -319,11 +322,11 @@ def mean_curvature(xyz):
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
 
-    dxyz=np.gradient(xyz)[0]
-    ddxyz=np.gradient(dxyz)[0]
+    dxyz = np.gradient(xyz)[0]
+    ddxyz = np.gradient(dxyz)[0]
 
-    #Curvature
-    k = magn(np.cross(dxyz,ddxyz),1)/(magn(dxyz,1)**3)
+    # Curvature
+    k = magn(np.cross(dxyz, ddxyz), 1)/(magn(dxyz, 1)**3)
 
     return np.mean(k)
 
@@ -347,11 +350,9 @@ def mean_orientation(xyz):
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
 
-    dxyz=np.gradient(xyz)[0]
+    dxyz = np.gradient(xyz)[0]
 
-    return np.mean(dxyz,axis=0)
-
-
+    return np.mean(dxyz, axis=0)
 
 
 def generate_combinations(items, n):
@@ -379,19 +380,18 @@ def generate_combinations(items, n):
     if n == 0:
         yield []
     elif n == 2:
-        #if n=2 non_recursive
+        # if n=2 non_recursive
         for i in xrange(len(items)-1):
-            for j in xrange(i+1,len(items)):
-                yield [i,j]
+            for j in xrange(i+1, len(items)):
+                yield [i, j]
     else:
-        #if n>2 uses recursion
+        # if n>2 uses recursion
         for i in xrange(len(items)):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
 
 
-
-def longest_track_bundle(bundle,sort=False):
+def longest_track_bundle(bundle, sort=False):
     ''' Return longest track or length sorted track indices in `bundle`
 
     If `sort` == True, return the indices of the sorted tracks in the
@@ -423,17 +423,17 @@ def longest_track_bundle(bundle,sort=False):
     array([0, 1]...)
 
     '''
-    alllengths=[length(t) for t in bundle]
-    alllengths=np.array(alllengths)
+    alllengths = [length(t) for t in bundle]
+    alllengths = np.array(alllengths)
     if sort:
-        ilongest=alllengths.argsort()
+        ilongest = alllengths.argsort()
         return ilongest
     else:
-        ilongest=alllengths.argmax()
+        ilongest = alllengths.argmax()
         return bundle[ilongest]
 
 
-def intersect_sphere(xyz,center,radius):
+def intersect_sphere(xyz, center, radius):
     ''' If any segment of the track is intersecting with a sphere of
     specific center and radius return True otherwise False
 
@@ -466,46 +466,49 @@ def intersect_sphere(xyz,center,radius):
     we just applied it for every segment neglecting the intersections where
     the intersecting points are not inside the segment
     '''
-    center=np.array(center)
-    #print center
+    center = np.array(center)
+    # print center
 
-    lt=xyz.shape[0]
+    lt = xyz.shape[0]
 
     for i in xrange(lt-1):
-        #first point
-        x1=xyz[i]
-        #second point
-        x2=xyz[i+1]
-        #do the calculations as given in the Notes
-        x=x2-x1
-        a=np.inner(x,x)
-        x1c=x1-center
-        b=2*np.inner(x,x1c)
-        c=np.inner(center,center)+np.inner(x1,x1)-2*np.inner(center,x1) - radius**2
-        bb4ac =b*b-4*a*c
-        #print 'bb4ac',bb4ac
-        if abs(a)<np.finfo(float).eps or bb4ac < 0 :#too small segment or no intersection
+        # first point
+        x1 = xyz[i]
+        # second point
+        x2 = xyz[i+1]
+        # do the calculations as given in the Notes
+        x = x2-x1
+        a = np.inner(x, x)
+        x1c = x1-center
+        b = 2*np.inner(x, x1c)
+        c = (np.inner(center, center)+np.inner(x1, x1)-2*np.inner(center, x1) -
+             radius**2)
+        bb4ac = b*b-4*a*c
+        # print 'bb4ac',bb4ac
+        if abs(a) < np.finfo(float).eps or bb4ac < 0:  # too small segment or
+                                                        # no intersection
             continue
-        if bb4ac ==0: #one intersection point p
-            mu=-b/2*a
-            p=x1+mu*x
-            #check if point is inside the segment
-            #print 'p',p
-            if np.inner(p-x1,p-x1) <= a:
+        if bb4ac == 0:  # one intersection point p
+            mu = -b/2*a
+            p = x1+mu*x
+            # check if point is inside the segment
+            # print 'p',p
+            if np.inner(p-x1, p-x1) <= a:
                 return True
-        if bb4ac > 0: #two intersection points p1 and p2
-            mu=(-b+np.sqrt(bb4ac))/(2*a)
-            p1=x1+mu*x
-            mu=(-b-np.sqrt(bb4ac))/(2*a)
-            p2=x1+mu*x
-            #check if points are inside the line segment
-            #print 'p1,p2',p1,p2
-            if np.inner(p1-x1,p1-x1) <= a or np.inner(p2-x1,p2-x1) <= a:
+        if bb4ac > 0:  # two intersection points p1 and p2
+            mu = (-b+np.sqrt(bb4ac))/(2*a)
+            p1 = x1+mu*x
+            mu = (-b-np.sqrt(bb4ac))/(2*a)
+            p2 = x1+mu*x
+            # check if points are inside the line segment
+            # print 'p1,p2',p1,p2
+            if np.inner(p1-x1, p1-x1) <= a or np.inner(p2-x1, p2-x1) <= a:
                 return True
     return False
 
-def inside_sphere(xyz,center,radius):
-    r''' If any point of the track is inside a sphere of a specified
+
+def inside_sphere(xyz, center, radius):
+    ''' If any point of the track is inside a sphere of a specified
     center and radius return True otherwise False.  Mathematicaly this
     can be simply described by $|x-c|\le r$ where $x$ a point $c$ the
     center of the sphere and $r$ the radius of the sphere.
@@ -533,10 +536,10 @@ def inside_sphere(xyz,center,radius):
     >>> inside_sphere(line,sph_cent,sph_radius)
     True
     '''
-    return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
+    return (np.sqrt(np.sum((xyz-center)**2, axis=1)) <= radius).any()
 
 
-def inside_sphere_points(xyz,center,radius):
+def inside_sphere_points(xyz, center, radius):
     ''' If a track intersects with a sphere of a specified center and
     radius return the points that are inside the sphere otherwise False.
     Mathematicaly this can be simply described by $|x-c| \le r$ where $x$
@@ -566,12 +569,10 @@ def inside_sphere_points(xyz,center,radius):
     >>> inside_sphere_points(line,sph_cent,sph_radius)
     array([[1, 1, 1]])
     '''
-    return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
+    return xyz[(np.sqrt(np.sum((xyz-center)**2, axis=1)) <= radius)]
 
 
-
-
-def spline(xyz,s=3,k=2,nest=-1):
+def spline(xyz, s=3, k=2, nest=-1):
     ''' Generate B-splines as documented in
     http://www.scipy.org/Cookbook/Interpolation
 
@@ -636,10 +637,10 @@ def spline(xyz,s=3,k=2,nest=-1):
     scipy.interpolate.splev
     '''
     # find the knot points
-    tckp,u = splprep([xyz[:,0],xyz[:,1],xyz[:,2]],s=s,k=k,nest=nest)
+    tckp, u = splprep([xyz[:, 0], xyz[:, 1], xyz[:, 2]], s=s, k=k, nest=nest)
     # evaluate spline, including interpolated points
-    xnew,ynew,znew = splev(np.linspace(0,1,400),tckp)
-    return np.vstack((xnew,ynew,znew)).T
+    xnew, ynew, znew = splev(np.linspace(0, 1, 400), tckp)
+    return np.vstack((xnew, ynew, znew)).T
 
 
 def startpoint(xyz):
@@ -701,7 +702,7 @@ def endpoint(xyz):
     return xyz[-1]
 
 
-def arbitrarypoint(xyz,distance):
+def arbitrarypoint(xyz, distance):
     ''' Select an arbitrary point along distance on the track (curve)
 
     Parameters
@@ -738,29 +739,29 @@ def arbitrarypoint(xyz,distance):
         return xyz.copy().squeeze()
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)
-    if cumlen[-1]<distance:
+    if cumlen[-1] < distance:
         raise ValueError('Given distance is bigger than '
                          'the length of the curve')
-    ind=np.where((cumlen-distance)>0)[0][0]
-    len0=cumlen[ind-1]
-    len1=cumlen[ind]
-    Ds=distance-len0
+    ind = np.where((cumlen-distance) > 0)[0][0]
+    len0 = cumlen[ind-1]
+    len1 = cumlen[ind]
+    Ds = distance-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
 
-def _extrap(xyz,cumlen,distance):
+def _extrap(xyz, cumlen, distance):
     ''' Helper function for extrapolate
     '''
-    ind=np.where((cumlen-distance)>0)[0][0]
-    len0=cumlen[ind-1]
-    len1=cumlen[ind]
-    Ds=distance-len0
+    ind = np.where((cumlen-distance) > 0)[0][0]
+    len0 = cumlen[ind-1]
+    len1 = cumlen[ind]
+    Ds = distance-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
 
-def downsample(xyz,n_pols=3):
+def downsample(xyz, n_pols=3):
     ''' downsample for a specific number of points along the curve/track
 
     Uses the length of the curve. It works in a similar fashion to
@@ -810,19 +811,19 @@ def downsample(xyz,n_pols=3):
         return xyz.copy().squeeze()
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)
-    step=cumlen[-1]/(n_pols-1)
-    if cumlen[-1]<step:
+    step = cumlen[-1]/(n_pols-1)
+    if cumlen[-1] < step:
         raise ValueError('Given number of points n_pols is incorrect. ')
-    if n_pols<=2:
+    if n_pols <= 2:
         raise ValueError('Given number of points n_pols needs to be'
                          ' higher than 2. ')
 
-    ar= np.arange(0,cumlen[-1],step)
+    ar = np.arange(0, cumlen[-1], step)
     if np.abs(ar[-1]-cumlen[-1]) < np.finfo('f4').eps:
-        ar=ar[:-1]
+        ar = ar[:-1]
 
-    xyz2=[_extrap(xyz,cumlen,distance) for distance in ar]
-    return np.vstack((np.array(xyz2),xyz[-1]))
+    xyz2 = [_extrap(xyz, cumlen, distance) for distance in ar]
+    return np.vstack((np.array(xyz2), xyz[-1]))
 
 
 def principal_components(xyz):
@@ -853,12 +854,12 @@ def principal_components(xyz):
     >>> np.allclose(va, [0.51010101, 0.09883545, 0])
     True
     '''
-    C=np.cov(xyz.T)
-    va,ve=np.linalg.eig(C)
-    return va,ve
+    C = np.cov(xyz.T)
+    va, ve = np.linalg.eig(C)
+    return va, ve
 
 
-def midpoint2point(xyz,p):
+def midpoint2point(xyz, p):
     ''' Calculate distance from midpoint of a curve to arbitrary point p
 
     Parameters
@@ -886,7 +887,7 @@ def midpoint2point(xyz,p):
     >>> dist=midpoint2point(xyz,np.array([0,0,0]))
 
     '''
-    mid=midpoint(xyz)
+    mid = midpoint(xyz)
     return np.sqrt(np.sum((xyz-mid)**2))
 
 

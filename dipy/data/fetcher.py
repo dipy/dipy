@@ -4,11 +4,6 @@ import os
 import sys
 import contextlib
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
-
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
@@ -21,9 +16,21 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
-# Set a user-writeable file-system location to put files:
-dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+if sys.version_info[0] < 3:
+    from urllib2 import urlopen
+else:
+    from urllib.request import urlopen
 
+
+# Set a user-writeable file-system location to put files:
+if 'DIPY_HOME' in os.environ:
+    dipy_home = os.environ['DIPY_HOME']
+else:
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+
+# The URL to the University of Washington Researchworks repository:
+UW_RW_URL = \
+  "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
 
 class FetcherError(Exception):
     pass
@@ -34,6 +41,41 @@ def _log(msg):
     For now, just prints the message
     """
     print(msg)
+
+
+def update_progressbar(progress, total_length):
+    """Show progressbar
+
+    Takes a number between 0 and 1 to indicate progress from 0 to 100%.
+
+    """
+    # Try to set the bar_length according to the console size
+    try:
+        columns = os.popen('tput cols', 'r').read()
+        bar_length = int(columns) - 46
+        if(not (bar_length > 1)):
+            bar_length = 20
+    except:
+        # Default value if determination of console size fails
+        bar_length = 20
+    block = int(round(bar_length * progress))
+    size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
+    text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
+        "#" * block + "-" * (bar_length - block), progress * 100, size_string)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
+    copied = 0
+    while True:
+        buf = fsrc.read(length)
+        if not buf:
+            break
+        fdst.write(buf)
+        copied += len(buf)
+        progress = float(copied) / float(total_length)
+        update_progressbar(progress, total_length)
 
 
 def _already_there_msg(folder):
@@ -49,7 +91,7 @@ def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
     md5_data = md5()
     with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * md5_data.block_size), b''):
             md5_data.update(chunk)
     return md5_data.hexdigest()
 
@@ -81,8 +123,20 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
+        if sys.version_info[0] < 3:
+            try:
+                response_size = opener.headers['content-length']
+            except KeyError:
+                response_size = None
+        else:
+            # python3.x
+            # returns none if header not found
+            response_size = opener.getheader("Content-Length")
         with open(fname, 'wb') as data:
-            copyfileobj(opener, data)
+            if(response_size is None):
+                copyfileobj(opener, data)
+            else:
+                copyfileobj_withprogress(opener, data, response_size)
 
 
 def fetch_data(files, folder, data_size=None):
@@ -204,10 +258,10 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
 fetch_isbi2013_2shell = _make_fetcher(
     "fetch_isbi2013_2shell",
     pjoin(dipy_home, 'isbi2013'),
-    'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/',
-    ['2shells-1500-2500-N64-SNR-30.nii.gz',
-     '2shells-1500-2500-N64.bval',
-     '2shells-1500-2500-N64.bvec'],
+    UW_RW_URL + '1773/38465/',
+    ['phantom64.nii.gz',
+     'phantom64.bval',
+     'phantom64.bvec'],
     ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec'],
     ['42911a70f232321cf246315192d69c42',
      '90e8cf66e0f4d9737a3b3c0da24df5ea',
@@ -228,10 +282,8 @@ fetch_stanford_labels = _make_fetcher(
 fetch_sherbrooke_3shell = _make_fetcher(
     "fetch_sherbrooke_3shell",
     pjoin(dipy_home, 'sherbrooke_3shell'),
-    'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/',
-    ['3shells-1000-2000-3500-N193.nii.gz',
-     '3shells-1000-2000-3500-N193.bval',
-     '3shells-1000-2000-3500-N193.bvec'],
+    UW_RW_URL + "1773/38475/",
+    ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec'],
     ['0b735e8f16695a37bfbd66aab136eb66',
      'e9b9bb56252503ea49d31fb30a0ac637',
@@ -271,22 +323,22 @@ fetch_stanford_pve_maps = _make_fetcher(
 fetch_taiwan_ntu_dsi = _make_fetcher(
     "fetch_taiwan_ntu_dsi",
     pjoin(dipy_home, 'taiwan_ntu_dsi'),
-    "http://dl.dropbox.com/u/2481924/",
-    ['taiwan_ntu_dsi.nii.gz', 'tawian_ntu_dsi.bval',
-     'taiwan_ntu_dsi.bvec', 'license_taiwan_ntu_dsi.txt'],
+    UW_RW_URL + "1773/38480/",
+    ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt'],
     ['950408c0980a7154cb188666a885a91f',
      '602e5cb5fad2e7163e8025011d8a6755',
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : http://dsi-studio.labsolver.org",
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : \
+         http://dsi-studio.labsolver.org",
     data_size="91MB")
 
 fetch_syn_data = _make_fetcher(
     "fetch_syn_data",
     pjoin(dipy_home, 'syn_test'),
-    'https://dl.dropboxusercontent.com/u/5918983/',
+    UW_RW_URL + "1773/38476/",
     ['t1.nii.gz', 'b0.nii.gz'],
     ['t1.nii.gz', 'b0.nii.gz'],
     ['701bda02bb769655c7d4a9b1df2b73a6',
@@ -297,33 +349,37 @@ fetch_syn_data = _make_fetcher(
 fetch_mni_template = _make_fetcher(
     "fetch_mni_template",
     pjoin(dipy_home, 'mni_template'),
-    'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/',
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['COPYING',
-     'mni_icbm152_t2_tal_nlin_asym_09a.nii',
-     'mni_icbm152_t1_tal_nlin_asym_09a.nii'],
-    ['6e2168072e80aa4c0c20f1e6e52ec0c8',
-     'f41f2e1516d880547fbf7d6a83884f0d',
-     '1ea8f4f1e41bc17a94602e48141fdbc8'],
-    doc = "Fetch the MNI T2 and T1 template files",
-    data_size="35MB")
+    'https://ndownloader.figshare.com/files/',
+    ['5572676?private_link=4b8666116a0128560fb5',
+     '5572673?private_link=93216e750d5a7e568bda',
+     '5572670?private_link=33c92d54d1afb9aa7ed2',
+     '5572661?private_link=584319b23e7343fed707'],
+    ['mni_icbm152_t2_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09a.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii',
+     'mni_icbm152_t1_tal_nlin_asym_09c.nii'],
+    ['f41f2e1516d880547fbf7d6a83884f0d',
+     '1ea8f4f1e41bc17a94602e48141fdbc8',
+     'a243e249cd01a23dc30f033b9656a786',
+     '3d5dd9b0cd727a17ceec610b782f66c1'],
+    doc="fetch the MNI 2009a T1 and T2, and 2009c T1 and T1 mask files",
+    data_size="70MB")
 
 fetch_scil_b0 = _make_fetcher(
     "fetch_scil_b0",
     dipy_home,
-    'http://scil.dinf.usherbrooke.ca/wp-content/data/',
+    UW_RW_URL + "1773/38479/",
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     None,
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
+         and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and different magnetic fields (1.5T and 3T)",
     unzip=True)
 
 fetch_viz_icons = _make_fetcher("fetch_viz_icons",
                                 pjoin(dipy_home, "icons"),
-                                'https://dl.dropboxusercontent.com/u/2481924/',
+                                UW_RW_URL + "1773/38478/",
                                 ['icomoon.tar.gz'],
                                 ['icomoon.tar.gz'],
                                 ['94a07cba06b4136b6687396426f1e380'],
@@ -334,13 +390,45 @@ fetch_viz_icons = _make_fetcher("fetch_viz_icons",
 fetch_bundles_2_subjects = _make_fetcher(
     "fetch_bundles_2_subjects",
     pjoin(dipy_home, 'exp_bundles_and_maps'),
-    'https://dl.dropboxusercontent.com/u/2481924/',
+    UW_RW_URL + '1773/38477/',
     ['bundles_2_subjects.tar.gz'],
     ['bundles_2_subjects.tar.gz'],
     ['97756fbef11ce2df31f1bedf1fc7aac7'],
     data_size="234MB",
     doc="Download 2 subjects from the SNAIL dataset with their bundles",
     unzip=True)
+
+fetch_ivim = _make_fetcher(
+    "fetch_ivim",
+    pjoin(dipy_home, 'ivim'),
+    'https://ndownloader.figshare.com/files/',
+    ['5305243', '5305246', '5305249'],
+    ['ivim.nii.gz', 'ivim.bval', 'ivim.bvec'],
+    ['cda596f89dc2676af7d9bf1cabccf600',
+     'f03d89f84aa9a9397103a400e43af43a',
+     'fb633a06b02807355e49ccd85cb92565'],
+    doc="Download IVIM dataset")
+
+fetch_cfin_multib = _make_fetcher(
+    "fetch_cfin_multib",
+    pjoin(dipy_home, 'cfin_multib'),
+    UW_RW_URL + '/1773/38488/',
+    ['T1.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec'],
+    ['T1.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval',
+     '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec'],
+    ['889883b5e7d93a6e372bc760ea887e7c',
+     '9daea1d01d68fd0055a3b34f5ffd5f6e',
+     '3ee44135fde7ea5c9b8c801414bdde2c',
+     '948373391de950e7cc1201ba9f696bf0'],
+    doc="Download CFIN multi b-value diffusion data",
+    msg=("This data was provided by Brian Hansen and Sune Jespersen" +
+         " More details about the data are available in their paper: " +
+         " https://www.nature.com/articles/sdata201672"))
 
 
 def read_scil_b0():
@@ -506,6 +594,76 @@ def read_syn_data():
     b0 = nib.load(b0_name)
     return t1, b0
 
+
+def fetch_tissue_data():
+    """ Download images to be used for tissue classification
+    """
+
+    t1 = 'https://ndownloader.figshare.com/files/6965969'
+    t1d = 'https://ndownloader.figshare.com/files/6965981'
+    ap = 'https://ndownloader.figshare.com/files/6965984'
+
+    folder = pjoin(dipy_home, 'tissue_data')
+
+    md5_list = ['99c4b77267a6855cbfd96716d5d65b70',  # t1
+                '4b87e1b02b19994fbd462490cc784fa3',  # t1d
+                'c0ea00ed7f2ff8b28740f18aa74bff6a']  # ap
+
+    url_list = [t1, t1d, ap]
+    fname_list = ['t1_brain.nii.gz', 't1_brain_denoised.nii.gz',
+                  'power_map.nii.gz']
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        msg = 'Downloading 3 Nifti1 images (9.3MB)...'
+        print(msg)
+
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        _already_there_msg(folder)
+
+
+def read_tissue_data(contrast='T1'):
+    """ Load images to be used for tissue classification
+
+    Parameters
+    ----------
+    constrast : str
+        'T1', 'T1 denoised' or 'Anisotropic Power'
+
+    Returns
+    -------
+    image : obj,
+        Nifti1Image
+
+    """
+    folder = pjoin(dipy_home, 'tissue_data')
+    t1_name = pjoin(folder, 't1_brain.nii.gz')
+    t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+    ap_name = pjoin(folder, 'power_map.nii.gz')
+
+    md5_dict = {'t1': '99c4b77267a6855cbfd96716d5d65b70',
+                't1d': '4b87e1b02b19994fbd462490cc784fa3',
+                'ap': 'c0ea00ed7f2ff8b28740f18aa74bff6a'}
+
+    check_md5(t1_name, md5_dict['t1'])
+    check_md5(t1d_name, md5_dict['t1d'])
+    check_md5(ap_name, md5_dict['ap'])
+
+    if contrast == 'T1 denoised':
+        return nib.load(t1d_name)
+    elif contrast == 'Anisotropic Power':
+        return nib.load(ap_name)
+    else:
+        return nib.load(t1_name)
+
+
 mni_notes = \
     """
     Notes
@@ -542,16 +700,19 @@ mni_notes = \
 """
 
 
-def read_mni_template(contrast="T2"):
+def read_mni_template(version="a", contrast="T2"):
     """
     Read the MNI template from disk
 
     Parameters
     ----------
+    version: string
+        There are two MNI templates 2009a and 2009c, so options available are:
+        "a" and "c".
     contrast : list or string, optional
-        Which of the contrast templates to read. Two contrasts are available:
-        "T1" and "T2", so you can either enter one of these strings as input,
-        or a list containing both of them.
+        Which of the contrast templates to read. For version "a" two contrasts
+        are available: "T1" and "T2". Similarly for version "c" there are two
+        options, "T1" and "mask". You can input contrast as a string or a list
 
     Returns
     -------
@@ -560,20 +721,47 @@ def read_mni_template(contrast="T2"):
 
     Examples
     --------
-    Get only the T2 file:
-    >>> T2_nifti = read_mni_template("T2") # doctest: +SKIP
-    Get both files in this order:
-    >>> T1_nifti, T2_nifti = read_mni_template(["T1", "T2"]) # doctest: +SKIP
+    Get only the T1 file for version c:
+    >>> T1_nifti = read_mni_template("c", contrast = "T1") # doctest: +SKIP
+    Get both files in this order for version a:
+    >>> T1_nifti, T2_nifti = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
-    file_dict = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
-                 "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
-    if isinstance(contrast, str):
-        return nib.load(file_dict[contrast])
-    else:
-        out_list = []
+    file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
+                   "T2": pjoin(folder, 'mni_icbm152_t2_tal_nlin_asym_09a.nii')}
+
+    file_dict_c = {
+        "T1": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c.nii'), "mask": pjoin(
+            folder, 'mni_icbm152_t1_tal_nlin_asym_09c_mask.nii')}
+
+    if contrast == "T2" and version == "c":
+        raise ValueError("No T2 image for MNI template 2009c")
+
+    if contrast == "mask" and version == "a":
+        raise ValueError("No template mask available for MNI 2009a")
+
+    if not(isinstance(contrast, str)) and version == "c":
         for k in contrast:
-            out_list.append(nib.load(file_dict[k]))
+            if k == "T2":
+                raise ValueError("No T2 image for MNI template 2009c")
+
+    if version == "a":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_a[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_a[k]))
+    elif version == "c":
+        if isinstance(contrast, str):
+            return nib.load(file_dict_c[contrast])
+        else:
+            out_list = []
+            for k in contrast:
+                out_list.append(nib.load(file_dict_c[k]))
+    else:
+        raise ValueError("Only 2009a and 2009c versions are available")
     return out_list
 
 
@@ -631,9 +819,7 @@ def fetch_cenir_multib(with_raw=False):
                          '4e4324c676f5a97b3ded8bbb100bf6e5'])
 
     files = {}
-    baseurl = \
-'https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33311/'
-
+    baseurl = UW_RW_URL + '1773/33311/'
     for f, m in zip(fname_list, md5_list):
         files[f] = (baseurl + f, m)
 
@@ -655,9 +841,6 @@ def read_cenir_multib(bvals=None):
     gtab : a GradientTable class instance
     img : nibabel.Nifti1Image
 
-    Notes
-    -----
-    Details of acquisition and processing are availble
     """
     files, folder = fetch_cenir_multib(with_raw=False)
     if bvals is None:
@@ -688,7 +871,7 @@ def read_cenir_multib(bvals=None):
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
     # All affines are the same, so grab the last one:
-    aff = nib.load(file_dict[bval]['DWI']).get_affine()
+    aff = nib.load(file_dict[bval]['DWI']).affine
     return (nib.Nifti1Image(np.concatenate(data, -1), aff),
             gradient_table(bval_list, np.concatenate(bvec_list, -1)))
 
@@ -698,7 +881,7 @@ CENIR_notes = \
     Notes
     -----
     Details of the acquisition and processing, and additional meta-data are
-    avalible through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+    available through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
     """
 
 fetch_cenir_multib.__doc__ += CENIR_notes
@@ -754,7 +937,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     References
     ----------
 
-    .. [1] Renaud, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
+    .. [1] Renauld, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
     K. Whittingstall, "Morphology of thalamus, LGN and optic radiation do not
     influence EEG alpha waves", Plos One (under submission), 2015.
 
@@ -773,13 +956,13 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     if 't1' in metrics:
         img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
         data = img.get_data()
-        affine = img.get_affine()
+        affine = img.affine
         res['t1'] = data
 
     if 'fa' in metrics:
         img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
         fa = img_fa.get_data()
-        affine = img_fa.get_affine()
+        affine = img_fa.affine
         res['fa'] = fa
 
     res['affine'] = affine
@@ -793,3 +976,59 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
         res[bun] = streamlines
 
     return res
+
+
+def read_ivim():
+    """ Load IVIM dataset
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    files, folder = fetch_ivim()
+    fraw = pjoin(folder, 'ivim.nii.gz')
+    fbval = pjoin(folder, 'ivim.bval')
+    fbvec = pjoin(folder, 'ivim.bvec')
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
+
+
+def read_cfin_dwi():
+    """Load CFIN multi b-value DWI data
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    files, folder = fetch_cfin_multib()
+    fraw = pjoin(folder,
+                 '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
+    fbval = pjoin(folder,
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
+    fbvec = pjoin(folder,
+                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
+
+
+def read_cfin_t1():
+    """Load CFIN T1-weighted data.
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    """
+    files, folder = fetch_cfin_multib()
+    img = nib.load(pjoin(folder, 'T1.nii'))
+    return img, gtab

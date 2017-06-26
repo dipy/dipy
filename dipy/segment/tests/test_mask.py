@@ -102,16 +102,15 @@ def test_median_otsu():
     assert_almost_equal(mask.sum(), mask2.sum())
 
     _, mask3 = median_otsu(data2, median_radius=3, numpass=2,
-                                      autocrop=False, vol_idx=[0, 1],
-                                      dilate=1)
+                           autocrop=False, vol_idx=[0, 1],
+                           dilate=1)
     assert_equal(mask2.sum() < mask3.sum(), True)
 
     _, mask4 = median_otsu(data2, median_radius=3, numpass=2,
-                                      autocrop=False, vol_idx=[0, 1],
-                                      dilate=2)
+                           autocrop=False, vol_idx=[0, 1],
+                           dilate=2)
     assert_equal(mask3.sum() < mask4.sum(), True)
 
 
 if __name__ == '__main__':
     run_module_suite()
-

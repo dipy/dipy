@@ -29,7 +29,7 @@ from dipy.data import read_stanford_labels
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 """
 This dataset provides a label map in which all white matter tissues are
@@ -102,15 +102,18 @@ streamlines = list(streamlines)
 
 # Prepare the display objects.
 color = line_colors(streamlines)
-streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-# Create the 3d display.
-r = fvtk.ren()
-fvtk.add(r, streamlines_actor)
+if fvtk.have_vtk:
+    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-# Save still images for this static example. Or for interactivity use fvtk.show
-fvtk.record(r, n_frames=1, out_path='deterministic.png',
-            size=(800, 800))
+    # Create the 3d display.
+    r = fvtk.ren()
+    fvtk.add(r, streamlines_actor)
+
+    # Save still images for this static example. Or for interactivity use
+    # fvtk.show
+    fvtk.record(r, n_frames=1, out_path='deterministic.png',
+                size=(800, 800))
 
 """
 .. figure:: deterministic.png
@@ -189,15 +192,17 @@ streamlines = list(streamlines)
 
 # Prepare the display objects.
 color = line_colors(streamlines)
-streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-# Create the 3d display.
-r = fvtk.ren()
-fvtk.add(r, streamlines_actor)
+if fvtk.have_vtk:
+    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-# Save still images for this static example.
-fvtk.record(r, n_frames=1, out_path='probabilistic.png',
-            size=(800, 800))
+    # Create the 3d display.
+    r = fvtk.ren()
+    fvtk.add(r, streamlines_actor)
+
+    # Save still images for this static example.
+    fvtk.record(r, n_frames=1, out_path='probabilistic.png',
+                size=(800, 800))
 
 """
 .. figure:: probabilistic.png

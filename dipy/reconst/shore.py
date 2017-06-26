@@ -7,12 +7,12 @@ import numpy as np
 
 from scipy.special import genlaguerre, gamma, hyp2f1
 
-from .cache import Cache
-from .multi_voxel import multi_voxel_fit
-from .shm import real_sph_harm
-from ..core.geometry import cart2sphere
+from dipy.reconst.cache import Cache
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.shm import real_sph_harm
+from dipy.core.geometry import cart2sphere
 
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 if have_cvxopt:
@@ -157,7 +157,7 @@ class ShoreModel(Cache):
         gtab = gradient_table(bvals, bvecs)
         from dipy.sims.voxel import SticksAndBall
         data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                                S0=1, angles=[(0, 0), (90, 0)],
+                                                S0=1., angles=[(0, 0), (90, 0)],
                                                 fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
         radial_order = 4

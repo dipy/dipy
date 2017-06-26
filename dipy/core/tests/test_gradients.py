@@ -7,7 +7,8 @@ import numpy.testing as npt
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
-                                 reorient_bvecs)
+                                 reorient_bvecs, generate_bvecs,
+                                 check_multi_b)
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -217,9 +218,9 @@ def test_reorient_bvecs():
         cos_rot = np.cos(rot_ang)
         sin_rot = np.sin(rot_ang)
         rotation_affines.append(np.array([[1, 0, 0, 0],
-                                         [0, cos_rot, -sin_rot, 0],
-                                         [0, sin_rot, cos_rot, 0],
-                                         [0, 0, 0, 1]]))
+                                          [0, cos_rot, -sin_rot, 0],
+                                          [0, sin_rot, cos_rot, 0],
+                                          [0, 0, 0, 1]]))
         rotated_bvecs[i] = np.dot(rotation_affines[-1][:3, :3],
                                   bvecs[i])
 
@@ -262,6 +263,39 @@ def test_nan_bvecs():
     with warnings.catch_warnings(record=True) as w:
         gtab = gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)
+
+
+def test_generate_bvecs():
+    """Tests whether we have properly generated bvecs.
+    """
+    # Test if the generated bvectors are unit vectors
+    bvecs = generate_bvecs(100)
+    norm = [np.linalg.norm(v) for v in bvecs]
+    npt.assert_almost_equal(norm, np.ones(100))
+
+    # Test if two generated vectors are almost orthogonal
+    bvecs_2 = generate_bvecs(2)
+    cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
+    npt.assert_almost_equal(cos_theta, 0.)
+
+
+def test_check_multi_b():
+    bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
+    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+
+    # We don't consider differences this small to be sufficient:
+    bvals = np.array([1995, 1995, 1995, 1995, 2005, 2005, 2005, 2005, 0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
+    npt.assert_(not check_multi_b(gtab, 2, non_zero=True))
+
+    # Unless you specify that you are interested in this magnitude of changes:
+    npt.assert_(check_multi_b(gtab, 2, non_zero=True, bmag=1))
+
+    # Or if you consider zero to be one of your b-values:
+    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
 if __name__ == "__main__":
