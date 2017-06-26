@@ -14,6 +14,7 @@ stopping criteria for the tracking.
 Let's load the necessary modules.
 """
 
+import numpy as np
 from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
 from dipy.tracking.utils import random_seeds_from_mask
 from dipy.reconst.dti import TensorModel
@@ -26,6 +27,7 @@ from dipy.viz import actor, window
 from dipy.io.image import save_nifti
 from nibabel.streamlines import save as save_trk
 from nibabel.streamlines import Tractogram
+from dipy.tracking.streamline import Streamlines
 
 """
 Enables/disables interactive visualization
@@ -107,7 +109,9 @@ which we will use as the basis to perform the tracking.
 """
 
 ren = window.Renderer()
-ren.add(actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values))
+ren.add(actor.peak_slicer(csd_peaks.peak_dirs,
+                          csd_peaks.peak_values,
+                          colors=None))
 
 if interactive:
     window.show(ren, size=(900, 900))
@@ -129,11 +133,18 @@ streamline_generator = LocalTracking(csd_peaks, tissue_classifier,
                                      seeds, affine=np.eye(4),
                                      step_size=0.5)
 
-from dipy.tracking.streamline import Streamlines
-
 streamlines = Streamlines(streamline_generator)
 
 """
+The total number of streamlines is shown below.
+"""
+
+print(len(streamlines))
+
+"""
+To increase the number of streamlines you can change the parameter
+``seeds_count`` in ``random_seeds_from_mask``.
+
 We can visualize the streamlines using ``actor.line`` or ``actor.streamtube``.
 """
 
@@ -160,7 +171,8 @@ Save the resulting streamlines in a Trackvis (.trk) format and FA as
 Nifti1 (.nii.gz).
 """
 
-save_trk(Tractogram(streamlines, img.affine), 'det_streamlines.trk')
+save_trk(Tractogram(streamlines, affine_to_rasmm=img.affine),
+         'det_streamlines.trk')
 
 save_nifti('fa_map.nii.gz', fa, img.affine)
 
