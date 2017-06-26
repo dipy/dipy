@@ -21,13 +21,14 @@ Highlights
 - DKI-based microstructural modelling.
 - Free water diffusion tensor imaging.
 - Denoising using Local PCA.
-- Bundle-based registration.
+- Streamline-based registration (SLR).
 - Fiber to bundle coherence (FBC) measures.
 - Bayesian MRF-based tissue classification.
 - New API for integrated user interfaces.
 - New hdf5 file (.pam5) for saving reconstruction results.
 - Intreractive slicing of images, ODFS and peaks.
 - Updated API to support latest numpy versions.
+- New system for automatically generating command line interfaces.
 - Faster computation of Cross Correlation metric for registration.
 
 **Dipy 0.11.0** is now available. New features include:
