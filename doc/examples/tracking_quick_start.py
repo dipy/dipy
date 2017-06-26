@@ -3,27 +3,36 @@
 Tracking Quick Start
 ====================
 
-This example shows how to perform fiber tracking using Dipy.
+This example shows how to perform fast fiber tracking using DIPY
+[Garyfallidis12]_.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
-reconstructions and then generate deterministic streamlines using the fiber
-directions (peaks) from CSD and fractional anisotropic (FA) as a
-stopping criterion.
+reconstruction and then generate deterministic streamlines using the fiber
+directions (peaks) from CSD and fractional anisotropic (FA) from DTI as a
+stopping criteria for the tracking.
 
 Let's load the necessary modules.
 """
 
 import numpy as np
-
-from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
+from dipy.tracking.utils import random_seeds_from_mask
+from dipy.reconst.dti import TensorModel
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.direction import peaks_from_model
-from dipy.tracking.eudx import EuDX
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.segment.mask import median_otsu
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
+from dipy.viz import actor, window
+from dipy.io.image import save_nifti
+from nibabel.streamlines import save as save_trk
+from nibabel.streamlines import Tractogram
+from dipy.tracking.streamline import Streamlines
+
+"""
+Enables/disables interactive visualization
+"""
+interactive = False
 
 """
 Load one of the available datasets with 150 gradients on the sphere and 10 b0s
@@ -37,7 +46,7 @@ data = img.get_data()
 """
 Create a brain mask. This dataset is a bit difficult to segment with the
 default ``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`)
-therefore we use here a bit more advanced options.
+therefore we use here more advanced options.
 """
 
 maskdata, mask = median_otsu(data, 3, 1, False,
@@ -77,32 +86,37 @@ tensor model first. Here, we fit the Tensor using weighted least squares (WLS).
 tensor_model = TensorModel(gtab, fit_method='WLS')
 tensor_fit = tensor_model.fit(data, mask)
 
-FA = fractional_anisotropy(tensor_fit.evals)
+fa = tensor_fit.fa
 
 """
-In order for the stopping values to be used with our tracking algorithm we need
-to have the same dimensions as the ``csd_peaks.peak_values``. For this reason,
-we can assign the same FA value to every peak direction in the same voxel in
-the following way.
+In this simple example we can use FA to stop tracking. Here we stop tracking
+when FA < 0.1.
 """
 
-stopping_values = np.zeros(csd_peaks.peak_values.shape)
-stopping_values[:] = FA[..., None]
+tissue_classifier = ThresholdTissueClassifier(fa, 0.1)
+
+"""
+Now, we need to set starting points for propagating each track. We call those
+seeds. Using ``random_seeds_from_mask`` we can select a specific number of
+seeds (``seeds_count``) in each voxel where the mask `fa > 0.3` is true.
+"""
+
+seeds = random_seeds_from_mask(fa > 0.3, seeds_count=1)
 
 """
 For quality assurance we can also visualize a slice from the direction field
 which we will use as the basis to perform the tracking.
 """
 
-ren = fvtk.ren()
+ren = window.Renderer()
+ren.add(actor.peak_slicer(csd_peaks.peak_dirs,
+                          csd_peaks.peak_values,
+                          colors=None))
 
-slice_no = data.shape[2] / 2
-
-fvtk.add(ren, fvtk.peaks(csd_peaks.peak_dirs[:, :, slice_no:slice_no + 1],
-                         stopping_values[:, :, slice_no:slice_no + 1]))
-
-print('Saving illustration as csd_direction_field.png')
-fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
+if interactive:
+    window.show(ren, size=(900, 900))
+else:
+    window.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
 """
 .. figure:: csd_direction_field.png
@@ -111,72 +125,58 @@ fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
  **Direction Field (peaks)**
 
 ``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
-streamlines. If the parameter ``seeds`` is a positive integer it will generate
-that number of randomly placed seeds everywhere in the volume. Alternatively,
-you can specify the exact seed points using an array (N, 3) where N is the
-number of seed points. For simplicity, here we will use the first option
-(random seeds). ``a_low`` is the threshold of the fist parameter
-(``stopping_values``) which means that there will that tracking will stop in
-regions with FA < 0.1.
+streamlines. This algorithm is what is used here and the default option
+when providing the output of peaks directly in LocalTracking.
 """
 
-streamline_generator = EuDX(stopping_values,
-                            csd_peaks.peak_indices,
-                            seeds=10**4,
-                            odf_vertices=sphere.vertices,
-                            a_low=0.1)
+streamline_generator = LocalTracking(csd_peaks, tissue_classifier,
+                                     seeds, affine=np.eye(4),
+                                     step_size=0.5)
 
-streamlines = [streamline for streamline in streamline_generator]
+streamlines = Streamlines(streamline_generator)
 
 """
-We can visualize the streamlines using ``fvtk.line`` or ``fvtk.streamtube``.
+The total number of streamlines is shown below.
 """
 
-fvtk.clear(ren)
-
-fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
-
-print('Saving illustration as csd_streamlines_eudx.png')
-fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
+print(len(streamlines))
 
 """
-.. figure:: csd_streamlines_eudx.png
+To increase the number of streamlines you can change the parameter
+``seeds_count`` in ``random_seeds_from_mask``.
+
+We can visualize the streamlines using ``actor.line`` or ``actor.streamtube``.
+"""
+
+ren.clear()
+ren.add(actor.line(streamlines))
+
+if interactive:
+    window.show(ren, size=(900, 900))
+else:
+    print('Saving illustration as det_streamlines.png')
+    window.record(ren, out_path='det_streamlines.png', size=(900, 900))
+
+"""
+.. figure:: det_streamlines.png
  :align: center
 
- **CSD-based streamlines using EuDX**
-
-We used above ``fvtk.record`` because we want to create a figure for the
-tutorial but you can visualize the same objects in 3D using
-``fvtk.show(ren)``.
+ **Deterministic streamlines using EuDX (new framework)**
 
 To learn more about this process you could start playing with the number of
 seed points or, even better, specify seeds to be in specific regions of interest
 in the brain.
 
-``fvtk`` gives some minimal interactivity however you can save the resulting
-streamlines in a Trackvis (.trk) format and load them for example with the
-Fibernavigator_ or another tool for medical visualization.
-
-Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
+Save the resulting streamlines in a Trackvis (.trk) format and FA as
+Nifti1 (.nii.gz).
 """
 
-import nibabel as nib
+save_trk(Tractogram(streamlines, affine_to_rasmm=img.affine),
+         'det_streamlines.trk')
 
-hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = img.get_header().get_zooms()[:3]
-hdr['voxel_order'] = 'LAS'
-hdr['dim'] = FA.shape[:3]
-
-csd_streamlines_trk = ((sl, None, None) for sl in streamlines)
-
-csd_sl_fname = 'csd_streamline.trk'
-
-nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
-
-nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
+save_nifti('fa_map.nii.gz', fa, img.affine)
 
 """
-
 In Windows if you get a runtime error about frozen executable please start
 your script by adding your code above in a ``main`` function and use:
 
@@ -187,10 +187,6 @@ if __name__ == '__main__':
 
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
-
-.. NOTE::
-    Dipy has a new and very modular fiber tracking machinery. Our new machinery
-    for fiber tracking is featured in the example :ref:`example_tracking_quick_start`.
 
 
 .. include:: ../links_names.inc

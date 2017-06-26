@@ -5,12 +5,12 @@ import abc
 import numpy as np
 import scipy as sp
 from scipy import gradient, ndimage
-from ..utils.six import with_metaclass
-from . import vector_fields as vfu
-from . import sumsqdiff as ssd
-from . import crosscorr as cc
-from . import expectmax as em
-from . import floating
+from dipy.utils.six import with_metaclass
+from dipy.align import vector_fields as vfu
+from dipy.align import sumsqdiff as ssd
+from dipy.align import crosscorr as cc
+from dipy.align import expectmax as em
+from dipy.align import floating
 
 
 class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):

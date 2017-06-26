@@ -31,11 +31,11 @@ def test_offset():
     # Test ndarray_offset function
     for dt in (np.int32, np.float64):
         index = np.array([1, 1], dtype=np.intp)
-        A = np.array([[1,0,0],[0,2,0],[0,0,3]], dtype=dt)
+        A = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]], dtype=dt)
         strides = np.array(A.strides, np.intp)
         i_size = A.dtype.itemsize
         assert_equal(ndarray_offset(index, strides, 2, i_size), 4)
-        assert_equal(A.ravel()[4], A[1,1])
+        assert_equal(A.ravel()[4], A[1, 1])
         # Index and strides arrays must be C-continuous. Test this is enforced
         # by using non-contiguous versions of the input arrays.
         assert_raises(ValueError, ndarray_offset,
@@ -45,13 +45,13 @@ def test_offset():
 
 
 def test_trilinear_interp_cubic_voxels():
-    A=np.ones((17,17,17))
-    B=np.zeros(3)
-    strides=np.array(A.strides, np.intp)
-    A[7,7,7]=2
-    points=np.array([[0,0,0],[7.,7.5,7.],[3.5,3.5,3.5]])
-    map_coordinates_trilinear_iso(A,points,strides,3,B)
-    assert_array_almost_equal(B,np.array([ 1. ,  1.5,  1. ]))
+    A = np.ones((17, 17, 17))
+    B = np.zeros(3)
+    strides = np.array(A.strides, np.intp)
+    A[7, 7, 7] = 2
+    points = np.array([[0, 0, 0], [7., 7.5, 7.], [3.5, 3.5, 3.5]])
+    map_coordinates_trilinear_iso(A, points, strides, 3, B)
+    assert_array_almost_equal(B, np.array([1., 1.5, 1.]))
     # All of the input array, points array, strides array and output array must
     # be C-contiguous.  Check by passing in versions that aren't C contiguous
     assert_raises(ValueError, map_coordinates_trilinear_iso,
@@ -68,32 +68,33 @@ def test_eudx_further():
     """ Cause we love testin.. ;-)
     """
 
-    fimg,fbvals,fbvecs=get_data('small_101D')
+    fimg, fbvals, fbvecs = get_data('small_101D')
 
-    img=ni.load(fimg)
-    affine=img.get_affine()
-    data=img.get_data()
+    img = ni.load(fimg)
+    affine = img.affine
+    data = img.get_data()
     gtab = gradient_table(fbvals, fbvecs)
     tensor_model = TensorModel(gtab)
     ten = tensor_model.fit(data)
-    x,y,z=data.shape[:3]
-    seeds=np.zeros((10**4,3))
+    x, y, z = data.shape[:3]
+    seeds = np.zeros((10**4, 3))
     for i in range(10**4):
-        rx=(x-1)*np.random.rand()
-        ry=(y-1)*np.random.rand()
-        rz=(z-1)*np.random.rand()
-        seeds[i]=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
+        rx = (x-1)*np.random.rand()
+        ry = (y-1)*np.random.rand()
+        rz = (z-1)*np.random.rand()
+        seeds[i] = np.ascontiguousarray(np.array([rx, ry, rz]),
+                                        dtype=np.float64)
 
     sphere = get_sphere('symmetric724')
 
     ind = quantize_evecs(ten.evecs)
-    eu=EuDX(a=ten.fa, ind=ind, seeds=seeds,
-            odf_vertices=sphere.vertices, a_low=.2)
-    T=[e for e in eu]
+    eu = EuDX(a=ten.fa, ind=ind, seeds=seeds,
+              odf_vertices=sphere.vertices, a_low=.2)
+    T = [e for e in eu]
 
-    #check that there are no negative elements
+    # check that there are no negative elements
     for t in T:
-        assert_equal(np.sum(t.ravel()<0),0)
+        assert_equal(np.sum(t.ravel() < 0), 0)
 
     # Test eudx with affine
     def random_affine(seeds):
@@ -126,7 +127,7 @@ def test_eudx_bad_seed():
     fimg, fbvals, fbvecs = get_data('small_101D')
 
     img = ni.load(fimg)
-    affine = img.get_affine()
+    affine = img.affine
     data = img.get_data()
     gtab = gradient_table(fbvals, fbvecs)
     tensor_model = TensorModel(gtab)

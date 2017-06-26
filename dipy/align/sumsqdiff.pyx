@@ -66,7 +66,7 @@ def solve_2d_symmetric_positive_definite(A, y, double det):
         <double*> cnp.PyArray_DATA(np.ascontiguousarray(y, float)),
         det,
         <double*> cnp.PyArray_DATA(out))
-    return out
+    return np.asarray(out)
 
 
 @cython.boundscheck(False)
@@ -154,7 +154,7 @@ def solve_3d_symmetric_positive_definite(g, y, double tau):
         <double*> cnp.PyArray_DATA(np.ascontiguousarray(y, float)),
         tau,
         <double*> cnp.PyArray_DATA(out))
-    return out, is_singular
+    return np.asarray(out), is_singular
 
 
 @cython.boundscheck(False)
@@ -640,7 +640,7 @@ def compute_residual_displacement_field_ssd_3d(
                         residual[s, r, c, 2] = (b[2] -
                                                 (gradient_field[s, r, c, 2] * dotP +
                                                  sigmasq * lambda_param * y[2]))
-    return residual
+    return np.asarray(residual)
 
 
 @cython.boundscheck(False)
@@ -742,7 +742,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
                     residual[r, c, 1] = (b[1] -
                                          (gradient_field[r, c, 1] * dotP +
                                           sigmasq * lambda_param * y[1]))
-    return residual
+    return np.asarray(residual)
 
 
 @cython.boundscheck(False)
@@ -816,7 +816,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                     out[i, j, 0] = delta * gradient_moving[i, j, 0] / den
                     out[i, j, 1] = delta * gradient_moving[i, j, 1] / den
 
-    return out, energy
+    return np.asarray(out), energy
 
 
 @cython.boundscheck(False)
@@ -898,4 +898,4 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                            gradient_moving[k, i, j, 1] / den)
                         out[k, i, j, 2] = (delta *
                                            gradient_moving[k, i, j, 2] / den)
-    return out, energy
+    return np.asarray(out), energy

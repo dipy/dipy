@@ -72,7 +72,7 @@ cdef class Transform:
             raise ValueError("Invalid point dimension: %d"%(m,))
         J = np.zeros((self.dim, n))
         ret = self._jacobian(theta, x, J)
-        return J
+        return np.asarray(J)
 
     def get_identity_parameters(self):
         r""" Parameter values corresponding to the identity transform
@@ -86,7 +86,7 @@ cdef class Transform:
             raise ValueError("Invalid transform.")
         theta = np.zeros(self.number_of_parameters)
         self._get_identity_parameters(theta)
-        return theta
+        return np.asarray(theta)
 
     def param_to_matrix(self, double[:] theta):
         r""" Matrix representation of this transform with the given parameters
@@ -106,7 +106,7 @@ cdef class Transform:
             raise ValueError("Invalid number of parameters: %d"%(n,))
         T = np.eye(self.dim + 1)
         self._param_to_matrix(theta, T)
-        return T
+        return np.asarray(T)
 
     def get_number_of_parameters(self):
         return self.number_of_parameters

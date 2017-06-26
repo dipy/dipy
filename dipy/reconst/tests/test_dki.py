@@ -5,6 +5,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import random
 import dipy.reconst.dki as dki
+import dipy.reconst.dti as dti
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from nose.tools import assert_raises
@@ -14,11 +15,12 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals)
+                              axial_kurtosis, radial_kurtosis, _positive_evals,
+                              lower_triangular)
 
 from dipy.core.sphere import Sphere
-
-from dipy.core.geometry import perpendicular_directions
+from dipy.data import get_sphere
+from dipy.core.geometry import (sphere2cart, perpendicular_directions)
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -146,6 +148,12 @@ def test_dki_predict():
     pred_multi = dkiM.predict(multi_params, S0=100)
     assert_array_almost_equal(pred_multi, DWI)
 
+    # Check that it works with more than one voxel, and with a different S0
+    # in each voxel:
+    pred_multi = dkiM.predict(multi_params,
+                              S0=100*np.ones(pred_multi.shape[:3]))
+    assert_array_almost_equal(pred_multi, DWI)
+
     # check the function predict of the DiffusionKurtosisFit object
     dkiF = dkiM.fit(DWI)
     pred_multi = dkiF.predict(gtab_2s, S0=100)
@@ -154,6 +162,15 @@ def test_dki_predict():
     dkiF = dkiM.fit(pred_multi)
     pred_from_fit = dkiF.predict(dkiM.gtab, S0=100)
     assert_array_almost_equal(pred_from_fit, DWI)
+
+    # Test the module function:
+    pred = dki.dki_prediction(crossing_ref, gtab_2s, S0=100)
+    assert_array_almost_equal(pred, signal_cross)
+
+    # Test the module function with S0 volume:
+    pred = dki.dki_prediction(multi_params, gtab_2s,
+                              S0=100 * np.ones(multi_params.shape[:3]))
+    assert_array_almost_equal(pred, DWI)
 
 
 def test_carlson_rf():
@@ -427,10 +444,10 @@ def test_single_voxel_DKI_stats():
     RDi = 0
     RDe = 0.00087
     # Reference values
-    AD = fie*ADi + (1-fie)*ADe
-    AK = 3 * fie * (1-fie) * ((ADi-ADe) / AD) ** 2
-    RD = fie*RDi + (1-fie)*RDe
-    RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
+    AD = fie * ADi + (1 - fie) * ADe
+    AK = 3 * fie * (1 - fie) * ((ADi-ADe) / AD) ** 2
+    RD = fie * RDi + (1 - fie) * RDe
+    RK = 3 * fie * (1 - fie) * ((RDi-RDe) / RD) ** 2
     ref_vals = np.array([AD, AK, RD, RK])
 
     # simulate fiber randomly oriented
@@ -438,15 +455,15 @@ def test_single_voxel_DKI_stats():
     phi = random.uniform(0, 320)
     angles = [(theta, phi), (theta, phi)]
     mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
-    frac = [fie*100, (1-fie)*100]
+    frac = [fie * 100, (1 - fie) * 100]
     signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
                                       fractions=frac, snr=None)
     evals, evecs = decompose_tensor(from_lower_triangular(dt))
     dki_par = np.concatenate((evals, evecs[0], evecs[1], evecs[2], kt), axis=0)
 
     # Estimates using dki functions
-    ADe1 = dki.axial_diffusivity(evals)
-    RDe1 = dki.radial_diffusivity(evals)
+    ADe1 = dti.axial_diffusivity(evals)
+    RDe1 = dti.radial_diffusivity(evals)
     AKe1 = axial_kurtosis(dki_par)
     RKe1 = radial_kurtosis(dki_par)
     e1_vals = np.array([ADe1, AKe1, RDe1, RKe1])
@@ -561,3 +578,157 @@ def test_dki_errors():
     assert_array_almost_equal(dkiF.model_params, multi_params)
     # test a incorrect mask
     assert_raises(ValueError, dkiM.fit, DWI, mask=mask_not_correct)
+
+    # error if data with only one non zero b-value is given
+    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+
+
+def test_kurtosis_maximum():
+    # TEST 1
+    # simulate a crossing fibers interserting at 70 degrees. The first fiber
+    # is aligned to the x-axis while the second fiber is aligned to the x-z
+    # plane with an angular deviation of 70 degrees from the first one.
+    # According to Neto Henriques et al, 2015 (NeuroImage 111: 85-99), the
+    # kurtosis tensor of this simulation will have a maxima aligned to axis y
+    angles = [(90, 0), (90, 0), (20, 0), (20, 0)]
+    signal_70, dt_70, kt_70 = multi_tensor_dki(gtab_2s, mevals_cross, S0=100,
+                                               angles=angles,
+                                               fractions=frac_cross, snr=None)
+    # prepare inputs
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
+    dkiF = dkiM.fit(signal_70)
+    MD = dkiF.md
+    kt = dkiF.kt
+    R = dkiF.evecs
+    evals = dkiF.evals
+    dt = lower_triangular(np.dot(np.dot(R, np.diag(evals)), R.T))
+    sphere = get_sphere('symmetric724')
+
+    # compute maxima
+    k_max_cross, max_dir = dki._voxel_kurtosis_maximum(dt, MD, kt, sphere,
+                                                       gtol=1e-5)
+
+    yaxis = np.array([0., 1., 0.])
+    cos_angle = np.abs(np.dot(max_dir[0], yaxis))
+    assert_almost_equal(cos_angle, 1.)
+
+    # TEST 2
+    # test the function on cases of well aligned fibers oriented in a random
+    # defined direction. According to Neto Henriques et al, 2015 (NeuroImage
+    # 111: 85-99), the maxima of kurtosis is any direction perpendicular to the
+    # fiber direction. Moreover, according to multicompartmetal simulations,
+    # kurtosis in this direction has to be equal to:
+    fie = 0.49
+    ADi = 0.00099
+    ADe = 0.00226
+    RDi = 0
+    RDe = 0.00087
+    RD = fie*RDi + (1-fie)*RDe
+    RK = 3 * fie * (1-fie) * ((RDi-RDe) / RD) ** 2
+
+    # prepare simulation:
+    theta = random.uniform(0, 180)
+    phi = random.uniform(0, 320)
+    angles = [(theta, phi), (theta, phi)]
+    mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+    frac = [fie*100, (1 - fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, angles=angles,
+                                      fractions=frac, snr=None)
+
+    # prepare inputs
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
+    dkiF = dkiM.fit(signal)
+    MD = dkiF.md
+    kt = dkiF.kt
+    R = dkiF.evecs
+    evals = dkiF.evals
+    dt = lower_triangular(np.dot(np.dot(R, np.diag(evals)), R.T))
+
+    # compute maxima
+    k_max, max_dir = dki._voxel_kurtosis_maximum(dt, MD, kt, sphere, gtol=1e-5)
+
+    # check if max direction is perpendicular to fiber direction
+    fdir = np.array([sphere2cart(1., np.deg2rad(theta), np.deg2rad(phi))])
+    cos_angle = np.abs(np.dot(max_dir[0], fdir[0]))
+    assert_almost_equal(cos_angle, 0., decimal=5)
+
+    # check if max direction is equal to expected value
+    assert_almost_equal(k_max, RK)
+
+    # According to Neto Henriques et al., 2015 (NeuroImage 111: 85-99),
+    # e.g. see figure 1 of this article, kurtosis maxima for the first test is
+    # also equal to the maxima kurtosis value of well-aligned fibers, since
+    # simulations parameters (apart from fiber directions) are equal
+    assert_almost_equal(k_max_cross, RK)
+
+    # Test 3 - Test performance when kurtosis is spherical - this case, can be
+    # problematic since a spherical kurtosis does not have an maximum
+    k_max, max_dir = dki._voxel_kurtosis_maximum(dt_sph, np.mean(evals_sph),
+                                                 kt_sph, sphere, gtol=1e-2)
+    assert_almost_equal(k_max, Kref_sphere)
+
+    # Test 4 - Test performance when kt have all elements zero - this case, can
+    # be problematic this case does not have an maximum
+    k_max, max_dir = dki._voxel_kurtosis_maximum(dt_sph, np.mean(evals_sph),
+                                                 np.zeros(15), sphere,
+                                                 gtol=1e-2)
+    assert_almost_equal(k_max, 0.0)
+
+
+def test_multi_voxel_kurtosis_maximum():
+    # Multi-voxel simulations parameters
+    FIE = np.array([[[0.30, 0.32], [0.74, 0.51]],
+                    [[0.47, 0.21], [0.80, 0.63]]])
+    RDI = np.zeros((2, 2, 2))
+    ADI = np.array([[[1e-3, 1.3e-3], [0.8e-3, 1e-3]],
+                    [[0.9e-3, 0.99e-3], [0.89e-3, 1.1e-3]]])
+    ADE = np.array([[[2.2e-3, 2.3e-3], [2.8e-3, 2.1e-3]],
+                    [[1.9e-3, 2.5e-3], [1.89e-3, 2.1e-3]]])
+    Tor = np.array([[[2.6, 2.4], [2.8, 2.1]],
+                    [[2.9, 2.5], [2.7, 2.3]]])
+    RDE = ADE / Tor
+
+    # prepare simulation:
+    DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
+
+    for i in range(2):
+        for j in range(2):
+            for k in range(2):
+                ADi = ADI[i, j, k]
+                RDi = RDI[i, j, k]
+                ADe = ADE[i, j, k]
+                RDe = RDE[i, j, k]
+                fie = FIE[i, j, k]
+                mevals = np.array([[ADi, RDi, RDi], [ADe, RDe, RDe]])
+                frac = [fie*100, (1 - fie)*100]
+                theta = random.uniform(0, 180)
+                phi = random.uniform(0, 320)
+                angles = [(theta, phi), (theta, phi)]
+                signal, dt, kt = multi_tensor_dki(gtab_2s, mevals,
+                                                  angles=angles,
+                                                  fractions=frac, snr=None)
+                DWIsim[i, j, k, :] = signal
+
+    # Ground truth Maximum kurtosis
+    RD = FIE*RDI + (1-FIE)*RDE
+    RK = 3 * FIE * (1-FIE) * ((RDI-RDE) / RD) ** 2
+
+    # prepare inputs
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
+    dkiF = dkiM.fit(DWIsim)
+    sphere = get_sphere('symmetric724')
+
+    # TEST - when no sphere is given
+    k_max = dki.kurtosis_maximum(dkiF.model_params)
+    assert_almost_equal(k_max, RK, decimal=5)
+
+    # TEST - when sphere is given
+    k_max = dki.kurtosis_maximum(dkiF.model_params, sphere)
+    assert_almost_equal(k_max, RK, decimal=5)
+
+    # TEST - when mask is given
+    mask = np.ones((2, 2, 2), dtype='bool')
+    mask[1, 1, 1] = 0
+    RK[1, 1, 1] = 0
+    k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
+    assert_almost_equal(k_max, RK, decimal=5)

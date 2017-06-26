@@ -31,7 +31,7 @@ Load the raw diffusion data and the affine.
 """
 
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
@@ -44,7 +44,7 @@ dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=35, filter_width=18.5)
 Lets just use one slice only from the data.
 """
 
-dataslice = data[30:70, 20:80, data.shape[2] / 2]
+dataslice = data[30:70, 20:80, data.shape[2] // 2]
 
 """
 Normalize the signal by the b0

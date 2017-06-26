@@ -5,6 +5,7 @@ from dipy.denoise.nlmeans import nlmeans
 import dipy.data as dpd
 import nibabel as nib
 
+
 def test_denoise():
     """
 

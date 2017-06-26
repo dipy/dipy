@@ -502,7 +502,7 @@ def cubic_spline(double[:] x):
     with nogil:
         for i in range(n):
             sx[i] = _cubic_spline(x[i])
-    return sx
+    return np.asarray(sx)
 
 
 cdef inline double _cubic_spline(double x) nogil:
@@ -542,7 +542,7 @@ def cubic_spline_derivative(double[:] x):
     with nogil:
         for i in range(n):
             sx[i] = _cubic_spline_derivative(x[i])
-    return sx
+    return np.asarray(sx)
 
 
 cdef inline double _cubic_spline_derivative(double x) nogil:
@@ -1360,4 +1360,4 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
                 samples[i, 0] = _apply_affine_3d_x0(s, r, c, 1, grid2world)
                 samples[i, 1] = _apply_affine_3d_x1(s, r, c, 1, grid2world)
                 samples[i, 2] = _apply_affine_3d_x2(s, r, c, 1, grid2world)
-    return samples
+    return np.asarray(samples)

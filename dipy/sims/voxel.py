@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 
 import numpy as np
@@ -5,6 +6,7 @@ from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.reconst.utils import dki_design_matrix
+from scipy.special import jn
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
 #
@@ -133,7 +135,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
+def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
                     fractions=[35, 35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
@@ -182,6 +184,129 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
 
         S[i + 1] = S0 * S[i + 1]
 
+    S[gtab.b0s_mask] = S0
+    S = add_noise(S, snr, S0)
+
+    return S, sticks
+
+
+def callaghan_perpendicular(q, radius):
+    r""" Calculates the perpendicular diffusion signal E(q) in a cylinder of
+    radius R using the Soderman model [1]_. Assumes that the pulse length
+    is infinitely short and the diffusion time is infinitely long.
+
+    Parameters
+    ----------
+    q : array, shape (N,)
+        q-space value in 1/mm
+    radius : float
+        cylinder radius in mm
+
+    Returns
+    -------
+    E : array, shape (N,)
+        signal attenuation
+
+    References
+    ----------
+    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
+           cylindrical geometry." Journal of Magnetic Resonance, Series A
+           117.1 (1995): 94-97.
+    """
+    # Eq. [6] in the paper
+    E = ((2 * jn(1, 2 * np.pi * q * radius)) ** 2 /
+         (2 * np.pi * q * radius) ** 2
+         )
+    return E
+
+
+def gaussian_parallel(q, tau, D=0.7e-3):
+    r""" Calculates the parallel Gaussian diffusion signal.
+
+    Parameters
+    ----------
+    q : array, shape (N,)
+        q-space value in 1/mm
+    tau : float
+        diffusion time in s
+    D : float
+        diffusion constant
+
+    Returns
+    -------
+    E : array, shape (N,)
+        signal attenuation
+    """
+    return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
+
+
+def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
+                                S0=1., angles=[(0, 0), (90, 0)],
+                                fractions=[35, 35], snr=20):
+    r""" Calculates the three-dimensional signal attenuation E(q) originating
+    from within a cylinder of radius R using the Soderman approximation [1]_.
+    The diffusion signal is assumed to be separable perpendicular and parallel
+    to the cylinder axis [2]_.
+    This function is basically an extension of the ball and stick model.
+    Setting the radius to zero makes them equivalent.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+        Signal measurement directions.
+    tau : float
+        diffusion time in s
+    radii : float
+        cylinder radius in mm
+    D : float
+        diffusion constant
+    S0 : float
+        Unweighted signal value.
+    angles : array (K,2) or (K, 3)
+        List of K polar angles (in degrees) for the sticks or array of K
+        sticks as unit vectors.
+    direction : array (3)
+        direction of the axis of the cylinder
+    fractions : float
+        Percentage of each stick.  Remainder to 100 specifies isotropic
+        component.
+    snr : float
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
+
+    Returns
+    -------
+    E : array, shape (N,)
+        signal attenuation
+
+    References
+    ----------
+    .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
+           cylindrical geometry." Journal of Magnetic Resonance, Series A
+           117.1 (1995): 94-97.
+    .. [2] Assaf, Yaniv, et al. "New modeling and experimental framework to
+           characterize hindered and restricted water diffusion in brain white
+           matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
+    """
+    qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
+    qvecs = qvals[:, None] * gtab.bvecs
+    q_norm = np.sqrt(np.einsum('ij,ij->i', qvecs, qvecs))
+
+    fractions = [f / 100. for f in fractions]
+    f0 = 1 - np.sum(fractions)
+
+    S = np.zeros(len(gtab.bvals))
+    sticks = _check_directions(angles)
+
+    for i, f in enumerate(fractions):
+        q_par = abs(np.dot(qvecs, sticks[i]))
+        q_perp = np.sqrt(q_norm ** 2 - q_par ** 2)
+        S_cylinder = (callaghan_perpendicular(q_perp, radii[i]) *
+                      gaussian_parallel(q_par, tau, D=D))
+        S += f * S_cylinder
+
+    S += f0 * np.exp(-gtab.bvals * D)
+    S *= S0
     S[gtab.b0s_mask] = S0
     S = add_noise(S, snr, S0)
 
@@ -244,7 +369,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     return S.reshape(out_shape)
 
 
-def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
+def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
     r""" Simulate a Multi-Tensor signal.
 
@@ -305,9 +430,8 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     return add_noise(S, snr, S0), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
+def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
                      fractions=[50, 50], snr=20):
-
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
@@ -411,7 +535,7 @@ def multi_tensor_dki(gtab, mevals, S0=100, angles=[(90., 0.), (90., 0.)],
     kt[14] = kurtosis_element(D_comps, fractions, 0, 1, 2, 2, DT, MD)
 
     # compute S based on the DT and KT
-    S = DKI_signal(gtab, dt, kt, S0, snr)
+    S = dki_signal(gtab, dt, kt, S0, snr)
 
     return S, dt, kt
 
@@ -482,7 +606,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     return wijkl
 
 
-def DKI_signal(gtab, dt, kt, S0=150, snr=None):
+def dki_signal(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
     tensors of a single voxel. Simulations are preformed assuming the DKI
     model.
@@ -531,7 +655,6 @@ def DKI_signal(gtab, dt, kt, S0=150, snr=None):
     S = add_noise(S, snr, S0)
 
     return S
-
 
 
 def single_tensor_odf(r, evals=None, evecs=None):

@@ -4,9 +4,10 @@ Direct Bundle Registration
 ==========================
 
 This example explains how you can register two bundles from two different
-subjects directly in native space [Garyfallidis14]_.
+subjects directly in the space of streamlines [Garyfallidis15]_, [Garyfallidis14]_.
 
-To show the concept we will use two pre-saved cingulum bundles.
+To show the concept we will use two pre-saved cingulum bundles. The algorithm
+used here is called Streamline-based Linear Registration (SLR) [Garyfallidis15]_.
 """
 
 from dipy.viz import fvtk
@@ -20,9 +21,11 @@ from dipy.tracking.streamline import set_number_of_points
 
 
 """
-An important step before running the registration is to resample the streamlines
-so that they both have the same number of points per streamline. Here we will
-use 20 points.
+An important step before running the registration is to resample the
+streamlines so that they both have the same number of points per streamline.
+Here we will use 20 points. This step is not optional. Inputting streamlines
+with different number of points will break the theoretical advantages of using
+the SLR as explained in [Garyfallidis15]_.
 """
 
 cb_subj1 = set_number_of_points(cb_subj1, 20)
@@ -38,7 +41,7 @@ srr = StreamlineLinearRegistration()
 srm = srr.optimize(static=cb_subj1, moving=cb_subj2)
 
 """
-After the optimization is finished we can apply the learned transformation to
+After the optimization is finished we can apply the transformation to
 ``cb_subj2``.
 """
 
@@ -82,6 +85,9 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
    :align: center
 
    **After bundle registration**.
+
+As you can see the two cingulum bundles are well aligned although they contain
+many streamlines of different length and shape.
 
 .. [Garyfallidis15] Garyfallidis et. al, "Robust and efficient linear
                     registration of white-matter fascicles in the space

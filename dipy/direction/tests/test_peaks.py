@@ -1,13 +1,17 @@
 import numpy as np
+
+import pickle
+from io import BytesIO
+
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_almost_equal, run_module_suite,
                            assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
 from dipy.direction.peaks import (peaks_from_model,
-                                peak_directions,
-                                peak_directions_nl,
-                                reshape_peaks_for_visualization)
+                                  peak_directions,
+                                  peak_directions_nl,
+                                  reshape_peaks_for_visualization)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, all_tensor_evecs, multi_tensor_odf
@@ -227,7 +231,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (90, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -238,7 +246,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [45, 45, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -249,7 +261,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (60, 0)]
     fractions = [40, 40, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
@@ -261,7 +277,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [35, 35, 20, 10]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 3, 2)
@@ -273,7 +293,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [25, 25, 25, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .15, 5.)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 2)
@@ -285,7 +309,11 @@ def test_peak_directions_thorough():
                        [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0), (90, 0), (90, 45)]
     fractions = [30, 30, 20, 20]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
@@ -299,7 +327,11 @@ def test_peak_directions_thorough():
     # four peaks and one them quite small
     fractions = [35, 35, 20, 10]
 
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals,
+                                            angles,
+                                            fractions,
+                                            100,
+                                            None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
@@ -457,6 +489,28 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
+    # Test serialization and deserialization:
+    for normalize_peaks in [True, False]:
+        for return_odf in [True, False]:
+            for return_sh in [True, False]:
+                pam = peaks_from_model(model, data, _sphere, .5, 45,
+                                       normalize_peaks=normalize_peaks,
+                                       return_odf=return_odf,
+                                       return_sh=return_sh)
+
+                b = BytesIO()
+                pickle.dump(pam, b)
+                b.seek(0)
+                new_pam = pickle.load(b)
+                b.close()
+
+                for attr in ['peak_dirs', 'peak_values', 'peak_indices',
+                             'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
+                    assert_array_equal(getattr(pam, attr),
+                                       getattr(new_pam, attr))
+                    assert_array_equal(pam.sphere.vertices,
+                                       new_pam.sphere.vertices)
+
 
 def test_peaksFromModelParallel():
     SNR = 100
@@ -484,33 +538,44 @@ def test_peaksFromModelParallel():
                                   normalize_peaks=True, return_odf=True,
                                   return_sh=True, parallel=False)
 
-    assert_equal(pam_multi.gfa.dtype, pam_single.gfa.dtype)
-    assert_equal(pam_multi.gfa.shape, pam_single.gfa.shape)
-    assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
+    pam_multi_inv1 = peaks_from_model(model, data, _sphere, .5, 45,
+                                      normalize_peaks=True, return_odf=True,
+                                      return_sh=True, parallel=True,
+                                      nbr_processes=0)
 
-    assert_equal(pam_multi.qa.dtype, pam_single.qa.dtype)
-    assert_equal(pam_multi.qa.shape, pam_single.qa.shape)
-    assert_array_almost_equal(pam_multi.qa, pam_single.qa)
+    pam_multi_inv2 = peaks_from_model(model, data, _sphere, .5, 45,
+                                      normalize_peaks=True, return_odf=True,
+                                      return_sh=True, parallel=True,
+                                      nbr_processes=-2)
 
-    assert_equal(pam_multi.peak_values.dtype, pam_single.peak_values.dtype)
-    assert_equal(pam_multi.peak_values.shape, pam_single.peak_values.shape)
-    assert_array_almost_equal(pam_multi.peak_values, pam_single.peak_values)
+    for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
+        assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
+        assert_equal(pam.gfa.shape, pam_single.gfa.shape)
+        assert_array_almost_equal(pam.gfa, pam_single.gfa)
 
-    assert_equal(pam_multi.peak_indices.dtype, pam_single.peak_indices.dtype)
-    assert_equal(pam_multi.peak_indices.shape, pam_single.peak_indices.shape)
-    assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)
+        assert_equal(pam.qa.dtype, pam_single.qa.dtype)
+        assert_equal(pam.qa.shape, pam_single.qa.shape)
+        assert_array_almost_equal(pam.qa, pam_single.qa)
 
-    assert_equal(pam_multi.peak_dirs.dtype, pam_single.peak_dirs.dtype)
-    assert_equal(pam_multi.peak_dirs.shape, pam_single.peak_dirs.shape)
-    assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)
+        assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
+        assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
+        assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
 
-    assert_equal(pam_multi.shm_coeff.dtype, pam_single.shm_coeff.dtype)
-    assert_equal(pam_multi.shm_coeff.shape, pam_single.shm_coeff.shape)
-    assert_array_almost_equal(pam_multi.shm_coeff, pam_single.shm_coeff)
+        assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
+        assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
+        assert_array_equal(pam.peak_indices, pam_single.peak_indices)
 
-    assert_equal(pam_multi.odf.dtype, pam_single.odf.dtype)
-    assert_equal(pam_multi.odf.shape, pam_single.odf.shape)
-    assert_array_almost_equal(pam_multi.odf, pam_single.odf)
+        assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
+        assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
+        assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
+
+        assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
+        assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
+        assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
+
+        assert_equal(pam.odf.dtype, pam_single.odf.dtype)
+        assert_equal(pam.odf.shape, pam_single.odf.shape)
+        assert_array_almost_equal(pam.odf, pam_single.odf)
 
 
 def test_peaks_shm_coeff():

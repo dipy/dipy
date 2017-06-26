@@ -2,7 +2,7 @@
 Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
-from .peaks import peak_directions, default_sphere
+from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.local.direction_getter import DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
@@ -81,7 +81,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
     """
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere, pmf_threshold=0.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -93,6 +93,9 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        pmf_threshold : float [0., 1.]
+            Used to remove direction from the probability mass function for
+            selecting the tracking direction.
         relative_peak_threshold : float in [0., 1.]
             Used for extracting initial tracking directions. Passed to
             peak_directions.
@@ -114,11 +117,11 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
                    "points in sphere.")
             raise ValueError(msg)
         pmf_gen = SimplePmfGen(pmf)
-        return klass(pmf_gen, max_angle, sphere, **kwargs)
+        return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
-    def from_shcoeff(klass, shcoeff, max_angle, sphere, basis_type=None,
-                     **kwargs):
+    def from_shcoeff(klass, shcoeff, max_angle, sphere, pmf_threshold=0.1,
+                     basis_type=None, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere.
 
@@ -136,6 +139,9 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        pmf_threshold : float [0., 1.]
+            Used to remove direction from the probability mass function for
+            selecting the tracking direction.
         basis_type : name of basis
             The basis that ``shcoeff`` are associated with.
             ``dipy.reconst.shm.real_sym_sh_basis`` is used by default.
@@ -152,21 +158,25 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
         """
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
-        return klass(pmf_gen, max_angle, sphere, **kwargs)
+        return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
+                 **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
         ----------
         pmf_gen : PmfGen
-            Used to get probability mass function for choosing tracking
+            Used to get probability mass function for selecting tracking
             directions.
         max_angle : float, [0, 90]
             The maximum allowed angle between incoming direction and new
             direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        pmf_threshold : float [0., 1.]
+            Used to remove direction from the probability mass function for
+            selecting the tracking direction.
         relative_peak_threshold : float in [0., 1.]
             Used for extracting initial tracking directions. Passed to
             peak_directions.
@@ -181,6 +191,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         """
         PeakDirectionGetter.__init__(self, sphere, **kwargs)
         self.pmf_gen = pmf_gen
+        self.pmf_threshold = pmf_threshold
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
         cos_similarity = np.cos(np.deg2rad(max_angle))
@@ -235,6 +246,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         """
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf(point)
+        pmf[pmf < self.pmf_threshold] = 0
         cdf = (self._adj_matrix[tuple(direction)] * pmf).cumsum()
         if cdf[-1] == 0:
             return 1
@@ -271,6 +283,7 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         """
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf(point)
+        pmf[pmf < self.pmf_threshold] = 0
         cdf = self._adj_matrix[tuple(direction)] * pmf
         idx = np.argmax(cdf)
 

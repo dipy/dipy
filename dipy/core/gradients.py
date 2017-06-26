@@ -1,6 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
-from ..utils.six import string_types
+from dipy.utils.six import string_types
 
 import numpy as np
 try:
@@ -9,9 +9,10 @@ except ImportError:   # Some elderly scipy doesn't have polar
     from dipy.fixes.scipy import polar
 from scipy.linalg import inv
 
-from ..io import gradients as io
-from .onetime import auto_attr
-from .geometry import vector_norm
+from dipy.io import gradients as io
+from dipy.core.onetime import auto_attr
+from dipy.core.geometry import vector_norm
+from dipy.core.sphere import disperse_charges, HemiSphere
 
 
 class GradientTable(object):
@@ -20,7 +21,8 @@ class GradientTable(object):
     Parameters
     ----------
     gradients : array_like (N, 3)
-        N diffusion gradients
+        Diffusion gradients. The direction of each of these vectors corresponds
+        to the b-vector, and the length corresponds to the b-value.
     b0_threshold : float
         Gradients with b-value less than or equal to `b0_threshold` are
         considered as b0s i.e. without diffusion weighting.
@@ -46,6 +48,12 @@ class GradientTable(object):
     See Also
     --------
     gradient_table
+
+    Notes
+    --------
+    The GradientTable object is immutable. Do NOT assign attributes.
+    If you have your gradient table in a bval & bvec format, we recommend
+    using the factory function gradient_table
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
@@ -150,6 +158,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
     return grad_table
 
+
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                    b0_threshold=0, atol=1e-2):
     """A general function for creating diffusion MR gradients.
@@ -244,7 +253,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0] > 1:
+        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
@@ -307,3 +316,71 @@ def reorient_bvecs(gtab, affines):
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
     return gradient_table(gtab.bvals, return_bvecs)
+
+
+def generate_bvecs(N, iters=5000):
+    """Generates N bvectors.
+
+    Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
+    a unit sphere.
+
+    Parameters
+    ----------
+    N : int
+        The number of bvectors to generate. This should be equal to the number
+        of bvals used.
+    iters : int
+        Number of iterations to run.
+
+    Returns
+    -------
+    bvecs : (N,3) ndarray
+        The generated directions, represented as a unit vector, of each
+        gradient.
+    """
+    theta = np.pi * np.random.rand(N)
+    phi = 2 * np.pi * np.random.rand(N)
+    hsph_initial = HemiSphere(theta=theta, phi=phi)
+    hsph_updated, potential = disperse_charges(hsph_initial, iters)
+    bvecs = hsph_updated.vertices
+    return bvecs
+
+
+def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
+    """
+    Check if you have enough different b-values in your gradient table
+
+    Parameters
+    ----------
+    gtab : GradientTable class instance.
+
+    n_bvals : int
+        The number of different b-values you are checking for.
+    non_zero : bool
+        Whether to check only non-zero bvalues. In this case, we will require
+        at least `n_bvals` *non-zero* b-values (where non-zero is defined
+        depending on the `gtab` object's `b0_threshold` attribute)
+    bmag : int
+        The order of magnitude of the b-values used. The function will
+        normalize the b-values relative $10^{bmag - 1}$. Default: derive this
+        value from the maximal b-value provided: $bmag=log_{10}(max(bvals))$.
+
+    Returns
+    -------
+    bool : Whether there are at least `n_bvals` different b-values in the
+    gradient table used.
+    """
+    bvals = gtab.bvals.copy()
+    if non_zero:
+        bvals = bvals[~gtab.b0s_mask]
+
+    if bmag is None:
+        bmag = int(np.log10(np.max(bvals)))
+
+    b = bvals / (10 ** (bmag - 1))  # normalize b units
+    b = b.round()
+    uniqueb = np.unique(b)
+    if uniqueb.shape[0] < n_bvals:
+        return False
+    else:
+        return True

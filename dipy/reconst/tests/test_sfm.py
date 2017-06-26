@@ -41,10 +41,10 @@ def test_sfm():
         npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
         npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
         npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
-
         # Fit zeros and you will get back zeros
-        npt.assert_almost_equal(sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
-                                np.zeros(sfmodel.design_matrix[0].shape[-1]))
+        npt.assert_almost_equal(
+            sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
+            np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
 @npt.dec.skipif(not sfm.has_sklearn)
@@ -76,7 +76,7 @@ def test_sfm_background():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
-    to_fit = data[0,0,0]
+    to_fit = data[0, 0, 0]
     to_fit[gtab.b0s_mask] = 0
     sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS')
     sffit = sfmodel.fit(to_fit)

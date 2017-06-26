@@ -4,8 +4,10 @@
 
 Run scripts and check outputs
 """
+'''
 from __future__ import division, print_function, absolute_import
 
+import glob
 import os
 import shutil
 
@@ -19,21 +21,22 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_data
 
-# Quickbundles command-line requires matplotlib: 
+# Quickbundles command-line requires matplotlib:
 try:
     import matplotlib
     no_mpl = False
 except ImportError:
     no_mpl = True
 
-from .scriptrunner import ScriptRunner
+from dipy.tests.scriptrunner import ScriptRunner
 
 runner = ScriptRunner(
-    script_sdir = 'bin',
-    debug_print_var = 'NIPY_DEBUG_PRINT')
+    script_sdir='bin',
+    debug_print_var='NIPY_DEBUG_PRINT')
 run_command = runner.run_command
 
 DATA_PATH = abspath(pjoin(dirname(__file__), 'data'))
+
 
 def test_dipy_peak_extraction():
     # test dipy_peak_extraction script
@@ -60,7 +63,7 @@ def assert_image_shape_affine(filename, shape, affine):
     assert_true(os.path.isfile(filename))
     image = nib.load(filename)
     assert_equal(image.shape, shape)
-    nt.assert_array_almost_equal(image.get_affine(), affine)
+    nt.assert_array_almost_equal(image.affine, affine)
 
 
 def test_dipy_fit_tensor_again():
@@ -76,7 +79,7 @@ def test_dipy_fit_tensor_again():
         assert_equal(out[0], 0)
         # Get expected values
         img = nib.load("small_25.nii.gz")
-        affine = img.get_affine()
+        affine = img.affine
         shape = img.shape[:-1]
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
@@ -93,12 +96,13 @@ def test_dipy_fit_tensor_again():
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
         # Call script
-        cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
+        cmd = ["dipy_fit_tensor", "--save-tensor",
+               "--mask=none", "small_25.nii.gz"]
         out = run_command(cmd)
         assert_equal(out[0], 0)
         # Get expected values
         img = nib.load("small_25.nii.gz")
-        affine = img.get_affine()
+        affine = img.affine
         shape = img.shape[:-1]
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
@@ -113,6 +117,7 @@ def test_dipy_fit_tensor_again():
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
 
+
 @nt.dec.skipif(no_mpl)
 def test_qb_commandline():
     with InTemporaryDirectory():
@@ -121,3 +126,26 @@ def test_qb_commandline():
                '--out_file', 'tracks300.trk']
         out = run_command(cmd)
         assert_equal(out[0], 0)
+
+@nt.dec.skipif(no_mpl)
+def test_qb_commandline_output_path_handling():
+    with InTemporaryDirectory():
+        # Create temporary subdirectory for input and for output
+        os.mkdir('work')
+        os.mkdir('output')
+
+        os.chdir('work')
+        tracks_file = get_data('fornix')
+
+        # Need to specify an output directory with a "../" style path
+        # to trigger old bug.
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+               '--out_file', os.path.join('..', 'output', 'tracks300.trk')]
+        out = run_command(cmd)
+        assert_equal(out[0], 0)
+
+        # Make sure the files were created in the output directory
+        os.chdir('../')
+        output_files_list = glob.glob('output/tracks300_*.trk')
+        assert_true(output_files_list)
+'''

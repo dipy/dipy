@@ -12,12 +12,12 @@ def read_bvec_file(filename, atol=.001):
     file should have three rows, where the rows are the x, y, and z
     components of the normalized gradient direction for each of the
     volumes.
-    
+
     Parameters
     ------------
-    filename : 
+    filename :
         The path to the either the bvec or bval file
-    atol : float, optional 
+    atol : float, optional
         The tolorance used to check all the gradient directions are
         normalized. Defult is .001
 
@@ -35,7 +35,7 @@ def read_bvec_file(filename, atol=.001):
         bval = filename
     else:
         raise ValueError('filename must have .bvec or .bval extension')
-    
+
     b_values = np.loadtxt(bval)
     grad_table = np.loadtxt(bvec)
     if grad_table.shape[0] != 3:
@@ -43,18 +43,22 @@ def read_bvec_file(filename, atol=.001):
     if b_values.ndim != 1:
         raise IOError('bval file should have one row')
     if b_values.shape[0] != grad_table.shape[1]:
-        raise IOError('the gradient file and b value file should have the same number of columns')
+        raise IOError('the gradient file and b value fileshould'
+                      'have the same number of columns')
 
     grad_norms = np.sqrt((grad_table**2).sum(0))
     if not np.allclose(grad_norms[b_values > 0], 1, atol=atol):
-        raise IOError('the magnitudes of the gradient directions are not within '+str(atol)+' of 1') 
-    grad_table[:,b_values > 0] = grad_table[:,b_values > 0]/grad_norms[b_values > 0]
-    
+        raise IOError('the magnitudes of the gradient directions' +
+                      'are not within ' + str(atol) + ' of 1')
+    grad_table[:, b_values > 0] = (grad_table[:, b_values > 0] /
+                                   grad_norms[b_values > 0])
+
     return (grad_table, b_values)
+
 
 def ornt_mapping(ornt1, ornt2):
     """Calculates the mapping needing to get from orn1 to orn2"""
-    
+
     mapping = np.empty((len(ornt1), 2), 'int')
     mapping[:, 0] = -1
     A = ornt1[:, 0].argsort()
@@ -64,6 +68,7 @@ def ornt_mapping(ornt1, ornt2):
     sign = ornt2[:, 1] * ornt1[mapping[:, 0], 1]
     mapping[:, 1] = sign
     return mapping
+
 
 def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     """Changes the orientation of a gradients or other vectors
@@ -103,7 +108,7 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
         new_ornt = orientation_from_string(new_ornt)
 
     n = input.shape[axis]
-    if current_ornt.shape != (n,2) or new_ornt.shape != (n,2):
+    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
         raise ValueError("orientations do not match")
 
     input = np.asarray(input)
@@ -113,14 +118,15 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     out_view *= mapping[:, 1]
     return output
 
+
 def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
     if isinstance(new_ornt, str):
         new_ornt = orientation_from_string(new_ornt)
-    
+
     n = input.shape[axis]
-    if current_ornt.shape != (n,2) or new_ornt.shape != (n,2):
+    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
         raise ValueError("orientations do not match")
 
     mapping = ornt_mapping(current_ornt, new_ornt)
@@ -134,10 +140,11 @@ def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     output *= sign
     return output
 
+
 def orientation_from_string(string_ornt):
     """Returns an array representation of an ornt string"""
-    orientation_dict = dict(r=(0,1), l=(0,-1), a=(1,1), 
-                            p=(1,-1), s=(2,1), i=(2,-1))
+    orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
+                            p=(1, -1), s=(2, 1), i=(2, -1))
     ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
     ornt = np.array(ornt)
     if _check_ornt(ornt):
@@ -145,17 +152,19 @@ def orientation_from_string(string_ornt):
         raise ValueError(msg)
     return ornt
 
+
 def orientation_to_string(ornt):
     """Returns a string representation of a 3d ornt"""
     if _check_ornt(ornt):
         msg = repr(ornt) + " does not seem to be a valid orientation"
         raise ValueError(msg)
-    orientation_dict = {(0,1):'r', (0,-1):'l', (1,1):'a',
-                        (1,-1):'p', (2,1):'s', (2,-1):'i'}
+    orientation_dict = {(0, 1): 'r', (0, -1): 'l', (1, 1): 'a',
+                        (1, -1): 'p', (2, 1): 's', (2, -1): 'i'}
     ornt_string = ''
     for ii in ornt:
         ornt_string += orientation_dict[(ii[0], ii[1])]
     return ornt_string
+
 
 def _check_ornt(ornt):
     uniq = np.unique(ornt[:, 0])

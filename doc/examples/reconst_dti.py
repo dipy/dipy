@@ -163,7 +163,7 @@ affine matrix which transform the image's coordinates to the world coordinates.
 Here, we choose to save the FA in float32.
 """
 
-fa_img = nib.Nifti1Image(FA.astype(np.float32), img.get_affine())
+fa_img = nib.Nifti1Image(FA.astype(np.float32), img.affine)
 nib.save(fa_img, 'tensor_fa.nii.gz')
 
 """
@@ -172,7 +172,7 @@ using matplotlib_'s imshow. In the same way you can save the eigen values, the
 eigen vectors or any other properties of the Tensor.
 """
 
-evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.get_affine())
+evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.affine)
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
@@ -186,7 +186,7 @@ eigen-values of the TensorFit class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
-nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.get_affine()), 'tensors_md.nii.gz')
+nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.affine), 'tensors_md.nii.gz')
 
 """
 The other is to call the TensorFit class method:
@@ -203,7 +203,7 @@ that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 
 FA = np.clip(FA, 0, 1)
 RGB = color_fa(FA, tenfit.evecs)
-nib.save(nib.Nifti1Image(np.array(255 * RGB, 'uint8'), img.get_affine()), 'tensor_rgb.nii.gz')
+nib.save(nib.Nifti1Image(np.array(255 * RGB, 'uint8'), img.affine), 'tensor_rgb.nii.gz')
 
 """
 Let's try to visualize the tensor ellipsoids of a small rectangular

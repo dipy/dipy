@@ -55,7 +55,9 @@ def test_feature_resample():
             super(ResampleFeature, self).__init__(is_order_invariant=False)
             self.nb_points = nb_points
             if nb_points <= 0:
-                raise ValueError("ResampleFeature: `nb_points` must be strictly positive: {0}".format(nb_points))
+                msg = ("ResampleFeature: `nb_points` must be strictly"
+                       " positive: {0}").format(nb_points)
+                raise ValueError(msg)
 
         def infer_shape(self, streamline):
             return (self.nb_points, streamline.shape[1])
@@ -67,8 +69,9 @@ def test_feature_resample():
     assert_raises(ValueError, ResampleFeature, nb_points=0)
 
     max_points = max(map(len, [s1, s2, s3, s4]))
-    for nb_points in [1, 5, 2*max_points]:
-        for feature in [dipymetric.ResampleFeature(nb_points), ResampleFeature(nb_points)]:
+    for nb_points in [2, 5, 2*max_points]:
+        for feature in [dipymetric.ResampleFeature(nb_points),
+                        ResampleFeature(nb_points)]:
             for s in [s1, s2, s3, s4]:
                 # Test method infer_shape
                 assert_equal(feature.infer_shape(s), (nb_points, s.shape[1]))
@@ -76,14 +79,16 @@ def test_feature_resample():
                 # Test method extract
                 features = feature.extract(s)
                 assert_equal(features.shape, (nb_points, s.shape[1]))
-                assert_array_almost_equal(features, set_number_of_points(s, nb_points))
+                assert_array_almost_equal(features,
+                                          set_number_of_points(s, nb_points))
 
             # This feature type is not order invariant
             assert_false(feature.is_order_invariant)
             for s in [s1, s2, s3, s4]:
                 features = feature.extract(s)
                 features_flip = feature.extract(s[::-1])
-                assert_array_equal(features_flip, set_number_of_points(s[::-1], nb_points))
+                assert_array_equal(features_flip,
+                                   set_number_of_points(s[::-1], nb_points))
                 assert_true(np.any(np.not_equal(features, features_flip)))
 
 
@@ -216,7 +221,8 @@ def test_feature_vector_of_endpoints():
 
 
 def test_feature_extract():
-    # Test that features are automatically cast into float32 when coming from Python space
+    # Test that features are automatically cast into float32 when
+    # coming from Python space
     class CenterOfMass64bit(dipymetric.Feature):
         def infer_shape(self, streamline):
             return streamline.shape[1]
@@ -224,11 +230,14 @@ def test_feature_extract():
         def extract(self, streamline):
             return np.mean(streamline.astype(np.float64), axis=0)
 
+    rng = np.random.RandomState(1234)
     nb_streamlines = 100
     feature_shape = (1, 3)  # One N-dimensional point
     feature = CenterOfMass64bit()
 
-    streamlines = [np.arange(np.random.randint(20, 30) * 3).reshape((-1, 3)).astype(np.float32) for i in range(nb_streamlines)]
+    nb_points = rng.randint(20, 30, size=(nb_streamlines,)) * 3
+    streamlines = [np.arange(nb).reshape((-1, 3)).astype(np.float32)
+                   for nb in nb_points]
     features = extract(feature, streamlines)
 
     assert_equal(len(features), len(streamlines))
@@ -240,15 +249,14 @@ def test_feature_extract():
             return 1
 
         def extract(self, streamline):
-            return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
+            square_norms = np.sum((streamline[1:] - streamline[:-1]) ** 2)
+            return np.sum(np.sqrt(square_norms))
 
     nb_streamlines = 100
     feature_shape = (1, 1)  # One scalar represented as a 2D array
     feature = ArcLengthFeature()
 
-    streamlines = [np.arange(np.random.randint(20, 30) * 3).reshape((-1, 3)).astype(np.float32) for i in range(nb_streamlines)]
     features = extract(feature, streamlines)
-
     assert_equal(len(features), len(streamlines))
     assert_equal(features[0].shape, feature_shape)
 
@@ -296,7 +304,8 @@ def test_using_python_feature_with_cython_metric():
             return long(1)
 
         def extract(self, streamline):
-            return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
+            square_norms = np.sum((streamline[1:] - streamline[:-1]) ** 2)
+            return np.sum(np.sqrt(square_norms))
 
     # Test using Python Feature with Cython Metric
     feature = ArcLengthFeature()

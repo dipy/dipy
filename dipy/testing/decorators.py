@@ -60,12 +60,12 @@ def xvfb_it(my_test):
     # When we use verbose testing we want the name:
     fname = my_test.__name__
 
-    def test_with_xvfb():
+    def test_with_xvfb(*args, **kwargs):
         if use_xvfb:
             from xvfbwrapper import Xvfb
             display = Xvfb(width=1920, height=1080)
             display.start()
-        my_test()
+        my_test(*args, **kwargs)
         if use_xvfb:
             display.stop()
     # Plant it back in and return the new function:

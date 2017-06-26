@@ -58,8 +58,8 @@ SENSE reconstruction, which has a Rician noise nature and thus N is always 1.
 
 sigma, mask = piesno(data, N=4, return_mask=True)
 
-axial = data[:, :, data.shape[2] / 2, 0].T
-axial_piesno = mask[:, :, data.shape[2] / 2].T
+axial = data[:, :, data.shape[2] // 2, 0].T
+axial_piesno = mask[:, :, data.shape[2] // 2].T
 
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 2)
@@ -80,7 +80,7 @@ plt.savefig('piesno.png', bbox_inches='tight')
    background voxels (right) used to estimate the noise standard deviation**.
 """
 
-nib.save(nib.Nifti1Image(mask, img.get_affine(), img.get_header()),
+nib.save(nib.Nifti1Image(mask, img.affine, img.header),
          'mask_piesno.nii.gz')
 
 print('The noise standard deviation is sigma= ', sigma)

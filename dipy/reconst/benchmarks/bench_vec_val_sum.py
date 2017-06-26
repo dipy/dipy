@@ -6,13 +6,13 @@ Run benchmarks with::
     dire.bench()
 
 If you have doctests enabled by default in nose (with a noserc file or
-environment variable), and you have a numpy version <= 1.6.1, this will also run
-the doctests, let's hope they pass.
+environment variable), and you have a numpy version <= 1.6.1, this will also
+run the doctests, let's hope they pass.
 """
 import numpy as np
 from numpy.random import randn
 
-from ..vec_val_sum import vec_val_vect
+from dipy.reconst.vec_val_sum import vec_val_vect
 
 from numpy.testing import measure, dec
 
@@ -21,7 +21,8 @@ try:
 except AttributeError:
     with_einsum = dec.skipif(True, "Need einsum for benchmark")
 else:
-    with_einsum = lambda f : f
+    def with_einsum(f): return f
+
 
 @with_einsum
 def bench_vec_val_vect():
@@ -29,7 +30,8 @@ def bench_vec_val_vect():
     repeat = 100
     shape = (100, 100)
     evecs, evals = randn(*(shape + (3, 3))), randn(*(shape + (3,)))
-    etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)",
+    etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals, \
+                               evecs)",
                     repeat)
     vtime = measure("vec_val_vect(evecs, evals)", repeat)
     print("einsum %4.2f; vec_val_vect %4.2f" % (etime, vtime))

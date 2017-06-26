@@ -8,6 +8,8 @@ Here we present an example for visualizing slices from 3D images.
 
 """
 
+from __future__ import division
+
 import os
 import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
@@ -26,7 +28,7 @@ fname_t1 = os.path.join(os.path.expanduser('~'), '.dipy',
 
 img = nib.load(fname_t1)
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 """
 Create a Renderer object which holds all the actors which we want to visualize.
@@ -69,11 +71,11 @@ copy the actor first.
 slice_actor2 = slice_actor.copy()
 
 """
-Now we have a new ``slice_actor`` which displays the middle slice of saggital
+Now we have a new ``slice_actor`` which displays the middle slice of sagittal
 plane.
 """
 
-slice_actor2.display(slice_actor2.shape[0]/2, None, None)
+slice_actor2.display(slice_actor2.shape[0]//2, None, None)
 
 renderer.add(slice_actor2)
 

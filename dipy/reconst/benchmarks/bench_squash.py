@@ -6,8 +6,8 @@ Run all benchmarks with::
     dire.bench()
 
 If you have doctests enabled by default in nose (with a noserc file or
-environment variable), and you have a numpy version <= 1.6.1, this will also run
-the doctests, let's hope they pass.
+environment variable), and you have a numpy version <= 1.6.1, this will also
+run the doctests, let's hope they pass.
 
 
 Run this benchmark with:
@@ -25,6 +25,7 @@ from dipy.core.ndindex import ndindex
 from dipy.reconst.quick_squash import quick_squash
 
 from numpy.testing import measure, dec
+
 
 def old_squash(arr, mask=None, fill=0):
     """Try and make a standard array from an object array
@@ -69,10 +70,9 @@ def old_squash(arr, mask=None, fill=0):
     True
     >>> r.dtype
     dtype('float64')
-
     """
     if mask is None:
-        mask = arr != np.array(None)
+        mask = np.vectorize(lambda x : x is not None)(arr)
     not_none = arr[mask]
     # all None, just return arr
     if not_none.size == 0:
@@ -109,9 +109,9 @@ def old_squash(arr, mask=None, fill=0):
         if not all_scalars:
             return arr
         # See comment about np.result_type above. We sum against the smallest
-        # possible type, bool, and let numpy type promotion find the best common
-        # type. The values might all be Python scalars so we need to cast to
-        # numpy type at the end to be sure of having a dtype.
+        # possible type, bool, and let numpy type promotion find the best
+        # common type. The values might all be Python scalars so we need to
+        # cast to numpy type at the end to be sure of having a dtype.
         dtype = np.asarray(sum(not_none, False)).dtype
         temp = arr.copy()
         temp[~mask] = fill

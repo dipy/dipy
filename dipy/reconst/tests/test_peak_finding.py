@@ -8,6 +8,7 @@ from dipy.data import get_sphere, get_data
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs
 
+
 def test_local_maxima():
     sphere = get_sphere('symmetric724')
     vertices, faces = sphere.vertices, sphere.faces

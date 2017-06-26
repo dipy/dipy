@@ -177,18 +177,21 @@ if __name__ == "__main__":
         all_authors = check_output(author_cmd).splitlines()
         unique_authors = sorted(set(all_authors))
 
-        print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
-        print()
-        print('\n'.join(unique_authors))
-        print()
+        if len(unique_authors) == 0:
+            print("No commits during this period.")
+        else: 
+            print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
+            print()
+            print('\n'.join(unique_authors))
+            print()
 
-    print()
-    print("We closed a total of %d issues, %d pull requests and %d regular issues;\n"
-          "this is the full list (generated with the script \n"
-          ":file:`tools/github_stats.py`):" % (n_total, n_pulls, n_issues))
-    print()
-    print('Pull Requests (%d):\n' % n_pulls)
-    report(pulls, show_urls)
-    print()
-    print('Issues (%d):\n' % n_issues)
-    report(issues, show_urls)
+            print()
+            print("We closed a total of %d issues, %d pull requests and %d regular issues;\n"
+                  "this is the full list (generated with the script \n"
+                  ":file:`tools/github_stats.py`):" % (n_total, n_pulls, n_issues))
+            print()
+            print('Pull Requests (%d):\n' % n_pulls)
+            report(pulls, show_urls)
+            print()
+            print('Issues (%d):\n' % n_issues)
+            report(issues, show_urls)

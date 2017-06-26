@@ -3,6 +3,7 @@ from dipy.core.sphere import Sphere
 
 from numpy.testing import assert_, assert_equal, run_module_suite
 
+
 class TestModel(Cache):
     def __init__(self):
         pass

@@ -4,13 +4,16 @@ from __future__ import division, print_function, absolute_import
 from math import floor
 from platform import architecture
 
+
 def WichmannHill2006():
     '''
     B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
     Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
     December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
-    10.1016/j.csda.2006.05.019. (http://www.sciencedirect.com/science/article/B6V8V-4K7F86W-2/2/a3a33291b8264e4c882a8f21b6e43351)
-    for advice on generating many sequences for use together, and on alternative algorithms and codes
+    10.1016/j.csda.2006.05.019.
+    (http://www.sciencedirect.com/science/article/B6V8V-4K7F86W-2/2/a3a33291b8264e4c882a8f21b6e43351)
+    for advice on generating many sequences for use together, and on
+    alternative algorithms and codes
 
     Examples
     ----------
@@ -24,7 +27,8 @@ def WichmannHill2006():
 
     if architecture()[0] == '64':
 
-        #If 64 bits are available then the following lines of code will be faster.
+        # If 64 bits are available then the following lines of code will be
+        # faster.
         ix = (11600 * ix) % 2147483579
         iy = (47003 * iy) % 2147483543
         iz = (23000 * iz) % 2147483423
@@ -32,7 +36,7 @@ def WichmannHill2006():
 
     else:
 
-        #If only 32 bits are available
+        # If only 32 bits are available
 
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
         iy = 47003 * (ix %  45688) - 10479 * (iy /  45688)
@@ -91,8 +95,8 @@ def WichmannHill1982():
     if iz < 0:
         iz = iz + 30323
     '''
-    return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307.
-                          + np.float(iz) / 30323., 1.0)
+    return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307. +
+                        np.float(iz) / 30323., 1.0)
 
 
 def LEcuyer():
@@ -113,7 +117,7 @@ def LEcuyer():
         s1 = s1 + 2147483563
     k = s2 / 52774
     s2 = 40692 * (s2 - k * 52774) - k * 3791
-    if  s2 < 0:
+    if s2 < 0:
         s2 = s2 + 2147483399
     z = s1 - s2
     if z < 0:

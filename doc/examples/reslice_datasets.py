@@ -44,13 +44,13 @@ Load the affine of the image. The affine is the transformation matrix
 which maps image coordinates to world (mm) coordinates.
 """
 
-affine = img.get_affine()
+affine = img.affine
 
 """
 Load and show the zooms which hold the voxel size.
 """
 
-zooms = img.get_header().get_zooms()[:3]
+zooms = img.header.get_zooms()[:3]
 zooms
 
 """

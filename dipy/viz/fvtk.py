@@ -1,8 +1,10 @@
-''' Fvtk module implements simple visualization functions using VTK.
+""" Fvtk module implements simple visualization functions using VTK.
 
 The main idea is the following:
-A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
-You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+A window can have one or more renderers. A renderer can have none,
+one or more actors. Examples of actors are a sphere, line, point etc.
+You basically add actors in a renderer and in that way you can
+visualize the forementioned objects e.g. sphere, line ...
 
 Examples
 ---------
@@ -14,7 +16,7 @@ Examples
 
 For more information on VTK there many neat examples in
 http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
-'''
+"""
 from __future__ import division, print_function, absolute_import
 from warnings import warn
 
@@ -25,7 +27,7 @@ import numpy as np
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
@@ -37,6 +39,8 @@ if have_matplotlib:
     get_cmap = cm.get_cmap
 else:
     from dipy.data import get_cmap
+
+from dipy.viz.colormap import create_colormap
 
 # a track buffer used only with picking tracks
 track_buffer = []
@@ -66,6 +70,16 @@ if have_vtk:
     from dipy.viz.window import (ren, renderer, add, clear, rm, rm_all,
                                  show, record, snapshot)
     from dipy.viz.actor import line, streamtube, slicer, axes
+
+    try:
+        from vtk import vtkVolumeTextureMapper2D
+        have_vtk_texture_mapper2D = True
+    except:
+        have_vtk_texture_mapper2D = False
+
+else:
+    ren, have_ren, _ = optional_package('dipy.viz.window.ren',
+                                        'Python VTK is not installed')
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
@@ -278,7 +292,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         As given by volumeimages.
     center_origin : int {0,1}
         It considers that the center of the volume is the
-        point ``(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)``.
+        point ``(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,
+            -vol.shape[2]/2.0+0.5)``.
     info : int {0,1}
         If 1 it prints out some info about the volume, the method and the
         dataset.
@@ -286,7 +301,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         Use trilinear interpolation, default 1, gives smoother rendering. If
         you want faster interpolation use 0 (Nearest).
     maptype : int {0,1}
-        The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering.
+        The maptype is a very important parameter which affects the
+        raycasting algorithm in use for the rendering.
         The options are:
         If 0 then vtkVolumeTextureMapper2D is used.
         If 1 then vtkVolumeRayCastFunction is used.
@@ -431,8 +447,12 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     if affine is not None:
 
         aff = vtk.vtkMatrix4x4()
-        aff.DeepCopy((affine[0, 0], affine[0, 1], affine[0, 2], affine[0, 3], affine[1, 0], affine[1, 1], affine[1, 2], affine[1, 3], affine[2, 0], affine[
-                     2, 1], affine[2, 2], affine[2, 3], affine[3, 0], affine[3, 1], affine[3, 2], affine[3, 3]))
+        aff.DeepCopy((affine[0, 0], affine[0, 1], affine[0, 2],
+                      affine[0, 3], affine[1, 0], affine[1, 1],
+                      affine[1, 2], affine[1, 3], affine[2, 0],
+                      affine[2, 1], affine[2, 2], affine[2, 3],
+                      affine[3, 0], affine[3, 1], affine[3, 2],
+                      affine[3, 3]))
         # aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],0,affine[1,0],affine[1,1],affine[1,2],0,affine[2,0],affine[2,1],affine[2,2],0,affine[3,0],affine[3,1],affine[3,2],1))
         # aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],127.5,affine[1,0],affine[1,1],affine[1,2],-127.5,affine[2,0],affine[2,1],affine[2,2],-127.5,affine[3,0],affine[3,1],affine[3,2],1))
 
@@ -466,7 +486,9 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         # changeFilter.SetInput(im)
         if center_origin:
             changeFilter.SetOutputOrigin(
-                -vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
+                -vol.shape[0] / 2.0 + 0.5,
+                -vol.shape[1] / 2.0 + 0.5,
+                -vol.shape[2] / 2.0 + 0.5)
             print('ChangeFilter ', changeFilter.GetOutputOrigin())
 
     opacity = vtk.vtkPiecewiseFunction()
@@ -479,6 +501,9 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
             colormap[i, 0], colormap[i, 1], colormap[i, 2], colormap[i, 3])
 
     if(maptype == 0):
+        if not have_vtk_texture_mapper2D:
+            raise ValueError("VolumeTextureMapper2D is not available in your "
+                             "version of VTK")
 
         property = vtk.vtkVolumeProperty()
         property.SetColor(color)
@@ -662,53 +687,6 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
         del skinExtractor
 
     return ass
-
-
-lowercase_cm_name = {'blues':'Blues', 'accent':'Accent'}
-def create_colormap(v, name='jet', auto=True):
-    """Create colors from a specific colormap and return it
-    as an array of shape (N,3) where every row gives the corresponding
-    r,g,b value. The colormaps we use are similar with those of pylab.
-
-    Parameters
-    ----------
-    v : (N,) array
-        vector of values to be mapped in RGB colors according to colormap
-    name : str.
-        Name of the colormap. Currently implemented: 'jet', 'blues',
-        'accent', 'bone' and matplotlib colormaps if you have matplotlib
-        installed.
-    auto : bool,
-        if auto is True then v is interpolated to [0, 10] from v.min()
-        to v.max()
-
-    Notes
-    -----
-    Dipy supports a few colormaps for those who do not use Matplotlib, for
-    more colormaps consider downloading Matplotlib.
-
-    """
-
-    if v.ndim > 1:
-        msg = 'This function works only with 1d arrays. Use ravel()'
-        raise ValueError(msg)
-
-    if auto:
-        v = np.interp(v, [v.min(), v.max()], [0, 1])
-    else:
-        v = np.clip(v, 0, 1)
-
-    # For backwards compatibility with lowercase names
-    newname = lowercase_cm_name.get(name) or name
-
-    colormap = get_cmap(newname)
-    if colormap is None:
-        e_s = "Colormap '%s' is not yet implemented " % name
-        raise ValueError(e_s)
-
-    rgba = colormap(v)
-    rgb = rgba[:, :3].copy()
-    return rgb
 
 
 def _makeNd(array, ndim):
@@ -898,14 +876,15 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
                 pv = 1.
 
             symm = np.vstack((-peaks_dirs[ijk][i] * pv + xyz,
-                               peaks_dirs[ijk][i] * pv + xyz))
+                              peaks_dirs[ijk][i] * pv + xyz))
 
             list_dirs.append(symm)
 
     return line(list_dirs, colors)
 
 
-def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
+def tensor(evals, evecs, scalar_colors=None,
+           sphere=None, scale=2.2, norm=True):
     """Plot many tensors as ellipsoids simultaneously.
 
     Parameters

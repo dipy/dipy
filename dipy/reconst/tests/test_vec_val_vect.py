@@ -2,7 +2,8 @@ import numpy as np
 from numpy.random import randn
 from numpy.testing import assert_almost_equal, dec
 
-from ..vec_val_sum import vec_val_vect
+from dipy.reconst.vec_val_sum import vec_val_vect
+
 
 def make_vecs_vals(shape):
     return randn(*(shape)), randn(*(shape[:-2] + shape[-1:]))
@@ -13,7 +14,7 @@ try:
 except AttributeError:
     with_einsum = dec.skipif(True, "Need einsum for benchmark")
 else:
-    with_einsum = lambda f : f
+    def with_einsum(f): return f
 
 
 @with_einsum

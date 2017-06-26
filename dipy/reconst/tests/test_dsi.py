@@ -18,13 +18,13 @@ from dipy.core.sphere_stats import angular_similarity
 
 
 def test_dsi():
-    #load symmetric 724 sphere
+    # load symmetric 724 sphere
     sphere = get_sphere('symmetric724')
 
-    #load icosahedron sphere
+    # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))
-    gtab = gradient_table(btable[:,0], btable[:,1:])
+    gtab = gradient_table(btable[:, 0], btable[:, 1:])
     data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                             S0=100, angles=[(0, 0), (90, 0)],
                                             fractions=[50, 50], snr=None)
@@ -49,7 +49,7 @@ def test_dsi():
                         2, 1)
 
     assert_equal(dsfit.pdf().shape, 3 * (ds.qgrid_size, ))
-    sb_dummies=sticks_and_ball_dummies(gtab)
+    sb_dummies = sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         odf = ds.fit(data).odf(sphere2)
@@ -102,7 +102,7 @@ def test_multib0_dsi():
 
 
 def sticks_and_ball_dummies(gtab):
-    sb_dummies={}
+    sb_dummies = {}
     S, sticks = SticksAndBall(gtab, d=0.0015, S0=100,
                               angles=[(0, 0)],
                               fractions=[100], snr=None)

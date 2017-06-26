@@ -6,12 +6,12 @@ Run all benchmarks with::
     dipysegment.bench()
 
 If you have doctests enabled by default in nose (with a noserc file or
-environment variable), and you have a numpy version <= 1.6.1, this will also run
-the doctests, let's hope they pass.
+environment variable), and you have a numpy version <= 1.6.1, this will
+also run the doctests, let's hope they pass.
 
 Run this benchmark with:
 
-    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_quickbundles.py
+    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_quickbundles.py
 """
 import numpy as np
 import nibabel as nib
@@ -47,7 +47,7 @@ def bench_quickbundles():
     fornix = [s[0].astype(dtype) for s in streams]
     fornix = streamline_utils.set_number_of_points(fornix, nb_points)
 
-    #Create eight copies of the fornix to be clustered (one in each octant).
+    # Create eight copies of the fornix to be clustered (one in each octant).
     streamlines = []
     streamlines += [s + np.array([100, 100, 100], dtype) for s in fornix]
     streamlines += [s + np.array([100, -100, 100], dtype) for s in fornix]
@@ -69,7 +69,8 @@ def bench_quickbundles():
     print("QuickBundles time: {0:.4}sec".format(qb1_time))
     assert_equal(qb.total_clusters, expected_nb_clusters)
     sizes1 = [qb.partitions()[i]['N'] for i in range(qb.total_clusters)]
-    indices1 = [qb.partitions()[i]['indices'] for i in range(qb.total_clusters)]
+    indices1 = [qb.partitions()[i]['indices']
+                for i in range(qb.total_clusters)]
 
     qb2 = QB_New(threshold)
     qb2_time = measure("clusters = qb2.cluster(streamlines)", repeat)
