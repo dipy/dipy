@@ -31,27 +31,23 @@ The following 48 authors contributed 1491 commits.
 * Matthieu Dumont
 * Nil Goyette
 * Omar Ocegueda Gonzalez
-* Rafael Henriques
 * Rafael Neto Henriques
-* RafaelNH
 * Ranveer Aggarwal
 * Riddhish Bhalodia
 * Rutger Fick
 * Samuel St-Jean
 * Serge Koudoro
 * Shahnawaz Ahmed
-* Sourav
 * Sourav Singh
 * Stephan Meesters
-* StongeEtienne
-* Theaud
+* Stonge Etienne
+* Guillaume Theaud
 * Tingyi Wanyan
 * Tom Wright
 * Vibhatha Abeykoon
 * Yaroslav Halchenko
-* algo
-* etpeterson
-* sdorkenw
+* Eric Peterson
+* Sven Dorkenwald
 * theaverageguy
 
 
