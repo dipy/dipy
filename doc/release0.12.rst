@@ -1,3 +1,9 @@
+.. _release0.12:
+
+====================================
+ Release notes for Dipy version 0.12
+====================================
+
 
 GitHub stats for 2016/02/21 - 2017/06/26 (tag: 0.11.0)
 
@@ -50,7 +56,7 @@ The following 48 authors contributed 1491 commits.
 
 
 We closed a total of 511 issues, 169 pull requests and 342 regular issues;
-this is the full list (generated with the script 
+this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
 Pull Requests (169):
@@ -93,7 +99,7 @@ Pull Requests (169):
 * :ghpull:`1214`: DOC: add a clarification note to simplify_warp_funcion_3d
 * :ghpull:`1208`: Follow PEP8 in reconst (part 1)
 * :ghpull:`1206`: Revert #1204, and add a filter to suppress warnings.
-* :ghpull:`1196`: MRG: Use dipy's array comparisons for tests 
+* :ghpull:`1196`: MRG: Use dipy's array comparisons for tests
 * :ghpull:`1204`: Suppress warnings regarding one-dimensional arrays changes in scipy 0.18
 * :ghpull:`1199`: A lightweight UI for medical visualizations #3: Changes to Event Handling
 * :ghpull:`1202`: Use integer division to avoid errors in indexing
@@ -112,11 +118,11 @@ Pull Requests (169):
 * :ghpull:`1174`: NF: added the repulsion 200 sphere.
 * :ghpull:`1177`: BF: fix interpolation call with Numpy 1.12
 * :ghpull:`1162`: Return S0 value for DTI fits
-* :ghpull:`1147`: add this fix for newer version of pytables. 
+* :ghpull:`1147`: add this fix for newer version of pytables.
 * :ghpull:`1076`: ENH: Add support for ArraySequence in `length` function
 * :ghpull:`1050`: ENH: expand OpenMP utilities and move from denspeed.pyx to dipy.utils
 * :ghpull:`1082`: Add documentation uploading script
-* :ghpull:`1153`: Athena mapmri 
+* :ghpull:`1153`: Athena mapmri
 * :ghpull:`1159`: TST - add tests for various affine matrices for local tracking
 * :ghpull:`1157`: Replace `get_affine` with `affine` and `get_header` with `header`.
 * :ghpull:`1160`: Add Shahnawaz to list of contributors.
@@ -127,15 +133,15 @@ Pull Requests (169):
 * :ghpull:`942`: NF: Added support to colorize each line points indivdually
 * :ghpull:`1141`: Do not cover files related to benchmarks.
 * :ghpull:`1098`: Adding custom interactor for vizualisation
-* :ghpull:`1136`: Update deprecated function.  
+* :ghpull:`1136`: Update deprecated function.
 * :ghpull:`1113`: TST: Test for invariance of model_params to splitting of the data.
 * :ghpull:`1134`: Rebase of https://github.com/nipy/dipy/pull/993
 * :ghpull:`1064`: Faster dti odf
 * :ghpull:`1114`: flexible grid to streamline affine generation and pathlength function
 * :ghpull:`1122`: Add the reconst_dti workflow
 * :ghpull:`1132`: Update .travis.yml and README.md
-* :ghpull:`1125`: Intensity adjustment. Find a better upper bound for interpolating images. 
-* :ghpull:`1130`: Minor corrections for showing surfaces 
+* :ghpull:`1125`: Intensity adjustment. Find a better upper bound for interpolating images.
+* :ghpull:`1130`: Minor corrections for showing surfaces
 * :ghpull:`1092`: Line-based target()
 * :ghpull:`1129`: Fix 1127
 * :ghpull:`1034`: Viz surfaces
@@ -230,7 +236,7 @@ Issues (342):
 * :ghissue:`1273`: Release 0.12 doc fix
 * :ghissue:`1272`: small correction for debugging purpose on nlmeans
 * :ghissue:`1269`: Odf slicer
-* :ghissue:`1143`: Slice through ODF fields 
+* :ghissue:`1143`: Slice through ODF fields
 * :ghissue:`1271`: Viz tut update
 * :ghissue:`1246`: WIP: Replace widget with ui components in example.
 * :ghissue:`1268`: Following up on #1243.
@@ -265,7 +271,7 @@ Issues (342):
 * :ghissue:`994`: Use absolute import in dipy/core
 * :ghissue:`608`: Customize at runtime the number of cores nlmeans is using
 * :ghissue:`865`: PEP8 in test_imwarp
-* :ghissue:`591`: Allow seed_from_mask to generate random seeds 
+* :ghissue:`591`: Allow seed_from_mask to generate random seeds
 * :ghissue:`518`: TODO: aniso2iso module will be completely removed in version 0.10.
 * :ghissue:`328`: "incompatible" import of peaks_from_model in your recent publication
 * :ghissue:`1241`: Csa and csd reconstruction workflow rebased
@@ -301,7 +307,7 @@ Issues (342):
 * :ghissue:`1214`: DOC: add a clarification note to simplify_warp_funcion_3d
 * :ghissue:`1208`: Follow PEP8 in reconst (part 1)
 * :ghissue:`1206`: Revert #1204, and add a filter to suppress warnings.
-* :ghissue:`1196`: MRG: Use dipy's array comparisons for tests 
+* :ghissue:`1196`: MRG: Use dipy's array comparisons for tests
 * :ghissue:`1191`: Test failures for cluster code with current numpy master
 * :ghissue:`1207`: Follow PEP8 in reconst
 * :ghissue:`1204`: Suppress warnings regarding one-dimensional arrays changes in scipy 0.18
@@ -335,11 +341,11 @@ Issues (342):
 * :ghissue:`1177`: BF: fix interpolation call with Numpy 1.12
 * :ghissue:`1162`: Return S0 value for DTI fits
 * :ghissue:`1142`: pytables version and streamlines_format.py example
-* :ghissue:`1147`: add this fix for newer version of pytables. 
+* :ghissue:`1147`: add this fix for newer version of pytables.
 * :ghissue:`1076`: ENH: Add support for ArraySequence in `length` function
 * :ghissue:`1050`: ENH: expand OpenMP utilities and move from denspeed.pyx to dipy.utils
 * :ghissue:`1082`: Add documentation uploading script
-* :ghissue:`1153`: Athena mapmri 
+* :ghissue:`1153`: Athena mapmri
 * :ghissue:`1097`: Added to quantize_evecs: multiprocessing and v
 * :ghissue:`1159`: TST - add tests for various affine matrices for local tracking
 * :ghissue:`1163`: WIP: Combined contour function with slicer to use affine
@@ -365,7 +371,7 @@ Issues (342):
 * :ghissue:`942`: NF: Added support to colorize each line points indivdually
 * :ghissue:`1141`: Do not cover files related to benchmarks.
 * :ghissue:`1098`: Adding custom interactor for vizualisation
-* :ghissue:`1136`: Update deprecated function.  
+* :ghissue:`1136`: Update deprecated function.
 * :ghissue:`1113`: TST: Test for invariance of model_params to splitting of the data.
 * :ghissue:`1134`: Rebase of https://github.com/nipy/dipy/pull/993
 * :ghissue:`1064`: Faster dti odf
@@ -376,12 +382,12 @@ Issues (342):
 * :ghissue:`993`: FIX: Use absolute imports in testing,tests and segment files
 * :ghissue:`673`: WIP: Workflow for syn registration
 * :ghissue:`859`: [WIP] Suppress warnings in tests
-* :ghissue:`983`: PEP8 in sims #884 
+* :ghissue:`983`: PEP8 in sims #884
 * :ghissue:`984`: PEP8 in reconst #881
 * :ghissue:`1009`: Absolute Imports in Tracking
 * :ghissue:`1036`: Estimate S0 from data (DTI)
-* :ghissue:`1125`: Intensity adjustment. Find a better upper bound for interpolating images. 
-* :ghissue:`1130`: Minor corrections for showing surfaces 
+* :ghissue:`1125`: Intensity adjustment. Find a better upper bound for interpolating images.
+* :ghissue:`1130`: Minor corrections for showing surfaces
 * :ghissue:`1092`: Line-based target()
 * :ghissue:`1129`: Fix 1127
 * :ghissue:`1034`: Viz surfaces
@@ -417,14 +423,14 @@ Issues (342):
 * :ghissue:`1101`: Test with optional dependencies (including pytables) on Python 3.
 * :ghissue:`1094`: Updates to FBC measures documentation
 * :ghissue:`1059`: Documentation to discourage misuse of GradientTable
-* :ghissue:`1061`: Inconsistency in specifying S0 values in multi_tensor and single_tensor 
+* :ghissue:`1061`: Inconsistency in specifying S0 values in multi_tensor and single_tensor
 * :ghissue:`1063`: Fixes #1061 : Changed all S0 to 1.0
 * :ghissue:`1089`: BF: fix test error on Python 3
 * :ghissue:`1079`: Return a generator from `orient_by_roi`
 * :ghissue:`1088`: Restored the older implementation of nlmeans
 * :ghissue:`1080`: DOC: TensorModel.__init__ docstring.
 * :ghissue:`1085`: Enhanced workflows
-* :ghissue:`1081`: mean_diffusivity from the reconst.dti module returns incorrect shape 
+* :ghissue:`1081`: mean_diffusivity from the reconst.dti module returns incorrect shape
 * :ghissue:`1031`: improvements for denoise/denspeed.pyx
 * :ghissue:`828`: Fiber to bundle coherence measures
 * :ghissue:`1072`: DOC: Added a coverage badge to README.rst
@@ -458,7 +464,7 @@ Issues (342):
 * :ghissue:`1008`: [WIP] NF: Implementation of CHARMED model
 * :ghissue:`1030`: Fetcher files not found on Windows
 * :ghissue:`1035`: Fix for fetcher files in Windows
-* :ghissue:`1016`: viz.fvtk has no attribute 'ren' 
+* :ghissue:`1016`: viz.fvtk has no attribute 'ren'
 * :ghissue:`1033`: Viz surfaces
 * :ghissue:`1032`: Merge pull request #1 from nipy/master
 * :ghissue:`1029`: Errors building Cython extensions on Python 3.5
@@ -519,9 +525,9 @@ Issues (342):
 * :ghissue:`977`: Relative import fix in dipy/align
 * :ghissue:`875`: PEP8 in denoise
 * :ghissue:`957`: FIX: PEP8 in denoise
-* :ghissue:`960`: PEP8 in sims #884 
-* :ghissue:`961`: PEP8 in reconst #880 
-* :ghissue:`962`: PEP8 in reconst #881 
+* :ghissue:`960`: PEP8 in sims #884
+* :ghissue:`961`: PEP8 in reconst #880
+* :ghissue:`962`: PEP8 in reconst #881
 * :ghissue:`889`: PEP8 in utils
 * :ghissue:`959`: FIX: PEP8 in utils
 * :ghissue:`866`: PEP8 in test_metrics
@@ -555,7 +561,7 @@ Issues (342):
 * :ghissue:`939`: Fixed PEP8 in utils, denoise , tracking and testing
 * :ghissue:`945`: FIX: PEP8 in test_scalespace
 * :ghissue:`937`: BF : Clamping of the value of v in winding function
-* :ghissue:`930`: pep8 fix issue  #896 - "continuation line over-indented for visual indent" 
+* :ghissue:`930`: pep8 fix issue  #896 - "continuation line over-indented for visual indent"
 * :ghissue:`943`: BF: Removed unsused code in slicer
 * :ghissue:`907`: DOC: switch to using mathjax for maths
 * :ghissue:`931`: dipy/tracking/streamlinespeed set_number_of_points crash when nb_points=0
