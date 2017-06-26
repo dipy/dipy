@@ -3,12 +3,12 @@
 Tracking Quick Start
 ====================
 
-This example shows how to perform fiber tracking using Dipy.
+This example shows how to perform fiber tracking using DIPY.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
 reconstructions and then generate deterministic streamlines using the fiber
-directions (peaks) from CSD and fractional anisotropic (FA) as a
-stopping criterion.
+directions (peaks) from CSD and fractional anisotropic (FA) from DTI as a
+stopping criterion for tracking.
 
 Let's load the necessary modules.
 """
@@ -19,7 +19,8 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.direction import peaks_from_model
-from dipy.tracking.eudx import EuDX
+from dipy.tracking.local import LocalTracking, ThresholdTissueClassifier
+from dipy.tracking.utils import seeds_from_mask
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.segment.mask import median_otsu
 from dipy.viz import fvtk
@@ -86,8 +87,12 @@ we can assign the same FA value to every peak direction in the same voxel in
 the following way.
 """
 
+tissue_classifier = ThresholdTissueClassifier(FA, 0.1)
+
 stopping_values = np.zeros(csd_peaks.peak_values.shape)
 stopping_values[:] = FA[..., None]
+
+seeds = seeds_from_mask(FA > 0.3)
 
 """
 For quality assurance we can also visualize a slice from the direction field
@@ -120,13 +125,11 @@ number of seed points. For simplicity, here we will use the first option
 regions with FA < 0.1.
 """
 
-streamline_generator = EuDX(stopping_values,
-                            csd_peaks.peak_indices,
-                            seeds=10**4,
-                            odf_vertices=sphere.vertices,
-                            a_low=0.1)
+streamline_generator = LocalTracking(csd_peaks, tissue_classifier,
+                                     seeds, affine=None,
+                                     step_size=0.5)
 
-streamlines = [streamline for streamline in streamline_generator]
+streamlines = list(streamline_generator)
 
 """
 We can visualize the streamlines using ``fvtk.line`` or ``fvtk.streamtube``.
@@ -160,18 +163,12 @@ Fibernavigator_ or another tool for medical visualization.
 Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
 """
 
+from nibabel.streamlines import save as save_trk
+from nibabel.streamlines import Tractogram
 import nibabel as nib
 
-hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = img.header.get_zooms()[:3]
-hdr['voxel_order'] = 'LAS'
-hdr['dim'] = FA.shape[:3]
 
-csd_streamlines_trk = ((sl, None, None) for sl in streamlines)
-
-csd_sl_fname = 'csd_streamline.trk'
-
-nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
+save_trk(Tractogram(streamlines, img.affine), 'csd_streamline.trk')
 
 nib.save(nib.Nifti1Image(FA, img.affine), 'FA_map.nii.gz')
 
@@ -187,10 +184,6 @@ if __name__ == '__main__':
 
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
-
-.. NOTE::
-    Dipy has a new and very modular fiber tracking machinery. Our new machinery
-    for fiber tracking is featured in the example :ref:`example_tracking_quick_start`.
 
 
 .. include:: ../links_names.inc
