@@ -16,8 +16,8 @@ Highlights
 
 **Dipy 0.12.0** is now available. New features include:
 
-- IVIM Simultaneous modeling of perfusion and diffusion
-- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI
+- IVIM Simultaneous modeling of perfusion and diffusion.
+- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
 - DKI-based microstructural modelling.
 - Free water diffusion tensor imaging.
 - Denoising using Local PCA.
