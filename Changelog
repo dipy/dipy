@@ -27,8 +27,8 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 
 * 0.12 (Tuesday, 26 June 2017)
 
-- IVIM Simultaneous modeling of perfusion and diffusion
-- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI
+- IVIM Simultaneous modeling of perfusion and diffusion.
+- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
 - DKI-based microstructural modelling.
 - Free water diffusion tensor imaging.
 - Denoising using Local PCA.
