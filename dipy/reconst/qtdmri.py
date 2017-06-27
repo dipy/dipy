@@ -1,20 +1,21 @@
 import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.core.geometry import cart2sphere
-from warnings import warn
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from scipy.special import hermite, genlaguerre, gamma
+from scipy.special import genlaguerre, gamma
 from scipy import special
 from dipy.reconst import mapmri
-from dipy.core.gradients import gradient_table
-from scipy.misc import factorial, factorial2
+try:  # preferred scipy >= 0.14, required scipy >= 1.0
+    from scipy.special import factorial, factorial2
+except ImportError:
+    from scipy.misc import factorial, factorial2
+from scipy.optimize import fmin_l_bfgs_b
 from dipy.reconst.shm import real_sph_harm
-from cvxopt import matrix, solvers
 import dipy.reconst.dti as dti
 import cvxpy
-from scipy.optimize import curve_fit, fmin_l_bfgs_b
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 import random
+
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
@@ -49,7 +50,7 @@ class MaptimeModel(Cache):
         radial_order : unsigned int,
             an even integer that represent the order of the basis.
         time_order : unsigned int,
-        
+
         laplacian_regularization: bool,
             Regularize using the Laplacian of the SHORE basis.
         laplacian_weighting: string or scalar,
@@ -73,36 +74,23 @@ class MaptimeModel(Cache):
 
     def __init__(self,
                  gtab,
-                 fit_tau_inf=False,
-                 fit_tau=True,
                  radial_order=4,
                  time_order=3,
                  cartesian=True,
                  anisotropic_scaling=True,
                  normalization=False,
-                 #tau0_boundary_condition=True,
-                 number_of_b0s=50,
                  laplacian_regularization=False,
                  laplacian_weighting=0.2,
                  l1_regularization=False,
-                 l1_weighting = 0.1,
+                 l1_weighting=0.1,
                  elastic_net=False,
-                 positivity_constraint=False,
-                 grid_size_r=10,
-                 max_radius_r=20e-3,
-                 grid_size_tau=5,
-                 constrain_q0=False,
-                 #hack_multiplier=1,
-                 bval_threshold = np.inf,
-                 #copy_b0=False,
-                 #copy_tau_max=.1,
-                 #copy_number_of_copies=50
+                 constrain_q0=True,
+                 bval_threshold=np.inf
                  ):
 
         self.gtab = gtab
         self.constrain_q0 = constrain_q0
         self.bval_threshold = bval_threshold
-        #self.hack_multiplier = hack_multiplier
         self.laplacian_regularization = laplacian_regularization
         self.laplacian_weighting = laplacian_weighting
         self.anisotropic_scaling = anisotropic_scaling
@@ -116,61 +104,26 @@ class MaptimeModel(Cache):
             msg = "time_order must be a positive number."
             raise ValueError(msg)
         self.time_order = time_order
-        if fit_tau_inf and fit_tau:
-            if laplacian_regularization:
-                msg = "Laplacian not estimated for combined infinite-time and"
-                msg += " time-dependent basis"
-                raise ValueError(msg)
-        if not fit_tau_inf and not fit_tau:
-            msg = "Setting both fit_tau_inf and fit_tau to False means fitting"
-            msg += " nothing. Choose one or both, but not neither."
-        self.fit_tau_inf = fit_tau_inf
-        self.fit_tau = fit_tau
-        
         if self.anisotropic_scaling:
             self.ind_mat = maptime_index_matrix(radial_order, time_order)
         else:
-            self.ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
+            self.ind_mat = maptime_isotropic_index_matrix(radial_order,
+                                                          time_order)
 
         self.S_mat, self.T_mat, self.U_mat = mapmri.mapmri_STU_reg_matrices(
-                radial_order)
+                radial_order
+        )
         self.part4_reg_mat_tau = part4_reg_matrix_tau(self.ind_mat, 1.)
         self.part23_reg_mat_tau = part23_reg_matrix_tau(self.ind_mat, 1.)
         self.part1_reg_mat_tau = part1_reg_matrix_tau(self.ind_mat, 1.)
-                
         self.l1_regularization = l1_regularization
         self.l1_weighting = l1_weighting
-        
         self.elastic_net = elastic_net
-                
-        min_tau = gtab.tau[~gtab.b0s_mask].min()
-        max_tau = gtab.tau[~gtab.b0s_mask].max()
-        
-        self.constraint_grid = create_rspace_tau(grid_size_r, max_radius_r,
-                                                 grid_size_tau, min_tau, max_tau)
-        self.positivity_constraint = positivity_constraint
-        #self.tau0_boundary_condition = tau0_boundary_condition
-        
         self.tenmodel = dti.TensorModel(gtab)
 
     @multi_voxel_fit
     def fit(self, data):
-        #if self.tau0_boundary_condition:
-        #    b0_mean = data[self.gtab.b0s_mask].mean()
-        #    dwi_norm = data[~self.gtab.b0s_mask] / b0_mean
-        #    tau_min = self.gtab.tau[~self.gtab.b0s_mask].min()
-        #    tau_max = self.gtab.tau[~self.gtab.b0s_mask].max()
-        #    b0taus = np.linspace(tau_min, tau_max, 50)
-        #    number_of_b0s = b0taus.shape[0]
-        #    qvals = np.hstack((np.tile(0, number_of_b0s), self.gtab.qvals[~self.gtab.b0s_mask]))
-        #    tau = np.hstack((b0taus, self.gtab.tau[~self.gtab.b0s_mask]))
-        #    data_norm = np.hstack((np.tile(1., number_of_b0s), dwi_norm))
-        #    bvecs = np.vstack((np.tile(np.r_[1,0,0], (number_of_b0s, 1)), self.gtab.bvecs[~self.gtab.b0s_mask]))
-        #    b0s_mask = data_norm == 1.
-        #else:
-
         bval_mask = self.gtab.bvals < self.bval_threshold
-
         data_norm = data / data[self.gtab.b0s_mask].mean()
         tau = self.gtab.tau
         bvecs = self.gtab.bvecs
@@ -183,7 +136,6 @@ class MaptimeModel(Cache):
                                                         qvals[bval_mask],
                                                         bvecs[bval_mask],
                                                         tau[bval_mask])
-                #us *= self.hack_multiplier
                 tau_scaling = ut / us.mean()
                 tau_scaled = tau * tau_scaling
                 us, ut, R = maptime_anisotropic_scaling(data_norm[bval_mask],
@@ -191,22 +143,24 @@ class MaptimeModel(Cache):
                                                         bvecs[bval_mask],
                                                         tau_scaled[bval_mask])
                 us = np.clip(us, 1e-4, np.inf)
-                #us *= self.hack_multiplier
                 q = np.dot(bvecs, R) * qvals[:, None]
-                M = maptime_signal_matrix_(self.radial_order, self.time_order, 
-                                    us, ut, q, tau_scaled,
-                                    self.fit_tau, self.fit_tau_inf, self.normalization)
+                M = maptime_signal_matrix_(
+                    self.radial_order, self.time_order, us, ut, q, tau_scaled,
+                    self.normalization
+                )
             else:
                 us, ut = maptime_isotropic_scaling(data_norm, qvals, tau)
                 tau_scaling = ut / us
                 tau_scaled = tau * tau_scaling
-                us, ut = maptime_isotropic_scaling(data_norm, qvals, tau_scaled)
+                us, ut = maptime_isotropic_scaling(data_norm, qvals,
+                                                   tau_scaled)
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
-                M = maptime_signal_matrix_(self.radial_order, self.time_order, 
-                                    us, ut, q, tau_scaled,
-                                    self.fit_tau, self.fit_tau_inf, self.normalization)
+                M = maptime_signal_matrix_(
+                    self.radial_order, self.time_order, us, ut, q, tau_scaled,
+                    self.normalization
+                )
         else:
             us, ut = maptime_isotropic_scaling(data_norm, qvals, tau)
             tau_scaling = ut / us
@@ -215,9 +169,9 @@ class MaptimeModel(Cache):
             R = np.eye(3)
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
-            M = maptime_isotropic_signal_matrix_(self.radial_order, self.time_order,
-                                                us[0], ut, q, tau_scaled,
-                                                self.fit_tau, self.fit_tau_inf)
+            M = maptime_isotropic_signal_matrix_(
+                self.radial_order, self.time_order, us[0], ut, q, tau_scaled
+            )
 
         b0_indices = np.arange(self.gtab.tau.shape[0])[self.gtab.b0s_mask]
         tau0_ordered = self.gtab.tau[b0_indices]
@@ -232,32 +186,34 @@ class MaptimeModel(Cache):
         if self.laplacian_regularization:
             if self.cartesian:
                 laplacian_matrix = maptime_laplacian_reg_matrix(
-                        self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
-                        self.part1_reg_mat_tau,
-                        self.part23_reg_mat_tau,
-                        self.part4_reg_mat_tau
-                        )
+                    self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
+                    self.part1_reg_mat_tau,
+                    self.part23_reg_mat_tau,
+                    self.part4_reg_mat_tau
+                )
             else:
-                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(self.ind_mat,
-                                                       self.us, self.ut)
+                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(
+                    self.ind_mat, self.us, self.ut
+                )
             if self.laplacian_weighting == 'GCV':
                 try:
-                    lopt = generalized_crossvalidation(data_norm, M, laplacian_matrix)
+                    lopt = generalized_crossvalidation(data_norm, M,
+                                                       laplacian_matrix)
                 except:
-                    lopt=3e-4
+                    lopt = 3e-4
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
                 lopt = generalized_crossvalidation(data, M, laplacian_matrix,
                                                    self.laplacian_weighting)
-            
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data_norm)
-                           + lopt * cvxpy.quad_form(c, laplacian_matrix)
-                            )
-            if self.constrain_q0:  # just constraint first and last, otherwise the solver fails
+                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                lopt * cvxpy.quad_form(c, laplacian_matrix)
+            )
+            if self.constrain_q0:
+                # just constraint first and last, otherwise the solver fails
                 constraints = [M0[0] * c == 1,
                                M0[-1] * c == 1]
             else:
@@ -266,7 +222,8 @@ class MaptimeModel(Cache):
             try:
                 prob.solve(solver="ECOS", verbose=False)
                 maptime_coef = np.asarray(c.value).squeeze()
-            except: maptime_coef = np.zeros(M.shape[1])
+            except:
+                maptime_coef = np.zeros(M.shape[1])
         elif self.l1_regularization:
             if self.l1_weighting == 'CV':
                 alpha = l1_crossvalidation(b0s_mask, data_norm, M)
@@ -274,12 +231,12 @@ class MaptimeModel(Cache):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
-
             objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data_norm)
-                           + alpha * cvxpy.norm1(c)
-                            )
-            if self.constrain_q0:  # just constraint first and last, otherwise the solver fails
+                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                alpha * cvxpy.norm1(c)
+            )
+            if self.constrain_q0:
+                # just constraint first and last, otherwise the solver fails
                 constraints = [M0[0] * c == 1,
                                M0[-1] * c == 1]
             else:
@@ -288,20 +245,23 @@ class MaptimeModel(Cache):
             try:
                 prob.solve(solver="ECOS", verbose=False)
                 maptime_coef = np.asarray(c.value).squeeze()
-            except: maptime_coef = np.zeros(M.shape[1])
+            except:
+                maptime_coef = np.zeros(M.shape[1])
         elif self.elastic_net:
             if self.cartesian:
                 laplacian_matrix = maptime_laplacian_reg_matrix(
-                        self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
-                        self.part1_reg_mat_tau,
-                        self.part23_reg_mat_tau,
-                        self.part4_reg_mat_tau
-                        )
+                    self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
+                    self.part1_reg_mat_tau,
+                    self.part23_reg_mat_tau,
+                    self.part4_reg_mat_tau
+                )
             else:
-                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(self.ind_mat,
-                                                       self.us, self.ut)
+                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(
+                    self.ind_mat, self.us, self.ut
+                )
             if self.laplacian_weighting == 'GCV':
-                lopt = generalized_crossvalidation(data_norm, M, laplacian_matrix)
+                lopt = generalized_crossvalidation(data_norm, M,
+                                                   laplacian_matrix)
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
@@ -315,11 +275,12 @@ class MaptimeModel(Cache):
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data_norm)
-                           + alpha * cvxpy.norm1(c)
-                           + lopt * cvxpy.quad_form(c, laplacian_matrix)
-                            )
-            if self.constrain_q0:  # just constraint first and last, otherwise the solver fails
+                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                alpha * cvxpy.norm1(c) +
+                lopt * cvxpy.quad_form(c, laplacian_matrix)
+            )
+            if self.constrain_q0:
+                # just constraint first and last, otherwise the solver fails
                 constraints = [M0[0] * c == 1,
                                M0[-1] * c == 1]
             else:
@@ -328,90 +289,21 @@ class MaptimeModel(Cache):
             try:
                 prob.solve(solver="ECOS", verbose=False)
                 maptime_coef = np.asarray(c.value).squeeze()
-            except: maptime_coef = np.zeros(M.shape[1])
-        
-        elif self.positivity_constraint:
-            if self.tau0_boundary_condition:
-                M0 = maptime_signal_matrix_(self.radial_order,
-                                self.time_order,
-                                us, ut, np.zeros((b0taus.shape[0], 3)), b0taus * tau_scaling,
-                                self.fit_tau,
-                                self.fit_tau_inf,
-                                self.normalization)
-            Phi0 = cvxpy.Constant(M0)
-            lopt = .0
-            c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
-            rt_points = self.constraint_grid
-            rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
-            if self.anisotropic_scaling:
-                K = maptime_eap_matrix_(self.radial_order,
-                                        self.time_order,
-                                        us, ut, rt_points_,
-                                        self.fit_tau,
-                                        self.fit_tau_inf,
-                                        self.normalization)
-            else:
-                K = maptime_isotropic_eap_matrix_(self.radial_order,
-                                                self.time_order,
-                                                us[0], ut, rt_points_,
-                                                self.fit_tau,
-                                                self.fit_tau_inf)
-
-            Psi = cvxpy.Constant(K)
-            objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data_norm)
-                            )
-            if self.tau0_boundary_condition:
-                constraints = [Psi * c > 0.,
-                            Phi0 * c > 0.99,
-                            Phi0 * c < 1.01]
-            else:
-                constraints = [Psi * c > 0]
-            prob = cvxpy.Problem(objective, constraints)
-            prob.solve(solver="ECOS", verbose=False)
-            maptime_coef = np.asarray(c.value).squeeze()
-        
-#        if self.positivity_constraint:
-#            w_s = "The MAPMRI positivity constraint depends on CVXOPT "
-#            w_s += "(http://cvxopt.org/). CVXOPT is licensed "
-#            w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
-#            w_s += "and you may be subject to this license when using the "
-#            w_s += "positivity constraint."
-#            warn(w_s)
-#            constraint_grid = self.constraint_grid
-#            K = design_matrix_EAP(self.radial_order, self.time_order,
-#                                  us, ut, constraint_grid)
-#            Q = cvxopt.matrix(np.dot(M.T, M) + lopt * laplacian_matrix)
-#            p = cvxopt.matrix(-1 * np.dot(M.T, data))
-#            G = cvxopt.matrix(-1 * K)
-#            h = cvxopt.matrix(np.zeros((K.shape[0])), (K.shape[0], 1))
-#            cvxopt.solvers.options['show_progress'] = False
-#            sol = cvxopt.solvers.qp(Q, p, G, h)
-#            if sol['status'] != 'optimal':
-#                warn('Optimization did not find a solution')
-#
-#            maptime_coef = np.array(sol['x'])[:, 0]
+            except:
+                maptime_coef = np.zeros(M.shape[1])
         else:
-            #pseudoInv = np.dot(
-            #    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
             pseudoInv = np.linalg.pinv(M)
-            #pseudoInv = np.dot(
-            #    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix), M.T)
             maptime_coef = np.dot(pseudoInv, data_norm)
 
-        #maptime_coef = maptime_coef / sum(maptime_coef * self.Bm)
-
-        fitted_signal = np.dot(M, maptime_coef)
-        residual = fitted_signal - data_norm
-        mean_squared_error = np.mean(residual ** 2)
-
-        return MaptimeFit(self, maptime_coef, us, ut, tau_scaling, R, lopt, alpha, mean_squared_error)
+        return MaptimeFit(
+            self, maptime_coef, us, ut, tau_scaling, R, lopt, alpha
+        )
 
 
 class MaptimeFit():
 
-    def __init__(self, model, maptime_coef, us, ut, tau_scaling, R, lopt, alpha, mean_squared_error):
+    def __init__(self, model, maptime_coef, us, ut, tau_scaling, R, lopt,
+                 alpha):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -438,16 +330,14 @@ class MaptimeFit():
         self.R = R
         self.lopt = lopt
         self.alpha = alpha
-        self.mean_squared_error = mean_squared_error
-
 
     @property
     def maptime_coeff(self):
         """The MAPTIME coefficients
         """
         return self._maptime_coef
-        
-    def sparsity(self, threshold=0.99):
+
+    def sparsity_abs(self, threshold=0.99):
         total_weight = np.sum(abs(self._maptime_coef))
         absolute_normalized_coef_array = (
             np.sort(abs(self._maptime_coef))[::-1] / total_weight)
@@ -455,6 +345,17 @@ class MaptimeFit():
         counter = 0
         while current_weight < threshold:
             current_weight += absolute_normalized_coef_array[counter]
+            counter += 1
+        return counter
+
+    def sparsity_density(self, threshold=0.99):
+        total_weight = np.sum(self._maptime_coef ** 2)
+        squared_normalized_coef_array = (
+            np.sort(self._maptime_coef ** 2)[::-1] / total_weight)
+        current_weight = 0.
+        counter = 0
+        while current_weight < threshold:
+            current_weight += squared_normalized_coef_array[counter]
             counter += 1
         return counter
 
@@ -466,8 +367,8 @@ class MaptimeFit():
             E = self.predict(self.model.gtab)
         else:
             E = self.predict(gtab)
-        return E      
-        
+        return E
+
     def predict(self, qvals_or_gtab, S0=1.):
         r'''Recovers the reconstructed signal for any qvalue array or
         gradient table. We precompute the mu independent part of the
@@ -487,24 +388,18 @@ class MaptimeFit():
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
                 M = maptime_signal_matrix_(self.model.radial_order,
-                                        self.model.time_order,
-                                        self.us, self.ut, q_rot, tau,
-                                        self.model.fit_tau,
-                                        self.model.fit_tau_inf,
-                                        self.model.normalization)
+                                           self.model.time_order,
+                                           self.us, self.ut, q_rot, tau,
+                                           self.model.normalization)
             else:
                 M = maptime_signal_matrix_(self.model.radial_order,
-                                        self.model.time_order,
-                                        self.us, self.ut, q, tau,
-                                        self.model.fit_tau,
-                                        self.model.fit_tau_inf,
-                                        self.model.normalization)
+                                           self.model.time_order,
+                                           self.us, self.ut, q, tau,
+                                           self.model.normalization)
         else:
             M = maptime_isotropic_signal_matrix_(self.model.radial_order,
-                                                self.model.time_order,
-                                                self.us[0], self.ut, q, tau,
-                                                self.model.fit_tau,
-                                                self.model.fit_tau_inf)
+                                                 self.model.time_order,
+                                                 self.us[0], self.ut, q, tau)
         E = S0 * np.dot(M, self._maptime_coef)
         return E
 
@@ -516,9 +411,9 @@ class MaptimeFit():
                                                       self.model.T_mat,
                                                       self.model.U_mat)
         else:
-            lap_matrix = maptime_isotropic_laplacian_reg_matrix(self.model.ind_mat,
-                                                                self.us,
-                                                                self.ut)
+            lap_matrix = maptime_isotropic_laplacian_reg_matrix(
+                self.model.ind_mat, self.us, self.ut
+            )
         norm_laplacian = np.dot(self._maptime_coef,
                                 np.dot(self._maptime_coef, lap_matrix))
         return norm_laplacian
@@ -534,15 +429,11 @@ class MaptimeFit():
             K = maptime_eap_matrix_(self.model.radial_order,
                                     self.model.time_order,
                                     self.us, self.ut, rt_points_,
-                                      self.model.fit_tau,
-                                      self.model.fit_tau_inf,
-                                      self.model.normalization)
+                                    self.model.normalization)
         else:
             K = maptime_isotropic_eap_matrix_(self.model.radial_order,
                                               self.model.time_order,
-                                              self.us[0], self.ut, rt_points_,
-                                              self.model.fit_tau,
-                                              self.model.fit_tau_inf)
+                                              self.us[0], self.ut, rt_points_)
         eap = np.dot(K, self._maptime_coef)
         return eap
 
@@ -561,117 +452,87 @@ class MaptimeFit():
                                      key=(tau))
             if I is None:
                 I = maptime_isotropic_to_mapmri_matrix(self.model.radial_order,
-                                                       self.model.time_order, self.ut,
+                                                       self.model.time_order,
+                                                       self.ut,
                                                        self.tau_scaling * tau)
                 self.model.cache_set('maptime_isotropic_to_mapmri_matrix',
                                      (tau), I)
-        
+
         mapmri_coef = np.dot(I, self._maptime_coef)
         return mapmri_coef
 
     def msd(self, tau):
-        ind_mat = maptime_index_matrix(self.model.radial_order, self.model.time_order)
-        mu=self.us
-        
-        max_o = ind_mat[:,3].max()
+        ind_mat = maptime_index_matrix(self.model.radial_order,
+                                       self.model.time_order)
+        mu = self.us
+        max_o = ind_mat[:, 3].max()
         small_temporal_storage = np.zeros(max_o + 1)
         for o in range(max_o + 1):
-            small_temporal_storage[o] = temporal_basis(o, self.ut, tau * self.tau_scaling)
-
-        mu=self.us
-        msd = 0
+            small_temporal_storage[o] = temporal_basis(o, self.ut,
+                                                       tau * self.tau_scaling)
+        msd = 0.
         for i in range(ind_mat.shape[0]):
-            nx, ny, nz = ind_mat[i,:3]
-            if not(nx%2) and not(ny%2) and not(nz%2):
-                msd+= self._maptime_coef[i] * (-1) ** (0.5 * (- nx - ny - nz))*\
-                np.pi ** (3/2.0) *\
-                ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) * mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2) /\
-                (np.sqrt(2 ** (-nx - ny - nz) * factorial(nx) * factorial(ny) * factorial(nz)) *\
-                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * gamma(0.5 - 0.5 * nz)) *\
-                small_temporal_storage[ind_mat[i,3]]
-                
+            nx, ny, nz = ind_mat[i, :3]
+            if not(nx % 2) and not(ny % 2) and not(nz % 2):
+                msd += (
+                    self._maptime_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
+                    np.pi ** (3/2.0) *
+                    ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) * mu[1] ** 2 +
+                     (1 + 2 * nz) * mu[2] ** 2) /
+                    (np.sqrt(2 ** (-nx - ny - nz) *
+                             factorial(nx) * factorial(ny) * factorial(nz)) *
+                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
+                     gamma(0.5 - 0.5 * nz)) *
+                    small_temporal_storage[ind_mat[i, 3]]
+                )
         return msd
-        
-    def dw(self, tau):
-        dtau = 0.001
-        exponent = np.log(self.msd(tau + dtau) /self.msd(tau-dtau)) / np.log((tau + dtau) / (tau - dtau))        
-        dw = 2 / exponent
-        return dw
-        
-    def dw2(self, tau):
-        dtau = 0.001
-        exponent = ((self.msd(tau + dtau) - self.msd(tau-dtau)) / (2 * dtau)) / ((tau + dtau) / (tau - dtau))
-        dw = 2 / exponent
-        return dw
-        
-    #def rtop(self, tau):
-    #    ind_mat = maptime_index_matrix(self.model.radial_order, self.model.time_order)
-    #    B_mat = b_mat(ind_mat)
-    #    mu=self.us
-    #    
-    #    max_o = ind_mat[:,3].max()
-    #    small_temporal_storage = np.zeros(max_o + 1)
-    #    for o in range(max_o + 1):
-    #        small_temporal_storage[o] = temporal_basis(o, self.ut, tau * self.tau_scaling)
-    #    
-    #    rtop=0
-    #    const= 1 / np.sqrt(8 * np.pi ** 3 * (mu[0] ** 2 * mu[1] ** 2 * mu[2] ** 2))
-    #    for i in range(ind_mat.shape[0]):
-    #        nx, ny, nz = ind_mat[i,:3]
-    #        if B_mat[i]>0.0:
-    #            rtop += const * (-1.0) ** ((nx + ny + nz)/2.0) * self._maptime_coef[i] * B_mat[i] *\
-    #            small_temporal_storage[ind_mat[i,3]]
-    #            
-    #    return rtop
-        
+
     def rtop(self, tau):
         mapmri_coef = self.maptime_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
-        
-        rtop=0
-        const= 1 / np.sqrt(8 * np.pi ** 3 * (mu[0] ** 2 * mu[1] ** 2 * mu[2] ** 2))
+
+        rtop = 0.
+        const = 1. / np.sqrt(
+            8 * np.pi ** 3 * (mu[0] ** 2 * mu[1] ** 2 * mu[2] ** 2)
+        )
         for i in range(ind_mat.shape[0]):
             nx, ny, nz = ind_mat[i]
-            if B_mat[i]>0.0:
-                rtop += const * (-1.0) ** ((nx + ny + nz)/2.0) * mapmri_coef[i] * B_mat[i]
+            if B_mat[i] > 0.:
+                rtop += (
+                    const * (-1.0) ** ((nx + ny + nz) / 2.0) * mapmri_coef[i] *
+                    B_mat[i]
+                )
         return rtop
-        
+
     def rtap(self, tau):
         mapmri_coef = self.maptime_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
 
-        #if self.model.anisotropic_scaling:
+        # if self.model.anisotropic_scaling:
         sel = B_mat > 0.  # select only relevant coefficients
         const = 1 / (2 * np.pi * np.prod(mu[1:]))
         ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
         rtap_vec = const * B_mat[sel] * ind_sum * mapmri_coef[sel]
         rtap = np.sum(rtap_vec)
         return rtap
-        
+
     def rtpp(self, tau):
         mapmri_coef = self.maptime_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
 
-        #if self.model.anisotropic_scaling:
+        # if self.model.anisotropic_scaling:
         sel = B_mat > 0.  # select only relevant coefficients
         const = 1 / (np.sqrt(2 * np.pi) * mu[0])
         ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
         rtpp_vec = const * B_mat[sel] * ind_sum * mapmri_coef[sel]
         rtpp = rtpp_vec.sum()
         return rtpp
-        
-    
-    def ds(self, tau):
-        dtau = 0.001
-        exponent = np.log(self.rtop(tau + dtau) /self.rtop(tau-dtau)) / np.log((tau + dtau) / (tau - dtau))
-        ds = -exponent * 2
-        return ds
 
 
 def maptime_to_mapmri_matrix(radial_order, time_order, ut, tau):
@@ -680,16 +541,16 @@ def maptime_to_mapmri_matrix(radial_order, time_order, ut, tau):
     maptime_ind_mat = maptime_index_matrix(radial_order, time_order)
     n_elem_maptime = maptime_ind_mat.shape[0]
 
-    temporal_storage = np.zeros(time_order + 1)    
+    temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
     mapmri_mat = np.zeros((n_elem_mapmri, n_elem_maptime))
     for nxt, nyt, nzt, o in maptime_ind_mat:
-        index_overlap = np.all([nxt == mapmri_ind_mat[:,0],
-                                nyt == mapmri_ind_mat[:,1],
-                                nzt == mapmri_ind_mat[:,2]], 0)
+        index_overlap = np.all([nxt == mapmri_ind_mat[:, 0],
+                                nyt == mapmri_ind_mat[:, 1],
+                                nzt == mapmri_ind_mat[:, 2]], 0)
         mapmri_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
     return mapmri_mat
@@ -701,16 +562,16 @@ def maptime_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
     maptime_ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
     n_elem_maptime = maptime_ind_mat.shape[0]
 
-    temporal_storage = np.zeros(time_order + 1)    
+    temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
     mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_maptime))
     for j, l, m, o in maptime_ind_mat:
-        index_overlap = np.all([j == mapmri_ind_mat[:,0],
-                                l == mapmri_ind_mat[:,1],
-                                m == mapmri_ind_mat[:,2]], 0)
+        index_overlap = np.all([j == mapmri_ind_mat[:, 0],
+                                l == mapmri_ind_mat[:, 1],
+                                m == mapmri_ind_mat[:, 2]], 0)
         mapmri_isotropic_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
     return mapmri_isotropic_mat
@@ -720,7 +581,8 @@ def maptime_temporal_normalization(ut):
     return np.sqrt(ut)
 
 
-def maptime_signal_matrix_(radial_order, time_order, us, ut, q, tau, fit_tau, fit_tau_inf, normalization=False):
+def maptime_signal_matrix_(radial_order, time_order, us, ut, q, tau,
+                           normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -728,38 +590,34 @@ def maptime_signal_matrix_(radial_order, time_order, us, ut, q, tau, fit_tau, fi
         sqrtC = mapmri.mapmri_normalization(us)
         sqrtut = maptime_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
-    if fit_tau and not fit_tau_inf:
-        M_tau = maptime_signal_matrix(radial_order, time_order, us, ut, q, tau) * sqrtCut
-        return M_tau
-    if fit_tau_inf and not fit_tau:
-        M_tau_inf = mapmri.mapmri_phi_matrix(radial_order, us, q) * sqrtC
-        return M_tau_inf
-    if fit_tau and fit_tau_inf:
-        M_tau = maptime_signal_matrix(radial_order, time_order, us, ut, q, tau) * sqrtCut
-        M_tau_inf = mapmri.mapmri_phi_matrix(radial_order, us, q) * sqrtC
-        M = np.hstack((M_tau, M_tau_inf))
-        return M
+    M_tau = (maptime_signal_matrix(radial_order, time_order, us, ut, q, tau) *
+             sqrtCut)
+    return M_tau
+
 
 def maptime_signal_matrix(radial_order, time_order, us, ut, q, tau):
-    r'''Constructs the design matrix as a product of 3 separated radial, 
+    r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
-    '''    
+    '''
     ind_mat = maptime_index_matrix(radial_order, time_order)
-    
+
     n_dat = q.shape[0]
     n_elem = ind_mat.shape[0]
     qx, qy, qz = q.T
     mux, muy, muz = us
 
-    temporal_storage = np.zeros((n_dat, time_order + 1))    
+    temporal_storage = np.zeros((n_dat, time_order + 1))
     for o in range(time_order + 1):
-        temporal_storage[:,o] = temporal_basis(o, ut, tau)
+        temporal_storage[:, o] = temporal_basis(o, ut, tau)
 
-    Qx_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
-    Qy_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
-    Qz_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)), dtype=complex)
+    Qx_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
+                          dtype=complex)
+    Qy_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
+                          dtype=complex)
+    Qz_storage = np.array(np.zeros((n_dat, radial_order + 1 + 4)),
+                          dtype=complex)
     for n in range(radial_order + 1 + 4):
         Qx_storage[:, n] = mapmri.mapmri_phi_1d(n, qx, mux)
         Qy_storage[:, n] = mapmri.mapmri_phi_1d(n, qy, muy)
@@ -768,8 +626,10 @@ def maptime_signal_matrix(radial_order, time_order, us, ut, q, tau):
     counter = 0
     Q = np.zeros((n_dat, n_elem))
     for nx, ny, nz, o in ind_mat:
-        Q[:, counter] = (
-            np.real(Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz]) * temporal_storage[:, o])
+        Q[:, counter] = (np.real(
+            Qx_storage[:, nx] * Qy_storage[:, ny] * Qz_storage[:, nz]) *
+            temporal_storage[:, o]
+        )
         counter += 1
 
     return Q
@@ -780,13 +640,14 @@ def design_matrix_normalized(radial_order, time_order, us, ut, q, tau):
     sqrtut = maptime_temporal_normalization(ut)
     normalization = sqrtC * sqrtut
     normalized_design_matrix = (
-        normalization * maptime_signal_matrix(radial_order, time_order, us, ut, q, tau)
-        )
+        normalization *
+        maptime_signal_matrix(radial_order, time_order, us, ut, q, tau)
+    )
     return normalized_design_matrix
 
 
 def maptime_eap_matrix(radial_order, time_order, us, ut, grid):
-    r'''Constructs the design matrix as a product of 3 separated radial, 
+    r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
@@ -798,9 +659,9 @@ def maptime_eap_matrix(radial_order, time_order, us, ut, grid):
     n_elem = ind_mat.shape[0]
     mux, muy, muz = us
 
-    temporal_storage = np.zeros((n_dat, time_order + 1))    
+    temporal_storage = np.zeros((n_dat, time_order + 1))
     for o in range(time_order + 1):
-        temporal_storage[:,o] = temporal_basis(o, ut, tau)
+        temporal_storage[:, o] = temporal_basis(o, ut, tau)
 
     Kx_storage = np.zeros((n_dat, radial_order + 1))
     Ky_storage = np.zeros((n_dat, radial_order + 1))
@@ -814,41 +675,36 @@ def maptime_eap_matrix(radial_order, time_order, us, ut, grid):
     K = np.zeros((n_dat, n_elem))
     for nx, ny, nz, o in ind_mat:
         K[:, counter] = (
-            Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz] * temporal_storage[:, o])
+            Kx_storage[:, nx] * Ky_storage[:, ny] * Kz_storage[:, nz] *
+            temporal_storage[:, o]
+        )
         counter += 1
 
     return K
 
 
-def maptime_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau, fit_tau, fit_tau_inf):
-    if fit_tau and not fit_tau_inf:
-        M_tau = maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
-        return M_tau
-    if fit_tau_inf and not fit_tau:
-        M_tau_inf = mapmri.mapmri_isotropic_phi_matrix(radial_order, us, q)
-        return M_tau_inf
-    if fit_tau and fit_tau_inf:
-        M_tau = maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau)
-        M_tau_inf = mapmri.mapmri_isotropic_phi_matrix(radial_order, us, q)
-        M = np.hstack((M_tau, M_tau_inf))
-        return M
+def maptime_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau):
+    M_tau = maptime_isotropic_signal_matrix(
+        radial_order, time_order, us, ut, q, tau
+    )
+    return M_tau
 
 
 def maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
-    qvals, theta, phi = cart2sphere(q[:,0], q[:,1], q[:,2])
-    
+    qvals, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
+
     n_dat = qvals.shape[0]
     n_elem = ind_mat.shape[0]
 
-    num_j = np.max(ind_mat[:,0])
+    num_j = np.max(ind_mat[:, 0])
     num_o = time_order + 1
     num_l = radial_order / 2 + 1
     num_m = radial_order * 2 + 1
 
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
-    for j in range(1,num_j+1):
+    for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
             radial_storage[j-1, l/2, :] = radial_basis_opt(j, l, us, qvals)
 
@@ -856,15 +712,15 @@ def maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     angular_storage = np.zeros([num_l, num_m, n_dat])
     for l in range(0, radial_order + 1, 2):
         for m in range(-l, l+1):
-            angular_storage[l / 2, m + l, :] =(
-            angular_basis_opt(l, m, qvals, theta, phi)
+            angular_storage[l / 2, m + l, :] = (
+                angular_basis_opt(l, m, qvals, theta, phi)
             )
 
     # Temporal Basis
-    temporal_storage = np.zeros([num_o+1,n_dat])
+    temporal_storage = np.zeros([num_o + 1, n_dat])
     for o in range(0, num_o + 1):
         temporal_storage[o, :] = temporal_basis(o, ut, tau)
-    
+
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
     counter = 0
@@ -872,11 +728,12 @@ def maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
         M[:, counter] = (radial_storage[j-1, l/2, :] *
                          angular_storage[l / 2, m + l, :] *
                          temporal_storage[o, :])
-        counter+=1
+        counter += 1
     return M
 
 
-def maptime_eap_matrix_(radial_order, time_order, us, ut, grid, fit_tau, fit_tau_inf, normalization=False):
+def maptime_eap_matrix_(radial_order, time_order, us, ut, grid,
+                        normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -884,36 +741,22 @@ def maptime_eap_matrix_(radial_order, time_order, us, ut, grid, fit_tau, fit_tau
         sqrtC = mapmri.mapmri_normalization(us)
         sqrtut = maptime_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
-    if fit_tau and not fit_tau_inf:
-        K_tau = maptime_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
-        return K_tau
-    if fit_tau_inf and not fit_tau:
-        K_tau_inf = mapmri.mapmri_psi_matrix(radial_order, us, grid[:, :3]) * sqrtC
-        return K_tau_inf
-    if fit_tau and fit_tau_inf:
-        K_tau = maptime_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
-        K_tau_inf = mapmri.mapmri_psi_matrix(radial_order, us, grid[:, :3]) * sqrtC
-        K = np.hstack((K_tau, K_tau_inf))
-        return K
+    K_tau = (
+        maptime_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
+    )
+    return K_tau
 
 
-def maptime_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid, fit_tau, fit_tau_inf):
-    if fit_tau and not fit_tau_inf:
-        K_tau = maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)
-        return K_tau
-    if fit_tau_inf and not fit_tau:
-        K_tau_inf = mapmri.mapmri_isotropic_psi_matrix(radial_order, us, grid[:, :3])
-        return K_tau_inf
-    if fit_tau and fit_tau_inf:
-        K_tau = maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid)
-        K_tau_inf = mapmri.mapmri_isotropic_psi_matrix(radial_order, us, grid[:, :3])
-        K = np.hstack((K_tau, K_tau_inf))
-        return K
+def maptime_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
+    K_tau = maptime_isotropic_eap_matrix(
+        radial_order, time_order, us, ut, grid
+    )
+    return K_tau
 
 
 def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
                                  spatial_storage=None):
-    r'''Constructs the design matrix as a product of 3 separated radial, 
+    r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
@@ -922,19 +765,19 @@ def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
     rx, ry, rz, tau = grid.T
     R, theta, phi = cart2sphere(rx, ry, rz)
     theta[np.isnan(theta)] = 0
-    
+
     ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
     n_dat = R.shape[0]
     n_elem = ind_mat.shape[0]
-    
-    num_j = np.max(ind_mat[:,0])
+
+    num_j = np.max(ind_mat[:, 0])
     num_o = time_order + 1
     num_l = radial_order / 2 + 1
     num_m = radial_order * 2 + 1
 
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
-    for j in range(1,num_j + 1):
+    for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
             radial_storage[j - 1, l / 2, :] = radial_basis_EAP_opt(j, l, us, R)
 
@@ -943,14 +786,15 @@ def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
     for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
             for m in range(-l, l + 1):
-                angular_storage[j - 1, l / 2, m + l, :] = angular_basis_EAP_opt(
-                                                          j, l, m, R, theta, phi)
+                angular_storage[j - 1, l / 2, m + l, :] = (
+                    angular_basis_EAP_opt(j, l, m, R, theta, phi)
+                )
 
     # Temporal Basis
-    temporal_storage = np.zeros([num_o+1,n_dat])
+    temporal_storage = np.zeros([num_o + 1, n_dat])
     for o in range(0, num_o + 1):
         temporal_storage[o, :] = temporal_basis(o, ut, tau)
-    
+
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
     counter = 0
@@ -965,32 +809,42 @@ def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
 def radial_basis_opt(j, l, us, q):
     ''' Spatial basis dependent on spatial scaling factor us
     '''
-    const = us ** l * np.exp(-2 * np.pi ** 2 * us ** 2 * q ** 2) *\
-            genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * us ** 2 * q ** 2)
+    const = (
+        us ** l * np.exp(-2 * np.pi ** 2 * us ** 2 * q ** 2) *
+        genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * us ** 2 * q ** 2)
+    )
     return const
+
 
 def angular_basis_opt(l, m, q, theta, phi):
     ''' Angular basis independent of spatial scaling factor us. Though it
     includes q, it is independent of the data and can be precomputed.
     '''
-    const = (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *\
-            (2 * np.pi ** 2 * q ** 2) ** (l / 2) *\
-            real_sph_harm(m, l, theta, phi)
+    const = (
+        (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
+        (2 * np.pi ** 2 * q ** 2) ** (l / 2) *
+        real_sph_harm(m, l, theta, phi)
+    )
     return const
 
+
 def radial_basis_EAP_opt(j, l, us, r):
-    radial_part =  (us ** 3) ** (-1) /\
-                     (us ** 2) ** (l / 2) *\
-                np.exp(- r ** 2 / (2 * us ** 2)) *\
-                genlaguerre(j - 1, l + 0.5)(r ** 2 / us ** 2)
+    radial_part = (
+        (us ** 3) ** (-1) / (us ** 2) ** (l / 2) *
+        np.exp(- r ** 2 / (2 * us ** 2)) *
+        genlaguerre(j - 1, l + 0.5)(r ** 2 / us ** 2)
+    )
     return radial_part
 
+
 def angular_basis_EAP_opt(j, l, m, r, theta, phi):
-    angular_part = (-1) ** (j - 1) * (np.sqrt(2) * np.pi) ** (-1) *\
-    (r ** 2 / 2) ** (l / 2) * real_sph_harm(m, l, theta, phi)
+    angular_part = (
+        (-1) ** (j - 1) * (np.sqrt(2) * np.pi) ** (-1) *
+        (r ** 2 / 2) ** (l / 2) * real_sph_harm(m, l, theta, phi)
+    )
     return angular_part
 
-    
+
 def temporal_basis(o, ut, tau):
     ''' Temporal basis dependent on temporal scaling factor ut
     '''
@@ -1005,7 +859,7 @@ def maptime_index_matrix(radial_order, time_order):
     for n in range(0, radial_order + 1, 2):
         for i in range(0, n + 1):
             for j in range(0, n - i + 1):
-                for o in range(0,time_order+1):
+                for o in range(0, time_order + 1):
                     index_matrix.append([n - i - j, j, i, o])
 
     return np.array(index_matrix)
@@ -1018,8 +872,8 @@ def maptime_isotropic_index_matrix(radial_order, time_order):
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n / 2):
             l = n + 2 - 2 * j
-            for m in range(-l, l+1):
-                for o in range(0,time_order+1):
+            for m in range(-l, l + 1):
+                for o in range(0, time_order+1):
                     index_matrix.append([j, l, m, o])
 
     return np.array(index_matrix)
@@ -1056,7 +910,9 @@ def b_mat(ind_mat):
 
     return B
 
-def maptime_laplacian_reg_matrix_normalized(ind_mat, us, ut, S_mat, T_mat, U_mat):
+
+def maptime_laplacian_reg_matrix_normalized(ind_mat, us, ut,
+                                            S_mat, T_mat, U_mat):
     sqrtC = mapmri.mapmri_normalization(us)
     sqrtut = maptime_temporal_normalization(ut)
     normalization = sqrtC * sqrtut
@@ -1089,10 +945,9 @@ def maptime_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
     else:
         part4_ut = part4_ut_precomp * ut ** 3
 
-    regularization_matrix = part1_us * part1_ut +\
-                            part23_us * part23_ut +\
-                            part4_us * part4_ut
-
+    regularization_matrix = (
+        part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
+    )
     return regularization_matrix
 
 
@@ -1105,10 +960,9 @@ def maptime_isotropic_laplacian_reg_matrix(ind_mat, us, ut):
     part23_ut = part23_reg_matrix_tau(ind_mat, ut)
     part4_ut = part4_reg_matrix_tau(ind_mat, ut)
 
-    regularization_matrix = part1_us * part1_ut +\
-                            part23_us * part23_ut +\
-                            part4_us * part4_ut
-
+    regularization_matrix = (
+        part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
+    )
     return regularization_matrix
 
 
@@ -1122,21 +976,22 @@ def part23_reg_matrix_q(ind_mat, U_mat, T_mat, us):
             val = 0
             if x[i] == x[k] and y[i] == y[k]:
                 val += (
-                (uz / (ux * uy)) *
-                U_mat[x[i], x[k]] * U_mat[y[i], y[k]] * T_mat[z[i], z[k]]
+                    (uz / (ux * uy)) *
+                    U_mat[x[i], x[k]] * U_mat[y[i], y[k]] * T_mat[z[i], z[k]]
                 )
             if x[i] == x[k] and z[i] == z[k]:
                 val += (
-                (uy / (ux * uz)) *
-                U_mat[x[i], x[k]] * T_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                    (uy / (ux * uz)) *
+                    U_mat[x[i], x[k]] * T_mat[y[i], y[k]] * U_mat[z[i], z[k]]
                 )
             if y[i] == y[k] and z[i] == z[k]:
                 val += (
-                (ux / (uy * uz)) *
-                T_mat[x[i], x[k]] * U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                    (ux / (uy * uz)) *
+                    T_mat[x[i], x[k]] * U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
                 )
             LR[i, k] = LR[k, i] = val
-    return LR            
+    return LR
+
 
 def part23_iso_reg_matrix_q(ind_mat, us):
     n_elem = ind_mat.shape[0]
@@ -1150,18 +1005,19 @@ def part23_iso_reg_matrix_q(ind_mat, us):
                 ji = ind_mat[i, 0]
                 jk = ind_mat[k, 0]
                 l = ind_mat[i, 1]
-                if  ji == (jk + 1):
-                    LR[i, k] = LR[k, i] = 2 ** (-l) *\
-                       -gamma(3 / 2.0 + jk + l) / gamma(jk) 
+                if ji == (jk + 1):
+                    LR[i, k] = LR[k, i] = (
+                        2 ** (-l) * -gamma(3 / 2.0 + jk + l) / gamma(jk)
+                    )
                 elif ji == jk:
                     LR[i, k] = LR[k, i] = 2 ** (-(l+1)) *\
                         (1 - 4 * ji - 2 * l) *\
-                        gamma(1 / 2.0 + ji + l) / gamma(ji) 
+                        gamma(1 / 2.0 + ji + l) / gamma(ji)
                 elif ji == (jk - 1):
                     LR[i, k] = LR[k, i] = 2 ** (-l) *\
                         -gamma(3 / 2.0 + ji + l) / gamma(ji)
-    
     return LR / us
+
 
 def part4_reg_matrix_q(ind_mat, U_mat, us):
     ux, uy, uz = us
@@ -1173,10 +1029,11 @@ def part4_reg_matrix_q(ind_mat, U_mat, us):
             if x[i] == x[k] and \
                y[i] == y[k] and \
                z[i] == z[k]:
-                LR[i, k] = LR[k, i]= (1. / (ux * uy * uz)) *\
-                    U_mat[x[i], x[k]] * U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
-
-    return LR            
+                LR[i, k] = LR[k, i] = (
+                    (1. / (ux * uy * uz)) * U_mat[x[i], x[k]] *
+                    U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
+                )
+    return LR
 
 
 def part4_iso_reg_matrix_q(ind_mat, us):
@@ -1189,8 +1046,11 @@ def part4_iso_reg_matrix_q(ind_mat, us):
                ind_mat[i, 2] == ind_mat[k, 2]:
                 ji = ind_mat[i, 0]
                 l = ind_mat[i, 1]
-                LR[i, k] = LR[k, i] = 2 ** (-(l + 2)) *\
-                       gamma(1 / 2.0 + ji + l) / (np.pi ** 2 * gamma(ji)) 
+                LR[i, k] = LR[k, i] = (
+                    2 ** (-(l + 2)) * gamma(1 / 2.0 + ji + l) /
+                    (np.pi ** 2 * gamma(ji))
+                )
+
     return LR / us ** 3
 
 
@@ -1228,44 +1088,49 @@ def part4_reg_matrix_tau(ind_mat, ut):
             for k in range(i, n_elem):
                 oi = ind_mat[i, 3]
                 ok = ind_mat[k, 3]
-                
+
                 sum1 = 0
-                for p in range(1,min([ok, oi]) + 1 + 1):
+                for p in range(1, min([ok, oi]) + 1 + 1):
                     sum1 += (oi - p) * (ok - p) * H(min([oi, ok]) - p)
-                    
+
                 sum2 = 0
                 for p in range(0, min(ok - 2, oi - 1) + 1):
                     sum2 += p
-                    
+
                 sum3 = 0
                 for p in range(0, min(ok - 1, oi - 2) + 1):
                     sum3 += p
-                    
+
                 LD[i, k] = LD[k, i] = (
-                    (1 / 4.) * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) + min([oi, ok]) +
-                    sum1 + H(oi - 1) * H(ok - 1) * (oi + ok - 2 + sum2 + sum3 + 
-                    H(abs(oi - ok) - 1) * (abs(oi - ok) - 1) * min([ok - 1,oi - 1])))
+                    0.25 * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) +
+                    min([oi, ok]) + sum1 + H(oi - 1) * H(ok - 1) *
+                    (oi + ok - 2 + sum2 + sum3 + H(abs(oi - ok) - 1) *
+                     (abs(oi - ok) - 1) * min([ok - 1, oi - 1]))
+                )
     return LD * ut ** 3
 
 
 def maptime_laplace_S_tau(oi, ok):
     sum1 = 0
-    for p in range(1,min([ok, oi]) + 1 + 1):
+    for p in range(1, min([ok, oi]) + 1 + 1):
         sum1 += (oi - p) * (ok - p) * H(min([oi, ok]) - p)
-        
+
     sum2 = 0
     for p in range(0, min(ok - 2, oi - 1) + 1):
         sum2 += p
-        
+
     sum3 = 0
     for p in range(0, min(ok - 1, oi - 2) + 1):
         sum3 += p
-        
+
     val = (
-        (1 / 4.) * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) + min([oi, ok]) +
-        sum1 + H(oi - 1) * H(ok - 1) * (oi + ok - 2 + sum2 + sum3 + 
-        H(abs(oi - ok) - 1) * (abs(oi - ok) - 1) * min([ok - 1,oi - 1])))
+        (1 / 4.) * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) +
+        min([oi, ok]) + sum1 + H(oi - 1) * H(ok - 1) *
+        (oi + ok - 2 + sum2 + sum3 + H(abs(oi - ok) - 1) * (abs(oi - ok) - 1) *
+         min([ok - 1, oi - 1]))
+    )
     return val
+
 
 def maptime_laplace_T_tau(oi, ok):
     if oi == ok:
@@ -1281,7 +1146,6 @@ def maptime_laplace_U_tau(oi, ok):
     else:
         val = 0.
     return val
-
 
 
 def maptime_STU_time_reg_matrices(time_order):
@@ -1326,6 +1190,7 @@ def H(value):
         return 1
     return 0
 
+
 def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     """Generalized Cross Validation Function [4]
     """
@@ -1333,20 +1198,15 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     MMt = np.dot(M.T, M)
     K = len(data)
     input_stuff = (data, M, MMt, K, LR)
-    #ranges = (slice(.1,10,(10 - .1) / 30.),)
-    #res_brute = brute(lambda x, input_stuff: GCV_cost_function(x * 1e4, input_stuff), 
-    #                    ranges, args=(input_stuff,), finish=None)
-    #if GCV_setting is "Brute":
-    #    return res_brute * 1e4
-        
+
     bounds = ((1e-5, 1),)
-    res=fmin_l_bfgs_b(lambda x, input_stuff: GCV_cost_function(x, input_stuff),
-                    (startpoint), args=(input_stuff,), approx_grad=True,
-                    bounds=bounds, disp=True,
-                    pgtol=1e-10, factr=10.)
+    res = fmin_l_bfgs_b(lambda x,
+                        input_stuff: GCV_cost_function(x, input_stuff),
+                        (startpoint), args=(input_stuff,), approx_grad=True,
+                        bounds=bounds, disp=True, pgtol=1e-10, factr=10.)
     return res[0][0]
-    
-    
+
+
 def GCV_cost_function(weight, input_stuff):
     """The GCV cost function that is iterated [4]
     """
@@ -1357,66 +1217,43 @@ def GCV_cost_function(weight, input_stuff):
     gcv_value = normyytilde / (K - trS)
     return gcv_value
 
-#def generalized_crossvalidation(data, M, LR):
-#    """Generalized Cross Validation Function [3]
-#    """
-#    lrange = np.linspace(1e-5,1e-2,50)
-#    samples = lrange.shape[0]
-#    MMt = np.dot(M.T, M)
-#    K = len(data)
-#    gcvold = gcvnew = 10e10
-#    i = -1
-#    while gcvold >= gcvnew and i < samples - 2:
-#        gcvold = gcvnew
-#        i = i + 1
-#        S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
-#        trS = np.matrix.trace(S)
-#        normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
-#        gcvnew = normyytilde / (K - trS)
-#
-#    return lrange[i-1]
-
 
 def maptime_isotropic_scaling(data, q, tau):
-    """  Constructs design matrix for fitting an exponential to the 
+    """  Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
     dataclip = np.clip(data, 1e-05, 1.)
     logE = -np.log(dataclip)
-    logE_q = logE / (2 * np.pi ** 2) 
+    logE_q = logE / (2 * np.pi ** 2)
     logE_tau = logE * 2
-    
+
     B_q = np.array([q * q])
     inv_B_q = np.linalg.pinv(B_q)
-    
+
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
-    
+
     us = np.sqrt(np.dot(logE_q, inv_B_q))
     ut = np.dot(logE_tau, inv_B_tau)
-    
     return us, ut
 
 
 def maptime_anisotropic_scaling(data, q, bvecs, tau):
-    """  Constructs design matrix for fitting an exponential to the 
+    """  Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
     dataclip = np.clip(data, 1e-05, 10e10)
     logE = -np.log(dataclip)
-    logE_q = logE / (2 * np.pi ** 2) 
+    logE_q = logE / (2 * np.pi ** 2)
     logE_tau = logE * 2
-
-    #B_q = np.array([q * q])
-    #inv_B_q = np.linalg.pinv(B_q)
 
     B_q = design_matrix_spatial(bvecs, q)
     inv_B_q = np.linalg.pinv(B_q)
     A = np.dot(inv_B_q, logE_q)
 
     evals, R = dti.decompose_tensor(dti.from_lower_triangular(A))
-    us = np.sqrt(evals)    
-    
+    us = np.sqrt(evals)
+
     B_tau = np.array([tau])
     inv_B_tau = np.linalg.pinv(B_tau)
 
@@ -1424,31 +1261,6 @@ def maptime_anisotropic_scaling(data, q, bvecs, tau):
 
     return us, ut, R
 
-
-def isotropic_scaling_factors(x, data):
-    """Fits the scaling factors of the spatial and temporal basis [2].
-    """
-    
-    bounds = ((0.00001, 100.), (0.00001, 100.))
-    
-    res=fmin_l_bfgs_b(lambda p0, x:np.mean((isotropic_basis_function_zero_zero(x, p0[0], p0[1]) - data) ** 2),
-            (.01, .1), args = (x,), approx_grad=True, bounds=bounds, disp=False,
-            pgtol=1e-10, factr=10.)[0]
-    us, ut = res
-    return us, ut
-
-def isotropic_basis_function_zero_zero(x, us, ut):
-    q, tau = x
-    return np.exp(- 2 * np.pi ** 2 * q ** 2 * us ** 2 - (tau * ut) / 2)
-
-def anistropic_basis_function_zero_zero(x, Dxx, Dyy, Dzz, Dxy, Dxz, Dyz, ut):
-    q, gx, gy, gz, tau = x
-    
-    res = np.zeros_like(q)
-    for i in range(res.shape[0]):
-        res[i] = np.exp(- 2 * np.pi ** 2 * q ** 2 * us ** 2 - tau * ut / 2)
-    
-    return np.exp(- 2 * np.pi ** 2 * q ** 2 * us ** 2 - tau * ut / 2)
 
 def design_matrix_spatial(bvecs, qvals, dtype=None):
     """  Constructs design matrix for DTI weighted least squares or
@@ -1474,29 +1286,20 @@ def design_matrix_spatial(bvecs, qvals, dtype=None):
     B[:, 3] = bvecs[:, 0] * bvecs[:, 2] * 2. * qvals ** 2  # Bxz
     B[:, 4] = bvecs[:, 1] * bvecs[:, 2] * 2. * qvals ** 2  # Byz
     B[:, 5] = bvecs[:, 2] * bvecs[:, 2] * 1. * qvals ** 2  # Bzz
-    #B[:, 6] = np.ones(gtab.gradients.shape[0])
-
     return B
 
-def generate_fake_gtab(gtab):
-    gtab_fake = gradient_table(qvals=gtab.qvals,
-                               bvecs=gtab.bvecs,
-                               pulse_separation=gtab.pulse_separation,
-                               pulse_duration=gtab.pulse_duration)
-    gtab_fake.bvals = gtab.bvals * 2 * gtab.tau * 1000
-    
-    return gtab_fake
-    
-def create_rspace_tau(grid_size_r, max_radius_r, grid_size_tau, min_radius_tau,
-                                                                max_radius_tau):
-    """ Generates EAP grid for positivity constraint.
-    """
+
+def create_rt_space_grid(grid_size_r, max_radius_r, grid_size_tau,
+                         min_radius_tau, max_radius_tau):
+    """ Generates EAP grid (for potential positivity constraint)."""
     tau_list = np.linspace(min_radius_tau, max_radius_tau, grid_size_tau)
     constraint_grid_tau = np.c_[0., 0., 0., 0.]
     for tau in tau_list:
         constraint_grid = mapmri.create_rspace(grid_size_r, max_radius_r)
-        constraint_grid_tau = np.vstack([constraint_grid_tau,
-            np.c_[constraint_grid, np.zeros(constraint_grid.shape[0]) + tau]])
+        constraint_grid_tau = np.vstack(
+            [constraint_grid_tau,
+             np.c_[constraint_grid, np.zeros(constraint_grid.shape[0]) + tau]]
+        )
     return constraint_grid_tau[1:]
 
 
@@ -1506,27 +1309,34 @@ def maptime_number_of_coefficients(radial_order, time_order):
     M_total = Msym * (time_order + 1)
     return M_total
 
+
 def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
     b0_indices = np.arange(E.shape[0])[b0_mask]
     random.shuffle(dwi_indices)
-    
+
     sub0 = dwi_indices[0::5]
     sub1 = dwi_indices[1::5]
     sub2 = dwi_indices[2::5]
     sub3 = dwi_indices[3::5]
     sub4 = dwi_indices[4::5]
-    
+
     test0 = np.hstack((b0_indices, sub1, sub2, sub3, sub4))
     test1 = np.hstack((b0_indices, sub0, sub2, sub3, sub4))
     test2 = np.hstack((b0_indices, sub0, sub1, sub3, sub4))
     test3 = np.hstack((b0_indices, sub0, sub1, sub2, sub4))
     test4 = np.hstack((b0_indices, sub0, sub1, sub2, sub3))
-    
-    cv_list = ((sub0, test0), (sub1, test1), (sub2, test2), (sub3, test3), (sub4, test4))
-    
+
+    cv_list = (
+        (sub0, test0),
+        (sub1, test1),
+        (sub2, test2),
+        (sub3, test3),
+        (sub4, test4)
+    )
+
     errorlist = np.zeros((5, 21))
     errorlist[:, 0] = 100.
     optimal_alpha_sub = np.zeros(5)
@@ -1541,9 +1351,9 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
             design_matrix_to_recover = cvxpy.Constant(M[sub])
             data = cvxpy.Constant(E[test])
             objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data)
-                           + alpha * cvxpy.norm1(c)
-                            )
+                cvxpy.sum_squares(design_matrix * c - data) +
+                alpha * cvxpy.norm1(c)
+            )
             constraints = []
             prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="ECOS", verbose=False)
@@ -1557,27 +1367,35 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
     optimal_alpha = optimal_alpha_sub.mean()
     return optimal_alpha
 
-def elastic_crossvalidation(b0s_mask, E, M, L, lopt, weight_array=np.linspace(0, .2, 21)):
+
+def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
+                            weight_array=np.linspace(0, .2, 21)):
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
     b0_indices = np.arange(E.shape[0])[b0_mask]
     random.shuffle(dwi_indices)
-    
+
     sub0 = dwi_indices[0::5]
     sub1 = dwi_indices[1::5]
     sub2 = dwi_indices[2::5]
     sub3 = dwi_indices[3::5]
     sub4 = dwi_indices[4::5]
-    
+
     test0 = np.hstack((b0_indices, sub1, sub2, sub3, sub4))
     test1 = np.hstack((b0_indices, sub0, sub2, sub3, sub4))
     test2 = np.hstack((b0_indices, sub0, sub1, sub3, sub4))
     test3 = np.hstack((b0_indices, sub0, sub1, sub2, sub4))
     test4 = np.hstack((b0_indices, sub0, sub1, sub2, sub3))
-    
-    cv_list = ((sub0, test0), (sub1, test1), (sub2, test2), (sub3, test3), (sub4, test4))
-    
+
+    cv_list = (
+        (sub0, test0),
+        (sub1, test1),
+        (sub2, test2),
+        (sub3, test3),
+        (sub4, test4)
+    )
+
     errorlist = np.zeros((5, 21))
     errorlist[:, 0] = 100.
     optimal_alpha_sub = np.zeros(5)
@@ -1591,10 +1409,10 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt, weight_array=np.linspace(0,
         design_matrix_to_recover = cvxpy.Constant(M[sub])
         data = cvxpy.Constant(E[test])
         objective = cvxpy.Minimize(
-                           cvxpy.sum_squares(design_matrix * c - data)
-                           + alpha * cvxpy.norm1(c)
-                           + lopt * cvxpy.quad_form(c, L)
-                            )
+            cvxpy.sum_squares(design_matrix * c - data) +
+            alpha * cvxpy.norm1(c) +
+            lopt * cvxpy.quad_form(c, L)
+        )
         constraints = []
         prob = cvxpy.Problem(objective, constraints)
         while cv_old >= cv_new and counter < weight_array.shape[0]:
