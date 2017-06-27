@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.core.geometry import cart2sphere
@@ -107,7 +108,7 @@ class QtdmriModel(Cache):
             self.ind_mat = qtdmri_index_matrix(radial_order, time_order)
         else:
             self.ind_mat = qtdmri_isotropic_index_matrix(radial_order,
-                                                          time_order)
+                                                         time_order)
 
         self.S_mat, self.T_mat, self.U_mat = mapmri.mapmri_STU_reg_matrices(
                 radial_order
@@ -131,15 +132,15 @@ class QtdmriModel(Cache):
         if self.cartesian:
             if self.anisotropic_scaling:
                 us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
-                                                        qvals[bval_mask],
-                                                        bvecs[bval_mask],
-                                                        tau[bval_mask])
+                                                       qvals[bval_mask],
+                                                       bvecs[bval_mask],
+                                                       tau[bval_mask])
                 tau_scaling = ut / us.mean()
                 tau_scaled = tau * tau_scaling
                 us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
-                                                        qvals[bval_mask],
-                                                        bvecs[bval_mask],
-                                                        tau_scaled[bval_mask])
+                                                       qvals[bval_mask],
+                                                       bvecs[bval_mask],
+                                                       tau_scaled[bval_mask])
                 us = np.clip(us, 1e-4, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
                 M = qtdmri_signal_matrix_(
@@ -151,7 +152,7 @@ class QtdmriModel(Cache):
                 tau_scaling = ut / us
                 tau_scaled = tau * tau_scaling
                 us, ut = qtdmri_isotropic_scaling(data_norm, qvals,
-                                                   tau_scaled)
+                                                  tau_scaled)
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
@@ -335,6 +336,65 @@ class QtdmriFit():
         """
         return self._qtdmri_coef
 
+    @property
+    def qtdmri_R(self):
+        """The qtdmri rotation matrix
+        """
+        return self.R
+
+    @property
+    def qtdmri_us(self):
+        """The qtdmri spatial scale factors
+        """
+        return self.us
+
+    @property
+    def qtdmri_ut(self):
+        """The qtdmri temporal scale factor
+        """
+        return self.ut
+
+    def qtdmri_to_mapmri_coef(self, tau):
+        """This function converts the qtdmri coefficients to mapmri
+        coefficients for a given tau [1]_. The conversion is performed by a
+        matrix multiplication that evaluates the time-depenent part of the
+        basis and multiplies it with the coefficients, after which coefficients
+        with the same spatial orders are summed up, resulting in mapmri
+        coefficients.
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+        """
+        if self.model.anisotropic_scaling:
+            I = self.model.cache_get('qtdmri_to_mapmri_matrix',
+                                     key=(tau))
+            if I is None:
+                I = qtdmri_to_mapmri_matrix(self.model.radial_order,
+                                            self.model.time_order, self.ut,
+                                            self.tau_scaling * tau)
+                self.model.cache_set('qtdmri_to_mapmri_matrix',
+                                     (tau), I)
+        else:
+            I = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
+                                     key=(tau))
+            if I is None:
+                I = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
+                                                      self.model.time_order,
+                                                      self.ut,
+                                                      self.tau_scaling * tau)
+                self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
+                                     (tau), I)
+        mapmri_coef = np.dot(I, self._qtdmri_coef)
+        return mapmri_coef
+
     def sparsity_abs(self, threshold=0.99):
         total_weight = np.sum(abs(self._qtdmri_coef))
         absolute_normalized_coef_array = (
@@ -357,9 +417,349 @@ class QtdmriFit():
             counter += 1
         return counter
 
+    def odf(self, sphere, tau, s=2):
+        r""" Calculates the analytical Orientation Distribution Function (ODF)
+        for a given diffusion time tau from the signal, [1]_ Eq. (32).
+
+        Parameters
+        ----------
+        s : unsigned int
+            radial moment of the ODF
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+        if self.model.anisotropic_scaling:
+            v_ = sphere.vertices
+            v = np.dot(v_, self.R)
+            I_s = mapmri.mapmri_odf_matrix(self.radial_order, self.us, s, v)
+            odf = np.dot(I_s, mapmri_coef)
+        else:
+            I = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            if I is None:
+                I = mapmri.mapmri_isotropic_odf_matrix(self.radial_order, 1,
+                                                       s, sphere.vertices)
+                self.model.cache_set('ODF_matrix', (sphere, s), I)
+
+            odf = self.us[0] ** s * np.dot(I, mapmri_coef)
+        return odf
+
+    def odf_sh(self, tau, s=2):
+        r""" Calculates the real analytical odf for a given discrete sphere.
+        Computes the design matrix of the ODF for the given sphere vertices
+        and radial moment [1]_ eq. (32). The radial moment s acts as a
+        sharpening method. The analytical equation for the spherical ODF basis
+        is given in [2]_ eq. (C8).
+
+        Parameters
+        ----------
+        s : unsigned int
+            radial moment of the ODF
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+        if self.model.anisotropic_scaling:
+            msg = 'odf in spherical harmonics not yet implemented for '
+            msg += 'anisotropic implementation'
+            raise ValueError(msg)
+        I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
+
+        if I is None:
+            I = mapmri.mapmri_isotropic_odf_sh_matrix(self.radial_order, 1, s)
+            self.model.cache_set('ODF_sh_matrix', (self.radial_order, s), I)
+
+        odf = self.us[0] ** s * np.dot(I, mapmri_coef)
+        return odf
+
+    def rtpp(self, tau):
+        r""" Calculates the analytical return to the plane probability (RTPP)
+        for a given diffusion time tau, [1]_ eq. (42). The analytical formula
+        for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+
+        if self.model.anisotropic_scaling:
+            ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
+            Bm = mapmri.b_mat(ind_mat)
+            sel = Bm > 0.  # select only relevant coefficients
+            const = 1 / (np.sqrt(2 * np.pi) * self.us[0])
+            ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
+            rtpp_vec = const * Bm[sel] * ind_sum * mapmri_coef[sel]
+            rtpp = rtpp_vec.sum()
+            return rtpp
+        else:
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(
+                self.model.radial_order
+            )
+            rtpp_vec = np.zeros((ind_mat.shape[0]))
+            count = 0
+            for n in range(0, self.model.radial_order + 1, 2):
+                    for j in range(1, 2 + n // 2):
+                        l = n + 2 - 2 * j
+                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
+                        matsum = 0
+                        for k in range(0, j):
+                            matsum += (-1) ** k * \
+                                mapmri.binomialfloat(j + l - 0.5, j - k - 1) *\
+                                gamma(l / 2 + k + 1 / 2.0) /\
+                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
+                        for m in range(-l, l + 1):
+                            rtpp_vec[count] = const * matsum
+                            count += 1
+            direction = np.array(self.R[:, 0], ndmin=2)
+            r, theta, phi = cart2sphere(direction[:, 0], direction[:, 1],
+                                        direction[:, 2])
+
+            rtpp = mapmri_coef * (1 / self.us[0]) *\
+                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                                         theta, phi)
+            return rtpp.sum()
+
+    def rtap(self, tau):
+        r""" Calculates the analytical return to the axis probability (RTAP)
+        for a given diffusion time tau, [1]_ eq. (40, 44a). The analytical
+        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+
+        if self.model.anisotropic_scaling:
+            ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
+            Bm = mapmri.b_mat(ind_mat)
+            sel = Bm > 0.  # select only relevant coefficients
+            const = 1 / (2 * np.pi * np.prod(self.us[1:]))
+            ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
+            rtap_vec = const * Bm[sel] * ind_sum * mapmri_coef[sel]
+            rtap = np.sum(rtap_vec)
+        else:
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(
+                self.model.radial_order
+            )
+            rtap_vec = np.zeros((ind_mat.shape[0]))
+            count = 0
+
+            for n in range(0, self.model.radial_order + 1, 2):
+                for j in range(1, 2 + n // 2):
+                    l = n + 2 - 2 * j
+                    kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0)) / np.pi
+                    matsum = 0
+                    for k in range(0, j):
+                        matsum += ((-1) ** k *
+                                   mapmri.binomialfloat(j + l - 0.5,
+                                                        j - k - 1) *
+                                   gamma((l + 1) / 2.0 + k)) /\
+                            (factorial(k) * 0.5 ** ((l + 1) / 2.0 + k))
+                    for m in range(-l, l + 1):
+                        rtap_vec[count] = kappa * matsum
+                        count += 1
+            rtap_vec *= 2
+
+            direction = np.array(self.R[:, 0], ndmin=2)
+            r, theta, phi = cart2sphere(direction[:, 0],
+                                        direction[:, 1], direction[:, 2])
+            rtap_vec = mapmri_coef * (1 / self.us[0] ** 2) *\
+                rtap_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                                         theta, phi)
+            rtap = rtap_vec.sum()
+        return rtap
+
+    def rtop(self, tau):
+        r""" Calculates the analytical return to the origin probability (RTOP)
+        for a given diffusion time tau [1]_ eq. (36, 43). The analytical
+        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+
+        if self.model.anisotropic_scaling:
+            ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
+            Bm = mapmri.b_mat(ind_mat)
+            const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.us))
+            ind_sum = (-1.0) ** (np.sum(ind_mat, axis=1) / 2)
+            rtop_vec = const * ind_sum * Bm * mapmri_coef
+            rtop = rtop_vec.sum()
+        else:
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(
+                self.model.radial_order
+            )
+            Bm = mapmri.b_mat_isotropic(ind_mat)
+            const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
+            rtop_vec = const * (-1.0) ** (ind_mat[:, 0] - 1) * Bm
+            rtop = (1 / self.us[0] ** 3) * rtop_vec * mapmri_coef
+            rtop = rtop.sum()
+        return rtop
+
+    def msd(self, tau):
+        r""" Calculates the analytical Mean Squared Displacement (MSD) for a
+        given diffusion time tau. It is defined as the Laplacian of the origin
+        of the estimated signal [1]_. The analytical formula for the MAP-MRI
+        basis was derived in [2]_ eq. (C13, D1).
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
+        Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+        mu = self.us
+        if self.model.anisotropic_scaling:
+            ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
+            Bm = mapmri.b_mat(ind_mat)
+            sel = Bm > 0.  # select only relevant coefficients
+            ind_sum = np.sum(ind_mat[sel], axis=1)
+            nx, ny, nz = ind_mat[sel].T
+
+            numerator = (-1) ** (0.5 * (-ind_sum)) * np.pi ** (3 / 2.0) *\
+                ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
+                 mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2)
+
+            denominator = np.sqrt(2. ** (-ind_sum) * factorial(nx) *
+                                  factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *\
+                gamma(0.5 - 0.5 * nz)
+
+            msd_vec = mapmri_coef[sel] * (numerator / denominator)
+            msd = msd_vec.sum()
+        else:
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(
+                self.model.radial_order
+            )
+            Bm = mapmri.b_mat_isotropic(ind_mat)
+            sel = Bm > 0.  # select only relevant coefficients
+            msd_vec = (4 * ind_mat[sel, 0] - 1) * Bm[sel]
+            msd = self.us[0] ** 2 * msd_vec * mapmri_coef[sel]
+            msd = msd.sum()
+        return msd
+
+    def qiv(self, tau):
+        r""" Calculates the analytical Q-space Inverse Variance (QIV) for given
+        diffusion time tau.
+        It is defined as the inverse of the Laplacian of the origin of the
+        estimated propagator [1]_ eq. (22). The analytical formula for the
+        MAP-MRI basis was derived in [2]_ eq. (C14, D2).
+
+        Parameters
+        ----------
+        tau : float
+            diffusion time (big_delta - small_delta / 3.) in seconds
+
+        References
+        ----------
+        .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
+        (bfor): An analytical diffusion propagator reconstruction for hybrid
+        diffusion imaging and computation of q-space indices. NeuroImage 64,
+        2013, 650–670.
+
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
+        ux, uy, uz = self.us
+        if self.model.anisotropic_scaling:
+            ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
+            Bm = mapmri.b_mat(ind_mat)
+            sel = Bm > 0  # select only relevant coefficients
+            nx, ny, nz = ind_mat[sel].T
+
+            numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
+                np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
+                gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
+                gamma(0.5 - 0.5 * nz)
+
+            denominator = np.sqrt(2. ** (-1 + nx + ny + nz)) *\
+                ((1 + 2 * nx) * uy ** 2 * uz ** 2 + ux ** 2 *
+                 ((1 + 2 * nz) * uy ** 2 + (1 + 2 * ny) * uz ** 2))
+
+            qiv_vec = mapmri_coef[sel] * (numerator / denominator)
+            qiv = qiv_vec.sum()
+        else:
+            ind_mat = mapmri.mapmri_isotropic_index_matrix(
+                self.model.radial_order
+            )
+            Bm = mapmri.b_mat_isotropic(ind_mat)
+            sel = Bm > 0.  # select only relevant coefficients
+            j = ind_mat[sel, 0]
+            qiv_vec = ((8 * (-1.0) ** (1 - j) *
+                        np.sqrt(2) * np.pi ** (7 / 2.)) / ((4.0 * j - 1) *
+                                                           Bm[sel]))
+            qiv = ux ** 5 * qiv_vec * mapmri_coef[sel]
+            qiv = qiv.sum()
+        return qiv
+
     def fitted_signal(self, gtab=None):
-        """ Recovers the fitted signal. If no gtab is given it recovers
-        the signal for the gtab of the data.
+        """
+        Recovers the fitted signal for the given gradient table. If no gradient
+        table is given it recovers the signal for the gtab of the model object.
         """
         if gtab is None:
             E = self.predict(self.model.gtab)
@@ -368,10 +768,9 @@ class QtdmriFit():
         return E
 
     def predict(self, qvals_or_gtab, S0=1.):
-        r'''Recovers the reconstructed signal for any qvalue array or
-        gradient table. We precompute the mu independent part of the
-        design matrix Q to speed up the computation.
-        '''
+        r"""Recovers the reconstructed signal for any qvalue array or
+        gradient table.
+        """
         tau_scaling = self.tau_scaling
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab[:, :3]
@@ -386,28 +785,41 @@ class QtdmriFit():
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
                 M = qtdmri_signal_matrix_(self.model.radial_order,
-                                           self.model.time_order,
-                                           self.us, self.ut, q_rot, tau,
-                                           self.model.normalization)
+                                          self.model.time_order,
+                                          self.us, self.ut, q_rot, tau,
+                                          self.model.normalization)
             else:
                 M = qtdmri_signal_matrix_(self.model.radial_order,
-                                           self.model.time_order,
-                                           self.us, self.ut, q, tau,
-                                           self.model.normalization)
+                                          self.model.time_order,
+                                          self.us, self.ut, q, tau,
+                                          self.model.normalization)
         else:
             M = qtdmri_isotropic_signal_matrix_(self.model.radial_order,
-                                                 self.model.time_order,
-                                                 self.us[0], self.ut, q, tau)
+                                                self.model.time_order,
+                                                self.us[0], self.ut, q, tau)
         E = S0 * np.dot(M, self._qtdmri_coef)
         return E
 
     def norm_of_laplacian_signal(self):
+        """ Calculates the norm of the laplacian of the fitted signal [1]_.
+        This information could be useful to assess if the extrapolation of the
+        fitted signal contains spurious oscillations. A high laplacian may
+        indicate that these are present, and any q-space indices that
+        use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
+        QIV).
+
+        References
+        ----------
+        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        using Laplacian-regularized MAP-MRI and its application to HCP data."
+        NeuroImage (2016).
+        """
         if self.model.anisotropic_scaling:
             lap_matrix = qtdmri_laplacian_reg_matrix(self.model.ind_mat,
-                                                      self.us, self.ut,
-                                                      self.model.S_mat,
-                                                      self.model.T_mat,
-                                                      self.model.U_mat)
+                                                     self.us, self.ut,
+                                                     self.model.S_mat,
+                                                     self.model.T_mat,
+                                                     self.model.U_mat)
         else:
             lap_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                 self.model.ind_mat, self.us, self.ut
@@ -425,112 +837,15 @@ class QtdmriFit():
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
         if self.model.anisotropic_scaling:
             K = qtdmri_eap_matrix_(self.model.radial_order,
-                                    self.model.time_order,
-                                    self.us, self.ut, rt_points_,
-                                    self.model.normalization)
+                                   self.model.time_order,
+                                   self.us, self.ut, rt_points_,
+                                   self.model.normalization)
         else:
             K = qtdmri_isotropic_eap_matrix_(self.model.radial_order,
-                                              self.model.time_order,
-                                              self.us[0], self.ut, rt_points_)
+                                             self.model.time_order,
+                                             self.us[0], self.ut, rt_points_)
         eap = np.dot(K, self._qtdmri_coef)
         return eap
-
-    def qtdmri_to_mapmri_coef(self, tau):
-        if self.model.anisotropic_scaling:
-            I = self.model.cache_get('qtdmri_to_mapmri_matrix',
-                                     key=(tau))
-            if I is None:
-                I = qtdmri_to_mapmri_matrix(self.model.radial_order,
-                                             self.model.time_order, self.ut,
-                                             self.tau_scaling * tau)
-                self.model.cache_set('qtdmri_to_mapmri_matrix',
-                                     (tau), I)
-        else:
-            I = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
-                                     key=(tau))
-            if I is None:
-                I = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
-                                                       self.model.time_order,
-                                                       self.ut,
-                                                       self.tau_scaling * tau)
-                self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
-                                     (tau), I)
-
-        mapmri_coef = np.dot(I, self._qtdmri_coef)
-        return mapmri_coef
-
-    def msd(self, tau):
-        ind_mat = qtdmri_index_matrix(self.model.radial_order,
-                                       self.model.time_order)
-        mu = self.us
-        max_o = ind_mat[:, 3].max()
-        small_temporal_storage = np.zeros(max_o + 1)
-        for o in range(max_o + 1):
-            small_temporal_storage[o] = temporal_basis(o, self.ut,
-                                                       tau * self.tau_scaling)
-        msd = 0.
-        for i in range(ind_mat.shape[0]):
-            nx, ny, nz = ind_mat[i, :3]
-            if not(nx % 2) and not(ny % 2) and not(nz % 2):
-                msd += (
-                    self._qtdmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
-                    np.pi ** (3/2.0) *
-                    ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) * mu[1] ** 2 +
-                     (1 + 2 * nz) * mu[2] ** 2) /
-                    (np.sqrt(2 ** (-nx - ny - nz) *
-                             factorial(nx) * factorial(ny) * factorial(nz)) *
-                     gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *
-                     gamma(0.5 - 0.5 * nz)) *
-                    small_temporal_storage[ind_mat[i, 3]]
-                )
-        return msd
-
-    def rtop(self, tau):
-        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
-        ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
-        B_mat = mapmri.b_mat(ind_mat)
-        mu = self.us
-
-        rtop = 0.
-        const = 1. / np.sqrt(
-            8 * np.pi ** 3 * (mu[0] ** 2 * mu[1] ** 2 * mu[2] ** 2)
-        )
-        for i in range(ind_mat.shape[0]):
-            nx, ny, nz = ind_mat[i]
-            if B_mat[i] > 0.:
-                rtop += (
-                    const * (-1.0) ** ((nx + ny + nz) / 2.0) * mapmri_coef[i] *
-                    B_mat[i]
-                )
-        return rtop
-
-    def rtap(self, tau):
-        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
-        ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
-        B_mat = mapmri.b_mat(ind_mat)
-        mu = self.us
-
-        # if self.model.anisotropic_scaling:
-        sel = B_mat > 0.  # select only relevant coefficients
-        const = 1 / (2 * np.pi * np.prod(mu[1:]))
-        ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
-        rtap_vec = const * B_mat[sel] * ind_sum * mapmri_coef[sel]
-        rtap = np.sum(rtap_vec)
-        return rtap
-
-    def rtpp(self, tau):
-        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
-        ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
-        B_mat = mapmri.b_mat(ind_mat)
-        mu = self.us
-
-        # if self.model.anisotropic_scaling:
-        sel = B_mat > 0.  # select only relevant coefficients
-        const = 1 / (np.sqrt(2 * np.pi) * mu[0])
-        ind_sum = (-1.0) ** (ind_mat[sel, 0] / 2.0)
-        rtpp_vec = const * B_mat[sel] * ind_sum * mapmri_coef[sel]
-        rtpp = rtpp_vec.sum()
-        return rtpp
 
 
 def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
@@ -580,7 +895,7 @@ def qtdmri_temporal_normalization(ut):
 
 
 def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
-                           normalization=False):
+                          normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -731,7 +1046,7 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
 
 def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
-                        normalization=False):
+                       normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -753,7 +1068,7 @@ def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
 
 
 def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
-                                 spatial_storage=None):
+                                spatial_storage=None):
     r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
@@ -910,21 +1225,21 @@ def b_mat(ind_mat):
 
 
 def qtdmri_laplacian_reg_matrix_normalized(ind_mat, us, ut,
-                                            S_mat, T_mat, U_mat):
+                                           S_mat, T_mat, U_mat):
     sqrtC = mapmri.mapmri_normalization(us)
     sqrtut = qtdmri_temporal_normalization(ut)
     normalization = sqrtC * sqrtut
     normalized_laplacian_matrix = (
         normalization ** 2 * qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
-                                                          S_mat, T_mat, U_mat)
-                                                          )
+                                                         S_mat, T_mat, U_mat)
+                                                         )
     return normalized_laplacian_matrix
 
 
 def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
-                                 part1_ut_precomp=None,
-                                 part23_ut_precomp=None,
-                                 part4_ut_precomp=None):
+                                part1_ut_precomp=None,
+                                part23_ut_precomp=None,
+                                part4_ut_precomp=None):
     part1_us = mapmri.mapmri_laplacian_reg_matrix(ind_mat[:, :3], us,
                                                   S_mat, T_mat, U_mat)
     part23_us = part23_reg_matrix_q(ind_mat, U_mat, T_mat, us)
@@ -1024,9 +1339,7 @@ def part4_reg_matrix_q(ind_mat, U_mat, us):
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
-            if x[i] == x[k] and \
-               y[i] == y[k] and \
-               z[i] == z[k]:
+            if x[i] == x[k] and y[i] == y[k] and z[i] == z[k]:
                 LR[i, k] = LR[k, i] = (
                     (1. / (ux * uy * uz)) * U_mat[x[i], x[k]] *
                     U_mat[y[i], y[k]] * U_mat[z[i], z[k]]
