@@ -21,26 +21,32 @@ cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
 class QtdmriModel(Cache):
-    r""" Analytical and continuous modeling of the diffusion signal using
-        the diffusion time extended MAP-MRI basis [1].
-        This implementation is based on the recent IPMI publication [2]
+    r"""The q$\tau$-dMRI model [1] to analytically and continuously represent
+        the q$\tau$ diffusion signal attenuation over diffusion sensitization
+        q and diffusion time $\tau$. The model can be seen as an extension of
+        the MAP-MRI basis [2] towards different diffusion times.
 
         The main idea is to model the diffusion signal over time and space as
-        a linear combination of continuous functions $\phi_i$,
+        a linear combination of continuous functions,
 
         ..math::
             :nowrap:
                 \begin{equation}
-                    E(\mathbf{q},\tau)= \sum_{i=0}^I  c_{i}
-                    \S_{i}(\mathbf{q})T_{i}(\tau).
+                    \hat{E}(\textbf{q},\tau;\textbf{c}) =
+                    \sum_i^{N_{\textbf{q}}}\sum_k^{N_\tau} \textbf{c}_{ik}
+                    \,\Phi_i(\textbf{q})\,T_k(\tau),
                 \end{equation}
 
-        where $\mathbf{q}$ is the wavector which corresponds to different
-        gradient directions.
+        where $\Phi$ and $T$ are the spatial and temporal basis funcions,
+        $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal
+        order, and $i,k$ are basis order iterators.
 
-        From the $c_i$ coefficients, there exists an analytical formula to
-        estimate the ODF, RTOP, RTAP, RTPP and MSD, for any diffusion time.
+        The estimation of the coefficients $c_i$ can be regularized using
+        either analytic Laplacian regularization, sparsity regularization using
+        the l1-norm, or both to do a type of elastic net regularization.
 
+        From the coefficients, there exists an analytical formula to estimate
+        the ODF, RTOP, RTAP, RTPP, QIV and MSD, for any diffusion time.
 
         Parameters
         ----------
@@ -49,41 +55,70 @@ class QtdmriModel(Cache):
             should be in the normal s/mm^2. big_delta and small_delta need to
             given in seconds.
         radial_order : unsigned int,
-            an even integer that represent the order of the basis.
+            an even integer representing the spatial/radial order of the basis.
         time_order : unsigned int,
-
-        laplacian_regularization: bool,
-            Regularize using the Laplacian of the SHORE basis.
+            an integer larger or equal than zero representing the time order
+            of the basis.
+        laplacian_regularization : bool,
+            Regularize using the Laplacian of the qt-dMRI basis.
         laplacian_weighting: string or scalar,
             The string 'GCV' makes it use generalized cross-validation to find
             the regularization weight [3]. A scalar sets the regularization
             weight to that value.
-        tau : float,
-            diffusion time. Defined as $\Delta-\delta/3$ in seconds.
-            Default value makes q equal to the square root of the b-value.
+        l1_regularization : bool,
+            Regularize by imposing sparsity in the coefficients using the
+            l1-norm.
+        l1_weighting : 'CV' or scalar,
+            The string 'CV' makes it use five-fold cross-validation to find
+            the regularization weight. A scalar sets the regularization weight
+            to that value.
+        cartesian : bool
+            Whether to use the Cartesian or spherical implementation of the
+            qt-dMRI basis, which we first explored in [4].
+        anisotropic_scaling : bool
+            Whether to use anisotropic scaling or isotropic scaling. This
+            option can be used to test if the Cartesian implementation is
+            equivalent with the spherical one when using the same scaling.
+        normalization : bool
+            Whether to normalize the basis functions such that their inner
+            product is equal to one. Normalization is only necessary when
+            imposing sparsity in the spherical basis if cartesian=False.
+        constrain_q0 : bool
+            whether to constrain the q0 point to unity along the tau-space.
+            This is necessary to ensure that $E(0,\tau)=1$.
+        bval_threshold : float
+            the threshold b-value to be used, such that only data points below
+            that threshold are used when estimating the scale factors.
 
         References
         ----------
-        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+           Representation of dMRI in Space and Time", Medical Image Analysis,
+           2017.
+
+        .. [2] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
            diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
-           [2] Fick et al., "A unifying framework for spatial and temporal
-           diffusion", IPMI, 2015.
-           [3] Craven et al. "Smoothing Noisy Data with Spline Functions."
+
+        .. [3] Craven et al. "Smoothing Noisy Data with Spline Functions."
            NUMER MATH 31.4 (1978): 377-403.
+
+        .. [4] Fick, Rutger HJ, et al. "A unifying framework for spatial and
+           temporal diffusion in diffusion mri." International Conference on
+           Information Processing in Medical Imaging. Springer, Cham, 2015.
         """
 
     def __init__(self,
                  gtab,
                  radial_order=6,
                  time_order=2,
-                 cartesian=True,
-                 anisotropic_scaling=True,
-                 normalization=False,
                  laplacian_regularization=False,
                  laplacian_weighting=0.2,
                  l1_regularization=False,
                  l1_weighting=0.1,
+                 cartesian=True,
+                 anisotropic_scaling=True,
+                 normalization=False,
                  constrain_q0=True,
                  bval_threshold=np.inf
                  ):
