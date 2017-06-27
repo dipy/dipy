@@ -277,11 +277,11 @@ if interactive:
 
 else:
 
-    window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
+    window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
                   reset_camera=False)
 
 """
-.. figure:: bundles_and_a_slice.png
+.. figure:: bundles_and_3_slices.png
    :align: center
 
    **A few bundles with interactive slicing**.
