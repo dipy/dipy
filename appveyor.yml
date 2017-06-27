@@ -3,24 +3,14 @@ build: false
 environment:
   matrix:
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.10"
+      PYTHON_VERSION: "2.7.11"
       PYTHON_ARCH: "64"
       MINICONDA: C:\Miniconda
 
-    - PYTHON: "C:\\Python33"
-      PYTHON_VERSION: "3.3.5"
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.0"
       PYTHON_ARCH: "64"
-      MINICONDA: C:\Miniconda3
-
-    - PYTHON: "C:\\Python34"
-      PYTHON_VERSION: "3.4.3"
-      PYTHON_ARCH: "64"
-      MINICONDA: C:\Miniconda3
-
-    - PYTHON: "C:\\Python35"
-      PYTHON_VERSION: "3.5.0"
-      PYTHON_ARCH: "64"
-      MINICONDA: C:\Miniconda35
+      MINICONDA: C:\Miniconda36
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH% %MINICONDA%"
