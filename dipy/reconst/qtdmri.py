@@ -19,7 +19,7 @@ import random
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
-class MaptimeModel(Cache):
+class QtdmriModel(Cache):
     r""" Analytical and continuous modeling of the diffusion signal using
         the diffusion time extended MAP-MRI basis [1].
         This implementation is based on the recent IPMI publication [2]
@@ -295,12 +295,12 @@ class MaptimeModel(Cache):
             pseudoInv = np.linalg.pinv(M)
             maptime_coef = np.dot(pseudoInv, data_norm)
 
-        return MaptimeFit(
+        return QtdmriFit(
             self, maptime_coef, us, ut, tau_scaling, R, lopt, alpha
         )
 
 
-class MaptimeFit():
+class QtdmriFit():
 
     def __init__(self, model, maptime_coef, us, ut, tau_scaling, R, lopt,
                  alpha):
