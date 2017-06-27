@@ -74,8 +74,8 @@ class QtdmriModel(Cache):
 
     def __init__(self,
                  gtab,
-                 radial_order=4,
-                 time_order=3,
+                 radial_order=6,
+                 time_order=2,
                  cartesian=True,
                  anisotropic_scaling=True,
                  normalization=False,
@@ -83,7 +83,6 @@ class QtdmriModel(Cache):
                  laplacian_weighting=0.2,
                  l1_regularization=False,
                  l1_weighting=0.1,
-                 elastic_net=False,
                  constrain_q0=True,
                  bval_threshold=np.inf
                  ):
@@ -105,9 +104,9 @@ class QtdmriModel(Cache):
             raise ValueError(msg)
         self.time_order = time_order
         if self.anisotropic_scaling:
-            self.ind_mat = maptime_index_matrix(radial_order, time_order)
+            self.ind_mat = qtdmri_index_matrix(radial_order, time_order)
         else:
-            self.ind_mat = maptime_isotropic_index_matrix(radial_order,
+            self.ind_mat = qtdmri_isotropic_index_matrix(radial_order,
                                                           time_order)
 
         self.S_mat, self.T_mat, self.U_mat = mapmri.mapmri_STU_reg_matrices(
@@ -118,7 +117,6 @@ class QtdmriModel(Cache):
         self.part1_reg_mat_tau = part1_reg_matrix_tau(self.ind_mat, 1.)
         self.l1_regularization = l1_regularization
         self.l1_weighting = l1_weighting
-        self.elastic_net = elastic_net
         self.tenmodel = dti.TensorModel(gtab)
 
     @multi_voxel_fit
@@ -132,44 +130,44 @@ class QtdmriModel(Cache):
 
         if self.cartesian:
             if self.anisotropic_scaling:
-                us, ut, R = maptime_anisotropic_scaling(data_norm[bval_mask],
+                us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
                                                         qvals[bval_mask],
                                                         bvecs[bval_mask],
                                                         tau[bval_mask])
                 tau_scaling = ut / us.mean()
                 tau_scaled = tau * tau_scaling
-                us, ut, R = maptime_anisotropic_scaling(data_norm[bval_mask],
+                us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
                                                         qvals[bval_mask],
                                                         bvecs[bval_mask],
                                                         tau_scaled[bval_mask])
                 us = np.clip(us, 1e-4, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
-                M = maptime_signal_matrix_(
+                M = qtdmri_signal_matrix_(
                     self.radial_order, self.time_order, us, ut, q, tau_scaled,
                     self.normalization
                 )
             else:
-                us, ut = maptime_isotropic_scaling(data_norm, qvals, tau)
+                us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
                 tau_scaling = ut / us
                 tau_scaled = tau * tau_scaling
-                us, ut = maptime_isotropic_scaling(data_norm, qvals,
+                us, ut = qtdmri_isotropic_scaling(data_norm, qvals,
                                                    tau_scaled)
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
-                M = maptime_signal_matrix_(
+                M = qtdmri_signal_matrix_(
                     self.radial_order, self.time_order, us, ut, q, tau_scaled,
                     self.normalization
                 )
         else:
-            us, ut = maptime_isotropic_scaling(data_norm, qvals, tau)
+            us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
             tau_scaling = ut / us
             tau_scaled = tau * tau_scaling
-            us, ut = maptime_isotropic_scaling(data_norm, qvals, tau_scaled)
+            us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau_scaled)
             R = np.eye(3)
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
-            M = maptime_isotropic_signal_matrix_(
+            M = qtdmri_isotropic_signal_matrix_(
                 self.radial_order, self.time_order, us[0], ut, q, tau_scaled
             )
 
@@ -183,16 +181,16 @@ class QtdmriModel(Cache):
 
         lopt = 0.
         alpha = 0.
-        if self.laplacian_regularization:
+        if self.laplacian_regularization and not self.l1_regularization:
             if self.cartesian:
-                laplacian_matrix = maptime_laplacian_reg_matrix(
+                laplacian_matrix = qtdmri_laplacian_reg_matrix(
                     self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau
                 )
             else:
-                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(
+                laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                     self.ind_mat, self.us, self.ut
                 )
             if self.laplacian_weighting == 'GCV':
@@ -200,7 +198,7 @@ class QtdmriModel(Cache):
                     lopt = generalized_crossvalidation(data_norm, M,
                                                        laplacian_matrix)
                 except:
-                    lopt = 3e-4
+                    lopt = 2e-4
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             elif type(self.laplacian_weighting) == np.ndarray:
@@ -221,10 +219,10 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver="ECOS", verbose=False)
-                maptime_coef = np.asarray(c.value).squeeze()
+                qtdmri_coef = np.asarray(c.value).squeeze()
             except:
-                maptime_coef = np.zeros(M.shape[1])
-        elif self.l1_regularization:
+                qtdmri_coef = np.zeros(M.shape[1])
+        elif self.l1_regularization and not self.laplacian_regularization:
             if self.l1_weighting == 'CV':
                 alpha = l1_crossvalidation(b0s_mask, data_norm, M)
             elif np.isscalar(self.l1_weighting):
@@ -244,19 +242,19 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver="ECOS", verbose=False)
-                maptime_coef = np.asarray(c.value).squeeze()
+                qtdmri_coef = np.asarray(c.value).squeeze()
             except:
-                maptime_coef = np.zeros(M.shape[1])
-        elif self.elastic_net:
+                qtdmri_coef = np.zeros(M.shape[1])
+        elif self.l1_regularization and not self.laplacian_regularization:
             if self.cartesian:
-                laplacian_matrix = maptime_laplacian_reg_matrix(
+                laplacian_matrix = qtdmri_laplacian_reg_matrix(
                     self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau
                 )
             else:
-                laplacian_matrix = maptime_isotropic_laplacian_reg_matrix(
+                laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                     self.ind_mat, self.us, self.ut
                 )
             if self.laplacian_weighting == 'GCV':
@@ -288,21 +286,21 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver="ECOS", verbose=False)
-                maptime_coef = np.asarray(c.value).squeeze()
+                qtdmri_coef = np.asarray(c.value).squeeze()
             except:
-                maptime_coef = np.zeros(M.shape[1])
-        else:
+                qtdmri_coef = np.zeros(M.shape[1])
+        elif not self.l1_regularization and not self.laplacian_regularization:
             pseudoInv = np.linalg.pinv(M)
-            maptime_coef = np.dot(pseudoInv, data_norm)
+            qtdmri_coef = np.dot(pseudoInv, data_norm)
 
         return QtdmriFit(
-            self, maptime_coef, us, ut, tau_scaling, R, lopt, alpha
+            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha
         )
 
 
 class QtdmriFit():
 
-    def __init__(self, model, maptime_coef, us, ut, tau_scaling, R, lopt,
+    def __init__(self, model, qtdmri_coef, us, ut, tau_scaling, R, lopt,
                  alpha):
         """ Calculates diffusion properties for a single voxel
 
@@ -310,8 +308,8 @@ class QtdmriFit():
         ----------
         model : object,
             AnalyticalModel
-        maptime_coef : 1d ndarray,
-            maptime coefficients
+        qtdmri_coef : 1d ndarray,
+            qtdmri coefficients
         us : array, 3 x 1
             spatial scaling factors
         ut : float
@@ -323,7 +321,7 @@ class QtdmriFit():
         """
 
         self.model = model
-        self._maptime_coef = maptime_coef
+        self._qtdmri_coef = qtdmri_coef
         self.us = us
         self.ut = ut
         self.tau_scaling = tau_scaling
@@ -332,15 +330,15 @@ class QtdmriFit():
         self.alpha = alpha
 
     @property
-    def maptime_coeff(self):
-        """The MAPTIME coefficients
+    def qtdmri_coeff(self):
+        """The qtdmri coefficients
         """
-        return self._maptime_coef
+        return self._qtdmri_coef
 
     def sparsity_abs(self, threshold=0.99):
-        total_weight = np.sum(abs(self._maptime_coef))
+        total_weight = np.sum(abs(self._qtdmri_coef))
         absolute_normalized_coef_array = (
-            np.sort(abs(self._maptime_coef))[::-1] / total_weight)
+            np.sort(abs(self._qtdmri_coef))[::-1] / total_weight)
         current_weight = 0.
         counter = 0
         while current_weight < threshold:
@@ -349,9 +347,9 @@ class QtdmriFit():
         return counter
 
     def sparsity_density(self, threshold=0.99):
-        total_weight = np.sum(self._maptime_coef ** 2)
+        total_weight = np.sum(self._qtdmri_coef ** 2)
         squared_normalized_coef_array = (
-            np.sort(self._maptime_coef ** 2)[::-1] / total_weight)
+            np.sort(self._qtdmri_coef ** 2)[::-1] / total_weight)
         current_weight = 0.
         counter = 0
         while current_weight < threshold:
@@ -387,35 +385,35 @@ class QtdmriFit():
         if self.model.cartesian:
             if self.model.anisotropic_scaling:
                 q_rot = np.dot(q, self.R)
-                M = maptime_signal_matrix_(self.model.radial_order,
+                M = qtdmri_signal_matrix_(self.model.radial_order,
                                            self.model.time_order,
                                            self.us, self.ut, q_rot, tau,
                                            self.model.normalization)
             else:
-                M = maptime_signal_matrix_(self.model.radial_order,
+                M = qtdmri_signal_matrix_(self.model.radial_order,
                                            self.model.time_order,
                                            self.us, self.ut, q, tau,
                                            self.model.normalization)
         else:
-            M = maptime_isotropic_signal_matrix_(self.model.radial_order,
+            M = qtdmri_isotropic_signal_matrix_(self.model.radial_order,
                                                  self.model.time_order,
                                                  self.us[0], self.ut, q, tau)
-        E = S0 * np.dot(M, self._maptime_coef)
+        E = S0 * np.dot(M, self._qtdmri_coef)
         return E
 
     def norm_of_laplacian_signal(self):
         if self.model.anisotropic_scaling:
-            lap_matrix = maptime_laplacian_reg_matrix(self.model.ind_mat,
+            lap_matrix = qtdmri_laplacian_reg_matrix(self.model.ind_mat,
                                                       self.us, self.ut,
                                                       self.model.S_mat,
                                                       self.model.T_mat,
                                                       self.model.U_mat)
         else:
-            lap_matrix = maptime_isotropic_laplacian_reg_matrix(
+            lap_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                 self.model.ind_mat, self.us, self.ut
             )
-        norm_laplacian = np.dot(self._maptime_coef,
-                                np.dot(self._maptime_coef, lap_matrix))
+        norm_laplacian = np.dot(self._qtdmri_coef,
+                                np.dot(self._qtdmri_coef, lap_matrix))
         return norm_laplacian
 
     def pdf(self, rt_points):
@@ -426,43 +424,43 @@ class QtdmriFit():
         tau_scaling = self.tau_scaling
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
         if self.model.anisotropic_scaling:
-            K = maptime_eap_matrix_(self.model.radial_order,
+            K = qtdmri_eap_matrix_(self.model.radial_order,
                                     self.model.time_order,
                                     self.us, self.ut, rt_points_,
                                     self.model.normalization)
         else:
-            K = maptime_isotropic_eap_matrix_(self.model.radial_order,
+            K = qtdmri_isotropic_eap_matrix_(self.model.radial_order,
                                               self.model.time_order,
                                               self.us[0], self.ut, rt_points_)
-        eap = np.dot(K, self._maptime_coef)
+        eap = np.dot(K, self._qtdmri_coef)
         return eap
 
-    def maptime_to_mapmri_coef(self, tau):
+    def qtdmri_to_mapmri_coef(self, tau):
         if self.model.anisotropic_scaling:
-            I = self.model.cache_get('maptime_to_mapmri_matrix',
+            I = self.model.cache_get('qtdmri_to_mapmri_matrix',
                                      key=(tau))
             if I is None:
-                I = maptime_to_mapmri_matrix(self.model.radial_order,
+                I = qtdmri_to_mapmri_matrix(self.model.radial_order,
                                              self.model.time_order, self.ut,
                                              self.tau_scaling * tau)
-                self.model.cache_set('maptime_to_mapmri_matrix',
+                self.model.cache_set('qtdmri_to_mapmri_matrix',
                                      (tau), I)
         else:
-            I = self.model.cache_get('maptime_isotropic_to_mapmri_matrix',
+            I = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
                                      key=(tau))
             if I is None:
-                I = maptime_isotropic_to_mapmri_matrix(self.model.radial_order,
+                I = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
                                                        self.model.time_order,
                                                        self.ut,
                                                        self.tau_scaling * tau)
-                self.model.cache_set('maptime_isotropic_to_mapmri_matrix',
+                self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
                                      (tau), I)
 
-        mapmri_coef = np.dot(I, self._maptime_coef)
+        mapmri_coef = np.dot(I, self._qtdmri_coef)
         return mapmri_coef
 
     def msd(self, tau):
-        ind_mat = maptime_index_matrix(self.model.radial_order,
+        ind_mat = qtdmri_index_matrix(self.model.radial_order,
                                        self.model.time_order)
         mu = self.us
         max_o = ind_mat[:, 3].max()
@@ -475,7 +473,7 @@ class QtdmriFit():
             nx, ny, nz = ind_mat[i, :3]
             if not(nx % 2) and not(ny % 2) and not(nz % 2):
                 msd += (
-                    self._maptime_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
+                    self._qtdmri_coef[i] * (-1) ** (0.5 * (- nx - ny - nz)) *
                     np.pi ** (3/2.0) *
                     ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) * mu[1] ** 2 +
                      (1 + 2 * nz) * mu[2] ** 2) /
@@ -488,7 +486,7 @@ class QtdmriFit():
         return msd
 
     def rtop(self, tau):
-        mapmri_coef = self.maptime_to_mapmri_coef(tau)
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
@@ -507,7 +505,7 @@ class QtdmriFit():
         return rtop
 
     def rtap(self, tau):
-        mapmri_coef = self.maptime_to_mapmri_coef(tau)
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
@@ -521,7 +519,7 @@ class QtdmriFit():
         return rtap
 
     def rtpp(self, tau):
-        mapmri_coef = self.maptime_to_mapmri_coef(tau)
+        mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
         B_mat = mapmri.b_mat(ind_mat)
         mu = self.us
@@ -535,19 +533,19 @@ class QtdmriFit():
         return rtpp
 
 
-def maptime_to_mapmri_matrix(radial_order, time_order, ut, tau):
+def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
     mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
     n_elem_mapmri = mapmri_ind_mat.shape[0]
-    maptime_ind_mat = maptime_index_matrix(radial_order, time_order)
-    n_elem_maptime = maptime_ind_mat.shape[0]
+    qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
+    n_elem_qtdmri = qtdmri_ind_mat.shape[0]
 
     temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
-    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_maptime))
-    for nxt, nyt, nzt, o in maptime_ind_mat:
+    mapmri_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
+    for nxt, nyt, nzt, o in qtdmri_ind_mat:
         index_overlap = np.all([nxt == mapmri_ind_mat[:, 0],
                                 nyt == mapmri_ind_mat[:, 1],
                                 nzt == mapmri_ind_mat[:, 2]], 0)
@@ -556,19 +554,19 @@ def maptime_to_mapmri_matrix(radial_order, time_order, ut, tau):
     return mapmri_mat
 
 
-def maptime_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
+def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
     mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
     n_elem_mapmri = mapmri_ind_mat.shape[0]
-    maptime_ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
-    n_elem_maptime = maptime_ind_mat.shape[0]
+    qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
+    n_elem_qtdmri = qtdmri_ind_mat.shape[0]
 
     temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
         temporal_storage[o] = temporal_basis(o, ut, tau)
 
     counter = 0
-    mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_maptime))
-    for j, l, m, o in maptime_ind_mat:
+    mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
+    for j, l, m, o in qtdmri_ind_mat:
         index_overlap = np.all([j == mapmri_ind_mat[:, 0],
                                 l == mapmri_ind_mat[:, 1],
                                 m == mapmri_ind_mat[:, 2]], 0)
@@ -577,31 +575,31 @@ def maptime_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
     return mapmri_isotropic_mat
 
 
-def maptime_temporal_normalization(ut):
+def qtdmri_temporal_normalization(ut):
     return np.sqrt(ut)
 
 
-def maptime_signal_matrix_(radial_order, time_order, us, ut, q, tau,
+def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
                            normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
     if normalization:
         sqrtC = mapmri.mapmri_normalization(us)
-        sqrtut = maptime_temporal_normalization(ut)
+        sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
-    M_tau = (maptime_signal_matrix(radial_order, time_order, us, ut, q, tau) *
+    M_tau = (qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau) *
              sqrtCut)
     return M_tau
 
 
-def maptime_signal_matrix(radial_order, time_order, us, ut, q, tau):
+def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
     r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
     '''
-    ind_mat = maptime_index_matrix(radial_order, time_order)
+    ind_mat = qtdmri_index_matrix(radial_order, time_order)
 
     n_dat = q.shape[0]
     n_elem = ind_mat.shape[0]
@@ -637,22 +635,22 @@ def maptime_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
 def design_matrix_normalized(radial_order, time_order, us, ut, q, tau):
     sqrtC = mapmri.mapmri_normalization(us)
-    sqrtut = maptime_temporal_normalization(ut)
+    sqrtut = qtdmri_temporal_normalization(ut)
     normalization = sqrtC * sqrtut
     normalized_design_matrix = (
         normalization *
-        maptime_signal_matrix(radial_order, time_order, us, ut, q, tau)
+        qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau)
     )
     return normalized_design_matrix
 
 
-def maptime_eap_matrix(radial_order, time_order, us, ut, grid):
+def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
     '''
-    ind_mat = maptime_index_matrix(radial_order, time_order)
+    ind_mat = qtdmri_index_matrix(radial_order, time_order)
     rx, ry, rz, tau = grid.T
 
     n_dat = rx.shape[0]
@@ -683,15 +681,15 @@ def maptime_eap_matrix(radial_order, time_order, us, ut, grid):
     return K
 
 
-def maptime_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau):
-    M_tau = maptime_isotropic_signal_matrix(
+def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau):
+    M_tau = qtdmri_isotropic_signal_matrix(
         radial_order, time_order, us, ut, q, tau
     )
     return M_tau
 
 
-def maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
-    ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
+def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
+    ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
     qvals, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
 
     n_dat = qvals.shape[0]
@@ -732,29 +730,29 @@ def maptime_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     return M
 
 
-def maptime_eap_matrix_(radial_order, time_order, us, ut, grid,
+def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
                         normalization=False):
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
     if normalization:
         sqrtC = mapmri.mapmri_normalization(us)
-        sqrtut = maptime_temporal_normalization(ut)
+        sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
     K_tau = (
-        maptime_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
+        qtdmri_eap_matrix(radial_order, time_order, us, ut, grid) * sqrtCut
     )
     return K_tau
 
 
-def maptime_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
-    K_tau = maptime_isotropic_eap_matrix(
+def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
+    K_tau = qtdmri_isotropic_eap_matrix(
         radial_order, time_order, us, ut, grid
     )
     return K_tau
 
 
-def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
+def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
                                  spatial_storage=None):
     r'''Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
@@ -766,7 +764,7 @@ def maptime_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
     R, theta, phi = cart2sphere(rx, ry, rz)
     theta[np.isnan(theta)] = 0
 
-    ind_mat = maptime_isotropic_index_matrix(radial_order, time_order)
+    ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
     n_dat = R.shape[0]
     n_elem = ind_mat.shape[0]
 
@@ -852,7 +850,7 @@ def temporal_basis(o, ut, tau):
     return const
 
 
-def maptime_index_matrix(radial_order, time_order):
+def qtdmri_index_matrix(radial_order, time_order):
     """Computes the SHORE basis order indices according to [1].
     """
     index_matrix = []
@@ -865,7 +863,7 @@ def maptime_index_matrix(radial_order, time_order):
     return np.array(index_matrix)
 
 
-def maptime_isotropic_index_matrix(radial_order, time_order):
+def qtdmri_isotropic_index_matrix(radial_order, time_order):
     """Computes the SHORE basis order indices according to [1].
     """
     index_matrix = []
@@ -911,19 +909,19 @@ def b_mat(ind_mat):
     return B
 
 
-def maptime_laplacian_reg_matrix_normalized(ind_mat, us, ut,
+def qtdmri_laplacian_reg_matrix_normalized(ind_mat, us, ut,
                                             S_mat, T_mat, U_mat):
     sqrtC = mapmri.mapmri_normalization(us)
-    sqrtut = maptime_temporal_normalization(ut)
+    sqrtut = qtdmri_temporal_normalization(ut)
     normalization = sqrtC * sqrtut
     normalized_laplacian_matrix = (
-        normalization ** 2 * maptime_laplacian_reg_matrix(ind_mat, us, ut,
+        normalization ** 2 * qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
                                                           S_mat, T_mat, U_mat)
                                                           )
     return normalized_laplacian_matrix
 
 
-def maptime_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
+def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
                                  part1_ut_precomp=None,
                                  part23_ut_precomp=None,
                                  part4_ut_precomp=None):
@@ -951,7 +949,7 @@ def maptime_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
     return regularization_matrix
 
 
-def maptime_isotropic_laplacian_reg_matrix(ind_mat, us, ut):
+def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut):
     part1_us = mapmri.mapmri_isotropic_laplacian_reg_matrix(ind_mat, us[0])
     part23_us = part23_iso_reg_matrix_q(ind_mat, us[0])
     part4_us = part4_iso_reg_matrix_q(ind_mat, us[0])
@@ -1110,81 +1108,6 @@ def part4_reg_matrix_tau(ind_mat, ut):
     return LD * ut ** 3
 
 
-def maptime_laplace_S_tau(oi, ok):
-    sum1 = 0
-    for p in range(1, min([ok, oi]) + 1 + 1):
-        sum1 += (oi - p) * (ok - p) * H(min([oi, ok]) - p)
-
-    sum2 = 0
-    for p in range(0, min(ok - 2, oi - 1) + 1):
-        sum2 += p
-
-    sum3 = 0
-    for p in range(0, min(ok - 1, oi - 2) + 1):
-        sum3 += p
-
-    val = (
-        (1 / 4.) * np.abs(oi - ok) + (1 / 16.) * mapmri.delta(oi, ok) +
-        min([oi, ok]) + sum1 + H(oi - 1) * H(ok - 1) *
-        (oi + ok - 2 + sum2 + sum3 + H(abs(oi - ok) - 1) * (abs(oi - ok) - 1) *
-         min([ok - 1, oi - 1]))
-    )
-    return val
-
-
-def maptime_laplace_T_tau(oi, ok):
-    if oi == ok:
-        val = 1/2.
-    else:
-        val = np.abs(oi-ok)
-    return val
-
-
-def maptime_laplace_U_tau(oi, ok):
-    if oi == ok:
-        val = 1.
-    else:
-        val = 0.
-    return val
-
-
-def maptime_STU_time_reg_matrices(time_order):
-    """ Generates the static portions of the Laplacian regularization matrix
-    according to [1]_ eq. (11, 12, 13).
-
-    Parameters
-    ----------
-    radial_order : unsigned int,
-        an even integer that represent the order of the basis
-
-    Returns
-    -------
-    S, T, U : Matrices, shape (N_coef,N_coef)
-        Regularization submatrices
-
-    References
-    ----------
-    .. [1]_ Fick et al. "MAPL: Tissue Microstructure Estimation Using
-    Laplacian-Regularized MAP-MRI and its Application to HCP Data",
-    NeuroImage, Under Review.
-    """
-    S = np.zeros((time_order + 1, time_order + 1))
-    for i in range(time_order + 1):
-        for j in range(time_order + 1):
-            S[i, j] = maptime_laplace_S_tau(i, j)
-
-    T = np.zeros((time_order + 1, time_order + 1))
-    for i in range(time_order + 1):
-        for j in range(time_order + 1):
-            T[i, j] = maptime_laplace_T_tau(i, j)
-
-    U = np.zeros((time_order + 1, time_order + 1))
-    for i in range(time_order + 1):
-        for j in range(time_order + 1):
-            U[i, j] = maptime_laplace_U_tau(i, j)
-    return S, T, U
-
-
 def H(value):
     if value >= 0:
         return 1
@@ -1218,7 +1141,7 @@ def GCV_cost_function(weight, input_stuff):
     return gcv_value
 
 
-def maptime_isotropic_scaling(data, q, tau):
+def qtdmri_isotropic_scaling(data, q, tau):
     """  Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
@@ -1238,7 +1161,7 @@ def maptime_isotropic_scaling(data, q, tau):
     return us, ut
 
 
-def maptime_anisotropic_scaling(data, q, bvecs, tau):
+def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
     """  Constructs design matrix for fitting an exponential to the
     diffusion time points.
     """
@@ -1303,7 +1226,7 @@ def create_rt_space_grid(grid_size_r, max_radius_r, grid_size_tau,
     return constraint_grid_tau[1:]
 
 
-def maptime_number_of_coefficients(radial_order, time_order):
+def qtdmri_number_of_coefficients(radial_order, time_order):
     F = np.floor(radial_order / 2.)
     Msym = (F + 1) * (F + 2) * (4 * F + 3) / 6
     M_total = Msym * (time_order + 1)
