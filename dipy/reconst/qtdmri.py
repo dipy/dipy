@@ -13,11 +13,10 @@ except ImportError:
 from scipy.optimize import fmin_l_bfgs_b
 from dipy.reconst.shm import real_sph_harm
 import dipy.reconst.dti as dti
-import cvxpy
 from dipy.utils.optpkg import optional_package
 import random
 
-cvxopt, have_cvxopt, _ = optional_package("cvxopt")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 class QtdmriModel(Cache):
