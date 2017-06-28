@@ -473,8 +473,8 @@ class QtdmriFit():
         References
         ----------
         .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
-        Representation of dMRI in Space and Time", Medical Image Analysis,
-        2017.
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         if self.model.cartesian:
             I = self.model.cache_get('qtdmri_to_mapmri_matrix',
@@ -499,6 +499,12 @@ class QtdmriFit():
         return mapmri_coef
 
     def sparsity_abs(self, threshold=0.99):
+        """As a measure of sparsity, calculates the number of largest
+        coefficients needed to absolute sum up to 99% of the total absolute sum
+        of all coefficients"""
+        if not 0. < threshold < 1.:
+            msg = "sparsity threshold must be between zero and one"
+            raise ValueError(msg)
         total_weight = np.sum(abs(self._qtdmri_coef))
         absolute_normalized_coef_array = (
             np.sort(abs(self._qtdmri_coef))[::-1] / total_weight)
@@ -510,6 +516,12 @@ class QtdmriFit():
         return counter
 
     def sparsity_density(self, threshold=0.99):
+        """As a measure of sparsity, calculates the number of largest
+        coefficients needed to squared sum up to 99% of the total squared sum
+        of all coefficients"""
+        if not 0. < threshold < 1.:
+            msg = "sparsity threshold must be between zero and one"
+            raise ValueError(msg)
         total_weight = np.sum(self._qtdmri_coef ** 2)
         squared_normalized_coef_array = (
             np.sort(self._qtdmri_coef ** 2)[::-1] / total_weight)
@@ -522,20 +534,27 @@ class QtdmriFit():
 
     def odf(self, sphere, tau, s=2):
         r""" Calculates the analytical Orientation Distribution Function (ODF)
-        for a given diffusion time tau from the signal, [1]_ Eq. (32).
+        for a given diffusion time tau from the signal, [1]_ Eq. (32). The
+        qtdmri coefficients are first converted to mapmri coefficients
+        following [2].
 
         Parameters
         ----------
-        s : unsigned int
-            radial moment of the ODF
+        sphere : dipy sphere object
+            sphere object with vertice orientations to compute the ODF on.
         tau : float
             diffusion time (big_delta - small_delta / 3.) in seconds
+        s : unsigned int
+            radial moment of the ODF
 
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
+            diffusion imaging method for mapping tissue microstructure",
+            NeuroImage, 2013.
+        .. [2] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         if self.model.cartesian:
@@ -559,24 +578,27 @@ class QtdmriFit():
         Computes the design matrix of the ODF for the given sphere vertices
         and radial moment [1]_ eq. (32). The radial moment s acts as a
         sharpening method. The analytical equation for the spherical ODF basis
-        is given in [2]_ eq. (C8).
+        is given in [2]_ eq. (C8). The qtdmri coefficients are first converted
+        to mapmri coefficients following [3].
 
         Parameters
         ----------
-        s : unsigned int
-            radial moment of the ODF
         tau : float
             diffusion time (big_delta - small_delta / 3.) in seconds
+        s : unsigned int
+            radial moment of the ODF
 
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
-        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            diffusion imaging method for mapping tissue microstructure",
+            NeuroImage, 2013.
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         if self.model.cartesian:
@@ -598,7 +620,9 @@ class QtdmriFit():
     def rtpp(self, tau):
         r""" Calculates the analytical return to the plane probability (RTPP)
         for a given diffusion time tau, [1]_ eq. (42). The analytical formula
-        for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+        for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11). The
+        qtdmri coefficients are first converted to mapmri coefficients
+        following [3].
 
         Parameters
         ----------
@@ -608,12 +632,14 @@ class QtdmriFit():
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
+            diffusion imaging method for mapping tissue microstructure",
+            NeuroImage, 2013.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
@@ -658,6 +684,8 @@ class QtdmriFit():
         r""" Calculates the analytical return to the axis probability (RTAP)
         for a given diffusion time tau, [1]_ eq. (40, 44a). The analytical
         formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+        The qtdmri coefficients are first converted to mapmri coefficients
+        following [3].
 
         Parameters
         ----------
@@ -667,12 +695,14 @@ class QtdmriFit():
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
+            diffusion imaging method for mapping tissue microstructure",
+            NeuroImage, 2013.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
@@ -719,7 +749,9 @@ class QtdmriFit():
     def rtop(self, tau):
         r""" Calculates the analytical return to the origin probability (RTOP)
         for a given diffusion time tau [1]_ eq. (36, 43). The analytical
-        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
+        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11). 
+        The qtdmri coefficients are first converted to mapmri coefficients
+        following [3].
 
         Parameters
         ----------
@@ -729,12 +761,14 @@ class QtdmriFit():
         References
         ----------
         .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-        diffusion imaging method for mapping tissue microstructure",
-        NeuroImage, 2013.
-
+            diffusion imaging method for mapping tissue microstructure",
+            NeuroImage, 2013.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
@@ -760,7 +794,8 @@ class QtdmriFit():
         r""" Calculates the analytical Mean Squared Displacement (MSD) for a
         given diffusion time tau. It is defined as the Laplacian of the origin
         of the estimated signal [1]_. The analytical formula for the MAP-MRI
-        basis was derived in [2]_ eq. (C13, D1).
+        basis was derived in [2]_ eq. (C13, D1). The qtdmri coefficients are
+        first converted to mapmri coefficients following [3].
 
         Parameters
         ----------
@@ -770,11 +805,13 @@ class QtdmriFit():
         References
         ----------
         .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
-        Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
-
+            Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         mu = self.us
@@ -812,7 +849,8 @@ class QtdmriFit():
         diffusion time tau.
         It is defined as the inverse of the Laplacian of the origin of the
         estimated propagator [1]_ eq. (22). The analytical formula for the
-        MAP-MRI basis was derived in [2]_ eq. (C14, D2).
+        MAP-MRI basis was derived in [2]_ eq. (C14, D2). The qtdmri
+        coefficients are first converted to mapmri coefficients following [3].
 
         Parameters
         ----------
@@ -822,13 +860,15 @@ class QtdmriFit():
         References
         ----------
         .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
-        (bfor): An analytical diffusion propagator reconstruction for hybrid
-        diffusion imaging and computation of q-space indices. NeuroImage 64,
-        2013, 650–670.
-
+            (bfor): An analytical diffusion propagator reconstruction for
+            hybrid diffusion imaging and computation of q-space indices.
+            NeuroImage 64, 2013, 650–670.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP data."
+            NeuroImage (2016).
+        .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         ux, uy, uz = self.us
@@ -910,16 +950,20 @@ class QtdmriFit():
     def norm_of_laplacian_signal(self):
         """ Calculates the norm of the laplacian of the fitted signal [1]_.
         This information could be useful to assess if the extrapolation of the
-        fitted signal contains spurious oscillations. A high laplacian may
+        fitted signal contains spurious oscillations. A high laplacian norm may
         indicate that these are present, and any q-space indices that
         use integrals of the signal may be corrupted (e.g. RTOP, RTAP, RTPP,
-        QIV).
+        QIV). In contrast to [1], the Laplacian now describes oscillations in
+        the 4-dimensional qt-signal [2].
 
         References
         ----------
         .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-        using Laplacian-regularized MAP-MRI and its application to HCP data."
-        NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
+        .. [2] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+            Representation of dMRI in Space and Time", Medical Image Analysis,
+            2017.
         """
         if self.model.cartesian:
             lap_matrix = qtdmri_laplacian_reg_matrix(
@@ -962,6 +1006,29 @@ class QtdmriFit():
 
 
 def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generates the matrix that maps the qtdmri coefficients to MAP-MRI
+    coefficients. The conversion is done by only evaluating the time basis for
+    a diffusion time tau and summing up coefficients with the same spatial
+    basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
     n_elem_mapmri = mapmri_ind_mat.shape[0]
     qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
@@ -983,6 +1050,29 @@ def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
 
 
 def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
+    """Generates the matrix that maps the spherical qtdmri coefficients to
+    MAP-MRI coefficients. The conversion is done by only evaluating the time
+    basis for a diffusion time tau and summing up coefficients with the same
+    spatial basis orders [1].
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer representing the spatial/radial order of the basis.
+    time_order : unsigned int,
+        an integer larger or equal than zero representing the time order
+        of the basis.
+    ut : float
+        temporal scaling factor
+    tau : float
+        diffusion time (big_delta - small_delta / 3.) in seconds
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
     n_elem_mapmri = mapmri_ind_mat.shape[0]
     qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
@@ -1004,11 +1094,13 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
 
 
 def qtdmri_temporal_normalization(ut):
+    """Normalization factor for the temporal basis"""
     return np.sqrt(ut)
 
 
 def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
                           normalization=False):
+    '''Function to generate the qtdmri signal basis.'''
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -1059,17 +1151,6 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
         counter += 1
 
     return Q
-
-
-def design_matrix_normalized(radial_order, time_order, us, ut, q, tau):
-    sqrtC = mapmri.mapmri_normalization(us)
-    sqrtut = qtdmri_temporal_normalization(ut)
-    normalization = sqrtC * sqrtut
-    normalized_design_matrix = (
-        normalization *
-        qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau)
-    )
-    return normalized_design_matrix
 
 
 def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
@@ -1305,54 +1386,21 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
     return np.array(index_matrix)
 
 
-def b_mat(ind_mat):
-    r""" Calculates the B coefficients from [1]_ Eq. 27.
-
-    Parameters
-    ----------
-    index_matrix : array, shape (N,3)
-        ordering of the basis in x, y, z
-
-    Returns
-    -------
-    B : array, shape (N,)
-        B coefficients for the basis
-
-    References
-    ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
-    diffusion imaging method for mapping tissue microstructure",
-    NeuroImage, 2013.
-    """
-
-    B = np.zeros(ind_mat.shape[0])
-    for i in range(ind_mat.shape[0]):
-        n1, n2, n3, _ = ind_mat[i]
-        K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
-        B[i] = (
-            K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
-            (factorial2(n1) * factorial2(n2) * factorial2(n3))
-            )
-
-    return B
-
-
-def qtdmri_laplacian_reg_matrix_normalized(ind_mat, us, ut,
-                                           S_mat, T_mat, U_mat):
-    sqrtC = mapmri.mapmri_normalization(us)
-    sqrtut = qtdmri_temporal_normalization(ut)
-    normalization = sqrtC * sqrtut
-    normalized_laplacian_matrix = (
-        normalization ** 2 * qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
-                                                         S_mat, T_mat, U_mat)
-                                                         )
-    return normalized_laplacian_matrix
-
-
 def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
                                 part1_ut_precomp=None,
                                 part23_ut_precomp=None,
                                 part4_ut_precomp=None):
+    """Computes the cartesian qt-dMRI Laplacian regularization matrix. If
+    given, uses precomputed matrices for temporal and spatial regularization
+    matrices to speed up computation. Follows the the formulation of Appendix B
+    in [1].
+    
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     part1_us = mapmri.mapmri_laplacian_reg_matrix(ind_mat[:, :3], us,
                                                   S_mat, T_mat, U_mat)
     part23_us = part23_reg_matrix_q(ind_mat, U_mat, T_mat, us)
@@ -1382,6 +1430,17 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
                                           part1_ut_precomp=None,
                                           part23_ut_precomp=None,
                                           part4_ut_precomp=None):
+    """Computes the spherical qt-dMRI Laplacian regularization matrix. If
+    given, uses precomputed matrices for temporal and spatial regularization
+    matrices to speed up computation. Follows the the formulation of Appendix C
+    in [1].
+    
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     if part1_uq_iso_precomp is None:
         part1_us = (
             mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
@@ -1420,6 +1479,15 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
 
 
 def part23_reg_matrix_q(ind_mat, U_mat, T_mat, us):
+    """Partial cartesian spatial Laplacian regularization matrix following
+    second line of Eq. (B2) in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     ux, uy, uz = us
     x, y, z, _ = ind_mat.T
     n_elem = ind_mat.shape[0]
@@ -1447,6 +1515,15 @@ def part23_reg_matrix_q(ind_mat, U_mat, T_mat, us):
 
 
 def part23_iso_reg_matrix_q(ind_mat, us):
+    """Partial spherical spatial Laplacian regularization matrix following the
+    equation below Eq. (C4) in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     n_elem = ind_mat.shape[0]
 
     LR = np.zeros((n_elem, n_elem))
@@ -1473,6 +1550,15 @@ def part23_iso_reg_matrix_q(ind_mat, us):
 
 
 def part4_reg_matrix_q(ind_mat, U_mat, us):
+    """Partial cartesian spatial Laplacian regularization matrix following
+    equation Eq. (B2) in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     ux, uy, uz = us
     x, y, z, _ = ind_mat.T
     n_elem = ind_mat.shape[0]
@@ -1488,6 +1574,15 @@ def part4_reg_matrix_q(ind_mat, U_mat, us):
 
 
 def part4_iso_reg_matrix_q(ind_mat, us):
+    """Partial spherical spatial Laplacian regularization matrix following the
+    equation below Eq. (C4) in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     n_elem = ind_mat.shape[0]
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
@@ -1506,6 +1601,15 @@ def part4_iso_reg_matrix_q(ind_mat, us):
 
 
 def part1_reg_matrix_tau(ind_mat, ut):
+    """Partial temporal Laplacian regularization matrix following
+    Appendix B in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     n_elem = ind_mat.shape[0]
     LD = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
@@ -1518,6 +1622,15 @@ def part1_reg_matrix_tau(ind_mat, ut):
 
 
 def part23_reg_matrix_tau(ind_mat, ut):
+    """Partial temporal Laplacian regularization matrix following
+    Appendix B in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     n_elem = ind_mat.shape[0]
     LD = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
@@ -1532,6 +1645,15 @@ def part23_reg_matrix_tau(ind_mat, ut):
 
 
 def part4_reg_matrix_tau(ind_mat, ut):
+    """Partial temporal Laplacian regularization matrix following
+    Appendix B in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     n_elem = ind_mat.shape[0]
     LD = np.zeros((n_elem, n_elem))
 
@@ -1562,13 +1684,20 @@ def part4_reg_matrix_tau(ind_mat, ut):
 
 
 def H(value):
+    """Step function of H(x)=1 if x>=0 and zero otherwise. Used for the
+    temporal laplacian matrix."""
     if value >= 0:
         return 1
     return 0
 
 
 def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
-    """Generalized Cross Validation Function [4]
+    r"""Generalized Cross Validation Function [1].
+
+    References
+    ----------
+    .. [1] Craven et al. "Smoothing Noisy Data with Spline Functions."
+        NUMER MATH 31.4 (1978): 377-403.
     """
     startpoint = 1e-4
     MMt = np.dot(M.T, M)
@@ -1583,10 +1712,15 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     return res[0][0]
 
 
-def GCV_cost_function(weight, input_stuff):
-    """The GCV cost function that is iterated [4]
+def GCV_cost_function(weight, arguments):
+    r"""Generalized Cross Validation Function that is iterated [1].
+
+    References
+    ----------
+    .. [1] Craven et al. "Smoothing Noisy Data with Spline Functions."
+        NUMER MATH 31.4 (1978): 377-403.
     """
-    data, M, MMt, K, LR = input_stuff
+    data, M, MMt, K, LR = arguments
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
     trS = np.matrix.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
@@ -1680,6 +1814,15 @@ def create_rt_space_grid(grid_size_r, max_radius_r, grid_size_tau,
 
 
 def qtdmri_number_of_coefficients(radial_order, time_order):
+    """Computes the total number of coefficients of the qtdmri basis given a
+    radial and temporal order. Equation given below Eq (9) in [1].
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    """
     F = np.floor(radial_order / 2.)
     Msym = (F + 1) * (F + 2) * (4 * F + 3) / 6
     M_total = Msym * (time_order + 1)
@@ -1687,6 +1830,8 @@ def qtdmri_number_of_coefficients(radial_order, time_order):
 
 
 def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
+    """cross-validation function to find the optimal weight of alpha for
+    sparsity regularization"""
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
@@ -1746,6 +1891,8 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
 
 def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
                             weight_array=np.linspace(0, .2, 21)):
+    """cross-validation function to find the optimal weight of alpha for
+    sparsity regularization when also Laplacian regularization is used."""
     dwi_mask = ~b0s_mask
     b0_mask = b0s_mask
     dwi_indices = np.arange(E.shape[0])[dwi_mask]
