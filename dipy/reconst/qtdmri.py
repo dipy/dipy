@@ -398,8 +398,7 @@ class QtdmriModel(Cache):
             qtdmri_coef = np.dot(pseudoInv, data_norm)
 
         return QtdmriFit(
-            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha
-        )
+            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha)
 
 
 class QtdmriFit():
@@ -749,7 +748,7 @@ class QtdmriFit():
     def rtop(self, tau):
         r""" Calculates the analytical return to the origin probability (RTOP)
         for a given diffusion time tau [1]_ eq. (36, 43). The analytical
-        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11). 
+        formula for the isotropic MAP-MRI basis was derived in [2]_ eq. (C11).
         The qtdmri coefficients are first converted to mapmri coefficients
         following [3].
 
@@ -864,8 +863,8 @@ class QtdmriFit():
             hybrid diffusion imaging and computation of q-space indices.
             NeuroImage 64, 2013, 650–670.
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-            using Laplacian-regularized MAP-MRI and its application to HCP data."
-            NeuroImage (2016).
+            using Laplacian-regularized MAP-MRI and its application to HCP
+            data." NeuroImage (2016).
         .. [3] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
             Representation of dMRI in Space and Time", Medical Image Analysis,
             2017.
@@ -1100,7 +1099,7 @@ def qtdmri_temporal_normalization(ut):
 
 def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
                           normalization=False):
-    '''Function to generate the qtdmri signal basis.'''
+    """Function to generate the qtdmri signal basis."""
     sqrtC = 1.
     sqrtut = 1.
     sqrtCut = 1.
@@ -1114,11 +1113,11 @@ def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
 
 
 def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
-    r'''Constructs the design matrix as a product of 3 separated radial,
+    r"""Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
-    '''
+    """
     ind_mat = qtdmri_index_matrix(radial_order, time_order)
 
     n_dat = q.shape[0]
@@ -1154,11 +1153,11 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
 
 def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
-    r'''Constructs the design matrix as a product of 3 separated radial,
+    r"""Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
-    '''
+    """
     ind_mat = qtdmri_index_matrix(radial_order, time_order)
     rx, ry, rz, tau = grid.T
 
@@ -1261,13 +1260,12 @@ def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
     return K_tau
 
 
-def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
-                                spatial_storage=None):
-    r'''Constructs the design matrix as a product of 3 separated radial,
+def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
+    r"""Constructs the design matrix as a product of 3 separated radial,
     angular and temporal design matrices. It precomputes the relevant basis
     orders for each one and finally puts them together according to the index
     matrix
-    '''
+    """
 
     rx, ry, rz, tau = grid.T
     R, theta, phi = cart2sphere(rx, ry, rz)
@@ -1314,8 +1312,8 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid,
 
 
 def radial_basis_opt(j, l, us, q):
-    ''' Spatial basis dependent on spatial scaling factor us
-    '''
+    """ Spatial basis dependent on spatial scaling factor us
+    """
     const = (
         us ** l * np.exp(-2 * np.pi ** 2 * us ** 2 * q ** 2) *
         genlaguerre(j - 1, l + 0.5)(4 * np.pi ** 2 * us ** 2 * q ** 2)
@@ -1324,9 +1322,9 @@ def radial_basis_opt(j, l, us, q):
 
 
 def angular_basis_opt(l, m, q, theta, phi):
-    ''' Angular basis independent of spatial scaling factor us. Though it
+    """ Angular basis independent of spatial scaling factor us. Though it
     includes q, it is independent of the data and can be precomputed.
-    '''
+    """
     const = (
         (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
         (2 * np.pi ** 2 * q ** 2) ** (l / 2) *
@@ -1353,8 +1351,8 @@ def angular_basis_EAP_opt(j, l, m, r, theta, phi):
 
 
 def temporal_basis(o, ut, tau):
-    ''' Temporal basis dependent on temporal scaling factor ut
-    '''
+    """ Temporal basis dependent on temporal scaling factor ut
+    """
     const = np.exp(-ut * tau / 2.0) * special.laguerre(o)(ut * tau)
     return const
 
@@ -1394,7 +1392,7 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix B
     in [1].
-    
+
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
@@ -1434,7 +1432,7 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix C
     in [1].
-    
+
     References
     ----------
     .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
@@ -1467,10 +1465,6 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
 
     part23_us = part23_iso_reg_matrix_q(ind_mat, us[0])
     part4_us = part4_iso_reg_matrix_q(ind_mat, us[0])
-
-    part1_ut = part1_reg_matrix_tau(ind_mat, ut)
-    part23_ut = part23_reg_matrix_tau(ind_mat, ut)
-    part4_ut = part4_reg_matrix_tau(ind_mat, ut)
 
     regularization_matrix = (
         part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
@@ -1778,10 +1772,10 @@ def design_matrix_spatial(bvecs, qvals, dtype=None):
 
     Parameters
     ----------
-    gtab : A GradientTable class instance
-
-    dtype : string
-        Parameter to control the dtype of returned designed matrix
+    bvecs : array (N x 3)
+        unit b-vectors of the acquisition.
+    qvals : array (N,)
+        corresponding q-values in 1/mm
 
     Returns
     -------
