@@ -44,7 +44,6 @@ Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
-- :ref:`example_denoise_ascm`
 - :ref:`example_denoise_localpca`
 
 Reslice
@@ -125,14 +124,14 @@ Statistical evaluation
 - :ref:`example_kfold_xval`
 
 ------------------------------------------------
-Contextual enhancement 
+Contextual enhancement
 ------------------------------------------------
 
 - :ref:`example_contextual_enhancement`
-
+- :ref:`fiber_to_bundle_coherence`
 
 --------------
-Fiber tracking 
+Fiber tracking
 --------------
 
 - :ref:`example_introduction_to_basic_tracking`
@@ -144,7 +143,7 @@ Fiber tracking
 - :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
-Fiber tracking validation
+Fiber tracking evaluation
 -------------------------------------
 
 - :ref:`example_linear_fascicle_evaluation`
@@ -215,7 +214,7 @@ File Formats
 - :ref:`example_streamline_formats`
 
 -------------------
-Visualization 
+Visualization
 -------------------
 
 - :ref:`example_viz_advanced`

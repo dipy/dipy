@@ -22,8 +22,8 @@
  segment_clustering_metrics.py
  snr_in_cc.py
  streamline_formats.py
- tracking_eudx_odf.py
- tracking_eudx_tensor.py
+# tracking_eudx_odf.py
+# tracking_eudx_tensor.py
  sfm_tracking.py
  sfm_reconst.py
  gradients_spheres.py
@@ -35,6 +35,8 @@
  streamline_tools.py
  linear_fascicle_evaluation.py
  denoise_nlmeans.py
+ denoise_localpca.py
+ fiber_to_bundle_coherence.py
 # denoise_ascm.py
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
