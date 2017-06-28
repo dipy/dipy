@@ -473,13 +473,14 @@ class QtdmriFit():
         if self.model.anisotropic_scaling:
             v_ = sphere.vertices
             v = np.dot(v_, self.R)
-            I_s = mapmri.mapmri_odf_matrix(self.radial_order, self.us, s, v)
+            I_s = mapmri.mapmri_odf_matrix(self.model.radial_order, self.us,
+                                           s, v)
             odf = np.dot(I_s, mapmri_coef)
         else:
             I = self.model.cache_get('ODF_matrix', key=(sphere, s))
             if I is None:
-                I = mapmri.mapmri_isotropic_odf_matrix(self.radial_order, 1,
-                                                       s, sphere.vertices)
+                I = mapmri.mapmri_isotropic_odf_matrix(self.model.radial_order,
+                                                       1, s, sphere.vertices)
                 self.model.cache_set('ODF_matrix', (sphere, s), I)
 
             odf = self.us[0] ** s * np.dot(I, mapmri_coef)
@@ -514,11 +515,14 @@ class QtdmriFit():
             msg = 'odf in spherical harmonics not yet implemented for '
             msg += 'anisotropic implementation'
             raise ValueError(msg)
-        I = self.model.cache_get('ODF_sh_matrix', key=(self.radial_order, s))
+        I = self.model.cache_get('ODF_sh_matrix',
+                                 key=(self.model.radial_order,s))
 
         if I is None:
-            I = mapmri.mapmri_isotropic_odf_sh_matrix(self.radial_order, 1, s)
-            self.model.cache_set('ODF_sh_matrix', (self.radial_order, s), I)
+            I = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order,
+                                                      1, s)
+            self.model.cache_set('ODF_sh_matrix', (self.model.radial_order, s),
+                                 I)
 
         odf = self.us[0] ** s * np.dot(I, mapmri_coef)
         return odf
