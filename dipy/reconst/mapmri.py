@@ -16,7 +16,7 @@ from dipy.core.gradients import gradient_table
 from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer
 
-cvxopt, have_cvxopt, _ = optional_package("cvxopt")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 class MapmriModel(ReconstModel, Cache):
@@ -230,11 +230,9 @@ class MapmriModel(ReconstModel, Cache):
 
         self.positivity_constraint = positivity_constraint
         if self.positivity_constraint:
-            if not have_cvxopt:
+            if not have_cvxpy:
                 raise ValueError(
-                    'CVXOPT package needed to enforce constraints')
-            if not hasattr(cvxopt, 'solvers'):
-                raise ValueError("CVXOPT version 1.1.7 or higher required")
+                    'CVXPY package needed to enforce constraints')
             msg = "pos_radius must be 'adaptive' or a positive float"
             if isinstance(pos_radius, str):
                 if pos_radius != 'adaptive':
@@ -354,12 +352,6 @@ class MapmriModel(ReconstModel, Cache):
                                         self.ind_mat.shape[0]))
 
         if self.positivity_constraint:
-            w_s = "The MAPMRI positivity constraint depends on CVXOPT "
-            w_s += "(http://cvxopt.org/). CVXOPT is licensed "
-            w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
-            w_s += "and you may be subject to this license when using the "
-            w_s += "positivity constraint."
-            warn(w_s)
             if self.pos_radius == 'adaptive':
                 # custom constraint grid based on scale factor [Avram2015]
                 constraint_grid = create_rspace(self.pos_grid,
@@ -379,29 +371,21 @@ class MapmriModel(ReconstModel, Cache):
                         self.radial_order, mu[0], constraint_grid)
                     K = K_dependent * self.pos_K_independent
 
-            if isinstance(data, np.memmap):
-                data = np.asarray(data)
-            data = np.asarray(data / data[self.gtab.b0s_mask].mean())
+            data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
+            c = cvxpy.Variable(M.shape[1])
+            design_matrix = cvxpy.Constant(M)
+            objective = cvxpy.Minimize(
+                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                lopt * cvxpy.quad_form(c, laplacian_matrix)
+            )
             M0 = M[self.gtab.b0s_mask, :]
-            M0_mean = M0.mean(0)[None, :]
-            Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
-            Q = cvxopt.matrix(np.ascontiguousarray(
-                np.dot(Mprime.T, Mprime) + lopt * laplacian_matrix))
-
-            data_b0 = data[self.gtab.b0s_mask].mean()
-            data_single_b0 = np.r_[
-                data_b0, data[~self.gtab.b0s_mask]] / data_b0
-            p = cvxopt.matrix(np.ascontiguousarray(
-                -1 * np.dot(Mprime.T, data_single_b0)))
-            G = cvxopt.matrix(-1 * K)
-            h = cvxopt.matrix((1e-10) * np.ones((K.shape[0])), (K.shape[0], 1))
-            A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
-            b = cvxopt.matrix(np.array([1.]))
-            cvxopt.solvers.options['show_progress'] = False
+            constraints = [M0[0] * c == 1,
+                           K * c > -.1]
+            prob = cvxpy.Problem(objective, constraints)
             try:
-                sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
-                coef = np.array(sol['x'])[:, 0]
-            except ValueError:
+                prob.solve()
+                coef = np.asarray(c.value).squeeze()
+            except:
                 errorcode = 2
                 warn('Optimization did not find a solution')
                 try:
@@ -410,7 +394,6 @@ class MapmriModel(ReconstModel, Cache):
                     errorcode = 3
                     coef = np.zeros(M.shape[1])
                     return MapmriFit(self, coef, mu, R, lopt, errorcode)
-
         else:
             try:
                 pseudoInv = np.dot(
