@@ -248,8 +248,8 @@ def get_data(name='small_64D'):
     """
 
     if name == 'small_64D':
-        fbvals = pjoin(DATA_DIR, 'small_64D.bvals.npy')
-        fbvecs = pjoin(DATA_DIR, 'small_64D.gradients.npy')
+        fbvals = pjoin(DATA_DIR, 'small_64D.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
         fimg = pjoin(DATA_DIR, 'small_64D.nii')
         return fimg, fbvals, fbvecs
     if name == '55dir_grad.bvec':
