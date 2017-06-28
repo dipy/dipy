@@ -80,7 +80,8 @@ class MapmriModel(ReconstModel, Cache):
                  eigenvalue_threshold=1e-04,
                  bval_threshold=np.inf,
                  dti_scale_estimation=True,
-                 static_diffusivity=0.7e-3):
+                 static_diffusivity=0.7e-3,
+                 cvxpy_solver=None):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -159,6 +160,9 @@ class MapmriModel(ReconstModel, Cache):
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
             D=0.7e-3 _[5].
+        cvxpy_solver : cvxpy solver name
+            option to optimize the positivity constraint with a particular
+            cvxpy solver. See http://www.cvxpy.org/ for details.
 
         References
         ----------
@@ -256,6 +260,7 @@ class MapmriModel(ReconstModel, Cache):
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
 
+        self.cvxpy_solver = cvxpy_solver
         self.cutoff = gtab.bvals < self.bval_threshold
         gtab_cutoff = gradient_table(bvals=self.gtab.bvals[self.cutoff],
                                      bvecs=self.gtab.bvecs[self.cutoff])
@@ -383,7 +388,7 @@ class MapmriModel(ReconstModel, Cache):
                            K * c > -.1]
             prob = cvxpy.Problem(objective, constraints)
             try:
-                prob.solve()
+                prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
             except:
                 errorcode = 2
