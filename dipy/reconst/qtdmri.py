@@ -131,7 +131,7 @@ class QtdmriModel(Cache):
         if time_order < 0:
             msg = "time_order must be larger or equal than zero."
             raise ValueError(msg)
-        
+
         if not isinstance(laplacian_regularization, bool):
             msg = "laplacian_regularization must be True or False."
             raise ValueError(msg)
@@ -173,14 +173,14 @@ class QtdmriModel(Cache):
             raise ValueError(msg)
 
         if (not isinstance(bval_threshold, float) or
-            bval_threshold < 0):
+                bval_threshold < 0):
             msg = "bval_threshold must be a positive float"
             raise ValueError(msg)
 
         if (not isinstance(eigenvalue_threshold, float) or
-            eigenvalue_threshold < 0) :
+                eigenvalue_threshold < 0):
             msg = "eigenvalue_threshold must be a positive float"
-            raise ValueError(msg)       
+            raise ValueError(msg)
 
         self.gtab = gtab
         self.radial_order = radial_order
@@ -584,7 +584,7 @@ class QtdmriFit():
             msg += 'cartesian implementation'
             raise ValueError(msg)
         I = self.model.cache_get('ODF_sh_matrix',
-                                 key=(self.model.radial_order,s))
+                                 key=(self.model.radial_order, s))
 
         if I is None:
             I = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order,
