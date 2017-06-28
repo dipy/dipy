@@ -120,39 +120,103 @@ class QtdmriModel(Cache):
                  anisotropic_scaling=True,
                  normalization=False,
                  constrain_q0=True,
-                 bval_threshold=np.inf
+                 bval_threshold=1e10,
+                 eigenvalue_threshold=1e-04
                  ):
 
+        if radial_order % 2 or radial_order < 0:
+            msg = "radial_order must be zero or an even positive number."
+            raise ValueError(msg)
+
+        if time_order < 0:
+            msg = "time_order must be larger or equal than zero."
+            raise ValueError(msg)
+        
+        if not isinstance(laplacian_regularization, bool):
+            msg = "laplacian_regularization must be True or False."
+            raise ValueError(msg)
+
+        if laplacian_regularization:
+            msg = "laplacian_regularization weighting must be 'GCV' "
+            msg += "or a float larger or equal than zero."
+            if isinstance(laplacian_weighting, str):
+                if laplacian_weighting is not 'GCV':
+                    raise ValueError(msg)
+            elif isinstance(laplacian_weighting, float):
+                if laplacian_weighting < 0:
+                    raise ValueError(msg)
+
+        if not isinstance(l1_regularization, bool):
+            msg = "l1_regularization must be True or False."
+            raise ValueError(msg)
+
+        if l1_regularization:
+            msg = "l1_weighting weighting must be 'CV' "
+            msg += "or a float larger or equal than zero."
+            if isinstance(l1_weighting, str):
+                if l1_weighting is not 'CV':
+                    raise ValueError(msg)
+            elif isinstance(l1_weighting, float):
+                if l1_weighting < 0:
+                    raise ValueError(msg)
+
+        if not isinstance(cartesian, bool):
+            msg = "cartesian must be True or False."
+            raise ValueError(msg)
+
+        if not isinstance(anisotropic_scaling, bool):
+            msg = "anisotropic_scaling must be True or False."
+            raise ValueError(msg)
+
+        if not isinstance(constrain_q0, bool):
+            msg = "constrain_q0 must be True or False."
+            raise ValueError(msg)
+
+        if (not isinstance(bval_threshold, float) or
+            bval_threshold < 0):
+            msg = "bval_threshold must be a positive float"
+            raise ValueError(msg)
+
+        if (not isinstance(eigenvalue_threshold, float) or
+            eigenvalue_threshold < 0) :
+            msg = "eigenvalue_threshold must be a positive float"
+            raise ValueError(msg)       
+
         self.gtab = gtab
-        self.constrain_q0 = constrain_q0
-        self.bval_threshold = bval_threshold
+        self.radial_order = radial_order
+        self.time_order = time_order
         self.laplacian_regularization = laplacian_regularization
         self.laplacian_weighting = laplacian_weighting
-        self.anisotropic_scaling = anisotropic_scaling
+        self.l1_regularization = l1_regularization
+        self.l1_weighting = l1_weighting
         self.cartesian = cartesian
+        self.anisotropic_scaling = anisotropic_scaling
         self.normalization = normalization
-        if radial_order % 2 or radial_order < 0:
-            msg = "radial_order must be a non-zero even positive number."
-            raise ValueError(msg)
-        self.radial_order = radial_order
-        if time_order < 0:
-            msg = "time_order must be a positive number."
-            raise ValueError(msg)
-        self.time_order = time_order
-        if self.anisotropic_scaling:
+        self.constrain_q0 = constrain_q0
+        self.bval_threshold = bval_threshold
+        self.eigenvalue_threshold = eigenvalue_threshold
+
+        if self.cartesian:
             self.ind_mat = qtdmri_index_matrix(radial_order, time_order)
         else:
             self.ind_mat = qtdmri_isotropic_index_matrix(radial_order,
                                                          time_order)
 
-        self.S_mat, self.T_mat, self.U_mat = mapmri.mapmri_STU_reg_matrices(
-                radial_order
-        )
+        # precompute parts of laplacian regularization matrices
         self.part4_reg_mat_tau = part4_reg_matrix_tau(self.ind_mat, 1.)
         self.part23_reg_mat_tau = part23_reg_matrix_tau(self.ind_mat, 1.)
         self.part1_reg_mat_tau = part1_reg_matrix_tau(self.ind_mat, 1.)
-        self.l1_regularization = l1_regularization
-        self.l1_weighting = l1_weighting
+        if self.cartesian:
+            self.S_mat, self.T_mat, self.U_mat = (
+                mapmri.mapmri_STU_reg_matrices(radial_order)
+            )
+        else:
+            self.part1_uq_iso_precomp = (
+                mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
+                    self.ind_mat[:, :3], 1.
+                )
+            )
+
         self.tenmodel = dti.TensorModel(gtab)
 
     @multi_voxel_fit
@@ -227,7 +291,9 @@ class QtdmriModel(Cache):
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, self.us, self.ut
+                    self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
+                    self.part1_reg_mat_tau, self.part23_reg_mat_tau,
+                    self.part4_reg_mat_tau
                 )
             if self.laplacian_weighting == 'GCV':
                 try:
@@ -281,7 +347,7 @@ class QtdmriModel(Cache):
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
-        elif self.l1_regularization and not self.laplacian_regularization:
+        elif self.l1_regularization and self.laplacian_regularization:
             if self.cartesian:
                 laplacian_matrix = qtdmri_laplacian_reg_matrix(
                     self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
@@ -291,7 +357,9 @@ class QtdmriModel(Cache):
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, self.us, self.ut
+                    self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
+                    self.part1_reg_mat_tau, self.part23_reg_mat_tau,
+                    self.part4_reg_mat_tau
                 )
             if self.laplacian_weighting == 'GCV':
                 lopt = generalized_crossvalidation(data_norm, M,
@@ -408,7 +476,7 @@ class QtdmriFit():
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
         """
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             I = self.model.cache_get('qtdmri_to_mapmri_matrix',
                                      key=(tau))
             if I is None:
@@ -470,7 +538,7 @@ class QtdmriFit():
         NeuroImage, 2013.
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             v_ = sphere.vertices
             v = np.dot(v_, self.R)
             I_s = mapmri.mapmri_odf_matrix(self.model.radial_order, self.us,
@@ -511,9 +579,9 @@ class QtdmriFit():
         NeuroImage (2016).
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             msg = 'odf in spherical harmonics not yet implemented for '
-            msg += 'anisotropic implementation'
+            msg += 'cartesian implementation'
             raise ValueError(msg)
         I = self.model.cache_get('ODF_sh_matrix',
                                  key=(self.model.radial_order,s))
@@ -549,7 +617,7 @@ class QtdmriFit():
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
             sel = Bm > 0.  # select only relevant coefficients
@@ -608,7 +676,7 @@ class QtdmriFit():
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
             sel = Bm > 0.  # select only relevant coefficients
@@ -670,7 +738,7 @@ class QtdmriFit():
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
 
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
             const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.us))
@@ -710,7 +778,7 @@ class QtdmriFit():
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         mu = self.us
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
             sel = Bm > 0.  # select only relevant coefficients
@@ -764,7 +832,7 @@ class QtdmriFit():
         """
         mapmri_coef = self.qtdmri_to_mapmri_coef(tau)
         ux, uy, uz = self.us
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             ind_mat = mapmri.mapmri_index_matrix(self.model.radial_order)
             Bm = mapmri.b_mat(ind_mat)
             sel = Bm > 0  # select only relevant coefficients
@@ -853,15 +921,21 @@ class QtdmriFit():
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
-        if self.model.anisotropic_scaling:
-            lap_matrix = qtdmri_laplacian_reg_matrix(self.model.ind_mat,
-                                                     self.us, self.ut,
-                                                     self.model.S_mat,
-                                                     self.model.T_mat,
-                                                     self.model.U_mat)
+        if self.model.cartesian:
+            lap_matrix = qtdmri_laplacian_reg_matrix(
+                self.model.ind_mat, self.us, self.ut,
+                self.model.S_mat, self.model.T_mat, self.model.U_mat,
+                self.model.part1_reg_mat_tau,
+                self.model.part23_reg_mat_tau,
+                self.model.part4_reg_mat_tau
+            )
         else:
             lap_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                self.model.ind_mat, self.us, self.ut
+                self.model.ind_mat, self.us, self.ut,
+                self.model.part1_uq_iso_precomp,
+                self.model.part1_reg_mat_tau,
+                self.model.part23_reg_mat_tau,
+                self.model.part4_reg_mat_tau
             )
         norm_laplacian = np.dot(self._qtdmri_coef,
                                 np.dot(self._qtdmri_coef, lap_matrix))
@@ -874,7 +948,7 @@ class QtdmriFit():
         """
         tau_scaling = self.tau_scaling
         rt_points_ = rt_points * np.r_[1, 1, 1, tau_scaling]
-        if self.model.anisotropic_scaling:
+        if self.model.cartesian:
             K = qtdmri_eap_matrix_(self.model.radial_order,
                                    self.model.time_order,
                                    self.us, self.ut, rt_points_,
@@ -1303,8 +1377,35 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
     return regularization_matrix
 
 
-def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut):
-    part1_us = mapmri.mapmri_isotropic_laplacian_reg_matrix(ind_mat, us[0])
+def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
+                                          part1_uq_iso_precomp=None,
+                                          part1_ut_precomp=None,
+                                          part23_ut_precomp=None,
+                                          part4_ut_precomp=None):
+    if part1_uq_iso_precomp is None:
+        part1_us = (
+            mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
+                ind_mat[:, :3], us[0]
+            )
+        )
+    else:
+        part1_us = part1_uq_iso_precomp * us[0]
+
+    if part1_ut_precomp is None:
+        part1_ut = part1_reg_matrix_tau(ind_mat, ut)
+    else:
+        part1_ut = part1_ut_precomp / ut
+
+    if part23_ut_precomp is None:
+        part23_ut = part23_reg_matrix_tau(ind_mat, ut)
+    else:
+        part23_ut = part23_ut_precomp * ut
+
+    if part4_ut_precomp is None:
+        part4_ut = part4_reg_matrix_tau(ind_mat, ut)
+    else:
+        part4_ut = part4_ut_precomp * ut ** 3
+
     part23_us = part23_iso_reg_matrix_q(ind_mat, us[0])
     part4_us = part4_iso_reg_matrix_q(ind_mat, us[0])
 
