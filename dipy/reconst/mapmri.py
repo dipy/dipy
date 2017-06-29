@@ -160,9 +160,10 @@ class MapmriModel(ReconstModel, Cache):
             the tissue diffusivity that is used when dti_scale_estimation is
             set to False. The default is that of typical white matter
             D=0.7e-3 _[5].
-        cvxpy_solver : cvxpy solver name
-            option to optimize the positivity constraint with a particular
-            cvxpy solver. See http://www.cvxpy.org/ for details.
+        cvxpy_solver : str, optional
+            cvxpy solver name. Optionally optimize the positivity constraint
+            with a particular cvxpy solver. See http://www.cvxp for details.
+            Default: None (cvxpy chooses its own solver) 
 
         References
         ----------
@@ -195,7 +196,10 @@ class MapmriModel(ReconstModel, Cache):
         ODF.
 
         >>> from dipy.data import dsi_voxels, get_sphere
-        >>> data, gtab = dsi_voxels()
+        >>> from dipy.core.gradients import gradient_table
+        >>> data, gtab_ = dsi_voxels()
+        >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
+        ...                       b0_threshold=gtab_.bvals.min())
         >>> from dipy.sims.voxel import SticksAndBall
         >>> data, golden_directions = SticksAndBall(
         ...                                     gtab, d=0.0015,
@@ -209,8 +213,6 @@ class MapmriModel(ReconstModel, Cache):
         >>> odf = mapfit.odf(sphere)
         """
 
-        self.bvals = gtab.bvals
-        self.bvecs = gtab.bvecs
         self.gtab = gtab
         if radial_order < 0 or radial_order % 2:
             msg = "radial_order must be a positive, even number."
