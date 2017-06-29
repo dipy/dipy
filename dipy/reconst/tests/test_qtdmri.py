@@ -7,6 +7,7 @@ from numpy.testing import (assert_almost_equal,
 from dipy.reconst import qtdmri
 from dipy.sims.voxel import MultiTensor
 from dipy.data import get_sphere
+from dipy.sims.voxel import add_noise
 import scipy.integrate as integrate
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
 
@@ -31,7 +32,7 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
+    S, sticks = MultiTensor(gtab, mevals, S0=1.0, angles=angl,
                             fractions=[50, 50], snr=None)
     return S
 
@@ -164,7 +165,7 @@ def test_anisotropic_normalization(radial_order=4, time_order=2):
 def test_anisotropic_reduced_MSE(radial_order=0, time_order=0):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
-    S = generate_signal_crossing(gtab_4d, l1, l2, l3) / 100.
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
     qtdmri_mod_aniso = qtdmri.QtdmriModel(gtab_4d, radial_order=radial_order,
                                           time_order=time_order,
                                           cartesian=True,
@@ -178,6 +179,119 @@ def test_anisotropic_reduced_MSE(radial_order=0, time_order=0):
     mse_aniso = np.mean((S - qtdmri_fit_aniso.fitted_signal()) ** 2)
     mse_iso = np.mean((S - qtdmri_fit_iso.fitted_signal()) ** 2)
     assert_equal(mse_aniso < mse_iso, True)
+
+
+def test_number_of_coefficients(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    qtdmri_mod = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order)
+    qtdmri_fit = qtdmri_mod.fit(S)
+    number_of_coef_model = qtdmri_fit._qtdmri_coef.shape[0]
+    number_of_coef_analytic = qtdmri.qtdmri_number_of_coefficients(
+        radial_order, time_order
+    )
+    assert_equal(number_of_coef_model, number_of_coef_analytic)
+
+def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+
+    qtdmri_mod_no_laplacian = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        laplacian_regularization=True, laplacian_weighting=0.
+    )
+    qtdmri_mod_laplacian = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        laplacian_regularization=True, laplacian_weighting=1e-4
+    )
+
+    qtdmri_fit_no_laplacian = qtdmri_mod_no_laplacian.fit(S)
+    qtdmri_fit_laplacian = qtdmri_mod_laplacian.fit(S)
+    
+    laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
+    laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
+    
+    assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
+
+def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    S_noise = add_noise(S, S0=1., snr=20)
+
+    qtdmri_mod_laplacian_GCV = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        laplacian_regularization=True, laplacian_weighting="GCV"
+    )
+
+    qtdmri_fit_no_noise = qtdmri_mod_laplacian_GCV.fit(S)
+    qtdmri_fit_noise = qtdmri_mod_laplacian_GCV.fit(S_noise)
+
+    assert_equal(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt, True)
+
+
+def test_l1_increases_sparsity(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+
+    qtdmri_mod_no_l1 = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting=0.
+    )
+    qtdmri_mod_l1 = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting=.1
+    )
+
+    qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
+    qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
+    
+    sparsity_abs_no_reg = qtdmri_fit_no_l1.sparsity_abs()
+    sparsity_abs_reg = qtdmri_fit_l1.sparsity_abs()
+    assert_equal(sparsity_abs_no_reg > sparsity_abs_reg, True)
+
+    sparsity_density_no_reg = qtdmri_fit_no_l1.sparsity_density()
+    sparsity_density_reg = qtdmri_fit_l1.sparsity_density()
+    assert_equal(sparsity_density_no_reg > sparsity_density_reg, True)
+
+
+def test_l1_CV_higher_weight_with_noise(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    S_noise = add_noise(S, S0=1., snr=20)
+
+    qtdmri_mod_l1_cv = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting="CV"
+    )
+
+    qtdmri_fit_no_noise = qtdmri_mod_l1_cv.fit(S)
+    qtdmri_fit_noise = qtdmri_mod_l1_cv.fit(S_noise)
+    assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
+
+
+def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    S_noise = add_noise(S, S0=1., snr=20)
+
+    qtdmri_mod_elastic = qtdmri.QtdmriModel(gtab_4d,
+        radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting="CV",
+        laplacian_regularization=True, laplacian_weighting="GCV"
+    )
+
+    qtdmri_fit_no_noise = qtdmri_mod_elastic.fit(S)
+    qtdmri_fit_noise = qtdmri_mod_elastic.fit(S_noise)
+    
+    assert_equal(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt, True)
+    assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
 
 if __name__ == '__main__':
     run_module_suite()
