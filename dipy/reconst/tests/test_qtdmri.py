@@ -37,6 +37,103 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     return S
 
 
+def test_input_parameters():
+    gtab_4d = generate_gtab4D()
+    try:
+        qtdmri.QtdmriModel(gtab_4d, radial_order=3)
+        assert_equal(True, False)
+    except ValueError:
+        print 'uneven radial_order is caught'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, radial_order=-1)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative radial_order is caught'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, time_order=-1)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative time_order is caught'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, laplacian_regularization='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-bool laplacian_regularization is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
+                           laplacian_weighting='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-"GCV" string for laplacian_weighting is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
+                           laplacian_weighting=-1.)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative laplacian_weighting is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, l1_regularization='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-bool for l1_weighting is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, l1_regularization=True,
+                           l1_weighting='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-"CV" string for laplacian_weighting is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, l1_regularization=True,
+                           l1_weighting=-1.)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative l1_weighting is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, cartesian='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-bool cartesian is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, anisotropic_scaling='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-bool anisotropic_scaling is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, constrain_q0='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'non-bool constrain_q0 is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, bval_threshold=-1)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative bval_threshold is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, eigenvalue_threshold=-1)
+        assert_equal(True, False)
+    except ValueError:
+        print 'negative eigenvalue_threshold is caught.'
+
+    try:
+        qtdmri.QtdmriModel(gtab_4d, cvxpy_solver='test')
+        assert_equal(True, False)
+    except ValueError:
+        print 'unavailable cvxpy solver is caught.'
+
+
 def test_orthogonality_temporal_basis_functions():
     # numerical integration parameters
     ut = 10
@@ -137,19 +234,19 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
                               qtdmri_fit_sphere.odf(sphere, tau, s=0))
 
 
-def test_anisotropic_normalization(radial_order=4, time_order=2):
+def test_cartesian_normalization(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
 
     qtdmri_mod_aniso = qtdmri.QtdmriModel(gtab_4d, radial_order=radial_order,
                                           time_order=time_order,
-                                          cartesian=False)
+                                          cartesian=True,
+                                          normalization=False)
     qtdmri_mod_aniso_norm = qtdmri.QtdmriModel(gtab_4d,
                                                radial_order=radial_order,
                                                time_order=time_order,
-                                               cartesian=False,
-                                               anisotropic_scaling=False,
+                                               cartesian=True,
                                                normalization=True)
     qtdmri_fit_aniso = qtdmri_mod_aniso.fit(S)
     qtdmri_fit_aniso_norm = qtdmri_mod_aniso_norm.fit(S)
@@ -185,8 +282,8 @@ def test_number_of_coefficients(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    qtdmri_mod = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order)
+    qtdmri_mod = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order)
     qtdmri_fit = qtdmri_mod.fit(S)
     number_of_coef_model = qtdmri_fit._qtdmri_coef.shape[0]
     number_of_coef_analytic = qtdmri.qtdmri_number_of_coefficients(
@@ -194,27 +291,29 @@ def test_number_of_coefficients(radial_order=4, time_order=2):
     )
     assert_equal(number_of_coef_model, number_of_coef_analytic)
 
+
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
 
-    qtdmri_mod_no_laplacian = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_no_laplacian = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         laplacian_regularization=True, laplacian_weighting=0.
     )
-    qtdmri_mod_laplacian = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_laplacian = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         laplacian_regularization=True, laplacian_weighting=1e-4
     )
 
     qtdmri_fit_no_laplacian = qtdmri_mod_no_laplacian.fit(S)
     qtdmri_fit_laplacian = qtdmri_mod_laplacian.fit(S)
-    
+
     laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
     laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
-    
+
     assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
+
 
 def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
@@ -222,8 +321,8 @@ def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
     S_noise = add_noise(S, S0=1., snr=20)
 
-    qtdmri_mod_laplacian_GCV = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_laplacian_GCV = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         laplacian_regularization=True, laplacian_weighting="GCV"
     )
 
@@ -238,18 +337,18 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
 
-    qtdmri_mod_no_l1 = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_no_l1 = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting=0.
     )
-    qtdmri_mod_l1 = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_l1 = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting=.1
     )
 
     qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
     qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
-    
+
     sparsity_abs_no_reg = qtdmri_fit_no_l1.sparsity_abs()
     sparsity_abs_reg = qtdmri_fit_l1.sparsity_abs()
     assert_equal(sparsity_abs_no_reg > sparsity_abs_reg, True)
@@ -265,8 +364,8 @@ def test_l1_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
     S_noise = add_noise(S, S0=1., snr=20)
 
-    qtdmri_mod_l1_cv = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_l1_cv = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting="CV"
     )
 
@@ -281,15 +380,15 @@ def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
     S_noise = add_noise(S, S0=1., snr=20)
 
-    qtdmri_mod_elastic = qtdmri.QtdmriModel(gtab_4d,
-        radial_order=radial_order, time_order=time_order,
+    qtdmri_mod_elastic = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
         l1_regularization=True, l1_weighting="CV",
         laplacian_regularization=True, laplacian_weighting="GCV"
     )
 
     qtdmri_fit_no_noise = qtdmri_mod_elastic.fit(S)
     qtdmri_fit_noise = qtdmri_mod_elastic.fit(S_noise)
-    
+
     assert_equal(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt, True)
     assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
 
