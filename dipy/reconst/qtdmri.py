@@ -722,7 +722,7 @@ class QtdmriFit():
             for n in range(0, self.model.radial_order + 1, 2):
                 for j in range(1, 2 + n // 2):
                     l = n + 2 - 2 * j
-                    kappa = ((-1) ** (j - 1) * 2 ** (-(l + 3) / 2.0)) / np.pi
+                    kappa = ((-1) ** (j - 1) * 2. ** (-(l + 3) / 2.0)) / np.pi
                     matsum = 0
                     for k in range(0, j):
                         matsum += ((-1) ** k *
@@ -1530,14 +1530,14 @@ def part23_iso_reg_matrix_q(ind_mat, us):
                 l = ind_mat[i, 1]
                 if ji == (jk + 1):
                     LR[i, k] = LR[k, i] = (
-                        2 ** (-l) * -gamma(3 / 2.0 + jk + l) / gamma(jk)
+                        2. ** (-l) * -gamma(3 / 2.0 + jk + l) / gamma(jk)
                     )
                 elif ji == jk:
-                    LR[i, k] = LR[k, i] = 2 ** (-(l+1)) *\
+                    LR[i, k] = LR[k, i] = 2. ** (-(l+1)) *\
                         (1 - 4 * ji - 2 * l) *\
                         gamma(1 / 2.0 + ji + l) / gamma(ji)
                 elif ji == (jk - 1):
-                    LR[i, k] = LR[k, i] = 2 ** (-l) *\
+                    LR[i, k] = LR[k, i] = 2. ** (-l) *\
                         -gamma(3 / 2.0 + ji + l) / gamma(ji)
     return LR / us
 
@@ -1586,7 +1586,7 @@ def part4_iso_reg_matrix_q(ind_mat, us):
                 ji = ind_mat[i, 0]
                 l = ind_mat[i, 1]
                 LR[i, k] = LR[k, i] = (
-                    2 ** (-(l + 2)) * gamma(1 / 2.0 + ji + l) /
+                    2. ** (-(l + 2)) * gamma(1 / 2.0 + ji + l) /
                     (np.pi ** 2 * gamma(ji))
                 )
 
