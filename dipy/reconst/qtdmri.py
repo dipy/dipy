@@ -1106,6 +1106,26 @@ def qtdmri_temporal_normalization(ut):
     return np.sqrt(ut)
 
 
+def qtdmri_mapmri_normalization(mu):
+    """Normalization factor for Cartesian MAP-MRI basis. The scaling is the
+        same for every basis function depending only on the spatial scaling
+        mu.
+    """
+    sqrtC = np.sqrt(8 * np.prod(mu)) * np.pi ** (3. / 4.) 
+    return sqrtC
+
+
+def qtdmri_mapmri_isotropic_normalization(j, l, mu):
+    """Normalization factor for Spherical MAP-MRI basis. The normalization
+       for a basis function with orders [j,l,m] depends only on orders j,l and
+       the isotropic scale factor.
+    """
+    u0 = mu[0]
+    sqrtC = ((2 * np.pi) ** (3. / 2.) *
+    np.sqrt(2 ** l * u0 ** 3 * gamma(j) / gamma(j + l + 1. / 2.)))
+    return sqrtC
+
+
 def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
                           normalization=False):
     """Function to generate the qtdmri signal basis."""
@@ -1113,7 +1133,7 @@ def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
     sqrtut = 1.
     sqrtCut = 1.
     if normalization:
-        sqrtC = mapmri.mapmri_normalization(us)
+        sqrtC = qtdmri_mapmri_normalization(us)
         sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
     M_tau = (qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau) *
@@ -1253,7 +1273,7 @@ def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
     sqrtut = 1.
     sqrtCut = 1.
     if normalization:
-        sqrtC = mapmri.mapmri_normalization(us)
+        sqrtC = qtdmri_mapmri_normalization(us)
         sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
     K_tau = (
