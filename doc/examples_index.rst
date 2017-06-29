@@ -128,7 +128,7 @@ Contextual enhancement
 ------------------------------------------------
 
 - :ref:`example_contextual_enhancement`
-- :ref:`fiber_to_bundle_coherence`
+- :ref:`example_fiber_to_bundle_coherence`
 
 --------------
 Fiber tracking
@@ -139,8 +139,6 @@ Fiber tracking
 - :ref:`example_deterministic_fiber_tracking`
 - :ref:`example_tracking_tissue_classifier`
 - :ref:`example_sfm_tracking`
-- :ref:`example_tracking_eudx_tensor`
-- :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
 Fiber tracking evaluation
