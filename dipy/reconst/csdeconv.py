@@ -760,7 +760,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
 
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  return_number_of_voxels=False):
+                  fa_operator=lambda FA, fa_thr: FA > fa_thr, return_number_of_voxels=False):
     """ Automatic estimation of response function using FA.
 
     Parameters
@@ -775,6 +775,8 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         radius of cubic ROI
     fa_thr : float
         FA threshold
+    fa_operator : lambda
+        operator used to compare the FA with the fa_thr.
     return_number_of_voxels : bool
         If True, returns the number of voxels used for estimating the response
         function.
@@ -831,7 +833,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
-    indices = np.where(FA > fa_thr)
+    indices = np.where(fa_operator(FA, fa_thr))
 
     if indices[0].size == 0:
         msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
