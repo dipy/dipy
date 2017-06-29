@@ -1374,7 +1374,7 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
     """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
-        for j in range(1, 2 + n / 2):
+        for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             for m in range(-l, l + 1):
                 for o in range(0, time_order+1):
