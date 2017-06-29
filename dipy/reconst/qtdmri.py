@@ -88,6 +88,10 @@ class QtdmriModel(Cache):
         bval_threshold : float
             the threshold b-value to be used, such that only data points below
             that threshold are used when estimating the scale factors.
+        cvxpy_solver : str, optional
+            cvxpy solver name. Optionally optimize the positivity constraint
+            with a particular cvxpy solver. See http://www.cvxp for details.
+            Default: None (cvxpy chooses its own solver) 
 
         References
         ----------
@@ -120,7 +124,8 @@ class QtdmriModel(Cache):
                  normalization=False,
                  constrain_q0=True,
                  bval_threshold=1e10,
-                 eigenvalue_threshold=1e-04
+                 eigenvalue_threshold=1e-04,
+                 cvxpy_solver="ECOS"
                  ):
 
         if radial_order % 2 or radial_order < 0:
@@ -173,12 +178,16 @@ class QtdmriModel(Cache):
 
         if (not isinstance(bval_threshold, float) or
                 bval_threshold < 0):
-            msg = "bval_threshold must be a positive float"
+            msg = "bval_threshold must be a positive float."
             raise ValueError(msg)
 
         if (not isinstance(eigenvalue_threshold, float) or
                 eigenvalue_threshold < 0):
-            msg = "eigenvalue_threshold must be a positive float"
+            msg = "eigenvalue_threshold must be a positive float."
+            raise ValueError(msg)
+        
+        if cvxpy_solver not in cvxpy.installed_solvers():
+            msg = "cvxpy_solver is not installed in cvxpy"
             raise ValueError(msg)
 
         self.gtab = gtab
@@ -194,6 +203,7 @@ class QtdmriModel(Cache):
         self.constrain_q0 = constrain_q0
         self.bval_threshold = bval_threshold
         self.eigenvalue_threshold = eigenvalue_threshold
+        self.cvxpy_solver = cvxpy_solver
 
         if self.cartesian:
             self.ind_mat = qtdmri_index_matrix(radial_order, time_order)
@@ -319,7 +329,7 @@ class QtdmriModel(Cache):
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
             try:
-                prob.solve(solver="ECOS", verbose=False)
+                prob.solve(solver=self.cvxpy_solver, verbose=False)
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
@@ -342,7 +352,7 @@ class QtdmriModel(Cache):
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
             try:
-                prob.solve(solver="ECOS", verbose=False)
+                prob.solve(solver=self.cvxpy_solver, verbose=False)
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
@@ -388,7 +398,7 @@ class QtdmriModel(Cache):
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
             try:
-                prob.solve(solver="ECOS", verbose=False)
+                prob.solve(solver=self.cvxpy_solver, verbose=False)
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
