@@ -1701,7 +1701,7 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     res = fmin_l_bfgs_b(lambda x,
                         input_stuff: GCV_cost_function(x, input_stuff),
                         (startpoint), args=(input_stuff,), approx_grad=True,
-                        bounds=bounds, disp=True, pgtol=1e-10, factr=10.)
+                        bounds=bounds, disp=False, pgtol=1e-10, factr=10.)
     return res[0][0]
 
 
