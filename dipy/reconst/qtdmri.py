@@ -5,6 +5,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import genlaguerre, gamma
 from scipy import special
+from warnings import warn
 from dipy.reconst import mapmri
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
     from scipy.special import factorial, factorial2
@@ -309,6 +310,8 @@ class QtdmriModel(Cache):
                     lopt = generalized_crossvalidation(data_norm, M,
                                                        laplacian_matrix)
                 except:
+                    msg = "Laplacian GCV failed. lopt defaulted to 2e-4."
+                    warn(msg)
                     lopt = 2e-4
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
