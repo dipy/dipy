@@ -17,6 +17,8 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_deconv,
                                    odf_sh_to_sharp,
                                    auto_response,
+                                   fa_superior,
+                                   fa_inferior,
                                    recursive_response,
                                    response_from_mask)
 from dipy.direction.peaks import peak_directions
@@ -105,6 +107,50 @@ def test_recursive_response_calibration():
     FA = fractional_anisotropy(tenfit.evals)
     FA_gt = fractional_anisotropy(evals)
     assert_almost_equal(FA, FA_gt, 1)
+
+
+def test_auto_response():
+    fdata, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    data = nib.load(fdata).get_data()
+
+    gtab = gradient_table(bvals, bvecs)
+    radius = 3
+
+    def test_fa_superior(FA, fa_thr):
+        return FA > fa_thr
+
+    def test_fa_inferior(FA, fa_thr):
+        return FA < fa_thr
+
+    predefined_functions = [fa_superior, fa_inferior]
+    defined_functions = [test_fa_superior, test_fa_inferior]
+
+    for fa_thr in np.arange(0.1, 1, 0.1):
+        for predefined, defined in zip(predefined_functions, defined_functions):
+            response_predefined, ratio_predefined, nvoxels_predefined = auto_response(
+                gtab,
+                data,
+                roi_center=None,
+                roi_radius=radius,
+                fa_operator=predefined,
+                fa_thr=fa_thr,
+                return_number_of_voxels=True)
+
+            response_defined, ratio_defined, nvoxels_defined = auto_response(
+                gtab,
+                data,
+                roi_center=None,
+                roi_radius=radius,
+                fa_operator=defined,
+                fa_thr=fa_thr,
+                return_number_of_voxels=True)
+
+            assert_equal(nvoxels_predefined, nvoxels_defined)
+            assert_array_almost_equal(response_predefined[0], response_defined[0])
+            assert_almost_equal(response_predefined[1], response_defined[1])
+            assert_almost_equal(ratio_predefined, ratio_defined)
 
 
 def test_response_from_mask():
