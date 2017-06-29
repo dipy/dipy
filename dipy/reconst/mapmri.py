@@ -213,7 +213,12 @@ class MapmriModel(ReconstModel, Cache):
         >>> odf = mapfit.odf(sphere)
         """
 
+        if np.sum(gtab.b0s_mask) == 0:
+            msg = "gtab does not have any b0s, check in the gradient_table "
+            msg += "if b0_threshold needs to be increased."
+            raise ValueError(msg)
         self.gtab = gtab
+
         if radial_order < 0 or radial_order % 2:
             msg = "radial_order must be a positive, even number."
             raise ValueError(msg)
