@@ -759,8 +759,42 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     return fodf_sh
 
 
+def fa_superior(FA, fa_thr):
+    """ Check that the FA is greater than the FA threshold
+
+        Parameters
+        ----------
+        FA : array
+            Fractional Anisotropy
+        fa_thr : int
+            FA threshold
+
+        Returns
+        -------
+        True when the FA value is greater than the FA threshold, otherwise False.
+    """
+    return FA > fa_thr
+
+
+def fa_inferior(FA, fa_thr):
+    """ Check that the FA is lower than the FA threshold
+
+        Parameters
+        ----------
+        FA : array
+            Fractional Anisotropy
+        fa_thr : int
+            FA threshold
+
+        Returns
+        -------
+        True when the FA value is lower than the FA threshold, otherwise False.
+    """
+    return FA < fa_thr
+
+
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  fa_operator=lambda FA, fa_thr: FA > fa_thr, return_number_of_voxels=False):
+                  fa_operator=fa_superior, return_number_of_voxels=False):
     """ Automatic estimation of response function using FA.
 
     Parameters
@@ -775,8 +809,8 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         radius of cubic ROI
     fa_thr : float
         FA threshold
-    fa_operator : lambda
-        operator used to compare the FA with the fa_thr.
+    fa_operator : function
+        Function that defines operator used to compare the FA with the fa_thr.
     return_number_of_voxels : bool
         If True, returns the number of voxels used for estimating the response
         function.
