@@ -1263,13 +1263,13 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
     qvals, theta, phi = cart2sphere(q[:, 0], q[:, 1], q[:, 2])
 
-    n_dat = qvals.shape[0]
-    n_elem = ind_mat.shape[0]
+    n_dat = int(qvals.shape[0])
+    n_elem = int(ind_mat.shape[0])
 
     num_j = int(np.max(ind_mat[:, 0]))
-    num_o = time_order + 1
-    num_l = radial_order / 2 + 1
-    num_m = radial_order * 2 + 1
+    num_o = int(time_order + 1)
+    num_l = int(radial_order // 2 + 1)
+    num_m = int(radial_order * 2 + 1)
 
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
@@ -1343,13 +1343,13 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     theta[np.isnan(theta)] = 0
 
     ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
-    n_dat = R.shape[0]
-    n_elem = ind_mat.shape[0]
+    n_dat = int(R.shape[0])
+    n_elem = int(ind_mat.shape[0])
 
     num_j = int(np.max(ind_mat[:, 0]))
-    num_o = time_order + 1
-    num_l = radial_order / 2 + 1
-    num_m = radial_order * 2 + 1
+    num_o = int(time_order + 1)
+    num_l = int(radial_order / 2 + 1)
+    num_m = int(radial_order * 2 + 1)
 
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
