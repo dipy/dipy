@@ -14,9 +14,7 @@ from dipy.core.geometry import cart2sphere
 
 from dipy.utils.optpkg import optional_package
 
-cvxopt, have_cvxopt, _ = optional_package("cvxopt")
-if have_cvxopt:
-    import cvxopt.solvers
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 class ShoreModel(Cache):
 
@@ -63,10 +61,7 @@ class ShoreModel(Cache):
 
     Notes
     -----
-    The implementation of SHORE depends on CVXOPT (http://cvxopt.org/). This
-    software is licensed under the GPL (see:
-    http://cvxopt.org/copyright.html).and you may be subject to this license
-    when using SHORE.
+    The implementation of SHORE depends on CVXPY (http://www.cvxpy.org/).
     """
 
     def __init__(self,
@@ -79,7 +74,8 @@ class ShoreModel(Cache):
                  constrain_e0=False,
                  positive_constraint=False,
                  pos_grid=11,
-                 pos_radius=20e-03
+                 pos_radius=20e-03,
+                 cvxpy_solver=None
                  ):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
@@ -128,6 +124,10 @@ class ShoreModel(Cache):
         pos_radius : float,
             Radius of the grid of the EAP in which enforce positivity in
             millimeters. By default 20e-03 mm.
+        cvxpy_solver : str, optional
+            cvxpy solver name. Optionally optimize the positivity constraint
+            with a particular cvxpy solver. See http://www.cvxp for details.
+            Default: None (cvxpy chooses its own solver) 
 
         References
         ----------
@@ -188,6 +188,18 @@ class ShoreModel(Cache):
         if positive_constraint and not(constrain_e0):
             msg = "Constrain_e0 must be True to enfore positivity."
             raise ValueError(msg)
+            
+        if positive_constraint or constrain_e0:
+            if not have_cvxpy:
+                msg = "cvxpy must be installed for positive_constraint or "
+                msg += "constraint_e0."
+                raise ValueError(msg)
+            if cvxpy_solver is not None:
+                if cvxpy_solver not in cvxpy.installed_solvers():
+                    msg = "cvxpy_solver is not installed in cvxpy."
+                    raise ValueError(msg)
+
+        self.cvxpy_solver = cvxpy_solver
         self.positive_constraint = positive_constraint
         self.pos_grid = pos_grid
         self.pos_radius = pos_radius
@@ -226,60 +238,40 @@ class ShoreModel(Cache):
 
             coef = coef / signal_0
         else:
-            data = data / data[self.gtab.b0s_mask].mean()
-
-            # If cvxopt is not available, bail (scipy is ~100 times slower)
-            if not have_cvxopt:
-                raise ValueError(
-                    'CVXOPT package needed to enforce constraints')
-            w_s = "The implementation of SHORE depends on CVXOPT "
-            w_s += " (http://cvxopt.org/). This software is licensed "
-            w_s += "under the GPL (see: http://cvxopt.org/copyright.html) "
-            w_s += " and you may be subject to this license when using SHORE."
-            warn(w_s)
+            data_norm = data / data[self.gtab.b0s_mask].mean()
             M0 = M[self.gtab.b0s_mask, :]
-            M0_mean = M0.mean(0)[None, :]
-            Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
-            Q = cvxopt.matrix(np.ascontiguousarray(
-                np.dot(Mprime.T, Mprime)
-                + self.lambdaN * Nshore + self.lambdaL * Lshore
-            ))
-
-            data_b0 = data[self.gtab.b0s_mask].mean()
-            data_single_b0 = np.r_[
-                data_b0, data[~self.gtab.b0s_mask]] / data_b0
-            p = cvxopt.matrix(np.ascontiguousarray(
-                -1 * np.dot(Mprime.T, data_single_b0))
+            
+            c = cvxpy.Variable(M.shape[1])
+            design_matrix = cvxpy.Constant(M)
+            objective = cvxpy.Minimize(
+                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                self.lambdaN * cvxpy.quad_form(c, Nshore) +
+                self.lambdaL * cvxpy.quad_form(c, Lshore)
             )
 
-            cvxopt.solvers.options['show_progress'] = False
-
-            if not(self.positive_constraint):
-                G = None
-                h = None
+            if not self.positive_constraint:
+                constraints = [M0[0] * c == 1]
             else:
                 lg = int(np.floor(self.pos_grid ** 3 / 2))
-                G = self.cache_get(
-                    'shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
-                if G is None:
-                    v, t = create_rspace(self.pos_grid, self.pos_radius)
-
+                v, t = create_rspace(self.pos_grid, self.pos_radius)
+                psi = self.cache_get(
+                    'shore_matrix_positive_constraint',
+                    key=(self.pos_grid, self.pos_radius)
+                )
+                if psi is None:
                     psi = shore_matrix_pdf(
                         self.radial_order, self.zeta, t[:lg])
-                    G = cvxopt.matrix(-1 * psi)
                     self.cache_set(
-                        'shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
-                h = cvxopt.matrix((1e-10) * np.ones((lg)), (lg, 1))
-
-            A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
-            b = cvxopt.matrix(np.array([1.]))
-            sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
-
-            if sol['status'] != 'optimal':
+                        'shore_matrix_positive_constraint',
+                        (self.pos_grid, self.pos_radius), psi)
+                constraints = [M0[0] * c == 1., psi * c > 1e-3]
+            prob = cvxpy.Problem(objective, constraints)
+            try:
+                prob.solve(solver=self.cvxpy_solver)
+                coef = np.asarray(c.value).squeeze()
+            except:
                 warn('Optimization did not find a solution')
-
-            coef = np.array(sol['x'])[:, 0]
-
+                coef = np.zeros(M.shape[1])
         return ShoreFit(self, coef)
 
 
