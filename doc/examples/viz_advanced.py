@@ -209,7 +209,7 @@ We'll also create text labels to identify the sliders.
 
 line_slider_label_z = ui.TextBox2D(text="Z Slice", width=50, height=20)
 line_slider_label_x = ui.TextBox2D(text="X Slice", width=50, height=20)
-line_slider_label_y = ui.TextBox2D(text="Y Slicer", width=50, height=20)
+line_slider_label_y = ui.TextBox2D(text="Y Slice", width=50, height=20)
 opacity_slider_label = ui.TextBox2D(text="Opacity", width=50, height=20)
 
 """
@@ -260,22 +260,28 @@ def win_callback(obj, event):
 show_m.initialize()
 
 """
-Finally, please uncomment the following 3 lines so that you can interact with
-the available 3D and 2D objects.
+Finally, please set the following variable to True to interact with the 
+datasetsin 3D.
 """
 
-# show_m.add_window_callback(win_callback)
-# show_m.render()
-# show_m.start()
+interactive = False
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
-              reset_camera=False)
+if interactive:
+
+    show_m.add_window_callback(win_callback)
+    show_m.render()
+    show_m.start()
+
+else:
+
+    window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
+                  reset_camera=False)
 
 """
-.. figure:: bundles_and_a_slice.png
+.. figure:: bundles_and_3_slices.png
    :align: center
 
    **A few bundles with interactive slicing**.
