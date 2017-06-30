@@ -1276,7 +1276,7 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
             radial_storage[j-1, l/2, :] = radial_basis_opt(j, l, us, qvals)
-    bla
+
     # Angular Basis
     angular_storage = np.zeros([num_l, num_m, n_dat])
     for l in range(0, radial_order + 1, 2):
