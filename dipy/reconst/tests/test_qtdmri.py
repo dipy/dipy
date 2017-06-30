@@ -370,6 +370,66 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
 
 
 @np.testing.dec.skipif(not qtdmri.have_cvxpy)
+def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
+    gtab_4d = generate_gtab4D()
+    tau = gtab_4d.tau
+
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    # first test without regularization
+    qtdmri_mod_ls = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order
+    )
+    qtdmri_fit_ls = qtdmri_mod_ls.fit(S)
+    fitted_signal = qtdmri_fit_ls.fitted_signal()
+    # only first tau_point is normalized with least squares.
+    E_q0_first_tau = fitted_signal[
+        np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
+    ]
+    assert_equal(E_q0_first_tau, 1.)
+
+    # now with cvxpy regularization cartesian
+    qtdmri_mod_lap = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        laplacian_regularization=True, laplacian_weighting=1e-4
+    )
+    qtdmri_fit_lap = qtdmri_mod_lap.fit(S)
+    fitted_signal = qtdmri_fit_lap.fitted_signal()
+    E_q0_first_tau = fitted_signal[
+        np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
+    ]
+    E_q0_last_tau = fitted_signal[
+        np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
+    ]
+    assert_almost_equal(E_q0_first_tau[0], 1.)
+    assert_almost_equal(E_q0_last_tau[0], 1.)
+
+    # now with cvxpy regularization spherical
+    qtdmri_mod_lap = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        laplacian_regularization=True, laplacian_weighting=1e-4,
+        cartesian=False
+    )
+    qtdmri_fit_lap = qtdmri_mod_lap.fit(S)
+    fitted_signal = qtdmri_fit_lap.fitted_signal()
+    E_q0_first_tau = fitted_signal[
+        np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
+    ]
+    E_q0_last_tau = fitted_signal[
+        np.all([tau == tau.max(), gtab_4d.b0s_mask], axis=0)
+    ]
+    assert_almost_equal(E_q0_first_tau[0], 1.)
+    assert_almost_equal(E_q0_last_tau[0], 1.)
+
+    # test if maginal ODF integral in sh is equal to one
+    # Integral of Y00 spherical harmonic is 1 / (2 * np.sqrt(np.pi))
+    # division with this results in normalization
+    odf_sh = qtdmri_fit_lap.odf_sh(s=0, tau=tau.max())
+    odf_integral = odf_sh[0] * (2 * np.sqrt(np.pi))
+    assert_almost_equal(odf_integral, 1.)
+
+
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
