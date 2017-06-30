@@ -386,7 +386,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
     ]
-    assert_equal(float(E_q0_first_tau), 1.)
+    assert_almost_equal(float(E_q0_first_tau), 1.)
 
     # now with cvxpy regularization cartesian
     qtdmri_mod_lap = qtdmri.QtdmriModel(
