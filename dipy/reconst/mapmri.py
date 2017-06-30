@@ -163,7 +163,7 @@ class MapmriModel(ReconstModel, Cache):
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See http://www.cvxp for details.
-            Default: None (cvxpy chooses its own solver) 
+            Default: None (cvxpy chooses its own solver)
 
         References
         ----------
