@@ -128,7 +128,8 @@ def test_input_parameters():
         print ('negative eigenvalue_threshold is caught.')
 
     try:
-        qtdmri.QtdmriModel(gtab_4d, cvxpy_solver='test')
+        qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
+                           cvxpy_solver='test')
         assert_equal(True, False)
     except ValueError:
         print ('unavailable cvxpy solver is caught.')
@@ -368,6 +369,7 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
                               laplacian_matrix_regular)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -391,6 +393,7 @@ def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
                                                     time_order=2):
     gtab_4d = generate_gtab4D()
@@ -416,6 +419,7 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
     assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -433,6 +437,7 @@ def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     assert_equal(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -459,6 +464,7 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_equal(sparsity_density_no_reg > sparsity_density_reg, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -487,6 +493,7 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_equal(sparsity_density_no_reg > sparsity_density_reg, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_l1_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -503,6 +510,7 @@ def test_l1_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
 def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
