@@ -192,9 +192,10 @@ class QtdmriModel(Cache):
                 msg = "cvxpy must be installed for Laplacian or l1 "
                 msg += "regularization."
                 raise ValueError(msg)
-            if cvxpy_solver not in cvxpy.installed_solvers():
-                msg = "cvxpy_solver is not installed in cvxpy."
-                raise ValueError(msg)
+            if cvxpy_solver is not None:
+                if cvxpy_solver not in cvxpy.installed_solvers():
+                    msg = "cvxpy_solver is not installed in cvxpy."
+                    raise ValueError(msg)
 
         if l1_regularization and not cartesian and not normalization:
             msg = "The non-Cartesian implementation must be normalized for the"
