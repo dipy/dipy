@@ -257,6 +257,40 @@ def test_cartesian_normalization(radial_order=4, time_order=2):
     pdf_aniso_norm = qtdmri_fit_aniso_norm.pdf(rt_grid)
     assert_array_almost_equal(pdf_aniso / pdf_aniso.max(),
                               pdf_aniso_norm / pdf_aniso.max())
+    norm_laplacian = qtdmri_fit_aniso.norm_of_laplacian_signal()
+    norm_laplacian_norm = qtdmri_fit_aniso_norm.norm_of_laplacian_signal()
+    assert_array_almost_equal(norm_laplacian / norm_laplacian,
+                              norm_laplacian_norm / norm_laplacian)
+
+
+def test_spherical_normalization(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+
+    qtdmri_mod_aniso = qtdmri.QtdmriModel(gtab_4d, radial_order=radial_order,
+                                          time_order=time_order,
+                                          cartesian=False,
+                                          normalization=False)
+    qtdmri_mod_aniso_norm = qtdmri.QtdmriModel(gtab_4d,
+                                               radial_order=radial_order,
+                                               time_order=time_order,
+                                               cartesian=False,
+                                               normalization=True)
+    qtdmri_fit = qtdmri_mod_aniso.fit(S)
+    qtdmri_fit_norm = qtdmri_mod_aniso_norm.fit(S)
+    assert_array_almost_equal(qtdmri_fit.fitted_signal(),
+                              qtdmri_fit_norm.fitted_signal())
+    rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, .05)
+    pdf_aniso = qtdmri_fit.pdf(rt_grid)
+    pdf_aniso_norm = qtdmri_fit_norm.pdf(rt_grid)
+    assert_array_almost_equal(pdf_aniso / pdf_aniso.max(),
+                              pdf_aniso_norm / pdf_aniso.max())
+
+    norm_laplacian = qtdmri_fit.norm_of_laplacian_signal()
+    norm_laplacian_norm = qtdmri_fit_norm.norm_of_laplacian_signal()
+    assert_array_almost_equal(norm_laplacian / norm_laplacian,
+                              norm_laplacian_norm / norm_laplacian)
 
 
 def test_anisotropic_reduced_MSE(radial_order=0, time_order=0):

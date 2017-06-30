@@ -130,11 +130,11 @@ class QtdmriModel(Cache):
                  ):
 
         if radial_order % 2 or radial_order < 0:
-            msg = "radial_order must be zero or an even positive number."
+            msg = "radial_order must be zero or an even positive integer."
             raise ValueError(msg)
 
         if time_order < 0:
-            msg = "time_order must be larger or equal than zero."
+            msg = "time_order must be larger or equal than zero integer."
             raise ValueError(msg)
 
         if not isinstance(laplacian_regularization, bool):
@@ -297,13 +297,15 @@ class QtdmriModel(Cache):
                     self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
-                    self.part4_reg_mat_tau
+                    self.part4_reg_mat_tau,
+                    normalization=self.normalization
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                     self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
                     self.part1_reg_mat_tau, self.part23_reg_mat_tau,
-                    self.part4_reg_mat_tau
+                    self.part4_reg_mat_tau,
+                    normalization=self.normalization
                 )
             if self.laplacian_weighting == 'GCV':
                 try:
@@ -365,13 +367,16 @@ class QtdmriModel(Cache):
                     self.ind_mat, us, ut, self.S_mat, self.T_mat, self.U_mat,
                     self.part1_reg_mat_tau,
                     self.part23_reg_mat_tau,
-                    self.part4_reg_mat_tau
+                    self.part4_reg_mat_tau,
+                    normalization=self.normalization
+                    
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
                     self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
                     self.part1_reg_mat_tau, self.part23_reg_mat_tau,
-                    self.part4_reg_mat_tau
+                    self.part4_reg_mat_tau,
+                    normalization=self.model.normalization
                 )
             if self.laplacian_weighting == 'GCV':
                 lopt = generalized_crossvalidation(data_norm, M,
@@ -982,7 +987,8 @@ class QtdmriFit():
                 self.model.S_mat, self.model.T_mat, self.model.U_mat,
                 self.model.part1_reg_mat_tau,
                 self.model.part23_reg_mat_tau,
-                self.model.part4_reg_mat_tau
+                self.model.part4_reg_mat_tau,
+                normalization=self.model.normalization
             )
         else:
             lap_matrix = qtdmri_isotropic_laplacian_reg_matrix(
@@ -990,7 +996,8 @@ class QtdmriFit():
                 self.model.part1_uq_iso_precomp,
                 self.model.part1_reg_mat_tau,
                 self.model.part23_reg_mat_tau,
-                self.model.part4_reg_mat_tau
+                self.model.part4_reg_mat_tau,
+                normalization=self.model.normalization
             )
         norm_laplacian = np.dot(self._qtdmri_coef,
                                 np.dot(self._qtdmri_coef, lap_matrix))
@@ -1132,16 +1139,13 @@ def qtdmri_mapmri_isotropic_normalization(j, l, mu):
 def qtdmri_signal_matrix_(radial_order, time_order, us, ut, q, tau,
                           normalization=False):
     """Function to generate the qtdmri signal basis."""
-    sqrtC = 1.
-    sqrtut = 1.
-    sqrtCut = 1.
+    M = qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau)
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
         sqrtut = qtdmri_temporal_normalization(ut)
         sqrtCut = sqrtC * sqrtut
-    M_tau = (qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau) *
-             sqrtCut)
-    return M_tau
+        M *= sqrtCut
+    return M
 
 
 def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
@@ -1221,11 +1225,19 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     return K
 
 
-def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau):
-    M_tau = qtdmri_isotropic_signal_matrix(
+def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau,
+                                    normalization=False):
+    M = qtdmri_isotropic_signal_matrix(
         radial_order, time_order, us, ut, q, tau
     )
-    return M_tau
+    if normalization:
+        ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
+        j, l, m = ind_mat.T
+        sqrtut = qtdmri_temporal_normalization(ut)
+        sqrtC = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        sqrtCut = sqrtC * sqrtut
+        M = M * sqrtCut[:, None]
+    return M
 
 
 def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
@@ -1419,7 +1431,8 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
 def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
                                 part1_ut_precomp=None,
                                 part23_ut_precomp=None,
-                                part4_ut_precomp=None):
+                                part4_ut_precomp=None,
+                                normalization=False):
     """Computes the cartesian qt-dMRI Laplacian regularization matrix. If
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix B
@@ -1452,6 +1465,11 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
     regularization_matrix = (
         part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
     )
+
+    if normalization:
+        temporal_normalization = qtdmri_temporal_normalization(ut) ** 2
+        spatial_normalization = qtdmri_mapmri_normalization(us) ** 2
+        regularization_matrix *= temporal_normalization * spatial_normalization
     return regularization_matrix
 
 
@@ -1459,7 +1477,8 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
                                           part1_uq_iso_precomp=None,
                                           part1_ut_precomp=None,
                                           part23_ut_precomp=None,
-                                          part4_ut_precomp=None):
+                                          part4_ut_precomp=None,
+                                          normalization=False):
     """Computes the spherical qt-dMRI Laplacian regularization matrix. If
     given, uses precomputed matrices for temporal and spatial regularization
     matrices to speed up computation. Follows the the formulation of Appendix C
@@ -1501,6 +1520,14 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
     regularization_matrix = (
         part1_us * part1_ut + part23_us * part23_ut + part4_us * part4_ut
     )
+
+    if normalization:
+        temporal_normalization = qtdmri_temporal_normalization(ut) ** 2
+        spatial_normalization = np.zeros_like(regularization_matrix)
+        j, l = ind_mat[:, :2].T
+        pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        spatial_normalization = np.outer(pre_spatial_norm, pre_spatial_norm)
+        regularization_matrix *= temporal_normalization * spatial_normalization
     return regularization_matrix
 
 
