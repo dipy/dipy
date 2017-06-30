@@ -559,7 +559,10 @@ def gfa(samples):
     n = samples.shape[-1]
     numer = n * (diff * diff).sum(-1)
     denom = (n - 1) * (samples * samples).sum(-1)
-    return np.sqrt(numer / denom)
+    if denom > 0:
+        return np.sqrt(numer / denom)
+    else:
+        return np.nan
 
 
 def reshape_peaks_for_visualization(peaks):
