@@ -4,7 +4,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst import qtdmri
+from dipy.reconst import qtdmri, mapmri
 from dipy.sims.voxel import MultiTensor
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
@@ -281,11 +281,12 @@ def test_spherical_normalization(radial_order=4, time_order=2):
     qtdmri_fit_norm = qtdmri_mod_aniso_norm.fit(S)
     assert_array_almost_equal(qtdmri_fit.fitted_signal(),
                               qtdmri_fit_norm.fitted_signal())
+
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, .05)
-    pdf_aniso = qtdmri_fit.pdf(rt_grid)
-    pdf_aniso_norm = qtdmri_fit_norm.pdf(rt_grid)
-    assert_array_almost_equal(pdf_aniso / pdf_aniso.max(),
-                              pdf_aniso_norm / pdf_aniso.max())
+    pdf = qtdmri_fit.pdf(rt_grid)
+    pdf_norm = qtdmri_fit_norm.pdf(rt_grid)
+    assert_array_almost_equal(pdf / pdf.max(),
+                              pdf_norm / pdf.max())
 
     norm_laplacian = qtdmri_fit.norm_of_laplacian_signal()
     norm_laplacian_norm = qtdmri_fit_norm.norm_of_laplacian_signal()
@@ -326,6 +327,47 @@ def test_number_of_coefficients(radial_order=4, time_order=2):
     assert_equal(number_of_coef_model, number_of_coef_analytic)
 
 
+def test_calling_cartesian_laplacian_with_precomputed_matrices(
+        radial_order=4, time_order=2, ut=2e-3, us=np.r_[1e-3, 2e-3, 3e-3]):
+    ind_mat = qtdmri.qtdmri_index_matrix(radial_order, time_order)
+    part4_reg_mat_tau = qtdmri.part4_reg_matrix_tau(ind_mat, 1.)
+    part23_reg_mat_tau = qtdmri.part23_reg_matrix_tau(ind_mat, 1.)
+    part1_reg_mat_tau = qtdmri.part1_reg_matrix_tau(ind_mat, 1.)
+    S_mat, T_mat, U_mat = mapmri.mapmri_STU_reg_matrices(radial_order)
+
+    laplacian_matrix_precomputed = qtdmri.qtdmri_laplacian_reg_matrix(
+        ind_mat, us, ut, S_mat, T_mat, U_mat,
+        part1_reg_mat_tau, part23_reg_mat_tau, part4_reg_mat_tau
+    )
+    laplacian_matrix_regular = qtdmri.qtdmri_laplacian_reg_matrix(
+        ind_mat, us, ut)
+    assert_array_almost_equal(laplacian_matrix_precomputed,
+                              laplacian_matrix_regular)
+
+
+def test_calling_spherical_laplacian_with_precomputed_matrices(
+        radial_order=4, time_order=2, ut=2e-3, us=np.r_[2e-3, 2e-3, 2e-3]):
+    ind_mat = qtdmri.qtdmri_isotropic_index_matrix(radial_order, time_order)
+    part4_reg_mat_tau = qtdmri.part4_reg_matrix_tau(ind_mat, 1.)
+    part23_reg_mat_tau = qtdmri.part23_reg_matrix_tau(ind_mat, 1.)
+    part1_reg_mat_tau = qtdmri.part1_reg_matrix_tau(ind_mat, 1.)
+    part1_uq_iso_precomp = (
+        mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
+            ind_mat[:, :3], 1.
+            )
+        )
+    laplacian_matrix_precomp = qtdmri.qtdmri_isotropic_laplacian_reg_matrix(
+        ind_mat, us, ut,
+        part1_uq_iso_precomp=part1_uq_iso_precomp,
+        part1_ut_precomp=part1_reg_mat_tau,
+        part23_ut_precomp=part23_reg_mat_tau,
+        part4_ut_precomp=part4_reg_mat_tau)
+    laplacian_matrix_regular = qtdmri.qtdmri_isotropic_laplacian_reg_matrix(
+        ind_mat, us, ut)
+    assert_array_almost_equal(laplacian_matrix_precomp,
+                              laplacian_matrix_regular)
+
+
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -349,11 +391,36 @@ def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
 
 
+def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
+                                                    time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+
+    qtdmri_mod_no_laplacian = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        cartesian=False, laplacian_regularization=True, laplacian_weighting=0.
+    )
+    qtdmri_mod_laplacian = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        cartesian=False, laplacian_regularization=True,
+        laplacian_weighting=1e-4
+    )
+
+    qtdmri_fit_no_laplacian = qtdmri_mod_no_laplacian.fit(S)
+    qtdmri_fit_laplacian = qtdmri_mod_laplacian.fit(S)
+
+    laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
+    laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
+
+    assert_equal(laplacian_norm_no_reg > laplacian_norm_reg, True)
+
+
 def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=20)
+    S_noise = add_noise(S, S0=1., snr=10)
 
     qtdmri_mod_laplacian_GCV = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
@@ -392,11 +459,39 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_equal(sparsity_density_no_reg > sparsity_density_reg, True)
 
 
+def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+
+    qtdmri_mod_no_l1 = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, cartesian=False, normalization=True,
+        l1_weighting=0.
+    )
+    qtdmri_mod_l1 = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, cartesian=False, normalization=True,
+        l1_weighting=.1
+    )
+
+    qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
+    qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
+
+    sparsity_abs_no_reg = qtdmri_fit_no_l1.sparsity_abs()
+    sparsity_abs_reg = qtdmri_fit_l1.sparsity_abs()
+    assert_equal(sparsity_abs_no_reg > sparsity_abs_reg, True)
+
+    sparsity_density_no_reg = qtdmri_fit_no_l1.sparsity_density()
+    sparsity_density_reg = qtdmri_fit_l1.sparsity_density()
+    assert_equal(sparsity_density_no_reg > sparsity_density_reg, True)
+
+
 def test_l1_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=20)
+    S_noise = add_noise(S, S0=1., snr=10)
 
     qtdmri_mod_l1_cv = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,
@@ -412,7 +507,7 @@ def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
-    S_noise = add_noise(S, S0=1., snr=20)
+    S_noise = add_noise(S, S0=1., snr=10)
 
     qtdmri_mod_elastic = qtdmri.QtdmriModel(
         gtab_4d, radial_order=radial_order, time_order=time_order,

@@ -92,7 +92,7 @@ class QtdmriModel(Cache):
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See http://www.cvxp for details.
-            Default: None (cvxpy chooses its own solver) 
+            Default: None (cvxpy chooses its own solver)
 
         References
         ----------
@@ -186,9 +186,15 @@ class QtdmriModel(Cache):
                 eigenvalue_threshold < 0):
             msg = "eigenvalue_threshold must be a positive float."
             raise ValueError(msg)
-        
+
         if cvxpy_solver not in cvxpy.installed_solvers():
             msg = "cvxpy_solver is not installed in cvxpy"
+            raise ValueError(msg)
+
+        if l1_regularization and not cartesian and not normalization:
+            msg = "The non-Cartesian implementation must be normalized for the"
+            msg += " l1-norm sparsity regularization to work. Set "
+            msg += "normalization=True to proceed."
             raise ValueError(msg)
 
         self.gtab = gtab
@@ -278,7 +284,8 @@ class QtdmriModel(Cache):
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
             M = qtdmri_isotropic_signal_matrix_(
-                self.radial_order, self.time_order, us[0], ut, q, tau_scaled
+                self.radial_order, self.time_order, us[0], ut, q, tau_scaled,
+                normalization=self.normalization
             )
 
         b0_indices = np.arange(self.gtab.tau.shape[0])[self.gtab.b0s_mask]
@@ -302,7 +309,7 @@ class QtdmriModel(Cache):
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
+                    self.ind_mat, us, ut, self.part1_uq_iso_precomp,
                     self.part1_reg_mat_tau, self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
                     normalization=self.normalization
@@ -369,7 +376,6 @@ class QtdmriModel(Cache):
                     self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
                     normalization=self.normalization
-                    
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
@@ -957,9 +963,10 @@ class QtdmriFit():
                                           self.us, self.ut, q, tau,
                                           self.model.normalization)
         else:
-            M = qtdmri_isotropic_signal_matrix_(self.model.radial_order,
-                                                self.model.time_order,
-                                                self.us[0], self.ut, q, tau)
+            M = qtdmri_isotropic_signal_matrix_(
+                self.model.radial_order, self.model.time_order,
+                self.us[0], self.ut, q, tau,
+                normalization=self.model.normalization)
         E = S0 * np.dot(M, self._qtdmri_coef)
         return E
 
@@ -1016,9 +1023,11 @@ class QtdmriFit():
                                    self.us, self.ut, rt_points_,
                                    self.model.normalization)
         else:
-            K = qtdmri_isotropic_eap_matrix_(self.model.radial_order,
-                                             self.model.time_order,
-                                             self.us[0], self.ut, rt_points_)
+            K = qtdmri_isotropic_eap_matrix_(
+                self.model.radial_order, self.model.time_order,
+                self.us[0], self.ut, rt_points_,
+                normalization=self.model.normalization
+            )
         eap = np.dot(K, self._qtdmri_coef)
         return eap
 
@@ -1121,18 +1130,17 @@ def qtdmri_mapmri_normalization(mu):
         same for every basis function depending only on the spatial scaling
         mu.
     """
-    sqrtC = np.sqrt(8 * np.prod(mu)) * np.pi ** (3. / 4.) 
+    sqrtC = np.sqrt(8 * np.prod(mu)) * np.pi ** (3. / 4.)
     return sqrtC
 
 
-def qtdmri_mapmri_isotropic_normalization(j, l, mu):
+def qtdmri_mapmri_isotropic_normalization(j, l, u0):
     """Normalization factor for Spherical MAP-MRI basis. The normalization
        for a basis function with orders [j,l,m] depends only on orders j,l and
        the isotropic scale factor.
     """
-    u0 = mu[0]
     sqrtC = ((2 * np.pi) ** (3. / 2.) *
-    np.sqrt(2 ** l * u0 ** 3 * gamma(j) / gamma(j + l + 1. / 2.)))
+             np.sqrt(2 ** l * u0 ** 3 * gamma(j) / gamma(j + l + 1. / 2.)))
     return sqrtC
 
 
@@ -1232,11 +1240,11 @@ def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau,
     )
     if normalization:
         ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
-        j, l, m = ind_mat.T
+        j, l = ind_mat[:, :2].T
         sqrtut = qtdmri_temporal_normalization(ut)
         sqrtC = qtdmri_mapmri_isotropic_normalization(j, l, us)
         sqrtCut = sqrtC * sqrtut
-        M = M * sqrtCut[:, None]
+        M = M * sqrtCut[None, :]
     return M
 
 
@@ -1297,11 +1305,19 @@ def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
     return K_tau
 
 
-def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid):
-    K_tau = qtdmri_isotropic_eap_matrix(
+def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid,
+                                 normalization=False):
+    K = qtdmri_isotropic_eap_matrix(
         radial_order, time_order, us, ut, grid
     )
-    return K_tau
+    if normalization:
+        ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
+        j, l = ind_mat[:, :2].T
+        sqrtut = qtdmri_temporal_normalization(ut)
+        sqrtC = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        sqrtCut = sqrtC * sqrtut
+        K = K * sqrtCut[None, :]
+    return K
 
 
 def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
@@ -1424,11 +1440,11 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
             for m in range(-l, l + 1):
                 for o in range(0, time_order+1):
                     index_matrix.append([j, l, m, o])
-
     return np.array(index_matrix)
 
 
-def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
+def qtdmri_laplacian_reg_matrix(ind_mat, us, ut,
+                                S_mat=None, T_mat=None, U_mat=None,
                                 part1_ut_precomp=None,
                                 part23_ut_precomp=None,
                                 part4_ut_precomp=None,
@@ -1444,6 +1460,10 @@ def qtdmri_laplacian_reg_matrix(ind_mat, us, ut, S_mat, T_mat, U_mat,
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
+    if S_mat is None or T_mat is None or U_mat is None:
+        radial_order = ind_mat[:, :3].max()
+        S_mat, T_mat, U_mat = mapmri.mapmri_STU_reg_matrices(radial_order)
+
     part1_us = mapmri.mapmri_laplacian_reg_matrix(ind_mat[:, :3], us,
                                                   S_mat, T_mat, U_mat)
     part23_us = part23_reg_matrix_q(ind_mat, U_mat, T_mat, us)
@@ -1525,7 +1545,7 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
         temporal_normalization = qtdmri_temporal_normalization(ut) ** 2
         spatial_normalization = np.zeros_like(regularization_matrix)
         j, l = ind_mat[:, :2].T
-        pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, l, us[0])
         spatial_normalization = np.outer(pre_spatial_norm, pre_spatial_norm)
         regularization_matrix *= temporal_normalization * spatial_normalization
     return regularization_matrix
