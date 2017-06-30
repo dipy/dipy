@@ -245,6 +245,10 @@ class MapmriModel(ReconstModel, Cache):
                 raise ValueError(
                     'CVXPY package needed to enforce constraints')
             msg = "pos_radius must be 'adaptive' or a positive float"
+            if cvxpy_solver is not None:
+                if cvxpy_solver not in cvxpy.installed_solvers():
+                    msg = "cvxpy_solver is not installed in cvxpy."
+                    raise ValueError(msg)
             if isinstance(pos_radius, str):
                 if pos_radius != 'adaptive':
                     raise ValueError(msg)
