@@ -422,8 +422,13 @@ class QtdmriModel(Cache):
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
         elif not self.l1_regularization and not self.laplacian_regularization:
+            # just use least squares with the observation matrix
             pseudoInv = np.linalg.pinv(M)
             qtdmri_coef = np.dot(pseudoInv, data_norm)
+            # if cvxpy is used to constraint q0 without regularization the
+            # solver often fails, so only first tau-position is manually
+            # normalized.
+            qtdmri_coef /= np.dot(M0[0], qtdmri_coef)
 
         return QtdmriFit(
             self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha)
