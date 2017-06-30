@@ -16,6 +16,7 @@ from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+
 class ShoreModel(Cache):
 
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
@@ -127,7 +128,7 @@ class ShoreModel(Cache):
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See http://www.cvxp for details.
-            Default: None (cvxpy chooses its own solver) 
+            Default: None (cvxpy chooses its own solver)
 
         References
         ----------
@@ -156,9 +157,9 @@ class ShoreModel(Cache):
         bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
         gtab = gradient_table(bvals, bvecs)
         from dipy.sims.voxel import SticksAndBall
-        data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                                S0=1., angles=[(0, 0), (90, 0)],
-                                                fractions=[50, 50], snr=None)
+        data, golden_directions = SticksAndBall(
+            gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
+            fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
         radial_order = 4
         zeta = 700
@@ -188,7 +189,7 @@ class ShoreModel(Cache):
         if positive_constraint and not(constrain_e0):
             msg = "Constrain_e0 must be True to enfore positivity."
             raise ValueError(msg)
-            
+
         if positive_constraint or constrain_e0:
             if not have_cvxpy:
                 msg = "cvxpy must be installed for positive_constraint or "
@@ -219,7 +220,8 @@ class ShoreModel(Cache):
         MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
         if MpseudoInv is None:
             MpseudoInv = np.dot(
-                np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+                np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore +
+                              self.lambdaL * Lshore), M.T)
             self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
 
         # Compute the signal coefficients in SHORE basis
@@ -240,7 +242,7 @@ class ShoreModel(Cache):
         else:
             data_norm = data / data[self.gtab.b0s_mask].mean()
             M0 = M[self.gtab.b0s_mask, :]
-            
+
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
@@ -356,7 +358,8 @@ class ShoreFit():
         return np.clip(eap, 0, eap.max())
 
     def odf_sh(self):
-        r""" Calculates the real analytical ODF in terms of Spherical Harmonics.
+        r""" Calculates the real analytical ODF in terms of Spherical
+        Harmonics.
         """
         # Number of Spherical Harmonics involved in the estimation
         J = (self.radial_order + 1) * (self.radial_order + 2) // 2
@@ -371,10 +374,16 @@ class ShoreFit():
 
                     j = int(l + m + (2 * np.array(range(0, l, 2)) + 1).sum())
 
-                    Cnl = ((-1) ** (n - l / 2)) / (2.0 * (4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0)) * ((2.0 * (
-                        4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0) * factorial(n - l)) / (gamma(n + 3.0 / 2.0))) ** (1.0 / 2.0)
-                    Gnl = (gamma(l / 2 + 3.0 / 2.0) * gamma(3.0 / 2.0 + n)) / (gamma(
-                        l + 3.0 / 2.0) * factorial(n - l)) * (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
+                    Cnl = (
+                        ((-1) ** (n - l / 2)) /
+                        (2.0 * (4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0)) *
+                        ((2.0 * (4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0) *
+                          factorial(n - l)) /
+                         (gamma(n + 3.0 / 2.0))) ** (1.0 / 2.0)
+                    )
+                    Gnl = (gamma(l / 2 + 3.0 / 2.0) * gamma(3.0 / 2.0 + n)) / \
+                        (gamma(l + 3.0 / 2.0) * factorial(n - l)) * \
+                        (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
                     Fnl = hyp2f1(-n + l, l / 2 + 3.0 / 2.0, l + 3.0 / 2.0, 2.0)
 
                     c_sh[j] += self._shore_coef[counter] * Cnl * Gnl * Fnl
@@ -408,7 +417,7 @@ class ShoreFit():
         c = self._shore_coef
 
         for n in range(int(self.radial_order / 2) + 1):
-            rtop +=  c[n] * (-1) ** n * \
+            rtop += c[n] * (-1) ** n * \
                 ((16 * np.pi * self.zeta ** 1.5 * gamma(n + 1.5)) / (
                  factorial(n))) ** 0.5
 
@@ -428,7 +437,8 @@ class ShoreFit():
         c = self._shore_coef
         for n in range(int(self.radial_order / 2) + 1):
             rtop += c[n] * (-1) ** n * \
-                ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) / (gamma(n + 1.5))) ** 0.5 * \
+                ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) /
+                 (gamma(n + 1.5))) ** 0.5 * \
                 genlaguerre(n, 0.5)(0)
 
         return np.clip(rtop, 0, rtop.max())
@@ -439,10 +449,13 @@ class ShoreFit():
         ..math::
             :nowrap:
                 \begin{equation}
-                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
+                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}
+                    \int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot
+                    \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
                 \end{equation}
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu et. al [1]_).
+        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu
+        et. al [1]_).
 
         References
         ----------
@@ -453,8 +466,9 @@ class ShoreFit():
         c = self._shore_coef
 
         for n in range(int(self.radial_order / 2) + 1):
-            msd += c[n]  * (-1) ** n *\
-                (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6  *  self.zeta ** 3.5 * factorial(n))) ** 0.5 *\
+            msd += c[n] * (-1) ** n *\
+                (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6 * self.zeta ** 3.5 *
+                                         factorial(n))) ** 0.5 *\
                 hyp2f1(-n, 2.5, 1.5, 2)
 
         return np.clip(msd, 0, msd.max())
@@ -574,7 +588,8 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
                 psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
-                    genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 * zeta * r ** 2 ) *\
+                    genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
+                                                zeta * r ** 2) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
                     _kappa_pdf(zeta, n, l) *\
                     (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
@@ -584,7 +599,8 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
 
 
 def _kappa_pdf(zeta, n, l):
-    return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
+    return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) /
+                   gamma(n + 1.5))
 
 
 def shore_matrix_odf(radial_order, zeta, sphere_vertices):
@@ -616,7 +632,8 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
     for l in range(0, radial_order + 1, 2):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
-                upsilon[:, counter] = (-1) ** (n - l / 2.0) * _kappa_odf(zeta, n, l) * \
+                upsilon[:, counter] = (-1) ** (n - l / 2.0) * \
+                    _kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
                     real_sph_harm(m, l, theta, phi)
                 counter += 1
@@ -625,8 +642,10 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
 
 def _kappa_odf(zeta, n, l):
-    return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
+    return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 *
+                    gamma(n + 1.5) * 2 ** (l + 3)) /
+                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) *
+                    gamma(l + 1.5) ** 2))
 
 
 def l_shore(radial_order):
@@ -742,7 +761,8 @@ def shore_indices(radial_order, index):
     m_i = 0
 
     if n_c < (index + 1):
-        msg = "The index is higher than the number of coefficients of the truncated basis."
+        msg = "The index is higher than the number of coefficients of the "
+        msg += "truncated basis."
         raise ValueError(msg)
     else:
         counter = 0
@@ -779,7 +799,8 @@ def shore_order(n, l, m):
 
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0 or np.abs(m) > l:
-        msg = "The index l must be even and 0 <= l <= n, the index m must be -l <= m <= l."
+        msg = "The index l must be even and 0 <= l <= n, the index m must be "
+        msg += "-l <= m <= l."
         raise ValueError(msg)
     else:
         if n % 2 == 1:
