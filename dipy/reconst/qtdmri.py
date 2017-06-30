@@ -1346,7 +1346,7 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     n_dat = R.shape[0]
     n_elem = ind_mat.shape[0]
 
-    num_j = np.max(ind_mat[:, 0])
+    num_j = int(np.max(ind_mat[:, 0]))
     num_o = time_order + 1
     num_l = radial_order / 2 + 1
     num_m = radial_order * 2 + 1
