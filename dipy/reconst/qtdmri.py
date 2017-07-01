@@ -689,7 +689,7 @@ class QtdmriFit():
             ind_mat = mapmri.mapmri_isotropic_index_matrix(
                 self.model.radial_order
             )
-            rtpp_vec = np.zeros((ind_mat.shape[0]))
+            rtpp_vec = np.zeros(int(ind_mat.shape[0]))
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
                     for j in range(1, 2 + n // 2):
@@ -751,7 +751,7 @@ class QtdmriFit():
             ind_mat = mapmri.mapmri_isotropic_index_matrix(
                 self.model.radial_order
             )
-            rtap_vec = np.zeros((ind_mat.shape[0]))
+            rtap_vec = np.zeros(int(ind_mat.shape[0]))
             count = 0
 
             for n in range(0, self.model.radial_order + 1, 2):
@@ -1068,9 +1068,9 @@ def qtdmri_to_mapmri_matrix(radial_order, time_order, ut, tau):
         2017.
     """
     mapmri_ind_mat = mapmri.mapmri_index_matrix(radial_order)
-    n_elem_mapmri = mapmri_ind_mat.shape[0]
+    n_elem_mapmri = int(mapmri_ind_mat.shape[0])
     qtdmri_ind_mat = qtdmri_index_matrix(radial_order, time_order)
-    n_elem_qtdmri = qtdmri_ind_mat.shape[0]
+    n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
 
     temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
@@ -1112,9 +1112,9 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
         2017.
     """
     mapmri_ind_mat = mapmri.mapmri_isotropic_index_matrix(radial_order)
-    n_elem_mapmri = mapmri_ind_mat.shape[0]
+    n_elem_mapmri = int(mapmri_ind_mat.shape[0])
     qtdmri_ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
-    n_elem_qtdmri = qtdmri_ind_mat.shape[0]
+    n_elem_qtdmri = int(qtdmri_ind_mat.shape[0])
 
     temporal_storage = np.zeros(time_order + 1)
     for o in range(time_order + 1):
@@ -1175,8 +1175,8 @@ def qtdmri_signal_matrix(radial_order, time_order, us, ut, q, tau):
     """
     ind_mat = qtdmri_index_matrix(radial_order, time_order)
 
-    n_dat = q.shape[0]
-    n_elem = ind_mat.shape[0]
+    n_dat = int(q.shape[0])
+    n_elem = int(ind_mat.shape[0])
     qx, qy, qz = q.T
     mux, muy, muz = us
 
@@ -1216,8 +1216,8 @@ def qtdmri_eap_matrix(radial_order, time_order, us, ut, grid):
     ind_mat = qtdmri_index_matrix(radial_order, time_order)
     rx, ry, rz, tau = grid.T
 
-    n_dat = rx.shape[0]
-    n_elem = ind_mat.shape[0]
+    n_dat = int(rx.shape[0])
+    n_elem = int(ind_mat.shape[0])
     mux, muy, muz = us
 
     temporal_storage = np.zeros((n_dat, time_order + 1))
@@ -1274,14 +1274,14 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
-        for l in range(0, radial_order + 1, 2):
-            radial_storage[j-1, l/2, :] = radial_basis_opt(j, l, us, qvals)
+        for l in range(0, radial_order+1, 2):
+            radial_storage[j-1, l//2, :] = radial_basis_opt(j, l, us, qvals)
 
     # Angular Basis
     angular_storage = np.zeros([num_l, num_m, n_dat])
-    for l in range(0, radial_order + 1, 2):
+    for l in range(0, radial_order+1, 2):
         for m in range(-l, l+1):
-            angular_storage[l / 2, m + l, :] = (
+            angular_storage[l//2, m+l, :] = (
                 angular_basis_opt(l, m, qvals, theta, phi)
             )
 
@@ -1294,8 +1294,8 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     M = np.zeros((n_dat, n_elem))
     counter = 0
     for j, l, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j-1, l/2, :] *
-                         angular_storage[l / 2, m + l, :] *
+        M[:, counter] = (radial_storage[j-1, l//2, :] *
+                         angular_storage[l//2, m+l, :] *
                          temporal_storage[o, :])
         counter += 1
     return M
@@ -1355,14 +1355,14 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
-            radial_storage[j - 1, l / 2, :] = radial_basis_EAP_opt(j, l, us, R)
+            radial_storage[j-1, l//2, :] = radial_basis_EAP_opt(j, l, us, R)
 
     # Angular Basis
     angular_storage = np.zeros([num_j, num_l, num_m, n_dat])
     for j in range(1, num_j + 1):
         for l in range(0, radial_order + 1, 2):
             for m in range(-l, l + 1):
-                angular_storage[j - 1, l / 2, m + l, :] = (
+                angular_storage[j-1, l//2, m+l, :] = (
                     angular_basis_EAP_opt(j, l, m, R, theta, phi)
                 )
 
@@ -1375,8 +1375,8 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     M = np.zeros((n_dat, n_elem))
     counter = 0
     for j, l, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j-1, l/2, :] *
-                         angular_storage[j - 1, l / 2, m + l, :] *
+        M[:, counter] = (radial_storage[j-1, l//2, :] *
+                         angular_storage[j-1, l//2, m+l, :] *
                          temporal_storage[o, :])
         counter += 1
     return M
@@ -1574,7 +1574,7 @@ def part23_reg_matrix_q(ind_mat, U_mat, T_mat, us):
     """
     ux, uy, uz = us
     x, y, z, _ = ind_mat.T
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
@@ -1608,7 +1608,7 @@ def part23_iso_reg_matrix_q(ind_mat, us):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
 
     LR = np.zeros((n_elem, n_elem))
 
@@ -1645,7 +1645,7 @@ def part4_reg_matrix_q(ind_mat, U_mat, us):
     """
     ux, uy, uz = us
     x, y, z, _ = ind_mat.T
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
@@ -1667,7 +1667,7 @@ def part4_iso_reg_matrix_q(ind_mat, us):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LR = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
@@ -1694,7 +1694,7 @@ def part1_reg_matrix_tau(ind_mat, ut):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LD = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
@@ -1715,7 +1715,7 @@ def part23_reg_matrix_tau(ind_mat, ut):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LD = np.zeros((n_elem, n_elem))
     for i in range(n_elem):
         for k in range(i, n_elem):
@@ -1738,7 +1738,7 @@ def part4_reg_matrix_tau(ind_mat, ut):
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
     """
-    n_elem = ind_mat.shape[0]
+    n_elem = int(ind_mat.shape[0])
     LD = np.zeros((n_elem, n_elem))
 
     for i in range(n_elem):
