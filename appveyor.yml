@@ -1,4 +1,7 @@
-build: false
+os:
+  - Visual Studio 2015 Update 2
+
+build: off
 
 environment:
   matrix:
