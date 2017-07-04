@@ -113,7 +113,7 @@ class LocalTracking(object):
         B = F.copy()
         for s in self.seeds:
             s = np.dot(lin, s) + offset
-            directions = self.dg.initial_direction(s)
+            directions = self.direction_getter.initial_direction(s)
             if directions.size == 0 and self.return_all:
                 # only the seed position
                 yield [s]
@@ -195,6 +195,7 @@ class ParticleFilteringTracking(LocalTracking):
         self.pft_tracking_steps = int(np.ceil(pft_tracking_dist / step_size))
         self.max_pft_trial = max_pft_trial
         self.nbr_particles = 10
+        self.directions = np.empty((maxlen + 1, 3), dtype=float)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
                                                         seeds,
@@ -213,6 +214,7 @@ class ParticleFilteringTracking(LocalTracking):
                            self.tissue_classifier,
                            self._voxel_size,
                            self.step_size,
+                           self.directions,
                            self.back_tracking_steps,
                            self.pft_tracking_steps,
                            self.max_pft_trial,
