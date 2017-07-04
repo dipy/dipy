@@ -134,7 +134,7 @@ def test_auto_response():
                 data,
                 roi_center=None,
                 roi_radius=radius,
-                fa_operator=predefined,
+                fa_callable=predefined,
                 fa_thr=fa_thr,
                 return_number_of_voxels=True)
 
@@ -143,7 +143,7 @@ def test_auto_response():
                 data,
                 roi_center=None,
                 roi_radius=radius,
-                fa_operator=defined,
+                fa_callable=defined,
                 fa_thr=fa_thr,
                 return_number_of_voxels=True)
 
