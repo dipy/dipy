@@ -794,7 +794,7 @@ def fa_inferior(FA, fa_thr):
 
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  fa_operator=fa_superior, return_number_of_voxels=False):
+                  fa_callable=fa_superior, return_number_of_voxels=False):
     """ Automatic estimation of response function using FA.
 
     Parameters
@@ -809,7 +809,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         radius of cubic ROI
     fa_thr : float
         FA threshold
-    fa_operator : callable
+    fa_callable : callable
         A callable that defines an operation that compares FA with the fa_thr. The operator
         should have two positional arguments (e.g., `fa_operator(FA, fa_thr)`) and it should
         return a bool array.
@@ -869,7 +869,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
-    indices = np.where(fa_operator(FA, fa_thr))
+    indices = np.where(fa_callable(FA, fa_thr))
 
     if indices[0].size == 0:
         msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
