@@ -47,6 +47,7 @@ Dipy 0.10 Changes
 ``fvtk.slicer`` input parameters have changed. Now the slicer function is
 more powerfull and supports RGB images too. See tutorial ``viz_slice.py`` for
 more information.
+<<<<<<< HEAD
 
 **Interpolation**
 The default behavior of the function `core.sphere.interp_rbf` has changed.
@@ -54,6 +55,8 @@ The default smoothing parameter is now set to 0.1 (previously 0). In addition,
 the default norm is now `angle` (was previously `euclidean_norm`). Note that
 the use of `euclidean_norm` is discouraged, and this norm will be deprecated
 in the 0.11 release cycle.
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 **Registration**
 

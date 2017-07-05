@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import sys
 import inspect
 
@@ -19,6 +20,13 @@ def get_args_default(func):
 
     return names, defaults
 
+=======
+from dipy.fixes import argparse as arg
+
+import inspect
+
+from dipy.workflows.documentation import NumpyDocString
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 class IntrospectiveArgumentParser(arg.ArgumentParser):
 
@@ -28,6 +36,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                  prefix_chars='-', fromfile_prefix_chars=None,
                  argument_default=None, conflict_handler='resolve',
                  add_help=True):
+<<<<<<< HEAD
+=======
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         """ Augmenting the argument parser to allow automatic creation of
         arguments from workflows
 
@@ -60,6 +72,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         """
 
         iap = IntrospectiveArgumentParser
+<<<<<<< HEAD
         if epilog is None:
             epilog =\
                 ("References: \n"
@@ -68,6 +81,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                  " library for the analysis of diffusion MRI data. Frontiers"
                  " in Neuroinformatics, 1-18, 2014.")
 
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         super(iap, self).__init__(prog, usage, description, epilog, version,
                                   parents, formatter_class, prefix_chars,
                                   fromfile_prefix_chars, argument_default,
@@ -76,6 +91,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = None
 
     def add_workflow(self, workflow):
+<<<<<<< HEAD
         """ Take a workflow object and use introspection to extract the parameters,
         types and docstrings of its run method. Then add these parameters
         to the current arparser's own params to parse. If the workflow is of
@@ -101,10 +117,19 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                         'out_' in param[0]]
 
         args, defaults = get_args_default(workflow.run)
+=======
+        specs = inspect.getargspec(workflow)
+        doc = inspect.getdoc(workflow)
+        self.doc = NumpyDocString(doc)['Parameters']
+
+        args = specs.args
+        defaults = specs.defaults
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         len_args = len(args)
         len_defaults = len(defaults)
 
+<<<<<<< HEAD
         output_args = \
             self.add_argument_group('output arguments(optional)')
 
@@ -112,6 +137,11 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             prefix = ''
             is_optionnal = i >= len_args - len_defaults
             if is_optionnal:
+=======
+        for i, arg in enumerate(args):
+            prefix = ''
+            if i >= len_args - len_defaults:
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
                 prefix = '--'
 
             typestr = self.doc[i][1]
@@ -119,6 +149,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             help_msg = ''.join(self.doc[i][2])
 
             _args = ['{0}{1}'.format(prefix, arg)]
+<<<<<<< HEAD
             _kwargs = {'help': help_msg,
                        'type': dtype,
                        'action': 'store'}
@@ -236,6 +267,23 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         is_nargs : Whether or not this argument is nargs
         (arparse's multiple values argument)
         """
+=======
+            _kwargs = {"action": 'store',
+                      "metavar": dtype.__name__,
+                      "help": help_msg,
+                      'type': dtype}
+
+            if dtype is bool:
+                _kwargs['type'] = int
+                _kwargs['choices'] = [0, 1]
+
+            if isnarg:
+                 _kwargs['nargs'] = '*'
+
+            self.add_argument(*_args, **_kwargs)
+
+    def _select_dtype(self, text):
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         text = text.lower()
         nargs_str = 'variable'
         is_nargs = nargs_str in text
@@ -249,33 +297,55 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             arg_type = float
         if 'bool' in text:
             arg_type = bool
+<<<<<<< HEAD
         if 'tuple' in text:
             arg_type = tuple
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
+<<<<<<< HEAD
         """ Returns the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
         """
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
 
         return dict((k, v) for k, v in dct.items() if v is not None)
 
     def update_argument(self, *args, **kargs):
+<<<<<<< HEAD
         self.add_argument(*args, **kargs)
 
     def show_argument(self, dest):
+=======
+
+        self.add_argument(*args, **kargs)
+
+    def show_argument(self, dest):
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         for act in self._actions[1:]:
             if act.dest == dest:
                 print(act)
 
     def add_epilogue(self):
+<<<<<<< HEAD
+=======
+        # with citations
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         pass
 
     def add_description(self):
         pass
 
+<<<<<<< HEAD
     def get_outputs(self):
         return self.outputs
+=======
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253

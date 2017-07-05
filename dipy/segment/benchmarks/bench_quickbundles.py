@@ -93,3 +93,40 @@ def bench_quickbundles():
     assert_equal(len(clusters), expected_nb_clusters)
     assert_array_equal(sizes3, sizes1)
     assert_arrays_equal(indices3, indices1)
+
+
+def bench_quickbundles_assignation():
+    dtype = "float32"
+    repeat = 10
+    nb_points = 18
+
+    streams, hdr = nib.trackvis.read(get_data('fornix'))
+    fornix = [s[0].astype(dtype) for s in streams]
+    fornix = streamline_utils.set_number_of_points(fornix, nb_points)
+
+    #Create eight copies of the fornix to be clustered (one in each octant).
+    streamlines = []
+    streamlines += [s + np.array([100, 100, 100], dtype) for s in fornix]
+    streamlines += [s + np.array([100, -100, 100], dtype) for s in fornix]
+    streamlines += [s + np.array([100, 100, -100], dtype) for s in fornix]
+    streamlines += [s + np.array([100, -100, -100], dtype) for s in fornix]
+    streamlines += [s + np.array([-100, 100, 100], dtype) for s in fornix]
+    streamlines += [s + np.array([-100, -100, 100], dtype) for s in fornix]
+    streamlines += [s + np.array([-100, 100, -100], dtype) for s in fornix]
+    streamlines += [s + np.array([-100, -100, -100], dtype) for s in fornix]
+    streamlines *= 10
+
+    # The expected number of clusters of the fornix using threshold=10 is 4.
+    threshold = 10.
+    print("Timing assignation with QuickBundles ({} streamlines)".format(len(streamlines)))
+
+    qb = QB_New(threshold)
+    qb_time = measure("clusters = qb.cluster(streamlines)", repeat)
+    print("QuickBundles time: {0:.4}sec".format(qb_time))
+
+    clusters = qb.cluster(streamlines)
+    qb_assign_time = measure("new_clusters = qb.assign(clusters, streamlines)", repeat)
+    print("QuickBundles assignation time: {0:.4}sec".format(qb_assign_time))
+
+    new_clusters = qb.assign(clusters, streamlines)
+    assert_equal(len(new_clusters), len(clusters))

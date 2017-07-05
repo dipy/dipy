@@ -6,14 +6,20 @@ import numpy as np
 from numpy.linalg import norm
 import numpy.testing as npt
 from dipy.testing.memory import get_type_refcount
+<<<<<<< HEAD
 from dipy.testing import assert_arrays_equal
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
 from dipy.tracking import Streamlines
+<<<<<<< HEAD
 import dipy.tracking.utils as ut
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
                                       relist_streamlines,
@@ -23,8 +29,12 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       select_random_set_of_streamlines,
                                       compress_streamlines,
                                       select_by_rois,
+<<<<<<< HEAD
                                       orient_by_rois,
                                       values_from_volume)
+=======
+                                      orient_by_rois)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -300,9 +310,21 @@ def test_set_number_of_points():
     assert_equal(len(set_number_of_points(streamlines_readonly, nb_points=42)),
                  len(streamlines_readonly))
 
+<<<<<<< HEAD
     # Test if nb_points is less than 2
     assert_raises(ValueError, set_number_of_points, [np.ones((10, 3)),
                   np.ones((10, 3))], nb_points=1)
+=======
+    # Test resampling of Streamlines object
+    nb_points = 12
+    streamlines_obj = Streamlines(streamlines)
+    rstreamlines_cython = set_number_of_points(streamlines, nb_points)
+    rstreamlines_obj_cython = set_number_of_points(streamlines_obj, nb_points)
+    assert_true(isinstance(rstreamlines_obj_cython, Streamlines))
+
+    for s1, s2 in zip(rstreamlines_cython, rstreamlines_obj_cython):
+        assert_array_equal(s1, s2)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 
 def test_set_number_of_points_memory_leaks():
@@ -311,18 +333,29 @@ def test_set_number_of_points_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
+<<<<<<< HEAD
         streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
                        for _ in range(NB_STREAMLINES)]
+=======
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         list_refcount_before = get_type_refcount()["list"]
 
         rstreamlines = set_number_of_points(streamlines, nb_points=2)
         list_refcount_after = get_type_refcount()["list"]
+<<<<<<< HEAD
         del rstreamlines  # Delete `rstreamlines` because it holds a reference
         #                   to `list`.
 
         # Calling `set_number_of_points` should increase the refcount of `list`
         #  by one since we kept the returned value.
+=======
+        del rstreamlines  # Delete `rstreamlines` because it holds a reference to `list`.
+
+        # Calling `set_number_of_points` should increase the refcount of `list` by one
+        # since we kept the returned value.
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -338,10 +371,29 @@ def test_set_number_of_points_memory_leaks():
     rstreamlines = set_number_of_points(streamlines, nb_points=2)
     list_refcount_after = get_type_refcount()["list"]
 
+<<<<<<< HEAD
     # Calling `set_number_of_points` should increase the refcount of `list`
     #  by one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
 
+=======
+    # Calling `set_number_of_points` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
+
+    # Test resampling of Streamlines object
+    nb_points = 12
+    streamlines_obj = Streamlines(streamlines)
+
+    list_refcount_before = get_type_refcount()["list"]
+    rstreamlines_obj_cython = set_number_of_points(streamlines_obj, nb_points)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `set_number_of_points` should increase the refcount of `list` by two
+    # since a ``Streamlines`` object contains two lists.
+    assert_equal(list_refcount_after, list_refcount_before+2)
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 def test_length():
     # Test length of only one streamline
@@ -456,6 +508,7 @@ def test_length_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
+<<<<<<< HEAD
         streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
                        for _ in range(NB_STREAMLINES)]
 
@@ -465,6 +518,16 @@ def test_length_memory_leaks():
         list_refcount_after = get_type_refcount()["list"]
 
         # Calling `length` shouldn't increase the refcount of `list`
+=======
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+
+        list_refcount_before = get_type_refcount()["list"]
+
+        lengths = ds_length(streamlines)
+        list_refcount_after = get_type_refcount()["list"]
+
+        # Calling `ds_length` shouldn't increase the refcount of `list`
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         # since the return value is a numpy array.
         assert_equal(list_refcount_after, list_refcount_before)
 
@@ -478,10 +541,17 @@ def test_length_memory_leaks():
 
     list_refcount_before = get_type_refcount()["list"]
 
+<<<<<<< HEAD
     lengths = length(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
     # Calling `length` shouldn't increase the refcount of `list`
+=======
+    lengths = ds_length(streamlines)
+    list_refcount_after = get_type_refcount()["list"]
+
+    # Calling `ds_length` shouldn't increase the refcount of `list`
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
     # since the return value is a numpy array.
     assert_equal(list_refcount_after, list_refcount_before)
 
@@ -677,18 +747,29 @@ def test_compress_streamlines_memory_leaks():
     for dtype in dtypes:
         rng = np.random.RandomState(1234)
         NB_STREAMLINES = 10000
+<<<<<<< HEAD
         streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype)
                        for _ in range(NB_STREAMLINES)]
+=======
+        streamlines = [rng.randn(rng.randint(10, 100), 3).astype(dtype) for _ in range(NB_STREAMLINES)]
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         list_refcount_before = get_type_refcount()["list"]
 
         cstreamlines = compress_streamlines(streamlines)
         list_refcount_after = get_type_refcount()["list"]
+<<<<<<< HEAD
         del cstreamlines  # Delete `cstreamlines` because it holds a reference
         #                   to `list`.
 
         # Calling `compress_streamlines` should increase the refcount of `list`
         # by one since we kept the returned value.
+=======
+        del cstreamlines  # Delete `cstreamlines` because it holds a reference to `list`.
+
+        # Calling `compress_streamlines` should increase the refcount of `list` by one
+        # since we kept the returned value.
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
         assert_equal(list_refcount_after, list_refcount_before+1)
 
     # Test mixed dtypes
@@ -704,6 +785,7 @@ def test_compress_streamlines_memory_leaks():
     cstreamlines = compress_streamlines(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
+<<<<<<< HEAD
     # Calling `compress_streamlines` should increase the refcount of `list` by
     # one since we kept the returned value.
     assert_equal(list_refcount_after, list_refcount_before+1)
@@ -725,6 +807,12 @@ def generate_sl(streamlines):
         yield sl
 
 
+=======
+    # Calling `compress_streamlines` should increase the refcount of `list` by one
+    # since we kept the returned value.
+    assert_equal(list_refcount_after, list_refcount_before+1)
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 def test_select_by_rois():
     streamlines = [np.array([[0, 0., 0.9],
                              [1.9, 0., 0.]]),
@@ -1021,6 +1109,49 @@ def test_values_from_volume():
     data4D = np.ones((2, 2, 2, 2))
     streamlines = np.ones((10, 1, 3))
     npt.assert_equal(values_from_volume(data4D, streamlines).shape, (10, 1, 2))
+
+
+def test_orient_by_rois():
+    streamlines = [np.array([[0, 0., 0],
+                             [1, 0., 0.],
+                             [2, 0., 0.]]),
+                   np.array([[2, 0., 0.],
+                             [1, 0., 0],
+                             [0, 0,  0.]])]
+
+    # Make two ROIs:
+    mask1_vol = np.zeros((4, 4, 4), dtype=bool)
+    mask2_vol = np.zeros_like(mask1_vol)
+    mask1_vol[0, 0, 0] = True
+    mask2_vol[1, 0, 0] = True
+    mask1_coords = np.array(np.where(mask1_vol)).T
+    mask2_coords = np.array(np.where(mask2_vol)).T
+
+    # If there is an affine, we'll use it:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
+
+    for copy in [True, False]:
+        for sl, affine in zip([streamlines, x_streamlines], [None, affine]):
+            for mask1, mask2 in \
+              zip([mask1_vol, mask1_coords], [mask2_vol, mask2_coords]):
+                new_streamlines = orient_by_rois(sl, mask1, mask2,
+                                                 affine=affine, copy=copy)
+                if copy:
+                    flipped_sl = [sl[0], sl[1][::-1]]
+                else:
+                    flipped_sl = [np.array([[0, 0., 0],
+                                            [1, 0., 0.],
+                                            [2, 0., 0.]]),
+                                  np.array([[0, 0., 0.],
+                                            [1, 0., 0],
+                                            [2, 0,  0.]])]
+                    if affine is not None:
+                        flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+
+                npt.assert_equal(new_streamlines, flipped_sl)
 
 
 if __name__ == '__main__':
