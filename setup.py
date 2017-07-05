@@ -201,8 +201,12 @@ def main(**extra_args):
                           'dipy.sims.tests',
                           'dipy.denoise',
                           'dipy.denoise.tests',
+<<<<<<< HEAD
                           'dipy.workflows',
                           'dipy.workflows.tests'],
+=======
+                          'dipy.workflows'],
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
@@ -215,8 +219,19 @@ def main(**extra_args):
                           [pjoin('data', 'files', '*')
                           ]},
           data_files=[('share/doc/dipy/examples',
+<<<<<<< HEAD
                        glob(pjoin('doc', 'examples','*.py')))],
           scripts = glob(pjoin('bin', 'dipy_*')),
+=======
+                       glob(pjoin('doc','examples','*.py')))],
+          scripts      = [pjoin('bin', 'dipy_peak_extraction'),
+                          pjoin('bin', 'dipy_fit_tensor'),
+                          pjoin('bin', 'dipy_sh_estimate'),
+                          pjoin('bin', 'dipy_quickbundles'),
+                          pjoin('bin', 'dipy_recognize_bundles'),
+                          pjoin('bin', 'dipy_whole_brain_slr'),
+                          pjoin('bin', 'dipy_horizon')],
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
           cmdclass = cmdclass,
           **extra_args
         )

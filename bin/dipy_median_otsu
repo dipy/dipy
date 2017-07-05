@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!python
 
 from __future__ import division, print_function
@@ -7,3 +8,16 @@ from dipy.workflows.segment import MedianOtsuFlow
 
 if __name__ == "__main__":
     run_flow(MedianOtsuFlow())
+=======
+#! /usr/bin/env python
+
+from dipy.workflows.segment import median_otsu_flow
+from dipy.workflows.base import IntrospectiveArgumentParser
+
+parser = IntrospectiveArgumentParser()
+parser.add_workflow(median_otsu_flow)
+
+if __name__ == "__main__":
+    args = parser.get_flow_args()
+    median_otsu_flow(**args)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253

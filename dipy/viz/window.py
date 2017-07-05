@@ -34,6 +34,7 @@ from dipy.utils.optpkg import optional_package
 
 from dipy import __version__ as dipy_version
 from dipy.utils.six import string_types
+from dipy.viz.actor import Container
 
 from dipy.viz.interactor import CustomInteractorStyle
 
@@ -76,12 +77,21 @@ class Renderer(vtkRenderer):
         """ Add an actor to the renderer
         """
         for actor in actors:
+<<<<<<< HEAD
             if isinstance(actor, vtk.vtkVolume):
                 self.AddVolume(actor)
             elif isinstance(actor, vtk.vtkActor2D):
                 self.AddActor2D(actor)
             elif hasattr(actor, 'add_to_renderer'):
                 actor.add_to_renderer(self)
+=======
+            if isinstance(actor, Container):
+                actor.add_to_renderer(self)
+            elif isinstance(actor, vtk.vtkVolume):
+                self.AddVolume(actor)
+            elif isinstance(actor, vtk.vtkActor2D):
+                self.AddActor2D(actor)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
             else:
                 self.AddActor(actor)
 
@@ -118,6 +128,39 @@ class Renderer(vtkRenderer):
         """ Reset the camera to an automatic position given by the engine.
         """
         self.ResetCamera()
+
+    def reset_camera_tight(self, margin_factor=1.02):
+        """ Resets camera so the content fit tightly within the window.
+
+        Parameters
+        ----------
+        margin_factor : float (optional)
+            Margin added around the content. Default: 1.02.
+
+        Notes
+        -----
+        This reset function works best with
+        ``:func:dipy.interactor.InteractorStyleImageAndTrackballActor``.
+        """
+        self.ComputeAspect()
+        cam = self.GetActiveCamera()
+        aspect = self.GetAspect()
+
+        X1, X2, Y1, Y2, Z1, Z2 = self.ComputeVisiblePropBounds()
+        width, height = X2-X1, Y2-Y1
+        center = np.array((X1 + width/2., Y1 + height/2., 0))
+
+        angle = np.pi*cam.GetViewAngle()/180.
+        dist = max(width/aspect[0], height) / np.sin(angle/2.) / 2.
+        position = center + np.array((0, 0, dist*margin_factor))
+
+        cam.SetViewUp(0, 1, 0)
+        cam.SetPosition(*position)
+        cam.SetFocalPoint(*center)
+        self.ResetCameraClippingRange(X1, X2, Y1, Y2, Z1, Z2)
+
+        parallelScale = max(width/aspect[0], height) / 2.
+        cam.SetParallelScale(parallelScale*margin_factor)
 
     def reset_clipping_range(self):
         self.ResetCameraClippingRange()
@@ -209,7 +252,7 @@ class Renderer(vtkRenderer):
         focal point. This is usually the opposite of the ViewPlaneNormal, the
         vector perpendicular to the screen, unless the view is oblique.
         """
-        return self.GetActiveCamera().GetDirectionOfProjection()
+        return np.array(self.GetActiveCamera().GetDirectionOfProjection())
 
 
 def renderer(background=None):
@@ -327,7 +370,12 @@ class ShowManager(object):
 
     def __init__(self, ren=None, title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
+<<<<<<< HEAD
                  interactor_style='custom'):
+=======
+                 interactor_style='trackball', picker_pos=(10, 10, 0),
+                 picker_tol=0.002):
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         """ Manages the visualization pipeline
 
@@ -352,9 +400,16 @@ class ShowManager(object):
             the order of their addition to the Renderer().
         interactor_style : str or vtkInteractorStyle
             If str then if 'trackball' then vtkInteractorStyleTrackballCamera()
+<<<<<<< HEAD
             is used, if 'image' then vtkInteractorStyleImage() is used (no
             rotation) or if 'custom' then CustomInteractorStyle is used.
             Otherwise you can input your own interactor style.
+=======
+            is used or if 'image' then vtkInteractorStyleImage() is used (no
+            rotation). Otherwise you can input your own interactor style.
+        picker_pos : tuple
+        picker_tol : float
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
         Attributes
         ----------
@@ -398,6 +453,9 @@ class ShowManager(object):
         self.reset_camera = reset_camera
         self.order_transparent = order_transparent
         self.interactor_style = interactor_style
+        self.picker_pos = picker_pos
+        self.picker_tol = picker_tol
+        self.timers = []
 
         if self.reset_camera:
             self.ren.ResetCamera()
@@ -443,15 +501,59 @@ class ShowManager(object):
 
         self.iren = vtk.vtkRenderWindowInteractor()
         self.style.SetCurrentRenderer(self.ren)
+<<<<<<< HEAD
         # Hack: below, we explicitly call the Python version of SetInteractor.
         self.style.SetInteractor(self.iren)
         self.iren.SetInteractorStyle(self.style)
         self.iren.SetRenderWindow(self.window)
+=======
+        self.style.SetInteractor(self.iren)  # Hack: this allows the Python version of this method to be called.
+        self.iren.SetInteractorStyle(self.style)
+        self.iren.SetRenderWindow(self.window)
+
+        def key_press_standard(obj, event):
+
+            key = obj.GetKeySym()
+            if key == 's' or key == 'S':
+                print('Saving image...')
+                renderLarge = vtk.vtkRenderLargeImage()
+                if major_version <= 5:
+                    renderLarge.SetInput(ren)
+                else:
+                    renderLarge.SetInput(ren)
+                renderLarge.SetMagnification(png_magnify)
+                renderLarge.Update()
+
+                file_types = (("PNG file", "*.png"), ("All Files", "*.*"))
+                filepath = save_file_dialog(initial_file='dipy.png',
+                                            default_ext='.png',
+                                            file_types=file_types)
+                if filepath == '':
+                    print('No file was provided in the dialog')
+                else:
+                    writer = vtk.vtkPNGWriter()
+                    writer.SetInputConnection(renderLarge.GetOutputPort())
+                    writer.SetFileName(filepath)
+                    writer.Write()
+                    print('File ' + filepath + ' is saved.')
+
+        self.iren.AddObserver('KeyPressEvent', key_press_standard)
+
+        self.picker = vtk.vtkCellPicker()
+        self.picker.SetTolerance(self.picker_tol)
+        self.iren.SetPicker(self.picker)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
     def initialize(self):
         """ Initialize interaction
         """
         self.iren.Initialize()
+<<<<<<< HEAD
+=======
+
+        i, j, k = self.picker_pos
+        self.picker.Pick(i, j, k, self.ren)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
     def render(self):
         """ Renders only once
@@ -475,6 +577,7 @@ class ShowManager(object):
 
         self.window.RemoveRenderer(self.ren)
         self.ren.SetRenderWindow(None)
+        self.destroy_timers()
         del self.iren
         del self.window
 
@@ -584,8 +687,22 @@ class ShowManager(object):
         """ Add window callbacks
         """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
-        self.window.Render()
 
+    def add_picker_callback(self, picker_callback):
+        self.picker.AddObserver("EndPickEvent", picker_callback)
+
+    def add_timer_callback(self, repeat, duration, timer_callback):
+        self.iren.AddObserver("TimerEvent", timer_callback)
+
+        if repeat:
+            timer_id = self.iren.CreateRepeatingTimer(duration)
+        else:
+            timer_id = self.iren.CreateOneShotTimer(duration)
+        self.timers.append(timer_id)
+
+    def destroy_timers(self):
+        for timer_id in self.timers:
+            self.iren.DestroyTimer(timer_id)
 
 def show(ren, title='DIPY', size=(300, 300),
          png_magnify=1, reset_camera=True, order_transparent=False):
@@ -925,3 +1042,57 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
         report.objects = objects
 
     return report
+
+
+class MovieWriter():
+
+    def __init__(self, fname, window, encoder='ffmpeg',
+                 bit_rate=None, bit_rate_tol=None, frame_rate=None,
+                 compression=False, compression_quality=None):
+
+        self.wif = vtk.vtkWindowToImageFilter()
+        self.wif.SetInput(window)
+        self.wif.ReadFrontBufferOff()
+        self.wif.Update()
+
+        self.writer_alive = True
+        self.bit_rate = bit_rate
+        self.bit_rate_tol = bit_rate_tol
+        self.frame_rate = frame_rate
+        self.compression = compression
+        self.compression_quality = compression_quality
+
+        if encoder == 'ffmpeg':
+            self.writer = vtk.vtkFFMPEGWriter()
+            self.writer.SetInputConnection(self.wif.GetOutputPort())
+            self.writer.SetFileName(fname)
+            if bit_rate is not None:
+                self.writer.SetBitRate(bit_rate)
+                self.writer.SetBitRateTolerance(bit_rate_tol)
+            if frame_rate is not None:
+                self.writer.SetRate(frame_rate)
+            self.writer.SetCompression(compression)
+            if compression_quality is not None:
+                self.writer.SetQuality(compression_quality)
+
+        if encoder == 'png':
+            raise ValueError('PNG writing not currently supported')
+
+        if encoder == 'gif':
+            raise ValueError('GIF writing not currently supported')
+
+    def start(self):
+        if self.writer_alive:
+            self.writer.Start()
+
+    def write(self):
+        self.wif.Modified()
+        self.writer.Write()
+
+    def end(self):
+        self.writer.End()
+        self.write_alive = False
+
+    def __del__(self):
+        if self.writer_alive:
+            self.writer.End()

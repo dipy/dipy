@@ -7,6 +7,12 @@ from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
 cimport numpy as np
+<<<<<<< HEAD
+=======
+
+import cython
+from dipy.tracking import Streamlines
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 from dipy.tracking import Streamlines
 
@@ -243,6 +249,51 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     free(arclengths)
 
 
+def _set_number_of_points_compactlist(streamlines, nb_points=3):
+    ''' Change the number of points of streamlines
+        (either by downsampling or upsampling)
+
+    Change the number of points of streamlines in order to obtain
+    `nb_points`-1 segments of equal length. Points of streamlines will be
+    modified along the curve.
+
+    Parameters
+    ----------
+    streamlines : ``Streamlines`` object
+        Streamlines to resample.
+    nb_points : int
+        Number of points wanted along the curve.
+
+    Returns
+    -------
+    rstreamlines : ``Streamlines`` object
+        Streamlines resampled so they have all the same number of points.
+
+    '''
+    if not isinstance(streamlines, Streamlines):
+        raise ValueError("`streamlines` must be a ``Streamlines`` object")
+
+    dtype = streamlines._data.dtype
+    new_nb_points = len(streamlines) * nb_points
+
+    rstreamlines = Streamlines()
+    rstreamlines._data = np.empty((new_nb_points, 3), dtype=dtype)
+    rstreamlines._offsets = (np.arange(len(streamlines)) * nb_points).tolist()
+    rstreamlines._lengths = [nb_points] * len(streamlines)
+
+    cdef int i
+    for i in range(len(streamlines)):
+        # HACK: To avoid memleaks we have to recast with astype(dtype).
+        s = streamlines[i].astype(dtype)
+
+        if dtype == np.float32:
+            c_set_number_of_points[float2d](s, rstreamlines[i])
+        else:
+            c_set_number_of_points[double2d](s, rstreamlines[i])
+
+    return rstreamlines
+
+
 def set_number_of_points(streamlines, nb_points=3):
     ''' Change the number of points of streamlines
         (either by downsampling or upsampling)
@@ -285,6 +336,9 @@ def set_number_of_points(streamlines, nb_points=3):
     [10, 10]
 
     '''
+    if isinstance(streamlines, Streamlines):
+        return _set_number_of_points_compactlist(streamlines, nb_points)
+
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True

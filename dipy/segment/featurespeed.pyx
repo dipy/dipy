@@ -1,5 +1,5 @@
 # distutils: language = c
-# cython: wraparound=False, cdivision=True, boundscheck=False
+# cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
 import numpy as np
 cimport numpy as cnp

@@ -1,0 +1,176 @@
+#! /usr/bin/env python
+"""
+We have a nifti T1 file (RAS) and bundle trk file (LPS). Let's try to show
+them together in a common space. This space could be the standard space used
+by trackvis (voxmm) or world space (RAS 1mm).
+
+TODO: a shift of 0.5 voxels is needed because Trackvis origin is at the corner
+and not the center of the voxel.
+"""
+
+from dipy.fixes import argparse as arg
+from dipy.workflows.base import IntrospectiveArgumentParser
+
+import numpy as np
+import nibabel as nib
+from nibabel import trackvis
+from dipy.core.histeq import histeq
+from dipy.tracking.streamline import transform_streamlines
+from dipy.viz import actor, window, widget
+from nibabel import trackvis as tv
+from copy import copy, deepcopy
+from glob import glob
+
+def load_trk(fname):
+    streams, hdr = tv.read(fname, points_space='rasmm')
+    return [i[0] for i in streams], hdr
+
+
+def save_trk(fname, streamlines, hdr=None):
+    streams = ((s, None, None) for s in streamlines)
+    if hdr is not None:
+        hdr_dict = {key: hdr[key] for key in hdr.dtype.names}
+        tv.write(fname, streams, hdr_mapping=hdr_dict, points_space='rasmm')
+    else:
+        tv.write(fname, streams, points_space='rasmm')
+
+
+def voxmm_lps_to_ras(streamline, shape, vox_size):
+    streamline.setflags(write=True)
+
+    max_sizes = np.array(vox_size) * np.array(shape)
+    streamline[:, 0] = max_sizes[0] - streamline[:, 0]
+    streamline[:, 1] = max_sizes[1] - streamline[:, 1]
+    return streamline
+
+
+def viz(streamlines, data, affine, affine_voxmm, world_coords):
+
+    slicer_opacity = .8
+
+    ren = window.Renderer()
+    stream_actor = actor.line(streamlines)
+
+    if not world_coords:
+        image_actor = actor.slicer(data, affine_voxmm)
+    else:
+        image_actor = actor.slicer(data, affine)
+
+    image_actor.opacity(slicer_opacity)
+
+    ren.add(stream_actor)
+    ren.add(image_actor)
+
+    from dipy.viz import fvtk
+    ren.add(fvtk.axes((10, 10, 10)))
+
+    show_m = window.ShowManager(ren, size=(1200, 900))
+    show_m.initialize()
+
+    def change_slice(obj, event):
+        z = int(np.round(obj.get_value()))
+        image_actor.display(None, z, None)
+
+    slider = widget.slider(show_m.iren, show_m.ren,
+                           callback=change_slice,
+                           min_value=0,
+                           max_value=image_actor.shape[1] - 1,
+                           value=image_actor.shape[1] / 2,
+                           label="Move slice",
+                           right_normalized_pos=(.98, 0.6),
+                           size=(120, 0), label_format="%0.lf",
+                           color=(1., 1., 1.),
+                           selected_color=(0.86, 0.33, 1.))
+
+    global size
+    size = ren.GetSize()
+
+    def win_callback(obj, event):
+        global size
+        if size != obj.GetSize():
+
+            slider.place(ren)
+            size = obj.GetSize()
+
+    show_m.initialize()
+    show_m.add_window_callback(win_callback)
+    show_m.render()
+    show_m.start()
+
+
+def lps_to_ras_flow(bundle_files, anatomy_file, verbose=True):
+    """ LPS to RAS flow
+
+    Parameters
+    ----------
+    bundle_files : string
+    anatomy_file : string
+    verbose : bool
+    """
+
+    world_coords = True
+    equalize = True
+    img = nib.load(anatomy_file)
+    data = img.get_data()
+    affine = img.get_affine()
+    if verbose:
+        print(anatomy_file)
+        print('Anatomy file is' + ''.join(nib.aff2axcodes(affine)))
+    vox_size = img.get_header().get_zooms()[:3]
+
+    if equalize:
+        data = histeq(data)
+
+    shape = data.shape
+
+    bundle_files = glob(bundle_files)
+
+    for bundle_file in bundle_files:
+
+        streams, hdr = trackvis.read(bundle_file)
+        if verbose:
+            print(bundle_file)
+            print(' Streamlines are in ' + str(hdr['voxel_order']))
+
+        streamlines = [voxmm_lps_to_ras(s[0], shape, vox_size)
+                       for s in streams]
+        affine_voxmm = np.diag(vox_size + (1,))
+
+        if world_coords:
+
+            affine_world = np.dot(affine, np.linalg.inv(affine_voxmm))
+            streamlines = transform_streamlines(streamlines, affine_world)
+
+        # if disp:
+        #   viz(streamlines, data, affine, affine_voxmm, world_coords)
+
+        hdr2 = deepcopy(hdr)
+
+        # from ipdb import set_trace
+        # set_trace()
+        hdr2['voxel_order'] = 'RAS'
+        hdr2['vox_to_ras'] = affine
+        if verbose:
+            print(' Streamlines are now in ' + str(hdr2['voxel_order']))
+        # print(hdr2.keys())
+
+        save_trk(bundle_file + '_RAS.trk', streamlines, hdr=hdr2)
+        if verbose:
+            print('Created file ' +  bundle_file + '_RAS.trk')
+
+#    # streamlines1, hdr1 = load_trk(bundle_files)
+#    streamlines1, hdr1 = load_trk('tracts_500K_WM.trk')
+#    streamlines1 = streamlines1[::100]
+#    streamlines2, hdr2 = load_trk(bundle_files + '_RAS.trk')
+#
+#    viz(streamlines1, data, affine, affine_voxmm, world_coords)
+#    viz(streamlines2, data, affine, affine_voxmm, world_coords)
+
+
+iap = IntrospectiveArgumentParser()
+iap.add_workflow(lps_to_ras_flow)
+
+if __name__ == '__main__':
+
+    args = iap.get_flow_args()
+    lps_to_ras_flow(**args)
