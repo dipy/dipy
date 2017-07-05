@@ -28,8 +28,12 @@ nibabel*egg/
 pyx-stamps
 __config__.py
 .DS_Store
+<<<<<<< HEAD
 .coverage
 .buildbot.patch
 .eggs/
 dipy/.idea/
 .idea/
+=======
+.eggs
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253

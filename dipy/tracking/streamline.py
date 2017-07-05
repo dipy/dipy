@@ -12,8 +12,13 @@ from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
+<<<<<<< HEAD
 import dipy.align.vector_fields as vfu
 
+=======
+from scipy.spatial.distance import cdist
+from copy import deepcopy
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 def unlist_streamlines(streamlines):
     """ Return the streamlines not as a list but as an array and an offset
@@ -260,6 +265,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
             yield sl
 
 
+<<<<<<< HEAD
 def _orient_generator(out, roi1, roi2):
     """
     Helper function to `orient_by_rois`
@@ -300,10 +306,14 @@ def _orient_list(out, roi1, roi2):
 
 def orient_by_rois(streamlines, roi1, roi2, in_place=False,
                    as_generator=False, affine=None):
+=======
+def orient_by_rois(streamlines, roi1, roi2, affine=None, copy=True):
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
     ----------
+<<<<<<< HEAD
     streamlines : list or generator
         List or generator of 2d arrays of 3d coordinates. Each array contains
         the xyz coordinates of a single streamline.
@@ -325,6 +335,23 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     streamlines : list or generator
         The same 3D arrays as a list or generator, but reoriented with respect
         to the ROIs
+=======
+    streamlines : list
+        List of 3d arrays. Each array contains the xyz coordinates of a single
+        streamline.
+    roi1, roi2 : ndarray
+        Binary masks designating the location of the regions of interest, or
+        coordinate arrays (n-by-3 array with ROI coordinate in each row).
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+    copy : bool
+        Whether to make a copy of the input, or mutate the input inplace.
+
+    Returns
+    -------
+    streamlines : list
+        The same 3D arrays, but reoriented with respect to the ROIs
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
     Examples
     --------
@@ -346,6 +373,10 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
            [ 2.,  0.,  0.]])]
 
     """
+<<<<<<< HEAD
+=======
+
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
     # If we don't already have coordinates on our hands:
     if len(roi1.shape) == 3:
         roi1 = np.asarray(np.where(roi1.astype(bool))).T
@@ -356,6 +387,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         roi1 = apply_affine(affine, roi1)
         roi2 = apply_affine(affine, roi2)
 
+<<<<<<< HEAD
     if as_generator:
         if in_place:
             w_s = "Cannot return a generator when in_place is set to True"
@@ -510,3 +542,44 @@ def values_from_volume(data, streamlines, affine=None):
         return _extract_vals(data, streamlines, affine=affine)
     else:
         raise ValueError("Data needs to have 3 or 4 dimensions")
+=======
+    # Make a copy, so you don't change the output in place:
+    if copy:
+        new_sl = deepcopy(streamlines)
+    else:
+        new_sl = streamlines
+
+    for idx, sl in enumerate(streamlines):
+        dist1 = cdist(sl, roi1, 'euclidean')
+        dist2 = cdist(sl, roi2, 'euclidean')
+        min1 = np.argmin(dist1, 0)
+        min2 = np.argmin(dist2, 0)
+        if min1[0] > min2[0]:
+            new_sl[idx] = sl[::-1]
+
+    return new_sl
+
+def get_bounding_box_streamlines(streamlines):
+    """ Returns the axis aligned bounding box (AABB) envlopping `streamlines`.
+
+    Parameters
+    ----------
+    streamlines : list of 2D arrays
+        Each 2D array represents a sequence of 3D points (nb_points, 3).
+
+    Returns
+    -------
+    box_min : ndarray
+        Coordinate of the bounding box corner having the minimum (X, Y, Z).
+    box_max : ndarray
+        Coordinate of the bounding box corner having the maximum (X, Y, Z).
+    """
+    box_min = np.array([np.inf, np.inf, np.inf])
+    box_max = -np.array([np.inf, np.inf, np.inf])
+
+    for s in streamlines:
+        box_min = np.minimum(box_min, np.min(s, axis=0))
+        box_max = np.maximum(box_max, np.max(s, axis=0))
+
+    return box_min, box_max
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253

@@ -53,7 +53,9 @@ We will use 3 bundles, FA and the affine transformation that brings the voxel
 coordinates to world coordinates (RAS 1mm).
 """
 
-streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
+af_streamlines = res['af.left']
+cst_streamlines = res['cst.right']
+cc_streamlines = res['cc_1']
 data = res['fa']
 shape = data.shape
 affine = res['affine']
@@ -74,7 +76,12 @@ native space using the inverse of the affine.
 
 if not world_coords:
     from dipy.tracking.streamline import transform_streamlines
-    streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
+    af_streamlines = transform_streamlines(af_streamlines,
+                                           np.linalg.inv(affine))
+    cst_streamlines = transform_streamlines(cst_streamlines,
+                                            np.linalg.inv(affine))
+    cc_streamlines = transform_streamlines(cc_streamlines,
+                                           np.linalg.inv(affine))
 
 """
 Now we create, a ``Renderer`` object and add the streamlines using the ``line``
@@ -82,7 +89,9 @@ function and an image plane using the ``slice`` function.
 """
 
 ren = window.Renderer()
-stream_actor = actor.line(streamlines)
+af_actor = actor.line(af_streamlines)
+cst_actor = actor.line(cst_streamlines)
+cc_actor = actor.line(cc_streamlines)
 
 if not world_coords:
     image_actor_z = actor.slicer(data, affine=np.eye(4))
@@ -124,10 +133,17 @@ image_actor_y.display_extent(0,
 Connect the actors with the Renderer.
 """
 
+<<<<<<< HEAD
 ren.add(stream_actor)
 ren.add(image_actor_z)
 ren.add(image_actor_x)
 ren.add(image_actor_y)
+=======
+ren.add(af_actor)
+ren.add(cst_actor)
+ren.add(cc_actor)
+ren.add(image_actor)
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 """
 Now we would like to change the position of each ``image_actor`` using a
@@ -257,18 +273,74 @@ def win_callback(obj, event):
         size_change = [size[0] - size_old[0], 0]
         panel.re_align(size_change)
 
+"""
+Here, we can add a callback that is triggered everytime we press 'p' on a
+slicer and gives us the position and actual value.
+"""
+
+resampled = image_actor.get_data()
+
+status = actor.text_overlay('', font_size=14, bold=True)
+ren.add(status)
+
+
+def pick_callback(obj, event):
+
+    ijk = obj.GetPointIJK()
+    i, j, k = ijk
+    v1, v2, v3, v4 = resampled[i, j, k]
+    msg = ">>> Position (%d, %d, %d) value %d" % (i, j, k, v1)
+    status.message(msg)
+
+
 show_m.initialize()
 
+ren.zoom(1.5)
+ren.reset_clipping_range()
+
 """
+<<<<<<< HEAD
 Finally, please set the following variable to True to interact with the 
 datasetsin 3D.
 """
 
 interactive = False
+=======
+Please uncomment the following lines so that you can interact with
+the available 3D and 2D objects.
+"""
 
-ren.zoom(1.5)
-ren.reset_clipping_range()
+show_m.render()
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
+bit_rate = 10 * np.prod(show_m.window.GetSize())
+print(bit_rate)
+bit_rate_tol = 10 * np.prod(show_m.window.GetSize()) * 3
+print(bit_rate_tol)
+mw = window.MovieWriter('new.avi', show_m.window,
+                        bit_rate=bit_rate, bit_rate_tol=bit_rate_tol,
+                        frame_rate=None,
+                        compression=True, compression_quality=None)
+mw.start()
+
+def timer_callback(obj, event):
+
+    ren.azimuth(.1)
+    show_m.render()
+    mw.write()
+
+
+show_m.add_window_callback(win_callback)
+show_m.add_picker_callback(pick_callback)
+show_m.add_timer_callback(True, 20, timer_callback)
+
+show_m.render()
+show_m.start()
+
+
+del mw
+
+<<<<<<< HEAD
 if interactive:
 
     show_m.add_window_callback(win_callback)
@@ -279,6 +351,9 @@ else:
 
     window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
                   reset_camera=False)
+=======
+# window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900))
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
 """
 .. figure:: bundles_and_3_slices.png

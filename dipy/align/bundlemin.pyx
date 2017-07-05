@@ -177,6 +177,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         double * min_j
         double * min_i
         openmp.omp_lock_t lock
+<<<<<<< HEAD
         int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
@@ -188,6 +189,8 @@ def _bundle_minimum_distance(double [:, ::1] stat,
     if have_openmp:
         openmp.omp_set_dynamic(0)
         openmp.omp_set_num_threads(threads_to_use)
+=======
+>>>>>>> 673537700ce0828891541d053481f728b7ed5253
 
     with nogil:
 
@@ -240,6 +243,99 @@ def _bundle_minimum_distance(double [:, ::1] stat,
         openmp.omp_set_num_threads(all_cores)
 
     return dist
+
+
+def _bundle_minimum_distance_static(double [:, ::1] stat,
+                                    double [:, ::1] mov,
+                                    cnp.npy_intp static_size,
+                                    cnp.npy_intp moving_size,
+                                    cnp.npy_intp rows):
+    """ MDF-based pairwise distance optimization function
+
+    We minimize the distance between moving streamlines of the same number of
+    points as they align with the static streamlines.
+
+    Parameters
+    -----------
+    static : array
+        Static streamlines
+    moving : array
+        Moving streamlines
+    static_size : int
+        Number of static streamlines
+    moving_size : int
+        Number of moving streamlines
+    rows : int
+        Number of points per streamline
+
+    Returns
+    -------
+    cost : double
+
+    Notes
+    -----
+    The difference with ``_bundle_minimum_distance`` is that we sum the
+    minimum values only for the static. Therefore, this is assymetric.
+    """
+
+    cdef:
+        cnp.npy_intp i=0, j=0
+        double sum_i=0, sum_j=0, tmp=0
+        double inf = np.finfo('f8').max
+        double dist=0
+        double * min_j
+        # double * min_i
+        openmp.omp_lock_t lock
+
+    with nogil:
+
+        if have_openmp:
+            openmp.omp_init_lock(&lock)
+
+        min_j = <double *> malloc(static_size * sizeof(double))
+        # min_i = <double *> malloc(moving_size * sizeof(double))
+
+        for i in range(static_size):
+            min_j[i] = inf
+
+        # for j in range(moving_size):
+        #    min_i[j] = inf
+
+        for i in prange(static_size):
+
+            for j in range(moving_size):
+
+                tmp = min_direct_flip_dist(&stat[i * rows, 0],
+                                       &mov[j * rows, 0], rows)
+
+                if have_openmp:
+                    openmp.omp_set_lock(&lock)
+                if tmp < min_j[i]:
+                    min_j[i] = tmp
+
+                # if tmp < min_i[j]:
+                #    min_i[j] = tmp
+                if have_openmp:
+                    openmp.omp_unset_lock(&lock)
+
+        if have_openmp:
+            openmp.omp_destroy_lock(&lock)
+
+        for i in range(static_size):
+            sum_i += min_j[i]
+
+        # for j in range(moving_size):
+        #    sum_j += min_i[j]
+
+        free(min_j)
+        # free(min_i)
+
+        dist = sum_i / <double>static_size
+
+        # dist = 0.25 * dist * dist
+
+    return dist
+
 
 
 def distance_matrix_mdf(streamlines_a, streamlines_b):
