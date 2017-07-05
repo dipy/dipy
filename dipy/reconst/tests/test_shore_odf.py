@@ -1,13 +1,12 @@
 import numpy as np
 from dipy.data import get_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.reconst.shore import ShoreModel
-from dipy.reconst.shm import QballModel, sh_to_sf
-from dipy.direction.peaks import gfa, peak_directions
+from dipy.reconst.shm import sh_to_sf
+from dipy.direction.peaks import peak_directions
+from dipy.reconst.odf import gfa
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
-                           run_module_suite,
-                           assert_array_equal,
-                           assert_raises)
+                           run_module_suite)
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
