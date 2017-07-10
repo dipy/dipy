@@ -122,7 +122,6 @@ if use_xvfb:
 if use_memprof:
     import memory_profiler
 
-
 name = ''
 
 def run_script(script_name=name):
