@@ -320,6 +320,7 @@ class ConstrainedSDTModel(SphHarmModel):
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
         odf_sh /= Z
+
         shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
                                        self.lambda_, self.tau)
         # print 'SDT CSD converged after %d iterations' % num_it
