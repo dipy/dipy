@@ -1,6 +1,7 @@
 import numpy as np
-from numpy.testing import run_module_suite, assert_equal
-from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize)
+from numpy.testing import (run_module_suite, assert_equal, assert_almost_equal,
+                           assert_)
+from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize, gfa)
 
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
@@ -65,6 +66,24 @@ def test_minmax_normalize():
     odf3 = minmax_normalize(odf, odf3)
     assert_equal(odf3.max(), 1)
     assert_equal(odf3.min(), 0)
+
+
+def test_gfa():
+    g = gfa(np.ones(100))
+    assert_equal(g, 0)
+
+    g = gfa(np.ones((2, 100)))
+    assert_equal(g, np.array([0, 0]))
+
+    # The following series follows the rule (sqrt(n-1)/((n-1)^2))
+    g = gfa(np.hstack([np.ones((9)), [0]]))
+    assert_almost_equal(g, np.sqrt(9./81))
+    g = gfa(np.hstack([np.ones((99)), [0]]))
+    assert_almost_equal(g, np.sqrt(99./(99.**2)))
+
+    # All-zeros returns a nan with no warning:
+    g = gfa(np.zeros(10))
+    assert_(np.isnan(g))
 
 
 if __name__ == '__main__':
