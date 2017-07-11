@@ -670,7 +670,7 @@ class Panel2D(UI):
             raise ValueError("You can only left-align or right-align objects in a panel.")
 
 
-class TextActor2D(object):
+class TextActor2D(UI):
     """ Wraps over the default vtkTextActor and helps setting the text.
 
     Contains member functions for text formatting.
@@ -682,6 +682,7 @@ class TextActor2D(object):
     """
 
     def __init__(self):
+        super(TextActor2D, self).__init__()
         self.actor = vtkTextActor()
 
     def get_actor(self):
@@ -693,6 +694,12 @@ class TextActor2D(object):
             The actor composing this class.
         """
         return self.actor
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        return [self.actor]
 
     @property
     def message(self):
@@ -920,6 +927,16 @@ class TextActor2D(object):
         ----------
         position : (float, float)
             The new position. (x, y) in pixels.
+
+        """
+        self.actor.SetPosition(*position)
+
+    def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position : (float, float)
 
         """
         self.actor.SetPosition(*position)
