@@ -1,7 +1,7 @@
 """
-==============
-User Interface
-==============
+===============
+User Interfaces
+===============
 
 This example shows how to use the UI API.
 Currently includes button, textbox, panel, and line slider.
@@ -70,7 +70,6 @@ button_example = ui.Button2D(icon_fnames=icon_files)
 We now add some click listeners.
 """
 
-
 def left_mouse_button_click(i_ren, obj, button):
     print("Left Button Clicked")
 
@@ -105,13 +104,11 @@ via a callback that is triggered on left click.
 
 
 def modify_button_callback(i_ren, obj, button):
-    # i_ren: CustomInteractorStyle
-    # obj: vtkActor picked
-    # button: Button2D
     button.next_icon()
     i_ren.force_render()
 
 second_button_example.on_left_mouse_button_pressed = modify_button_callback
+
 
 """
 Panels
@@ -137,16 +134,31 @@ text = ui.TextBox2D(height=3, width=10)
 ==============
 """
 
+def translate_green_cube(i_ren, obj, slider):
+    value = slider.value
+    cube_actor_2.SetPosition(value, 0, 0)
+
 line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
+
+line_slider.add_callback(line_slider.slider_disk,
+                         "MouseMoveEvent",
+                         translate_green_cube)
 
 """
 2D Disk Slider
 ==============
 """
 
+def rotate_red_cube(i_ren, obj, slider):
+    angle = slider.value
+    cube_actor_1.RotateY(0.005 * angle)
+
 disk_slider = ui.DiskSlider2D()
 disk_slider.set_center((200, 200))
+disk_slider.add_callback(disk_slider.handle,
+                         "MouseMoveEvent",
+                         rotate_red_cube)
 
 """
 2D File Select Menu

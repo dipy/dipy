@@ -5,6 +5,13 @@ from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
+cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+
+if have_matplotlib:
+    get_cmap = cm.get_cmap
+else:
+    from dipy.data import get_cmap
+from warnings import warn
 
 
 def colormap_lookup_table(scale_range=(0, 1), hue_range=(0.8, 0),
@@ -255,3 +262,58 @@ def line_colors(streamlines, cmap='rgb_standard'):
                     for streamline in streamlines]
 
     return np.vstack(col_list)
+
+
+lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
+
+
+def create_colormap(v, name='plasma', auto=True):
+    """Create colors from a specific colormap and return it
+    as an array of shape (N,3) where every row gives the corresponding
+    r,g,b value. The colormaps we use are similar with those of matplotlib.
+
+    Parameters
+    ----------
+    v : (N,) array
+        vector of values to be mapped in RGB colors according to colormap
+    name : str.
+        Name of the colormap. Currently implemented: 'jet', 'blues',
+        'accent', 'bone' and matplotlib colormaps if you have matplotlib
+        installed. For example, we suggest using 'plasma', 'viridis' or
+        'inferno'. 'jet' is popular but can be often misleading and we will
+        deprecate it the future.
+    auto : bool,
+        if auto is True then v is interpolated to [0, 10] from v.min()
+        to v.max()
+
+    Notes
+    -----
+    Dipy supports a few colormaps for those who do not use Matplotlib, for
+    more colormaps consider downloading Matplotlib (see matplotlib.org).
+    """
+
+    if name == 'jet':
+        msg = 'Jet is a popular colormap but can often be misleading'
+        msg += 'Use instead plasma, viridis, hot or inferno.'
+        warn(msg, DeprecationWarning)
+
+    if v.ndim > 1:
+        msg = 'This function works only with 1d arrays. Use ravel()'
+        raise ValueError(msg)
+
+    if auto:
+        v = np.interp(v, [v.min(), v.max()], [0, 1])
+    else:
+        v = np.clip(v, 0, 1)
+
+    # For backwards compatibility with lowercase names
+    newname = lowercase_cm_name.get(name) or name
+
+    colormap = get_cmap(newname)
+    if colormap is None:
+        e_s = "Colormap {} is not yet implemented ".format(name)
+        raise ValueError(e_s)
+
+    rgba = colormap(v)
+    rgb = rgba[:, :3].copy()
+    return rgb

@@ -10,17 +10,15 @@ from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor,
                              multi_tensor_pdf,
                              single_tensor,
-                             cylinders_and_ball_soderman,
-                             callaghan_perpendicular)
+                             cylinders_and_ball_soderman)
 from scipy.special import gamma
 from scipy.misc import factorial
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
 import scipy.integrate as integrate
-import scipy.special as special
-from scipy.special import jn
 from dipy.core.sphere_stats import angular_similarity
-from dipy.direction.peaks import gfa, peak_directions
+from dipy.direction.peaks import peak_directions
+from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.shm import sh_to_sf

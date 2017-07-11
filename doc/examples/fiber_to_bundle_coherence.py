@@ -39,6 +39,7 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 (150 orientations, b=2000s/mm^2) which is one of the standard example datasets
 in DIPY.
 """
+
 import numpy as np
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
