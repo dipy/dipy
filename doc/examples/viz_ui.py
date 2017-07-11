@@ -173,6 +173,9 @@ show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
 show_manager.ren.add(file_select_menu)
+show_manager.ren.reset_camera()
+show_manager.ren.reset_clipping_range()
+show_manager.ren.azimuth(30)
 
 # show_manager.ren.azimuth(30)
 
