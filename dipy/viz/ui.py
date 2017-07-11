@@ -1894,10 +1894,12 @@ class FileSelectMenu2D(UI):
         Distance between menu text items in pixels.
     parent_ui: :class:`UI`
         The UI component this object belongs to.
+    extensions: list(string)
+            List of extensions to be shown as files.
 
     """
 
-    def __init__(self, size, font_size, position, parent, line_spacing=1.4):
+    def __init__(self, size, font_size, position, parent, extensions, line_spacing=1.4):
         """
         Parameters
         ----------
@@ -1911,6 +1913,8 @@ class FileSelectMenu2D(UI):
             The initial position (x, y) in pixels.
         line_spacing: float
             Distance between menu text items in pixels.
+        extensions: list(string)
+            List of extensions to be shown as files.
 
         """
         super(FileSelectMenu2D, self).__init__()
@@ -1919,6 +1923,7 @@ class FileSelectMenu2D(UI):
         self.font_size = font_size
         self.parent_ui = parent
         self.line_spacing = line_spacing
+        self.extensions = extensions
 
         self.n_text_actors = 0  # Initialisation Value
         self.text_item_list = []
@@ -2066,7 +2071,7 @@ class FileSelectMenu2D(UI):
         for directory_name in directory_names:
             all_file_names.append((directory_name, "directory"))
 
-        file_names = self.get_file_names("png")
+        file_names = self.get_file_names()
         for file_name in file_names:
             all_file_names.append((file_name, "file"))
 
@@ -2090,16 +2095,10 @@ class FileSelectMenu2D(UI):
 
         return directory_names
 
-    @staticmethod
-    def get_file_names(extension):
+    def get_file_names(self):
         """ Re-allots file names to the text actors.
 
         Uses FileSelectMenuText2D for selecting files and folders.
-
-        Parameters
-        ----------
-        extension: string
-            Examples: png, jpg, etc.
 
         Returns
         -------
@@ -2108,7 +2107,9 @@ class FileSelectMenu2D(UI):
 
         """
         # A list of file names with extension in the current directory
-        file_names = glob.glob("*." + extension)
+        file_names = []
+        for extension in self.extensions:
+            file_names += glob.glob("*." + extension)
 
         return file_names
 
