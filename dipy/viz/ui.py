@@ -1931,17 +1931,17 @@ class FileSelectMenu2D(UI):
         self.fill_text_actors()
         self.handle_events(None)
 
+    def add_to_renderer(self, ren):
+        self.menu.add_to_renderer(ren)
+        super(FileSelectMenu2D, self).add_to_renderer(ren)
+        for menu_text in self.text_item_list:
+            menu_text.add_to_renderer(ren)
+
     def get_actors(self):
         """ Returns the actors that compose this UI component.
 
         """
-        actors = []
-        actors.extend(self.menu.get_actors())
-        text_actors = [text_item.text_actor.actor for text_item in self.text_item_list]
-        actors.extend(text_actors)
-        actors.append(self.buttons["up"])
-        actors.append(self.buttons["down"])
-        return actors
+        return [self.buttons["up"], self.buttons["down"]]
 
     def build_actors(self, position):
         """ Builds the number of text actors that will fit in the given size.
@@ -2066,7 +2066,7 @@ class FileSelectMenu2D(UI):
         for directory_name in directory_names:
             all_file_names.append((directory_name, "directory"))
 
-        file_names = self.get_file_names("py")
+        file_names = self.get_file_names("png")
         for file_name in file_names:
             all_file_names.append((file_name, "file"))
 
@@ -2178,7 +2178,9 @@ class FileSelectMenuText2D(UI):
 
         self.text_actor = self.build_actor(position=position, font_size=font_size)
 
-        self.handle_events(None)
+        self.handle_events(self.text_actor.get_actor())
+
+        self.on_left_mouse_button_pressed = self.left_button_press
 
     def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
                     justification='left', bold=False, italic=False,
@@ -2268,7 +2270,7 @@ class FileSelectMenuText2D(UI):
                 self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
 
     @staticmethod
-    def handle_click_callback(i_ren, obj, file_select_text):
+    def left_button_press(i_ren, obj, file_select_text):
         """ A callback to handle click for this UI element.
 
         Parameters
@@ -2301,10 +2303,3 @@ class FileSelectMenuText2D(UI):
             The new position (x, y) in pixels.
         """
         self.text_actor.position = position
-
-    def handle_events(self, actor):
-        """ Handle default click event.
-
-        """
-        self.add_callback(self.text_actor.get_actor(), "LeftButtonPressEvent",
-                          self.handle_click_callback)
