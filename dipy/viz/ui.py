@@ -1884,7 +1884,8 @@ class FileSelectMenu2D(UI):
     text_item_list: list(:class:`FileSelectMenuText2D`)
         List of FileSelectMenuText2Ds - both visible and invisible.
     window: int
-        Used for scrolling. Basically, tells you the index of the first visible
+        Used for scrolling.
+        Basically, tells you the index of the first visible
         FileSelectMenuText2D object.
     size: (float, float)
         The size of the system (x, y) in pixels.
@@ -1899,7 +1900,8 @@ class FileSelectMenu2D(UI):
 
     """
 
-    def __init__(self, size, font_size, position, parent, extensions, line_spacing=1.4):
+    def __init__(self, size, font_size, position, parent,
+                 extensions, line_spacing=1.4):
         """
         Parameters
         ----------
@@ -1909,6 +1911,8 @@ class FileSelectMenu2D(UI):
             The font size in pixels.
         parent: :class:`UI`
             The UI component this object belongs to.
+            This will be useful when this UI element is used as a
+            part of other UI elements, like a file save dialog.
         position: (float, float)
             The initial position (x, y) in pixels.
         line_spacing: float
@@ -1976,7 +1980,9 @@ class FileSelectMenu2D(UI):
             self.text_item_list.append(text)
 
             panel.add_element(text, 'relative',
-                              (0.1, float(self.n_text_actors-i - 1)/float(self.n_text_actors)))
+                              (0.1,
+                               float(self.n_text_actors-i - 1) /
+                               float(self.n_text_actors)))
 
         up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
         panel.add_element(up_button, 'relative', (0.95, 0.95))
@@ -2290,7 +2296,8 @@ class FileSelectMenuText2D(UI):
             file_select_text.file_select.fill_text_actors()
             file_select_text.file_select.select_file(file_name="")
         else:
-            file_select_text.file_select.select_file(file_name=file_select_text.file_name)
+            file_select_text.file_select.select_file(
+                file_name=file_select_text.file_name)
 
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
