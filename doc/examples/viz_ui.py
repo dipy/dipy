@@ -14,7 +14,6 @@ from dipy.data import read_viz_icons, fetch_viz_icons
 
 from dipy.viz import ui, window
 
-
 """
 3D Elements
 ===========
@@ -37,6 +36,7 @@ def cube_maker(color=None, size=(0.2, 0.2, 0.2), center=None):
     if color is not None:
         cube_actor.GetProperty().SetColor(color)
     return cube_actor
+
 
 cube_actor_1 = cube_maker((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube_maker((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
@@ -70,12 +70,14 @@ button_example = ui.Button2D(icon_fnames=icon_files)
 We now add some click listeners.
 """
 
+
 def left_mouse_button_click(i_ren, obj, button):
     print("Left Button Clicked")
 
 
 def left_mouse_button_drag(i_ren, obj, button):
     print ("Left Button Dragged")
+
 
 button_example.on_left_mouse_button_drag = left_mouse_button_drag
 button_example.on_left_mouse_button_pressed = left_mouse_button_click
@@ -87,6 +89,7 @@ def right_mouse_button_drag(i_ren, obj, button):
 
 def right_mouse_button_click(i_ren, obj, button):
     print ("Right Button Clicked")
+
 
 button_example.on_right_mouse_button_drag = right_mouse_button_drag
 button_example.on_right_mouse_button_pressed = right_mouse_button_click
@@ -107,8 +110,8 @@ def modify_button_callback(i_ren, obj, button):
     button.next_icon()
     i_ren.force_render()
 
-second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
+second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
 """
 Panels
@@ -134,9 +137,11 @@ text = ui.TextBox2D(height=3, width=10)
 ==============
 """
 
+
 def translate_green_cube(i_ren, obj, slider):
     value = slider.value
     cube_actor_2.SetPosition(value, 0, 0)
+
 
 line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
@@ -150,9 +155,11 @@ line_slider.add_callback(line_slider.slider_disk,
 ==============
 """
 
+
 def rotate_red_cube(i_ren, obj, slider):
     angle = slider.value
     cube_actor_1.RotateY(0.005 * angle)
+
 
 disk_slider = ui.DiskSlider2D()
 disk_slider.set_center((200, 200))
@@ -165,7 +172,11 @@ disk_slider.add_callback(disk_slider.handle,
 ==============
 """
 
-file_select_menu = ui.FileSelectMenu2D(size=(500, 500), position=(300, 300), font_size=16, parent=None)
+file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
+                                       position=(300, 300),
+                                       font_size=16,
+                                       extensions=["py", "png"],
+                                       parent=None)
 
 """
 Adding Elements to the ShowManager
