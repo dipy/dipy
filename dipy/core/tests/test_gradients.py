@@ -276,7 +276,7 @@ def test_generate_bvecs():
     # Test if two generated vectors are almost orthogonal
     bvecs_2 = generate_bvecs(2)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
-    npt.assert_almost_equal(cos_theta, 0.)
+    npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
 def test_check_multi_b():
