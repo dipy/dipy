@@ -213,7 +213,7 @@ We'll also create text labels to identify the sliders.
 
 
 def build_label(text):
-    label = ui.TextActor2D()
+    label = ui.TextBlock2D()
     label.message = text
     label.font_size = 18
     label.font_family = 'Arial'
