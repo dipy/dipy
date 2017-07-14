@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def localpca(arr, mask, sigma, pca_method='eig', patch_radius=2,
+def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
              tau_factor=2.3, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
@@ -49,6 +49,10 @@ def localpca(arr, mask, sigma, pca_method='eig', patch_radius=2,
                   PCA. PLoS ONE 8(9): e73021.
                   https://doi.org/10.1371/journal.pone.0073021
     """
+    if mask is None:
+        # If mask is not specified, use the whole volume
+        mask = np.ones_like(arr, dtype=bool)[..., 0]
+
     if pca_method == 'svd':
         # Try to get the SVD through direct API to lapack:
         try:
