@@ -150,11 +150,18 @@ def test_ui_button_panel(recording=False):
     button_test.color = button_color
     # /Button
 
+    # TextBlock
+    text_block_test = ui.TextBlock2D()
+    text_block_test.message = 'TextBlock'
+    text_block_test.color = (0, 0, 0)
+    # /TextBlock
+
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150),
                        color=(1, 1, 1), align="right")
     panel.add_element(rectangle_test, 'absolute', (580, 150))
     panel.add_element(button_test, 'relative', (0.2, 0.2))
+    panel.add_element(text_block_test, 'relative', (0.7, 0.7))
     npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
                       'error_string', (1, 2))
     # /Panel
@@ -217,37 +224,37 @@ def test_ui_textbox(recording=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_text_actor_2d():
-    # TextActor2D
-    text_actor = ui.TextActor2D()
-    text_actor.message = "Hello World!"
-    npt.assert_equal("Hello World!", text_actor.message)
-    text_actor.font_size = 18
-    npt.assert_equal("18", str(text_actor.font_size))
-    text_actor.font_family = "Arial"
-    npt.assert_equal("Arial", text_actor.font_family)
+def test_text_block_2d():
+    # TextBlock2D
+    text_block = ui.TextBlock2D()
+    text_block.message = "Hello World!"
+    npt.assert_equal("Hello World!", text_block.message)
+    text_block.font_size = 18
+    npt.assert_equal("18", str(text_block.font_size))
+    text_block.font_family = "Arial"
+    npt.assert_equal("Arial", text_block.font_family)
     with npt.assert_raises(ValueError):
-        text_actor.font_family = "Verdana"
-    text_actor.justification = "left"
-    text_actor.justification = "right"
-    text_actor.justification = "center"
-    npt.assert_equal("Centered", text_actor.justification)
+        text_block.font_family = "Verdana"
+    text_block.justification = "left"
+    text_block.justification = "right"
+    text_block.justification = "center"
+    npt.assert_equal("Centered", text_block.justification)
     with npt.assert_raises(ValueError):
-        text_actor.justification = "bottom"
-    text_actor.bold = True
-    text_actor.bold = False
-    npt.assert_equal(False, text_actor.bold)
-    text_actor.italic = True
-    text_actor.italic = False
-    npt.assert_equal(False, text_actor.italic)
-    text_actor.shadow = True
-    text_actor.shadow = False
-    npt.assert_equal(False, text_actor.shadow)
-    text_actor.color = (1, 0, 0)
-    npt.assert_equal((1, 0, 0), text_actor.color)
-    text_actor.position = (2, 3)
-    npt.assert_equal((2, 3), text_actor.position)
-    # /TextActor2D
+        text_block.justification = "bottom"
+    text_block.bold = True
+    text_block.bold = False
+    npt.assert_equal(False, text_block.bold)
+    text_block.italic = True
+    text_block.italic = False
+    npt.assert_equal(False, text_block.italic)
+    text_block.shadow = True
+    text_block.shadow = False
+    npt.assert_equal(False, text_block.shadow)
+    text_block.color = (1, 0, 0)
+    npt.assert_equal((1, 0, 0), text_block.color)
+    text_block.position = (2, 3)
+    npt.assert_equal((2, 3), text_block.position)
+    # /TextBlock2D
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
