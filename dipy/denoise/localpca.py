@@ -69,7 +69,7 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
     if out_dtype is None:
         out_dtype = arr.dtype
 
-    # We retain float64 precision, if the input is in this precision:
+    # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
 
