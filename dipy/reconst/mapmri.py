@@ -117,7 +117,8 @@ class MapmriModel(ReconstModel, Cache):
         Parameters
         ----------
         gtab : GradientTable,
-            gradient directions and bvalues container class
+            gradient directions and bvalues container class.
+            the gradient table has to include b0-images.
         radial_order : unsigned int,
             an even integer that represent the order of the basis
         laplacian_regularization: bool,
@@ -247,7 +248,9 @@ class MapmriModel(ReconstModel, Cache):
             msg = "pos_radius must be 'adaptive' or a positive float"
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "cvxpy_solver is not installed in cvxpy."
+                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
+                    msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
+                    msg += " was expected."
                     raise ValueError(msg)
             if isinstance(pos_radius, str):
                 if pos_radius != 'adaptive':

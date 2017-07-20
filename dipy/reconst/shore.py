@@ -197,7 +197,9 @@ class ShoreModel(Cache):
                 raise ValueError(msg)
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
-                    msg = "cvxpy_solver is not installed in cvxpy."
+                    msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
+                    msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
+                    msg += " was expected."
                     raise ValueError(msg)
 
         self.cvxpy_solver = cvxpy_solver
@@ -761,8 +763,10 @@ def shore_indices(radial_order, index):
     m_i = 0
 
     if n_c < (index + 1):
-        msg = "The index is higher than the number of coefficients of the "
-        msg += "truncated basis."
+        msg = "The index %s is higher than the number of" % index
+        msg += " coefficients of the truncated basis,"
+        msg += " which is %s starting from 0." % int(n_c - 1)
+        msg += " Select a lower index."
         raise ValueError(msg)
     else:
         counter = 0
@@ -800,7 +804,8 @@ def shore_order(n, l, m):
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0 or np.abs(m) > l:
         msg = "The index l must be even and 0 <= l <= n, the index m must be "
-        msg += "-l <= m <= l."
+        msg += "-l <= m <= l. Given values were"
+        msg += " [n,l,m]=[%s]." % ','.join([str(n), str(l), str(m)])
         raise ValueError(msg)
     else:
         if n % 2 == 1:
