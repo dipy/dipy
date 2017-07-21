@@ -1,4 +1,13 @@
 import numpy as np
+try:
+    from scipy.linalg.lapack import dgesvd as svd
+    svd_args = [1, 0]
+    # If you have an older version of scipy, we fall back
+    # on the standard scipy SVD API:
+except ImportError:
+    from scipy.linalg import svd
+    svd_args = [False]
+from scipy.linalg import eigh
 
 
 def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
@@ -53,26 +62,12 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
         # If mask is not specified, use the whole volume
         mask = np.ones_like(arr, dtype=bool)[..., 0]
 
-    if pca_method == 'svd':
-        # Try to get the SVD through direct API to lapack:
-        try:
-            from scipy.linalg.lapack import dgesvd as svd
-            svd_args = [1, 0]
-            # If you have an older version of scipy, we fall back
-            # on the standard scipy SVD API:
-        except ImportError:
-            from scipy.linalg import svd
-            svd_args = [False]
-    else:
-        from scipy.linalg import eigh
-
     if out_dtype is None:
         out_dtype = arr.dtype
 
     # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
-
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
@@ -80,6 +75,13 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
                          arr.shape)
+
+    if pca_method.lower() == 'svd':
+        is_svd = True
+    elif pca_method.lower() == 'eig':
+        is_svd = False
+    else:
+        raise ValueError("pca_method should be either 'eig' or 'svd'")
 
     patch_size = 2 * patch_radius + 1
 
@@ -109,7 +111,7 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
         for j in range(patch_radius, arr.shape[1] - patch_radius):
             for i in range(patch_radius, arr.shape[0] - patch_radius):
                 # Shorthand for indexing variables:
-                if mask[i, j, k] == False:
+                if not mask[i, j, k]:
                     continue
                 ix1 = i - patch_radius
                 ix2 = i + patch_radius + 1
@@ -125,7 +127,7 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
                 # Upcast the dtype for precision in the SVD
                 X = X - M
 
-                if pca_method == 'svd':
+                if is_svd:
                     # PCA using an SVD
                     U, S, Vt = svd(X, *svd_args)[:3]
                     # Items in S are the eigenvalues, but in ascending order
