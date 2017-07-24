@@ -49,7 +49,9 @@ def test_io_peaks():
         pam2.affine = None
 
         fname2 = 'test2.pam5'
-        save_peaks(fname2, pam2)
+        save_peaks(fname2, pam2, np.eye(4))
+        pam2_res = load_peaks(fname2, verbose=True)
+        npt.assert_array_equal(pam.peak_dirs, pam2_res.peak_dirs)
 
         pam3 = load_peaks(fname2, verbose=False)
 
