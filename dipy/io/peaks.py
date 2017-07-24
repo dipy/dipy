@@ -32,7 +32,8 @@ def _safe_save(f, group, array, name):
     """
 
     if not have_tables:
-        raise ImportError('PyTables is not installed')
+        # We generate a TripWireError via this call
+        _ = tables.any_attributes
 
     func_create_carray = f.createCArray if TABLES_LESS_3_0 else f.create_carray
 
