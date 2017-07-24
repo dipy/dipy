@@ -22,8 +22,7 @@ from dipy.utils.optpkg import optional_package
 tables, have_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-if have_tables:
-    TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
+TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']

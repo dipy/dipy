@@ -10,6 +10,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWireError
 
 # Allow import, but disable doctests, if we don't have pytables
 tables, have_tables, _ = optional_package('tables')
@@ -26,9 +27,7 @@ iftables = npt.dec.skipif(not have_tables,
 
 @iftables
 def test_io_peaks():
-
     with InTemporaryDirectory():
-
         fname = 'test.pam5'
 
         sphere = get_sphere('repulsion724')
@@ -116,6 +115,33 @@ def test_io_peaks():
         os.path.isfile(fname_gfa)
 
 
-if __name__ == '__main__':
+def test_io_save_peaks_error():
+    with InTemporaryDirectory():
+        fname = 'test.pam5'
 
+        pam = PeaksAndMetrics()
+
+        npt.assert_raises(IOError, save_peaks, 'test.pam', pam)
+        npt.assert_raises(ValueError, save_peaks, fname, pam)
+
+        sphere = get_sphere('repulsion724')
+
+        pam.affine = np.eye(4)
+        pam.peak_dirs = np.random.rand(10, 10, 10, 5, 3)
+        pam.peak_values = np.zeros((10, 10, 10, 5))
+        pam.peak_indices = np.zeros((10, 10, 10, 5))
+        pam.shm_coeff = np.zeros((10, 10, 10, 45))
+        pam.sphere = sphere
+        pam.B = np.zeros((45, sphere.vertices.shape[0]))
+        pam.total_weight = 0.5
+        pam.ang_thr = 60
+        pam.gfa = np.zeros((10, 10, 10))
+        pam.qa = np.zeros((10, 10, 10, 5))
+        pam.odf = np.zeros((10, 10, 10, sphere.vertices.shape[0]))
+
+        if not have_tables:
+            npt.assert_raises(TripWireError, save_peaks, fname, pam)
+
+
+if __name__ == '__main__':
     npt.run_module_suite()
