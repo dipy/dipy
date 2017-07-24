@@ -12,11 +12,10 @@ from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables')
+tables, have_tables, _ = optional_package('tables', 'PyTables is not installed')
 
 # Useful variable for backward compatibility.
-if have_tables:
-    TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
+TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
 
 from dipy.data import get_sphere
 from dipy.core.sphere import Sphere
@@ -34,10 +33,10 @@ def _safe_save(f, group, array, name):
     name : string
     """
 
-    if TABLES_LESS_3_0:
-        func_create_carray = f.createCArray
-    else:
-        func_create_carray = f.create_carray
+    if not have_tables:
+        raise ImportError('PyTables is not installed')
+
+    func_create_carray = f.createCArray if TABLES_LESS_3_0 else f.create_carray
 
     if array is not None:
         atom = tables.Atom.from_dtype(array.dtype)
