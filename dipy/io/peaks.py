@@ -186,20 +186,9 @@ def save_peaks(fname, pam, affine=None, verbose=False):
                                 [b"0.0.1"], 'PAM5 version number')
     version_string = f.root.version[0].decode()
 
-    try:
-        affine = pam.affine
-    except AttributeError:
-        pass
-
-    try:
-        shm_coeff = pam.shm_coeff
-    except AttributeError:
-        shm_coeff = None
-
-    try:
-        odf = pam.odf
-    except AttributeError:
-        odf = None
+    affine = pam.affine if hasattr(pam, 'affine') else None
+    shm_coeff = pam.shm_coeff if hasattr(pam, 'shm_coeff') else None
+    odf = pam.odf if hasattr(pam, 'odf') else None
 
     _safe_save(f, group, affine, 'affine')
     _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
