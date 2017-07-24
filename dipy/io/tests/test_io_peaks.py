@@ -4,9 +4,11 @@ import os
 import numpy as np
 import numpy.testing as npt
 
-from distutils.version import LooseVersion
-from dipy.reconst.peaks import PeaksAndMetrics
 from nibabel.tmpdirs import InTemporaryDirectory
+
+from dipy.reconst.peaks import PeaksAndMetrics
+from dipy.data import get_sphere
+from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
 
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
@@ -15,14 +17,8 @@ from dipy.utils.tripwire import TripWireError
 # Allow import, but disable doctests, if we don't have pytables
 tables, have_tables, _ = optional_package('tables')
 
-from dipy.data import get_sphere
-from dipy.core.sphere import Sphere
-
-from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
-
 # Decorator to protect tests from being run without pytables present
-iftables = npt.dec.skipif(not have_tables,
-                          'Pytables does not appear to be installed')
+iftables = npt.dec.skipif(not have_tables, 'Pytables does not appear to be installed')
 
 
 @iftables
@@ -96,7 +92,6 @@ def test_io_peaks():
 
         del pam.shm_coeff
         save_peaks(fname6, pam, verbose=True)
-        pam_tmp = load_peaks(fname6, True)
 
         fname_shm = 'shm.nii.gz'
         fname_dirs = 'dirs.nii.gz'
