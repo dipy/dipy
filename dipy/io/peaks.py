@@ -186,7 +186,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
                                 [b"0.0.1"], 'PAM5 version number')
     version_string = f.root.version[0].decode()
 
-    affine = pam.affine if hasattr(pam, 'affine') else None
+    affine = pam.affine if hasattr(pam, 'affine') else affine
     shm_coeff = pam.shm_coeff if hasattr(pam, 'shm_coeff') else None
     odf = pam.odf if hasattr(pam, 'odf') else None
 
@@ -257,4 +257,3 @@ def peaks_to_niftis(pam,
         save_nifti(fname_indices, pam.peak_indices, pam.affine)
 
         save_nifti(fname_gfa, pam.gfa, pam.affine)
-
