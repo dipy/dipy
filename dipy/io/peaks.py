@@ -3,9 +3,11 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 
-from dipy.core.sphere import Sphere
 from dipy.direction.peaks import (PeaksAndMetrics,
                                   reshape_peaks_for_visualization)
+from dipy.core.sphere import Sphere
+from dipy.io.image import save_nifti
+
 from distutils.version import LooseVersion
 
 # Conditional import machinery for pytables
@@ -16,10 +18,6 @@ tables, have_tables, _ = optional_package('tables', 'PyTables is not installed')
 
 # Useful variable for backward compatibility.
 TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
-
-from dipy.data import get_sphere
-from dipy.core.sphere import Sphere
-from dipy.io.image import save_nifti
 
 
 def _safe_save(f, group, array, name):
