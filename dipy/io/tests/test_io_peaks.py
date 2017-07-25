@@ -8,7 +8,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.reconst.peaks import PeaksAndMetrics
 from dipy.data import get_sphere
-from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
+from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis, _safe_save
 
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
@@ -138,6 +138,20 @@ def test_io_save_peaks_error():
 
         if not have_tables:
             npt.assert_raises(TripWireError, save_peaks, fname, pam)
+
+
+@npt.dec.skipif(have_tables)
+def test_io_safe_save_error():
+
+    class Mock(object):
+        pass
+
+    fake_hdf5 = Mock()
+    fake_group = Mock()
+    fake_array = np.eye(4)
+    fake_name = "function_tester"
+
+    npt.assert_raises(TripWireError, _safe_save, fake_hdf5, fake_group, fake_array, fake_name)
 
 
 if __name__ == '__main__':
