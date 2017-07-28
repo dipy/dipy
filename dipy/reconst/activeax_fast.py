@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Jun 16 16:32:05 2017
+
+@author: Maryam
+"""
+from numba import jit
 from dipy.reconst.base import ReconstModel
 import numpy as np
 from scipy.optimize import least_squares
@@ -21,6 +28,7 @@ small_delta = params[:, 5]
 D_iso = 2 * 10 ** 3
 
 
+@jit(nopython=True, nogil=True, cache=True)
 def x_to_xs(x):
     x1 = x[0:3]
     x2 = np.zeros((3))
@@ -204,6 +212,7 @@ def estimate_signal(x_fe):
     return S
 
 
+@jit(nopython=True, nogil=True, cache=True)
 def stoc_search_cost(x, signal, gtab):
 
     """
@@ -246,6 +255,7 @@ def stoc_search_cost(x, signal, gtab):
     return error_one
 
 
+@jit(nopython=True, nogil=True, cache=True)
 def nls_cost(x_fe, signal, gtab):
 
     """

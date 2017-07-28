@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Fri Jun 16 16:37:04 2017
 
+@author: Maryam
+"""
+
+# -*- coding: utf-8 -*-
+
+from numba import jit
 import numpy as np
 # import nibabel as nib
 # from dipy.core.gradients import gradient_table
 from scipy.optimize import least_squares
 import cvxpy as cvx
 # from dipy.data import get_data
-from scipy.optimize import differential_evolution, minimize
-#import scipy
-from numba import jit
+from scipy.optimize import differential_evolution
+from scipy.linalg import get_blas_funcs
+gemm = get_blas_funcs("gemm")
 
 gamma = 2.675987 * 10 ** 8
 D_intra = 0.6 * 10 ** 3
 D_iso = 2 * 10 ** 3
 
+#cnt_stochastic = 0
 
 def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
 
@@ -24,7 +33,29 @@ def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
     return signal_param
 
 
-#@profile
+#@jit(nopython=True, nogil=True, cache=True)
+#def active_func1(am, am2, small_delta, bid_delta, D_intra=0.6 * 10 ** 3, x):
+#    for i in range(len(am)):
+#        num = (2 * D_intra * am2[i] * small_delta) - 2 + \
+#              (2 * np.exp(-(D_intra * am2[i] * small_delta))) + \
+#              (2 * np.exp(-(D_intra * am2[i] * big_delta))) - \
+#              (np.exp(-(D_intra * am2[i] * (big_delta - small_delta)))) - \
+#              (np.exp(-(D_intra * am2[i] * (big_delta + small_delta))))
+#
+#        denom = (D_intra ** 2) * (am2[i] ** 3) * ((x[2]) ** 2 * am2[i] - 1)
+#        summ[:, i] = num / denom
+#    return summ
+#
+#
+#@jit(nopython=True, nogil=True, cache=True)
+#def active_func2(bvecs,n):
+#    for i in range(len(bvecs)):
+#        g_per[i] = np.dot(bvecs[i, :], bvecs[i, :]) - \
+#                   np.dot(bvecs[i, :], n) ** 2
+#
+#    return g_per
+
+
 #@jit(nopython=True, nogil=True, cache=True)
 @jit
 def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
@@ -81,9 +112,6 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
 
     # Cylinder
     L = bvals * D_intra
-#    print(L)
-#    print(bvecs.shape)
-#    print(n.shape)
     L1 = L * np.dot(bvecs, n) ** 2
     am = np.array([1.84118307861360, 5.33144196877749,
                    8.53631578218074, 11.7060038949077,
@@ -156,7 +184,7 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
             yhat_ball, yhat_dot
     return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot
 
-#@profile
+#@jit(nopython=True, nogil=True, cache=True)
 def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
                          gamma=gamma,
                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
@@ -273,9 +301,6 @@ def activax_exvivo_compartments2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     # Cylinder
     L = bvals * D_intra
-#    print(L)
-#    print(bvecs.shape)
-#    print(n.shape)
     L1 = L * np.dot(bvecs, n) ** 2
     am = np.array([1.84118307861360, 5.33144196877749,
                    8.53631578218074, 11.7060038949077,
@@ -412,7 +437,8 @@ def activax_exvivo_model2(x_fe, bvals, bvecs, G, small_delta, big_delta,
 
     return np.exp(-phi)
 
-#@profile
+
+#@jit(nopython=True, nogil=True, cache=True)
 def activeax_cost_one(phi, signal):  # sigma
 
     """
@@ -441,12 +467,21 @@ def activeax_cost_one(phi, signal):  # sigma
 
     """
 
-    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
-    f = np.dot(phi_mp, signal)
-    yhat = np.dot(phi, f)  # - sigma
-    return np.dot((signal - yhat).T, signal - yhat)
+#    phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
+#    f = np.dot(phi_mp, signal)
+#    yhat = np.dot(phi, f)  # - sigma
+#    return np.dot((signal - yhat).T, signal - yhat)
 
-#@profile
+#    gemm = get_blas_funcs("gemm", [X, Y])
+#    np.all(gemm(1, X, Y) == np.dot(X, Y))
+
+    phi_mp = gemm(1, np.linalg.inv(gemm(1, phi.T, phi)), phi.T)  # moore-penrose
+    f = gemm(1, phi_mp, signal)
+    yhat = gemm(1, phi, f)  # - sigma
+    return gemm(1, (signal - yhat).T, signal - yhat)
+
+
+#@jit(nopython=True, nogil=True, cache=True)
 def stoc_search_cost_func(x, signal, bvals, bvecs, G, small_delta, big_delta):
 
     """
@@ -485,13 +520,15 @@ def stoc_search_cost_func(x, signal, bvals, bvecs, G, small_delta, big_delta):
         (signal -  S)^T(signal -  S)
     """
 
+#    global cnt_stochastic
+#    cnt_stochastic += 1
     phi = activax_exvivo_model(x, bvals, bvecs, G,
                                small_delta, big_delta)
-
     error_one = activeax_cost_one(phi, signal)
     return error_one
 
-#@profile
+
+#@jit(nopython=True, nogil=True, cache=True)
 def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 
     """
@@ -525,17 +562,10 @@ def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
                                                              bvecs, G,
                                                              small_delta,
                                                              big_delta))
-
-
-#    res_one = scipy.optimize.minimize(stoc_search_cost_func, 2*x, args=(signal, bvals,
-#                                                             bvecs, G,
-#                                                             small_delta,
-#                                                             big_delta), method='Powell')
-
-
     return res_one.x
 
 
+# @jit(nopython=True, nogil=True, cache=True)
 def estimate_f(signal, phi):
 
     """
@@ -584,6 +614,7 @@ def estimate_f(signal, phi):
     return np.array(fe.value)
 
 
+# @jit(nopython=True, nogil=True, cache=True)
 def nls_cost_func(x_fe, signal_param):
 
     """
@@ -638,6 +669,7 @@ def nls_cost_func(x_fe, signal_param):
     return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
 
 
+# @jit(nopython=True, nogil=True, cache=True)
 def final(signal, x, fe):
 
     """ Nonlinear least squares fitting
