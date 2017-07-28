@@ -220,8 +220,6 @@ def test_phantom():
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
     mask = np.ones_like(DWI, dtype=bool)[..., 0]
-    mask[0, ...] = False
-    mask[:, -1, :] = False
     DWI_den = localpca(DWI, sigma_vol, mask, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
