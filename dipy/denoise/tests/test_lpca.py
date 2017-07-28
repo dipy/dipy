@@ -231,6 +231,7 @@ def test_phantom():
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
         np.sum(np.abs(DWI_clean_wrc))
 
+
     assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
