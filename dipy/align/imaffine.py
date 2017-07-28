@@ -264,7 +264,7 @@ class AffineMap(object):
         # Transform the input image
         if interp == 'linear':
             image = image.astype(np.float64)
-        transformed = _transform_method[(dim, interp)](image, shape, comp)
+        transformed = _transform_method[(dim, interp)](image, shape, comp, None)
         return transformed
 
     def transform(self, image, interp='linear', image_grid2world=None,

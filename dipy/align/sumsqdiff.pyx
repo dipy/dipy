@@ -1,5 +1,7 @@
 """ Utility functions used by the Sum of Squared Differences (SSD) metric """
 
+# cython: embedsignature=True
+
 import numpy as np
 cimport cython
 cimport numpy as cnp

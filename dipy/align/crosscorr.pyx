@@ -1,5 +1,7 @@
 """ Utility functions used by the Cross Correlation (CC) metric """
 
+# cython: embedsignature=True
+
 import numpy as np
 from fused_types cimport floating
 cimport cython
@@ -130,7 +132,7 @@ cdef inline void _update_factors(double[:, :, :, :] factors,
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static,
                              floating[:, :, :] moving,
-                             cnp.npy_intp radius, num_threads=None):
+                             cnp.npy_intp radius):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric and image

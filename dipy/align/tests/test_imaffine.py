@@ -444,8 +444,8 @@ def test_affine_map():
 
             # Evaluate the transform with vector_fields module (already tested)
             expected_linear = oracle_linear(img, dom_shape[:dim],
-                                            grid2grid_transform)
-            expected_nn = oracle_nn(img, dom_shape[:dim], grid2grid_transform)
+                                            grid2grid_transform, None)
+            expected_nn = oracle_nn(img, dom_shape[:dim], grid2grid_transform, None)
 
             # Evaluate the transform with the implementation under test
             affine_map = imaffine.AffineMap(affine,
@@ -478,8 +478,8 @@ def test_affine_map():
             aff_inv = None if affine is None else npl.inv(affine)
             aff_inv_inv = None if aff_inv is None else npl.inv(aff_inv)
             expected_linear = oracle_linear(img, dom_shape[:dim],
-                                            aff_inv_inv)
-            expected_nn = oracle_nn(img, dom_shape[:dim], aff_inv_inv)
+                                            aff_inv_inv, None)
+            expected_nn = oracle_nn(img, dom_shape[:dim], aff_inv_inv, None)
 
             affine_map = imaffine.AffineMap(aff_inv,
                                             cod_shape[:dim],

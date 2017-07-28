@@ -1,4 +1,7 @@
 #!python
+
+# cython: embedsignature=True
+
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: cdivision=True

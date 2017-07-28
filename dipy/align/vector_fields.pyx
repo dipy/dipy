@@ -1,4 +1,7 @@
 #!python
+
+# cython: embedsignature=True
+
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: cdivision=True
@@ -1137,7 +1140,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tolerance,
-                                       floating[:, :, :] start=None):
+                                       floating[:, :, :] start):
     r"""Computes the inverse of a 2D displacement fields
 
     Computes the inverse of the given 2-D displacement field d using the
@@ -1161,7 +1164,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         maximum number of iterations to be performed
     tolerance : float
         maximum tolerated inversion error
-    start : array, shape (R, C)
+    start : array, shape (R, C) or None
         an approximation to the inverse displacement field (if no approximation
         is available, None can be provided and the start displacement field
         will be zero)
@@ -1241,7 +1244,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tol,
-                                       floating[:, :, :, :] start=None):
+                                       floating[:, :, :, :] start):
     r"""Computes the inverse of a 3D displacement fields
 
     Computes the inverse of the given 3-D displacement field d using the
@@ -1265,7 +1268,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         maximum number of iterations to be performed
     tol : float
         maximum tolerated inversion error
-    start : array, shape (S, R, C)
+    start : array, shape (S, R, C) or None
         an approximation to the inverse displacement field (if no approximation
         is available, None can be provided and the start displacement field
         will be zero)
@@ -1867,10 +1870,10 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
 
 
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
-            double[:, :] affine_idx_in=None,
-            double[:, :] affine_idx_out=None,
-            double[:, :] affine_disp=None,
-            int[:] out_shape=None):
+            double[:, :] affine_idx_in,
+            double[:, :] affine_idx_out,
+            double[:, :] affine_disp,
+            int[:] out_shape):
     r"""Warps a 3D volume using trilinear interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -1888,13 +1891,13 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the input volume to be transformed
     d1 : array, shape (S', R', C', 3)
         the displacement field driving the transformation
-    affine_idx_in : array, shape (4, 4)
+    affine_idx_in : array, shape (4, 4) or None
         the matrix A in eq. (1) above
-    affine_idx_out : array, shape (4, 4)
+    affine_idx_out : array, shape (4, 4) or None
         the matrix B in eq. (1) above
-    affine_disp : array, shape (4, 4)
+    affine_disp : array, shape (4, 4) or None
         the matrix C in eq. (1) above
-    out_shape : array, shape (3,)
+    out_shape : array, shape (3,) or None
         the number of slices, rows and columns of the sampling grid
 
     Returns
@@ -2015,7 +2018,7 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
         the input volume to be transformed
     ref_shape : array, shape (3,)
         the shape of the resulting volume
-    affine : array, shape (4, 4)
+    affine : array, shape (4, 4) or None
         the affine transform to be applied
 
     Returns
@@ -2067,10 +2070,10 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
 
 
 def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
-               double[:, :] affine_idx_in=None,
-               double[:, :] affine_idx_out=None,
-               double[:, :] affine_disp=None,
-               int[:] out_shape=None):
+               double[:, :] affine_idx_in,
+               double[:, :] affine_idx_out,
+               double[:, :] affine_disp,
+               int[:] out_shape):
     r"""Warps a 3D volume using using nearest-neighbor interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -2088,13 +2091,13 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the input volume to be transformed
     d1 : array, shape (S', R', C', 3)
         the displacement field driving the transformation
-    affine_idx_in : array, shape (4, 4)
+    affine_idx_in : array, shape (4, 4) or None
         the matrix A in eq. (1) above
-    affine_idx_out : array, shape (4, 4)
+    affine_idx_out : array, shape (4, 4) or None
         the matrix B in eq. (1) above
-    affine_disp : array, shape (4, 4)
+    affine_disp : array, shape (4, 4) or None
         the matrix C in eq. (1) above
-    out_shape : array, shape (3,)
+    out_shape : array, shape (3,) or None
         the number of slices, rows and columns of the sampling grid
 
     Returns
@@ -2200,7 +2203,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
 
 def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
-                           double[:, :] affine=None):
+                           double[:, :] affine):
     r"""Transforms a 3D volume by an affine transform with NN interpolation
 
     Deforms the input volume under the given affine transformation using
@@ -2214,7 +2217,7 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
         the input volume to be transformed
     ref_shape : array, shape (3,)
         the shape of the resulting volume
-    affine : array, shape (4, 4)
+    affine : array, shape (4, 4) or None
         the affine transform to be applied
 
     Returns
@@ -2265,10 +2268,10 @@ def transform_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
 
 
 def warp_2d(floating[:, :] image, floating[:, :, :] d1,
-            double[:, :] affine_idx_in=None,
-            double[:, :] affine_idx_out=None,
-            double[:, :] affine_disp=None,
-            int[:] out_shape=None):
+            double[:, :] affine_idx_in,
+            double[:, :] affine_idx_out,
+            double[:, :] affine_disp,
+            int[:] out_shape):
     r"""Warps a 2D image using bilinear interpolation
 
     Deforms the input image under the given transformation. The warped image
@@ -2286,13 +2289,13 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
         the input image to be transformed
     d1 : array, shape (R', C', 2)
         the displacement field driving the transformation
-    affine_idx_in : array, shape (3, 3)
+    affine_idx_in : array, shape (3, 3) or None
         the matrix A in eq. (1) above
-    affine_idx_out : array, shape (3, 3)
+    affine_idx_out : array, shape (3, 3) or None
         the matrix B in eq. (1) above
-    affine_disp : array, shape (3, 3)
+    affine_disp : array, shape (3, 3) or None
         the matrix C in eq. (1) above
-    out_shape : array, shape (2,)
+    out_shape : array, shape (2,) or None
         the number of rows and columns of the sampling grid
 
     Returns
@@ -2382,7 +2385,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
 
 def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
-                        double[:, :] affine=None):
+                        double[:, :] affine):
     r"""Transforms a 2D image by an affine transform with bilinear interp.
 
     Deforms the input image under the given affine transformation using
@@ -2396,7 +2399,7 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
         the input image to be transformed
     ref_shape : array, shape (2,)
         the shape of the resulting image
-    affine : array, shape (3, 3)
+    affine : array, shape (3, 3) or None
         the affine transform to be applied
 
     Returns
@@ -2442,10 +2445,10 @@ def transform_2d_affine(floating[:, :] image, int[:] ref_shape,
 
 
 def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
-               double[:, :] affine_idx_in=None,
-               double[:, :] affine_idx_out=None,
-               double[:, :] affine_disp=None,
-               int[:] out_shape=None):
+               double[:, :] affine_idx_in,
+               double[:, :] affine_idx_out,
+               double[:, :] affine_disp,
+               int[:] out_shape):
     r"""Warps a 2D image using nearest neighbor interpolation
 
     Deforms the input image under the given transformation. The warped image
@@ -2463,13 +2466,13 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
         the input image to be transformed
     d1 : array, shape (R', C', 2)
         the displacement field driving the transformation
-    affine_idx_in : array, shape (3, 3)
+    affine_idx_in : array, shape (3, 3) or None
         the matrix A in eq. (1) above
-    affine_idx_out : array, shape (3, 3)
+    affine_idx_out : array, shape (3, 3) or None
         the matrix B in eq. (1) above
-    affine_disp : array, shape (3, 3)
+    affine_disp : array, shape (3, 3) or None
         the matrix C in eq. (1) above
-    out_shape : array, shape (2,)
+    out_shape : array, shape (2,) or None
         the number of rows and columns of the sampling grid
 
     Returns
@@ -2559,7 +2562,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
 
 def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
-                           double[:, :] affine=None):
+                           double[:, :] affine):
     r"""Transforms a 2D image by an affine transform with NN interpolation
 
     Deforms the input image under the given affine transformation using
@@ -2573,7 +2576,7 @@ def transform_2d_affine_nn(number[:, :] image, int[:] ref_shape,
         the input image to be transformed
     ref_shape : array, shape (2,)
         the shape of the resulting image
-    affine : array, shape (3, 3)
+    affine : array, shape (3, 3) or None
         the affine transform to be applied
 
     Returns

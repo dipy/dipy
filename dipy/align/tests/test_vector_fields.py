@@ -775,24 +775,24 @@ def test_affine_transforms_2d():
             expected = map_coordinates(circle, Y, order=1)
             warped = vfu.transform_2d_affine(
                 circle, np.array(
-                    d_shape, dtype=np.int32), gt_affine)
+                    d_shape, dtype=np.int32), gt_affine, None)
             assert_array_almost_equal(warped, expected)
 
             # Test affine warping with nearest-neighbor interpolation
             expected = map_coordinates(circle, Y, order=0)
             warped = vfu.transform_2d_affine_nn(
-                circle, np.array(d_shape, dtype=np.int32), gt_affine)
+                circle, np.array(d_shape, dtype=np.int32), gt_affine, None)
             assert_array_almost_equal(warped, expected)
 
     # Test the affine = None case
     warped = vfu.transform_2d_affine(
         circle, np.array(
-            codomain_shape, dtype=np.int32), None)
+            codomain_shape, dtype=np.int32), None, None)
     assert_array_equal(warped, circle)
 
     warped = vfu.transform_2d_affine_nn(
         circle, np.array(
-            codomain_shape, dtype=np.int32), None)
+            codomain_shape, dtype=np.int32), None, None)
     assert_array_equal(warped, circle)
 
     # Test exception is raised when the affine transform matrix is not valid
@@ -801,7 +801,7 @@ def test_affine_transforms_2d():
     invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_2d
-    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid)
+    assert_raises(ValueError, vfu.transform_2d_affine, circle, shape, invalid, None)
     assert_raises(
         ValueError,
         vfu.transform_2d_affine,
@@ -878,22 +878,22 @@ def test_affine_transforms_3d():
 
             expected = map_coordinates(sphere, Y, order=1)
             transformed = vfu.transform_3d_affine(
-                sphere, np.array(d_shape, dtype=np.int32), gt_affine)
+                sphere, np.array(d_shape, dtype=np.int32), gt_affine, None)
             assert_array_almost_equal(transformed, expected)
 
             # Test affine transform with nearest-neighbor interpolation
             expected = map_coordinates(sphere, Y, order=0)
             transformed = vfu.transform_3d_affine_nn(
-                sphere, np.array(d_shape, dtype=np.int32), gt_affine)
+                sphere, np.array(d_shape, dtype=np.int32), gt_affine, None)
             assert_array_almost_equal(transformed, expected)
 
     # Test the affine = None case
     transformed = vfu.transform_3d_affine(
-        sphere, np.array(codomain_shape, dtype=np.int32), None)
+        sphere, np.array(codomain_shape, dtype=np.int32), None, None)
     assert_array_equal(transformed, sphere)
 
     transformed = vfu.transform_3d_affine_nn(
-        sphere, np.array(codomain_shape, dtype=np.int32), None)
+        sphere, np.array(codomain_shape, dtype=np.int32), None, None)
     assert_array_equal(transformed, sphere)
 
     # Test exception is raised when the affine transform matrix is not valid
@@ -902,7 +902,7 @@ def test_affine_transforms_3d():
     invalid_nan[1, 1] = np.nan
     shape = np.array(codomain_shape, dtype=np.int32)
     # Exceptions from transform_3d_affine
-    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid)
+    assert_raises(ValueError, vfu.transform_3d_affine, sphere, shape, invalid, None)
     assert_raises(
         ValueError,
         vfu.transform_3d_affine,
@@ -999,12 +999,12 @@ def test_compose_vector_fields_2d():
                                                           time_scaling, None)
         # apply the implementation under test
         warped = np.array(vfu.warp_2d(moving_image, composition, None,
-                                      premult_index, premult_disp))
+                                      premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
-                                         premult_index, premult_disp))
+                                         premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test updating the displacement field instead of creating a new one
@@ -1014,12 +1014,12 @@ def test_compose_vector_fields_2d():
                                      composition)
         # apply the implementation under test
         warped = np.array(vfu.warp_2d(moving_image, composition, None,
-                                      premult_index, premult_disp))
+                                      premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
-                                         premult_index, premult_disp))
+                                         premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
     # Test non-overlapping case
@@ -1135,12 +1135,12 @@ def test_compose_vector_fields_3d():
                                                           time_scaling, None)
         # apply the implementation under test
         warped = np.array(vfu.warp_3d(moving_image, composition, None,
-                                      premult_index, premult_disp))
+                                      premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
-                                         premult_index, premult_disp))
+                                         premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test updating the displacement field instead of creating a new one
@@ -1150,12 +1150,12 @@ def test_compose_vector_fields_3d():
                                      time_scaling, composition)
         # apply the implementation under test
         warped = np.array(vfu.warp_3d(moving_image, composition, None,
-                                      premult_index, premult_disp))
+                                      premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
         # test also using nearest neighbor interpolation
         warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
-                                         premult_index, premult_disp))
+                                         premult_index, premult_disp, None))
         assert_array_almost_equal(warped, expected)
 
     # Test non-overlapping case
@@ -1302,7 +1302,7 @@ def test_invert_vector_field_3d():
             # We will investigate this issue with more detail in the future.
 
             inv_approx = vfu.invert_vector_field_fixed_point_3d(
-                dcopy, gt_affine_inv, np.array([s, s, s]) * 0.5, 40, 1e-7)
+                dcopy, gt_affine_inv, np.array([s, s, s]) * 0.5, 40, 1e-7, None)
 
             mapping = imwarp.DiffeomorphicMap(3, (nr, nc), gt_affine)
             mapping.forward = dcopy
