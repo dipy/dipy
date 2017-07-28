@@ -166,6 +166,8 @@ class ApiDocWriter(object):
         # XXX maybe check for extensions as well?
         if os.path.exists(path + '.py'):  # file
             path += '.py'
+        elif os.path.exists(path + '.pyx'):  # file
+            path += '.pyx'
         elif os.path.exists(os.path.join(path, '__init__.py')):
             path = os.path.join(path, '__init__.py')
         else:
@@ -396,8 +398,9 @@ class ApiDocWriter(object):
             # Normally, we'd only iterate over dirnames, but since
             # dipy does not import a whole bunch of modules we'll
             # include those here as well (the *.py filenames).
-            filenames = [f[:-3] for f in filenames if
-                         f.endswith('.py') and not f.startswith('__init__')]
+
+            filenames = [os.path.splitext(f)[0] for f in filenames if
+                         (f.endswith('.py') and not f.startswith('__init__')) or f.endswith('.pyx')]
             for filename in filenames:
                 package_uri = '/'.join((dirpath, filename))
 
