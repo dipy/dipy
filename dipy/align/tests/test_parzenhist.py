@@ -306,7 +306,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
 
     M = transform.param_to_matrix(theta)
     shape = np.array(moving.shape, dtype=np.int32)
-    static = np.array(transform_method(moving.astype(np.float32), shape, M, None))
+    static = np.array(transform_method(moving.astype(np.float32), shape, M))
     static = static.astype(np.float64)
     static_g2w = np.eye(dim + 1)
     smask = np.ones_like(static, dtype=np.int32)
@@ -357,7 +357,7 @@ def test_joint_pdf_gradients_dense():
         M = transform.param_to_matrix(theta)
         shape = np.array(static.shape, dtype=np.int32)
 
-        moved = transform_method(moving.astype(np.float32), shape, M, None)
+        moved = transform_method(moving.astype(np.float32), shape, M)
         moved = np.array(moved)
         parzen_hist.update_pdfs_dense(static.astype(np.float64),
                                       moved.astype(np.float64))
@@ -385,7 +385,7 @@ def test_joint_pdf_gradients_dense():
             # Update the joint distribution with the transformed moving image
             M = transform.param_to_matrix(dtheta)
             shape = np.array(static.shape, dtype=np.int32)
-            moved = transform_method(moving.astype(np.float32), shape, M, None)
+            moved = transform_method(moving.astype(np.float32), shape, M)
             moved = np.array(moved)
             parzen_hist.update_pdfs_dense(static.astype(np.float64),
                                           moved.astype(np.float64))
