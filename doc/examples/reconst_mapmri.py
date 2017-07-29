@@ -139,9 +139,11 @@ and also faster in practice [Fick2016]_.
 
 We can then fit the MAPMRI model to the data.
 """
+
 mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
 mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
+
 """
 From the fitted models we will first illustrate the estimation of q-space
 indices. For completeness, we will compare the estimation using only Laplacian
@@ -173,6 +175,7 @@ cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
 
 plt.savefig('MAPMRI_maps_regularization.png')
+
 """
 .. figure:: MAPMRI_maps_regularization.png
    :align: center
@@ -288,6 +291,7 @@ physically meaningful we must use a b-value threshold in the MAPMRI model. This
 threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
+
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                        laplacian_regularization=True,
                                        laplacian_weighting=.05,
@@ -348,6 +352,7 @@ angles.
 For the isotropic basis we recommend to use a higher_order of 8, as the basis
 needs more generic and needs more basis functions to approximate the signal.
 """
+
 radial_order = 8
 map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                         laplacian_regularization=True,
@@ -381,6 +386,7 @@ sfu = fvtk.sphere_funcs(odf, sphere, colormap='jet')
 sfu.RotateX(-90)
 fvtk.add(r, sfu)
 fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
+
 """
 .. figure:: odfs.png
    :align: center

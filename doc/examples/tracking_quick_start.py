@@ -32,6 +32,7 @@ from dipy.tracking.streamline import Streamlines
 """
 Enables/disables interactive visualization
 """
+
 interactive = False
 
 """
