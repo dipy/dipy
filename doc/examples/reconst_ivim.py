@@ -39,7 +39,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
 """
-We get an IVIM dataset using Dipy's data fetcher ``read_ivim``.
+We get an IVIM dataset using dipy_'s data fetcher ``read_ivim``.
 This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
 other, and averaged across directions. Thus, this dataset has 4 dimensions,
@@ -51,10 +51,9 @@ measured at 0 bvalue.
 img, gtab = read_ivim()
 
 """
-The variable ``img`` contains a ``nibabel`` NIfTI image object (with the data)
-and gtab contains a GradientTable object (information about
-the gradients e.g. b-values and b-vectors). We get the
-data from img using ``read_data``.
+The variable ``img`` contains a nibabel NIfTI image object (with the data)
+and gtab contains a GradientTable object (information about the gradients e.g.
+b-values and b-vectors). We get the data from img using ``read_data``.
 """
 
 data = img.get_data()
@@ -114,18 +113,19 @@ $\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values greater than
 ``split_b_D`` (default: 400))and assuming a mono-exponential signal. This is
 based on the assumption that at high b-values the signal can be approximated
 as a mono exponential decay and by taking the logarithm of the signal values
-a linear fit can be obtained. Another linear fit for ``S0`` (bvals < ``split_b_S0``
-(default: 200)) follows and ``f`` is estimated using 1 - S0_prime/S0.
-Then a non-linear least squares fitting is performed to fit D_star and f.
-If the `two_stage` flag is set to `True` while initializing the model, a final
-non-linear least squares fitting is performed for all the parameters using Scipy's
-``leastsq`` or ``least_square`` function depending on which Scipy version you are
-using. All initializations for the model such as ``split_b_D`` are passed while
-creating the ``IvimModel``. If you are using Scipy 0.17, you can also set bounds by setting
-``bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))`` while initializing
-the IvimModel. It is recommeded that you upgrade to Scipy 0.17 since
-the fitting results might at times return values which do not make sense
-physically. (For example a negative $\mathbf{f}$)
+a linear fit can be obtained. Another linear fit for ``S0`` (bvals <
+``split_b_S0`` (default: 200)) follows and ``f`` is estimated using $1 -
+S0_{prime}/S0$. Then a non-linear least squares fitting is performed to fit
+``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
+initializing the model, a final non-linear least squares fitting is performed
+for all the parameters using Scipy's ``leastsq`` or ``least_square`` function
+depending on which Scipy version you are using. All initializations for the
+model such as ``split_b_D`` are passed while creating the ``IvimModel``. If you
+are using Scipy 0.17, you can also set bounds by setting ``bounds=([0., 0., 0.,
+0.], [np.inf, 1., 1., 1.]))`` while initializing the ``IvimModel``. It is
+recommeded that you upgrade to Scipy 0.17 since the fitting results might at
+times return values which do not make sense physically (for example, a negative
+$\mathbf{f}$).
 """
 
 ivimmodel = IvimModel(gtab)

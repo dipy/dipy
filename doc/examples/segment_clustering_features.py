@@ -176,8 +176,8 @@ fvtk.record(ren, n_frames=1, out_path='center_of_mass_feature.png', size=(600, 6
 .. figure:: center_of_mass_feature.png
    :align: center
 
-   **Showing the center of mass of each streamline and colored according to
-   the QuickBundles results**.
+   Showing the center of mass of each streamline and colored according to
+   the QuickBundles results.
 
 .. _clustering-examples-MidpointFeature:
 
@@ -229,8 +229,8 @@ fvtk.record(ren, n_frames=1, out_path='midpoint_feature.png', size=(600, 600))
 .. figure:: midpoint_feature.png
    :align: center
 
-   **Showing the middle point of each streamline and colored according to the
-   QuickBundles results**.
+   Showing the middle point of each streamline and colored according to the
+   QuickBundles results.
 
 .. _clustering-examples-ArcLengthFeature:
 
@@ -275,7 +275,7 @@ fvtk.record(ren, n_frames=1, out_path='arclength_feature.png', size=(600, 600))
 .. figure:: arclength_feature.png
    :align: center
 
-   **Showing the streamlines colored according to their length**.
+   Showing the streamlines colored according to their length.
 
 .. _clustering-examples-VectorOfEndpointsFeature:
 
@@ -325,11 +325,10 @@ fvtk.record(ren, n_frames=1, out_path='vector_of_endpoints_feature.png', size=(6
 .. figure:: vector_of_endpoints_feature.png
    :align: center
 
-   **Showing the streamlines colored according to their orientation**.
+   Showing the streamlines colored according to their orientation.
 
 .. include:: ../links_names.inc
 
 .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                    tractography simplification, Frontiers in Neuroscience, vol
-                    6, no 175, 2012.
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.
 """

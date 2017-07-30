@@ -1,19 +1,19 @@
 .. _release-guide:
 
 *********************************
-A guide to making a dipy release
+A guide to making a DIPY release
 *********************************
 
-A guide for developers who are doing a dipy release
+A guide for developers who are doing a DIPY release
 
 .. _release-tools:
 
 Release tools
 =============
 
-There are some release utilities that come with nibabel_.  nibabel should
+There are some release utilities that come with nibabel_. nibabel should
 install these as the ``nisext`` package, and the testing stuff is understandably
-in the ``testers`` module of that package.  Dipy has Makefile targets for their
+in the ``testers`` module of that package. DIPY has Makefile targets for their
 use.  The relevant targets are::
 
     make check-version-info
@@ -75,10 +75,10 @@ Release checklist
   ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
   Check all the links are still valid.
 
-* Check all the dipy builds are green on the `nipy buildbot`_
+* Check all the DIPY builds are green on the `nipy buildbot`_
 
 * If you have travis-ci_ building set up you might want to push the code in its
-  current state to a branch that will build, e.g::
+current state to a branch that will build, e.g.::
 
     git branch -D pre-release-test # in case branch already exists
     git co -b pre-release-test
@@ -128,7 +128,7 @@ Release checklist
     git clean -fxd
     python setup.py build_ext --inplace
 
-* Make sure all tests pass on your local machine (from the dipy root directory)::
+* Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
 
     cd ..
     nosetests --with-doctest dipy
@@ -144,14 +144,16 @@ Release checklist
   running the doctests in the code, where the doctests pass when run in nose -
   we should find out why this is at some point, but leave it for now.
 
-* Trigger builds of all the binary build testers for dipy, using the web
-  interface.  You may need permissions set to do this - contact Matthew or
+* Trigger builds of all the binary build testers for DIPY, using the web
+  interface. You may need permissions set to do this - contact Matthew or
   Eleftherios if you do.
 
-  At the moment, the useful dipy binary build testers are:
+  At the moment, the useful DIPY binary build testers are:
 
-      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-26
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-35
       * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-27
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist64-27
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist64-35
       * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.6
       * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.7
 
@@ -263,9 +265,9 @@ tag to github, so the buildbots can find the released code and build it.
 
   Download the builds and upload to pypi.
 
-  You can upload the exe files with the *files* interface for the new dipy release.
+  You can upload the exe files with the *files* interface for the new DIPY release.
   Obviously you'll need to log in to do this, and you'll need to be an admin for
-  the dipy pypi project.
+  the DIPY pypi project.
 
   For reference, if you need to do binary exe builds by hand, use something
   like::
