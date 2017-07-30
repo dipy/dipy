@@ -73,7 +73,7 @@ for modulename, other_sources, language in (
     ('dipy.tracking.local.direction_getter', [], 'c'),
     ('dipy.tracking.local.tissue_classifier', [], 'c'),
     ('dipy.tracking.local.interpolation', [], 'c'),
-    ('dipy.tracking.vox2track', [], 'c'),
+    ('dipy.tracking.vox2track', [], 'c++'),
     ('dipy.tracking.propspeed', [], 'c'),
     ('dipy.tracking.fbcmeasures', [], 'c'),
     ('dipy.segment.cythonutils', [], 'c'),

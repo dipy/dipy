@@ -19,7 +19,8 @@ from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
 
-from dipy.tracking.vox2track import streamline_mapping
+from dipy.tracking.vox2track import (
+    streamline_mapping, streamline_mapping_line_based)
 import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
@@ -449,6 +450,55 @@ def test_streamline_mapping():
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
     assert_equal(mapping, expected)
+
+
+def test_streamline_mapping_line_based():
+    streamlines = [np.array([[0., 1., 1.],
+                             [3., 1., 1.]]),
+                   np.array([[0., 0., 0.],
+                             [2., 2., 2.]]),
+                   np.array([[1., 1., 1.]])]  # Single-point streamline
+    mapping = streamline_mapping_line_based(streamlines, (1, 1, 1))
+    expected_idx = {
+        (0, 1, 1): [0],
+        (1, 1, 1): [0, 1],
+        (2, 1, 1): [0],
+        (3, 1, 1): [0],
+        (0, 0, 0): [1],
+        (2, 2, 2): [1]}
+    assert_equal(mapping, expected_idx)
+
+    mapping = streamline_mapping_line_based(
+        streamlines, (1, 1, 1), mapping_as_streamlines=True)
+    expected_streamlines = dict(
+        (k, [streamlines[i] for i in indices])
+        for k, indices in expected_idx.items())
+    assert_equal(mapping, expected_streamlines)
+
+    # Test passing affine
+    affine = np.eye(4)
+    affine[:3, 3] = .5
+    mapping = streamline_mapping_line_based(streamlines, affine=affine)
+    assert_equal(mapping, expected_idx)
+
+    # Make the voxel size smaller
+    affine = np.diag([.5, .5, .5, 1.])
+    affine[:3, 3] = .25
+    mapping = streamline_mapping_line_based(
+          streamlines, affine=affine, mapping_as_streamlines=False)
+    expected_idx ={
+        (0, 2, 2): [0],
+        (1, 2, 2): [0],
+        (2, 2, 2): [0, 1],
+        (3, 2, 2): [0],
+        (4, 2, 2): [0],
+        (5, 2, 2): [0],
+        (6, 2, 2): [0],
+        (0, 0, 0): [1],
+        (1, 1, 1): [1],
+        (3, 3, 3): [1],
+        (4, 4, 4): [1]}
+    assert_equal(mapping, expected_idx)
 
 
 def test_rmi():
