@@ -3,11 +3,11 @@
 Visualize surfaces
 ==================
 
-Here is a simple tutorial that shows how to visualize surfaces using DIPY. It
-also shows how to load/save, get/set and update vtkPolyData and show
+Here is a simple tutorial that shows how to visualize surfaces using dipy_. It
+also shows how to load/save, get/set and update ``vtkPolyData`` and show
 surfaces.
 
-vtkPolyData is a structure used by VTK to represent surfaces and other data
+``vtkPolyData`` is a structure used by VTK to represent surfaces and other data
 structures. Here we show how to visualize a simple cube but the same idea
 should apply for any surface.
 """
@@ -15,7 +15,7 @@ should apply for any surface.
 import numpy as np
 
 """
-Import useful functions from dipy.viz.utils
+Import useful functions from ``dipy.viz.utils``
 """
 
 import dipy.io.vtk as io_vtk
@@ -28,7 +28,7 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 """
-Create an empty vtkPolyData
+Create an empty ``vtkPolyData``
 """
 
 my_polydata = vtk.vtkPolyData()
@@ -61,14 +61,14 @@ my_triangles = np.array([[0,  6,  4],
 
 
 """
-Set vertices and triangles in poly data
+Set vertices and triangles in the ``vtkPolyData``
 """
 
 ut_vtk.set_polydata_vertices(my_polydata, my_vertices)
 ut_vtk.set_polydata_triangles(my_polydata, my_triangles)
 
 """
-Save polydata
+Save the ``vtkPolyData``
 """
 
 file_name = "my_cube.vtk"
@@ -76,7 +76,7 @@ io_vtk.save_polydata(my_polydata, file_name)
 print("Surface saved in " + file_name)
 
 """
-Load polydata
+Load the ``vtkPolyData``
 """
 
 cube_polydata = io_vtk.load_polydata(file_name)
@@ -113,5 +113,8 @@ window.record(renderer, out_path='cube.png', size=(600, 600))
 .. figure:: cube.png
    :align: center
 
-   **An example of a simple surface visualized with DIPY**.
+   An example of a simple surface visualized with DIPY.
+
+.. include:: ../links_names.inc
+
 """

@@ -66,7 +66,7 @@ regtools.overlay_slices(static, resampled, None, 2,
 .. figure:: resampled_2.png
    :align: center
 
-   **Input images before alignment**.
+   Input images before alignment.
 """
 
 """
@@ -99,7 +99,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 .. figure:: transformed_com_2.png
    :align: center
 
-   **Registration result by aligning the centers of mass of the images**.
+   Registration result by aligning the centers of mass of the images.
 """
 
 """
@@ -203,7 +203,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 .. figure:: transformed_trans_2.png
    :align: center
 
-   **Registration result by translating the moving image, using MI**.
+   Registration result by translating the moving image, using Mutual Information.
 """
 
 """
@@ -238,7 +238,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 .. figure:: transformed_rigid_2.png
    :align: center
 
-   **Registration result with a rigid transform, using Mutual Information**.
+   Registration result with a rigid transform, using Mutual Information.
 """
 
 """
@@ -274,7 +274,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 .. figure:: transformed_affine_2.png
    :align: center
 
-   **Registration result with an affine transform, using Mutual Information**.
+   Registration result with an affine transform, using Mutual Information.
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
               Eubank, W. (2003). PET-CT image registration in the chest using
