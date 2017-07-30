@@ -6,11 +6,11 @@ Tracking with the Sparse Fascicle Model
 ==================================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
-Model, described in [Rokem2015]_. This model reconstructs the diffusion signal
-as a combination of the signals from different fascicles (see also
+Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
+signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 
-To begin, we read the Stanford HARDI data-set into memory:
+To begin, we read the Stanford HARDI data set into memory:
 """
 
 from dipy.data import read_stanford_labels
@@ -20,8 +20,9 @@ labels = labels_img.get_data()
 affine = hardi_img.affine
 
 """
-This dataset provides a label map (generated using Freesurfer), in which the
-white matter voxels are labeled as either 1 or 2:
+This data set provides a label map (generated using `FreeSurfer
+<https://surfer.nmr.mgh.harvard.edu/>`_), in which the white matter voxels are
+labeled as either 1 or 2:
 """
 
 white_matter = (labels == 1) | (labels == 2)
@@ -161,8 +162,8 @@ References
 ----------
 
 .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2015). Evaluating the accuracy of diffusion MRI models in white
-   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015). Evaluating
+   the accuracy of diffusion MRI models in white matter. PLoS ONE 10(4):
+   e0123272. doi:10.1371/journal.pone.0123272
 
 """

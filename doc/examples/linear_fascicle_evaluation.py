@@ -13,7 +13,7 @@ We will use streamlines generated using probabilistic tracking on CSA
 peaks. For brevity, we will include in this example only streamlines going
 through the corpus callosum connecting left to right superior frontal
 cortex. The process of tracking and finding these streamlines is fully
-demonstrated in the `streamline_tools.py` example. If this example has been
+demonstrated in the :ref:`streamline_tools` example. If this example has been
 run, we can read the streamlines from file. Otherwise, we'll run that example
 first, by importing it. This provides us with all of the variables that were
 created in that example:
@@ -91,7 +91,7 @@ fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
 
 """
 
-Next, we initialize a LiFE model. We import the `dipy.tracking.life` module,
+Next, we initialize a LiFE model. We import the ``dipy.tracking.life`` module,
 which contains the classes and functions that implement the model:
 
 """
@@ -111,8 +111,8 @@ mid-point of the AC-PC-connecting line), we would use this::
 the inverse transformation from world space to the voxel space as the affine for
 the following model fit.
 
-The next step is to fit the model, producing a `FiberFit` class instance, that
-stores the data, as well as the results of the fitting procedure.
+The next step is to fit the model, producing a ``FiberFit`` class instance,
+that stores the data, as well as the results of the fitting procedure.
 
 The LiFE model posits that the signal in the diffusion MRI volume can be
 explained by the streamlines, by the equation
@@ -126,8 +126,8 @@ streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
 $n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
 voxels in the ROI that contains the streamlines considered in this model. The
 $i^{th}$ column of the matrix contains the expected contributions of the
-$i^{th}$ streamline (arbitrarly ordered) to each of the voxels. $X$ is a sparse
-matrix, because each streamline traverses only a small percentage of the
+$i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
+sparse matrix, because each streamline traverses only a small percentage of the
 voxels. The  expected contributions of the streamline are calculated using a
 forward model, where each node of the streamline is modeled as a cylindrical
 fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
@@ -139,7 +139,7 @@ fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
 
 """
 
-The `FiberFit` class instance holds various properties of the model fit. For
+The ``FiberFit`` class instance holds various properties of the model fit. For
 example, it has the weights $\beta$, that are assigned to each streamline. In
 most cases, a tractography through some region will include redundant
 streamlines, and these streamlines will have $\beta_i$ that are 0.
@@ -196,15 +196,15 @@ streamlines have presumably been removed (in this case, about 50% of the
 streamlines).
 
 But how well does the model do in explaining the diffusion data? We can
-quantify that: the `FiberFit` class instance has a `predict` method, which can
+quantify that: the ``FiberFit`` class instance has a `predict` method, which can
 be used to invert the model and predict back either the data that was used to
 fit the model, or other unseen data (e.g. in cross-validation, see
 :ref:`kfold_xval`).
 
-Without arguments, the `.predict()` method will predict the diffusion signal
-for the same gradient table that was used in the fit data, but `gtab` and `S0`
-key-word arguments can be used to predict for other acquisition schemes and
-other baseline non-diffusion-weighted signals.
+Without arguments, the ``.predict()`` method will predict the diffusion signal
+for the same gradient table that was used in the fit data, but ``gtab`` and
+``S0`` keyword arguments can be used to predict for other acquisition schemes
+and other baseline non-diffusion-weighted signals.
 
 """
 
@@ -276,7 +276,7 @@ fig.savefig('error_histograms.png')
 .. figure:: error_histograms.png
    :align: center
 
-   **Improvement in error with fitting of the LiFE model**.
+   Improvement in error with fitting of the LiFE model.
 
 """
 
@@ -331,8 +331,7 @@ fig.savefig("spatial_errors.png")
 .. figure:: spatial_errors.png
    :align: center
 
-
-   **Spatial distribution of error and improvement**
+   Spatial distribution of error and improvement.
 
 """
 
@@ -351,12 +350,11 @@ For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
 webpage <http://francopestilli.github.io/life/>`_.
 
 References
-~~~~~~~~~~~~~~~~~~~~~~
+----------
 
-.. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
-                  B.A. (2014). Validation and statistical inference in living
-                  connectomes. Nature Methods 11:
-                  1058-1063. doi:10.1038/nmeth.3098
+.. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A.
+   (2014). Validation and statistical inference in living connectomes. Nature
+   Methods 11: 1058-1063. doi:10.1038/nmeth.3098
 
 .. include:: ../links_names.inc
 

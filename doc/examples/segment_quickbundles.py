@@ -100,7 +100,7 @@ fvtk.record(ren, n_frames=1, out_path='fornix_initial.png', size=(600, 600))
 .. figure:: fornix_initial.png
    :align: center
 
-   **Initial Fornix dataset**.
+   Initial Fornix dataset.
 
 Show the centroids of the fornix after clustering (with random colors):
 """
@@ -117,7 +117,7 @@ fvtk.record(ren, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
 .. figure:: fornix_centroids.png
    :align: center
 
-   **Showing the different QuickBundles centroids with random colors**.
+   Showing the different QuickBundles centroids with random colors.
 
 Show the labeled fornix (colors from centroids).
 """
@@ -135,7 +135,7 @@ fvtk.record(ren, n_frames=1, out_path='fornix_clusters.png', size=(600, 600))
 .. figure:: fornix_clusters.png
    :align: center
 
-   **Showing the different clusters**.
+   Showing the different clusters.
 
 It is also possible to save the complete `ClusterMap` object with pickling.
 """
@@ -150,6 +150,9 @@ Finally, here is a video of QuickBundles applied on a larger dataset.
     <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 
 .. include:: ../links_names.inc
+
+References
+----------
 
 .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
                     tractography simplification, Frontiers in Neuroscience, vol
