@@ -1,4 +1,4 @@
-''' A class for handling large tractography datasets.
+""" A class for handling large tractography datasets.
 
     It is built using the pytables tools which in turn implement
     key features of the HDF5 (hierachical data format) API [1]_.
@@ -6,7 +6,7 @@
     References
     ----------
     .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
-'''
+"""
 
 import numpy as np
 
@@ -22,8 +22,7 @@ from dipy.utils.optpkg import optional_package
 tables, have_tables, _ = optional_package('tables')
 
 # Useful variable for backward compatibility.
-if have_tables:
-    TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
+TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
@@ -32,7 +31,7 @@ __all__ = ['Dpy']
 class Dpy(object):
     @doctest_skip_parser
     def __init__(self, fname, mode='r', compression=0):
-        ''' Advanced storage system for tractography based on HDF5
+        """ Advanced storage system for tractography based on HDF5
 
         Parameters
         ------------
@@ -50,7 +49,7 @@ class Dpy(object):
         >>> from dipy.io.dpy import Dpy
         >>> def dpy_example():
         ...     fd,fname = mkstemp()
-        ...     fname = fname + '.dpy' #add correct extension
+        ...     fname += '.dpy'#add correct extension
         ...     dpw = Dpy(fname,'w')
         ...     A=np.ones((5,3))
         ...     B=2*A.copy()
@@ -67,7 +66,7 @@ class Dpy(object):
         ...     os.remove(fname) #delete file from disk
         >>> dpy_example()  # skip if not have_tables
 
-        '''
+        """
 
         self.mode = mode
         self.f = tables.openFile(fname, mode=self.mode) if TABLES_LESS_3_0 else tables.open_file(fname, mode=self.mode)
@@ -116,30 +115,30 @@ class Dpy(object):
         return ver[0].decode()
 
     def write_track(self, track):
-        ''' write on track each time
-        '''
+        """ write on track each time
+        """
         self.tracks.append(track.astype(np.float32))
         self.curr_pos += track.shape[0]
         self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
 
     def write_tracks(self, T):
-        ''' write many tracks together
-        '''
+        """ write many tracks together
+        """
         for track in T:
             self.tracks.append(track.astype(np.float32))
             self.curr_pos += track.shape[0]
             self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
 
     def read_track(self):
-        ''' read one track each time
-        '''
+        """ read one track each time
+        """
         off0, off1 = self.offsets[self.offs_pos:self.offs_pos + 2]
         self.offs_pos += 1
         return self.tracks[off0:off1]
 
     def read_tracksi(self, indices):
-        ''' read tracks with specific indices
-        '''
+        """ read tracks with specific indices
+        """
         T = []
         for i in indices:
             # print(self.offsets[i:i+2])
@@ -148,8 +147,8 @@ class Dpy(object):
         return T
 
     def read_tracks(self):
-        ''' read the entire tractography
-        '''
+        """ read the entire tractography
+        """
         I = self.offsets[:]
         TR = self.tracks[:]
         T = []

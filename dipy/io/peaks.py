@@ -3,24 +3,21 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 
-from dipy.core.sphere import Sphere
 from dipy.direction.peaks import (PeaksAndMetrics,
                                   reshape_peaks_for_visualization)
+from dipy.core.sphere import Sphere
+from dipy.io.image import save_nifti
+
 from distutils.version import LooseVersion
 
 # Conditional import machinery for pytables
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables')
+tables, have_tables, _ = optional_package('tables', 'PyTables is not installed')
 
 # Useful variable for backward compatibility.
-if have_tables:
-    TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0"
-
-from dipy.data import get_sphere
-from dipy.core.sphere import Sphere
-from dipy.io.image import save_nifti
+TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
 
 
 def _safe_save(f, group, array, name):
@@ -34,10 +31,11 @@ def _safe_save(f, group, array, name):
     name : string
     """
 
-    if TABLES_LESS_3_0:
-        func_create_carray = f.createCArray
-    else:
-        func_create_carray = f.create_carray
+    if not have_tables:
+        # We generate a TripWireError via this call
+        _ = tables.any_attributes
+
+    func_create_carray = f.createCArray if TABLES_LESS_3_0 else f.create_carray
 
     if array is not None:
         atom = tables.Atom.from_dtype(array.dtype)
@@ -189,20 +187,9 @@ def save_peaks(fname, pam, affine=None, verbose=False):
                                 [b"0.0.1"], 'PAM5 version number')
     version_string = f.root.version[0].decode()
 
-    try:
-        affine = pam.affine
-    except AttributeError:
-        pass
-
-    try:
-        shm_coeff = pam.shm_coeff
-    except AttributeError:
-        shm_coeff = None
-
-    try:
-        odf = pam.odf
-    except AttributeError:
-        odf = None
+    affine = pam.affine if hasattr(pam, 'affine') else affine
+    shm_coeff = pam.shm_coeff if hasattr(pam, 'shm_coeff') else None
+    odf = pam.odf if hasattr(pam, 'odf') else None
 
     _safe_save(f, group, affine, 'affine')
     _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
@@ -271,4 +258,3 @@ def peaks_to_niftis(pam,
         save_nifti(fname_indices, pam.peak_indices, pam.affine)
 
         save_nifti(fname_gfa, pam.gfa, pam.affine)
-
