@@ -75,7 +75,7 @@ print("peaks_from_model using " + str(multiprocessing.cpu_count())
       + " process ran in :" + str(time_parallel) + " seconds")
 
 """
-``peaks_from_model`` using 8 processes ran in :114.425682068 seconds
+``peaks_from_model`` using 8 processes ran in 114.425682068 seconds
 """
 
 start_time = time.time()
@@ -96,7 +96,7 @@ time_single = time.time() - start_time
 print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
 """
-``peaks_from_model`` ran in :242.772505999 seconds
+``peaks_from_model`` ran in 242.772505999 seconds
 """
 
 print("Speedup factor : " + str(time_single / time_parallel))
@@ -107,8 +107,10 @@ Speedup factor : 2.12166099088
 In Windows if you get a runtime error about frozen executable please start
 your script by adding your code above in a ``main`` function and use:
 
+``
 if __name__ == '__main__':
     import multiprocessing
     multiprocessing.freeze_support()
     main()
+``
 """

@@ -1,7 +1,7 @@
 .. _release0.8:
 
 ===================================
- Release notes for dipy version 0.8
+ Release notes for DIPY version 0.8
 ===================================
 
 GitHub stats for 2013/12/24 - 2014/12/26 (tag: 0.7.0)

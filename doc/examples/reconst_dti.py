@@ -1,5 +1,7 @@
 """
 
+.. _reconst_dti:
+
 ============================================================
 Reconstruction of the diffusion signal with the Tensor model
 ============================================================
@@ -68,7 +70,7 @@ from dipy.data import fetch_stanford_hardi
 
 """
 Fetch will download the raw dMRI dataset of a single subject. The size of the
-dataset is 87 MBytes.  You only need to fetch once.
+dataset is 87 MBytes. You only need to fetch once.
 """
 
 fetch_stanford_hardi()
@@ -82,8 +84,8 @@ from dipy.data import read_stanford_hardi
 img, gtab = read_stanford_hardi()
 
 """
-img contains a nibabel Nifti1Image object (with the data) and gtab contains a
-GradientTable object (information about the gradients e.g. b-values and
+``img`` contains a nibabel Nifti1Image object (with the data) and gtab contains a
+``GradientTable`` object (information about the gradients e.g. b-values and
 b-vectors).
 """
 
@@ -94,8 +96,8 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 data.shape ``(81, 106, 76, 160)``
 
 First of all, we mask and crop the data. This is a quick way to avoid
-calculating Tensors on the background of the image. This is done using dipy's
-mask module.
+calculating Tensors on the background of the image. This is done using dipy_'s
+``mask`` module.
 """
 
 from dipy.segment.mask import median_otsu
@@ -121,7 +123,7 @@ TensorModel in the following way:
 tenfit = tenmodel.fit(maskdata)
 
 """
-The fit method creates a TensorFit object which contains the fitting parameters
+The fit method creates a ``TensorFit`` object which contains the fitting parameters
 and other attributes of the model. For example we can generate fractional
 anisotropy (FA) from the eigen-values of the tensor. FA is used to characterize
 the degree to which the distribution of diffusion in a voxel is
@@ -158,9 +160,9 @@ easily remove these in the following way.
 FA[np.isnan(FA)] = 0
 
 """
-Saving the FA images is very easy using nibabel. We need the FA volume and the
+Saving the FA images is very easy using nibabel_. We need the FA volume and the
 affine matrix which transform the image's coordinates to the world coordinates.
-Here, we choose to save the FA in float32.
+Here, we choose to save the FA in ``float32``.
 """
 
 fa_img = nib.Nifti1Image(FA.astype(np.float32), img.affine)
@@ -168,28 +170,28 @@ nib.save(fa_img, 'tensor_fa.nii.gz')
 
 """
 You can now see the result with any nifti viewer or check it slice by slice
-using matplotlib_'s imshow. In the same way you can save the eigen values, the
-eigen vectors or any other properties of the Tensor.
+using matplotlib_'s ``imshow``. In the same way you can save the eigen values, the
+eigen vectors or any other properties of the tensor.
 """
 
 evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.affine)
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
-Other tensor statistics can be calculated from the `tenfit` object. For example,
+Other tensor statistics can be calculated from the ``tenfit`` object. For example,
 a commonly calculated statistic is the mean diffusivity (MD). This is simply the
 mean of the  eigenvalues of the tensor. Since FA is a normalized
 measure of variance and MD is the mean, they are often used as complimentary
-measures. In `dipy`, there are two equivalent ways to calculate the mean
-diffusivity. One is by calling the `mean_diffusivity` module function on the
-eigen-values of the TensorFit class instance:
+measures. In DIPY, there are two equivalent ways to calculate the mean
+diffusivity. One is by calling the ``mean_diffusivity`` module function on the
+eigen-values of the ``TensorFit`` class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
 nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.affine), 'tensors_md.nii.gz')
 
 """
-The other is to call the TensorFit class method:
+The other is to call the ``TensorFit`` class method:
 """
 
 MD2 = tenfit.md
@@ -239,13 +241,13 @@ fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
 .. figure:: tensor_ellipsoids.png
    :align: center
 
-   **Tensor Ellipsoids**.
+   Tensor Ellipsoids.
 """
 
 fvtk.clear(ren)
 
 """
-Finally, we can visualize the tensor orientation distribution functions
+Finally, we can visualize the tensor Orientation Distribution Functions
 for the same area as we did with the ellipsoids.
 """
 
@@ -260,7 +262,7 @@ fvtk.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 .. figure:: tensor_odfs.png
    :align: center
 
-   **Tensor ODFs**.
+   Tensor ODFs.
 
 Note that while the tensor model is an accurate and reliable model of the
 diffusion signal in the white matter, it has the drawback that it only has one
@@ -273,14 +275,15 @@ tracks. Fortunately, other reconstruction methods can be used to represent the
 diffusion and fiber orientations in those locations. These are presented in
 other examples.
 
+References
+----------
 
 .. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
-                spectroscopy and imaging.
+   spectroscopy and imaging.
 
-.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent
-                 the orientation of anisotropic tissues from diffusion tensor
-                 data: application to white matter fiber tract mapping in
-                 the human brain.
+.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent the
+   orientation of anisotropic tissues from diffusion tensor data: application
+   to white matter fiber tract mapping in the human brain.
 
 .. include:: ../links_names.inc
 

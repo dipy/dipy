@@ -1,11 +1,12 @@
 """
+.. _streamline_tools:
 
 =========================================================
 Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
 
 This example is meant to be an introduction to some of the streamline tools
-available in dipy. Some of the functions covered in this example are
+available in dipy_. Some of the functions covered in this example are
 ``target``, ``connectivity_matrix`` and ``density_map``. ``target`` allows one
 to filter streamlines that either pass through or do not pass through some
 region of the brain, ``connectivity_matrix`` groups and counts streamlines
@@ -88,7 +89,7 @@ other_streamlines = list(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
-We can use some of dipy's visualization tools to display the ROI we targeted
+We can use some of dipy_'s visualization tools to display the ROI we targeted
 above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
@@ -208,7 +209,7 @@ visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
 
-To do that, we will use tools available in [nibabel](http://nipy.org/nibabel)
+To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
 import nibabel as nib
@@ -236,7 +237,7 @@ nib.trackvis.write("lr-superiorfrontal.trk", for_save, trackvis_header)
 
 """
 Let's take a moment here to consider the representation of streamlines used in
-dipy. Streamlines are a path though the 3d space of an image represented by a
+DIPY. Streamlines are a path though the 3D space of an image represented by a
 set of points. For these points to have a meaningful interpretation, these
 points must be given in a known coordinate system. The ``affine`` attribute of
 the ``streamline_generator`` object specifies the coordinate system of the
@@ -270,11 +271,12 @@ image.
 .. rubric:: Footnotes
 
 .. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is a
-    modified version of label map `aparc+aseg.mgz` created by freesurfer.  The
-    corpus callosum region is a combination of the freesurfer labels 251-255.
-    The remaining freesurfer labels were re-mapped and reduced so that they lie
-    between 0 and 88. To see the freesurfer region, label and name, represented
-    by each value see `label_info.txt` in `~/.dipy/stanford_hardi`.
+    modified version of label map `aparc+aseg.mgz` created by `FreeSurfer
+    <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus callosum region is a
+    combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
+    labels were re-mapped and reduced so that they lie between 0 and 88. To
+    see the FreeSurfer region, label and name, represented by each value see
+   `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
     that can represent scaling, rotation, sheer, translation and reflection.
     Affine transformations are often represented using a 4x4 matrix where the

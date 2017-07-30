@@ -1,12 +1,12 @@
 .. _forking:
 
 ======================================================
-Making your own copy (fork) of dipy
+Making your own copy (fork) of DIPY
 ======================================================
 
-You need to do this only once.  The instructions here are very similar
+You need to do this only once. The instructions here are very similar
 to the instructions at http://help.github.com/forking/ |emdash| please see
-that page for more detail.  We're repeating some of it here just to give the
+that page for more detail. We're repeating some of it here just to give the
 specifics for the `dipy`_ project, and to suggest some default names.
 
 Set up and configure a github account
@@ -17,7 +17,7 @@ If you don't have a github account, go to the github page, and make one.
 You then need to configure your account to allow write access |emdash| see
 the ``Generating SSH keys`` help on `github help`_.
 
-Create your own forked copy of `dipy`_
+Create your own forked copy of dipy_
 ======================================================
 
 #. Log into your github account.

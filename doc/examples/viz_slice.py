@@ -99,7 +99,7 @@ window.record(renderer, out_path='slices.png', size=(600, 600),
 .. figure:: slices.png
    :align: center
 
-   **Simple slice viewer**.
+   Simple slice viewer.
 
 Render slices from FA with your colormap
 ========================================
@@ -147,7 +147,7 @@ window.record(renderer, out_path='slices_lut.png', size=(600, 600),
 .. figure:: slices_lut.png
    :align: center
 
-   **Simple slice viewer with an HSV colormap**.
+   Simple slice viewer with an HSV colormap.
 
 
 Create a mosaic
@@ -209,5 +209,5 @@ window.record(renderer, out_path='mosaic.png', size=(900, 600),
 .. figure:: mosaic.png
    :align: center
 
-   **A mosaic of all the slices in the T1 volume**.
+   A mosaic of all the slices in the T1 volume.
 """

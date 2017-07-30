@@ -20,7 +20,7 @@ import numpy as np
 import nibabel as nib
 
 if not os.path.exists('tensor_fa.nii.gz'):
-	import reconst_dti
+    import reconst_dti
 
 """
 EuDX will use the directions (eigen vectors) of the Tensors to propagate
@@ -105,10 +105,10 @@ lightweight `fvtk` module.
 """
 
 try:
-	from dipy.viz import fvtk
+    from dipy.viz import fvtk
 except ImportError:
-	raise ImportError('Python vtk module is not installed')
-	sys.exit()
+    raise ImportError('Python vtk module is not installed')
+    sys.exit()
 
 """
 Create a scene.
@@ -138,9 +138,13 @@ fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
 .. figure:: tensor_tracks.png
    :align: center
 
-   **Deterministic streamlines with EuDX on a Tensor Field**.
+   Deterministic streamlines with EuDX on a Tensor Field.
 
-.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
+References
+----------
+
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography",
+   PhD thesis, University of Cambridge, 2012.
 
 .. include:: ../links_names.inc
 
