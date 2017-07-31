@@ -3,6 +3,7 @@
 
 import os
 import sys
+import platform
 from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
@@ -118,11 +119,22 @@ build_ext, need_cython = cyproc_exts(EXTS,
 simple_test_c = """int main(int argc, char** argv) { return(0); }"""
 omp_test_c = """#include <omp.h>
 int main(int argc, char** argv) { return(0); }"""
-extbuilder = add_flag_checking(
-    build_ext, [
-        [['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
-        [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
-        [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
+
+msc_flag_defines = [ [['/openmp'], [], omp_test_c, 'HAVE_VC_OPENMP'],
+                     ]
+# Test if it is a 32 bits version
+if not sys.maxsize > 2**32:
+    # This flag is needed only on 32 bits
+    msc_flag_defines += [ [['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],]
+
+gcc_flag_defines = [
+                     [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
+                     [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP'],
+                     ]
+
+flag_defines  = msc_flag_defines if 'msc' in platform.python_compiler().lower() else gcc_flag_defines
+
+extbuilder = add_flag_checking(build_ext, flag_defines, 'dipy')
 
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
