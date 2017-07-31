@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
-
 import numpy.testing as npt
+
 from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot
 import dipy.core.optimize as opt
 
@@ -163,6 +163,8 @@ def test_sparse_nnls():
     # We should be able to get back the right answer for this simple case
     npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
     npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
+    # Answers should be identical:
+    npt.assert_array_almost_equal(beta_hat, beta_hat_sparse)
 
 
 if __name__ == '__main__':

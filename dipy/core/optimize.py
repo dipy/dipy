@@ -1,7 +1,4 @@
 """ A unified interface for performing and debugging optimization problems.
-
-Only L-BFGS-B and Powell is supported in this class for versions of
-Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 """
 import abc
 from distutils.version import LooseVersion
@@ -117,6 +114,11 @@ class Optimizer(object):
         evolution : bool, optional
             save history of x for each iteration. Only available using Scipy
             >= 0.12.
+
+        Note
+        ----
+        Only L-BFGS-B and Powell is supported in this class for versions of
+        Scipy < 0.12. All optimizers are available for scipy >= 0.12.
 
         See also
         ---------
@@ -369,7 +371,7 @@ def sparse_nnls(y, X,
                 h[h < 0] = 0
 
         # Every once in a while check whether it's converged:
-        if np.mod(iteration, check_error_iter):
+        if np.mod(iteration, check_error_iter) == 0:
             # This calculates the sum of squared residuals at this point:
             sse = np.sum((y - spdot(X, h)) ** 2)
             # Did we do better this time around?

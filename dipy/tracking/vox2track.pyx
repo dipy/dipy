@@ -23,23 +23,18 @@ def _voxel2streamline(sl,
     """
     Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
-
     Parameters
     ----------
     sl : list
         A collection of streamlines, each n by 3, with n being the number of
         nodes in the fiber.
-
     unique_idx : array.
        The unique indices in the streamlines
-
     Returns
     -------
     v2f, v2fn : tuple of dicts
-
     The first dict in the tuple answers the question: Given a voxel (from
     the unique indices in this model), which fibers pass through it?
-
     The second answers the question: Given a streamline, for each voxel that
     this streamline passes through, which nodes of that streamline are in that
     voxel?
@@ -74,7 +69,6 @@ def _voxel2streamline(sl,
             else:
                 v2fn[s_idx][voxel_id] = [node_idx]
     return v2f ,v2fn
-
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,
                        mapping_as_streamlines=False):

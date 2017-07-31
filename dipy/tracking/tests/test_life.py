@@ -102,6 +102,7 @@ def test_voxel2streamline():
 
 
 def test_FiberModel_init():
+    evals = [0.001, 0, 0]
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
@@ -109,7 +110,7 @@ def test_FiberModel_init():
     data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
-    FM = life.FiberModel(gtab)
+    FM = life.FiberModel(gtab, evals=evals)
 
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
@@ -133,13 +134,13 @@ def test_FiberFit():
     data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
-    FM = life.FiberModel(gtab)
-    evals = [0.0015, 0.0005, 0.0005]
+    evals = [0.001, 0, 0]
+    FM = life.FiberModel(gtab, evals)
 
-    streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+    streamline = [np.array([[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]),
+                  np.array([[1, 2, 3], [4, 5, 3], [5, 6, 3]])]
 
-    fiber_matrix, vox_coords = FM.setup(streamline, None, evals)
+    fiber_matrix, vox_coords = FM.setup(streamline, None)
 
     w = np.array([0.5, 0.5])
     sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
@@ -165,7 +166,24 @@ def test_FiberFit():
         this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]],
         fit.data)
 
+    FMM = life.FiberModel(gtab, conserve_memory=True)
+
+    fitm = FMM.fit(this_data, streamline)
+
+    npt.assert_almost_equal(fitm.predict(streamline)[1],
+                            fitm.data[1], decimal=-1)
+
+    # Predict with an input GradientTable
+    npt.assert_almost_equal(fitm.predict(streamline, gtab)[1],
+                            fitm.data[1], decimal=-1)
+
+    npt.assert_almost_equal(
+        this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]],
+        fitm.data)
+
+
 def test_fit_data():
+    evals = [0.001, 0, 0]
     fdata, fbval, fbvec = dpd.get_data('small_25')
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
@@ -180,10 +198,16 @@ def test_fit_data():
     tensor_streamlines = [streamline for streamline in eu]
     life_model = life.FiberModel(gtab)
     life_fit = life_model.fit(data, tensor_streamlines)
-    model_error = life_fit.predict() - life_fit.data
+    p_model = life_fit.predict()
+    model_error = p_model - life_fit.data
     model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
     matlab_rmse, matlab_weights = dpd.matlab_life_results()
     # Lower error than the matlab implementation for these data:
     npt.assert_(np.median(model_rmse) < np.median(matlab_rmse))
     # And a moderate correlation with the Matlab implementation weights:
     npt.assert_(np.corrcoef(matlab_weights, life_fit.beta)[0, 1] > 0.6)
+    life_model_memory = life.FiberModel(gtab, conserve_memory=True)
+    life_fit_memory = life_model_memory.fit(data, tensor_streamlines)
+    npt.assert_almost_equal(life_fit_memory.beta, life_fit.beta, decimal=1)
+    p_model_mem = life_fit_memory.predict(tensor_streamlines)
+    npt.assert_(np.corrcoef(p_model, p_model_mem)[0, 1] > 0.9999)
