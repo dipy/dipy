@@ -21,7 +21,7 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
         are the diffusion gradient directions.
     mask : 3D boolean array
         A mask with voxels that are true inside the brain and false outside of
-        it. The function denoises within the True part and returns zeros
+        it. The function denoises within the true part and returns zeros
         outside of those voxels.
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
