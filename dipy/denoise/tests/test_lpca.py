@@ -217,9 +217,12 @@ def test_phantom():
     DWI_den_svd = localpca(DWI, sigma, pca_method='svd', patch_radius=3)
     assert_array_almost_equal(DWI_den, DWI_den_svd)
 
+    assert_raises(ValueError, localpca, DWI, sigma, pca_method='empty')
+
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
     mask = np.ones_like(DWI, dtype=bool)[..., 0]
+    mask[0, ...] = False
     DWI_den = localpca(DWI, sigma_vol, mask, patch_radius=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
