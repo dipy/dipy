@@ -68,7 +68,7 @@ class ActiveAxModel(ReconstModel):
         self.G = G
         D_iso = 2 * 10 ** 3
         self.yhat_ball = D_iso * self.gtab.bvals
-        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
+#        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
 #        self.bvec_norm = func_norm(gtab.bvecs)
 
 #    @profile
@@ -103,6 +103,7 @@ class ActiveAxModel(ReconstModel):
         M = am2.shape[0]
         big_delta = self.big_delta
         small_delta = self.small_delta
+        summ = np.zeros((self.small_delta.shape[0], M))
         for i in range(M):
             am = am2[i]
             D_intra_am = D_intra * am
@@ -112,8 +113,8 @@ class ActiveAxModel(ReconstModel):
                   np.exp(-(bd - sd)) - np.exp(-(bd + sd))
             denom = (D_intra ** 2) * (am ** 3) * ((x[2]) ** 2 * am - 1)
             idenom = 1. / denom
-            self.summ[:, i] = num * idenom
-            return self.summ
+            summ[:, i] = num * idenom
+        return summ
 
 #    @jit(nogil=True, cache=True)
 #    def func_norm(self):
@@ -129,8 +130,11 @@ class ActiveAxModel(ReconstModel):
         g_per = np.zeros((M))
         bvecs = self.gtab.bvecs
         for i in range(M):
-            g_per[i] = bvecs[i, 0]**2 + bvecs[i, 1]**2 + bvecs[i, 2]**2 - \
+#            g_per[i] = bvecs[i, 0]**2 + bvecs[i, 1]**2 + bvecs[i, 2]**2 - \
+#                       (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
+            g_per[i] = 1 - \
                        (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
+
         return g_per
 
     def x_to_xs(self, x):
