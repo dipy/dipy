@@ -82,6 +82,7 @@ function and an image plane using the ``slice`` function.
 """
 
 ren = window.Renderer()
+ren.background([1, 1, 1])
 stream_actor = actor.line(streamlines)
 
 if not world_coords:
@@ -194,6 +195,7 @@ def change_opacity(i_ren, obj, slider):
     image_actor_x.opacity(slicer_opacity)
     image_actor_y.opacity(slicer_opacity)
 
+
 line_slider_z.add_callback(line_slider_z.slider_disk,
                            "MouseMoveEvent",
                            change_slice_z)
@@ -206,6 +208,60 @@ line_slider_y.add_callback(line_slider_y.slider_disk,
 opacity_slider.add_callback(opacity_slider.slider_disk,
                             "MouseMoveEvent",
                             change_opacity)
+
+
+"""
+    Create cell picker for this example
+"""
+from dipy.utils.optpkg import optional_package
+
+# Allow import, but disable doctests if we don't have vtk.
+vtk, have_vtk, setup_module = optional_package('vtk')
+
+if have_vtk:
+    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    major_version = vtk.vtkVersion.GetVTKMajorVersion()
+    vtkCellPicker = vtk.vtkCellPicker
+else:
+    vtkCellPicker = object
+
+cell_picker = vtkCellPicker()
+cell_picker.SetTolerance(0.002)
+
+
+def left_click_callback(obj, ev):
+    event_pos = show_m.iren.GetEventPosition()
+
+    # get cell from interactor's cell picker
+    cell_from_interactor = show_m.style.get_cell_at_event_position()
+    print('from interactor: (' +
+          str(cell_from_interactor[0]) + ', ' +
+          str(cell_from_interactor[1]) + ')')
+
+    # get cell from this example's cell picker
+    cell_picker.Pick(event_pos[0],
+                     event_pos[1],
+                     0,
+                     show_m.ren)
+
+    cell_from_example = cell_picker.GetCellIJK()
+    print('from example: (' +
+          str(cell_from_example[0]) + ', ' +
+          str(cell_from_example[1]) + ')')
+
+    # get cell from the actor's cell picker
+    obj.picker.Pick(event_pos[0],
+                    event_pos[1],
+                    0,
+                    show_m.ren)
+
+    cell_from_actor = obj.picker.GetCellIJK()
+    print('from actor: (' +
+          str(cell_from_actor[0]) + ', ' +
+          str(cell_from_actor[1]) + ')')
+
+
+image_actor_z.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
 
 """
 We'll also create text labels to identify the sliders.
@@ -278,6 +334,7 @@ def win_callback(obj, event):
         size_change = [size[0] - size_old[0], 0]
         panel.re_align(size_change)
 
+
 show_m.initialize()
 
 """
@@ -285,7 +342,7 @@ Finally, please set the following variable to ``True`` to interact with the
 datasets in 3D.
 """
 
-interactive = False
+interactive = True
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
@@ -293,6 +350,7 @@ ren.reset_clipping_range()
 if interactive:
 
     show_m.add_window_callback(win_callback)
+    # show_m.iren.add_callback()
     show_m.render()
     show_m.start()
 
