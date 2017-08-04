@@ -39,13 +39,20 @@ You can find our sources and single-click downloads:
 .. _Documentation: http://dipy.org
 .. _current trunk: http://github.com/nipy/dipy/archives/master
 
+
+Installing DIPY
+===============
+
+For installation instructions, please read our `documentation <http://nipy.org/dipy/installation.html>`_.
+
+
 License
 =======
 
 DIPY is licensed under the terms of the BSD license.
-Please see the LICENSE file in the dipy distribution.
+Please see `LICENSE file <https://github.com/nipy/dipy/blob/master/LICENSE>`_.
 
-DIPY uses other libraries also licensed under the BSD or the
-MIT licenses, with the only exception of the SHORE module which
-optionally uses the cvxopt library. Cvxopt is licensed
-under the GPL license.
+Contributing
+============
+
+We welcome contributions from the community. Please read our `contributor guidlines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`.
