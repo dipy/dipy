@@ -154,7 +154,6 @@ def test_ui_button_panel(recording=False):
     text_block_test = ui.TextBlock2D()
     text_block_test.message = 'TextBlock'
     text_block_test.color = (0, 0, 0)
-    # /TextBlock
 
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150),
@@ -254,7 +253,6 @@ def test_text_block_2d():
     npt.assert_equal((1, 0, 0), text_block.color)
     text_block.position = (2, 3)
     npt.assert_equal((2, 3), text_block.position)
-    # /TextBlock2D
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
