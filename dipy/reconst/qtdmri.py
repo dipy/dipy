@@ -91,8 +91,8 @@ class QtdmriModel(Cache):
             that threshold are used when estimating the scale factors.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
-            with a particular cvxpy solver. See http://www.cvxp for details.
-            Default: None (cvxpy chooses its own solver)
+            with a particular cvxpy solver. See See http://www.cvxpy.org/ for
+            details. Default: ECOS.
 
         References
         ----------
