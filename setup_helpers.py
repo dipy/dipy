@@ -1,6 +1,6 @@
-''' Distutils / setuptools helpers
+""" Distutils / setuptools helpers
 
-'''
+"""
 import os
 import sys
 from os.path import join as pjoin, split as psplit, splitext, dirname, exists
@@ -64,8 +64,7 @@ class install_scripts_bat(install_scripts):
             # file, make .bat wrapper for script.
             with open(filepath, 'rt') as fobj:
                 first_line = fobj.readline()
-            if not (first_line.startswith('#!') and
-                            'python' in first_line.lower()):
+            if not (first_line.startswith('#!') and 'python' in first_line.lower()):
                 log.info("No #!python executable found, skipping .bat wrapper")
                 continue
             pth, fname = psplit(filepath)
