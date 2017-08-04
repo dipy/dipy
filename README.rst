@@ -43,7 +43,16 @@ You can find our sources and single-click downloads:
 Installing DIPY
 ===============
 
-For installation instructions, please read our `documentation <http://nipy.org/dipy/installation.html>`_.
+DIPY can be installed using `pip`:
+
+    pip install dipy
+
+or using `conda`:
+
+    conda install -c conda-forge dipy vtk
+
+For detailed installation instructions, including instructions for installing
+from source, please read our `documentation <http://nipy.org/dipy/installation.html>`_.
 
 
 License
