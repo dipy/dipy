@@ -221,17 +221,24 @@ def test_phantom():
 
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
-    mask = np.ones_like(DWI, dtype=bool)[..., 0]
-    mask[0, ...] = False
+    mask = np.zeros_like(DWI, dtype=bool)[..., 0]
+    mask[2:-2, 2:-2, 2:-2] = True
     DWI_den = localpca(DWI, sigma_vol, mask, patch_radius=3)
-    rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
-    rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
+    DWI_clean_masked = DWI_clean.copy()
+    DWI_clean_masked[~mask] = 0
+    DWI_masked = DWI.copy()
+    DWI_masked[~mask] = 0
+    rmse_den = np.sum(np.abs(DWI_clean_masked - DWI_den)) / np.sum(np.abs(
+            DWI_clean_masked))
+    rmse_noisy = np.sum(np.abs(DWI_clean_masked - DWI_masked)) / np.sum(np.abs(
+            DWI_clean_masked))
 
-    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc - DWI_den)
-                          ) / np.sum(np.abs(DWI_clean_wrc))
-    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
-        np.sum(np.abs(DWI_clean_wrc))
-
+    DWI_clean_wrc_masked = DWI_clean_wrc.copy()
+    DWI_clean_wrc_masked[~mask] = 0
+    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc_masked - DWI_den)
+                          ) / np.sum(np.abs(DWI_clean_wrc_masked))
+    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc_masked - DWI_masked)) / \
+        np.sum(np.abs(DWI_clean_wrc_masked))
 
     assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
