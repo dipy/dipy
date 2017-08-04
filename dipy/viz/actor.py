@@ -142,6 +142,9 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     class ImageActor(vtk.vtkImageActor):
+        def __init__(self):
+            self.picker = vtk.vtkCellPicker()
+            self.picker.SetTolerance(0.002)
 
         def input_connection(self, output):
             if vtk.VTK_MAJOR_VERSION <= 5:
