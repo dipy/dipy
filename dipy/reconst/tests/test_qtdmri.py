@@ -3,6 +3,7 @@ from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
+                           assert_raises,
                            run_module_suite)
 from dipy.reconst import qtdmri, mapmri
 from dipy.sims.voxel import MultiTensor
@@ -588,6 +589,15 @@ def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
 
     assert_equal(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt, True)
     assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
+
+
+def test_visualise_gradient_table_G_Delta_rainbow():
+    gtab_4d = generate_gtab4D()
+    qtdmri.visualise_gradient_table_G_Delta_rainbow(gtab_4d)
+
+    gtab_4d.small_delta[4] += 0.001  # so now the gtab has multiple small_delta
+    assert_raises(ValueError,
+                  qtdmri.visualise_gradient_table_G_Delta_rainbow, gtab_4d)
 
 if __name__ == '__main__':
     run_module_suite()
