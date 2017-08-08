@@ -591,6 +591,7 @@ def test_elastic_GCV_CV_higher_weight_with_noise(radial_order=4, time_order=2):
     assert_equal(qtdmri_fit_noise.alpha > qtdmri_fit_no_noise.alpha, True)
 
 
+@np.testing.dec.skipif(not qtdmri.have_plt)
 def test_visualise_gradient_table_G_Delta_rainbow():
     gtab_4d = generate_gtab4D()
     qtdmri.visualise_gradient_table_G_Delta_rainbow(gtab_4d)

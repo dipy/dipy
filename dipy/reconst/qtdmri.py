@@ -5,7 +5,6 @@ from dipy.core.geometry import cart2sphere
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import genlaguerre, gamma
 from dipy.core.gradients import gradient_table_from_gradient_strength_bvecs
-import matplotlib.pyplot as plt
 from scipy import special
 from warnings import warn
 from dipy.reconst import mapmri
@@ -20,6 +19,7 @@ from dipy.utils.optpkg import optional_package
 import random
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 class QtdmriModel(Cache):
