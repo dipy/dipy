@@ -295,7 +295,7 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
     >>> gradient_strength = .03e-3 * np.ones(7)  # clinical strength at 30 mT/m
     >>> big_delta = .03  # pulse separation of 30ms
     >>> small_delta = 0.01  # pulse duration of 10ms
-    >>> bvals[0] = 0
+    >>> gradient_strength[0] = 0
     >>> sq2 = np.sqrt(2) / 2
     >>> bvecs = np.array([[0, 0, 0],
     ...                   [1, 0, 0],
