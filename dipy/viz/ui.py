@@ -2317,6 +2317,12 @@ class FileSelectMenuText2D(UI):
         else:
             file_select_text.file_select.select_file(
                 file_name=file_select_text.file_name)
+            file_select_text.file_select.fill_text_actors()
+            if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+                pass
+            else:
+                file_select_text.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
+                file_select_text.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
