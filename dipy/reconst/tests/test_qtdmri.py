@@ -135,6 +135,13 @@ def test_input_parameters():
     except ValueError:
         print ('unavailable cvxpy solver is caught.')
 
+    try:
+        qtdmri.QtdmriModel(gtab_4d, l1_regularization=True, cartesian=False,
+                           normalization=False)
+        assert_equal(True, False)
+    except ValueError:
+        print ('non-normalized non-cartesian l1-regularization is caught.')
+
 
 def test_orthogonality_temporal_basis_functions():
     # numerical integration parameters
@@ -404,6 +411,13 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     ]
     assert_almost_equal(E_q0_first_tau[0], 1.)
     assert_almost_equal(E_q0_last_tau[0], 1.)
+
+    # check if odf in spherical harmonics for cartesian raises an error
+    try:
+        qtdmri_fit_lap.odf_sh(tau=tau.max())
+        assert_equal(True, False)
+    except ValueError:
+        print ('missing spherical harmonics cartesian ODF caught.')
 
     # now with cvxpy regularization spherical
     qtdmri_mod_lap = qtdmri.QtdmriModel(

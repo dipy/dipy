@@ -345,9 +345,6 @@ class QtdmriModel(Cache):
                     lopt = 2e-4
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
-            elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation(data, M, laplacian_matrix,
-                                                   self.laplacian_weighting)
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
@@ -410,9 +407,6 @@ class QtdmriModel(Cache):
                                                    laplacian_matrix)
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
-            elif type(self.laplacian_weighting) == np.ndarray:
-                lopt = generalized_crossvalidation(data, M, laplacian_matrix,
-                                                   self.laplacian_weighting)
             if self.l1_weighting == 'CV':
                 alpha = elastic_crossvalidation(b0s_mask, data_norm, M,
                                                 laplacian_matrix, lopt)
