@@ -2236,11 +2236,11 @@ class FileSelectMenuText2D(UI):
 
         Returns
         -------
-        text_actor: :class:`TextActor2D`
+        text_actor: :class:`TextBlock2D`
             The base text actor.
 
         """
-        text_actor = TextActor2D()
+        text_actor = TextBlock2D()
         text_actor.position = position
         text_actor.message = text
         text_actor.font_size = font_size
