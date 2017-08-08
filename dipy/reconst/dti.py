@@ -468,7 +468,7 @@ def mode(q_form):
 
     Notes
     -----
-    Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
+    Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
     with 0 representing orthotropy. Mode is calculated with the
     following equation (equation 9 in [1]_):
 
@@ -910,7 +910,7 @@ class TensorFit(object):
     @auto_attr
     def md(self):
         r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues.
+        Mean diffusivity (MD) calculated from cached eigenvalues.
 
         Returns
         ---------
@@ -931,7 +931,7 @@ class TensorFit(object):
     @auto_attr
     def rd(self):
         r"""
-        Radial diffusitivity (RD) calculated from cached eigenvalues.
+        Radial diffusivity (RD) calculated from cached eigenvalues.
 
         Returns
         ---------
@@ -1007,7 +1007,7 @@ class TensorFit(object):
         .. math::
 
             Sphericity =
-            \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+            \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         Notes
         -----
@@ -1343,7 +1343,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
         1. calculate OLS estimates of the data
         2. apply the OLS estimates as weights to the WLS fit of the data
 
-    This ensured heteroscadasticity could be properly modeled for various
+    This ensured heteroscedasticity could be properly modeled for various
     types of bootstrap resampling (namely residual bootstrap).
 
     .. math::
@@ -1477,7 +1477,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         The voxel signal in all gradient directions
 
     weighting : str (optional).
-         Whether to use the Geman McClure weighting criterion (see [1]_
+         Whether to use the Geman-McClure weighting criterion (see [1]_
          for details)
 
     sigma : float or float array (optional)
@@ -1490,7 +1490,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     Notes
     -----
-    The GemanMcClure M-estimator is described as follows [1]_ (page 1089): "The
+    The Geman-McClure M-estimator is described as follows [1]_ (page 1089): "The
     scale factor C affects the shape of the GMM [Geman-McClure M-estimator]
     weighting function and represents the expected spread of the residuals
     (i.e., the SD of the residuals) due to Gaussian distributed noise. The
@@ -1534,7 +1534,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         w = 1 / (sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
@@ -1573,7 +1573,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
     Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors (Basser et al., 1994a). Some fit approaches can produce nan
-    tensor elements in background voxels (particularly non-linear approachs).
+    tensor elements in background voxels (particularly non-linear approaches).
     This function avoids the eigen decomposition errors of nan tensor elements
     by replacing tensor with nan elements by a given alternative tensor
     estimate.
@@ -1732,7 +1732,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
-        optimization procedure used to fit the tensor paramters (see also
+        optimization procedure used to fit the tensor parameters (see also
         :func:`nlls_fit_tensor`). Default: True
 
     return_S0_hat : bool
@@ -1856,8 +1856,9 @@ _lt_indices = np.array([[0, 1, 3],
 def from_lower_triangular(D):
     """ Returns a tensor given the six unique tensor elements
 
-    Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
-    Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+    Given the six unique tensor elements (in the order: Dxx, Dxy, Dyy, Dxz,
+    Dyz, Dzz) returns a 3 by 3 tensor. All elements after the sixth are
+    ignored.
 
     Parameters
     -----------
