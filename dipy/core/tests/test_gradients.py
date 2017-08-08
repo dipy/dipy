@@ -7,6 +7,9 @@ import numpy.testing as npt
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
+                                 gradient_table_from_qvals_bvecs,
+                                 gradient_table_from_gradient_strength_bvecs,
+                                 WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b)
 from dipy.io.gradients import read_bvals_bvecs
@@ -71,6 +74,52 @@ def test_GradientTable():
 
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
+
+
+def test_gradient_table_from_qvals_bvecs():
+    qvals = 30. * np.ones(7)
+    big_delta = .03  # pulse separation of 30ms
+    small_delta = 0.01  # pulse duration of 10ms
+    qvals[0] = 0
+    sq2 = np.sqrt(2) / 2
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
+    gt = gradient_table_from_qvals_bvecs(qvals, bvecs,
+                                         big_delta, small_delta)
+
+    bvals_expected = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
+    gradient_strength_expected = qvals * 2 * np.pi /\
+        (small_delta * WATER_GYROMAGNETIC_RATIO)
+    npt.assert_almost_equal(gt.gradient_strength, gradient_strength_expected)
+    npt.assert_almost_equal(gt.bvals, bvals_expected)
+
+
+def test_gradient_table_from_gradient_strength_bvecs():
+    gradient_strength = .03e-3 * np.ones(7)  # clinical strength at 30 mT/m
+    big_delta = .03  # pulse separation of 30ms
+    small_delta = 0.01  # pulse duration of 10ms
+    gradient_strength[0] = 0
+    sq2 = np.sqrt(2) / 2
+    bvecs = np.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [0, 1, 0],
+                      [0, 0, 1],
+                      [sq2, sq2, 0],
+                      [sq2, 0, sq2],
+                      [0, sq2, sq2]])
+    gt = gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
+                                                     big_delta, small_delta)
+    qvals_expected = (gradient_strength * WATER_GYROMAGNETIC_RATIO *
+                      small_delta / (2 * np.pi))
+    bvals_expected = (qvals_expected * 2 * np.pi) ** 2 *\
+                     (big_delta - small_delta / 3.)
+    npt.assert_almost_equal(gt.qvals, qvals_expected)
+    npt.assert_almost_equal(gt.bvals, bvals_expected)
 
 
 def test_gradient_table_from_bvals_bvecs():

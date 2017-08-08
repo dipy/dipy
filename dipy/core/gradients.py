@@ -14,6 +14,8 @@ from dipy.core.onetime import auto_attr
 from dipy.core.geometry import vector_norm
 from dipy.core.sphere import disperse_charges, HemiSphere
 
+WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
+
 
 class GradientTable(object):
     """Diffusion gradient information
@@ -81,6 +83,14 @@ class GradientTable(object):
     def qvals(self):
         tau = self.big_delta - self.small_delta / 3.0
         return np.sqrt(self.bvals / tau) / (2 * np.pi)
+
+    @auto_attr
+    def gradient_strength(self):
+        tau = self.big_delta - self.small_delta / 3.0
+        qvals = np.sqrt(self.bvals / tau) / (2 * np.pi)
+        gradient_strength = (qvals * (2 * np.pi) /
+                             (self.small_delta * WATER_GYROMAGNETIC_RATIO))
+        return gradient_strength
 
     @auto_attr
     def b0s_mask(self):
@@ -167,7 +177,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
 
 def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
-                              b0_threshold=0, atol=1e-2):
+                                    b0_threshold=0, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -176,7 +186,8 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
     Parameters
     ----------
 
-    qvals : an array of shape (N,)
+    qvals : an array of shape (N,),
+        q-value given in 1/mm
 
     bvecs : can be any of two options
 
@@ -203,23 +214,21 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
 
     Examples
     --------
-    >>> from dipy.core.gradients import gradient_table
-    >>> bvals=1500*np.ones(7)
-    >>> bvals[0]=0
-    >>> sq2=np.sqrt(2)/2
-    >>> bvecs=np.array([[0, 0, 0],
-    ...                 [1, 0, 0],
-    ...                 [0, 1, 0],
-    ...                 [0, 0, 1],
-    ...                 [sq2, sq2, 0],
-    ...                 [sq2, 0, sq2],
-    ...                 [0, sq2, sq2]])
-    >>> gt = gradient_table(bvals, bvecs)
-    >>> gt.bvecs.shape == bvecs.shape
-    True
-    >>> gt = gradient_table(bvals, bvecs.T)
-    >>> gt.bvecs.shape == bvecs.T.shape
-    False
+    >>> from dipy.core.gradients import gradient_table_from_qvals_bvecs
+    >>> qvals = 30. * np.ones(7)
+    >>> big_delta = .03  # pulse separation of 30ms
+    >>> small_delta = 0.01  # pulse duration of 10ms
+    >>> qvals[0] = 0
+    >>> sq2 = np.sqrt(2) / 2
+    >>> bvecs = np.array([[0, 0, 0],
+    ...                   [1, 0, 0],
+    ...                   [0, 1, 0],
+    ...                   [0, 0, 1],
+    ...                   [sq2, sq2, 0],
+    ...                   [sq2, 0, sq2],
+    ...                   [0, sq2, sq2]])
+    >>> gt = gradient_table_from_qvals_bvecs(qvals, bvecs,
+    ...                                      big_delta, small_delta)
 
     Notes
     -----
@@ -235,6 +244,85 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
     bvecs = np.asarray(bvecs)
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
+    bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
+    return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
+                                           small_delta=small_delta,
+                                           b0_threshold=b0_threshold,
+                                           atol=atol)
+
+
+def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
+                                                big_delta, small_delta,
+                                                b0_threshold=0, atol=1e-2):
+    """A general function for creating diffusion MR gradients.
+
+    It reads, loads and prepares scanner parameters like the b-values and
+    b-vectors so that they can be useful during the reconstruction process.
+
+    Parameters
+    ----------
+
+    gradient_strength : an array of shape (N,),
+        gradient strength given in T/mm
+
+    bvecs : can be any of two options
+
+        1. an array of shape (N, 3) or (3, N) with the b-vectors.
+        2. a path for the file which contains an array like the previous.
+
+    big_delta : float or array of shape (N,)
+        acquisition pulse separation time in seconds
+
+    small_delta : float
+        acquisition pulse duration time in seconds
+
+    b0_threshold : float
+        All b-values with values less than or equal to `bo_threshold` are
+        considered as b0s i.e. without diffusion weighting.
+
+    atol : float
+        All b-vectors need to be unit vectors up to a tolerance.
+
+    Returns
+    -------
+    gradients : GradientTable
+        A GradientTable with all the gradient information.
+
+    Examples
+    --------
+    >>> from dipy.core.gradients import (
+    ...    gradient_table_from_gradient_strength_bvecs)
+    >>> gradient_strength = .03e-3 * np.ones(7)  # clinical strength at 30 mT/m
+    >>> big_delta = .03  # pulse separation of 30ms
+    >>> small_delta = 0.01  # pulse duration of 10ms
+    >>> bvals[0] = 0
+    >>> sq2 = np.sqrt(2) / 2
+    >>> bvecs = np.array([[0, 0, 0],
+    ...                   [1, 0, 0],
+    ...                   [0, 1, 0],
+    ...                   [0, 0, 1],
+    ...                   [sq2, sq2, 0],
+    ...                   [sq2, 0, sq2],
+    ...                   [0, sq2, sq2]])
+    >>> gt = gradient_table_from_gradient_strength_bvecs(
+    ...     gradient_strength, bvecs, big_delta, small_delta)
+
+    Notes
+    -----
+    1. Often b0s (b-values which correspond to images without diffusion
+       weighting) have 0 values however in some cases the scanner cannot
+       provide b0s of an exact 0 value and it gives a bit higher values
+       e.g. 6 or 12. This is the purpose of the b0_threshold in the __init__.
+    2. We assume that the minimum number of b-values is 7.
+    3. B-vectors should be unit vectors.
+
+    """
+    gradient_strength = np.asarray(gradient_strength)
+    bvecs = np.asarray(bvecs)
+    if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
+        bvecs = bvecs.T
+    qvals = gradient_strength * small_delta * WATER_GYROMAGNETIC_RATIO /\
+        (2 * np.pi)
     bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
@@ -287,16 +375,16 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     Examples
     --------
     >>> from dipy.core.gradients import gradient_table
-    >>> bvals=1500*np.ones(7)
-    >>> bvals[0]=0
-    >>> sq2=np.sqrt(2)/2
-    >>> bvecs=np.array([[0, 0, 0],
-    ...                 [1, 0, 0],
-    ...                 [0, 1, 0],
-    ...                 [0, 0, 1],
-    ...                 [sq2, sq2, 0],
-    ...                 [sq2, 0, sq2],
-    ...                 [0, sq2, sq2]])
+    >>> bvals = 1500 * np.ones(7)
+    >>> bvals[0] = 0
+    >>> sq2 = np.sqrt(2) / 2
+    >>> bvecs = np.array([[0, 0, 0],
+    ...                   [1, 0, 0],
+    ...                   [0, 1, 0],
+    ...                   [0, 0, 1],
+    ...                   [sq2, sq2, 0],
+    ...                   [sq2, 0, sq2],
+    ...                   [0, sq2, sq2]])
     >>> gt = gradient_table(bvals, bvecs)
     >>> gt.bvecs.shape == bvecs.shape
     True
