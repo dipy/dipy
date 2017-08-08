@@ -32,11 +32,12 @@ class UI(object):
     Attributes
     ----------
     ui_param : object
-        This is an attribute that can be passed to the UI object by the interactor.
+        This is an attribute that can be passed to the UI object by the 
+        interactor.
     ui_list : list of :class:`UI`
         This is used when there are more than one UI elements inside
-        a UI element. They're all automatically added to the renderer at the same time
-        as this one.
+        a UI element. They're all automatically added to the renderer at the 
+        same time as this one.
     parent_ui: UI
         Reference to the parent UI element. This is useful of there is a parent
         UI element and its reference needs to be passed down to the child.
@@ -216,7 +217,8 @@ class Button2D(UI):
     def __build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
 
-        A pre-processing step to prevent re-read of file names during every state change.
+        A pre-processing step to prevent re-read of file names during every 
+        state change.
 
         Parameters
         ----------
@@ -674,7 +676,7 @@ class Panel2D(UI):
             raise ValueError("You can only left-align or right-align objects in a panel.")
 
 
-class TextActor2D(object):
+class TextBlock2D(UI):
     """ Wraps over the default vtkTextActor and helps setting the text.
 
     Contains member functions for text formatting.
@@ -686,6 +688,7 @@ class TextActor2D(object):
     """
 
     def __init__(self):
+        super(TextBlock2D, self).__init__()
         self.actor = vtkTextActor()
 
     def get_actor(self):
@@ -697,6 +700,12 @@ class TextActor2D(object):
             The actor composing this class.
         """
         return self.actor
+
+    def get_actors(self):
+        """ Returns the actors that compose this UI component.
+
+        """
+        return [self.actor]
 
     @property
     def message(self):
@@ -928,6 +937,16 @@ class TextActor2D(object):
         """
         self.actor.SetPosition(*position)
 
+    def set_center(self, position):
+        """ Sets the text center to position.
+
+        Parameters
+        ----------
+        position : (float, float)
+
+        """
+        self.position = position
+
 
 class TextBox2D(UI):
     """ An editable 2D text box that behaves as a UI component.
@@ -1033,26 +1052,26 @@ class TextBox2D(UI):
 
         Returns
         -------
-        :class:`vtkActor2d`
+        :class:`TextBlock2D`
 
         """
-        text_actor = TextActor2D()
-        text_actor.position = position
-        text_actor.message = text
-        text_actor.font_size = font_size
-        text_actor.font_family = font_family
-        text_actor.justification = justification
-        text_actor.bold = bold
-        text_actor.italic = italic
-        text_actor.shadow = shadow
+        text_block = TextBlock2D()
+        text_block.position = position
+        text_block.message = text
+        text_block.font_size = font_size
+        text_block.font_family = font_family
+        text_block.justification = justification
+        text_block.bold = bold
+        text_block.italic = italic
+        text_block.shadow = shadow
         if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
             pass
         else:
-            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-            text_actor.color = color
+            text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            text_block.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+            text_block.color = color
 
-        return text_actor
+        return text_block
 
     def set_message(self, message):
         """ Set custom text to textbox.
@@ -1335,7 +1354,7 @@ class LineSlider2D(UI):
         The line on which the slider disk moves.
     slider_disk : :class:`vtkActor`
         The moving slider disk.
-    text : :class:`TextActor2D`
+    text : :class:`TextBlock2D`
         The text that shows percentage.
 
     """
@@ -1437,7 +1456,7 @@ class LineSlider2D(UI):
         # /Slider Disk
 
         # Slider Text
-        self.text = TextActor2D()
+        self.text = TextBlock2D()
         self.text.position = (self.left_x_position - 50, self.center[1] - 10)
         self.text.font_size = text_size
         # /Slider Text
@@ -1711,7 +1730,7 @@ class DiskSlider2D(UI):
         self.handle = vtk.vtkActor2D()
         self.handle.SetMapper(handle_mapper)
 
-        self.text = TextActor2D()
+        self.text = TextBlock2D()
         offset = np.array((16., 8.))
         self.text.position = self.center - offset
         self.text.font_size = self.text_size

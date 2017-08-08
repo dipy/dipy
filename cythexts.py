@@ -38,7 +38,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
     for mod in exts:
         for source in mod.sources:
             base, ext = splitext(source)
-            if not ext in ('.pyx', '.py'):
+            if ext not in ('.pyx', '.py'):
                 continue
             source_hash = sha1(open(source, 'rb').read()).hexdigest()
             c_fname = base + '.c'
@@ -58,7 +58,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
         if line.startswith('#'):
             continue
         fname, hash = [e.strip() for e in line.split(',')]
-        if not hash in stamps:
+        if hash not in stamps:
             return False
         # Compare path made canonical for \/
         fname = fname.replace(filesep, '/')
