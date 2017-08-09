@@ -18,6 +18,7 @@ import sys
 import shutil
 from subprocess import check_call
 from glob import glob
+from time import time
 
 # Third-party imports
 
@@ -139,7 +140,10 @@ name = ''
 
 def run_script():
     namespace = {}
+    t1 = time()
     exec(open(script).read(), namespace)
+    t2 = time()
+    print("That took %.2f seconds to run" % (t2 - t1))
     plt.close('all')
     del namespace
 
