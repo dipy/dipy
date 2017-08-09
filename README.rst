@@ -47,7 +47,7 @@ DIPY can be installed using `pip`:
 
     pip install dipy
 
-or using `conda`:
+or using `conda` (only on Python 2):
 
     conda install -c conda-forge dipy vtk
 
