@@ -121,7 +121,7 @@ doctest:
 
 rstexamples: rstexamples-stamp
 rstexamples-stamp:
-	../tools/make_examples.py
+	cd examples_built && ../../tools/make_examples.py
 	touch $@
 
 pdf: pdf-stamp

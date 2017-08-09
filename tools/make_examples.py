@@ -54,12 +54,12 @@ plt.show = show
 # -----------------------------------------------------------------------------
 
 # Where things are
-DOC_PATH = op.abspath(op.join('..', 'doc'))
+DOC_PATH = op.abspath('..')
 EG_INDEX_FNAME = op.join(DOC_PATH, 'examples_index.rst')
 EG_SRC_DIR = op.join(DOC_PATH, 'examples')
 
 # Work in examples directory
-os.chdir(op.join(DOC_PATH, 'examples_built'))
+#os.chdir(op.join(DOC_PATH, 'examples_built'))
 
 if not os.getcwd().endswith(op.join('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
@@ -107,7 +107,6 @@ check_call('python ../../tools/ex2rst --project dipy --outdir . .', shell=True)
 # added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
 
-# Execute each python script in the directory.
 if not op.isdir('fig'):
     os.mkdir('fig')
 
@@ -138,22 +137,23 @@ if use_memprof:
 name = ''
 
 
-def run_script(script_name=name):
+def run_script():
     namespace = {}
     exec(open(script).read(), namespace)
     plt.close('all')
     del namespace
 
 
+# Execute each python script in the directory:
 for script in validated_examples:
     figure_basename = op.join('fig', op.splitext(script)[0])
     if use_memprof:
         print("memory profiling ", script)
-        name = script
         memory_profiler.profile(run_script)()
+
     else:
         print(script)
-        run_script(script)
+        run_script()
 
 if use_xvfb:
     display.stop()
