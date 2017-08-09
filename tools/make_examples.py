@@ -115,14 +115,28 @@ use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 use_memprof = os.environ.get('TEST_WITH_MEMPROF', False)
 
 if use_xvfb:
-    from xvfbwrapper import Xvfb
+    try:
+        from xvfbwrapper import Xvfb
+    except ImportError:
+        raise RuntimeError("You are trying to run a documentation build",
+                           "with 'TEST_WITH_XVFB' set to True, but ",
+                           "xvfbwrapper is not available. Please install",
+                           "xvfbwrapper and try again")
+
     display = Xvfb(width=1920, height=1080)
     display.start()
 
 if use_memprof:
-    import memory_profiler
+    try:
+        import memory_profiler
+    except ImportError:
+        raise RuntimeError("You are trying to run a documentation build",
+                           "with 'TEST_WITH_MEMPROF' set to True, but ",
+                           "memory_profiler is not available. Please install",
+                           "memory_profiler and try again")
 
 name = ''
+
 
 def run_script(script_name=name):
     namespace = {}
