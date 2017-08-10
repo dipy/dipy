@@ -112,7 +112,7 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double get_exclude_value_at_position(self, double[::1] point):
+    cpdef double get_exclude(self, double[::1] point):
         exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None],
                                                   point, self.interp_out_view)
         if exclude_err == -1:
@@ -122,7 +122,7 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double get_include_value_at_position(self, double[::1] point):
+    cpdef double get_include(self, double[::1] point):
         exclude_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
                                                   point, self.interp_out_view)
         if exclude_err == -1:

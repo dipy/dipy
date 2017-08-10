@@ -28,8 +28,8 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 cdef class ConstrainedTissueClassifier(TissueClassifier):
     cdef:
         double[:, :, :] include_map, exclude_map
-    cpdef double get_exclude_value_at_position(self, double[::1] point)
-    cpdef double get_include_value_at_position(self, double[::1] point)
+    cpdef double get_exclude(self, double[::1] point)
+    cpdef double get_include(self, double[::1] point)
     pass
 
 cdef class ActTissueClassifier(ConstrainedTissueClassifier):
