@@ -3,8 +3,8 @@ cimport cython
 cimport numpy as np
 import numpy as np
 from .direction_getter cimport DirectionGetter
-from .tissue_classifier cimport (TissueClassifier, TissueClass, TRACKPOINT,
-                                 ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
+from .tissue_classifier cimport(TissueClassifier, TissueClass, TRACKPOINT,
+                                ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
 
 
 cdef extern from "dpy_math.h" nogil:
@@ -27,8 +27,8 @@ cdef inline double stepsize(double point, double increment) nogil:
         return dist / increment
 
 
-cdef void step_to_boundary(double *point, double *direction,
-                          double overstep) nogil:
+cdef void step_to_boundary(double * point, double * direction,
+                           double overstep) nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
     Parameters
@@ -61,7 +61,7 @@ cdef void step_to_boundary(double *point, double *direction,
         point[i] += smallest_step * direction[i]
 
 
-cdef void fixed_step(double *point, double *direction, double stepsize) nogil:
+cdef void fixed_step(double * point, double * direction, double stepsize) nogil:
     """Updates point by stepping in direction.
 
     Parameters
@@ -78,7 +78,7 @@ cdef void fixed_step(double *point, double *direction, double stepsize) nogil:
         point[i] += direction[i] * stepsize
 
 
-cdef inline void copypoint(double *a, double *b) nogil:
+cdef inline void copypoint(double * a, double * b) nogil:
     for i in range(3):
         b[i] = a[i]
 
@@ -93,62 +93,72 @@ def pft_tracker(np.ndarray[np.float_t, ndim=1] seed,
                 TissueClassifier tc,
                 np.ndarray[np.float_t, ndim=1] voxel_size,
                 double step_size,
-                int back_tracking_steps,
-                int pft_tracking_steps,
-                int max_pft_trial,
-                int pft_nbr_particles):
-
+                int pft_nbr_back_steps,
+                int pft_nbr_steps,
+                int pft_max_trial,
+                int pft_nbr_particles,
+                np.ndarray[np.float_t, ndim=4, mode='c'] particle_paths,
+                np.ndarray[np.float_t, ndim=3, mode='c'] particle_dirs,
+                np.ndarray[np.float_t, ndim=2, mode='c'] particle_weights,
+                np.ndarray[np.int_t, ndim=3, mode='c'] particle_states):
 
     if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
-        voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
+            voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError()
     cdef:
-        int i, pft_trial, new_i, back_i
+        int i, pft_trial, pft_streamline_i, back_i
         TissueClass tissue_class
         double point[3], dir[3], vs[3], voxdir[3]
         double[::1] pview = point, dview = dir
-        void (*step)(double*, double*, double) nogil
+        void (*step)(double * , double*, double) nogil
     pft_trial = 0
 
-    for i in range(3):
-        streamline[0, i] = point[i] = seed[i]
-        dir[i] = first_step[i]
-        vs[i] = voxel_size[i]
+    for j in range(3):
+        streamline[0, j] = point[j] = seed[j]
+        dir[j] = first_step[j]
+        vs[j] = voxel_size[j]
 
     tissue_class = TRACKPOINT
-    for i in range(1, streamline.shape[0]):
+    i = 0
+    while i < streamline.shape[0] - 1:
+        i += 1
         if dg.get_direction(pview, dview):
             break
         for j in range(3):
             voxdir[j] = dir[j] / vs[j]
         fixed_step(point, voxdir, step_size)
-        copypoint(point, &streamline[i, 0])
+        copypoint(point, & streamline[i, 0])
         tissue_class = tc.check_point(pview)
         if tissue_class == TRACKPOINT:
             continue
         elif tissue_class == ENDPOINT:
-            if (pft_trial < max_pft_trial and i > 1):
-                back_i = min(i-1, back_tracking_steps)
-                new_i = i - back_i
-                pft_tissue_class, ii = particle_filtering_tractography(streamline,
-                                                                       new_i,
-                                                                       dg,
-                                                                       tc,
-                                                                       voxel_size,
-                                                                       step_size,
-                                                                       pft_tracking_steps,
-                                                                       pft_nbr_particles)
-                print i, back_i, new_i, ii
-                pft_trial += 1
-                #continue
-                i += 1
-                break
+            i += 1
+            break
+        elif tissue_class == INVALIDPOINT:
+            if (pft_trial < pft_max_trial and i > 1 and False):
+                back_i = min(i - 1, pft_nbr_back_steps)
+                pft_streamline_i = min(i - back_i, streamline.shape[0] - i)
+                tissue_class, i = _pft(streamline,
+                                       pft_streamline_i,
+                                       dir,
+                                       dg,
+                                       tc,
+                                       voxel_size,
+                                       step_size,
+                                       pft_nbr_steps,
+                                       pft_nbr_particles,
+                                       particle_paths,
+                                       particle_dirs,
+                                       particle_weights,
+                                       particle_states)
+                # update the current point
+                for j in range(3):
+                    point[j] = streamline[i, j]
+                if not tissue_class == TRACKPOINT:
+                    break
             else:
                 i += 1
                 break
-        elif tissue_class == INVALIDPOINT:
-            i += 1
-            break
         elif tissue_class == OUTSIDEIMAGE:
             break
     else:
@@ -157,30 +167,101 @@ def pft_tracker(np.ndarray[np.float_t, ndim=1] seed,
     return i, tissue_class
 
 
-def particle_filtering_tractography(np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
-                                    int i,
-                                    DirectionGetter dg,
-                                    TissueClassifier tc,
-                                    np.ndarray[np.float_t, ndim=1] voxel_size,
-                                    double step_size,
-                                    int pft_tracking_steps,
-                                    int pft_nbr_particles):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef _pft(np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
+          int streamline_i,
+          double * init_dir,
+          DirectionGetter dg,
+          TissueClassifier tc,
+          np.ndarray[np.float_t, ndim=1] voxel_size,
+          double step_size,
+          int pft_nbr_steps,
+          int pft_nbr_particles,
+          np.ndarray[np.float_t, ndim=4, mode='c'] particle_paths,
+          np.ndarray[np.float_t, ndim=3, mode='c'] particle_dirs,
+          np.ndarray[np.float_t, ndim=2, mode='c'] particle_weights,
+          np.ndarray[np.int_t, ndim=3, mode='c'] particle_states):
     cdef:
         double sum_weights
         double point[3], dir[3], vs[3], voxdir[3]
         double[::1] pview = point, dview = dir
-        cdef np.ndarray particle_paths = np.zeros([pft_nbr_particles, pft_tracking_steps + 1, 3], dtype=float)
-        cdef np.ndarray temp_particle_paths = np.zeros([pft_nbr_particles, pft_tracking_steps + 1, 3], dtype=float)
-        cdef np.ndarray particle_weights = np.zeros([pft_nbr_particles], dtype=float)
-        cdef np.ndarray temp_particle_weights = np.zeros([pft_nbr_particles], dtype=float)
-        cdef np.ndarray particle_states = np.zeros([pft_nbr_particles], dtype=float)
-        cdef np.ndarray temp_particle_states = np.zeros([pft_nbr_particles], dtype=float)
 
-    for k in range(pft_nbr_particles):
-        particle_paths[k][0][:] = streamline[i][:]
-        particle_weights[k] = 1/pft_nbr_particles
+    for i in range(3):
+        vs[i] = voxel_size[i]
 
-    return ENDPOINT, i
+    for p in range(pft_nbr_particles):
+        for i in range(3):
+            particle_paths[0, p, 0, i] = streamline[streamline_i, i]
+            particle_dirs[0, p, i] = init_dir[i]
+        particle_weights[0, p] = 1. / pft_nbr_particles
+        particle_states[0, p] = TRACKPOINT
+
+    for s in range(pft_nbr_steps):
+        for p in range(pft_nbr_particles):
+            if not particle_states[0, p, 0] == TRACKPOINT:
+                for i in range(3):
+                    particle_paths[0, p, s, i] = 0
+                    particle_dirs[0, p, i] = 0
+                continue
+
+            for i in range(3):
+                point[i] = particle_paths[0, p, s, i]
+                dir[i] = particle_dirs[0, p, i]
+
+            if dg.get_direction(pview, dview):
+                particle_states[0, p] = INVALIDPOINT
+            else:
+                for j in range(3):
+                    voxdir[j] = dir[j] / vs[j]
+                fixed_step(point, voxdir, step_size)
+
+                for i in range(3):
+                    particle_paths[0, p, s + 1, i] = point[i]
+                    particle_dirs[0, p, i] = dir[i]
+
+                particle_states[0, p, 0] = tc.check_point(pview)
+                particle_states[0, p, 1] = s
+                particle_weights[0, p] *= 1 - tc.get_exclude(pview)
+                if (particle_states[0, p, 0] == INVALIDPOINT and
+                        particle_weights[0, p] > 0):
+                    particle_states[0, p, 0] = TRACKPOINT
+
+        sum_weights = 0
+        for p in range(pft_nbr_particles):
+            sum_weights += particle_weights[0, p]
+        sum_squared = 0
+        for p in range(pft_nbr_particles):
+            particle_weights[0, p] = particle_weights[0, p] / sum_weights
+            sum_squared += particle_weights[0, p] * particle_weights[0, p]
+        N_effective = 1. / sum_squared
+        if N_effective < pft_nbr_particles / 10.:
+            # copy data in the temp arrays
+            for p in range(pft_nbr_particles):
+                for s in range(pft_nbr_steps):
+                    for j in range(3):
+                        particle_paths[1, p, s, j] = particle_paths[0, p, s, j]
+                particle_weights[1, p] = particle_weights[0, p]
+                particle_states[1, p] = particle_states[0, p]
+            # sample N new particle
+            for p in range(pft_nbr_particles):
+                p_source = particle_weights[1, :].cumsum().searchsorted(np.random.random(), 'right')
+                for s in range(pft_nbr_steps):
+                    for j in range(3):
+                        particle_paths[0, p, s, j] = particle_paths[1, p_source, s, j]
+                particle_states[0, p] = particle_states[1, p_source]
+                particle_weights[0, p] = 1. / pft_nbr_particles
+    # update the streamline with the trajectory of one particle
+    p = particle_weights[0, :].cumsum().searchsorted(np.random.random(),
+                                                     'right')
+    for s in range(particle_states[0, p, 1] + 1):
+        for j in range(3):
+            streamline[streamline_i + s, j] = particle_paths[0, p, s, j]
+    for j in range(3):
+        init_dir[j] = particle_dirs[0, p, j]
+
+    return particle_states[0, p, 0], streamline_i + particle_states[0, p, 1]
 
 
 @cython.boundscheck(False)
@@ -246,7 +327,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
 
     """
     if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
-        voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
+            voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError()
 
     cdef:
@@ -254,7 +335,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         TissueClass tissue_class
         double point[3], dir[3], vs[3], voxdir[3]
         double[::1] pview = point, dview = dir
-        void (*step)(double*, double*, double) nogil
+        void (*step)(double * , double*, double) nogil
 
     if fixedstep:
         step = fixed_step
@@ -273,7 +354,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         for j in range(3):
             voxdir[j] = dir[j] / vs[j]
         step(point, voxdir, stepsize)
-        copypoint(point, &streamline[i, 0])
+        copypoint(point, & streamline[i, 0])
         tissue_class = tc.check_point(pview)
         if tissue_class == TRACKPOINT:
             continue

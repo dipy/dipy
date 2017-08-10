@@ -1,10 +1,10 @@
 import numpy as np
 
-#from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
+from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
 
 from dipy.align import Bunch
-#from dipy.direction import ProbabilisticDirectionGetter
+#from dipy.direction.probabilistic_direction_getter import ProbabilisticDirectionGetter
 from dipy.tracking import utils
 
 
@@ -134,7 +134,7 @@ class LocalTracking(object):
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
-                    parts = (B[stepsB-1:0:-1], F[:stepsF])
+                    parts = (B[stepsB - 1:0:-1], F[:stepsF])
                     streamline = np.concatenate(parts, axis=0)
                 yield streamline
 
@@ -144,8 +144,9 @@ class ParticleFilteringTracking(LocalTracking):
     """
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, return_all=True,
-                 max_pft_trial=20, back_tracking_dist=2, pft_tracking_dist=3):
+                 step_size, max_cross=None, maxlen=500,
+                 pft_back_tracking_dist=2, pft_front_tracking_dist=1,
+                 pft_max_trial=20, pft_nbr_particles=15, return_all=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -166,36 +167,53 @@ class ParticleFilteringTracking(LocalTracking):
             data.
         step_size : float
             Step size used for tracking.
-        back_tracking_dist : float
-            Distance in mm to back track before starting the particle filtering
-            tractography.
-        pft_tracking_dist : float
-            Distance in mm to run the particle filtering tractography.
-        max_pft_trial : int
-            Maximum number of trial for the particle filtering tractography
-            (Prevents infinit loops).
         max_cross : int or None
             The maximum number of direction to track from each seed in crossing
             voxels. By default all initial directions are tracked.
         maxlen : int
             Maximum number of steps to track from seed. Used to prevent
             infinite loops.
+        pft_back_tracking_dist : float
+            Distance in mm to back track before starting the particle filtering
+            tractography. The total particle filtering tractography distance is
+            equal to back_tracking_dist + front_tracking_dist.
+            By default this is set to 2 mm.
+        pft_front_tracking_dist : float
+            Distance in mm to run the particle filtering tractography after the
+            the back track distance. The total particle filtering tractography
+            distance is equal to back_tracking_dist + front_tracking_dist. By
+            default this is set to 1 mm. By default this is set to 1 mm.
+        pft_pft_max_trial : int
+            Maximum number of trial for the particle filtering tractography
+            (Prevents infinit loops).
+        pft_nbr_particles : int
+            Number of particles to use in the particle filter.
         return_all : bool
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
         """
 
-        #if not isinstance(direction_getter, ProbabilisticDirectionGetter):
-        #    raise ValueError("expecting ProbabilisticDirectionGetter")
+        if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
+            raise ValueError("expecting ConstrainedTissueClassifier ")
 
-        #if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
-        #    raise ValueError("expecting ConstrainedTissueClassifier")
-
-        self.back_tracking_steps = int(np.ceil(back_tracking_dist / step_size))
-        self.pft_tracking_steps = int(np.ceil(pft_tracking_dist / step_size))
-        self.max_pft_trial = max_pft_trial
-        self.nbr_particles = 10
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
+
+        self.pft_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
+                                              / step_size))
+        self.pft_nbr_steps = int(np.ceil((pft_back_tracking_dist
+                                          + pft_front_tracking_dist)
+                                         / step_size))
+        self.pft_max_trial = pft_max_trial
+        self.pft_nbr_particles = pft_nbr_particles
+        self.particle_paths = np.empty((2, self.pft_nbr_particles,
+                                        self.pft_nbr_steps + 1, 3),
+                                       dtype=float)
+        self.particle_weights = np.empty((2, self.pft_nbr_particles),
+                                         dtype=float)
+        self.particle_dirs = np.empty((2, self.pft_nbr_particles, 3),
+                                      dtype=float)
+        self.particle_states = np.empty((2, self.pft_nbr_particles, 2),
+                                        dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
                                                         seeds,
@@ -214,8 +232,11 @@ class ParticleFilteringTracking(LocalTracking):
                            self.tissue_classifier,
                            self._voxel_size,
                            self.step_size,
-                           self.directions,
-                           self.back_tracking_steps,
-                           self.pft_tracking_steps,
-                           self.max_pft_trial,
-                           self.nbr_particles)
+                           self.pft_nbr_back_steps,
+                           self.pft_nbr_steps,
+                           self.pft_max_trial,
+                           self.pft_nbr_particles,
+                           self.particle_paths,
+                           self.particle_dirs,
+                           self.particle_weights,
+                           self.particle_states)
