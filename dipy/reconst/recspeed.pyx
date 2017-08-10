@@ -627,10 +627,7 @@ cdef double fast_func_mul(double [:] x, double [:] am2, double [:] small_delta, 
     cdef cnp.npy_intp K = small_delta.shape[0]
     cdef double D_intra = 0.6 * 10 ** 3
     cdef double num
-    #cdef double [:, ::1] summ = np.zeros((small_delta.shape[0], M))
     cdef double * idenom = <double *> calloc(M, sizeof(double))
-    #cdef double [:] summ_rows = np.zeros(M)
-
 
     for i in range(M):
         am = am2[i]
@@ -647,41 +644,7 @@ cdef double fast_func_mul(double [:] x, double [:] am2, double [:] small_delta, 
 
             summ_rows[j] += num * idenom[i]
 
-    #    for j in range(K):
-    #        for i in range(M):
-    #            summ_rows[j] += summ[j, i]
 
-    #print(summ[3, 3])
-    #print(summ[20, 2])
-    #print(summ_rows[20])
-    #print(summ_rows[2])
     free(idenom)
     return num
 
-
-def func_mul_jitted(x, am2, small_delta, big_delta):
-    M = am2.shape[0]
-    bd = np.zeros((small_delta.shape[0], M))
-    sd = np.zeros((small_delta.shape[0], M))
-    D_intra = 0.6 * 10 ** 3
-    for i in range(M):
-        am = am2[i]
-        D_intra_am = D_intra * am
-        bd[:, i] = D_intra_am * big_delta
-        sd[:, i] = D_intra_am * small_delta
-#    esd = np.exp(-sd)
-#    ebd = np.exp(-bd)
-#    num = 2 * sd - 2 + 2 * esd + 2 * ebd - \
-#                ebd / esd - ebd * esd
-    num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
-                np.exp(-(bd - sd)) - np.exp(-(bd + sd))
-#    num = all_exps(sd, bd)
-    denom = (D_intra ** 2) * (am2 ** 3) * ((x[2]) ** 2 * am2 - 1)
-    idenom = 1. / denom
-    #summ = fun_sum(num, idenom)
-    summ = num * idenom.T
-    #summ_rows = np.sum(summ, axis=1)
-    summ_rows = np.zeros((summ.shape[0],))
-    for i in range(summ.shape[0]):
-        summ_rows[i] = np.sum(summ[i])
-    return summ_rows
