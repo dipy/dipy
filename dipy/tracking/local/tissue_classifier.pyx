@@ -109,6 +109,26 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef double get_exclude_value_at_position(self, double[::1] point):
+        exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None],
+                                                  point, self.interp_out_view)
+        if exclude_err == -1:
+            return 0
+        return self.interp_out_view[0]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef double get_include_value_at_position(self, double[::1] point):
+        exclude_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
+                                                  point, self.interp_out_view)
+        if exclude_err == -1:
+            return 0
+        return self.interp_out_view[0]
+
 
 cdef class ActTissueClassifier(ConstrainedTissueClassifier):
     r"""
@@ -225,7 +245,6 @@ cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
         # test if the tracking continues
         if include_result + exclude_result <= 0:
             return TRACKPOINT
-
         num = max(0, (1 - include_result - exclude_result))
         den = num + include_result + exclude_result
         p = (num / den) ** self.correction_factor
