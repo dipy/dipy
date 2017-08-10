@@ -12,6 +12,8 @@ from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 from time import time
 import cvxpy as cvx
+from dipy.reconst.recspeed import func_mul
+
 
 global overall_duration
 overall_duration = 0
@@ -60,9 +62,11 @@ am = np.array([1.84118307861360, 5.33144196877749,
                178.280475036977, 181.422152668422,
                184.563828222242, 187.705499575101])
 
-am = np.array([1.84118307861360, 5.33144196877749,
-               8.53631578218074, 11.7060038949077,
-               14.8635881488839])
+#am = np.array([1.84118307861360, 5.33144196877749,
+#               8.53631578218074, 11.7060038949077,
+#               14.8635881488839])
+
+am = np.array([1.84118307861360])
 
 @jit(nopython=True, nogil=True, cache=True)
 def func_bvec(bvecs, n):
@@ -97,10 +101,11 @@ def func_bvec(bvecs, n):
 #    return summ
 #@profile
 @jit(signature_or_function=float64[:](float64[:], float64[:], float64[:], float64[:]), nopython=True, nogil=True, cache=True)
-def func_mul(x, am2, small_delta, big_delta):
+def func_mul_jitted(x, am2, small_delta, big_delta):
     M = am2.shape[0]
     bd = np.zeros((small_delta.shape[0], M))
     sd = np.zeros((small_delta.shape[0], M))
+    D_intra = 0.6 * 10 ** 3
     for i in range(M):
         am = am2[i]
         D_intra_am = D_intra * am
@@ -122,6 +127,9 @@ def func_mul(x, am2, small_delta, big_delta):
     for i in range(summ.shape[0]):
         summ_rows[i] = np.sum(summ[i])
     return summ_rows
+
+
+
 
 
 ##@cfunc("float64(float64, float64)")
@@ -172,7 +180,7 @@ class ActiveAxModel(ReconstModel):
         self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
 #        self.bvec_norm = func_norm(gtab.bvecs)
 
-#    @profile
+    @profile
     def S1(self, x1):
         big_delta = self.big_delta
         small_delta = self.small_delta
@@ -186,7 +194,9 @@ class ActiveAxModel(ReconstModel):
         L1 = L * np.dot(self.gtab.bvecs, n) ** 2
         am2 = (am / x1[2]) ** 2
         t1 = time()
-        summ_rows = func_mul(x1, am2, small_delta, big_delta)
+
+        summ_rows = np.zeros(small_delta.shape[0])
+        func_mul(x1, am2, small_delta, big_delta, summ_rows)
         t2 = time()
         duration = t2 - t1
         global overall_duration
