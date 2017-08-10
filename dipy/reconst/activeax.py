@@ -7,9 +7,12 @@ from scipy.optimize import differential_evolution
 # import cvxpy as cvx
 from dipy.data import get_data
 import nibabel as nib
-from numba import jit
+from numba import jit, cfunc, float64
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
+from time import time
+global overall_duration
+overall_duration = 0
 
 gamma = 2.675987 * 10 ** 8
 D_intra = 0.6 * 10 ** 3
@@ -18,7 +21,7 @@ params = np.loadtxt(fscanner)
 img = nib.load(fname)
 data = img.get_data()
 affine = img.affine
-# bvecs = params[:, 0:3]
+#bvecs = params[:, 0:3]
 G = params[:, 3] / 10 ** 6  # gradient strength
 #big_delta = params[:, 4]
 #small_delta = params[:, 5]
@@ -55,6 +58,102 @@ am = np.array([1.84118307861360, 5.33144196877749,
                178.280475036977, 181.422152668422,
                184.563828222242, 187.705499575101])
 
+am = np.array([1.84118307861360, 5.33144196877749,
+               8.53631578218074, 11.7060038949077,
+               14.8635881488839])
+
+@jit(nopython=True, nogil=True, cache=True)
+def func_bvec(bvecs, n):
+    M = bvecs.shape[0]
+    g_per = np.zeros((M))
+    for i in range(M):
+#        g_per[i] = bvecs[i, 0]**2 + bvecs[i, 1]**2 + bvecs[i, 2]**2 - \
+#                   (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
+        g_per[i] = 1 - \
+                   (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
+    return g_per
+
+
+##@profile
+#@jit(nopython=True, nogil=True, cache=True)
+#def func_mul(x, am2, small_delta, big_delta):
+#    M = am2.shape[0]
+#    N = small_delta.shape[0]
+#    summ = np.zeros((N, M))
+#    for i in range(M):
+#        am = am2[i]
+#        D_intra_am = D_intra * am
+#        bd = D_intra_am * big_delta
+#        sd = D_intra_am * small_delta
+##        num = 2 * sd - 2 + 2 * np.e**(-sd) + 2 * np.e**(-bd) - \
+##                np.e**(-(bd - sd)) - np.e**(-(bd + sd))
+#        num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
+#                np.exp(-(bd - sd)) - np.exp(-(bd + sd))
+#        denom = (D_intra ** 2) * (am ** 3) * ((x[2]) ** 2 * am - 1)
+#        idenom = 1. / denom
+#        summ[:, i] = num * idenom
+#    return summ
+#@profile
+@jit(signature_or_function=float64[:](float64[:], float64[:], float64[:], float64[:]), nopython=True, nogil=True, cache=True)
+def func_mul(x, am2, small_delta, big_delta):
+    M = am2.shape[0]
+    bd = np.zeros((small_delta.shape[0], M))
+    sd = np.zeros((small_delta.shape[0], M))
+    for i in range(M):
+        am = am2[i]
+        D_intra_am = D_intra * am
+        bd[:, i] = D_intra_am * big_delta
+        sd[:, i] = D_intra_am * small_delta
+#    esd = np.exp(-sd)
+#    ebd = np.exp(-bd)
+#    num = 2 * sd - 2 + 2 * esd + 2 * ebd - \
+#                ebd / esd - ebd * esd
+    num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
+                np.exp(-(bd - sd)) - np.exp(-(bd + sd))
+#    num = all_exps(sd, bd)
+    denom = (D_intra ** 2) * (am2 ** 3) * ((x[2]) ** 2 * am2 - 1)
+    idenom = 1. / denom
+    #summ = fun_sum(num, idenom)
+    summ = num * idenom.T
+    #summ_rows = np.sum(summ, axis=1)
+    summ_rows = np.zeros((summ.shape[0],))
+    for i in range(summ.shape[0]):
+        summ_rows[i] = np.sum(summ[i])
+    return summ_rows
+
+
+##@cfunc("float64(float64, float64)")
+#signature= "float64(float64, float64)"
+#@jit(nopython=True, nogil=True, cache=True)
+#def all_exps(sd, bd):
+#    return 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
+#            np.exp(-(bd - sd)) - np.exp(-(bd + sd))
+
+
+#@jit(nopython=True, nogil=True, cache=True)
+#def fun_sum(num, idenom):
+#    summ = np.zeros((num.shape[0], num.shape[1]))
+#    M = idenom.shape[0]
+#    for i in range(M):
+#        summ[:, i] = num[:, i] * idenom[i]
+#    return summ
+
+
+#@jit(nopython=True, nogil=True, cache=True)
+#def S2(x2, bvals, bvecs):
+#    x2_0 = x2[0]
+#    x2_1 = x2[1]
+#    x2_2 = x2[2]
+#    sinT = np.sin(x2_0)
+#    cosT = np.cos(x2_0)
+#    sinP = np.sin(x2_1)
+#    cosP = np.cos(x2_1)
+#    n = np.array([cosP * sinT, sinP * sinT, cosT])
+#    # zeppelin
+#    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - x2_2))) *
+#                        (np.dot(bvecs, n) ** 2) + (D_intra *
+#                                                             (1 - x2_2)))
+#    return yhat_zeppelin
 
 
 class ActiveAxModel(ReconstModel):
@@ -68,74 +167,77 @@ class ActiveAxModel(ReconstModel):
         self.G = G
         D_iso = 2 * 10 ** 3
         self.yhat_ball = D_iso * self.gtab.bvals
-#        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
+        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
 #        self.bvec_norm = func_norm(gtab.bvecs)
 
 #    @profile
     def S1(self, x1):
-#        big_delta = self.big_delta
-#        small_delta = self.small_delta
+        big_delta = self.big_delta
+        small_delta = self.small_delta
         sinT = np.sin(x1[0])
         cosT = np.cos(x1[0])
         sinP = np.sin(x1[1])
         cosP = np.cos(x1[1])
         n = np.array([cosP * sinT, sinP * sinT, cosT])
-#        bvecs = self.gtab.bvecs
         # Cylinder
         L = self.gtab.bvals * D_intra
         L1 = L * np.dot(self.gtab.bvecs, n) ** 2
         am2 = (am / x1[2]) ** 2
-        summ = self.func_mul(x1, am2)
-        summ_rows = np.sum(summ, axis=1)
-        g_per = self.func_bvec(n)
+        t1 = time()
+        summ_rows = func_mul(x1, am2, small_delta, big_delta)
+        t2 = time()
+        duration = t2 - t1
+        global overall_duration
+        overall_duration += duration
+#        summ_rows = np.sum(summ, axis=1)
+        g_per = func_bvec(self.gtab.bvecs, n)
         L2 = 2 * (g_per * gamma ** 2) * summ_rows * G ** 2
         yhat_cylinder = L1 + L2
         return yhat_cylinder
 
-
     def S4(self):
-    # dot
+        # dot
         yhat_dot = np.zeros(self.gtab.bvals.shape)
         return yhat_dot
 
-    @jit(nogil=True, cache=True)
-    def func_mul(self, x, am2):
-        M = am2.shape[0]
-        big_delta = self.big_delta
-        small_delta = self.small_delta
-        summ = np.zeros((self.small_delta.shape[0], M))
-        for i in range(M):
-            am = am2[i]
-            D_intra_am = D_intra * am
-            bd = D_intra_am * big_delta
-            sd = D_intra_am * small_delta
-            num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
-                  np.exp(-(bd - sd)) - np.exp(-(bd + sd))
-            denom = (D_intra ** 2) * (am ** 3) * ((x[2]) ** 2 * am - 1)
-            idenom = 1. / denom
-            summ[:, i] = num * idenom
-        return summ
-
 #    @jit(nogil=True, cache=True)
-#    def func_norm(self):
-#        bvec_norm = np.zeros(self.gtab.bvecs.shape[0])
-#        for i in range(self.gtab.bvecs.shape[0]):
-#            bvec_norm[i] = self.gtab.bvecs[i, 0]**2 + \
-#                     self.gtab.bvecs[i, 1]**2 + self.gtab.bvecs[i, 2]**2
-#        return bvec_norm
-
-    @jit(nogil=True, cache=True)
-    def func_bvec(self, n):
-        M = self.gtab.bvecs.shape[0]
-        g_per = np.zeros((M))
-        bvecs = self.gtab.bvecs
-        for i in range(M):
-#            g_per[i] = bvecs[i, 0]**2 + bvecs[i, 1]**2 + bvecs[i, 2]**2 - \
+#    def func_mul(self, x, am2):
+#        M = am2.shape[0]
+#        big_delta = self.big_delta
+#        small_delta = self.small_delta
+##        summ = np.zeros((self.small_delta.shape[0], M))
+#        for i in range(M):
+#            am = am2[i]
+#            D_intra_am = D_intra * am
+#            bd = D_intra_am * big_delta
+#            sd = D_intra_am * small_delta
+#            num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
+#                  np.exp(-(bd - sd)) - np.exp(-(bd + sd))
+#            denom = (D_intra ** 2) * (am ** 3) * ((x[2]) ** 2 * am - 1)
+#            idenom = 1. / denom
+#            self.summ[:, i] = num * idenom
+#        return self.summ
+#
+##    @jit(nogil=True, cache=True)
+##    def func_norm(self):
+##        bvec_norm = np.zeros(self.gtab.bvecs.shape[0])
+##        for i in range(self.gtab.bvecs.shape[0]):
+##            bvec_norm[i] = self.gtab.bvecs[i, 0]**2 + \
+##                     self.gtab.bvecs[i, 1]**2 + self.gtab.bvecs[i, 2]**2
+##        return bvec_norm
+#
+#    @jit(nogil=True, cache=True)
+#    def func_bvec(self, n):
+#        M = self.gtab.bvecs.shape[0]
+#        g_per = np.zeros((M))
+#        bvecs = self.gtab.bvecs
+#        for i in range(M):
+##            g_per[i] = bvecs[i, 0]**2 + bvecs[i, 1]**2 + bvecs[i, 2]**2 - \
+##                       (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
+#            g_per[i] = 1 - \
 #                       (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
-            g_per[i] = 1 - \
-                       (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
-
-        return g_per
+#
+#        return g_per
 
     def x_to_xs(self, x):
         x1 = x[0:3]
@@ -148,8 +250,7 @@ class ActiveAxModel(ReconstModel):
     def xs_to_x(self):
         pass
 
-
-    #@profile
+    @jit(nogil=True, cache=True)
     def S2(self, x2):
         x2_0 = x2[0]
         x2_1 = x2[1]
@@ -183,22 +284,16 @@ class ActiveAxModel(ReconstModel):
                                                                   (1 - v)))
         return yhat_zeppelin
 
-
     def S3(self):
         # ball
         yhat_ball = D_iso * self.gtab.bvals
         return yhat_ball
 
-
-    def S4(self):
-        # dot
-        yhat_dot = np.zeros(self.gtab.bvals.shape)
-        return yhat_dot
-
 #    @profile
     def Phi(self, x):
         x1, x2 = self.x_to_xs(x)
         yhat_zeppelin = self.S2(x2)
+#        yhat_zeppelin = S2(x2, self.gtab.bvals, self.gtab.bvecs)
         yhat_cylinder = self.S1(x1)
         phi = np.vstack([yhat_cylinder, yhat_zeppelin, self.S3(),
                          self.S4()]).T
@@ -240,12 +335,12 @@ class ActiveAxModel(ReconstModel):
         x_fe[6] = fe[3]
         return x_fe
 
-    def estimate_signal(self, x_fe):
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
-        x1, x2 = self.x_to_xs(x)
-        S = fe[0] * self.S1(x1) + fe[1] * self.S2(x2) + fe[2] * self.S3() \
-              + fe[3] * self.S4()
-        return S
+#    def estimate_signal(self, x_fe):
+#        x, fe = self.x_fe_to_x_and_fe(x_fe)
+#        x1, x2 = self.x_to_xs(x)
+#        S = fe[0] * self.S1(x1) + fe[1] * self.S2(x2) + fe[2] * self.S3() \
+#              + fe[3] * self.S4()
+#        return S
 
 #    @profile
     def stoc_search_cost(self, x, signal):
