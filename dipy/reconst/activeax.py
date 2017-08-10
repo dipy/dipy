@@ -11,6 +11,8 @@ from numba import jit, cfunc, float64
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 from time import time
+import cvxpy as cvx
+
 global overall_duration
 overall_duration = 0
 
@@ -424,13 +426,63 @@ class ActiveAxModel(ReconstModel):
         phi = self.Phi2(x_fe)
         return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
 
+
+    def estimate_f(signal, phi):
+
+        """
+    Linear parameters fit using cvx
+
+    Parameters
+    ----------
+    phi : array
+        phi.shape = number of data points x 4
+    signal : array
+        signal.shape = number of data points x 1
+
+    Returns
+    -------
+    f1, f2, f3, f4 (volume fractions)
+    f1 = fe[0]
+    f2 = fe[1]
+    f3 = fe[2]
+    f4 = fe[3]
+
+    Notes
+    --------
+    cost function for genetic algorithm:
+
+    .. math::
+
+        minimize(norm((signal)- (phi*fe)))
+        """
+
+        # Create four scalar optimization variables.
+        fe = cvx.Variable(4)
+        # Create four constraints.
+        constraints = [cvx.sum_entries(fe) == 1,
+                       fe[0] >= 0,
+                       fe[1] >= 0,
+                       fe[2] >= 0,
+                       fe[3] >= 0]
+
+        # Form objective.
+        obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal[:, None])))
+
+        # Form and solve problem.
+        prob = cvx.Problem(obj, constraints)
+        prob.solve()  # Returns the optimal value.
+
+        return np.array(fe.value)
+
+
     def fit(self, data, mask=None):
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          args=(data,))
         x = res_one.x
         phi = self.Phi(x)
-        fe = mix_fast.estimate_f(np.array(data), phi)
+#        fe = mix_fast.estimate_f(np.array(data), phi)
+        fe = self.estimate_f(np.array(data), phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
