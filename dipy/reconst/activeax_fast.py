@@ -59,7 +59,7 @@ def func_mul(x, am2, small_delta, big_delta):
 
         denom = (D_intra ** 2) * (am ** 3) * ((x[2]) ** 2 * am - 1)
         summ[:, i] = num / denom
-        return summ
+    return summ
 
 
 def x_to_xs(x):
