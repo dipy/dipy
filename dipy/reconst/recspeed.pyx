@@ -10,7 +10,7 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memcpy
 
 cdef extern from "dpy_math.h" nogil:
@@ -20,6 +20,7 @@ cdef extern from "dpy_math.h" nogil:
     double sin(double x)
     float acos(float x )
     double sqrt(double x)
+    double exp(double x)
     double DPY_PI
 
 
@@ -545,7 +546,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        For every vertex ``i`` in ``vertex_inds``, the number of
        neighbors for vertex ``i``
     adj_inds : (P,) array, dtype uint32
-       Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
+       Indices for neighbors for each point.  ``P=sum(adj_counts)``
 
     Returns
     -------
@@ -610,3 +611,40 @@ def argmax_from_countarrs(cnp.ndarray vals,
         return np.array([])
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def func_mul(x, am2, small_delta, big_delta, summ_rows):
+    fast_func_mul(x, am2, small_delta, big_delta, summ_rows)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_func_mul(double [:] x, double [:] am2, double [:] small_delta, double [:] big_delta, double [:] summ_rows) nogil:
+    cdef cnp.npy_intp M = am2.shape[0]
+    cdef double sd, bd, am, D_intra_am
+    cdef cnp.npy_intp i, j
+    cdef cnp.npy_intp K = small_delta.shape[0]
+    cdef double D_intra = 0.6 * 10 ** 3
+    cdef double num
+    cdef double * idenom = <double *> calloc(M, sizeof(double))
+
+    for i in range(M):
+        am = am2[i]
+        D_intra_am = D_intra * am
+        idenom[i] = 1.0 / ((D_intra * D_intra) * (am2[i] * am2[i] * am2[i]) * (x[2] * x[2] * am2[i] - 1))
+
+        for j in range(K):
+
+            bd = D_intra_am * big_delta[j]
+
+            sd = D_intra_am * small_delta[j]
+
+            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+
+            summ_rows[j] += num * idenom[i]
+
+
+    free(idenom)
+    return num
+
