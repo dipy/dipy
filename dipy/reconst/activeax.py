@@ -60,9 +60,7 @@ am = np.array([1.84118307861360, 5.33144196877749,
                178.280475036977, 181.422152668422,
                184.563828222242, 187.705499575101])
 
-am = np.array([1.84118307861360, 5.33144196877749,
-               8.53631578218074, 11.7060038949077,
-               14.8635881488839])
+#am = np.array([1.84118307861360])
 
 @jit(nopython=True, nogil=True, cache=True)
 def func_bvec(bvecs, n):
@@ -123,6 +121,39 @@ def func_mul(x, am2, small_delta, big_delta):
         summ_rows[i] = np.sum(summ[i])
     return summ_rows
 
+
+@jit(signature_or_function=float64[:, :](float64[:, :]),nopython=True, nogil=True, cache=True)
+def func_exp(a):
+    return np.exp(-a)
+
+@jit(nopython=True, nogil=True, cache=True)
+def x_fe_to_x_and_fe(x_fe):
+    fe = np.zeros((1, 4))
+    #fe = np.squeeze(fe)
+    fe = fe[0]
+    fe[0:3] = x_fe[0:3]
+    fe[3] = x_fe[6]
+    x = x_fe[3:6]
+    return x, fe
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def S2_new(x_fe, bvals, bvecs):
+    x, fe = x_fe_to_x_and_fe(x_fe)
+    fe0 = fe[0]
+    x_0 = x[0]
+    x_1 = x[1]
+    sinT = np.sin(x_0)
+    cosT = np.cos(x_0)
+    sinP = np.sin(x_1)
+    cosP = np.cos(x_1)
+    n = np.array([cosP * sinT, sinP * sinT, cosT])
+    # zeppelin
+    v = fe0/(fe0 + fe[1])
+    yhat_zeppelin = bvals * ((D_intra - (D_intra * (1 - v))) *
+                              (np.dot(bvecs, n) ** 2) + (D_intra *
+                                                              (1 - v)))
+    return yhat_zeppelin
 
 ##@cfunc("float64(float64, float64)")
 #signature= "float64(float64, float64)"
@@ -268,23 +299,23 @@ class ActiveAxModel(ReconstModel):
                                                              (1 - x2_2)))
         return yhat_zeppelin
 
-
-    def S2_new(self, x_fe):
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
-        fe0 = fe[0]
-        x_0 = x[0]
-        x_1 = x[1]
-        sinT = np.sin(x_0)
-        cosT = np.cos(x_0)
-        sinP = np.sin(x_1)
-        cosP = np.cos(x_1)
-        n = np.array([cosP * sinT, sinP * sinT, cosT])
-        # zeppelin
-        v = fe0/(fe0 + fe[1])
-        yhat_zeppelin = self.gtab.bvals * ((D_intra - (D_intra * (1 - v))) *
-                                  (np.dot(self.gtab.bvecs, n) ** 2) + (D_intra *
-                                                                  (1 - v)))
-        return yhat_zeppelin
+##    @jit(nogil=True, cache=True)
+#    def S2_new(self, x_fe):
+#        x, fe = self.x_fe_to_x_and_fe(x_fe)
+#        fe0 = fe[0]
+#        x_0 = x[0]
+#        x_1 = x[1]
+#        sinT = np.sin(x_0)
+#        cosT = np.cos(x_0)
+#        sinP = np.sin(x_1)
+#        cosP = np.cos(x_1)
+#        n = np.array([cosP * sinT, sinP * sinT, cosT])
+#        # zeppelin
+#        v = fe0/(fe0 + fe[1])
+#        yhat_zeppelin = self.gtab.bvals * ((D_intra - (D_intra * (1 - v))) *
+#                                  (np.dot(self.gtab.bvecs, n) ** 2) + (D_intra *
+#                                                                  (1 - v)))
+#        return yhat_zeppelin
 
     def S3(self):
         # ball
@@ -304,14 +335,23 @@ class ActiveAxModel(ReconstModel):
 
 #    @profile
     def Phi2(self, x_fe):
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
+#        x, fe = self.x_fe_to_x_and_fe(x_fe)
+        phi = np.zeros((self.gtab.bvals.shape[0], 4))
+        x, fe = x_fe_to_x_and_fe(x_fe)
         x1 = x[0:3]
-        yhat_zeppelin = self.S2_new(x_fe)
+#        yhat_zeppelin = self.S2_new(x_fe)
+        yhat_zeppelin = S2_new(x_fe, self.gtab.bvals, self.gtab.bvecs)
         yhat_cylinder = self.S1(x1)
-        phi = np.vstack([yhat_cylinder, yhat_zeppelin, self.S3(),
-                         self.S4()]).T
+
+        phi[:, 0] = yhat_cylinder
+        phi[:, 1] = yhat_zeppelin
+        phi[:, 2] = self.S3()
+        phi[:, 3] = self.S4()
+#        phi = np.vstack([yhat_cylinder, yhat_zeppelin, self.S3(),
+#                         self.S4()]).T
         phi = np.ascontiguousarray(phi)
-        return np.exp(-phi)
+#        return np.exp(-phi)
+        return func_exp(phi)
 
     def bounds(self, x):
         bound = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
@@ -321,13 +361,13 @@ class ActiveAxModel(ReconstModel):
     def bounds_x_fe(self, x_fe):
         pass
 
-    def x_fe_to_x_and_fe(self, x_fe):
-        fe = np.zeros((1, 4))
-        fe = np.squeeze(fe)
-        fe[0:3] = x_fe[0:3]
-        fe[3] = x_fe[6]
-        x = x_fe[3:6]
-        return x, fe
+#    def x_fe_to_x_and_fe(self, x_fe):
+#        fe = np.zeros((1, 4))
+#        fe = np.squeeze(fe)
+#        fe[0:3] = x_fe[0:3]
+#        fe[3] = x_fe[6]
+#        x = x_fe[3:6]
+#        return x, fe
 
     def x_and_fe_to_x_fe(self, x, fe):
         x_fe = np.zeros([7])
@@ -422,12 +462,13 @@ class ActiveAxModel(ReconstModel):
         sum{(signal -  phi*fe)^2}
         """
 
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
+#        x, fe = self.x_fe_to_x_and_fe(x_fe)
+        x, fe = x_fe_to_x_and_fe(x_fe)
         phi = self.Phi2(x_fe)
         return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
 
-
-    def estimate_f(signal, phi):
+#    @profile
+    def estimate_f(self, signal, phi):
 
         """
     Linear parameters fit using cvx
@@ -482,7 +523,7 @@ class ActiveAxModel(ReconstModel):
         x = res_one.x
         phi = self.Phi(x)
 #        fe = mix_fast.estimate_f(np.array(data), phi)
-        fe = self.estimate_f(np.array(data), phi)
+        fe = self.estimate_f(data, phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
