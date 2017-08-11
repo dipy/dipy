@@ -24,9 +24,33 @@ def make_signal_param(signal, bvals, bvecs, G, small_delta, big_delta):
     return signal_param
 
 
-#@profile
-#@jit(nopython=True, nogil=True, cache=True)
-@jit
+@jit(nopython=True, nogil=True, cache=True)
+def func_bvec(bvecs, n):
+    g_per = np.zeros((len(bvecs)))
+    for i in range(len(bvecs)):
+            g_per[i] = np.dot(bvecs[i, :], bvecs[i, :]) - \
+                       np.dot(bvecs[i, :], n) ** 2
+    return g_per
+
+
+@jit(nopython=True, nogil=True, cache=True)
+def func_mul(x, am2, small_delta, big_delta, D_intra):
+    M = len(am2)
+    N = len(small_delta)
+    summ = np.zeros((N, M))
+    for i in range(len(am2)):
+        num = (2 * D_intra * am2[i] * small_delta) - 2 + \
+              (2 * np.exp(-(D_intra * am2[i] * small_delta))) + \
+              (2 * np.exp(-(D_intra * am2[i] * big_delta))) - \
+              (np.exp(-(D_intra * am2[i] * (big_delta - small_delta)))) - \
+              (np.exp(-(D_intra * am2[i] * (big_delta + small_delta))))
+
+        denom = (D_intra ** 2) * (am2[i] ** 3) * ((x[2]) ** 2 * am2[i] - 1)
+        summ[:, i] = num / denom
+        return summ
+
+
+# @profile
 def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
                                 gamma=gamma, D_intra=0.6 * 10 ** 3,
                                 D_iso=2 * 10 ** 3, debug=False):
@@ -130,8 +154,16 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
         denom = (D_intra ** 2) * (am2[i] ** 3) * ((x[2]) ** 2 * am2[i] - 1)
         summ[:, i] = num / denom
 
+#    summ = func_mul(x, am2, small_delta, big_delta, D_intra)
+
+#    summ_rows = np.zeros((len(summ)))
+#    for i in range(len(summ)):
+#        summ_rows[i] = sum(summ[i, :])
+
     summ_rows = np.sum(summ, axis=1)
     g_per = np.zeros(bvals.shape)
+
+#    g_per = func_bvec(bvecs, n)
 
     for i in range(len(bvecs)):
         g_per[i] = np.dot(bvecs[i, :], bvecs[i, :]) - \
@@ -157,6 +189,7 @@ def activax_exvivo_compartments(x, bvals, bvecs, G, small_delta, big_delta,
     return yhat_cylinder, yhat_zeppelin, yhat_ball, yhat_dot
 
 #@profile
+#@jit(nopython=True, nogil=True, cache=True)
 def activax_exvivo_model(x, bvals, bvecs, G, small_delta, big_delta,
                          gamma=gamma,
                          D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
@@ -486,12 +519,16 @@ def stoc_search_cost_func(x, signal, bvals, bvecs, G, small_delta, big_delta):
     """
 
     phi = activax_exvivo_model(x, bvals, bvecs, G,
-                               small_delta, big_delta)
+                               small_delta, big_delta,
+                               gamma=gamma,
+                               D_intra=0.6 * 10 ** 3, D_iso=2 * 10 ** 3,
+                               debug=False)
 
     error_one = activeax_cost_one(phi, signal)
     return error_one
 
 #@profile
+#@jit
 def dif_evol(signal, bvals, bvecs, G, small_delta, big_delta):
 
     """
