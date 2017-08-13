@@ -105,7 +105,6 @@ def sharpen_image(data):
                                                     paddedhistogramsize *
                                                     paddedhistogramsize *
                                                     expfactor)
-
     ff = np.zeros(paddedhistogramsize,)
 
     ff = fft(sample_f)

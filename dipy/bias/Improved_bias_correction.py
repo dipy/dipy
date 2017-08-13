@@ -24,25 +24,28 @@ from sklearn import mixture
 from dipy.segment.mask import median_otsu
 from dipy.segment.threshold import otsu
 from scipy.misc import imresize
+import scipy.ndimage as ndimage
 
 
 class n3_correction(object):
     """Define a class for N3 bias correciton
     """
-    def __init__(self, data, ratio=3, kernel="triangle", init_u="init_v"):
+    def __init__(self, data, kernel="triangle", init_u="init_v"):
 
         #size = np.round((np.array(data.shape)/ratio))
         #size = size.astype(int)
         #self.resize_data = Setfieldpoints(data, size[0], size[1], size[2], "median")
         #self.resize_data = imresize(data,size)
-        self.data = np.log(data)
+        self.data = data
         self.sharpened_data = np.zeros((self.data.shape))
         self.field = np.zeros((self.data.shape))
         self.estimate_img = np.zeros((self.data.shape))
+        self.estimate_img[:] = self.data
         self.kernel = kernel
         self.data_shape = data.shape
         self.num_of_bins = 200
         self.h_scale = 2
+        self.exp_stat = np.zeros((self.num_of_bins))
         self.time_delay = 100
         self.difference = 1
         self.threshold = otsu(self.data)
@@ -50,12 +53,11 @@ class n3_correction(object):
         self.hist, self.bins = np.histogram(self.data,
                                             bins=self.num_of_bins,
                                             range=(self.threshold,
-                                                   self.resize_data.max()))
-        self.bins = np.log(self.bins)
+                                                   self.data.max()))
         self.bin_lengh = self.bins[1] - self.bins[0]
         self.bins_u[:] = self.bins[:]
         self.h = self.h_scale * self.bin_lengh
-        self.sample_f = self.gaussian_init(10, self.num_of_bins)
+        self.sample_f = self.gaussian_init(50, self.num_of_bins)
         #self.sample_f = self.uniform_init(4, self.num_of_bins)
         self.kernel_dhist = self.kernel_density_estimate(self.hist)
         self.hist_median = self.finding_mid_point(self.kernel_dhist)
@@ -144,7 +146,7 @@ class n3_correction(object):
 #        expect = np.zeros((self.num_of_bins,))
         ff = fft(paddel_sample_f)
         for n in range(self.num_of_bins):
-            numerator[n] = self.bins_u[n] * paddel_estimate_u[n]
+            numerator[n] = self.bins_u[n+1] * paddel_estimate_u[n]
 
         f_numerator = ff * fft(numerator)
         inumerator = ifft(f_numerator)
@@ -154,6 +156,17 @@ class n3_correction(object):
         idenominator = ifft(f_denominator)
 
         paddel_expect = inumerator.real / idenominator.real
+        '''
+        for i in np.array(range(200)):
+            if i == 199:
+                i = 198
+            k = np.where((self.data>self.bins[i])&(self.data<self.bins[i+1]))
+            n = len(k[0])
+            self.exp_stat[i] = np.median(self.data[k[0],k[1],k[2]]-self.field[k[0],k[1],k[2]])
+        '''
+        plt.figure()
+        plt.title("exp_stat")
+        plt.plot(self.bins[0:200],self.exp_stat)
 
 #        expect_smooth = paddel_expect[int(round((self.num_of_bins/2))):\
 #                               int(round((self.num_of_bins/2))) + \
@@ -165,14 +178,15 @@ class n3_correction(object):
         expect_p = expect[0:self.num_of_bins:4]
         #expect_obj = cubic_bspline(expect_p, self.num_of_bins + 15,
         #                           spacing="uniform")
-        expect_obj = cubic_bspline(paddel_expect, self.num_of_bins + 20,
+        expect_obj = cubic_bspline(expect_p, self.num_of_bins + 40,
                                    spacing="uniform")
-        expect_smooth = expect_obj.cubicbspline_2d()[9:self.num_of_bins+9]
+        expect_smooth = expect_obj.cubicbspline_2d()[19:self.num_of_bins+19]
         plt.figure()
         plt.title("expected value")
-        plt.plot(np.array(range(self.num_of_bins)), expect)
+        plt.plot(self.bins[0:200], expect)
         plt.figure()
         plt.plot(np.array(range(len(paddel_expect))), paddel_expect)
+
 #        kernel_estimate_expect = self.kernel_density_estimate(expect)
 
         if len(self.data.shape) == 3:
@@ -202,6 +216,8 @@ class n3_correction(object):
     def optimization_converge(self):
         expect_smooth = self.update_stratergy()
         field = self.data - self.sharpened_data
+        max_f = field.max()
+        self.field = field
         if len(self.data.shape) == 2:
             field_extract = Setfieldpoints_2d(field, 4, 6, "median")
             #np.exp(field[0:160:10, 0:239:10, 0:200:10])
@@ -212,23 +228,53 @@ class n3_correction(object):
             #                                  self.data_shape)
             #self.field = field_extract_obj.cubicbspline_3d()
         if len(self.data.shape) == 3:
-            field_extract = Setfieldpoints(field, 4, 6, 5, "median")
+
+            self.field[np.exp(self.field)<otsu(np.exp(self.field))]=0
+            for i in range(4):
+                shape_x = self.field.shape[0]
+                shape_y = self.field.shape[1]
+                shape_z = self.field.shape[2]
+                self.field = ndimage.gaussian_filter(self.field, sigma=(2, 2, 2), order=0)
+                self.field = self.field[0:shape_x:2,0:shape_y:2,0:shape_z:2]
+            self.field = self.field * (max_f/self.field.max()) * 1/3
+            self.field = Smoothfield_3D(self.field,
+                                        self.data_shape[0]/self.field.shape[0],
+                                        self.data_shape[1]/self.field.shape[1],
+                                        self.data_shape[2]/self.field.shape[2])
+            '''
+            field_extract = Setfieldpoints(field, 20, 30, 25, "subsample")
             #np.exp(field[0:160:10, 0:239:10, 0:200:10])
             self.field = Smoothfield_3D(field_extract,
+                                        self.data_shape[0]/20,
+                                        self.data_shape[1]/30,
+                                        self.data_shape[2]/25)
+            field_2 = Setfieldpoints(self.field, 4, 5, 6, "median")
+            self.field = Smoothfield_3D(field_2,
                                         self.data_shape[0]/4,
-                                        self.data_shape[1]/6,
-                                        self.data_shape[2]/5)
+                                        self.data_shape[1]/5,
+                                        self.data_shape[2]/6)
+            '''
         hist, h = np.histogram(self.field,
                                bins=self.num_of_bins)
 
         f_median = np.median(self.field)
         self.estimate_img = self.data - self.field
+        '''
+        if len(self.data.shape) == 3:
+            for index in ndindex(self.data.shape):
+                i, j, k = index
+                if self.data[i, j, k] > self.threshold:
+                    self.estimate_img[i, j, k] = self.data[i, j, k]-self.field[i,j,k]
+                if self.data[i, j, k] < self.threshold or \
+                   self.data[i, j, k] == self.threshold:
+                    self.estimate_img[i, j, k] = self.data[i, j, k]
+        '''
         #threshold = otsu(self.estimate_img)
         threshold_u = otsu(self.estimate_img)
         hist_u, h_u = np.histogram(self.estimate_img,
                                    bins=self.num_of_bins,
                                    range=(threshold_u,
-                                          self.data.max()))
+                                          self.estimate_img.max()))
         new_f = self.kernel_density_estimate(hist)
         self.estimate_u = self.kernel_density_estimate(hist_u)
         self.bins_u[:] = h_u[:]
@@ -335,7 +381,7 @@ def Setfieldpoints_2d(inputimg, xscale, yscale, method="mean"):
                     np.median(inputimg[j*xsubsize:(j+1)*xsubsize,
                                        k*ysubsize:(k+1)*ysubsize])
     return output
-
+'''
 def Setfieldpoints(inputimg, xscale, yscale, zscale, method="median"):
     xsize = inputimg.shape[0]
     ysize = inputimg.shape[1]
@@ -395,18 +441,24 @@ def Setfieldpoints(inputimg, xscale, yscale, zscale, method="mean"):
                         np.mean(inputimg[x_left:x_right,
                                          y_left:y_right,
                                          z_left:z_right])
+                if method == "subsample":
+                    output[j, k, i] = \
+                                inputimg[xresi+j*xsubsize,
+                                         yresi+k*ysubsize,
+                                         zresi+i*zsubsize]
                 if method == "median":
                     output[j, k, i] = \
                         np.median(inputimg[x_left:x_right,
-                                           y_left:y_right,
-                                           z_left:z_right])
+                                         y_left:y_right,
+                                         z_left:z_right])
     return output
-'''
+
 dname = "/Users/tiwanyan/ANTs/Images/Raw/"
 #dname = "/home/elef/Dropbox/Tingyi/Images/Raw/"
 #t1_input = "/Raw/Q_0001_T1.nii.gz"
 #ft1 = dname + "Q_0001_T1_N3.nii.gz"
-ft1 = dname + "Q_0001_T1.nii.gz"
+#ft1 = dname + "Q_0001_T1.nii.gz"
+ft1 = dname + "Q_0005_T1.nii.gz"
 #ft1 = dname + "sub-A00039461_t1_bias.nii.gz"
 #ft1_unb = dname + "sub-A00039461_t1_fast_nobias.nii.gz"
 ft2 = dname + "output.nii.gz"
@@ -427,14 +479,13 @@ t2 = t1[loc[0].min():loc[0].max(),
 
 t2 = t2 + 10
 t1 = t1 + 10
-#N3_correct = n3_correction(t1)
-#N3_correct.optimization_converge()
+N3_correct = n3_correction(np.log(t1))
+N3_correct.optimization_converge()
 
-'''
+
 figure()
 imshow(np.exp(N3_correct.data[:, :, 10]), cmap="gray")
 figure()
 imshow(np.exp(N3_correct.estimate_img[:, :, 10]), cmap="gray")
 figure()
 imshow(np.exp(N3_correct.field[:, :, 10]), cmap="gray")
-'''

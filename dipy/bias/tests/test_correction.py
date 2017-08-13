@@ -44,6 +44,6 @@ for i in np.array(range(100)):
             if(k == 40 and i == 40 and j == 40):
                 test_subject_adding_noise[i, j, k] = test_subject_adding_noise[i,j,k] - np.random.normal(30,1,1)
 
-logUncorrectedImage = np.log(test_subject_adding_noise)
+#logUncorrectedImage = np.log(test_subject_adding_noise)
 
-sharpenedimg = correction.SharpenImage(logUncorrectedImage)
+#sharpenedimg = correction.SharpenImage(logUncorrectedImage)

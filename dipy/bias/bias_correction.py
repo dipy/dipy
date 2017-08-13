@@ -5,6 +5,7 @@ field correction using a N3 stratergy
 Tingyi Wanyan
 """
 
+from __future__ import division, print_function
 import numpy as np
 import math
 import scipy
@@ -37,6 +38,7 @@ class NP_correction(object):
         self.estimate_img[:] = self.data
         self.kernel = kernel
         self.error = 0
+        self.median = 0
         self.data_shape = data.shape
         self.num_of_bins = 200
         self.h_scale = h_scale
@@ -146,6 +148,12 @@ class NP_correction(object):
         """
         if len(self.data.shape) == 3:
             self.field[np.exp(self.field) < otsu(np.exp(self.field))] = 0
+            #for i in range(4):
+                #elf.field = ndimage.gaussian_filter(self.field,
+                #                                     sigma=(2, 2, 2),
+                #                                     order=0)
+                #self.field = self.max_pooling(self.field)
+
             for i in range(4):
                 shape_x = self.field.shape[0]
                 shape_y = self.field.shape[1]
@@ -154,6 +162,7 @@ class NP_correction(object):
                                                      sigma=(2, 2, 2),
                                                      order=0)
                 self.field = self.field[0:shape_x:2, 0:shape_y:2, 0:shape_z:2]
+
             self.field = self.field * (max_f/self.field.max()) * 1/3
             self.field = self.Smoothfield_3D(self.field,
                                              self.data_shape[0]/self.field.shape[0],
@@ -244,13 +253,35 @@ class NP_correction(object):
         output = zoom(inputimg, (xscale, yscale, zscale))
         return output
 
+    def max_pooling(self, inputimg):
+        shape_x = inputimg.shape[0]
+        shape_y = inputimg.shape[1]
+        shape_z = inputimg.shape[2]
+        xscale = int(np.floor(shape_x/2))
+        yscale = int(np.floor(shape_y/2))
+        zscale = int(np.floor(shape_z/2))
+        output = np.zeros((xscale, yscale, zscale))
+        threshold = otsu(inputimg)
+        median = np.median(inputimg[inputimg > threshold])
+        print(median)
+        for i in range(xscale):
+            for j in range(yscale):
+                for k in range(zscale):
+                    local_max = inputimg[2*i:2*i+1,
+                                         2*j:2*j+1,
+                                         2*k:2*k+1].max()
+                    output[i, j, k] = local_max
+
+        return output
+
 """
 Example for using class, the estimage data is Correct.estimate_img,
 The calculated field is Correct.field
 """
 dname = "/Users/tiwanyan/ANTs/Images/Raw/"
-ft1 = dname + "Q_0007_T1.nii.gz"
+ft1 = dname + "Q_0011_T1.nii.gz"
 t1 = nib.load(ft1).get_data()
 Correct = NP_correction(t1)
 Correct.optimization_converge()
-show_volume(np.exp(Correct.estimate_img), t1, 0.5)
+#Correct.field_smoothing()
+#show_volume(np.exp(Correct.estimate_img), t1, 0.5)
