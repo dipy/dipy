@@ -1,20 +1,17 @@
 import numpy as np
-import scipy as sp
-import scipy.linalg as sla
-from warnings import warn
-
-# Try to get the SVD through direct API to lapack:
 try:
-    from scipy.linalg.lapack import sgesvd as svd
+    from scipy.linalg.lapack import dgesvd as svd
     svd_args = [1, 0]
-# If you have an older version of scipy, we fall back
-# on the standard scipy SVD API:
+    # If you have an older version of scipy, we fall back
+    # on the standard scipy SVD API:
 except ImportError:
     from scipy.linalg import svd
     svd_args = [False]
+from scipy.linalg import eigh
 
 
-def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
+def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
+             tau_factor=2.3, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -22,8 +19,17 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
+    mask : 3D boolean array
+        A mask with voxels that are true inside the brain and false outside of
+        it. The function denoises within the true part and returns zeros
+        outside of those voxels.
     sigma : float or 3D array
         Standard deviation of the noise estimated from the data.
+    pca_method : 'eig' or 'svd'
+        Use either eigenvalue decomposition (eig) or singular value
+        decomposition (svd) for principal component analysis. The default
+        method is 'eig' which is faster. However, occasionally 'svd' might be
+        more accurate.
     patch_radius : int, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
@@ -53,13 +59,16 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
                   PCA. PLoS ONE 8(9): e73021.
                   https://doi.org/10.1371/journal.pone.0073021
     """
+    if mask is None:
+        # If mask is not specified, use the whole volume
+        mask = np.ones_like(arr, dtype=bool)[..., 0]
+
     if out_dtype is None:
         out_dtype = arr.dtype
 
     # We retain float64 precision, iff the input is in this precision:
     if arr.dtype == np.float64:
         calc_dtype = np.float64
-
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
@@ -67,6 +76,13 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
                          arr.shape)
+
+    if pca_method.lower() == 'svd':
+        is_svd = True
+    elif pca_method.lower() == 'eig':
+        is_svd = False
+    else:
+        raise ValueError("pca_method should be either 'eig' or 'svd'")
 
     patch_size = 2 * patch_radius + 1
 
@@ -87,7 +103,6 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
             raise ValueError(e_s)
 
     tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
-    del sigma
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
@@ -97,6 +112,8 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
         for j in range(patch_radius, arr.shape[1] - patch_radius):
             for i in range(patch_radius, arr.shape[0] - patch_radius):
                 # Shorthand for indexing variables:
+                if not mask[i, j, k]:
+                    continue
                 ix1 = i - patch_radius
                 ix2 = i + patch_radius + 1
                 jx1 = j - patch_radius
@@ -110,15 +127,24 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
                 M = np.mean(X, axis=0)
                 # Upcast the dtype for precision in the SVD
                 X = X - M
-                # PCA using an SVD
-                U, S, Vt = svd(X, *svd_args)[:3]
-                # Items in S are the eigenvalues, but in ascending order
-                # We invert the order (=> descending), square and normalize
-                # \lambda_i = s_i^2 / n
-                d = S[::-1] ** 2 / X.shape[0]
-                # Rows of Vt are eigenvectors, but also in ascending eigenvalue
-                # order:
-                W = Vt[::-1].T
+
+                if is_svd:
+                    # PCA using an SVD
+                    U, S, Vt = svd(X, *svd_args)[:3]
+                    # Items in S are the eigenvalues, but in ascending order
+                    # We invert the order (=> descending), square and normalize
+                    # \lambda_i = s_i^2 / n
+                    d = S[::-1] ** 2 / X.shape[0]
+                    # Rows of Vt are eigenvectors, but also in ascending
+                    # eigenvalue order:
+                    W = Vt[::-1].T
+
+                else:
+                    # PCA using an Eigenvalue decomposition
+                    C = np.transpose(X).dot(X)
+                    C = C / X.shape[0]
+                    [d, W] = eigh(C, turbo=True)
+
                 # Threshold by tau:
                 W[:, d < tau] = 0
                 # This is equations 1 and 2 in Manjon 2013:
@@ -133,4 +159,5 @@ def localpca(arr, sigma, patch_radius=2, tau_factor=2.3, out_dtype=None):
 
     denoised_arr = thetax / theta
     denoised_arr.clip(min=0, out=denoised_arr)
+    denoised_arr[~mask] = 0
     return denoised_arr.astype(out_dtype)

@@ -170,7 +170,8 @@ def test_lpca_dtype():
 
     # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)), out_dtype=np.float32)
+    S0ns = localpca(S0, sigma=np.ones((20, 20, 20)),
+                    out_dtype=np.float32)
     assert_equal(np.float32, S0ns.dtype)
 
     # If we set a few entries to zero, this induces negative entries in the
@@ -212,22 +213,37 @@ def test_phantom():
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
+    # Check if the results of different PCA methods (eig, svd) are similar
+    DWI_den_svd = localpca(DWI, sigma, pca_method='svd', patch_radius=3)
+    assert_array_almost_equal(DWI_den, DWI_den_svd)
+
+    assert_raises(ValueError, localpca, DWI, sigma, pca_method='empty')
+
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
-    DWI_den = localpca(DWI, sigma_vol, patch_radius=3)
-    rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
-    rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
+    mask = np.zeros_like(DWI, dtype=bool)[..., 0]
+    mask[2:-2, 2:-2, 2:-2] = True
+    DWI_den = localpca(DWI, sigma_vol, mask, patch_radius=3)
+    DWI_clean_masked = DWI_clean.copy()
+    DWI_clean_masked[~mask] = 0
+    DWI_masked = DWI.copy()
+    DWI_masked[~mask] = 0
+    rmse_den = np.sum(np.abs(DWI_clean_masked - DWI_den)) / np.sum(np.abs(
+            DWI_clean_masked))
+    rmse_noisy = np.sum(np.abs(DWI_clean_masked - DWI_masked)) / np.sum(np.abs(
+            DWI_clean_masked))
 
-    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc - DWI_den)
-                          ) / np.sum(np.abs(DWI_clean_wrc))
-    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
-        np.sum(np.abs(DWI_clean_wrc))
+    DWI_clean_wrc_masked = DWI_clean_wrc.copy()
+    DWI_clean_wrc_masked[~mask] = 0
+    rmse_den_wrc = np.sum(np.abs(DWI_clean_wrc_masked - DWI_den)
+                          ) / np.sum(np.abs(DWI_clean_wrc_masked))
+    rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc_masked - DWI_masked)) / \
+        np.sum(np.abs(DWI_clean_wrc_masked))
 
     assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
-
 
 
 def test_lpca_ill_conditioned():
