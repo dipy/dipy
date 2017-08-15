@@ -319,6 +319,47 @@ def test_ui_disk_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_file_select_menu_2d(recording=False):
+    filename = "test_ui_file_select_menu_2d"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
+                                           position=(300, 300),
+                                           font_size=16,
+                                           extensions=["py", "png"],
+                                           parent=None)
+    file_select_menu.set_center((300, 300))
+
+    event_counter = EventCounter()
+    for event in event_counter.events_counts:
+        file_select_menu.add_callback(file_select_menu.buttons["up"].actor,
+                                      event, event_counter.count)
+        file_select_menu.add_callback(file_select_menu.buttons["down"].actor,
+                                      event, event_counter.count)
+        file_select_menu.menu.add_callback(file_select_menu.menu.panel.actor,
+                                           event, event_counter.count)
+        for text_ui in file_select_menu.text_item_list:
+            file_select_menu.add_callback(text_ui.text_actor.get_actors()[0],
+                                          event, event_counter.count)
+
+    current_size = (600, 600)
+    show_manager = window.ShowManager(size=current_size,
+                                      title="DIPY File Select Menu")
+    show_manager.ren.add(file_select_menu)
+
+    if recording:
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)

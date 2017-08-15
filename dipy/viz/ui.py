@@ -2200,10 +2200,9 @@ class FileSelectMenu2D(UI):
 
         for text_ui in self.text_item_list:
             self.add_callback(text_ui.text_actor.get_actors()[0], up_event,
-                                 self.up_button_callback)
+                              self.up_button_callback)
             self.add_callback(text_ui.text_actor.get_actors()[0], down_event,
-                                 self.down_button_callback)
-
+                              self.down_button_callback)
 
 
 class FileSelectMenuText2D(UI):
