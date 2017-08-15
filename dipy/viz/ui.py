@@ -32,23 +32,33 @@ class UI(object):
     Attributes
     ----------
     ui_param : object
-        This is an attribute that can be passed to the UI object by the 
+        This is an attribute that can be passed to the UI object by the
         interactor.
     ui_list : list of :class:`UI`
         This is used when there are more than one UI elements inside
-        a UI element. They're all automatically added to the renderer at the 
+        a UI element. They're all automatically added to the renderer at the
         same time as this one.
     parent_ui: UI
         Reference to the parent UI element. This is useful of there is a parent
         UI element and its reference needs to be passed down to the child.
     on_left_mouse_button_pressed: function
         Callback function for when the left mouse button is pressed.
-    on_left_mouse_button_drag: function
-        Callback function for when the left mouse button is dragged.
+    on_left_mouse_button_released: function
+        Callback function for when the left mouse button is released.
+    on_left_mouse_button_clicked: function
+        Callback function for when clicked using the left mouse button
+        (i.e. pressed -> released).
+    on_left_mouse_button_dragged: function
+        Callback function for when dragging using the left mouse button.
     on_right_mouse_button_pressed: function
         Callback function for when the right mouse button is pressed.
-    on_right_mouse_button_drag: function
-        Callback function for when the right mouse button is dragged.
+    on_right_mouse_button_released: function
+        Callback function for when the right mouse button is released.
+    on_right_mouse_button_clicked: function
+        Callback function for when clicking using the right mouse button
+        (i.e. pressed -> released).
+    on_right_mouse_button_dragged: function
+        Callback function for when dragging using the right mouse button.
 
     """
 
@@ -63,9 +73,13 @@ class UI(object):
         self.right_button_state = "released"
 
         self.on_left_mouse_button_pressed = lambda i_ren, obj, element: None
-        self.on_left_mouse_button_drag = lambda i_ren, obj, element: None
+        self.on_left_mouse_button_dragged = lambda i_ren, obj, element: None
+        self.on_left_mouse_button_released = lambda i_ren, obj, element: None
+        self.on_left_mouse_button_clicked = lambda i_ren, obj, element: None
         self.on_right_mouse_button_pressed = lambda i_ren, obj, element: None
-        self.on_right_mouse_button_drag = lambda i_ren, obj, element: None
+        self.on_right_mouse_button_released = lambda i_ren, obj, element: None
+        self.on_right_mouse_button_clicked = lambda i_ren, obj, element: None
+        self.on_right_mouse_button_dragged = lambda i_ren, obj, element: None
         self.on_key_press = lambda i_ren, obj, element: None
 
     def get_actors(self):
@@ -145,34 +159,38 @@ class UI(object):
 
     @staticmethod
     def left_button_click_callback(i_ren, obj, self):
-        self.left_button_state = "clicked"
+        self.left_button_state = "pressing"
+        self.on_left_mouse_button_pressed(i_ren, obj, self)
         i_ren.event.abort()
 
     @staticmethod
     def left_button_release_callback(i_ren, obj, self):
-        if self.left_button_state == "clicked":
-            self.on_left_mouse_button_pressed(i_ren, obj, self)
+        if self.left_button_state == "pressing":
+            self.on_left_mouse_button_clicked(i_ren, obj, self)
         self.left_button_state = "released"
+        self.on_left_mouse_button_released(i_ren, obj, self)
 
     @staticmethod
     def right_button_click_callback(i_ren, obj, self):
-        self.right_button_state = "clicked"
+        self.right_button_state = "pressing"
+        self.on_right_mouse_button_pressed(i_ren, obj, self)
         i_ren.event.abort()
 
     @staticmethod
     def right_button_release_callback(i_ren, obj, self):
-        if self.right_button_state == "clicked":
-            self.on_right_mouse_button_pressed(i_ren, obj, self)
+        if self.right_button_state == "pressing":
+            self.on_right_mouse_button_clicked(i_ren, obj, self)
         self.right_button_state = "released"
+        self.on_right_mouse_button_released(i_ren, obj, self)
 
     @staticmethod
     def mouse_move_callback(i_ren, obj, self):
-        if self.left_button_state == "clicked" or self.left_button_state == "dragging":
+        if self.left_button_state == "pressing" or self.left_button_state == "dragging":
             self.left_button_state = "dragging"
-            self.on_left_mouse_button_drag(i_ren, obj, self)
-        elif self.right_button_state == "clicked" or self.right_button_state == "dragging":
+            self.on_left_mouse_button_dragged(i_ren, obj, self)
+        elif self.right_button_state == "pressing" or self.right_button_state == "dragging":
             self.right_button_state = "dragging"
-            self.on_right_mouse_button_drag(i_ren, obj, self)
+            self.on_right_mouse_button_dragged(i_ren, obj, self)
         else:
             pass
 
@@ -217,7 +235,7 @@ class Button2D(UI):
     def __build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
 
-        A pre-processing step to prevent re-read of file names during every 
+        A pre-processing step to prevent re-read of file names during every
         state change.
 
         Parameters
@@ -567,8 +585,8 @@ class Panel2D(UI):
 
         self.handle_events(self.panel.actor)
 
-        self.on_left_mouse_button_pressed = self.left_button_press
-        self.on_left_mouse_button_drag = self.left_button_drag
+        self.on_left_mouse_button_pressed = self.left_button_pressed
+        self.on_left_mouse_button_dragged = self.left_button_dragged
 
     def add_to_renderer(self, ren):
         """ Allows UI objects to add their own props to the renderer.
@@ -640,7 +658,7 @@ class Panel2D(UI):
                 ui_element[0].set_center((ui_element[2], ui_element[3]))
 
     @staticmethod
-    def left_button_press(i_ren, obj, panel2d_object):
+    def left_button_pressed(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
         panel2d_object.ui_param = (click_position[0] -
                                    panel2d_object.panel.actor.GetPosition()[0] -
@@ -651,7 +669,7 @@ class Panel2D(UI):
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
-    def left_button_drag(i_ren, obj, panel2d_object):
+    def left_button_dragged(i_ren, obj, panel2d_object):
         click_position = i_ren.event.position
         if panel2d_object.ui_param is not None:
             panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0],
@@ -1920,7 +1938,7 @@ class FileSelectMenu2D(UI):
     """
 
     def __init__(self, size, font_size, position, parent,
-                 extensions, line_spacing=1.4):
+                 extensions, reverse_scrolling=False, line_spacing=1.4):
         """
         Parameters
         ----------
@@ -1934,6 +1952,8 @@ class FileSelectMenu2D(UI):
             part of other UI elements, like a file save dialog.
         position: (float, float)
             The initial position (x, y) in pixels.
+        reverse_scrolling: {True, False}
+            If True, scrolling up will move the list of files down.
         line_spacing: float
             Distance between menu text items in pixels.
         extensions: list(string)
@@ -1945,6 +1965,7 @@ class FileSelectMenu2D(UI):
         self.size = size
         self.font_size = font_size
         self.parent_ui = parent
+        self.reverse_scrolling = reverse_scrolling
         self.line_spacing = line_spacing
         self.extensions = extensions
 
@@ -2166,6 +2187,24 @@ class FileSelectMenu2D(UI):
         self.add_callback(self.buttons["down"].actor, "LeftButtonPressEvent",
                           self.down_button_callback)
 
+        # Handle mouse wheel events
+        up_event = "MouseWheelForwardEvent"
+        down_event = "MouseWheelBackwardEvent"
+        if self.reverse_scrolling:
+            up_event, down_event = down_event, up_event  # Swap events
+
+        self.add_callback(self.menu.get_actors()[0], up_event,
+                          self.up_button_callback)
+        self.add_callback(self.menu.get_actors()[0], down_event,
+                          self.down_button_callback)
+
+        for text_ui in self.text_item_list:
+            self.add_callback(text_ui.text_actor.get_actors()[0], up_event,
+                                 self.up_button_callback)
+            self.add_callback(text_ui.text_actor.get_actors()[0], down_event,
+                                 self.down_button_callback)
+
+
 
 class FileSelectMenuText2D(UI):
     """ The text to select folder in a file select menu.
@@ -2206,7 +2245,7 @@ class FileSelectMenuText2D(UI):
 
         self.handle_events(self.text_actor.get_actor())
 
-        self.on_left_mouse_button_pressed = self.left_button_press
+        self.on_left_mouse_button_clicked = self.left_button_clicked
 
     def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
                     justification='left', bold=False, italic=False,
@@ -2286,7 +2325,10 @@ class FileSelectMenuText2D(UI):
         self.text_actor.message = file_name
 
         if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
+            self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
+            if file_type != "file":
+                self.text_actor.get_actor().GetTextProperty().SetBold(True)
+
         else:
             if file_type == "file":
                 self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(0, 0, 0)
@@ -2296,8 +2338,8 @@ class FileSelectMenuText2D(UI):
                 self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
 
     @staticmethod
-    def left_button_press(i_ren, obj, file_select_text):
-        """ A callback to handle click for this UI element.
+    def left_button_clicked(i_ren, obj, file_select_text):
+        """ A callback to handle left click for this UI element.
 
         Parameters
         ----------
@@ -2319,7 +2361,7 @@ class FileSelectMenuText2D(UI):
                 file_name=file_select_text.file_name)
             file_select_text.file_select.fill_text_actors()
             if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-                pass
+                file_select_text.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
             else:
                 file_select_text.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
                 file_select_text.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
