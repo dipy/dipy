@@ -643,11 +643,13 @@ cdef double fast_func_mul(double [:] x, double [:] am2, double [:] small_delta, 
 
             num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
 
+#            num = 2 * sd - 2 + 2 * (cos(-sd) + 1j*sin(-sd)) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+
             summ_rows[j] += num * idenom[i]
 
 
     free(idenom)
-    return num
+#    return num
 
 
 @cython.boundscheck(False)
@@ -696,89 +698,92 @@ cdef double fast_S2(double [:] x2, double [:] bvals, double [:, :] bvecs, double
         # zeppelin
         yhat_zeppelin[i] = bvals[i] * ((D_intra - D_x2) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) + D_x2)
 
+#
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#def S1(x1, bvecs, bvals, small_delta, big_delta, G, yhat_cylinder):
+#    fast_S1(x1, bvecs, bvals, small_delta, big_delta, G, yhat_cylinder)
+#
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#@cython.cdivision(True)
+#cdef double fast_S1(double [:] x1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G, double [:] yhat_cylinder) nogil:
+#    cdef double x1_0, x1_1, L, am2
+#    cdef cnp.npy_intp i, j
+#    cdef double n[3]
+#    cdef cnp.npy_intp M = small_delta.shape[0]
+#    cdef double D_intra = 0.6 * 10 ** 3
+#    cdef double gamma = 2.675987 * 10 ** 8
+#    cdef double am = 1.84118307861360
+#
+#    cdef double * summ_rows = <double *> calloc(M, sizeof(double))
+##    cdef double * am2 = <double *> calloc(60, sizeof(double))
+#    cdef double * g_per = <double *> calloc(M, sizeof(double))
+#    cdef double * L2 = <double *> calloc(M, sizeof(double))
+#    cdef double * L1 = <double *> calloc(M, sizeof(double))
+#
+#    x1_0 = x1[0]
+#    x1_1 = x1[1]
+#    sinT = sin(x1_0)
+#    cosT = cos(x1_0)
+#    sinP = sin(x1_1)
+#    cosP = cos(x1_1)
+#    n[0] = cosP * sinT
+#    n[1] = sinP * sinT
+#    n[2] = cosT
+#    # Cylinder
+#    for i in range(M):
+#        L = bvals[i] * D_intra
+#        L1[i] = L * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2]) * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2])
+#    am2 = (am / x1[2]) * (am / x1[2])
+#
+#    func_mul(x1, am2, small_delta, big_delta, summ_rows)
+#    func_bvec(bvecs, n, g_per)
+#    for i in range(M):
+#        L2[i] = 2 * (g_per[i] * gamma * gamma) * summ_rows[i] * G[i] * G[i]
+#    yhat_cylinder = L1 + L2
+#
+#    free(summ_rows)
+#    free(g_per)
+#    free(L2)
+#    free(L1)
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def S1(x1, bvecs, bvals, small_delta, big_delta, G, yhat_cylinder):
-    fast_S1(x1, bvecs, bvals, small_delta, big_delta, G, yhat_cylinder)
+def S2_new(x_fe, bvals, bvecs, yhat_zeppelin):
+    fast_S2_new(x_fe, bvals, bvecs, yhat_zeppelin)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double fast_S1(double [:] x1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G, double [:] yhat_cylinder) nogil:
-    cdef double x1_0, x1_1, L, am2
-    cdef cnp.npy_intp i, j
+cdef double fast_S2_new(double [:] x_fe, double [:] bvals, double [:, :] bvecs, double[:] yhat_zeppelin) nogil:
+    cdef cnp.npy_intp i
+    cdef double x_0, x_1, fe0,  sinT, cosT, sinP, cosP, D_v, fe1
     cdef double n[3]
-    cdef cnp.npy_intp M = small_delta.shape[0]
-    cdef double D_intra = 0.6 * 10 ** 3
-    cdef double gamma = 2.675987 * 10 ** 8
-    cdef double am = 1.84118307861360
+#    cdef double fe[4]
+#    cdef double x[3]
+    cdef cnp.npy_intp M = bvals.shape[0]
+    cdef double D_intra = 600
 
-    cdef double * summ_rows = <double *> calloc(M, sizeof(double))
-#    cdef double * am2 = <double *> calloc(60, sizeof(double))
-    cdef double * g_per = <double *> calloc(M, sizeof(double))
-    cdef double * L2 = <double *> calloc(M, sizeof(double))
-    cdef double * L1 = <double *> calloc(M, sizeof(double))
-
-    x1_0 = x1[0]
-    x1_1 = x1[1]
-    sinT = sin(x1_0)
-    cosT = cos(x1_0)
-    sinP = sin(x1_1)
-    cosP = cos(x1_1)
+#    fe[0] = x_fe[0]
+#    fe[1] = x_fe[1]
+#    x[0] = x_fe[3]
+#    x[1] = x_fe[4]
+    fe1 = x_fe[1]
+    fe0 = x_fe[0]
+    x_0 = x_fe[3]
+    x_1 = x_fe[4]
+    sinT = sin(x_0)
+    cosT = cos(x_0)
+    sinP = sin(x_1)
+    cosP = cos(x_1)
     n[0] = cosP * sinT
     n[1] = sinP * sinT
     n[2] = cosT
-    # Cylinder
+    # zeppelin
+    D_v = D_intra * (1 - fe0/(fe0 + fe1))
+
     for i in range(M):
-        L = bvals[i] * D_intra
-        L1[i] = L * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2]) * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2])
-    am2 = (am / x1[2]) * (am / x1[2])
-
-    func_mul(x1, am2, small_delta, big_delta, summ_rows)
-    func_bvec(bvecs, n, g_per)
-    for i in range(M):
-        L2[i] = 2 * (g_per[i] * gamma * gamma) * summ_rows[i] * G[i] * G[i]
-    yhat_cylinder = L1 + L2
-
-    free(summ_rows)
-    free(g_per)
-    free(L2)
-    free(L1)
-
-
-
-#        def S1_slow(self, x1):
-#        big_delta = self.big_delta
-#        small_delta = self.small_delta
-#        bvecs = self.gtab.bvecs
-#        M = small_delta.shape[0]
-#        gamma = 2.675987 * 10 ** 8
-#        D_intra = 0.6 * 10 ** 3
-#        x1_0 = x1[0]
-#        x1_1 = x1[1]
-#        sinT = np.sin(x1_0)
-#        cosT = np.cos(x1_0)
-#        sinP = np.sin(x1_1)
-#        cosP = np.cos(x1_1)
-#        n = np.array([cosP * sinT, sinP * sinT, cosT])
-#        # Cylinder
-#        L = self.gtab.bvals * D_intra
-#        L1 = L * np.dot(bvecs, n) ** 2
-#        am2 = (am / x1[2]) ** 2
-#        t1 = time()
-#        summ_rows = np.zeros(M)
-#        func_mul(x1, am2, small_delta, big_delta, summ_rows)
-##        summ_rows = func_mul_jitted(x1, am2, small_delta, big_delta)
-#        t2 = time()
-#        duration = t2 - t1
-#        global overall_duration
-#        overall_duration += duration
-#        g_per = np.zeros(M)
-#        func_bvec(bvecs, n, g_per)
-##        g_per = func_bvec_jitted(bvecs, n)
-#        L2 = 2 * (g_per * gamma ** 2) * summ_rows * G ** 2
-#        yhat_cylinder = L1 + L2
-#        return yhat_cylinder
-#
-
+        # zeppelin
+        yhat_zeppelin[i] = bvals[i] * ((D_intra - D_v) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) + D_v)
