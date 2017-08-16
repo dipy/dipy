@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit, float64
-from dipy.reconst.recspeed import func_mul, func_bvec, S2
+from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 
@@ -106,7 +106,7 @@ class ActiveAxModel(ReconstModel):
         self.yhat_ball = D_iso * self.gtab.bvals
         self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
 
-#    @profile
+    @profile
     def S1_slow(self, x1):
         big_delta = self.big_delta
         small_delta = self.small_delta
@@ -114,6 +114,7 @@ class ActiveAxModel(ReconstModel):
         M = small_delta.shape[0]
         gamma = 2.675987 * 10 ** 8
         D_intra = 0.6 * 10 ** 3
+        G = self.G
         x1_0 = x1[0]
         x1_1 = x1[1]
         sinT = np.sin(x1_0)
@@ -172,8 +173,8 @@ class ActiveAxModel(ReconstModel):
 #                            (np.dot(self.gtab.bvecs, n) ** 2) + D_x2)
 #        return yhat_zeppelin
 
-#    @profile
-    def S2_new(self, x_fe):
+    #@profile
+    def S2_new_slow(self, x_fe):
         D_intra = 0.6 * 10 ** 3
         x, fe = self.x_fe_to_x_and_fe(x_fe)
         fe0 = fe[0]
@@ -200,7 +201,6 @@ class ActiveAxModel(ReconstModel):
     def Phi(self, x):
         phi = np.zeros((self.small_delta.shape[0], 4))
         x1, x2 = self.x_to_xs(x)
-#        yhat_zeppelin = self.S2(x2)
         yhat_zeppelin = np.zeros(self.small_delta.shape[0])
         S2(x2, self.gtab.bvals, self.gtab.bvecs, yhat_zeppelin)
 
@@ -211,7 +211,6 @@ class ActiveAxModel(ReconstModel):
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
         phi[:, 3] = self.S4()
-#        phi = np.ascontiguousarray(phi)
         return np.exp(-phi)
 
 #    @profile
@@ -219,7 +218,9 @@ class ActiveAxModel(ReconstModel):
         phi = np.zeros((self.small_delta.shape[0], 4))
         x, fe = self.x_fe_to_x_and_fe(x_fe)
         x1 = x[0:3]
-        yhat_zeppelin = self.S2_new(x_fe)
+#        yhat_zeppelin = self.S2_new_slow(x_fe)
+        yhat_zeppelin = np.zeros(self.small_delta.shape[0])
+        S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, yhat_zeppelin)
         yhat_cylinder = self.S1_slow(x1)
 #        yhat_cylinder = np.zeros(self.small_delta.shape[0])
 #        S1(x1, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, yhat_cylinder)
@@ -227,7 +228,6 @@ class ActiveAxModel(ReconstModel):
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
         phi[:, 3] = self.S4()
-#        phi = np.ascontiguousarray(phi)
         return np.exp(-phi)
 
     def bounds(self, x):
@@ -261,7 +261,7 @@ class ActiveAxModel(ReconstModel):
 #              + fe[3] * self.S4()
 #        return S
 
-    @profile
+#    @profile
     def stoc_search_cost(self, x, signal):
 
         """
@@ -338,7 +338,7 @@ class ActiveAxModel(ReconstModel):
         return np.dot((signal - yhat).T, signal - yhat)
 
 
-    @profile
+#    @profile
     def nls_cost(self, x_fe, signal):
 
         """
@@ -377,7 +377,8 @@ class ActiveAxModel(ReconstModel):
 
         x, fe = self.x_fe_to_x_and_fe(x_fe)
         phi = self.Phi2(x_fe)
-        return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
+#        return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
+        return np.sum((np.dot(phi, fe) - signal) ** 2)
 
 #    @profile
     def estimate_f(self, signal, phi):
