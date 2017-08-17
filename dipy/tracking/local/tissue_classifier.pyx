@@ -109,6 +109,29 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
+    @classmethod
+    def from_pve(klass, wm_map, gm_map, csf_map, **kw):
+        """ConstrainedTissueClassifier from partial volume fraction (PVE)
+        maps.
+
+        Parameters
+        ----------
+        wm_map : array
+            The partial volume fraction of white matter at each voxel.
+        gm_map : array
+            The partial volume fraction of grey matter at each voxel.
+        csf_map : array
+            The partial volume fraction of corticospinal fluid at each
+            voxel.
+
+        """
+        # include map = grey matter + image background
+        include_map = np.copy(gm_map)
+        include_map[(wm_map + gm_map + csf_map) == 0] = 1
+        # exclude map = csf
+        exclude_map = np.copy(csf_map)
+        return klass(include_map, exclude_map, **kw)
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
