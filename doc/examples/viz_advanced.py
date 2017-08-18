@@ -64,7 +64,7 @@ streamlines and slices to appear. The default we have here is to appear in
 world coordinates (RAS 1mm).
 """
 
-world_coords = True
+world_coords = False
 
 """
 If we want to see the objects in native space we need to make sure that all
@@ -84,11 +84,14 @@ function and an image plane using the ``slice`` function.
 ren = window.Renderer()
 ren.background([1, 1, 1])
 stream_actor = actor.line(streamlines)
+# streamlines_masked = np.random.choice(streamlines, 100)
+# stream_actor = actor.streamtube(streamlines_masked)
 
 if not world_coords:
-    image_actor_z = actor.slicer(data, affine=np.eye(4))
+    image_actor_z = actor.slicer(data, affine=np.eye(4), interpolation="nearest")
 else:
-    image_actor_z = actor.slicer(data, affine)
+    image_actor_z = actor.slicer(data, affine, interpolation="nearest")
+
 
 """
 We can also change also the opacity of the slicer.
@@ -210,55 +213,59 @@ opacity_slider.add_callback(opacity_slider.slider_disk,
                             change_opacity)
 
 
-"""
-    Create cell picker for this example
-"""
-from dipy.utils.optpkg import optional_package
+# """
+#     Create cell picker for this example
+# """
+# from dipy.utils.optpkg import optional_package
 
-# Allow import, but disable doctests if we don't have vtk.
-vtk, have_vtk, setup_module = optional_package('vtk')
+# # Allow import, but disable doctests if we don't have vtk.
+# vtk, have_vtk, setup_module = optional_package('vtk')
 
-if have_vtk:
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
-    major_version = vtk.vtkVersion.GetVTKMajorVersion()
-    vtkCellPicker = vtk.vtkCellPicker
-else:
-    vtkCellPicker = object
+# if have_vtk:
+#     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+#     major_version = vtk.vtkVersion.GetVTKMajorVersion()
+#     vtkCellPicker = vtk.vtkCellPicker
+# else:
+#     vtkCellPicker = object
 
-cell_picker = vtkCellPicker()
-cell_picker.SetTolerance(0.002)
+# cell_picker = vtkCellPicker()
+# cell_picker.SetTolerance(0.002)
 
 
 def left_click_callback(obj, ev):
     event_pos = show_m.iren.GetEventPosition()
 
-    # get cell from interactor's cell picker
-    cell_from_interactor = show_m.style.get_cell_at_event_position()
-    print('from interactor: (' +
-          str(cell_from_interactor[0]) + ', ' +
-          str(cell_from_interactor[1]) + ')')
+    # # get cell from interactor's cell picker
+    # cell_from_interactor = show_m.style.get_cell_at_event_position()
+    # print('from interactor: (' +
+    #       str(cell_from_interactor[0]) + ', ' +
+    #       str(cell_from_interactor[1]) + ')')
 
-    # get cell from this example's cell picker
-    cell_picker.Pick(event_pos[0],
-                     event_pos[1],
-                     0,
-                     show_m.ren)
+    # # get cell from this example's cell picker
+    # cell_picker.Pick(event_pos[0],
+    #                  event_pos[1],
+    #                  0,
+    #                  show_m.ren)
 
-    cell_from_example = cell_picker.GetCellIJK()
-    print('from example: (' +
-          str(cell_from_example[0]) + ', ' +
-          str(cell_from_example[1]) + ')')
-
+    # cell_from_example = cell_picker.GetCellIJK()
+    # print('from example: (' +
+    #       str(cell_from_example[0]) + ', ' +
+    #       str(cell_from_example[1]) + ')')
+    # obj.picker.UseCellsOn()
     # get cell from the actor's cell picker
     obj.picker.Pick(event_pos[0],
                     event_pos[1],
                     0,
                     show_m.ren)
 
-    cell_from_actor = obj.picker.GetCellIJK()
-    print('from actor: (' +
-          str(cell_from_actor[0]) + ', ' +
-          str(cell_from_actor[1]) + ')')
+    i, j, k = obj.picker.GetCellIJK()
+    print('pick coordinates: (' + str(i) + ', ' + str(j) + ', ' + str(k) +')') 
+    print('pick value: ' + str(data[i, j, k]))
+
+    # id = obj.picker.GetPointId()
+    # print('point id: ' + str(id))
+    # print(shape)
+    # print('z slice = ' + str(np.floor(id / (shape[0] * shape[1]))))
 
 
 image_actor_z.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
