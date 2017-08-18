@@ -734,14 +734,14 @@ cdef double fast_S2_new(double [:] x_fe, double [:] bvals, double [:, :] bvecs, 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, yhat_cylinder):
-    fast_S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, yhat_cylinder)
+def S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, L, yhat_cylinder):
+    fast_S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, L, yhat_cylinder)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G2, double [:] yhat_cylinder) nogil:
-    cdef double x1_0, x1_1, L, am, g_per, sd, bd, D_intra_am, x2, L2
+cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G2, double [:] L, double [:] yhat_cylinder) nogil:
+    cdef double x1_0, x1_1, am, g_per, sd, bd, D_intra_am, x2
     cdef cnp.npy_intp i, j
     cdef double n[3]
     cdef cnp.npy_intp K = small_delta.shape[0]
@@ -750,11 +750,13 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
     cdef cnp.npy_intp M = am1.shape[0]
 
     cdef double * idenom = <double *> calloc(M, sizeof(double))
-    cdef double * summ_rows = <double *> calloc(M, sizeof(double))
-    cdef double * L1 = <double *> calloc(M, sizeof(double))
+    cdef double * summ_rows = <double *> calloc(K, sizeof(double))
+    cdef double * L1 = <double *> calloc(K, sizeof(double))
+    cdef double * bvecs_n = <double *> calloc(K, sizeof(double))
 
     x1_0 = x1[0]
     x1_1 = x1[1]
+    x2 = x1[2]
     sinT = sin(x1_0)
     cosT = cos(x1_0)
     sinP = sin(x1_1)
@@ -764,10 +766,9 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
     n[2] = cosT
     # Cylinder
     for i in range(K):
-        L = bvals[i] * D_intra
-        L1[i] = L * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2]) * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2])
+        bvecs_n[i] = (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2]) * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2])
+        L1[i] = L[i] * bvecs_n[i]
 
-#    func_mul(x1, am2, small_delta, big_delta, summ_rows)
 
     for i in range(M):
         am = (am1[i] / x1[2]) * (am1[i] / x1[2])
@@ -779,48 +780,24 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
             bd = D_intra_am * big_delta[j]
 
             sd = D_intra_am * small_delta[j]
-
-            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+            num = sd_bd_num(sd, bd)
+#            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
 
             summ_rows[j] += num * idenom[i]
 
     for i in range(K):
-        g_per = 1 - (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2])
-        L2 = 2 * (g_per * gamma * gamma) * summ_rows[i] * G2[i]
-        yhat_cylinder[i] = L1[i] + L2
-#    func_bvec(bvecs, n, g_per)
-#    for i in range(M):
-#                L2[i] = 2 * (g_per[i] * gamma * gamma) * summ_rows[i] * G2[i]
-#    yhat_cylinder = L1 + L2
+        g_per = 1 - bvecs_n[i]
+        yhat_cylinder[i] = 2 * (g_per * gamma * gamma) * summ_rows[i] * G2[i] + L1[i]
 
     free(summ_rows)
     free(L1)
     free(idenom)
+    free(bvecs_n)
 
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def return_L1(L, bvecs, n, L1):
-    fast_return_L1(L, bvecs, n, L1)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double fast_return_L1(double [:] L, double [:, :] bvecs, double [:] n, double [:] L1) nogil:
-    cdef cnp.npy_intp i
-    cdef cnp.npy_intp M = bvecs.shape[0]
+cdef inline double sd_bd_num(double sd, double bd) nogil:
 
-    for i in range(M):
-        L1[i] = L[i]*(bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2]) * (bvecs[i, 0] * n[0] + bvecs[i, 1] * n[1] + bvecs[i, 2] * n[2])
-
-
-
-
-
-
-
-
-
-
-
-
+    return 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
