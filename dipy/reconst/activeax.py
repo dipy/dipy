@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit, float64
-from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1, return_L1
+from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 
@@ -110,38 +110,38 @@ class ActiveAxModel(ReconstModel):
 #        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
         self.L = self.gtab.bvals * D_intra
 
-#    @profile
-    def S1_slow(self, x1):
-        big_delta = self.big_delta
-        small_delta = self.small_delta
-        bvecs = self.gtab.bvecs
-        M = small_delta.shape[0]
-        L = self.L
-        G2 = self.G2
-        x1_0 = x1[0]
-        x1_1 = x1[1]
-        sinT = np.sin(x1_0)
-        cosT = np.cos(x1_0)
-        sinP = np.sin(x1_1)
-        cosP = np.cos(x1_1)
-        n = np.array([cosP * sinT, sinP * sinT, cosT])
-        # Cylinder
-#        L1 = np.zeros(M)
-#        return_L1(L, bvecs, n, L1)
-        L1 = L * np.dot(bvecs, n) ** 2
-        am2 = (am / x1[2]) ** 2
-        t1 = time()
-        summ_rows = np.zeros(M)
-        func_mul(x1, am2, small_delta, big_delta, summ_rows)
-        t2 = time()
-        duration = t2 - t1
-        global overall_duration
-        overall_duration += duration
-        g_per = np.zeros(M)
-        func_bvec(bvecs, n, g_per)
-        L2 = 2 * g_per * gamma2 * summ_rows * G2
-        yhat_cylinder = L1 + L2
-        return yhat_cylinder
+##    @profile
+#    def S1_slow(self, x1):
+#        big_delta = self.big_delta
+#        small_delta = self.small_delta
+#        bvecs = self.gtab.bvecs
+#        M = small_delta.shape[0]
+#        L = self.L
+#        G2 = self.G2
+#        x1_0 = x1[0]
+#        x1_1 = x1[1]
+#        sinT = np.sin(x1_0)
+#        cosT = np.cos(x1_0)
+#        sinP = np.sin(x1_1)
+#        cosP = np.cos(x1_1)
+#        n = np.array([cosP * sinT, sinP * sinT, cosT])
+#        # Cylinder
+##        L1 = np.zeros(M)
+##        return_L1(L, bvecs, n, L1)
+#        L1 = L * np.dot(bvecs, n) ** 2
+#        am2 = (am / x1[2]) ** 2
+#        t1 = time()
+#        summ_rows = np.zeros(M)
+#        func_mul(x1, am2, small_delta, big_delta, summ_rows)
+#        t2 = time()
+#        duration = t2 - t1
+#        global overall_duration
+#        overall_duration += duration
+#        g_per = np.zeros(M)
+#        func_bvec(bvecs, n, g_per)
+#        L2 = 2 * g_per * gamma2 * summ_rows * G2
+#        yhat_cylinder = L1 + L2
+#        return yhat_cylinder
 
     def S4(self):
         # dot
@@ -199,23 +199,22 @@ class ActiveAxModel(ReconstModel):
         yhat_ball = D_iso * self.gtab.bvals
         return yhat_ball
 
-#    @profile
+    @profile
     def Phi(self, x):
         phi = np.zeros((self.small_delta.shape[0], 4))
         x1, x2 = self.x_to_xs(x)
         yhat_zeppelin = np.zeros(self.small_delta.shape[0])
         S2(x2, self.gtab.bvals, self.gtab.bvecs, yhat_zeppelin)
-
-        yhat_cylinder = self.S1_slow(x1)
-#        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-#        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, yhat_cylinder)
+#        yhat_cylinder = self.S1_slow(x1)
+        yhat_cylinder = np.zeros(self.small_delta.shape[0])
+        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, yhat_cylinder)
         phi[:, 0] = yhat_cylinder
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
         phi[:, 3] = self.S4()
         return np.exp(-phi)
 
-#    @profile
+    @profile
     def Phi2(self, x_fe):
         phi = np.zeros((self.small_delta.shape[0], 4))
         x, fe = self.x_fe_to_x_and_fe(x_fe)
@@ -223,9 +222,9 @@ class ActiveAxModel(ReconstModel):
 #        yhat_zeppelin = self.S2_new_slow(x_fe)
         yhat_zeppelin = np.zeros(self.small_delta.shape[0])
         S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, yhat_zeppelin)
-        yhat_cylinder = self.S1_slow(x1)
-#        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-#        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, yhat_cylinder)
+#        yhat_cylinder = self.S1_slow(x1)
+        yhat_cylinder = np.zeros(self.small_delta.shape[0])
+        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, yhat_cylinder)
         phi[:, 0] = yhat_cylinder
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
