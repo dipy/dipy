@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit, float64
-from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new
+from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1, return_L1
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 
@@ -15,6 +15,7 @@ global overall_duration
 overall_duration = 0
 
 gamma = 2.675987 * 10 ** 8
+gamma2 = gamma ** 2
 D_intra = 0.6 * 10 ** 3
 fname, fscanner = get_data('ActiveAx_synth_2d')
 params = np.loadtxt(fscanner)
@@ -23,6 +24,7 @@ data = img.get_data()
 affine = img.affine
 # bvecs = params[:, 0:3]
 G = params[:, 3] / 10 ** 6  # gradient strength
+G2 = G ** 2
 # big_delta = params[:, 4]
 # small_delta = params[:, 5]
 D_iso = 2 * 10 ** 3
@@ -100,21 +102,22 @@ class ActiveAxModel(ReconstModel):
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta
-        self.gamma = gamma
-        self.G = G
+        self.gamma2 = gamma2
+        self.G2 = G2
+        self.am = am
         D_iso = 2 * 10 ** 3
         self.yhat_ball = D_iso * self.gtab.bvals
-        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
+#        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
+        self.L = self.gtab.bvals * D_intra
 
-    @profile
+#    @profile
     def S1_slow(self, x1):
         big_delta = self.big_delta
         small_delta = self.small_delta
         bvecs = self.gtab.bvecs
         M = small_delta.shape[0]
-        gamma = 2.675987 * 10 ** 8
-        D_intra = 0.6 * 10 ** 3
-        G = self.G
+        L = self.L
+        G2 = self.G2
         x1_0 = x1[0]
         x1_1 = x1[1]
         sinT = np.sin(x1_0)
@@ -123,21 +126,20 @@ class ActiveAxModel(ReconstModel):
         cosP = np.cos(x1_1)
         n = np.array([cosP * sinT, sinP * sinT, cosT])
         # Cylinder
-        L = self.gtab.bvals * D_intra
+#        L1 = np.zeros(M)
+#        return_L1(L, bvecs, n, L1)
         L1 = L * np.dot(bvecs, n) ** 2
         am2 = (am / x1[2]) ** 2
         t1 = time()
         summ_rows = np.zeros(M)
         func_mul(x1, am2, small_delta, big_delta, summ_rows)
-#        summ_rows = func_mul_jitted(x1, am2, small_delta, big_delta)
         t2 = time()
         duration = t2 - t1
         global overall_duration
         overall_duration += duration
         g_per = np.zeros(M)
         func_bvec(bvecs, n, g_per)
-#        g_per = func_bvec_jitted(bvecs, n)
-        L2 = 2 * (g_per * gamma ** 2) * summ_rows * G ** 2
+        L2 = 2 * g_per * gamma2 * summ_rows * G2
         yhat_cylinder = L1 + L2
         return yhat_cylinder
 
@@ -206,7 +208,7 @@ class ActiveAxModel(ReconstModel):
 
         yhat_cylinder = self.S1_slow(x1)
 #        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-#        S1(x1, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, yhat_cylinder)
+#        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, yhat_cylinder)
         phi[:, 0] = yhat_cylinder
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
@@ -223,7 +225,7 @@ class ActiveAxModel(ReconstModel):
         S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, yhat_zeppelin)
         yhat_cylinder = self.S1_slow(x1)
 #        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-#        S1(x1, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, yhat_cylinder)
+#        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, yhat_cylinder)
         phi[:, 0] = yhat_cylinder
         phi[:, 1] = yhat_zeppelin
         phi[:, 2] = self.S3()
