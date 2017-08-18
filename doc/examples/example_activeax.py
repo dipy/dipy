@@ -8,16 +8,12 @@ Created on Fri Jun 16 16:14:07 2017
 
 # -*- coding: utf-8 -*-
 from time import time
-# from numba import jit
 import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data
-import dipy.reconst.mix_fast as mix_fast
 import dipy.reconst.mix as mix
 import dipy.reconst.activeax as activeax
-import dipy.reconst.activeax_fast as activeax_fast
-
 from scipy.optimize import differential_evolution
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
@@ -62,25 +58,6 @@ def norm_meas_Aax(signal):
     return f
 
 
-
-"""
-from dipy.reconst.activeax import am
-x = np.array([0.5, 0.5, 10, 0.8])
-am2 = (am / x[2]) ** 2
-summ_rows = np.zeros(small_delta.shape[0])
-from dipy.reconst.recspeed import func_mul, func_mul_jitted
-
-t1 = time()
-for i in range(2000):
-    func_mul(x, am2, small_delta, big_delta, summ_rows)
-t2 = time()
-print('Duration ', t2 - t1)
-
-summ_rows2 = func_mul_jitted(x, am2, small_delta, big_delta)
-1/0
-
-"""
-
 signal = norm_meas_Aax(signal)
 signal = np.float64(signal)
 # jit decorator tells Numba to compile this function.
@@ -98,28 +75,28 @@ signal = np.float64(signal)
 #print(speedup)
 # print(mix_fast.cnt_stochastic)
 
-#t1 = time()
+t1 = time()
 fit_method = 'MIX'
 activeax_model = activeax.ActiveAxModel(gtab, fit_method=fit_method)
-#activeax_fit = activeax_model.fit(data[0, 0, 0])
-#t2 = time()
+activeax_fit = activeax_model.fit(signal)
+t2 = time()
 #fit_method = 'MIX'
 #activeax_model = activeax_fast.ActiveAxModel(gtab, fit_method=fit_method)
 #activeax_fit2 = activeax_model.fit(data[0, 0, 0])
 #t3 = time()
 
-t1 = time()
-bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
-res_one = differential_evolution(activeax_model.stoc_search_cost, bounds,
-                                 args=(signal,))
-t2 = time()
+#t1 = time()
+#bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
+#res_one = differential_evolution(activeax_model.stoc_search_cost, bounds,
+#                                 args=(signal,))
+#t2 = time()
 
 #res_one = mix.dif_evol(signal, bvals, bvecs, G, small_delta, big_delta)
 #t3 = time()
 
 fast_time = t2 - t1
 print(fast_time)
-print(res_one.x)
+#print(res_one.x)
 print(activeax.overall_duration)
 #slow_time = t3 - t2
 #speedup = slow_time/fast_time
@@ -127,3 +104,6 @@ print(activeax.overall_duration)
 #x = res_one.x
 #phi = activeax.Phi(x, gtab)
 #fe = mix.estimate_f(np.array(signal), phi)
+
+#yhat_zeppelin1 = np.zeros(small_delta.shape[0])
+#S2_new(x_fe, bvals,  bvecs, yhat_zeppelin1)
