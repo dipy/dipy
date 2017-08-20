@@ -1973,6 +1973,7 @@ class FileSelectMenu2D(UI):
         self.text_item_list = []
         self.selected_file = ""
         self.window = 0
+        self.current_directory = os.getcwd()
         self.buttons = dict()
 
         self.menu = self.build_actors(position)
@@ -2123,8 +2124,7 @@ class FileSelectMenu2D(UI):
 
         return all_file_names
 
-    @staticmethod
-    def get_directory_names():
+    def get_directory_names(self):
         """ Re-allots file names to the text actors.
 
         Uses FileSelectMenuText2D for selecting files and folders.
@@ -2136,8 +2136,9 @@ class FileSelectMenu2D(UI):
 
         """
         # A list of directory names in the current directory
-        directory_names = ["../"]
-        directory_names += glob.glob("*/")
+        directory_names = next(os.walk(self.current_directory))[1]
+        directory_names = [os.path.basename(os.path.abspath(dn)) for dn in directory_names]
+        directory_names = ["../"] + directory_names
 
         return directory_names
 
@@ -2155,8 +2156,8 @@ class FileSelectMenu2D(UI):
         # A list of file names with extension in the current directory
         file_names = []
         for extension in self.extensions:
-            file_names += glob.glob("*." + extension)
-
+            file_names += glob.glob(self.current_directory + "/*." + extension)
+        file_names = [os.path.basename(os.path.abspath(fn)) for fn in file_names]
         return file_names
 
     def select_file(self, file_name):
@@ -2350,7 +2351,9 @@ class FileSelectMenuText2D(UI):
         """
 
         if file_select_text.file_type == "directory":
-            os.chdir(file_select_text.text_actor.message)
+            file_select_text.file_select.current_directory = os.path.abspath(
+                os.path.join(file_select_text.file_select.current_directory, 
+                file_select_text.text_actor.message))
 
             file_select_text.file_select.window = 0
             file_select_text.file_select.fill_text_actors()
