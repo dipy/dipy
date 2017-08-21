@@ -372,3 +372,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_disk_slider_2d":
         test_ui_disk_slider_2d(recording=True)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_select_menu_2d":
+        test_ui_file_select_menu_2d(recording=True)
