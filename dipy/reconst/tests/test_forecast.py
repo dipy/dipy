@@ -49,7 +49,7 @@ def test_forecast_positive_constrain():
     f_fit = fm.fit(data.S)
 
     sphere = get_sphere('repulsion100')
-    fodf = f_fit.odf(sphere)
+    fodf = f_fit.odf(sphere, clip_negative=False)
     assert_equal(fodf[fodf < 0].sum(), 0)
 
     coeff = f_fit.sh_coeff
@@ -62,12 +62,12 @@ def test_forecast_csd():
     fm = ForecastModel(data.gtab, optimizer='csd',
                        sphere=data.sphere, lambda_csd=data.lambda_csd)
     f_fit = fm.fit(data.S)
-    fodf_csd = f_fit.odf(sphere)
+    fodf_csd = f_fit.odf(sphere, clip_negative=False)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
                        lambda_LB=data.lambda_LB, optimizer='wls')
     f_fit = fm.fit(data.S)
-    fodf_wls = f_fit.odf(sphere)
+    fodf_wls = f_fit.odf(sphere, clip_negative=False)
 
     value = fodf_wls[fodf_wls < 0].sum() < fodf_csd[fodf_csd < 0].sum()
     assert_equal(value, 1)
