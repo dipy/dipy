@@ -11,7 +11,7 @@ from math import factorial
 from dipy.core.geometry import cart2sphere
 from dipy.data import get_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq, fmin, fmin_cobyla
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
@@ -152,12 +152,16 @@ class ForecastModel(OdfModel, Cache):
         else:
             self.vertices = sphere
 
-        self.b0s_mask = gtab.b0s_mask
+        self.b0s_mask = self.bvals == 0
         self.one_0_bvals = np.r_[0, self.bvals[~self.b0s_mask]]
         self.one_0_bvecs = np.r_[np.array([0, 0, 0]).reshape(
             1, 3), self.bvecs[~self.b0s_mask, :]]
 
         self.rho = rho_matrix(self.sh_order, self.one_0_bvecs)
+
+        # signal regularization matrix
+        self.srm = rho_matrix(4, self.one_0_bvecs)
+        self.LB_signal = lb_forecast(4)
 
         self.b_unique = np.sort(np.unique(self.bvals[self.bvals > 0]))
         self.wls = True
@@ -175,7 +179,7 @@ class ForecastModel(OdfModel, Cache):
         if optimizer == 'csd':
             self.csd = True
 
-        self.L = lb_forecast(self.sh_order)
+        self.LB_matrix = lb_forecast(self.sh_order)
         self.lambda_lb = lambda_LB
         self.lambda_csd = lambda_csd
         self.fod = rho_matrix(sh_order, self.vertices)
@@ -185,31 +189,33 @@ class ForecastModel(OdfModel, Cache):
 
         data_b0 = data[self.b0s_mask].mean()
         data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]] / data_b0
-        data_single_b0 = np.clip(data_single_b0, 0, 1.0)
+        #data_single_b0 = np.clip(data_single_b0, 0, 1.0)
 
         # calculates the mean signal at each b_values
-        means = find_signal_means(self.b_unique, data_single_b0, self.bvals)
+        means = find_signal_means(self.b_unique, data_single_b0, self.bvals, self.srm, self.LB_signal)
 
         n_c = int((self.sh_order + 1)*(self.sh_order + 2)/2)
 
         lv = self.vertices.shape[0]
-
+    
         # average diffusivity initialization
         x = np.array([np.pi/4, np.pi/4])
 
         x, status = leastsq(forecast_error_func, x,
                             args=(self.b_unique, means))
-
+        # x = fmin(forecast_error_func, x, args=(self.b_unique, means),
+        #          full_output=False, disp=False)
         # squared to avoid negative diffusivities
-        c0 = np.cos(x[0])**2
-        c1 = np.cos(x[1])**2
+        c0 = np.cos(x[0])**2 * 3e-03
+        c1 = np.cos(x[1])**2 * 3e-03
 
         if c0 >= c1:
-            d_par = c0 * 3e-03
-            d_perp = c1 * 3e-03
+            d_par = c0 
+            d_perp = c1
         else:
-            d_par = c1 * 3e-03
-            d_perp = c0 * 3e-03
+            d_par = c1
+            d_perp = c0
+
 
         # round to avoid memory explosion
         diff_key = str(int(np.round(d_par*1e05))) + \
@@ -229,7 +235,7 @@ class ForecastModel(OdfModel, Cache):
             data_r = data_single_b0 - M0*c0
 
             Mr = M[:, 1:]
-            Lr = self.L[1:, 1:]
+            Lr = self.LB_matrix[1:, 1:]
 
             pseudoInv = np.dot(np.linalg.inv(
                 np.dot(Mr.T, Mr) + self.lambda_lb*Lr), Mr.T)
@@ -245,6 +251,7 @@ class ForecastModel(OdfModel, Cache):
 
             L = self.fod[low_peaks, :]
             counter = 0
+
             while not np.array_equal(low_peaks, lpl) and L.shape[0] > 0:
                 lpl = low_peaks
                 pseudoInv = np.linalg.inv(
@@ -272,7 +279,7 @@ class ForecastModel(OdfModel, Cache):
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix * c - data_single_b0) +
-                self.lambda_lb * cvxpy.quad_form(c, self.L))
+                self.lambda_lb * cvxpy.quad_form(c, self.LB_matrix))
 
             constraints = [c[0] == c0, self.fod * c >= 0]
             prob = cvxpy.Problem(objective, constraints)
@@ -308,27 +315,29 @@ class ForecastFit(OdfFit):
         self._sh_coef = sh_coef
         self.gtab = model.gtab
         self.sh_order = model.sh_order
-
         self.d_par = d_par
         self.d_perp = d_perp
 
-        self.M = None
         self.rho = None
 
-        self.Y_ = None
-
-    def odf(self, sphere):
+    def odf(self, sphere, clip_negative=True):
         r""" Calculates the fODF for a given discrete sphere.
 
         Parameters
         ----------
         sphere : Sphere,
             the odf sphere
+        clip_negative : boolean, optional
+            if True clip the negative odf values to 0, default True
         """
-        if self.rho == None:
+
+        if self.rho is None:
             self.rho = rho_matrix(self.sh_order, sphere.vertices)
 
         odf = np.dot(self.rho, self._sh_coef)
+
+        if clip_negative:
+            odf = np.clip(odf, 0, odf.max())
 
         return odf
 
@@ -364,7 +373,7 @@ class ForecastFit(OdfFit):
         return self.d_perp
 
 
-def find_signal_means(b_unique, data_norm, bvals):
+def find_signal_means(b_unique, data_norm, bvals, rho, LB, w = 1e-03):
     r"""Calculates the mean signal for each shell
 
     Parameters
@@ -374,7 +383,13 @@ def find_signal_means(b_unique, data_norm, bvals):
     data_norm : 1d ndarray,
         normalized diffusion signal
     bvals : 1d ndarray,
-        the b-values.
+        the b-values
+    rho : 2d ndarray,
+        SH basis matrix for fitting the signal on each shell
+    LB : 2d ndarray,
+        Laplace-Beltrami regularization matrix
+    w : float,
+        weight for the Laplace-Beltrami regularization  
 
     Returns
     -------
@@ -385,12 +400,16 @@ def find_signal_means(b_unique, data_norm, bvals):
 
     lb = len(b_unique)
     means = np.zeros(lb)
-
     for u in range(lb):
         ind = bvals == b_unique[u]
         shell = data_norm[ind]
+        M = rho[ind,:]
 
-        means[u] = np.mean(shell)
+        pseudoInv = np.dot(np.linalg.inv(
+            np.dot(M.T, M) + w*LB), M.T)
+        coef = np.dot(pseudoInv, shell)
+
+        means[u] = coef[0] / np.sqrt(4*np.pi)
 
     return means
 
@@ -413,7 +432,6 @@ def forecast_error_func(x, b_unique, E):
 
     v = E-E_
     return v
-
 
 def I_l(l, b):
     if np.isscalar(b):
