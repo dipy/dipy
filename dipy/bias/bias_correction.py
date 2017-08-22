@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import scipy.ndimage as ndimage
 from scipy.ndimage import zoom
 from dipy.core.ndindex import ndindex
-from bspline_fit import cubic_bspline
+#from bspline_fit import cubic_bspline
 from dipy.segment.threshold import otsu
 from Goal0_1 import show_volume
 
@@ -278,6 +278,7 @@ class NP_correction(object):
 Example for using class, the estimage data is Correct.estimate_img,
 The calculated field is Correct.field
 """
+"""
 dname = "/Users/tiwanyan/ANTs/Images/Raw/"
 ft1 = dname + "Q_0011_T1.nii.gz"
 t1 = nib.load(ft1).get_data()
@@ -285,3 +286,4 @@ Correct = NP_correction(t1)
 Correct.optimization_converge()
 #Correct.field_smoothing()
 #show_volume(np.exp(Correct.estimate_img), t1, 0.5)
+"""
