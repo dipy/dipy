@@ -418,15 +418,15 @@ def forecast_error_func(x, b_unique, E):
     r""" Calculates the difference between the mean signal calculated using 
     the parameter vector x and the average signal E using FORECAST and SMT
     """
-    c0 = np.cos(x[0])**2
-    c1 = np.cos(x[1])**2
+    c0 = np.cos(x[0])**2 * 3e-03
+    c1 = np.cos(x[1])**2 * 3e-03
 
     if c0 >= c1:
-        d_par = c0 * 3e-03
-        d_perp = c1 * 3e-03
+        d_par = c0
+        d_perp = c1
     else:
-        d_par = c1 * 3e-03
-        d_perp = c0 * 3e-03
+        d_par = c1
+        d_perp = c0
 
     E_ = 0.5 * np.exp(-b_unique*d_perp) * Psi_l(0, (b_unique * (d_par-d_perp)))
 
@@ -573,7 +573,7 @@ def rho_matrix(sh_order, vecs):
 
 
 def lb_forecast(sh_order):
-    r"""Returns the Laplace Beltrami regularization matrix for FORECAST
+    r"""Returns the Laplace-Beltrami regularization matrix for FORECAST
     """
     n_c = int((sh_order + 1)*(sh_order + 2)/2)
     diagL = np.zeros(n_c)
