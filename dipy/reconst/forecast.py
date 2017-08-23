@@ -11,7 +11,7 @@ from math import factorial
 from dipy.core.geometry import cart2sphere
 from dipy.data import get_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.optimize import leastsq, fmin, fmin_cobyla
+from scipy.optimize import leastsq
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
@@ -192,7 +192,8 @@ class ForecastModel(OdfModel, Cache):
         #data_single_b0 = np.clip(data_single_b0, 0, 1.0)
 
         # calculates the mean signal at each b_values
-        means = find_signal_means(self.b_unique, data_single_b0, self.bvals, self.srm, self.LB_signal)
+        means = find_signal_means(self.b_unique, data_single_b0, 
+                self.one_0_bvals, self.srm, self.LB_signal)
 
         n_c = int((self.sh_order + 1)*(self.sh_order + 2)/2)
 
@@ -203,9 +204,8 @@ class ForecastModel(OdfModel, Cache):
 
         x, status = leastsq(forecast_error_func, x,
                             args=(self.b_unique, means))
-        # x = fmin(forecast_error_func, x, args=(self.b_unique, means),
-        #          full_output=False, disp=False)
-        # squared to avoid negative diffusivities
+
+        # transform to bound the diffusivities from 0 to 3e-03
         c0 = np.cos(x[0])**2 * 3e-03
         c1 = np.cos(x[1])**2 * 3e-03
 
@@ -403,13 +403,16 @@ def find_signal_means(b_unique, data_norm, bvals, rho, LB, w = 1e-03):
     for u in range(lb):
         ind = bvals == b_unique[u]
         shell = data_norm[ind]
-        M = rho[ind,:]
+        if np.sum(ind) > 20:
+            M = rho[ind,:]
 
-        pseudoInv = np.dot(np.linalg.inv(
-            np.dot(M.T, M) + w*LB), M.T)
-        coef = np.dot(pseudoInv, shell)
+            pseudoInv = np.dot(np.linalg.inv(
+                np.dot(M.T, M) + w*LB), M.T)
+            coef = np.dot(pseudoInv, shell)
 
-        means[u] = coef[0] / np.sqrt(4*np.pi)
+            means[u] = coef[0] / np.sqrt(4*np.pi)
+        else:
+            means[u] = shell.mean()
 
     return means
 
