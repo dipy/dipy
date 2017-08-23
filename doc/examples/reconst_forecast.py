@@ -15,65 +15,30 @@ import matplotlib.pyplot as plt
 from dipy.reconst.forecast import ForecastModel
 from dipy.reconst.shm import sh_to_sf
 from dipy.viz import fvtk
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell, get_sphere
+# from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell, get_sphere
+from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
 from dipy.core.gradients import gradient_table
+
 
 """
 Download and read the data for this tutorial.
-
-fetch_sherbrooke_3shell() provides data acquired using three shells at
-b-values 1000, 2000, and 3500.
+Our implementation of FORECAST requires multi-shell data. 
+fetch_cenir_multib() provides data acquired using the shells at b-values 1000,
+2000, and 3000 (see MAPMRI example for more information on this dataset).
 """
 
-fetch_sherbrooke_3shell()
-img, gtab = read_sherbrooke_3shell()
+fetch_cenir_multib(with_raw=False)
+
+bvals = [1000, 2000, 3000]
+img, gtab = read_cenir_multib(bvals)
 data = img.get_data()
-
-print('data.shape (%d, %d, %d, %d)' % data.shape)
-
-"""
-sherbrooke_3shell has the x axis of the gradients flipped with respect to
-Dipy convention. We fix this by flipping the bvecs x axis 
-"""
-
-bvecs_corrected = gtab.bvecs * np.array([-1, 1, 1])
-gtab_corrected = gradient_table(gtab.bvals, bvecs_corrected)
-
-"""
-First, let us mask the data
-"""
-
-from dipy.segment.mask import median_otsu
-data_masked, mask = median_otsu(data, 2, 1)
-
-"""
-sherbrooke_3shell contains only one b0 image, in these cases it is always better
-to denoise the b0 image before processing the data.
-For more information about nlmeans denoising check the relative example in the
-gallery.
-"""
-
-from dipy.denoise.nlmeans import nlmeans
-from dipy.denoise.noise_estimate import estimate_sigma
-
-data_b0 = data[..., 0]
-
-sigma = estimate_sigma(data_b0, N=4)
-
-denoised_b0 = nlmeans(data_b0, sigma=sigma, mask=mask,
-                      patch_radius=1, block_radius=3, rician=False)
-
-data[..., 0] = denoised_b0
 
 """
 Let us consider only a single slice for the FORECAST fitting	
 """
-# axial_middle = data.shape[2] // 2
-# data_small = data[:, :, axial_middle]
-# mask_small = mask[:, :, axial_middle]
 
-data_small = data[26:100, 64:65, :]
-mask_small = mask[26:100, 64:65, :]
+data_small = data[18:87,51:52,10:70]
+mask_small = data_small[..., 0] > 1000
 
 """
 Instantiate the FORECAST Model.
@@ -84,7 +49,7 @@ optimizer is the algorithm used for the FORECAST basis fitting, in this case
 we used the Constrained Spherical Deconvolution (CSD) algorithm.
 
 """
-fm = ForecastModel(gtab_corrected, sh_order=6, optimizer='csd')
+fm = ForecastModel(gtab, sh_order=8, optimizer='csd')
 
 """
 Fit the FORECAST to the data
@@ -158,7 +123,7 @@ Display a part of the fODFs
 
 from dipy.viz import fvtk
 r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf[40:60, :, 30:45], sphere, colormap='jet')
+sfu = fvtk.sphere_funcs(odf[16:36, :, 30:45], sphere, colormap='jet')
 sfu.RotateX(-90)
 fvtk.add(r, sfu)
 fvtk.record(r, n_frames=1, out_path='fODFs.png', size=(600, 600),
