@@ -36,7 +36,7 @@ sherbrooke_3shell has the x axis of the gradients flipped with respect to
 Dipy convention. We fix this by flipping the bvecs x axis 
 """
 
-bvecs_corrected = gtab.bvecs * np.array([-1,1,1])
+bvecs_corrected = gtab.bvecs * np.array([-1, 1, 1])
 gtab_corrected = gradient_table(gtab.bvals, bvecs_corrected)
 
 """
@@ -60,9 +60,10 @@ data_b0 = data[..., 0]
 
 sigma = estimate_sigma(data_b0, N=4)
 
-denoised_b0 = nlmeans(data_b0, sigma=sigma, mask=mask, patch_radius=1, block_radius=3, rician=False)
+denoised_b0 = nlmeans(data_b0, sigma=sigma, mask=mask,
+                      patch_radius=1, block_radius=3, rician=False)
 
-data[...,0] = denoised_b0
+data[..., 0] = denoised_b0
 
 """
 Let us consider only a single slice for the FORECAST fitting	
@@ -72,7 +73,7 @@ Let us consider only a single slice for the FORECAST fitting
 # mask_small = mask[:, :, axial_middle]
 
 data_small = data[26:100, 64:65, :]
-mask_small = mask[26:100, 64:65, :] 
+mask_small = mask[26:100, 64:65, :]
 
 """
 Instantiate the FORECAST Model.
@@ -109,21 +110,25 @@ Show the indices and save them in FORECAST_indices.png.
 fig = plt.figure(figsize=(6, 6))
 ax1 = fig.add_subplot(2, 2, 1, title='parallel diffusivity')
 ax1.set_axis_off()
-ind = ax1.imshow(d_par[:,0,:].T, interpolation='nearest', origin='lower', cmap = plt.cm.gray)
+ind = ax1.imshow(d_par[:, 0, :].T, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 plt.colorbar(ind, shrink=0.6)
 ax2 = fig.add_subplot(2, 2, 2, title='perpendicular diffusivity')
 ax2.set_axis_off()
-ind = ax2.imshow(d_perp[:,0,:].T, interpolation='nearest', origin='lower', cmap = plt.cm.gray)
+ind = ax2.imshow(d_perp[:, 0, :].T, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 plt.colorbar(ind, shrink=0.6)
 ax3 = fig.add_subplot(2, 2, 3, title='fractional anisotropy')
 ax3.set_axis_off()
-ind = ax3.imshow(fa[:,0,:].T, interpolation='nearest', origin='lower', cmap = plt.cm.gray)
+ind = ax3.imshow(fa[:, 0, :].T, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 plt.colorbar(ind, shrink=0.6)
 ax4 = fig.add_subplot(2, 2, 4, title='mean diffusivity')
 ax4.set_axis_off()
-ind = ax4.imshow(md[:,0,:].T, interpolation='nearest', origin='lower', cmap = plt.cm.gray)
+ind = ax4.imshow(md[:, 0, :].T, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 plt.colorbar(ind, shrink=0.6)
-plt.savefig('FORECAST_indices.png')
+plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 
 """
 .. figure:: FORECAST_indices.png
@@ -153,12 +158,11 @@ Display a part of the fODFs
 
 from dipy.viz import fvtk
 r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf[40:60,:,30:45], sphere, colormap='jet')
+sfu = fvtk.sphere_funcs(odf[40:60, :, 30:45], sphere, colormap='jet')
 sfu.RotateX(-90)
 fvtk.add(r, sfu)
-fvtk.show(r)
-fvtk.record(r, n_frames=1, out_path='fODFs.png', size=(600, 600), 
-			magnification=4)
+fvtk.record(r, n_frames=1, out_path='fODFs.png', size=(600, 600),
+            magnification=4)
 
 """
 .. figure:: fODFs.png
