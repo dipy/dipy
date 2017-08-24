@@ -354,6 +354,31 @@ class ForecastFit(OdfFit):
         md = (self.d_par + 2*self.d_perp)/3.0
         return md
 
+    def predict(self, gtab=None, S0=1.0):
+        r""" Calculates the fODF for a given discrete sphere.
+
+        Parameters
+        ----------
+        gtab : GradientTable, optional
+            gradient directions and bvalues container class. 
+        S0 : float, optional
+            the signal at b-value=0
+            
+        """
+        if gtab is None:
+            gtab = self.gtab
+        
+        M_diff = forecast_matrix(self.sh_order,  
+                                 self.d_par,
+                                 self.d_perp,
+                                 gtab.bvals)
+
+        rho = rho_matrix(self.sh_order, gtab.bvecs)
+        M = M_diff * rho
+        S = S0 * np.dot(M, self._sh_coef)
+        
+        return S
+
     @property
     def sh_coeff(self):
         """The FORECAST SH coefficients

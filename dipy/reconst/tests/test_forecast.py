@@ -163,5 +163,55 @@ def test_forecast_indices():
     assert_almost_equal(f_fit.mean_diffusivity(), 3e-03, 10)
 
 
+def test_forecast_predict():
+    # check anisotropic tensor
+    fm = ForecastModel(data.gtab, sh_order=8,
+                       optimizer='csd', sphere=data.sphere)
+    f_fit = fm.fit(data.S)
+
+    S = f_fit.predict(S0=1.0)
+
+    mse = np.sum((S-data.S/100.0)**2) / len(S)
+
+    assert_almost_equal(mse, 0.0, 4)
+
+
+def test_multivox_forecast():
+    gtab = get_3shell_gtab()
+    mevals = np.array(([0.0017, 0.0003, 0.0003],
+                       [0.0017, 0.0003, 0.0003]))
+
+    angl1 = [(0, 0), (60, 0)]
+    angl2 = [(90, 0), (45, 90)]
+    angl3 = [(0, 0), (90, 0)]
+
+    S = np.zeros((3, 1, 1, len(gtab.bvals)))
+    S[0, 0, 0], sticks = MultiTensor(
+        gtab, mevals, S0=1.0, angles=angl1,
+        fractions=[50, 50], snr=None)
+    S[1, 0, 0], sticks = MultiTensor(
+        gtab, mevals, S0=1.0, angles=angl2,
+        fractions=[50, 50], snr=None)
+    S[2, 0, 0], sticks = MultiTensor(
+        gtab, mevals, S0=1.0, angles=angl3,
+        fractions=[50, 50], snr=None)
+
+    fm = ForecastModel(data.gtab, sh_order=8,
+                       optimizer='csd', sphere=data.sphere)
+    f_fit = fm.fit(S)
+
+    S_predict = f_fit.predict()
+
+    assert_equal(S_predict.shape, S.shape)
+
+    mse1 = np.sum((S_predict[0, 0, 0]-S[0, 0, 0])**2) / len(gtab.bvals)
+    assert_almost_equal(mse1, 0.0, 4)
+
+    mse2 = np.sum((S_predict[1, 0, 0]-S[1, 0, 0])**2) / len(gtab.bvals)
+    assert_almost_equal(mse2, 0.0, 4)
+
+    mse3 = np.sum((S_predict[2, 0, 0]-S[2, 0, 0])**2) / len(gtab.bvals)
+    assert_almost_equal(mse3, 0.0, 4)
+
 if __name__ == '__main__':
     run_module_suite()
