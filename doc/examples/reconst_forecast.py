@@ -9,16 +9,11 @@ axially symmetric tensor and the fODF using the FORECAST model from
 
 First import the necessary modules:
 """
-import numpy as np
+
 import matplotlib.pyplot as plt
-
 from dipy.reconst.forecast import ForecastModel
-from dipy.reconst.shm import sh_to_sf
 from dipy.viz import fvtk
-# from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell, get_sphere
 from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
-from dipy.core.gradients import gradient_table
-
 
 """
 Download and read the data for this tutorial.
@@ -37,7 +32,7 @@ data = img.get_data()
 Let us consider only a single slice for the FORECAST fitting	
 """
 
-data_small = data[18:87,51:52,10:70]
+data_small = data[18:87, 51:52, 10:70]
 mask_small = data_small[..., 0] > 1000
 
 """
@@ -47,9 +42,9 @@ sh_order is the spherical harmonics order used for the fODF.
 
 optimizer is the algorithm used for the FORECAST basis fitting, in this case
 we used the Constrained Spherical Deconvolution (CSD) algorithm.
-
 """
-fm = ForecastModel(gtab, sh_order=8, optimizer='csd')
+
+fm = ForecastModel(gtab, sh_order=6, optimizer='csd')
 
 """
 Fit the FORECAST to the data
@@ -121,7 +116,6 @@ print('fODF.shape (%d, %d, %d, %d)' % odf.shape)
 Display a part of the fODFs
 """
 
-from dipy.viz import fvtk
 r = fvtk.ren()
 sfu = fvtk.sphere_funcs(odf[16:36, :, 30:45], sphere, colormap='jet')
 sfu.RotateX(-90)

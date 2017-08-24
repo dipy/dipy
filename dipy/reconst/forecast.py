@@ -5,9 +5,7 @@ import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sph_harm
-from dipy.core.gradients import gradient_table
 from scipy.special import erf
-from math import factorial
 from dipy.core.geometry import cart2sphere
 from dipy.data import get_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
@@ -47,7 +45,7 @@ class ForecastModel(OdfModel, Cache):
     def __init__(self,
                  gtab,
                  sh_order=8,
-                 lambda_LB=1e-3,
+                 lambda_lb=1e-3,
                  optimizer='wls',
                  sphere=None,
                  lambda_csd=1.0):
@@ -79,7 +77,7 @@ class ForecastModel(OdfModel, Cache):
             gradient directions and bvalues container class.
         sh_order : unsigned int,
             an even integer that represent the SH order of the basis (max 12)
-        lambda_LB: float,
+        lambda_lb: float,
             Laplace-Beltrami regularization weight.
         optimizer : str,
             optimizer. The possible values are Weighted Least Squares ('wls'),
@@ -112,32 +110,29 @@ class ForecastModel(OdfModel, Cache):
         with respect to the FORECAST and compute the fODF, parallel and 
         perpendicular diffusivity.
 
-        from dipy.data import get_sphere, get_3shell_gtab
-        gtab = get_3shell_gtab()
-
-        from dipy.sims.voxel import MultiTensor
-        mevals = np.array(([0.0017, 0.0003, 0.0003],
-                            [0.0017, 0.0003, 0.0003]))
-        angl = [(0, 0), (60, 0)]
-        data, sticks = MultiTensor(
-            gtab, mevals, S0=100.0, angles=angl,
-            fractions=[50, 50], snr=None)
-
-        from dipy.reconst.forecast import ForecastModel
-        fm= ForecastModel(gtab, sh_order=6)
-        f_fit = fm.fit(data)
-        d_par = f_fit.dpar
-        d_perp = f_fit.dperp
-
-        sphere = get_sphere('symmetric724')
-        fodf = f_fit.odf(sphere)
+        >>> from dipy.data import get_sphere, get_3shell_gtab
+        >>> gtab = get_3shell_gtab()
+        >>> from dipy.sims.voxel import MultiTensor
+        >>> mevals = np.array(([0.0017, 0.0003, 0.0003],
+        >>>                     [0.0017, 0.0003, 0.0003]))
+        >>> angl = [(0, 0), (60, 0)]
+        >>> data, sticks = MultiTensor(
+        >>>     gtab, mevals, S0=100.0, angles=angl,
+        >>>     fractions=[50, 50], snr=None)
+        >>> from dipy.reconst.forecast import ForecastModel
+        >>> fm= ForecastModel(gtab, sh_order=6)
+        >>> f_fit = fm.fit(data)
+        >>> d_par = f_fit.dpar
+        >>> d_perp = f_fit.dperp
+        >>> sphere = get_sphere('symmetric724')
+        >>> fodf = f_fit.odf(sphere)
         """
 
         # round the bvals in order to avoid numerical errors
         self.bvals = np.round(gtab.bvals/100) * 100
         self.bvecs = gtab.bvecs
         self.gtab = gtab
-        if sh_order >= 0 and not(bool(sh_order % 2)) and sh_order<=12:
+        if sh_order >= 0 and not(bool(sh_order % 2)) and sh_order <= 12:
             self.sh_order = sh_order
         else:
             msg = "sh_order must be a non-zero even positive number "
@@ -161,7 +156,7 @@ class ForecastModel(OdfModel, Cache):
 
         # signal regularization matrix
         self.srm = rho_matrix(4, self.one_0_bvecs)
-        self.LB_signal = lb_forecast(4)
+        self.lb_matrix_signal = lb_forecast(4)
 
         self.b_unique = np.sort(np.unique(self.bvals[self.bvals > 0]))
         self.wls = True
@@ -179,8 +174,8 @@ class ForecastModel(OdfModel, Cache):
         if optimizer == 'csd':
             self.csd = True
 
-        self.LB_matrix = lb_forecast(self.sh_order)
-        self.lambda_lb = lambda_LB
+        self.lb_matrix = lb_forecast(self.sh_order)
+        self.lambda_lb = lambda_lb
         self.lambda_csd = lambda_csd
         self.fod = rho_matrix(sh_order, self.vertices)
 
@@ -189,16 +184,14 @@ class ForecastModel(OdfModel, Cache):
 
         data_b0 = data[self.b0s_mask].mean()
         data_single_b0 = np.r_[data_b0, data[~self.b0s_mask]] / data_b0
-        #data_single_b0 = np.clip(data_single_b0, 0, 1.0)
 
         # calculates the mean signal at each b_values
-        means = find_signal_means(self.b_unique, data_single_b0, 
-                self.one_0_bvals, self.srm, self.LB_signal)
+        means = find_signal_means(self.b_unique,
+                                  data_single_b0, 
+                                  self.one_0_bvals,
+                                  self.srm,
+                                  self.lb_matrix_signal)
 
-        n_c = int((self.sh_order + 1)*(self.sh_order + 2)/2)
-
-        lv = self.vertices.shape[0]
-    
         # average diffusivity initialization
         x = np.array([np.pi/4, np.pi/4])
 
@@ -216,7 +209,6 @@ class ForecastModel(OdfModel, Cache):
             d_par = c1
             d_perp = c0
 
-
         # round to avoid memory explosion
         diff_key = str(int(np.round(d_par*1e05))) + \
             str(int(np.round(d_perp*1e05)))
@@ -231,15 +223,20 @@ class ForecastModel(OdfModel, Cache):
         M0 = M[:, 0]
         c0 = np.sqrt(1.0/(4*np.pi))
 
+        # coefficients vector initialization
+        n_c = int((self.sh_order + 1)*(self.sh_order + 2)/2)
+        coef = np.zeros(n_c)
+        coef[0] = c0
+
         if self.wls:
             data_r = data_single_b0 - M0*c0
 
             Mr = M[:, 1:]
-            Lr = self.LB_matrix[1:, 1:]
+            Lr = self.lb_matrix[1:, 1:]
 
-            pseudoInv = np.dot(np.linalg.inv(
+            pseudo_inv = np.dot(np.linalg.inv(
                 np.dot(Mr.T, Mr) + self.lambda_lb*Lr), Mr.T)
-            coef = np.dot(pseudoInv, data_r)
+            coef = np.dot(pseudo_inv, data_r)
             coef = np.r_[c0, coef]
 
         if self.csd:
@@ -254,11 +251,11 @@ class ForecastModel(OdfModel, Cache):
 
             while not np.array_equal(low_peaks, lpl) and L.shape[0] > 0:
                 lpl = low_peaks
-                pseudoInv = np.linalg.inv(
+                pseudo_inv = np.linalg.inv(
                     np.dot(M.T, M) + self.lambda_csd*np.dot(L.T, L))
                 data_corr = np.dot(M.T, data_single_b0[:, None])
 
-                coef = np.dot(pseudoInv, data_corr)[:, 0]
+                coef = np.dot(pseudo_inv, data_corr)[:, 0]
 
                 coef = coef/coef[0] * c0
 
@@ -279,7 +276,7 @@ class ForecastModel(OdfModel, Cache):
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix * c - data_single_b0) +
-                self.lambda_lb * cvxpy.quad_form(c, self.LB_matrix))
+                self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
 
             constraints = [c[0] == c0, self.fod * c >= 0]
             prob = cvxpy.Problem(objective, constraints)
@@ -376,7 +373,7 @@ class ForecastFit(OdfFit):
         rho = rho_matrix(self.sh_order, gtab.bvecs)
         M = M_diff * rho
         S = S0 * np.dot(M, self._sh_coef)
-        
+
         return S
 
     @property
@@ -398,7 +395,7 @@ class ForecastFit(OdfFit):
         return self.d_perp
 
 
-def find_signal_means(b_unique, data_norm, bvals, rho, LB, w = 1e-03):
+def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
     r"""Calculates the mean signal for each shell
 
     Parameters
@@ -411,7 +408,7 @@ def find_signal_means(b_unique, data_norm, bvals, rho, LB, w = 1e-03):
         the b-values
     rho : 2d ndarray,
         SH basis matrix for fitting the signal on each shell
-    LB : 2d ndarray,
+    lb_matrix : 2d ndarray,
         Laplace-Beltrami regularization matrix
     w : float,
         weight for the Laplace-Beltrami regularization  
@@ -429,11 +426,11 @@ def find_signal_means(b_unique, data_norm, bvals, rho, LB, w = 1e-03):
         ind = bvals == b_unique[u]
         shell = data_norm[ind]
         if np.sum(ind) > 20:
-            M = rho[ind,:]
+            M = rho[ind, :]
 
-            pseudoInv = np.dot(np.linalg.inv(
-                np.dot(M.T, M) + w*LB), M.T)
-            coef = np.dot(pseudoInv, shell)
+            pseudo_inv = np.dot(np.linalg.inv(
+                np.dot(M.T, M) + w*lb_matrix), M.T)
+            coef = np.dot(pseudo_inv, shell)
 
             means[u] = coef[0] / np.sqrt(4*np.pi)
         else:
@@ -460,6 +457,7 @@ def forecast_error_func(x, b_unique, E):
 
     v = E-E_
     return v
+
 
 def I_l(l, b):
     if np.isscalar(b):
@@ -604,11 +602,11 @@ def lb_forecast(sh_order):
     r"""Returns the Laplace-Beltrami regularization matrix for FORECAST
     """
     n_c = int((sh_order + 1)*(sh_order + 2)/2)
-    diagL = np.zeros(n_c)
+    diag_lb = np.zeros(n_c)
     counter = 0
     for l in range(0, sh_order + 1, 2):
         for m in range(-l, l + 1):
-            diagL[counter] = (l * (l + 1)) ** 2
+            diag_lb[counter] = (l * (l + 1)) ** 2
             counter += 1
 
-    return np.diag(diagL)
+    return np.diag(diag_lb)
