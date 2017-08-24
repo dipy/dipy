@@ -60,6 +60,11 @@ Constrained Spherical Deconvolution
 
 - :ref:`example_reconst_csd`
 
+Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_forecast`
+
 Simple Harmonic Oscillator based Reconstruction and Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
