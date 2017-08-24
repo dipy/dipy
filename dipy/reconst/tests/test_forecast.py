@@ -33,7 +33,7 @@ def setup():
         data.gtab, data.mevals, S0=100.0, angles=data.angl,
         fractions=[50, 50], snr=None)
     data.sh_order = 6
-    data.lambda_LB = 1e-8
+    data.lambda_lb = 1e-8
     data.lambda_csd = 1.0
     sphere = get_sphere('repulsion100')
     data.sphere = sphere.vertices[0:int(sphere.vertices.shape[0]/2), :]
@@ -43,7 +43,7 @@ def setup():
 def test_forecast_positive_constrain():
     fm = ForecastModel(data.gtab,
                        sh_order=data.sh_order,
-                       lambda_LB=data.lambda_LB,
+                       lambda_lb=data.lambda_lb,
                        optimizer='pos',
                        sphere=data.sphere)
     f_fit = fm.fit(data.S)
@@ -65,7 +65,7 @@ def test_forecast_csd():
     fodf_csd = f_fit.odf(sphere, clip_negative=False)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_LB=data.lambda_LB, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='wls')
     f_fit = fm.fit(data.S)
     fodf_wls = f_fit.odf(sphere, clip_negative=False)
 
@@ -126,7 +126,7 @@ def test_forecast_odf():
 def test_forecast_indices():
     # check anisotropic tensor
     fm = ForecastModel(data.gtab, sh_order=2,
-                       lambda_LB=data.lambda_LB, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='wls')
     f_fit = fm.fit(data.S)
 
     d_par = f_fit.dpar
@@ -151,7 +151,7 @@ def test_forecast_indices():
         fractions=[50, 50], snr=None)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_LB=data.lambda_LB, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='wls')
     f_fit = fm.fit(S)
 
     d_par = f_fit.dpar
