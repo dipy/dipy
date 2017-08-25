@@ -173,7 +173,7 @@ def test_forecast_predict():
 
     mse = np.sum((S-data.S/100.0)**2) / len(S)
 
-    assert_almost_equal(mse, 0.0, 4)
+    assert_almost_equal(mse, 0.0, 3)
 
 
 def test_multivox_forecast():
@@ -196,8 +196,8 @@ def test_multivox_forecast():
         gtab, mevals, S0=1.0, angles=angl3,
         fractions=[50, 50], snr=None)
 
-    fm = ForecastModel(data.gtab, sh_order=8,
-                       optimizer='CSD', sphere=data.sphere)
+    fm = ForecastModel(gtab, sh_order=8,
+                       optimizer='CSD')
     f_fit = fm.fit(S)
 
     S_predict = f_fit.predict()
@@ -205,13 +205,13 @@ def test_multivox_forecast():
     assert_equal(S_predict.shape, S.shape)
 
     mse1 = np.sum((S_predict[0, 0, 0]-S[0, 0, 0])**2) / len(gtab.bvals)
-    assert_almost_equal(mse1, 0.0, 4)
+    assert_almost_equal(mse1, 0.0, 3)
 
     mse2 = np.sum((S_predict[1, 0, 0]-S[1, 0, 0])**2) / len(gtab.bvals)
-    assert_almost_equal(mse2, 0.0, 4)
+    assert_almost_equal(mse2, 0.0, 3)
 
     mse3 = np.sum((S_predict[2, 0, 0]-S[2, 0, 0])**2) / len(gtab.bvals)
-    assert_almost_equal(mse3, 0.0, 4)
+    assert_almost_equal(mse3, 0.0, 3)
 
 if __name__ == '__main__':
     run_module_suite()
