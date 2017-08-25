@@ -46,7 +46,7 @@ class ForecastModel(OdfModel, Cache):
                  gtab,
                  sh_order=8,
                  lambda_lb=1e-3,
-                 optimizer='wls',
+                 optimizer='WLS',
                  sphere=None,
                  lambda_csd=1.0):
         r""" Analytical and continuous modeling of the diffusion signal with
@@ -80,14 +80,14 @@ class ForecastModel(OdfModel, Cache):
         lambda_lb: float,
             Laplace-Beltrami regularization weight.
         optimizer : str,
-            optimizer. The possible values are Weighted Least Squares ('wls'),
-            Positivity Constraints using CVXPY ('pos') and the Constraint 
-            Spherical Deconvolution algorithm ('csd'). Default is 'wls'.
+            optimizer. The possible values are Weighted Least Squares ('WLS'),
+            Positivity Constraints using CVXPY ('POS') and the Constraint 
+            Spherical Deconvolution algorithm ('CSD'). Default is 'WLS'.
         sphere : array, shape (N,3),
-            sphere points where to enforce positivity when 'pos' or 'csd'
+            sphere points where to enforce positivity when 'POS' or 'CSD'
             optimizer are selected.
         lambda_csd : float,
-            csd regularization weight.
+            CSD regularization weight.
 
         References
         ----------
@@ -113,25 +113,29 @@ class ForecastModel(OdfModel, Cache):
         >>> from dipy.data import get_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
         >>> from dipy.sims.voxel import MultiTensor
-        >>> mevals = np.array(([0.0017, 0.0003, 0.0003],
-        >>>                     [0.0017, 0.0003, 0.0003]))
+        >>> mevals = np.array(([0.0017, 0.0003, 0.0003], 
+        ...                    [0.0017, 0.0003, 0.0003]))
         >>> angl = [(0, 0), (60, 0)]
-        >>> data, sticks = MultiTensor(
-        >>>     gtab, mevals, S0=100.0, angles=angl,
-        >>>     fractions=[50, 50], snr=None)
+        >>> data, sticks = MultiTensor(gtab,
+        ...                            mevals,
+        ...                            S0=100.0,
+        ...                            angles=angl,
+        ...                            fractions=[50, 50],
+        ...                            snr=None)
         >>> from dipy.reconst.forecast import ForecastModel
-        >>> fm= ForecastModel(gtab, sh_order=6)
+        >>> fm = ForecastModel(gtab, sh_order=6)
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
         >>> sphere = get_sphere('symmetric724')
         >>> fodf = f_fit.odf(sphere)
         """
+        OdfModel.__init__(self, gtab)
 
         # round the bvals in order to avoid numerical errors
         self.bvals = np.round(gtab.bvals/100) * 100
         self.bvecs = gtab.bvecs
-        self.gtab = gtab
+
         if sh_order >= 0 and not(bool(sh_order % 2)) and sh_order <= 12:
             self.sh_order = sh_order
         else:
@@ -163,7 +167,7 @@ class ForecastModel(OdfModel, Cache):
         self.csd = False
         self.pos = False
 
-        if optimizer == 'pos':
+        if optimizer.upper() == 'POS':
             if have_cvxpy:
                 self.wls = False
                 self.pos = True
@@ -171,7 +175,7 @@ class ForecastModel(OdfModel, Cache):
                 msg = 'cvxpy is needed to inforce positivity constraints.'
                 raise ValueError(msg)
 
-        if optimizer == 'csd':
+        if optimizer.upper() == 'CSD':
             self.csd = True
 
         self.lb_matrix = lb_forecast(self.sh_order)
@@ -288,18 +292,20 @@ class ForecastModel(OdfModel, Cache):
                 coef = np.zeros(M.shape[1])
                 coef[0] = c0
 
-        return ForecastFit(self, coef, d_par, d_perp)
+        return ForecastFit(self, data, coef, d_par, d_perp)
 
 
 class ForecastFit(OdfFit):
 
-    def __init__(self, model, sh_coef, d_par, d_perp):
+    def __init__(self, model, data, sh_coef, d_par, d_perp):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
         ----------
         model : object,
             AnalyticalModel
+        data : 1d ndarray,
+            fitted data
         sh_coef : 1d ndarray,
             forecast sh coefficients
         d_par : float,
@@ -307,7 +313,7 @@ class ForecastFit(OdfFit):
         d_perp : float,
             perpendicular diffusivity
         """
-
+        OdfFit.__init__(self, model, data)
         self.model = model
         self._sh_coef = sh_coef
         self.gtab = model.gtab

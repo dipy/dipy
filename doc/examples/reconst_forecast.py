@@ -44,7 +44,7 @@ optimizer is the algorithm used for the FORECAST basis fitting, in this case
 we used the Constrained Spherical Deconvolution (CSD) algorithm.
 """
 
-fm = ForecastModel(gtab, sh_order=6, optimizer='csd')
+fm = ForecastModel(gtab, sh_order=6, optimizer='CSD')
 
 """
 Fit the FORECAST to the data
