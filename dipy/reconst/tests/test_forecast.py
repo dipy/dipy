@@ -44,7 +44,7 @@ def test_forecast_positive_constrain():
     fm = ForecastModel(data.gtab,
                        sh_order=data.sh_order,
                        lambda_lb=data.lambda_lb,
-                       optimizer='pos',
+                       optimizer='POS',
                        sphere=data.sphere)
     f_fit = fm.fit(data.S)
 
@@ -59,13 +59,13 @@ def test_forecast_positive_constrain():
 
 def test_forecast_csd():
     sphere = get_sphere('repulsion100')
-    fm = ForecastModel(data.gtab, optimizer='csd',
+    fm = ForecastModel(data.gtab, optimizer='CSD',
                        sphere=data.sphere, lambda_csd=data.lambda_csd)
     f_fit = fm.fit(data.S)
     fodf_csd = f_fit.odf(sphere, clip_negative=False)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_lb=data.lambda_lb, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='WLS')
     f_fit = fm.fit(data.S)
     fodf_wls = f_fit.odf(sphere, clip_negative=False)
 
@@ -76,7 +76,7 @@ def test_forecast_csd():
 def test_forecast_odf():
     # check FORECAST fODF at different SH order
     fm = ForecastModel(data.gtab, sh_order=4,
-                       optimizer='csd', sphere=data.sphere)
+                       optimizer='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     sphere = get_sphere('repulsion724')
     fodf = f_fit.odf(sphere)
@@ -86,7 +86,7 @@ def test_forecast_odf():
         angular_similarity(directions, data.sticks), 2, 1)
 
     fm = ForecastModel(data.gtab, sh_order=6,
-                       optimizer='csd', sphere=data.sphere)
+                       optimizer='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
@@ -95,7 +95,7 @@ def test_forecast_odf():
         angular_similarity(directions, data.sticks), 2, 1)
 
     fm = ForecastModel(data.gtab, sh_order=8,
-                       optimizer='csd', sphere=data.sphere)
+                       optimizer='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
@@ -105,7 +105,7 @@ def test_forecast_odf():
 
     # stronger regularization is required for high order SH
     fm = ForecastModel(data.gtab, sh_order=10,
-                       optimizer='csd', sphere=sphere.vertices)
+                       optimizer='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
@@ -114,7 +114,7 @@ def test_forecast_odf():
         angular_similarity(directions, data.sticks), 2, 1)
 
     fm = ForecastModel(data.gtab, sh_order=12,
-                       optimizer='csd', sphere=sphere.vertices)
+                       optimizer='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
@@ -126,7 +126,7 @@ def test_forecast_odf():
 def test_forecast_indices():
     # check anisotropic tensor
     fm = ForecastModel(data.gtab, sh_order=2,
-                       lambda_lb=data.lambda_lb, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='WLS')
     f_fit = fm.fit(data.S)
 
     d_par = f_fit.dpar
@@ -151,7 +151,7 @@ def test_forecast_indices():
         fractions=[50, 50], snr=None)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_lb=data.lambda_lb, optimizer='wls')
+                       lambda_lb=data.lambda_lb, optimizer='WLS')
     f_fit = fm.fit(S)
 
     d_par = f_fit.dpar
@@ -166,7 +166,7 @@ def test_forecast_indices():
 def test_forecast_predict():
     # check anisotropic tensor
     fm = ForecastModel(data.gtab, sh_order=8,
-                       optimizer='csd', sphere=data.sphere)
+                       optimizer='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
 
     S = f_fit.predict(S0=1.0)
@@ -197,7 +197,7 @@ def test_multivox_forecast():
         fractions=[50, 50], snr=None)
 
     fm = ForecastModel(data.gtab, sh_order=8,
-                       optimizer='csd', sphere=data.sphere)
+                       optimizer='CSD', sphere=data.sphere)
     f_fit = fm.fit(S)
 
     S_predict = f_fit.predict()
