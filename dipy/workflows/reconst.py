@@ -166,12 +166,13 @@ class ReconstDtiFlow(Workflow):
                 evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
                 nib.save(evals_img, oevals)
 
-            if oevals == '':
+            dname_ = os.path.dirname(oevals)
+            if dname_ == '':
                 logging.info('DTI metrics saved in current directory')
             else:
-                logging.info('DTI metrics saved in {0}'.
-                             format(os.path.dirname(oevals)))
-
+                logging.info(
+                        'DTI metrics saved in {0}'.format(dname_))
+            
     def get_tensor_model(self, gtab):
         return TensorModel(gtab, fit_method="WLS")
 
@@ -397,12 +398,13 @@ class ReconstCSDFlow(Workflow):
                 peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            if opam == '':
+            dname_ = os.path.dirname(opam)
+            if dname_ == '':
                 logging.info('Peaks saved in current directory')
             else:
                 logging.info(
-                        'Peaks saved in {0}'.format(os.path.dirname(opam)))
-
+                        'Peaks saved in {0}'.format(dname_))
+            
             return io_it
 
 
@@ -412,7 +414,7 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
-    def run(self, input_files, bvalues, bvectors, mask_files,
+    def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
             b0_threshold=0.0, bvecs_tol=0.01, extract_pam_values=False,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
@@ -420,9 +422,9 @@ class ReconstCSAFlow(Workflow):
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Workflow for peaks computation. Peaks computation is done by 'globing'
-            ``input_files`` and saves the peaks in a directory specified by
-            ``out_dir``.
+        """ Workflow for peaks computation using Constant Solid Angle. Peaks 
+            computation is done by 'globing' `input_files`` and saves the peaks
+            in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -438,6 +440,8 @@ class ReconstCSAFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
+        sh_order : int, optional
+            Spherical harmonics order (default 6)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
         bvecs_tol : float, optional
@@ -478,7 +482,9 @@ class ReconstCSAFlow(Workflow):
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            sh_order = 8
+            sh_order = 6
+            
+            """
             if data.shape[-1] < 15:
                 raise ValueError(
                     'You need at least 15 unique DWI volumes to '
@@ -486,7 +492,7 @@ class ReconstCSAFlow(Workflow):
                     ' DWI volumes.'.format(data.shape[-1]))
             elif data.shape[-1] < 30:
                 sh_order = 6
-
+            
             response, ratio = auto_response(gtab, data)
             response = list(response)
 
@@ -496,7 +502,8 @@ class ReconstCSAFlow(Workflow):
             logging.info(
                 'Ratio for smallest to largest eigen value is {0}'
                     .format(ratio))
-
+            """
+            
             peaks_sphere = get_sphere('symmetric362')
 
             csa_model = CsaOdfModel(gtab, sh_order)
@@ -520,11 +527,13 @@ class ReconstCSAFlow(Workflow):
                                 opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            if opam == '':
+
+            dname_ = os.path.dirname(opam)
+            if dname_ == '':
                 logging.info('Peaks saved in current directory')
             else:
                 logging.info(
-                        'Peaks saved in {0}'.format(os.path.dirname(opam)))
+                        'Peaks saved in {0}'.format(dname_))
 
             return io_it
 
