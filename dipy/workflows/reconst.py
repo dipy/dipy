@@ -166,8 +166,11 @@ class ReconstDtiFlow(Workflow):
                 evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
                 nib.save(evals_img, oevals)
 
-            logging.info('DTI metrics saved in {0}'.
-                         format(os.path.dirname(oevals)))
+            if oevals == '':
+                logging.info('DTI metrics saved in current directory')
+            else:
+                logging.info('DTI metrics saved in {0}'.
+                             format(os.path.dirname(oevals)))
 
     def get_tensor_model(self, gtab):
         return TensorModel(gtab, fit_method="WLS")
@@ -394,7 +397,11 @@ class ReconstCSDFlow(Workflow):
                 peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            logging.info('Peaks saved in {0}'.format(os.path.dirname(opam)))
+            if opam == '':
+                logging.info('Peaks saved in current directory')
+            else:
+                logging.info(
+                        'Peaks saved in {0}'.format(os.path.dirname(opam)))
 
             return io_it
 
@@ -513,8 +520,11 @@ class ReconstCSAFlow(Workflow):
                                 opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            logging.info(
-                'Peaks saved in {0}'.format(os.path.dirname(opam)))
+            if opam == '':
+                logging.info('Peaks saved in current directory')
+            else:
+                logging.info(
+                        'Peaks saved in {0}'.format(os.path.dirname(opam)))
 
             return io_it
 
