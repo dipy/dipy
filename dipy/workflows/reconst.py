@@ -28,6 +28,7 @@ class ReconstDtiFlow(Workflow):
         return 'dti'
 
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
+            bvecs_tol=0.01,
             save_metrics=[],
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
@@ -54,6 +55,8 @@ class ReconstDtiFlow(Workflow):
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
+        bvecs_tol : float, optional
+            Threshold used so that norm(bvec)=1 (default 0.01)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -103,7 +106,7 @@ class ReconstDtiFlow(Workflow):
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                               b0_threshold)
+                                               b0_threshold, bvecs_tol)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -169,11 +172,13 @@ class ReconstDtiFlow(Workflow):
     def get_tensor_model(self, gtab):
         return TensorModel(gtab, fit_method="WLS")
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
+    def get_fitted_tensor(self, data, mask, bval, bvec, 
+                          b0_threshold=0, bvecs_tol=0.01):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                              atol=bvecs_tol)
 
         tenmodel = self.get_tensor_model(gtab)
         tenfit = tenmodel.fit(data, mask)
@@ -187,7 +192,7 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
         return 'dti_restore'
 
     def run(self, input_files, bvalues, bvectors, mask_files, sigma,
-            b0_threshold=0.0, save_metrics=[], jacobian=True,
+            b0_threshold=0.0, bvecs_tol=0.01, save_metrics=[], jacobian=True,
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -216,6 +221,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
                 An estimate of the variance.
             b0_threshold : float, optional
                 Threshold used to find b=0 directions (default 0.0)
+            bvecs_tol : float, optional
+                Threshold used so that norm(bvec)=1 (default 0.01)
             save_metrics : variable string, optional
                 List of metrics to save.
                 Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -270,6 +277,7 @@ class ReconstCSDFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0,
+            bvecs_tol=0.01,
             frf=[15.0, 4.0, 4.0], extract_pam_values=False, out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -295,6 +303,8 @@ class ReconstCSDFlow(Workflow):
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors. (default:0.01)
         frf : tuple, optional
             Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
         extract_pam_values : bool, optional
@@ -329,7 +339,8 @@ class ReconstCSDFlow(Workflow):
             affine = vol.get_affine()
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                                  atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
             sh_order = 8
@@ -395,7 +406,8 @@ class ReconstCSAFlow(Workflow):
         return 'csa'
 
     def run(self, input_files, bvalues, bvectors, mask_files,
-            b0_threshold=0.0, extract_pam_values=False, out_dir='',
+            b0_threshold=0.0, bvecs_tol=0.01, extract_pam_values=False,
+            out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
@@ -421,6 +433,8 @@ class ReconstCSAFlow(Workflow):
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
+        bvecs_tol : float, optional
+            Threshold used so that norm(bvec)=1 (default 0.01)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         out_dir : string, optional
@@ -454,7 +468,7 @@ class ReconstCSAFlow(Workflow):
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             gtab = gradient_table(bvals, bvecs,
-                                  b0_threshold=b0_threshold)
+                                  b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
             sh_order = 8
