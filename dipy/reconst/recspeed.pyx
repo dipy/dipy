@@ -2,8 +2,11 @@
 """ Optimized routines for creating voxel diffusion models
 """
 
+# cython: linetrace=True
+# distutils: define_macros=CYTHON_TRACE_NOGIL=1
+
 # cython: profile=True
-# cython: embedsignature=True
+# cython: embedsignature=true
 
 cimport cython
 
@@ -12,6 +15,7 @@ cimport numpy as cnp
 
 from libc.stdlib cimport malloc, free, calloc
 from libc.string cimport memcpy
+#from libc.time cimport clock
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
@@ -673,7 +677,7 @@ def S2(x2, bvals, bvecs, yhat_zeppelin):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef double fast_S2(double [:] x2, double [:] bvals, double [:, :] bvecs, double[:] yhat_zeppelin) nogil:
+cdef double fast_S2(double [:] x2, double [:] bvals, double [:, :] bvecs, double [:] yhat_zeppelin) nogil:
     cdef cnp.npy_intp i
     cdef double x2_0, x2_1, x2_2, sinT, cosT, sinP, cosP
     cdef double n[3]
@@ -731,7 +735,7 @@ cdef double fast_S2_new(double [:] x_fe, double [:] bvals, double [:, :] bvecs, 
 
 
 
-
+@cython.profile(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, L, yhat_cylinder):
@@ -741,7 +745,7 @@ def S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, L, yhat_cylinder):
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G2, double [:] L, double [:] yhat_cylinder) nogil:
-    cdef double x1_0, x1_1, am, g_per, sd, bd, D_intra_am, x2
+    cdef double x1_0, x1_1, am, g_per, sd, bd, D_intra_am, x2, num, sinT, cosT, sinP, cosP
     cdef cnp.npy_intp i, j
     cdef double n[3]
     cdef cnp.npy_intp K = small_delta.shape[0]
@@ -769,9 +773,9 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
         bvecs_n[i] = (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2]) * (bvecs [i, 0]* n[0] + bvecs [i, 1] * n[1] + bvecs [i, 2] *n[2])
         L1[i] = L[i] * bvecs_n[i]
 
-
+#    clock_t begin = clock();
     for i in range(M):
-        am = (am1[i] / x1[2]) * (am1[i] / x1[2])
+        am = (am1[i] / x2) * (am1[i] / x2)
         D_intra_am = D_intra * am
         idenom[i] = 1.0 / ((D_intra * D_intra) * (am * am * am) * (x2 * x2 * am - 1))
 
@@ -784,7 +788,8 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
 #            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
 
             summ_rows[j] += num * idenom[i]
-
+#    clock_t end = clock();
+#    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     for i in range(K):
         g_per = 1 - bvecs_n[i]
         yhat_cylinder[i] = 2 * (g_per * gamma * gamma) * summ_rows[i] * G2[i] + L1[i]
@@ -801,3 +806,214 @@ cdef double fast_S1(double [:] x1, double[:] am1, double [:, :] bvecs, double [:
 cdef inline double sd_bd_num(double sd, double bd) nogil:
 
     return 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def Phi(x, am1, bvecs, bvals, small_delta, big_delta, G2, L, exp_phi1):
+    fast_Phi(x, am1, bvecs, bvals, small_delta, big_delta, G2, L, exp_phi1)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_Phi(double [:] x, double[:] am1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G2, double [:] L, double [:, :] exp_phi1) nogil:
+    cdef double x1_0, x1_1, am, g_per, sd, bd, D_intra_am, x1_2, num, x2_0, x2_1, x2_2, sinT, cosT, sinP, cosP
+    cdef cnp.npy_intp i, j
+    cdef double n1[3]
+    cdef double n2[3]
+    cdef double x1[3]
+    cdef double x2[3]
+    cdef cnp.npy_intp K = small_delta.shape[0]
+    cdef double D_intra = 0.6 * 10 ** 3
+    cdef double gamma = 2.675987 * 10 ** 8
+    cdef cnp.npy_intp M = am1.shape[0]
+
+    cdef double * idenom = <double *> calloc(M, sizeof(double))
+    cdef double * summ_rows = <double *> calloc(K, sizeof(double))
+    cdef double * L1 = <double *> calloc(K, sizeof(double))
+    cdef double * bvecs_n = <double *> calloc(K, sizeof(double))
+    cdef double * yhat_cylinder = <double *> calloc(K, sizeof(double))
+    cdef double * yhat_zeppelin = <double *> calloc(K, sizeof(double))
+
+
+    x1[0] = x[0]
+    x1[1] = x[1]
+    x1[2] = x[2]
+    x2[0] = x[0]
+    x2[1] = x[1]
+    x2[2] = x[3]
+
+    x1_0 = x1[0]
+    x1_1 = x1[1]
+    x1_2 = x1[2]
+    n1[0] = cos(x1_1) * sin(x1_0)
+    n1[1] = sin(x1_1) * sin(x1_0)
+    n1[2] = cos(x1_0)
+    # Cylinder
+    for i in range(K):
+        bvecs_n[i] = (bvecs [i, 0]* n1[0] + bvecs [i, 1] * n1[1] + bvecs [i, 2] *n1[2]) * (bvecs [i, 0]* n1[0] + bvecs [i, 1] * n1[1] + bvecs [i, 2] *n1[2])
+        L1[i] = L[i] * bvecs_n[i]
+
+#    clock_t begin = clock();
+    for i in range(M):
+        am = (am1[i] / x1_2) * (am1[i] / x1_2)
+        D_intra_am = D_intra * am
+        idenom[i] = 1.0 / ((D_intra * D_intra) * (am * am * am) * (x1_2 * x1_2 * am - 1))
+
+        for j in range(K):
+
+            bd = D_intra_am * big_delta[j]
+
+            sd = D_intra_am * small_delta[j]
+            num = sd_bd_num(sd, bd)
+#            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+
+            summ_rows[j] += num * idenom[i]
+#    clock_t end = clock();
+#    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    for i in range(K):
+        g_per = 1 - bvecs_n[i]
+        yhat_cylinder[i] = 2 * (g_per * gamma * gamma) * summ_rows[i] * G2[i] + L1[i]
+
+    x2_0 = x2[0]
+    x2_1 = x2[1]
+    x2_2 = x2[2]
+    n2[0] = cos(x2_1) * sin(x2_0)
+    n2[1] = sin(x2_1) * sin(x2_0)
+    n2[2] = cos(x2_0)
+    D_x2 = D_intra * (1 - x2_2)
+    for i in range(K):
+        # zeppelin
+        yhat_zeppelin[i] = bvals[i] * ((D_intra - D_x2) * (bvecs [i, 0]* n2[0] + bvecs [i, 1] * n2[1] + bvecs [i, 2] *n2[2]) * (bvecs [i, 0]* n2[0] + bvecs [i, 1] * n2[1] + bvecs [i, 2] *n2[2]) + D_x2)
+
+#    fast_S2(x2, bvals, bvecs, yhat_zeppelin)
+#    fast_S1(x1, am1, bvecs, bvals, small_delta, big_delta, G2, L, yhat_cylinder)
+    for i in range(K):
+        exp_phi1[i, 0] = exp(-yhat_cylinder[i])
+        exp_phi1[i, 1] = exp(-yhat_zeppelin[i])
+
+    free(yhat_zeppelin)
+    free(yhat_cylinder)
+    free(summ_rows)
+    free(L1)
+    free(idenom)
+    free(bvecs_n)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def Phi2(x_fe, am1, bvecs, bvals, small_delta, big_delta, G2, L, exp_phi1):
+    fast_Phi2(x_fe, am1, bvecs, bvals, small_delta, big_delta, G2, L, exp_phi1)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_Phi2(double [:] x_fe, double[:] am1, double [:, :] bvecs, double [:] bvals, double [:] small_delta, double [:] big_delta, double [:] G2, double [:] L, double [:, :] exp_phi1) nogil:
+    cdef double x1_0, x1_1, am, g_per, sd, bd, D_intra_am, x1_2, num, x_0, x_1, fe0, fe1, cosT, sinT, cosP, sinP
+    cdef cnp.npy_intp i, j
+    cdef double n1[3]
+    cdef double n2[3]
+    cdef double x1[3]
+    cdef cnp.npy_intp K = small_delta.shape[0]
+    cdef double D_intra = 0.6 * 10 ** 3
+    cdef double gamma = 2.675987 * 10 ** 8
+    cdef cnp.npy_intp M = am1.shape[0]
+
+    cdef double * idenom = <double *> calloc(M, sizeof(double))
+    cdef double * summ_rows = <double *> calloc(K, sizeof(double))
+    cdef double * L1 = <double *> calloc(K, sizeof(double))
+    cdef double * bvecs_n = <double *> calloc(K, sizeof(double))
+    cdef double * yhat_cylinder = <double *> calloc(K, sizeof(double))
+    cdef double * yhat_zeppelin = <double *> calloc(K, sizeof(double))
+
+
+    x1[0] = x_fe[3]
+    x1[1] = x_fe[4]
+    x1[2] = x_fe[5]
+
+    x1_0 = x1[0]
+    x1_1 = x1[1]
+    x1_2 = x1[2]
+    n1[0] = cos(x1_1) * sin(x1_0)
+    n1[1] = sin(x1_1) * sin(x1_0)
+    n1[2] = cos(x1_0)
+    # Cylinder
+    for i in range(K):
+        bvecs_n[i] = (bvecs [i, 0]* n1[0] + bvecs [i, 1] * n1[1] + bvecs [i, 2] *n1[2]) * (bvecs [i, 0]* n1[0] + bvecs [i, 1] * n1[1] + bvecs [i, 2] *n1[2])
+        L1[i] = L[i] * bvecs_n[i]
+
+#    clock_t begin = clock();
+    for i in range(M):
+        am = (am1[i] / x1_2) * (am1[i] / x1_2)
+        D_intra_am = D_intra * am
+        idenom[i] = 1.0 / ((D_intra * D_intra) * (am * am * am) * (x1_2 * x1_2 * am - 1))
+
+        for j in range(K):
+
+            bd = D_intra_am * big_delta[j]
+
+            sd = D_intra_am * small_delta[j]
+            num = sd_bd_num(sd, bd)
+#            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
+
+            summ_rows[j] += num * idenom[i]
+#    clock_t end = clock();
+#    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    for i in range(K):
+        g_per = 1 - bvecs_n[i]
+        yhat_cylinder[i] = 2 * (g_per * gamma * gamma) * summ_rows[i] * G2[i] + L1[i]
+
+    fe1 = x_fe[1]
+    fe0 = x_fe[0]
+    x_0 = x_fe[3]
+    x_1 = x_fe[4]
+    sinT = sin(x_0)
+    cosT = cos(x_0)
+    sinP = sin(x_1)
+    cosP = cos(x_1)
+    n2[0] = cosP * sinT
+    n2[1] = sinP * sinT
+    n2[2] = cosT
+    # zeppelin
+    D_v = D_intra * (1 - fe0/(fe0 + fe1))
+
+    for i in range(K):
+        # zeppelin
+        yhat_zeppelin[i] = bvals[i] * ((D_intra - D_v) * (bvecs[i, 0] * n2[0] + bvecs[i, 1] * n2[1] + bvecs[i, 2] * n2[2]) * (bvecs[i, 0] * n2[0] + bvecs[i, 1] * n2[1] + bvecs[i, 2] * n2[2]) + D_v)
+
+    for i in range(K):
+        exp_phi1[i, 0] = exp(-yhat_cylinder[i])
+        exp_phi1[i, 1] = exp(-yhat_zeppelin[i])
+
+    free(yhat_zeppelin)
+    free(yhat_cylinder)
+    free(summ_rows)
+    free(L1)
+    free(idenom)
+    free(bvecs_n)
+
+
+#def Phi2_slow(self, x_fe):
+#        S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, self.yhat_zeppelin)
+#        S1(x_fe[3:6], self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, self.yhat_cylinder)
+#        self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
+#        self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
+#        return self.exp_phi1
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#def func_exp(x, exp_x):
+#    fast_func_exp(x, exp_x)
+#
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+#@cython.cdivision(True)
+#cdef void fast_func_exp(double [:,::1] x, double [:,::1] exp_x) nogil:
+#    cdef cnp.npy_intp i, j
+#    cdef cnp.npy_intp K = x.shape[0]
+#    cdef cnp.npy_intp M = x.shape[1]
+#
+#    for i in range(K):
+#        for j in range(M):
+#            exp_x[i, j] = exp(x[i, j])
+
