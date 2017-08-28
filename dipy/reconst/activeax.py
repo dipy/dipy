@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit, float64
-from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1
+from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1, Phi, Phi2
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 
@@ -22,11 +22,8 @@ params = np.loadtxt(fscanner)
 img = nib.load(fname)
 data = img.get_data()
 affine = img.affine
-# bvecs = params[:, 0:3]
 G = params[:, 3] / 10 ** 6  # gradient strength
 G2 = G ** 2
-# big_delta = params[:, 4]
-# small_delta = params[:, 5]
 D_iso = 2 * 10 ** 3
 
 am = np.array([1.84118307861360, 5.33144196877749,
@@ -99,6 +96,7 @@ class ActiveAxModel(ReconstModel):
 
     def __init__(self, gtab, fit_method='MIX'):
 
+        self.sigma = 0
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta
@@ -106,42 +104,13 @@ class ActiveAxModel(ReconstModel):
         self.G2 = G2
         self.am = am
         D_iso = 2 * 10 ** 3
-        self.yhat_ball = D_iso * self.gtab.bvals
-#        self.summ = np.zeros((self.small_delta.shape[0], am.shape[0]))
         self.L = self.gtab.bvals * D_intra
-
-##    @profile
-#    def S1_slow(self, x1):
-#        big_delta = self.big_delta
-#        small_delta = self.small_delta
-#        bvecs = self.gtab.bvecs
-#        M = small_delta.shape[0]
-#        L = self.L
-#        G2 = self.G2
-#        x1_0 = x1[0]
-#        x1_1 = x1[1]
-#        sinT = np.sin(x1_0)
-#        cosT = np.cos(x1_0)
-#        sinP = np.sin(x1_1)
-#        cosP = np.cos(x1_1)
-#        n = np.array([cosP * sinT, sinP * sinT, cosT])
-#        # Cylinder
-##        L1 = np.zeros(M)
-##        return_L1(L, bvecs, n, L1)
-#        L1 = L * np.dot(bvecs, n) ** 2
-#        am2 = (am / x1[2]) ** 2
-#        t1 = time()
-#        summ_rows = np.zeros(M)
-#        func_mul(x1, am2, small_delta, big_delta, summ_rows)
-#        t2 = time()
-#        duration = t2 - t1
-#        global overall_duration
-#        overall_duration += duration
-#        g_per = np.zeros(M)
-#        func_bvec(bvecs, n, g_per)
-#        L2 = 2 * g_per * gamma2 * summ_rows * G2
-#        yhat_cylinder = L1 + L2
-#        return yhat_cylinder
+        self.yhat_zeppelin = np.zeros(self.small_delta.shape[0])
+        self.yhat_cylinder = np.zeros(self.small_delta.shape[0])
+        self.yhat_dot = np.zeros(self.gtab.bvals.shape)
+        self.exp_phi1 = np.zeros((self.small_delta.shape[0], 4))
+        self.exp_phi1[:, 2] = np.exp(-D_iso * self.gtab.bvals)
+        self.exp_phi1[:, 3] = np.ones(self.gtab.bvals.shape)
 
     def S4(self):
         # dot
@@ -157,23 +126,6 @@ class ActiveAxModel(ReconstModel):
 
     def xs_to_x(self):
         pass
-
-##    @profile
-#    def S2(self, x2):
-#        D_intra = 0.6 * 10 ** 3
-#        x2_0 = x2[0]
-#        x2_1 = x2[1]
-#        x2_2 = x2[2]
-#        sinT = np.sin(x2_0)
-#        cosT = np.cos(x2_0)
-#        sinP = np.sin(x2_1)
-#        cosP = np.cos(x2_1)
-#        n = np.array([cosP * sinT, sinP * sinT, cosT])
-#        D_x2 = D_intra * (1 - x2_2)
-#        # zeppelin
-#        yhat_zeppelin = self.gtab.bvals * ((D_intra - D_x2) *
-#                            (np.dot(self.gtab.bvecs, n) ** 2) + D_x2)
-#        return yhat_zeppelin
 
     #@profile
     def S2_new_slow(self, x_fe):
@@ -199,37 +151,21 @@ class ActiveAxModel(ReconstModel):
         yhat_ball = D_iso * self.gtab.bvals
         return yhat_ball
 
-    @profile
-    def Phi(self, x):
-        phi = np.zeros((self.small_delta.shape[0], 4))
+    def Phi_slow(self, x):
         x1, x2 = self.x_to_xs(x)
-        yhat_zeppelin = np.zeros(self.small_delta.shape[0])
-        S2(x2, self.gtab.bvals, self.gtab.bvecs, yhat_zeppelin)
-#        yhat_cylinder = self.S1_slow(x1)
-        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, yhat_cylinder)
-        phi[:, 0] = yhat_cylinder
-        phi[:, 1] = yhat_zeppelin
-        phi[:, 2] = self.S3()
-        phi[:, 3] = self.S4()
-        return np.exp(-phi)
+        S2(x2, self.gtab.bvals, self.gtab.bvecs, self.yhat_zeppelin)
+        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, self.yhat_cylinder)
+        self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
+        self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
+        return self.exp_phi1
 
-    @profile
-    def Phi2(self, x_fe):
-        phi = np.zeros((self.small_delta.shape[0], 4))
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
-        x1 = x[0:3]
-#        yhat_zeppelin = self.S2_new_slow(x_fe)
-        yhat_zeppelin = np.zeros(self.small_delta.shape[0])
-        S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, yhat_zeppelin)
-#        yhat_cylinder = self.S1_slow(x1)
-        yhat_cylinder = np.zeros(self.small_delta.shape[0])
-        S1(x1, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, yhat_cylinder)
-        phi[:, 0] = yhat_cylinder
-        phi[:, 1] = yhat_zeppelin
-        phi[:, 2] = self.S3()
-        phi[:, 3] = self.S4()
-        return np.exp(-phi)
+#    @profile
+    def Phi2_slow(self, x_fe):
+        S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, self.yhat_zeppelin)
+        S1(x_fe[3:6], self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, self.yhat_cylinder)
+        self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
+        self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
+        return self.exp_phi1
 
     def bounds(self, x):
         bound = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
@@ -300,11 +236,14 @@ class ActiveAxModel(ReconstModel):
 
                 (signal -  S)^T(signal -  S)
         """
-        phi = self.Phi(x)
+#        phi = self.Phi_slow(x)
+        Phi(x, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
+            self.big_delta, self.G2, self.L, self.exp_phi1[:, 0:2])
+        phi = self.exp_phi1
         error_one = self.activeax_cost_one(phi, signal)
         return error_one
 
-
+#    @profile
     def activeax_cost_one(self, phi, signal):  # sigma
 
         """
@@ -334,10 +273,9 @@ class ActiveAxModel(ReconstModel):
            """
 
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
-        f = np.dot(phi_mp, signal)
-        yhat = np.dot(phi, f)  # - sigma
+#        yhat = np.dot(phi, np.dot(phi_mp, signal))  # - sigma
+        yhat = np.dot(phi, np.dot(phi_mp, signal)) - self.sigma
         return np.dot((signal - yhat).T, signal - yhat)
-
 
 #    @profile
     def nls_cost(self, x_fe, signal):
@@ -376,9 +314,12 @@ class ActiveAxModel(ReconstModel):
             sum{(signal -  phi*fe)^2}
         """
 
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
-        phi = self.Phi2(x_fe)
-#        return np.sum((np.squeeze(np.dot(phi, fe)) - signal) ** 2)
+        fe = np.zeros((4))
+        fe[0:3] = x_fe[0:3]
+        fe[3] = x_fe[6]
+        Phi2(x_fe, am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
+             self.big_delta, self.G2, self.L, self.exp_phi1[:,0:2])
+        phi = self.exp_phi1
         return np.sum((np.dot(phi, fe) - signal) ** 2)
 
 #    @profile
@@ -418,23 +359,33 @@ class ActiveAxModel(ReconstModel):
                        fe[2] >= 0,
                        fe[3] >= 0]
         # Form objective.
-        obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal[:, None])))
+        obj = cvx.Minimize(cvx.sum_entries(cvx.square(signal[:, None]
+                                                      - phi * fe
+                                                      - self.sigma)))
         # Form and solve problem.
         prob = cvx.Problem(obj, constraints)
         prob.solve()  # Returns the optimal value.
         return np.array(fe.value)
 
+#    @profile
     def fit(self, data, mask=None):
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
+#        res_one = differential_evolution(self.stoc_search_cost, bounds,
+#                                         args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
-                                         args=(data,))
+                                         maxiter=4, args=(data,))
         x = res_one.x
-        phi = self.Phi(x)
+
+        Phi(x, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
+            self.big_delta, self.G2, self.L, self.exp_phi1[:, 0:2])
+        phi = self.exp_phi1
+
         fe = self.estimate_f(np.array(data), phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
-        res = least_squares(self.nls_cost, x_fe, bounds=(bounds),
+#        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), args=(data,))
+        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=1e-1,
                             args=(data,))
         result = res.x
         return result
