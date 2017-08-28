@@ -23,14 +23,14 @@ class GenericTrackFlow(Workflow):
 
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
-
+        logging.info('classifier done')
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
             utils.seeds_from_mask(
                 seed_mask,
                 density=[seed_density, seed_density, seed_density],
                 affine=affine)
-
+        logging.info('seeds done')
         direction_getter = pam
 
         if use_sh:
@@ -42,7 +42,10 @@ class GenericTrackFlow(Workflow):
 
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
-
+        logging.info('LocalTracking initiated')
+        from ipdb import set_trace
+        set_trace()
+    
         tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
         save(tractogram, out_tract)
 
