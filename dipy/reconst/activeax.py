@@ -432,7 +432,7 @@ class ActiveAxModel(ReconstModel):
 #        res_one = differential_evolution(self.stoc_search_cost, bounds,
 #                                         args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
-                                         maxiter=4, args=(data,))
+                                         maxiter=5, args=(data,))
         x = res_one.x
 
         Phi(x, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
