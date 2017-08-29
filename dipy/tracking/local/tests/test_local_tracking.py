@@ -6,14 +6,15 @@ import numpy.testing as npt
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
 from dipy.data import get_data, get_sphere
+from dipy.direction import (ProbabilisticDirectionGetter,
+                            DeterministicMaximumDirectionGetter)
 from dipy.tracking.local import (ActTissueClassifier, BinaryTissueClassifier,
                                  DirectionGetter, LocalTracking,
                                  ParticleFilteringTracking,
                                  ThresholdTissueClassifier, TissueClassifier)
-from dipy.direction import (ProbabilisticDirectionGetter,
-                            DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 from dipy.tracking.local.localtracking import TissueTypes
+from dipy.tracking.utils import seeds_from_mask
 
 
 def test_stop_conditions():
@@ -46,7 +47,7 @@ def test_stop_conditions():
             p = np.round(point).astype(int)
             if (any(p < 0) or
                 any(p >= tissue.shape) or
-               tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
+                    tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
                 return np.array([])
             return np.array([[0., 0., 1.]])
 
@@ -227,7 +228,8 @@ def test_ProbabilisticOdfWeightedTracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere, pmf_threshold=0.1)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
+                                               pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 0.],
@@ -272,6 +274,7 @@ def test_ProbabilisticOdfWeightedTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
+
 def test_ParticleFilteringTractography():
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter then LocalTracking.
@@ -279,47 +282,65 @@ def test_ParticleFilteringTractography():
     #sphere = HemiSphere.from_sphere(unit_octahedron)
     sphere = get_sphere('repulsion100')
 
-    # A simple image with uniform pmf everywhere
-    #pmf_lookup = np.array([[1, 1, 0],
-    #                       [1, 1, 0]])
-
+    # Simple tissue masks
     simple_wm = np.array([[0, 0, 0, 0, 0, 0],
-                          [0, 0, 0, 1, 1, 0],
-                          [0, 0, 1, 1, 0, 0],
+                          [0, 0, 1, 0, 0, 0],
+                          [0, 1, 1, 1, 0, 0],
                           [0, 1, 1, 1, 0, 0],
                           [0, 0, 0, 0, 0, 0]])
-
+    simple_wm = np.stack([np.zeros(simple_wm.shape),
+                          simple_wm,
+                          simple_wm,
+                          simple_wm,
+                          np.zeros(simple_wm.shape)])
     simple_gm = np.array([[0, 0, 0, 0, 0, 0],
-                          [0, 1, 1, 0, 0, 0],
-                          [0, 0, 0, 0, 1, 0],
+                          [0, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 1, 0],
                           [0, 0, 0, 0, 1, 0],
                           [0, 0, 0, 0, 0, 0]])
+    simple_gm = np.stack([np.zeros(simple_gm.shape),
+                          simple_gm,
+                          simple_gm,
+                          simple_gm,
+                          np.zeros(simple_gm.shape)])
     simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
-    print simple_csf
+    tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
+    seeds = seeds_from_mask(simple_wm, density=2)
 
-    #simple_image = simple_wm[..., None]
-    #pmf = pmf_lookup[simple_wm[..., None]]
-    shape_img = list(simple_wm.shape)    
-    shape_img.extend([1,sphere.vertices.shape[0]])
-    pmf = np.ones(shape_img)
-    seeds = [np.array([2., 2., 0.])] * 100
-    tc = ActTissueClassifier.from_pve(simple_wm[..., None],
-                                      simple_gm[..., None],
-                                      simple_csf[..., None])
+    # Random pfm in every voxels
+    shape_img = list(simple_wm.shape)
+    shape_img.extend([sphere.vertices.shape[0]])
+    np.random.seed(0)  # fix the randominity
+    pmf = np.random.random(shape_img)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere)
+    # Test that PFT recover equal or more streamlines than localTracking
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
     local_streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2,
-                                      max_cross=1,
-                                      return_all=False)
+                                      max_cross=1, return_all=False)
     local_streamlines = [s for s in local_streamlines]
     pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
-                                                max_cross=1,
-                                                return_all=False)
+                                                max_cross=1, return_all=False)
     pft_streamlines = [s for s in pft_streamlines]
-
-    print [len(pft_streamlines), len(local_streamlines)]
     npt.assert_(np.array([len(pft_streamlines) > 0]))
-    npt.assert_(np.array([len(pft_streamlines) > len(local_streamlines)]))
+    npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
+
+    # Test that the number of streamline return with return_all=True equal the
+    # number of seeds places
+    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                                max_cross=1, return_all=True)
+    pft_streamlines = [s for s in pft_streamlines]
+    npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+
+    # Test with wrong tissueclassifier type
+    tc_bin = BinaryTissueClassifier(simple_wm)
+
+    def test_PFT_init():
+        pft_streamlines = ParticleFilteringTracking(dg, tc_bin, seeds,
+                                                    np.eye(4), 0.2)
+        pft_streamlines = ParticleFilteringTracking(dg, tc_bin, seeds,
+                                                    np.eye(4), 0.2,
+                                                    pft_nbr_steps=0)
+    npt.assert_raises(ValueError, test_PFT_init)
 
 
 def test_MaximumDeterministicTracker():
