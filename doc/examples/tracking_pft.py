@@ -85,8 +85,6 @@ seed_mask = labels == 2
 seed_mask[img_pve_wm.get_data() < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
-import time
-a=time.time()
 # Particle Filtering Tractography
 pft_streamlines = ParticleFilteringTracking(dg,
                                             cmc_classifier,
@@ -101,15 +99,12 @@ pft_streamlines = ParticleFilteringTracking(dg,
                                             return_all=False)
 streamlines = [s for s in pft_streamlines]
 save_trk("pft_streamline.trk", streamlines, affine, shape)
-print time.time()-a, len(streamlines), len(seeds)
 
 
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='pft_streamlines.png', size=(600, 600))
 
-import time
-a=time.time()
 # Local Probabilistic Tractography
 local_prob_streamlines = LocalTracking(dg,
                                        cmc_classifier,
@@ -120,7 +115,7 @@ local_prob_streamlines = LocalTracking(dg,
                                        return_all=False)
 streamlines = [s for s in local_prob_streamlines]
 save_trk("local_prob_streamlines.trk", streamlines, affine, shape)
-print time.time()-a, len(streamlines), len(seeds)
+
 fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 fvtk.record(ren, out_path='probabilistic_local_streamlines.png',
