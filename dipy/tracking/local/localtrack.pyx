@@ -145,7 +145,7 @@ def pft_tracker(np.ndarray[np.float_t, ndim=1] seed,
             if pft_trial < pft_max_trial and i > 1:
                 pft_streamline_i = min(i - 1, pft_nbr_back_steps)
                 pft_nbr_steps = min(pft_max_steps,
-                                   streamline.shape[0] - pft_streamline_i - 1)
+                                    streamline.shape[0] - pft_streamline_i - 1)
                 tissue_class, i = _pft(streamline,
                                        pft_streamline_i,
                                        directions,
@@ -198,9 +198,8 @@ cdef _pft(np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
         double[::1] pview = point, dview = dir
         int s, p, j
 
-    if pft_nbr_steps <=0:
+    if pft_nbr_steps <= 0:
         return INVALIDPOINT, streamline_i
-
 
     for j in range(3):
         vs[j] = voxel_size[j]
@@ -251,36 +250,43 @@ cdef _pft(np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
 
         # Resample the particles if the weights are too uneven.
         # Particles with negligable weights are replaced by duplicates of
-        # those with high weigths through resamplingip  
+        # those with high weigths through resamplingip
         N_effective = 1. / sum_squared
         if N_effective < pft_nbr_particles / 10.:
             # copy data in the temp arrays
             for pp in range(pft_nbr_particles):
                 for ss in range(pft_nbr_steps):
                     for j in range(3):
-                        particle_paths[1, pp, ss, j] = particle_paths[0, pp, ss, j]
-                        particle_dirs[1, pp, ss, j] = particle_dirs[0, pp, ss, j]
+                        particle_paths[1, pp, ss,
+                                       j] = particle_paths[0, pp, ss, j]
+                        particle_dirs[1, pp, ss,
+                                      j] = particle_dirs[0, pp, ss, j]
                 particle_weights[1, pp] = particle_weights[0, pp]
                 particle_states[1, pp, 0] = particle_states[0, pp, 0]
                 particle_states[1, pp, 1] = particle_states[0, pp, 1]
             # sample N new particle
             for pp in range(pft_nbr_particles):
-                p_source = particle_weights[1, :].cumsum().searchsorted(np.random.random(), 'right')
+                p_source = particle_weights[1, :].cumsum().searchsorted(
+                    np.random.random(), 'right')
                 for ss in range(pft_nbr_steps):
                     for j in range(3):
-                        particle_paths[0, pp, ss, j] = particle_paths[1, p_source, ss, j]
-                        particle_dirs[0, pp, ss, j] = particle_dirs[1, p_source, ss, j]
+                        particle_paths[0, pp, ss,
+                                       j] = particle_paths[1, p_source, ss, j]
+                        particle_dirs[0, pp, ss,
+                                      j] = particle_dirs[1, p_source, ss, j]
                 particle_states[0, pp, 0] = particle_states[1, p_source, 0]
                 particle_states[0, pp, 1] = particle_states[1, p_source, 1]
                 particle_weights[0, pp] = 1. / pft_nbr_particles
 
     # update the streamline with the trajectory of one particle
-    p = particle_weights[0, :].cumsum().searchsorted(np.random.random(), 'right')
+    p = particle_weights[0, :].cumsum().searchsorted(
+        np.random.random(), 'right')
     for s in range(particle_states[0, p, 1]):
         for j in range(3):
             streamline[streamline_i + s, j] = particle_paths[0, p, s, j]
             directions[streamline_i + s, j] = particle_dirs[0, p, s, j]
-    return particle_states[0, p, 0], streamline_i + particle_states[0, p, 1] - 1
+    return particle_states[0, p, 0], streamline_i + \
+        particle_states[0, p, 1] - 1
 
 
 @cython.boundscheck(False)
