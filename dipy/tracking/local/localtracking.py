@@ -196,21 +196,25 @@ class ParticleFilteringTracking(LocalTracking):
         if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
             raise ValueError("expecting ConstrainedTissueClassifier ")
 
-        self.directions = np.empty((maxlen + 1, 3), dtype=float)
-
         self.pft_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
                                               / step_size))
-        self.pft_nbr_steps = int(np.ceil((pft_back_tracking_dist
+        self.pft_max_steps = int(np.ceil((pft_back_tracking_dist
                                           + pft_front_tracking_dist)
                                          / step_size))
+        if not self.pft_max_steps > 0 :#or self.pft_max_steps > maxlen:
+            raise ValueError("The number of PFT steps must be greater than 0.")
+
+        self.directions = np.empty((maxlen + 1, 3), dtype=float)
+
         self.pft_max_trial = pft_max_trial
         self.pft_nbr_particles = pft_nbr_particles
         self.particle_paths = np.empty((2, self.pft_nbr_particles,
-                                        self.pft_nbr_steps + 1, 3),
+                                        self.pft_max_steps + 1, 3),
                                        dtype=float)
         self.particle_weights = np.empty((2, self.pft_nbr_particles),
                                          dtype=float)
-        self.particle_dirs = np.empty((2, self.pft_nbr_particles, 3),
+        self.particle_dirs = np.empty((2, self.pft_nbr_particles,
+                                       self.pft_max_steps + 1, 3),
                                       dtype=float)
         self.particle_states = np.empty((2, self.pft_nbr_particles, 2),
                                         dtype=int)
@@ -228,12 +232,13 @@ class ParticleFilteringTracking(LocalTracking):
         return pft_tracker(seed,
                            first_step,
                            streamline,
+                           self.directions,
                            self.direction_getter,
                            self.tissue_classifier,
                            self._voxel_size,
                            self.step_size,
                            self.pft_nbr_back_steps,
-                           self.pft_nbr_steps,
+                           self.pft_max_steps,
                            self.pft_max_trial,
                            self.pft_nbr_particles,
                            self.particle_paths,
