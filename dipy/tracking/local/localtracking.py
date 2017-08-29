@@ -4,7 +4,6 @@ from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
 
 from dipy.align import Bunch
-#from dipy.direction.probabilistic_direction_getter import ProbabilisticDirectionGetter
 from dipy.tracking import utils
 
 
@@ -194,14 +193,17 @@ class ParticleFilteringTracking(LocalTracking):
         """
 
         if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
-            raise ValueError("expecting ConstrainedTissueClassifier ")
+            raise ValueError("expecting ConstrainedTissueClassifier")
+
+        #if not isinstance(direction_getter, ProbabilisticDirectionGetter):
+        #    raise ValueError("expecting ProbabilisticDirectionGetter ")
 
         self.pft_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
                                               / step_size))
         self.pft_max_steps = int(np.ceil((pft_back_tracking_dist
                                           + pft_front_tracking_dist)
                                          / step_size))
-        if not self.pft_max_steps > 0 :#or self.pft_max_steps > maxlen:
+        if not self.pft_max_steps > 0:
             raise ValueError("The number of PFT steps must be greater than 0.")
 
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
