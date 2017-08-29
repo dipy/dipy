@@ -426,7 +426,7 @@ class ActiveAxModel(ReconstModel):
         prob.solve()  # Returns the optimal value.
         return np.array(fe.value)
 
-    @profile
+#    @profile
     def fit(self, data, mask=None):
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
 #        res_one = differential_evolution(self.stoc_search_cost, bounds,
