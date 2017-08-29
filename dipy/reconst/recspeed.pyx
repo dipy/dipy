@@ -9,7 +9,7 @@
 # cython: embedsignature=true
 
 cimport cython
-
+from cython.view cimport array as cvarray
 import numpy as np
 cimport numpy as cnp
 
@@ -954,7 +954,6 @@ cdef double fast_Phi2(double [:] x_fe, double[:] am1, double [:, :] bvecs, doubl
 
             sd = D_intra_am * small_delta[j]
             num = sd_bd_num(sd, bd)
-#            num = 2 * sd - 2 + 2 * exp(-sd) + 2 * exp(-bd) - exp(-(bd - sd)) - exp(-(bd + sd))
 
             summ_rows[j] += num * idenom[i]
 #    clock_t end = clock();
@@ -993,27 +992,148 @@ cdef double fast_Phi2(double [:] x_fe, double[:] am1, double [:, :] bvecs, doubl
     free(bvecs_n)
 
 
-#def Phi2_slow(self, x_fe):
-#        S2_new(x_fe, self.gtab.bvals,  self.gtab.bvecs, self.yhat_zeppelin)
-#        S1(x_fe[3:6], self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta, self.big_delta, self.G2, self.L, self.yhat_cylinder)
-#        self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
-#        self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
-#        return self.exp_phi1
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def func_inv(double [:, :] A, double [:, :] inv_A):
+    fast_func_inv(&A[0, 0], &inv_A[0, 0])
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-#def func_exp(x, exp_x):
-#    fast_func_exp(x, exp_x)
-#
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-#@cython.cdivision(True)
-#cdef void fast_func_exp(double [:,::1] x, double [:,::1] exp_x) nogil:
-#    cdef cnp.npy_intp i, j
-#    cdef cnp.npy_intp K = x.shape[0]
-#    cdef cnp.npy_intp M = x.shape[1]
-#
-#    for i in range(K):
-#        for j in range(M):
-#            exp_x[i, j] = exp(x[i, j])
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef inline double fast_func_inv(double * A, double * inv_A) nogil:
+    cdef double det_A
+    cdef cnp.npy_intp i, j
+    cdef cnp.npy_intp M = 4
 
+    det_A = A[0,0]*(A[1,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[1,3]+A[1,3]*A[1,2]*A[2,3])+\
+            A[0,1]*(A[0,1]*A[2,3]*A[2,3]+A[1,2]*A[0,2]*A[3,3]+A[1,3]*A[2,2]*A[0,3])+\
+            A[0,2]*(A[0,1]*A[1,2]*A[3,3]+A[1,1]*A[2,3]*A[0,3]+A[1,3]*A[0,2]*A[1,3])+\
+            A[0,3]*(A[1,0]*A[2,2]*A[3,1]+A[1,1]*A[0,2]*A[2,3]+A[1,2]*A[1,2]*A[0,3])-\
+            A[0,0]*(A[1,1]*A[2,3]*A[2,3]+A[1,2]*A[1,2]*A[3,3]+A[1,3]*A[2,2]*A[1,3])-\
+            A[0,1]*(A[0,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[0,3]+A[1,3]*A[0,2]*A[2,3])-\
+            A[0,2]*(A[0,1]*A[2,3]*A[1,3]+A[1,1]*A[0,2]*A[3,3]+A[1,3]*A[1,2]*A[0,3])-\
+            A[0,3]*(A[0,1]*A[1,2]*A[2,3]+A[1,1]*A[2,2]*A[0,3]+A[1,2]*A[0,2]*A[1,3])
+
+    inv_A[0,0] = A[1,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[1,3]+A[1,3]*A[1,2]*A[2,3]-\
+                 A[1,1]*A[2,3]*A[2,3]-A[1,2]*A[1,2]*A[3,3]-A[1,3]*A[1,3]*A[2,2]
+
+    inv_A[0,1] = A[0,1]*A[2,3]*A[2,3]+A[0,2]*A[1,2]*A[3,3]+A[0,3]*A[2,2]*A[1,3]-\
+                 A[0,1]*A[2,2]*A[3,3]-A[0,2]*A[2,3]*A[1,3]-A[0,3]*A[1,2]*A[2,3]
+
+    inv_A[0,2] = A[0,1]*A[1,2]*A[3,3]+A[0,2]*A[1,3]*A[1,3]+A[0,3]*A[1,1]*A[2,3]-\
+                 A[0,1]*A[1,3]*A[2,3]-A[0,2]*A[1,1]*A[3,3]-A[0,3]*A[1,2]*A[1,3]
+
+    inv_A[0,3] = A[0,1]*A[1,3]*A[2,2]+A[0,2]*A[1,1]*A[2,3]+A[0,3]*A[1,2]*A[1,2]-\
+                 A[0,1]*A[1,2]*A[2,3]-A[0,2]*A[1,3]*A[1,2]-A[0,3]*A[1,1]*A[2,2]
+
+    inv_A[1,1] = A[0,0]*A[2,2]*A[3,3]+A[0,2]*A[2,3]*A[0,3]+A[0,3]*A[0,2]*A[2,3]-\
+                 A[0,0]*A[2,3]*A[2,3]-A[0,2]*A[0,2]*A[3,3]-A[0,3]*A[2,2]*A[0,3]
+
+    inv_A[1,2] = A[0,0]*A[1,3]*A[2,3]+A[0,2]*A[0,1]*A[3,3]+A[0,3]*A[1,2]*A[0,3]-\
+                 A[0,0]*A[1,2]*A[3,3]-A[0,2]*A[1,3]*A[0,3]-A[0,3]*A[0,1]*A[2,3]
+
+    inv_A[1,3] = A[0,0]*A[1,2]*A[2,3]+A[0,2]*A[0,2]*A[1,3]+A[0,3]*A[0,1]*A[2,2]-\
+                 A[0,0]*A[1,3]*A[2,2]-A[0,2]*A[0,1]*A[2,3]-A[0,3]*A[0,2]*A[1,2]
+
+    inv_A[2,2] = A[0,0]*A[1,1]*A[3,3]+A[0,1]*A[1,3]*A[0,3]+A[0,3]*A[0,1]*A[1,3]-\
+                 A[0,0]*A[1,3]*A[1,3]-A[0,1]*A[0,1]*A[3,3]-A[0,3]*A[1,1]*A[0,3]
+
+    inv_A[2,3] = A[0,0]*A[1,3]*A[1,2]+A[0,1]*A[0,1]*A[2,3]+A[0,3]*A[1,1]*A[0,2]-\
+                 A[0,0]*A[1,1]*A[2,3]-A[0,1]*A[1,3]*A[0,2]-A[0,3]*A[0,1]*A[1,2]
+
+    inv_A[3,3] = A[0,0]*A[1,1]*A[2,2]+A[0,1]*A[1,2]*A[0,2]+A[0,2]*A[0,1]*A[1,2]-\
+                 A[0,0]*A[1,2]*A[1,2]-A[0,1]*A[0,1]*A[2,2]-A[0,2]*A[1,1]*A[0,2]
+
+    inv_A[0,0] = inv_A[0,0]/det_A
+    inv_A[0,1] = inv_A[0,1]/det_A
+    inv_A[0,2] = inv_A[0,2]/det_A
+    inv_A[0,3] = inv_A[0,3]/det_A
+    inv_A[1,1] = inv_A[1,1]/det_A
+    inv_A[1,2] = inv_A[1,2]/det_A
+    inv_A[1,3] = inv_A[1,3]/det_A
+    inv_A[2,2] = inv_A[2,2]/det_A
+    inv_A[2,3] = inv_A[2,3]/det_A
+    inv_A[3,3] = inv_A[3,3]/det_A
+
+    inv_A[1,0] = inv_A[0,1]
+    inv_A[2,0] = inv_A[0,2]
+    inv_A[2,1] = inv_A[1,2]
+    inv_A[3,0] = inv_A[0,3]
+    inv_A[3,1] = inv_A[1,3]
+    inv_A[3,2] = inv_A[2,3]
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def func_dot(double [:, :] A, double [:, :] B, double [:, :] AB):
+    fast_func_dot(A, B, AB)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_func_dot(double [:, :] A, double [:, :] B, double [:, :] AB) nogil:
+    cdef cnp.npy_intp i, j, k
+    cdef cnp.npy_intp M = A.shape[0]
+    cdef cnp.npy_intp N = A.shape[1]
+    cdef cnp.npy_intp K = B.shape[1]
+
+    for i in range(M):
+        for k in range(K):
+            for j in range(N):
+                AB[i, k] += A[i, j] * B[j, k]
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def activeax_cost_one(double [:, :] phi, double[:] signal):
+    return fast_activeax_cost_one(phi, signal)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_activeax_cost_one(double [:, :] phi, double [:] signal) nogil:
+    cdef cnp.npy_intp m, n, k
+    cdef double fe[4], norm_diff
+#    cdef double phi_dot[4, 4]
+#    cdef double phi_inv[4, 4]
+    cdef cnp.npy_intp M = phi.shape[0]
+    cdef cnp.npy_intp N = phi.shape[1]
+
+    cdef double * yhat = <double *> calloc(M, sizeof(double))
+    cdef double * phi_mp = <double *> calloc(M, sizeof(double))
+    cdef double phi_dot[4][4]
+    cdef double phi_inv[4][4]
+    for i in range(4):
+        for j in range(4):
+            phi_dot[i][j] = 0
+            phi_inv[i][j] = 0
+#     with gil:
+#        phi_dot =  cvarray(shape=(4, 4), itemsize=sizeof(double), format="d")
+#        phi_inv =  cvarray(shape=(4, 4), itemsize=sizeof(double), format="d")
+#        phi_mp =  cvarray(shape=(M, N), itemsize=sizeof(double), format="d")
+
+    for n in range(N):
+        for k in range(N):
+            for m in range(M):
+                phi_dot[n][k] += phi[m, n] * phi[m, k]
+
+    fast_func_inv(<double *>phi_dot, <double *>phi_inv)
+
+    for n in range(N):
+        for k in range(M):
+            for j in range(N):
+                phi_mp[k] += phi_inv[n][j] * phi[k, j]
+            fe[n] += phi_mp[k] * signal[k]
+            phi_mp[k] = 0
+
+    for i in range(M):
+        for j in range(N):
+            yhat[i] += phi[i, j] * fe[j]
+
+    for i in range(M):
+        norm_diff += (signal[i] - yhat[i]) * (signal[i] - yhat[i])
+
+    return norm_diff
+
+    free(yhat)
+    free(phi_mp)
