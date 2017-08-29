@@ -1000,10 +1000,8 @@ cdef double fast_Phi2(double [:] x_fe, double[:] am1, double [:, :] bvecs, doubl
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline double fast_func_inv(double A[4][4], double inv_A[4][4]) nogil:
+cdef inline double fast_func_inv(double A[][4], double inv_A[][4]) nogil:
     cdef double det_A
-    cdef cnp.npy_intp i, j
-    cdef cnp.npy_intp M = 4
 
     det_A = A[0][0]*(A[1][1]*A[2][2]*A[3][3]+A[1][2]*A[2][3]*A[1][3]+A[1][3]*A[1][2]*A[2][3])+\
             A[0][1]*(A[0][1]*A[2][3]*A[2][3]+A[1][2]*A[0][2]*A[3][3]+A[1][3]*A[2][2]*A[0][3])+\
