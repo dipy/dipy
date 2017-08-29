@@ -97,6 +97,12 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 cdef class ConstrainedTissueClassifier(TissueClassifier):
     r"""
     Abstract class that takes as input included and excluded tissue maps.
+    The 'include_map' defines when the streamline reached a 'valid' stopping
+    region (e.g. gray matter partial volume estimation (PVE) map) and the
+    'exclude_map' defines when the streamline reached an 'invalid' stopping
+    region (e.g. corticospinal fluid PVE map). The background of the anatomical
+    image should be added to the 'include_map' to keep streamlines exiting the
+    brain (e.g. through the brain stem).
 
     cdef:
         double interp_out_double[1]
@@ -216,6 +222,7 @@ cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
     Continuous map criterion (CMC) stopping criteria from [1]_.
     This implements the use of partial volume fraction (PVE) maps to
     determine when the tracking stops.
+
     cdef:
         double interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
