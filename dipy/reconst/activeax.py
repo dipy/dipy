@@ -7,7 +7,9 @@ from scipy.optimize import differential_evolution
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit, float64
-from dipy.reconst.recspeed import func_mul, func_bvec, S2, S2_new, S1, Phi, Phi2
+import scipy as sp
+from scipy.linalg.lapack import dpotrf
+from dipy.reconst.recspeed import S2, S2_new, S1, Phi, Phi2, activeax_cost_one
 from scipy.linalg import get_blas_funcs
 gemm = get_blas_funcs("gemm")
 
@@ -90,6 +92,59 @@ def func_mul_jitted(x, am2, small_delta, big_delta):
     for i in range(summ.shape[0]):
         summ_rows[i] = np.sum(summ[i])
     return summ_rows
+
+
+def func_inv_slow(A):
+    inv_A = np.zeros((4, 4))
+    det_A = A[0,0]*(A[1,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[1,3]+A[1,3]*A[1,2]*A[2,3])+\
+            A[0,1]*(A[0,1]*A[2,3]*A[2,3]+A[1,2]*A[0,2]*A[3,3]+A[1,3]*A[2,2]*A[0,3])+\
+            A[0,2]*(A[0,1]*A[1,2]*A[3,3]+A[1,1]*A[2,3]*A[0,3]+A[1,3]*A[0,2]*A[1,3])+\
+            A[0,3]*(A[1,0]*A[2,2]*A[3,1]+A[1,1]*A[0,2]*A[2,3]+A[1,2]*A[1,2]*A[0,3])-\
+            A[0,0]*(A[1,1]*A[2,3]*A[2,3]+A[1,2]*A[1,2]*A[3,3]+A[1,3]*A[2,2]*A[1,3])-\
+            A[0,1]*(A[0,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[0,3]+A[1,3]*A[0,2]*A[2,3])-\
+            A[0,2]*(A[0,1]*A[2,3]*A[1,3]+A[1,1]*A[0,2]*A[3,3]+A[1,3]*A[1,2]*A[0,3])-\
+            A[0,3]*(A[0,1]*A[1,2]*A[2,3]+A[1,1]*A[2,2]*A[0,3]+A[1,2]*A[0,2]*A[1,3])
+
+    inv_A[0,0] = A[1,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[1,3]+A[1,3]*A[1,2]*A[2,3]-\
+                 A[1,1]*A[2,3]*A[2,3]-A[1,2]*A[1,2]*A[3,3]-A[1,3]*A[1,3]*A[2,2]
+
+    inv_A[0,1] = A[0,1]*A[2,3]*A[2,3]+A[0,2]*A[1,2]*A[3,3]+A[0,3]*A[2,2]*A[1,3]-\
+                 A[0,1]*A[2,2]*A[3,3]-A[0,2]*A[2,3]*A[1,3]-A[0,3]*A[1,2]*A[2,3]
+
+    inv_A[0,2] = A[0,1]*A[1,2]*A[3,3]+A[0,2]*A[1,3]*A[1,3]+A[0,3]*A[1,1]*A[2,3]-\
+                 A[0,1]*A[1,3]*A[2,3]-A[0,2]*A[1,1]*A[3,3]-A[0,3]*A[1,2]*A[1,3]
+
+    inv_A[0,3] = A[0,1]*A[1,3]*A[2,2]+A[0,2]*A[1,1]*A[2,3]+A[0,3]*A[1,2]*A[1,2]-\
+                 A[0,1]*A[1,2]*A[2,3]-A[0,2]*A[1,3]*A[1,2]-A[0,3]*A[1,1]*A[2,2]
+
+    inv_A[1,1] = A[0,0]*A[2,2]*A[3,3]+A[0,2]*A[2,3]*A[0,3]+A[0,3]*A[0,2]*A[2,3]-\
+                 A[0,0]*A[2,3]*A[2,3]-A[0,2]*A[0,2]*A[3,3]-A[0,3]*A[2,2]*A[0,3]
+
+    inv_A[1,2] = A[0,0]*A[1,3]*A[2,3]+A[0,2]*A[0,1]*A[3,3]+A[0,3]*A[1,2]*A[0,3]-\
+                 A[0,0]*A[1,2]*A[3,3]-A[0,2]*A[1,3]*A[0,3]-A[0,3]*A[0,1]*A[2,3]
+
+    inv_A[1,3] = A[0,0]*A[1,2]*A[2,3]+A[0,2]*A[0,2]*A[1,3]+A[0,3]*A[0,1]*A[2,2]-\
+                 A[0,0]*A[1,3]*A[2,2]-A[0,2]*A[0,1]*A[2,3]-A[0,3]*A[0,2]*A[1,2]
+
+    inv_A[2,2] = A[0,0]*A[1,1]*A[3,3]+A[0,1]*A[1,3]*A[0,3]+A[0,3]*A[0,1]*A[1,3]-\
+                 A[0,0]*A[1,3]*A[1,3]-A[0,1]*A[0,1]*A[3,3]-A[0,3]*A[1,1]*A[0,3]
+
+    inv_A[2,3] = A[0,0]*A[1,3]*A[1,2]+A[0,1]*A[0,1]*A[2,3]+A[0,3]*A[1,1]*A[0,2]-\
+                 A[0,0]*A[1,1]*A[2,3]-A[0,1]*A[1,3]*A[0,2]-A[0,3]*A[0,1]*A[1,2]
+
+    inv_A[3,3] = A[0,0]*A[1,1]*A[2,2]+A[0,1]*A[1,2]*A[0,2]+A[0,2]*A[0,1]*A[1,2]-\
+                 A[0,0]*A[1,2]*A[1,2]-A[0,1]*A[0,1]*A[2,2]-A[0,2]*A[1,1]*A[0,2]
+
+    inv_A[1,0] = inv_A[0,1]
+    inv_A[2,0] = inv_A[0,2]
+    inv_A[2,1] = inv_A[1,2]
+    inv_A[3,0] = inv_A[0,3]
+    inv_A[3,1] = inv_A[1,3]
+    inv_A[3,2] = inv_A[2,3]
+
+    inv_A = inv_A/det_A
+
+    return inv_A
 
 
 class ActiveAxModel(ReconstModel):
@@ -236,15 +291,15 @@ class ActiveAxModel(ReconstModel):
 
                 (signal -  S)^T(signal -  S)
         """
-#        phi = self.Phi_slow(x)
         Phi(x, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
             self.big_delta, self.G2, self.L, self.exp_phi1[:, 0:2])
         phi = self.exp_phi1
-        error_one = self.activeax_cost_one(phi, signal)
-        return error_one
+
+        return activeax_cost_one(phi, signal)
+#        return self.activeax_cost_one_slow(phi, signal)
 
 #    @profile
-    def activeax_cost_one(self, phi, signal):  # sigma
+    def activeax_cost_one_slow(self, phi, signal):  # sigma
 
         """
         Aax_exvivo_nlin
@@ -272,9 +327,13 @@ class ActiveAxModel(ReconstModel):
 
            """
 
-        phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)  # moore-penrose
-#        yhat = np.dot(phi, np.dot(phi_mp, signal))  # - sigma
-        yhat = np.dot(phi, np.dot(phi_mp, signal)) - self.sigma
+        phi_dot = np.dot(phi.T, phi)
+#        phi_inv = np.zeros((4, 4))
+#        func_inv(phi_dot, phi_inv)
+        phi_inv = np.linalg.inv(phi_dot)
+        phi_mp = np.dot(phi_inv, phi.T)
+        phi_sig = np.dot(phi_mp, signal)
+        yhat = np.dot(phi, phi_sig)
         return np.dot((signal - yhat).T, signal - yhat)
 
 #    @profile
@@ -367,7 +426,7 @@ class ActiveAxModel(ReconstModel):
         prob.solve()  # Returns the optimal value.
         return np.array(fe.value)
 
-#    @profile
+    @profile
     def fit(self, data, mask=None):
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
 #        res_one = differential_evolution(self.stoc_search_cost, bounds,
@@ -385,7 +444,7 @@ class ActiveAxModel(ReconstModel):
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
 #        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), args=(data,))
-        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=1e-1,
+        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=1e-3,
                             args=(data,))
         result = res.x
         return result
