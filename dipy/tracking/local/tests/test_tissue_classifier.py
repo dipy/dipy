@@ -160,11 +160,26 @@ def test_cmc_tissue_classifier():
     gm = np.array([[[1, 1], [0, 0], [0, 0]]])
     wm = np.array([[[0, 0], [1, 1], [0, 0]]])
     csf = np.array([[[0, 0], [0, 0], [1, 1]]])
+    include_map = gm
+    exclude_map = csf
 
-    cmc_tc = CmcTissueClassifier(include_map=gm,
-                                 exclude_map=csf,
+    cmc_tc = CmcTissueClassifier(include_map=include_map,
+                                 exclude_map=exclude_map,
                                  step_size=1,
                                  average_voxel_size=1)
+    cmc_tc_from_pve = CmcTissueClassifier.from_pve(wm_map=wm,
+                                                   gm_map=gm,
+                                                   csf_map=csf,
+                                                   step_size=1,
+                                                   average_voxel_size=1)
+
+    # test contructors
+    for idx in np.ndindex(wm.shape):
+        idx = np.asarray(idx, dtype="float64")
+        npt.assert_almost_equal(cmc_tc.get_include(idx),
+                                cmc_tc_from_pve.get_include(idx))
+        npt.assert_almost_equal(cmc_tc.get_exclude(idx),
+                                cmc_tc_from_pve.get_exclude(idx))
 
     # test voxel center
     for ind in ndindex(wm.shape):
