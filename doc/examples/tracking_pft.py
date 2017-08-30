@@ -112,6 +112,7 @@ local_prob_streamlines = LocalTracking(dg,
                                        affine,
                                        max_cross=1,
                                        step_size=step_size,
+                                       maxlen=1000,
                                        return_all=False)
 streamlines = [s for s in local_prob_streamlines]
 save_trk("local_prob_streamlines.trk", streamlines, affine, shape)
@@ -127,7 +128,7 @@ References
 ----------
 .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
     Towards quantitative connectivity analysis: reducing tractography biases.
-    NeuroImage, 98, 266-278.
+    NeuroImage, 98, 266-278, 2014.
 
 .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
     Anatomically-constrained tractography: Improved diffusion MRI
