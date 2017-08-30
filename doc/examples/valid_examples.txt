@@ -41,6 +41,7 @@
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
  deterministic_fiber_tracking.py
+ particle_filtering_fiber_tracking.py
  affine_registration_3d.py
  syn_registration_2d.py
  syn_registration_3d.py
