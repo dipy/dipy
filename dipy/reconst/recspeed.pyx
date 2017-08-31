@@ -1121,7 +1121,7 @@ cdef double fast_activeax_cost_one(double [:, :] phi, double [:] signal) nogil:
     for i in range(M):
         for j in range(N):
             yhat[i] += phi[i, j] * fe[j]
-
+        yhat[i] = yhat[i]
     for i in range(M):
         norm_diff += (signal[i] - yhat[i]) * (signal[i] - yhat[i])
 
