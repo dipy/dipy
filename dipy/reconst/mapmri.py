@@ -439,7 +439,7 @@ class MapmriModel(ReconstModel, Cache):
             try:
                 coef, residual_variance = probabilistic_least_squares(
                     M, data, regularization_matrix=lopt * laplacian_matrix,
-                    posterior_samples=1 if self.sample_coefficients else None)
+                    n_posterior_samples=1 if self.sample_coefficients else None)
 
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
