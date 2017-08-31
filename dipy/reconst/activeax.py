@@ -61,39 +61,6 @@ am = np.array([1.84118307861360, 5.33144196877749,
 
 am = np.array([1.84118307861360])
 
-@jit(nopython=True, nogil=True, cache=True)
-def func_bvec_jitted(bvecs, n):
-    M = bvecs.shape[0]
-    g_per = np.zeros((M))
-    for i in range(M):
-        g_per[i] = 1 - \
-                   (bvecs[i, 0]*n[0] + bvecs[i, 1]*n[1] + bvecs[i, 2]*n[2])**2
-    return g_per
-
-
-#@profile
-@jit(signature_or_function=float64[:](float64[:], float64[:], float64[:], float64[:]), nopython=True, nogil=True, cache=True)
-def func_mul_jitted(x, am2, small_delta, big_delta):
-    M = am2.shape[0]
-    bd = np.zeros((small_delta.shape[0], M))
-    sd = np.zeros((small_delta.shape[0], M))
-    D_intra = 0.6 * 10 ** 3
-    for i in range(M):
-        am = am2[i]
-        D_intra_am = D_intra * am
-        bd[:, i] = D_intra_am * big_delta
-        sd[:, i] = D_intra_am * small_delta
-    num = 2 * sd - 2 + 2 * np.exp(-sd) + 2 * np.exp(-bd) - \
-                np.exp(-(bd - sd)) - np.exp(-(bd + sd))
-    denom = (D_intra ** 2) * (am2 ** 3) * ((x[2]) ** 2 * am2 - 1)
-    idenom = 1. / denom
-    summ = num * idenom.T
-    summ_rows = np.zeros((summ.shape[0],))
-    for i in range(summ.shape[0]):
-        summ_rows[i] = np.sum(summ[i])
-    return summ_rows
-
-
 def func_inv_slow(A):
     inv_A = np.zeros((4, 4))
     det_A = A[0,0]*(A[1,1]*A[2,2]*A[3,3]+A[1,2]*A[2,3]*A[1,3]+A[1,3]*A[1,2]*A[2,3])+\
@@ -152,6 +119,8 @@ class ActiveAxModel(ReconstModel):
     def __init__(self, gtab, fit_method='MIX'):
 
         self.sigma = 0
+        self.xtol = 1e-3  # Tolerance for termination, nonlinear least square 1e-3 default
+        self.maxiter = 5  # The maximum number of generations, genetic algorithm 5 default
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta
@@ -377,9 +346,10 @@ class ActiveAxModel(ReconstModel):
         fe[0:3] = x_fe[0:3]
         fe[3] = x_fe[6]
         Phi2(x_fe, am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
-             self.big_delta, self.G2, self.L, self.exp_phi1[:,0:2])
+             self.big_delta, self.G2, self.L, self.exp_phi1[:, 0:2])
         phi = self.exp_phi1
-        return np.sum((np.dot(phi, fe) - signal) ** 2)
+        return np.sum((signal - np.dot(phi, fe)) ** 2)
+#        return np.sum((signal - np.sqrt(np.dot(phi, fe)**2 + self.sigma**2)) ** 2)
 
 #    @profile
     def estimate_f(self, signal, phi):
@@ -413,14 +383,15 @@ class ActiveAxModel(ReconstModel):
         fe = cvx.Variable(4)
         # Create four constraints.
         constraints = [cvx.sum_entries(fe) == 1,
-                       fe[0] >= 0,
-                       fe[1] >= 0,
-                       fe[2] >= 0,
-                       fe[3] >= 0]
+                       fe[0] >= 0.011,
+                       fe[1] >= 0.011,
+                       fe[2] >= 0.011,
+                       fe[3] >= 0.011]
+#        noisy = ((phi* fe)**2 + self.sigma**2)**0.5
+        noisy = ((phi*fe) + self.sigma)
         # Form objective.
-        obj = cvx.Minimize(cvx.sum_entries(cvx.square(signal[:, None]
-                                                      - phi * fe
-                                                      - self.sigma)))
+        obj = cvx.Minimize(cvx.sum_entries(cvx.square(signal - noisy)))
+
         # Form and solve problem.
         prob = cvx.Problem(obj, constraints)
         prob.solve()  # Returns the optimal value.
@@ -429,10 +400,8 @@ class ActiveAxModel(ReconstModel):
 #    @profile
     def fit(self, data, mask=None):
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
-#        res_one = differential_evolution(self.stoc_search_cost, bounds,
-#                                         args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
-                                         maxiter=5, args=(data,))
+                                         maxiter=self.maxiter, args=(data,))
         x = res_one.x
 
         Phi(x, self.am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
@@ -441,10 +410,11 @@ class ActiveAxModel(ReconstModel):
 
         fe = self.estimate_f(np.array(data), phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
+#        bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
+#                  np.pi, np.pi, 11, 0.9])
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
-#        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), args=(data,))
-        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=1e-3,
+        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=self.xtol,
                             args=(data,))
         result = res.x
         return result
