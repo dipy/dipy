@@ -82,12 +82,16 @@ function and an image plane using the ``slice`` function.
 """
 
 ren = window.Renderer()
+ren.background([1, 1, 1])
 stream_actor = actor.line(streamlines)
+# streamlines_masked = np.random.choice(streamlines, 100)
+# stream_actor = actor.streamtube(streamlines_masked)
 
 if not world_coords:
-    image_actor_z = actor.slicer(data, affine=np.eye(4))
+    image_actor_z = actor.slicer(data, affine=np.eye(4), interpolation="nearest")
 else:
-    image_actor_z = actor.slicer(data, affine)
+    image_actor_z = actor.slicer(data, affine, interpolation="nearest")
+
 
 """
 We can also change also the opacity of the slicer.
@@ -190,6 +194,7 @@ def change_opacity(i_ren, obj, slider):
     image_actor_x.opacity(slicer_opacity)
     image_actor_y.opacity(slicer_opacity)
 
+
 line_slider_z.add_callback(line_slider_z.slider_disk,
                            "MouseMoveEvent",
                            change_slice_z)
@@ -202,6 +207,73 @@ line_slider_y.add_callback(line_slider_y.slider_disk,
 opacity_slider.add_callback(opacity_slider.slider_disk,
                             "MouseMoveEvent",
                             change_opacity)
+
+
+# """
+#     Create cell picker for this example
+# """
+# from dipy.utils.optpkg import optional_package
+
+# # Allow import, but disable doctests if we don't have vtk.
+# vtk, have_vtk, setup_module = optional_package('vtk')
+
+# if have_vtk:
+#     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+#     major_version = vtk.vtkVersion.GetVTKMajorVersion()
+#     vtkCellPicker = vtk.vtkCellPicker
+# else:
+#     vtkCellPicker = object
+
+# cell_picker = vtkCellPicker()
+# cell_picker.SetTolerance(0.002)
+
+
+def left_click_callback(obj, ev):
+    event_pos = show_m.iren.GetEventPosition()
+
+    # # get cell from interactor's cell picker
+    # cell_from_interactor = show_m.style.get_cell_at_event_position()
+    # print('from interactor: (' +
+    #       str(cell_from_interactor[0]) + ', ' +
+    #       str(cell_from_interactor[1]) + ')')
+
+    # # get cell from this example's cell picker
+    # cell_picker.Pick(event_pos[0],
+    #                  event_pos[1],
+    #                  0,
+    #                  show_m.ren)
+
+    # cell_from_example = cell_picker.GetCellIJK()
+    # print('from example: (' +
+    #       str(cell_from_example[0]) + ', ' +
+    #       str(cell_from_example[1]) + ')')
+    # obj.picker.UseCellsOn()
+    # get cell from the actor's cell picker
+    obj.picker.Pick(event_pos[0],
+                    event_pos[1],
+                    0,
+                    show_m.ren)
+
+    i, j, k = obj.picker.GetCellIJK()
+    print('cell coordinates: (' + str(i) + ', ' + str(j) + ', ' + str(k) + ')')
+    print('cell value: ' + ('%.8f' % data[i, j, k]))
+    result_cell_coords.set_message('(' + str(i) + ', ' + str(j) + ', ' + str(k) + ')')
+    result_cell_value.set_message('%.8f' % data[i, j, k])
+
+    l, m, n = obj.picker.GetPointIJK()
+    print('point coordinates: (' + str(l) + ', ' + str(m) + ', ' + str(n) + ')')
+    print('point value: ' + ('%.8f' % data[l, m, n]))
+    print('')
+    result_point_coords.set_message('(' + str(l) + ', ' + str(m) + ', ' + str(n) + ')')
+    result_point_value.set_message('%.8f' % data[l, m, n])
+
+    # id = obj.picker.GetPointId()
+    # print('point id: ' + str(id))
+    # print(shape)
+    # print('z slice = ' + str(np.floor(id / (shape[0] * shape[1]))))
+
+
+image_actor_z.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
 
 """
 We'll also create text labels to identify the sliders.
@@ -234,6 +306,35 @@ panel.add_element(opacity_slider, 'relative', (0.5, 0.2))
 
 show_m.ren.add(panel)
 
+label_cell_coords = ui.TextBox2D(text='Cell Position:', width=50, height=20)
+label_cell_value = ui.TextBox2D(text='Cell Value:', width=50, height=20)
+label_point_coords = ui.TextBox2D(text='Point Position:', width=50, height=20)
+label_point_value = ui.TextBox2D(text='Point Value:', width=50, height=20)
+
+result_cell_coords = ui.TextBox2D(text='', width=50, height=20)
+result_cell_value = ui.TextBox2D(text='', width=50, height=20)
+result_point_coords = ui.TextBox2D(text='', width=50, height=20)
+result_point_value = ui.TextBox2D(text='', width=50, height=20)
+
+panel_picking = ui.Panel2D(center=(200, 120),
+                           size=(300, 200),
+                           color=(1, 0, 1),
+                           opacity=0.5,
+                           align="left")
+
+panel_picking.add_element(label_cell_coords, 'relative', (0.1, 0.8))
+panel_picking.add_element(label_cell_value, 'relative', (0.1, 0.6))
+panel_picking.add_element(label_point_coords, 'relative', (0.1, 0.4))
+panel_picking.add_element(label_point_value, 'relative', (0.1, 0.2))
+
+panel_picking.add_element(result_cell_coords, 'relative', (0.6, 0.8))
+panel_picking.add_element(result_cell_value, 'relative', (0.6, 0.6))
+panel_picking.add_element(result_point_coords, 'relative', (0.6, 0.4))
+panel_picking.add_element(result_point_value, 'relative', (0.6, 0.2))
+
+show_m.ren.add(panel_picking)
+
+
 """
 Then, we can render all the widgets and everything else in the screen and
 start the interaction using ``show_m.start()``.
@@ -257,6 +358,7 @@ def win_callback(obj, event):
         size_change = [size[0] - size_old[0], 0]
         panel.re_align(size_change)
 
+
 show_m.initialize()
 
 """
@@ -264,7 +366,7 @@ Finally, please set the following variable to True to interact with the
 datasetsin 3D.
 """
 
-interactive = False
+interactive = True
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
@@ -272,6 +374,7 @@ ren.reset_clipping_range()
 if interactive:
 
     show_m.add_window_callback(win_callback)
+    # show_m.iren.add_callback()
     show_m.render()
     show_m.start()
 
