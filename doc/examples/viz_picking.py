@@ -3,7 +3,7 @@
 Advanced interactive visualization
 ==================================
 
-In dipy_ we created a thin interface to access many of the capabilities
+In DIPY we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
 needs of structural and diffusion imaging. Initially the 3D visualization
 module was named ``fvtk``, meaning functions using vtk. This is still available
@@ -41,8 +41,8 @@ from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 fetch_bundles_2_subjects()
 
 """
-The following function outputs a dictionary with the required bundles e.g. ``af
-left`` (left arcuate fasciculus) and maps, e.g. FA for a specific subject.
+The following function outputs a dictionary with the required bundles e.g., af
+left (left arcuate fasciculus) and maps, e.g., FA for a specific subject.
 """
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
@@ -82,12 +82,16 @@ function and an image plane using the ``slice`` function.
 """
 
 ren = window.Renderer()
+ren.background([1, 1, 1])
 stream_actor = actor.line(streamlines)
+# streamlines_masked = np.random.choice(streamlines, 100)
+# stream_actor = actor.streamtube(streamlines_masked)
 
 if not world_coords:
-    image_actor_z = actor.slicer(data, affine=np.eye(4))
+    image_actor_z = actor.slicer(data, affine=np.eye(4), interpolation="nearest")
 else:
-    image_actor_z = actor.slicer(data, affine)
+    image_actor_z = actor.slicer(data, affine, interpolation="nearest")
+
 
 """
 We can also change also the opacity of the slicer.
@@ -148,25 +152,21 @@ sliders to move the slices and change their opacity.
 line_slider_z = ui.LineSlider2D(min_value=0,
                                 max_value=shape[2] - 1,
                                 initial_value=shape[2] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+                                text_template="{value:.0f}")
 
 line_slider_x = ui.LineSlider2D(min_value=0,
                                 max_value=shape[0] - 1,
                                 initial_value=shape[0] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+                                text_template="{value:.0f}")
 
 line_slider_y = ui.LineSlider2D(min_value=0,
                                 max_value=shape[1] - 1,
                                 initial_value=shape[1] / 2,
-                                text_template="{value:.0f}",
-                                length=140)
+                                text_template="{value:.0f}")
 
 opacity_slider = ui.LineSlider2D(min_value=0.0,
                                  max_value=1.0,
-                                 initial_value=slicer_opacity,
-                                 length=140)
+                                 initial_value=slicer_opacity)
 
 """
 Now we will write callbacks for the sliders and register them.
@@ -194,6 +194,7 @@ def change_opacity(i_ren, obj, slider):
     image_actor_x.opacity(slicer_opacity)
     image_actor_y.opacity(slicer_opacity)
 
+
 line_slider_z.add_callback(line_slider_z.slider_disk,
                            "MouseMoveEvent",
                            change_slice_z)
@@ -207,31 +208,81 @@ opacity_slider.add_callback(opacity_slider.slider_disk,
                             "MouseMoveEvent",
                             change_opacity)
 
+
+# """
+#     Create cell picker for this example
+# """
+# from dipy.utils.optpkg import optional_package
+
+# # Allow import, but disable doctests if we don't have vtk.
+# vtk, have_vtk, setup_module = optional_package('vtk')
+
+# if have_vtk:
+#     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+#     major_version = vtk.vtkVersion.GetVTKMajorVersion()
+#     vtkCellPicker = vtk.vtkCellPicker
+# else:
+#     vtkCellPicker = object
+
+# cell_picker = vtkCellPicker()
+# cell_picker.SetTolerance(0.002)
+
+
+def left_click_callback(obj, ev):
+    event_pos = show_m.iren.GetEventPosition()
+
+    # # get cell from interactor's cell picker
+    # cell_from_interactor = show_m.style.get_cell_at_event_position()
+    # print('from interactor: (' +
+    #       str(cell_from_interactor[0]) + ', ' +
+    #       str(cell_from_interactor[1]) + ')')
+
+    # # get cell from this example's cell picker
+    # cell_picker.Pick(event_pos[0],
+    #                  event_pos[1],
+    #                  0,
+    #                  show_m.ren)
+
+    # cell_from_example = cell_picker.GetCellIJK()
+    # print('from example: (' +
+    #       str(cell_from_example[0]) + ', ' +
+    #       str(cell_from_example[1]) + ')')
+    # obj.picker.UseCellsOn()
+    # get cell from the actor's cell picker
+    obj.picker.Pick(event_pos[0],
+                    event_pos[1],
+                    0,
+                    show_m.ren)
+
+    i, j, k = obj.picker.GetCellIJK()
+    print('cell coordinates: (' + str(i) + ', ' + str(j) + ', ' + str(k) + ')')
+    print('cell value: ' + ('%.8f' % data[i, j, k]))
+    result_cell_coords.set_message('(' + str(i) + ', ' + str(j) + ', ' + str(k) + ')')
+    result_cell_value.set_message('%.8f' % data[i, j, k])
+
+    l, m, n = obj.picker.GetPointIJK()
+    print('point coordinates: (' + str(l) + ', ' + str(m) + ', ' + str(n) + ')')
+    print('point value: ' + ('%.8f' % data[l, m, n]))
+    print('')
+    result_point_coords.set_message('(' + str(l) + ', ' + str(m) + ', ' + str(n) + ')')
+    result_point_value.set_message('%.8f' % data[l, m, n])
+
+    # id = obj.picker.GetPointId()
+    # print('point id: ' + str(id))
+    # print(shape)
+    # print('z slice = ' + str(np.floor(id / (shape[0] * shape[1]))))
+
+
+image_actor_z.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
 """
 We'll also create text labels to identify the sliders.
 """
 
-
-def build_label(text):
-    label = ui.TextBlock2D()
-    label.message = text
-    label.font_size = 18
-    label.font_family = 'Arial'
-    label.justification = 'left'
-    label.bold = False
-    label.italic = False
-    label.shadow = False
-    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-    label.color = (1, 1, 1)
-
-    return label
-
-
-line_slider_label_z = build_label(text="Z Slice")
-line_slider_label_x = build_label(text="X Slice")
-line_slider_label_y = build_label(text="Y Slice")
-opacity_slider_label = build_label(text="Opacity")
+line_slider_label_z = ui.TextBox2D(text="Z Slice", width=50, height=20)
+line_slider_label_x = ui.TextBox2D(text="X Slice", width=50, height=20)
+line_slider_label_y = ui.TextBox2D(text="Y Slice", width=50, height=20)
+opacity_slider_label = ui.TextBox2D(text="Opacity", width=50, height=20)
 
 """
 Now we will create a ``panel`` to contain the sliders and labels.
@@ -244,16 +295,45 @@ panel = ui.Panel2D(center=(1030, 120),
                    opacity=0.1,
                    align="right")
 
-panel.add_element(line_slider_label_x, 'relative', (0.1, 0.75))
-panel.add_element(line_slider_x, 'relative', (0.65, 0.8))
-panel.add_element(line_slider_label_y, 'relative', (0.1, 0.55))
-panel.add_element(line_slider_y, 'relative', (0.65, 0.6))
-panel.add_element(line_slider_label_z, 'relative', (0.1, 0.35))
-panel.add_element(line_slider_z, 'relative', (0.65, 0.4))
-panel.add_element(opacity_slider_label, 'relative', (0.1, 0.15))
-panel.add_element(opacity_slider, 'relative', (0.65, 0.2))
+panel.add_element(line_slider_label_x, 'relative', (0.1, 0.8))
+panel.add_element(line_slider_x, 'relative', (0.5, 0.8))
+panel.add_element(line_slider_label_y, 'relative', (0.1, 0.6))
+panel.add_element(line_slider_y, 'relative', (0.5, 0.6))
+panel.add_element(line_slider_label_z, 'relative', (0.1, 0.4))
+panel.add_element(line_slider_z, 'relative', (0.5, 0.4))
+panel.add_element(opacity_slider_label, 'relative', (0.1, 0.2))
+panel.add_element(opacity_slider, 'relative', (0.5, 0.2))
 
 show_m.ren.add(panel)
+
+label_cell_coords = ui.TextBox2D(text='Cell Position:', width=50, height=20)
+label_cell_value = ui.TextBox2D(text='Cell Value:', width=50, height=20)
+label_point_coords = ui.TextBox2D(text='Point Position:', width=50, height=20)
+label_point_value = ui.TextBox2D(text='Point Value:', width=50, height=20)
+
+result_cell_coords = ui.TextBox2D(text='', width=50, height=20)
+result_cell_value = ui.TextBox2D(text='', width=50, height=20)
+result_point_coords = ui.TextBox2D(text='', width=50, height=20)
+result_point_value = ui.TextBox2D(text='', width=50, height=20)
+
+panel_picking = ui.Panel2D(center=(200, 120),
+                           size=(300, 200),
+                           color=(1, 0, 1),
+                           opacity=0.5,
+                           align="left")
+
+panel_picking.add_element(label_cell_coords, 'relative', (0.1, 0.8))
+panel_picking.add_element(label_cell_value, 'relative', (0.1, 0.6))
+panel_picking.add_element(label_point_coords, 'relative', (0.1, 0.4))
+panel_picking.add_element(label_point_value, 'relative', (0.1, 0.2))
+
+panel_picking.add_element(result_cell_coords, 'relative', (0.6, 0.8))
+panel_picking.add_element(result_cell_value, 'relative', (0.6, 0.6))
+panel_picking.add_element(result_point_coords, 'relative', (0.6, 0.4))
+panel_picking.add_element(result_point_value, 'relative', (0.6, 0.2))
+
+show_m.ren.add(panel_picking)
+
 
 """
 Then, we can render all the widgets and everything else in the screen and
@@ -278,14 +358,15 @@ def win_callback(obj, event):
         size_change = [size[0] - size_old[0], 0]
         panel.re_align(size_change)
 
+
 show_m.initialize()
 
 """
-Finally, please set the following variable to ``True`` to interact with the
-datasets in 3D.
+Finally, please set the following variable to True to interact with the 
+datasetsin 3D.
 """
 
-interactive = False
+interactive = True
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
@@ -293,6 +374,7 @@ ren.reset_clipping_range()
 if interactive:
 
     show_m.add_window_callback(win_callback)
+    # show_m.iren.add_callback()
     show_m.render()
     show_m.start()
 
@@ -305,13 +387,7 @@ else:
 .. figure:: bundles_and_3_slices.png
    :align: center
 
-   A few bundles with interactive slicing.
+   **A few bundles with interactive slicing**.
 """
 
 del show_m
-
-"""
-
-.. include:: ../links_names.inc
-
-"""
