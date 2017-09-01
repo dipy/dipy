@@ -148,21 +148,25 @@ sliders to move the slices and change their opacity.
 line_slider_z = ui.LineSlider2D(min_value=0,
                                 max_value=shape[2] - 1,
                                 initial_value=shape[2] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 line_slider_x = ui.LineSlider2D(min_value=0,
                                 max_value=shape[0] - 1,
                                 initial_value=shape[0] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 line_slider_y = ui.LineSlider2D(min_value=0,
                                 max_value=shape[1] - 1,
                                 initial_value=shape[1] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 opacity_slider = ui.LineSlider2D(min_value=0.0,
                                  max_value=1.0,
-                                 initial_value=slicer_opacity)
+                                 initial_value=slicer_opacity,
+                                 length=140)
 
 """
 Now we will write callbacks for the sliders and register them.
@@ -207,10 +211,27 @@ opacity_slider.add_callback(opacity_slider.slider_disk,
 We'll also create text labels to identify the sliders.
 """
 
-line_slider_label_z = ui.TextBox2D(text="Z Slice", width=50, height=20)
-line_slider_label_x = ui.TextBox2D(text="X Slice", width=50, height=20)
-line_slider_label_y = ui.TextBox2D(text="Y Slice", width=50, height=20)
-opacity_slider_label = ui.TextBox2D(text="Opacity", width=50, height=20)
+
+def build_label(text):
+    label = ui.TextBlock2D()
+    label.message = text
+    label.font_size = 18
+    label.font_family = 'Arial'
+    label.justification = 'left'
+    label.bold = False
+    label.italic = False
+    label.shadow = False
+    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
+    label.color = (1, 1, 1)
+
+    return label
+
+
+line_slider_label_z = build_label(text="Z Slice")
+line_slider_label_x = build_label(text="X Slice")
+line_slider_label_y = build_label(text="Y Slice")
+opacity_slider_label = build_label(text="Opacity")
 
 """
 Now we will create a ``panel`` to contain the sliders and labels.
@@ -223,14 +244,14 @@ panel = ui.Panel2D(center=(1030, 120),
                    opacity=0.1,
                    align="right")
 
-panel.add_element(line_slider_label_x, 'relative', (0.1, 0.8))
-panel.add_element(line_slider_x, 'relative', (0.5, 0.8))
-panel.add_element(line_slider_label_y, 'relative', (0.1, 0.6))
-panel.add_element(line_slider_y, 'relative', (0.5, 0.6))
-panel.add_element(line_slider_label_z, 'relative', (0.1, 0.4))
-panel.add_element(line_slider_z, 'relative', (0.5, 0.4))
-panel.add_element(opacity_slider_label, 'relative', (0.1, 0.2))
-panel.add_element(opacity_slider, 'relative', (0.5, 0.2))
+panel.add_element(line_slider_label_x, 'relative', (0.1, 0.75))
+panel.add_element(line_slider_x, 'relative', (0.65, 0.8))
+panel.add_element(line_slider_label_y, 'relative', (0.1, 0.55))
+panel.add_element(line_slider_y, 'relative', (0.65, 0.6))
+panel.add_element(line_slider_label_z, 'relative', (0.1, 0.35))
+panel.add_element(line_slider_z, 'relative', (0.65, 0.4))
+panel.add_element(opacity_slider_label, 'relative', (0.1, 0.15))
+panel.add_element(opacity_slider, 'relative', (0.65, 0.2))
 
 show_m.ren.add(panel)
 
