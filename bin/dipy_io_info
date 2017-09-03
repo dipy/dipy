@@ -2,8 +2,8 @@
 
 from __future__ import division, print_function
 
-from dipy.workflows.io import SummarizeData
+from dipy.workflows.io import IoInfo
 from dipy.workflows.flow_runner import run_flow
 
 if __name__ == "__main__":
-    run_flow(SummarizeData())
+    run_flow(IoInfo())
