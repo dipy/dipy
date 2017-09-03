@@ -20,7 +20,8 @@ class IoInfoFlow(Workflow):
             
     def run(self, input_files, b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
 
-        """ Workflow for creating a binary mask
+        """ Provides useful information about different files used in 
+        medical imaging. Any number of input files can be provided.
 
         Parameters
         ----------
@@ -39,8 +40,9 @@ class IoInfoFlow(Workflow):
         np.set_printoptions(3, suppress=True)
         
         for input_path in input_files:
-            logging.info('=======================================')
-            logging.info('Summarizing {0}'.format(input_path))
+            logging.info('------------------------------------------')
+            logging.info('Looking at {0}'.format(input_path))
+            logging.info('------------------------------------------')
             
             if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
                 
@@ -56,7 +58,7 @@ class IoInfoFlow(Workflow):
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
-                    'Voxel size is not isotropic. Recommending reslicing.'
+                    'Voxel size is not isotropic. Recommending reslicing.\n'
                     logging.warning(msg)
                                 
             if os.path.basename(input_path).find('bval') > -1:
@@ -65,7 +67,7 @@ class IoInfoFlow(Workflow):
                 logging.info('Total number of bvalues {}'.format(len(bvals)))
                 shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
                 logging.info('Number of shells {0}'.format(shells))
-                logging.info('Number of b0s {0} using b0_threshold {1}'
+                logging.info('Number of b0s {0} using b0_threshold {1}\n'
                              .format(np.sum(bvals <= b0_threshold),
                                      b0_threshold))
                 
@@ -84,7 +86,7 @@ class IoInfoFlow(Workflow):
                 ncl1 = np.sum(norms < 1 - bvecs_tol)
                 logging.info('Total number of unit bvectors {0}'
                              .format(len(res[0])))
-                logging.info('Total number of non-unit bvectors {0}'.format(ncl1))           
+                logging.info('Total number of non-unit bvectors {0}\n'.format(ncl1))           
                     
         np.set_printoptions()
                 
