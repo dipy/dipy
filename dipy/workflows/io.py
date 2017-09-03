@@ -3,12 +3,7 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 import logging
-#logging.basicConfig(format='%(message)s',
-#                    level=logging.DEBUG)
-#logging.basicConfig(format='%(levelname)s:%(message)s',
-#                    level=logging.DEBUG)
 from dipy.io.image import load_nifti
-
 from dipy.workflows.workflow import Workflow
 
 
@@ -16,7 +11,7 @@ class IoInfoFlow(Workflow):
     
     @classmethod
     def get_short_name(cls):
-        return 'io_input'
+        return 'io_info'
             
     def run(self, input_files, b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
 
@@ -66,8 +61,8 @@ class IoInfoFlow(Workflow):
                 logging.info('Bvalues \n{0}'.format(bvals))
                 logging.info('Total number of bvalues {}'.format(len(bvals)))
                 shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
-                logging.info('Number of shells {0}'.format(shells))
-                logging.info('Number of b0s {0} using b0_threshold {1}\n'
+                logging.info('Number of gradient shells {0}'.format(shells))
+                logging.info('Number of b0s {0} (b0_thr {1})\n'
                              .format(np.sum(bvals <= b0_threshold),
                                      b0_threshold))
                 
