@@ -56,7 +56,8 @@ class ReconstDtiFlow(Workflow):
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bvecs_tol : float, optional
-            Threshold used so that norm(bvec)=1 (default 0.01)
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol 
+            b-vectors are unit vectors (default 0.01)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval

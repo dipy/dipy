@@ -3,8 +3,8 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 import logging
-logging.basicConfig(format='%(message)s',
-                    level=logging.DEBUG)
+#logging.basicConfig(format='%(message)s',
+#                    level=logging.DEBUG)
 #logging.basicConfig(format='%(levelname)s:%(message)s',
 #                    level=logging.DEBUG)
 from dipy.io.image import load_nifti
@@ -16,9 +16,9 @@ class IoInfoFlow(Workflow):
     
     @classmethod
     def get_short_name(cls):
-        return 'io_ino'
+        return 'io_input'
             
-    def run(self, input_files, b0_threshold=50, bshell_thr=100):
+    def run(self, input_files, b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
 
         """ Workflow for creating a binary mask
 
@@ -28,6 +28,9 @@ class IoInfoFlow(Workflow):
             Nifti1, bvals and bvecs files.
         b0_threshold : float, optional
             (default 50)
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol 
+            b-vectors are unit vectors (default 0.01)
         bshell_thr : float, optional
             Threshold for distinguishing b-values in different shells 
             (default 100)
@@ -36,7 +39,8 @@ class IoInfoFlow(Workflow):
         np.set_printoptions(3, suppress=True)
         
         for input_path in input_files:
-            logging.info('\nSummarizing {0}'.format(input_path))
+            logging.info('=======================================')
+            logging.info('Summarizing {0}'.format(input_path))
             
             if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
                 
@@ -72,10 +76,16 @@ class IoInfoFlow(Workflow):
                              .format(bvecs.shape))
                 rows, cols = bvecs.shape
                 if rows < cols:
-                    logging.info('Bvectors are \n{0}'.format(bvecs.T))
-                else:
-                    logging.info('Bvectors are \n{0}'.format(bvecs))
-        
+                    bvecs = bvecs.T
+                logging.info('Bvectors are \n{0}'.format(bvecs))
+                norms = np.linalg.norm(bvecs, axis=1)
+                res = np.where(
+                        (norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
+                ncl1 = np.sum(norms < 1 - bvecs_tol)
+                logging.info('Total number of unit bvectors {0}'
+                             .format(len(res[0])))
+                logging.info('Total number of non-unit bvectors {0}'.format(ncl1))           
+                    
         np.set_printoptions()
                 
                 
