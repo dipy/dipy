@@ -12,7 +12,7 @@ from dipy.io.image import load_nifti
 from dipy.workflows.workflow import Workflow
 
 
-class IoInfo(Workflow):
+class IoInfoFlow(Workflow):
     
     @classmethod
     def get_short_name(cls):
