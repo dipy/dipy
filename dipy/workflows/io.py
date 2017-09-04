@@ -16,7 +16,8 @@ class IoInfoFlow(Workflow):
     def run(self, input_files, b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
 
         """ Provides useful information about different files used in 
-        medical imaging. Any number of input files can be provided.
+        medical imaging. Any number of input files can be provided. The
+        program identifies the type of file by its extension. 
 
         Parameters
         ----------
