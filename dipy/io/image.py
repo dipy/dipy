@@ -4,7 +4,7 @@ import nibabel as nib
 
 
 def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=True):
+               return_coords=False):
     img = nib.load(fname)
     data = img.get_data()
     # vox_size = hdr.get_zooms()[:3]
