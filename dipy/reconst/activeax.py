@@ -209,7 +209,7 @@ class ActiveAxModel(ReconstModel):
 
     def x_and_fe_to_x_fe(self, x, fe):
         x_fe = np.zeros(7)
-        fe = fe[:,0]
+        fe = fe[:, 0]
         x_fe[:3] = fe[:3]
         x_fe[3:6] = x[:3]
         x_fe[6] = fe[3]
@@ -414,7 +414,7 @@ class ActiveAxModel(ReconstModel):
 #                  np.pi, np.pi, 11, 0.9])
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
-        res = least_squares(self.nls_cost, x_fe, bounds=(bounds), xtol=self.xtol,
-                            args=(data,))
+        res = least_squares(self.nls_cost, x_fe, bounds=(bounds),
+                            xtol=self.xtol, args=(data,))
         result = res.x
         return result
