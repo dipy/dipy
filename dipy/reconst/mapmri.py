@@ -5,9 +5,12 @@ from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
-    from scipy.special import factorial, factorial2
+    from scipy.special import factorial as sfactorial
+    from scipy.special import factorial2
 except ImportError:
-    from scipy.misc import factorial, factorial2
+    from scipy.misc import factorial as sfactorial
+    from scipy.misc import factorial2
+from math import factorial as mfactorial
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.shm import real_sph_harm, sph_harm_ind_list
 import dipy.reconst.dti as dti
@@ -583,7 +586,7 @@ class MapmriFit(ReconstFit):
                             matsum += (-1) ** k * \
                                 binomialfloat(j + l - 0.5, j - k - 1) *\
                                 gamma(l / 2 + k + 1 / 2.0) /\
-                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
+                                (sfactorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
                         for m in range(-l, l + 1):
                             rtpp_vec[count] = const * matsum
                             count += 1
@@ -634,7 +637,7 @@ class MapmriFit(ReconstFit):
                         matsum += ((-1) ** k *
                                    binomialfloat(j + l - 0.5, j - k - 1) *
                                    gamma((l + 1) / 2.0 + k)) /\
-                            (factorial(k) * 0.5 ** ((l + 1) / 2.0 + k))
+                            (sfactorial(k) * 0.5 ** ((l + 1) / 2.0 + k))
                     for m in range(-l, l + 1):
                         rtap_vec[count] = kappa * matsum
                         count += 1
@@ -707,8 +710,8 @@ class MapmriFit(ReconstFit):
                 ((1 + 2 * nx) * mu[0] ** 2 + (1 + 2 * ny) *
                  mu[1] ** 2 + (1 + 2 * nz) * mu[2] ** 2)
 
-            denominator = np.sqrt(2. ** (-ind_sum) * factorial(nx) *
-                                  factorial(ny) * factorial(nz)) *\
+            denominator = np.sqrt(2. ** (-ind_sum) * sfactorial(nx) *
+                                  sfactorial(ny) * sfactorial(nz)) *\
                 gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) *\
                 gamma(0.5 - 0.5 * nz)
 
@@ -744,7 +747,7 @@ class MapmriFit(ReconstFit):
             nx, ny, nz = ind_mat[sel].T
 
             numerator = 8 * np.pi ** 2 * (ux * uy * uz) ** 3 *\
-                np.sqrt(factorial(nx) * factorial(ny) * factorial(nz)) *\
+                np.sqrt(sfactorial(nx) * sfactorial(ny) * sfactorial(nz)) *\
                 gamma(0.5 - 0.5 * nx) * gamma(0.5 - 0.5 * ny) * \
                 gamma(0.5 - 0.5 * nz)
 
@@ -826,7 +829,7 @@ class MapmriFit(ReconstFit):
             n1, n2, n3 = ind_mat[i]
             if (n2 % 2 + n3 % 2) == 0:
                 a_par[i] = coef[i] * (-1) ** ((n2 + n3) / 2) *\
-                    np.sqrt(factorial(n2) * factorial(n3)) /\
+                    np.sqrt(sfactorial(n2) * sfactorial(n3)) /\
                     (factorial2(n2) * factorial2(n3))
                 if n1 == 0:
                     a0[i] = a_par[i]
@@ -867,7 +870,7 @@ class MapmriFit(ReconstFit):
             if n1 % 2 == 0:
                 if n2 % 2 == 0 and n3 % 2 == 0:
                     a_perp[i] = coef[i] * (-1) ** (n1 / 2) *\
-                        np.sqrt(factorial(n1)) / factorial2(n1)
+                        np.sqrt(sfactorial(n1)) / factorial2(n1)
                     if n2 == 0 and n3 == 0:
                         a00[i] = a_perp[i]
         return np.sqrt(1 - np.sum(a00 ** 2) / np.sum(a_perp ** 2))
@@ -1038,7 +1041,7 @@ def b_mat(index_matrix):
         n1, n2, n3 = index_matrix[i]
         K = int(not(n1 % 2) and not(n2 % 2) and not(n3 % 2))
         B[i] = (
-            K * np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)) /
+            K * np.sqrt(sfactorial(n1) * sfactorial(n2) * sfactorial(n3)) /
             (factorial2(n1) * factorial2(n2) * factorial2(n3))
             )
 
@@ -1095,7 +1098,7 @@ def mapmri_phi_1d(n, q, mu):
     qn = 2 * np.pi * mu * q
     H = hermite(n)(qn)
     i = np.complex(0, 1)
-    f = factorial(n)
+    f = mfactorial(n)
 
     k = i ** (-n) / np.sqrt(2 ** (n) * f)
     phi = k * np.exp(- qn ** 2 / 2) * H
@@ -1172,7 +1175,7 @@ def mapmri_psi_1d(n, x, mu):
     """
 
     H = hermite(n)(x / mu)
-    f = factorial(n)
+    f = mfactorial(n)
     k = 1 / (np.sqrt(2 ** (n + 1) * np.pi * f) * mu)
     psi = k * np.exp(- x ** 2 / (2 * mu ** 2)) * H
 
@@ -1265,7 +1268,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
                                      3 * (mux ** 2 * muy ** 2 * muz ** 2))
     for j in range(n_elem):
         n1, n2, n3 = ind_mat[j]
-        f = np.sqrt(factorial(n1) * factorial(n2) * factorial(n3))
+        f = np.sqrt(sfactorial(n1) * sfactorial(n2) * sfactorial(n3))
         odf_mat[:, j] = const * f * \
             _odf_cfunc(n1, n2, n3, alpha, beta, gamma, s)
 
@@ -1282,7 +1285,7 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
     NeuroImage, 2013.
     """
 
-    f = factorial
+    f = mfactorial
     f2 = factorial2
     sumc = 0
     for i in range(0, n1 + 1, 2):
@@ -1541,7 +1544,7 @@ def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
 def binomialfloat(n, k):
     """Custom Binomial function
     """
-    return factorial(n) / (factorial(n - k) * factorial(k))
+    return sfactorial(n) / (sfactorial(n - k) * sfactorial(k))
 
 
 def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
@@ -1593,7 +1596,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
             for k in range(0, j):
                 matsum += ((-1) ** k * binomialfloat(j + l - 0.5, j - k - 1) *
                            gamma((l + s + 3) / 2.0 + k)) /\
-                    (factorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
+                    (mfactorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
             for m in range(-l, l + 1):
                 odf_mat[:, counter] = kappa * matsum *\
                     real_sph_harm(m, l, theta, phi)
@@ -1648,7 +1651,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
             for k in range(0, j):
                 matsum += ((-1) ** k * binomialfloat(j + l - 0.5, j - k - 1) *
                            gamma((l + s + 3) / 2.0 + k)) /\
-                    (factorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
+                    (mfactorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
             for m in range(-l, l + 1):
                 index_overlap = np.all([l == sh_mat[1], m == sh_mat[0]], 0)
                 odf_sh_mat[:, counter] = kappa * matsum * index_overlap
