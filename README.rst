@@ -2,6 +2,9 @@
  DIPY
 ======
 
+.. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
+  :target: https://travis-ci.org/nipy/dipy
+
 .. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/nipy/dipy
 
