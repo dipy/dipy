@@ -283,6 +283,9 @@ class ReconstCSDFlow(Workflow):
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0,
             bvecs_tol=0.01,
+            roi_center=None,
+            roi_radius=10,
+            fa_thr=0.7,
             frf=None, extract_pam_values=False, out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -310,6 +313,13 @@ class ReconstCSDFlow(Workflow):
             Threshold used to find b=0 directions
         bvecs_tol : float, optional
             Bvecs should be unit vectors. (default:0.01)
+        roi_center : variable int, optional
+            Center of ROI in data. If center is None, it is assumed that it is
+            the center of the volume with shape `data.shape[:3]` (default None)
+        roi_radius : int, optional
+            radius of cubic ROI in voxels (default 10)
+        fa_thr : float, optional
+            FA threshold for calculating the response function (default 0.7)
         frf : tuple, optional
             Fiber response function 15, 4, 4 to be mutiplied by 10**-4 
             (default: None)
@@ -339,11 +349,11 @@ class ReconstCSDFlow(Workflow):
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values, \
             opeaks_indices, ogfa in io_it:
 
-            logging.info('Computing fiber odfs for {0}'.format(dwi))
-            vol = nib.load(dwi)
-            data = vol.get_data()
-            affine = vol.get_affine()
-
+            logging.info('Loading {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            affine = img.affine
+            
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
@@ -358,14 +368,17 @@ class ReconstCSDFlow(Workflow):
             elif data.shape[-1] < 30:
                 sh_order = 6
 
-            response, ratio, nvox = auto_response(gtab, data,
-                                            roi_center=None,
-                                            roi_radius=10,
-                                            fa_thr=0.7,
-                                            return_number_of_voxels=True)
-            response = list(response)
+            if frf is None:
+                logging.info('Computing response function')                
+                response, ratio, nvox = auto_response(
+                        gtab, data,
+                        roi_center=roi_center,
+                        roi_radius=roi_radius,
+                        fa_thr=fa_thr,
+                        return_number_of_voxels=True)
+                response = list(response)
 
-            if frf is not None:
+            else:
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
@@ -376,13 +389,12 @@ class ReconstCSDFlow(Workflow):
                 ratio = l01[1] / l01[0]
 
             logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
+                'Eigenvalues for the response of the input data are :\n{0}'
                 .format(response[0]))
-            logging.info('Ratio for smallest to largest eigen value is {0}'
-                         .format(ratio))
+            
+            peaks_sphere = get_sphere('repulsion724')
 
-            peaks_sphere = get_sphere('symmetric362')
-
+            logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                         sh_order=sh_order)
 
@@ -399,6 +411,8 @@ class ReconstCSDFlow(Workflow):
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
+            
+            logging.info('CSD computation completed.')
 
             if extract_pam_values:
                 peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
@@ -406,10 +420,10 @@ class ReconstCSDFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
-                logging.info('Peaks saved in current directory')
+                logging.info('Pam5 file saved in current directory')
             else:
                 logging.info(
-                        'Peaks saved in {0}'.format(dname_))
+                        'Pam5 saved in {0}'.format(dname_))
             
             return io_it
 
@@ -478,7 +492,7 @@ class ReconstCSAFlow(Workflow):
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, \
             opeaks_values, opeaks_indices, ogfa in io_it:
 
-            logging.info('Computing fiber odfs for {0}'.format(dwi))
+            logging.info('Loading {0}'.format(dwi))
             vol = nib.load(dwi)
             data = vol.get_data()
             affine = vol.get_affine()
@@ -488,29 +502,7 @@ class ReconstCSAFlow(Workflow):
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            sh_order = 6
-            
-            """
-            if data.shape[-1] < 15:
-                raise ValueError(
-                    'You need at least 15 unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {0}'
-                    ' DWI volumes.'.format(data.shape[-1]))
-            elif data.shape[-1] < 30:
-                sh_order = 6
-            
-            response, ratio = auto_response(gtab, data)
-            response = list(response)
-
-            logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
-                    .format(response[0]))
-            logging.info(
-                'Ratio for smallest to largest eigen value is {0}'
-                    .format(ratio))
-            """
-            
-            peaks_sphere = get_sphere('symmetric362')
+            peaks_sphere = get_sphere('repulsion724')
 
             csa_model = CsaOdfModel(gtab, sh_order)
 
