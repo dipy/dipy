@@ -283,7 +283,7 @@ class ReconstCSDFlow(Workflow):
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0,
             bvecs_tol=0.01,
-            frf=[15.0, 4.0, 4.0], extract_pam_values=False, out_dir='',
+            frf=None, extract_pam_values=False, out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
@@ -311,7 +311,8 @@ class ReconstCSDFlow(Workflow):
         bvecs_tol : float, optional
             Bvecs should be unit vectors. (default:0.01)
         frf : tuple, optional
-            Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
+            Fiber response function 15, 4, 4 to be mutiplied by 10**-4 
+            (default: None)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         out_dir : string, optional
@@ -357,7 +358,11 @@ class ReconstCSDFlow(Workflow):
             elif data.shape[-1] < 30:
                 sh_order = 6
 
-            response, ratio = auto_response(gtab, data)
+            response, ratio, nvox = auto_response(gtab, data,
+                                            roi_center=None,
+                                            roi_radius=10,
+                                            fa_thr=0.7,
+                                            return_number_of_voxels=True)
             response = list(response)
 
             if frf is not None:
