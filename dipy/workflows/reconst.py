@@ -287,13 +287,13 @@ class ReconstCSDFlow(Workflow):
             roi_radius=10,
             fa_thr=0.7,
             frf=None, extract_pam_values=False, out_dir='',
+            sh_order=8,
+            odf_to_sh_order=8,
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Workflow for peaks computation. Peaks computation is done by 'globing'
-            ``input_files`` and saves the peaks in a directory specified by
-            ``out_dir``.
+        """ Constrained spherical deconvolution
 
         Parameters
         ----------
@@ -323,6 +323,11 @@ class ReconstCSDFlow(Workflow):
         frf : tuple, optional
             Fiber response function 15, 4, 4 to be mutiplied by 10**-4 
             (default: None)
+        sh_order : int, optional
+            Spherical harmonics order (default 6) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order used for peak_from_model to compress
+            the ODF to spherical harmonics coefficients (default 8)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         out_dir : string, optional
@@ -423,7 +428,7 @@ class ReconstCSDFlow(Workflow):
                 logging.info('Pam5 file saved in current directory')
             else:
                 logging.info(
-                        'Pam5 saved in {0}'.format(dname_))
+                        'Pam5 file saved in {0}'.format(dname_))
             
             return io_it
 
@@ -435,17 +440,16 @@ class ReconstCSAFlow(Workflow):
         return 'csa'
 
     def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
-            b0_threshold=0.0, bvecs_tol=0.01, extract_pam_values=False,
+            odf_to_sh_order, b0_threshold=0.0, bvecs_tol=0.01,
+            extract_pam_values=False,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Workflow for peaks computation using Constant Solid Angle. Peaks 
-            computation is done by 'globing' `input_files`` and saves the peaks
-            in a directory specified by ``out_dir``.
-
+        """ Constant Solid Angle. 
+        
         Parameters
         ----------
         input_files : string
@@ -461,7 +465,10 @@ class ReconstCSAFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         sh_order : int, optional
-            Spherical harmonics order (default 6)
+            Spherical harmonics order (default 6) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order used for peak_from_model to compress
+            the ODF to spherical harmonics coefficients (default 8)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
         bvecs_tol : float, optional
@@ -504,6 +511,8 @@ class ReconstCSAFlow(Workflow):
 
             peaks_sphere = get_sphere('repulsion724')
 
+            logging.info('Starting CSA computations {0}'.format(dwi))
+    
             csa_model = CsaOdfModel(gtab, sh_order)
 
             peaks_csa = peaks_from_model(model=csa_model,
@@ -513,13 +522,15 @@ class ReconstCSAFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_order=sh_order,
+                                         sh_order=odf_to_sh_order,
                                          normalize_peaks=True,
                                          parallel=False)
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
-
+            
+            logging.info('Finished CSA {0}'.format(dwi))
+    
             if extract_pam_values:
                 peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
                                 opeaks_values,
@@ -528,10 +539,10 @@ class ReconstCSAFlow(Workflow):
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
-                logging.info('Peaks saved in current directory')
+                logging.info('Pam5 file saved in current directory')
             else:
                 logging.info(
-                        'Peaks saved in {0}'.format(dname_))
+                        'Pam5 file saved in {0}'.format(dname_))
 
             return io_it
 
