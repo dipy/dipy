@@ -40,22 +40,12 @@ class GenericTrackFlow(Workflow):
                     max_angle=30.,
                     sphere=pam.sphere)
 
-        seeds = seeds[:50000, :]
+        #seeds = seeds[:50000, :]
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
         logging.info('LocalTracking initiated')
-        from ipdb import set_trace
-        from dipy.tracking.streamline import Streamlines
-        
-        #stlist = list(streamlines)
-        print('Starting')
-        #s = Streamlines()
-        #for arr in streamlines:
-        #    s.append(arr)
-        #set_trace()
-        
+       
         tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-        set_trace()
         save(tractogram, out_tract)
 
         logging.info('Saved {0}'.format(out_tract))
