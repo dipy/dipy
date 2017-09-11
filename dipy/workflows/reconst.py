@@ -545,7 +545,3 @@ class ReconstCSAFlow(Workflow):
                         'Pam5 file saved in {0}'.format(dname_))
 
             return io_it
-
-    def get_tensor_model(self, gtab):
-        return TensorModel(gtab, fit_method="RT", sigma=self.sigma,
-                           jac=self.jacobian)
