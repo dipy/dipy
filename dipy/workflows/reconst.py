@@ -440,7 +440,7 @@ class ReconstCSAFlow(Workflow):
         return 'csa'
 
     def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
-            odf_to_sh_order, b0_threshold=0.0, bvecs_tol=0.01,
+            odf_to_sh_order=8, b0_threshold=0.0, bvecs_tol=0.01,
             extract_pam_values=False,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
