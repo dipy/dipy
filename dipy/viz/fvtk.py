@@ -1,4 +1,4 @@
-''' Fvtk module implements simple visualization functions using VTK.
+""" Fvtk module implements simple visualization functions using VTK.
 
 The main idea is the following:
 A window can have one or more renderers. A renderer can have none,
@@ -16,7 +16,7 @@ Examples
 
 For more information on VTK there many neat examples in
 http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
-'''
+"""
 from __future__ import division, print_function, absolute_import
 from warnings import warn
 
@@ -39,6 +39,8 @@ if have_matplotlib:
     get_cmap = cm.get_cmap
 else:
     from dipy.data import get_cmap
+
+from dipy.viz.colormap import create_colormap
 
 # a track buffer used only with picking tracks
 track_buffer = []
@@ -76,8 +78,8 @@ if have_vtk:
         have_vtk_texture_mapper2D = False
 
 else:
-    msg = "Python VTK is not installed"
-    warn(msg)
+    ren, have_ren, _ = optional_package('dipy.viz.window.ren',
+                                        'Python VTK is not installed')
 
 
 def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
@@ -685,55 +687,6 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
         del skinExtractor
 
     return ass
-
-
-lowercase_cm_name = {'blues': 'Blues', 'accent': 'Accent'}
-
-
-def create_colormap(v, name='jet', auto=True):
-    """Create colors from a specific colormap and return it
-    as an array of shape (N,3) where every row gives the corresponding
-    r,g,b value. The colormaps we use are similar with those of pylab.
-
-    Parameters
-    ----------
-    v : (N,) array
-        vector of values to be mapped in RGB colors according to colormap
-    name : str.
-        Name of the colormap. Currently implemented: 'jet', 'blues',
-        'accent', 'bone' and matplotlib colormaps if you have matplotlib
-        installed.
-    auto : bool,
-        if auto is True then v is interpolated to [0, 10] from v.min()
-        to v.max()
-
-    Notes
-    -----
-    Dipy supports a few colormaps for those who do not use Matplotlib, for
-    more colormaps consider downloading Matplotlib.
-
-    """
-
-    if v.ndim > 1:
-        msg = 'This function works only with 1d arrays. Use ravel()'
-        raise ValueError(msg)
-
-    if auto:
-        v = np.interp(v, [v.min(), v.max()], [0, 1])
-    else:
-        v = np.clip(v, 0, 1)
-
-    # For backwards compatibility with lowercase names
-    newname = lowercase_cm_name.get(name) or name
-
-    colormap = get_cmap(newname)
-    if colormap is None:
-        e_s = "Colormap '%s' is not yet implemented " % name
-        raise ValueError(e_s)
-
-    rgba = colormap(v)
-    rgb = rgba[:, :3].copy()
-    return rgb
 
 
 def _makeNd(array, ndim):

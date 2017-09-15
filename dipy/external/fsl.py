@@ -128,14 +128,14 @@ def flirt2aff(mat, in_img, ref_img):
     ``ref_x_flip`` is the matrix above with ``N_i`` given by the reference
     image first axis length.
     """
-    in_hdr = in_img.get_header()
-    ref_hdr = ref_img.get_header()
+    in_hdr = in_img.header
+    ref_hdr = ref_img.header
     # get_zooms gets the positive voxel sizes as returned in the header
     inspace = np.diag(in_hdr.get_zooms() + (1,))
     refspace = np.diag(ref_hdr.get_zooms() + (1,))
-    if npl.det(in_img.get_affine()) >= 0:
+    if npl.det(in_img.affine) >= 0:
         inspace = np.dot(inspace, _x_flipper(in_hdr.get_data_shape()[0]))
-    if npl.det(ref_img.get_affine()) >= 0:
+    if npl.det(ref_img.affine) >= 0:
         refspace = np.dot(refspace, _x_flipper(ref_hdr.get_data_shape()[0]))
     # Return voxel to voxel mapping
     return np.dot(npl.inv(refspace), np.dot(mat, inspace))
@@ -184,11 +184,11 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
     fref : filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
     ffaw : filename for the output warped image
     '''
-    refaff = nib.load(fref).get_affine()
+    refaff = nib.load(fref).affine
     disdata = nib.load(fdis).get_data()
     imgfa = nib.load(ffa)
     fadata = imgfa.get_data()
-    fazooms = imgfa.get_header().get_zooms()
+    fazooms = imgfa.header.get_zooms()
     # from fa index to ref index
     res = flirt2aff_files(flaff, ffa, fref)
     # from ref index to fa index
@@ -264,12 +264,12 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
 
     # load the reference img
     imgref = nib.load(fref)
-    refaff = imgref.get_affine()
+    refaff = imgref.affine
 
     # load the invwarp displacements
     imginvw = nib.load(finv)
     invwdata = imginvw.get_data()
-    invwaff = imginvw.get_affine()
+    invwaff = imginvw.affine
 
     # load the forward displacements
     imgdis = nib.load(fdis)

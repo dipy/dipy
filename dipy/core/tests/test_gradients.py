@@ -7,7 +7,8 @@ import numpy.testing as npt
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
-                                 reorient_bvecs, generate_bvecs)
+                                 reorient_bvecs, generate_bvecs,
+                                 check_multi_b)
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -275,7 +276,26 @@ def test_generate_bvecs():
     # Test if two generated vectors are almost orthogonal
     bvecs_2 = generate_bvecs(2)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
-    npt.assert_almost_equal(cos_theta, 0.)
+    npt.assert_almost_equal(cos_theta, 0., decimal=6)
+
+
+def test_check_multi_b():
+    bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
+    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+
+    # We don't consider differences this small to be sufficient:
+    bvals = np.array([1995, 1995, 1995, 1995, 2005, 2005, 2005, 2005, 0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
+    npt.assert_(not check_multi_b(gtab, 2, non_zero=True))
+
+    # Unless you specify that you are interested in this magnitude of changes:
+    npt.assert_(check_multi_b(gtab, 2, non_zero=True, bmag=1))
+
+    # Or if you consider zero to be one of your b-values:
+    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
 if __name__ == "__main__":

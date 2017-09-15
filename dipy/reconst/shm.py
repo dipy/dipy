@@ -362,7 +362,7 @@ def sph_harm_ind_list(sh_order):
     n_range = np.arange(0, sh_order + 1, 2, dtype=int)
     n_list = np.repeat(n_range, n_range * 2 + 1)
 
-    ncoef = (sh_order + 2) * (sh_order + 1) // 2
+    ncoef = int((sh_order + 2) * (sh_order + 1) // 2)
     offset = 0
     m_list = empty(ncoef, 'int')
     for ii in n_range:
@@ -401,8 +401,8 @@ def smooth_pinv(B, L):
     Notes
     -----
     In the literature this inverse is often written $(B^{T}B+L^{2})^{-1}B^{T}$.
-    However here this inverse is implemented using the pseudo-inverse because it
-    is more numerically stable than the direct implementation of the matrix
+    However here this inverse is implemented using the pseudo-inverse because
+    it is more numerically stable than the direct implementation of the matrix
     product.
 
     """
@@ -1010,7 +1010,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     ----------
     sh_coeffs : ndarray
         A ndarray where the last dimension is the
-        SH coeff estimates for that voxel.
+        SH coefficients estimates for that voxel.
     norm_factor: float, optional
         The value to normalize the ap values. Default is 10^-5.
     power : int, optional
@@ -1026,7 +1026,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
 
     Notes
     ----------
-    Calculate AP image based on a IxJxKxC SH coeffecient matrix based on the
+    Calculate AP image based on a IxJxKxC SH coefficient matrix based on the
     equation:
     .. math::
         AP = \sum_{l=2,4,6,...}{\frac{1}{2l+1} \sum_{m=-l}^l{|a_{l,m}|^n}}
@@ -1034,11 +1034,12 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
     Where the last dimension, C, is made of a flattened array of $l$x$m$
     coefficients, where $l$ are the SH orders, and $m = 2l+1$,
     So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
-    A l=2 SH coeffecient matrix will then be composed of a IxJxKx6 volume.
+    A l=2 SH coefficient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
-    The final AP image is then shifted by -log(normal_factor), to be strictly non-negative. Remaining values < 0 are discarded (set to 0), per default,
-    and this option is controlled throug the `non_negative` key word argument.
+    The final AP image is then shifted by -log(norm_factor), to be strictly
+    non-negative. Remaining values < 0 are discarded (set to 0), per default,
+    and this option is controlled through the `non_negative` keyword argument.
 
     References
     ----------
@@ -1060,8 +1061,17 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
         ap += ap_i
         n_start = n_stop
 
-    # Shift the map to be mostly non-negative:
-    log_ap = np.log(ap) - np.log(norm_factor)
+    # Shift the map to be mostly non-negative,
+    # only applying the log operation to positive elements
+    # to avoid getting numpy warnings on log(0).
+    # It is impossible to get ap values smaller than 0.
+    # Also avoids getting voxels with -inf when non_negative=False.
+
+    if ap.ndim < 1:
+        # For the off chance we have a scalar on our hands
+        ap = np.reshape(ap, (1, ))
+    log_ap = np.zeros_like(ap)
+    log_ap[ap > 0] = np.log(ap[ap > 0]) - np.log(norm_factor)
 
     # Deal with residual negative values:
     if non_negative:

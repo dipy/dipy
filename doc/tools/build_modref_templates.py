@@ -64,12 +64,10 @@ if __name__ == '__main__':
                              other_defines=other_defines)
     docwriter.package_skip_patterns += [r'\.fixes$',
                                         r'\.externals$',
-                                        r'\.reconst.eit$',
                                         r'\.tracking\.interfaces.*$',
                                         r'\.tracking\.gui_tools.*$',
                                         r'.*test.*$',
-                                        r'\.utils.*$',
-                                        r'\.viz.*$',
+                                        r'^\.utils.*',
                                         r'\.boots\.resampling.*$',
                                         r'\.fixes.*$',
                                         r'\.info.*$',

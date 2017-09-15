@@ -1,14 +1,17 @@
+
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.core.gradients import gradient_table
+from dipy.data import get_data
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
-                                 DirectionGetter, TissueClassifier)
+                                 DirectionGetter, TissueClassifier,
+                                 BinaryTissueClassifier)
 from dipy.direction import (ProbabilisticDirectionGetter,
                             DeterministicMaximumDirectionGetter)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
-
 from dipy.tracking.local.localtracking import TissueTypes
 
 
@@ -151,13 +154,6 @@ def test_stop_conditions():
     npt.assert_equal(sl[-1], seeds[y])
     npt.assert_equal(len(sl), 1)
 
-    bad_affine = np.eye(3)
-    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
-
-    bad_affine = np.eye(4)
-    bad_affine[0, 1] = 1.
-    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
-
 
 def test_trilinear_interpolate():
 
@@ -275,6 +271,7 @@ def test_ProbabilisticOdfWeightedTracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
+
 def test_MaximumDeterministicTracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -347,6 +344,113 @@ def test_MaximumDeterministicTracker():
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[2]))
+
+
+def test_affine_transformations():
+    """This tests that the input affine is properly handled by
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    pmf_lookup = np.array([[0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 1., 0.],
+                           [.4, .6, 0.]])
+    simple_image = np.array([[0, 0, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    pmf = pmf_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.]),
+             np.array([2., 4., 0.])]
+
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]])]
+
+    mask = (simple_image > 0).astype(float)
+    tc = BinaryTissueClassifier(mask)
+
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 60, sphere,
+                                                      pmf_threshold=0.1)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    # TST- bad affine wrong shape
+    bad_affine = np.eye(3)
+    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
+
+    # TST - bad affine with shearing
+    bad_affine = np.eye(4)
+    bad_affine[0, 1] = 1.
+    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
+
+    # TST - identity
+    a0 = np.eye(4)
+    # TST - affines with positive/negative offsets
+    a1 = np.eye(4)
+    a1[:3, 3] = [1, 2, 3]
+    a2 = np.eye(4)
+    a2[:3, 3] = [-2, 0, -1]
+    # TST - affine with scaling
+    a3 = np.eye(4)
+    a3[0, 0] = a3[1, 1] = a3[2, 2] = 8
+    # TST - affine with axes inverting (negative value)
+    a4 = np.eye(4)
+    a4[1, 1] = a4[2, 2] = -1
+    # TST - combined affines
+    a5 = a1 + a2 + a3
+    a5[3, 3] = 1
+    # TST - in vivo affine exemple
+    # Sometimes data have affines with tiny shear components.
+    # For example, the small_101D data-set has some of that:
+    fdata, _, _ = get_data('small_101D')
+    a6 = nib.load(fdata).affine
+
+    for affine in [a0, a1, a2, a3, a4, a5, a6]:
+        lin = affine[:3, :3]
+        offset = affine[:3, 3]
+        seeds_trans = [np.dot(lin, s) + offset for s in seeds]
+
+        # We compute the voxel size to ajust the step size to one voxel
+        voxel_size = np.mean(np.sqrt(np.dot(lin, lin).diagonal()))
+
+        streamlines = LocalTracking(direction_getter=dg,
+                                    tissue_classifier=tc,
+                                    seeds=seeds_trans,
+                                    affine=affine,
+                                    step_size=voxel_size,
+                                    return_all=True)
+
+        # We apply the inverse affine transformation to the generated
+        # streamlines. It should be equals to the expected streamlines
+        # (generated with the identity affine matrix).
+        affine_inv = np.linalg.inv(affine)
+        lin = affine_inv[:3, :3]
+        offset = affine_inv[:3, 3]
+        streamlines_inv = []
+        for line in streamlines:
+            streamlines_inv.append([np.dot(pts, lin) + offset for pts in line])
+
+        npt.assert_equal(len(streamlines_inv[0]), len(expected[0]))
+        npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
+        npt.assert_equal(len(streamlines_inv[1]), len(expected[1]))
+        npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
+
 
 if __name__ == "__main__":
     npt.run_module_suite()

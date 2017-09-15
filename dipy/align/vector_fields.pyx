@@ -1369,6 +1369,28 @@ def simplify_warp_function_2d(floating[:, :, :] d,
     (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+
+    Parameters
+    ----------
+    d : array, shape (R', C', 2)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (3, 3)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (3, 3)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (3, 3)
+        the matrix W in eq. (1) above
+    out_shape : array, shape (2,)
+        the number of rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = out_shape
+        the deformation field `out` associated with `T` in eq. (1) such that:
+        T[i] = i + out[i]
+
+    Notes
+    -----
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
     in this form:
 
@@ -1393,24 +1415,6 @@ def simplify_warp_function_2d(floating[:, :, :] d,
              (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
-
-    Parameters
-    ----------
-    d : array, shape (R', C', 2)
-        the non-linear part of the transformation (displacement field)
-    affine_idx_in : array, shape (3, 3)
-        the matrix U in eq. (1) above
-    affine_idx_out : array, shape (3, 3)
-        the matrix V in eq. (1) above
-    affine_disp : array, shape (3, 3)
-        the matrix W in eq. (1) above
-    out_shape : array, shape (2,)
-        the number of rows and columns of the sampling grid
-
-    Returns
-    -------
-    out : array, shape = out_shape
-        the simplified transformation given by one single displacement field
     """
     cdef:
         cnp.npy_intp nrows = out_shape[0]
@@ -1475,9 +1479,10 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
     r"""
     Simplifies a nonlinear warping function combined with an affine transform
 
-    Modifies the given deformation field by incorporating into it a
-    an affine transformation and voxel-to-space transforms associated to
+    Modifies the given deformation field by incorporating into it
+    an affine transformation and voxel-to-space transforms associated with
     the discretization of its domain and codomain.
+
     The resulting transformation may be regarded as operating on the
     image spaces given by the domain and codomain discretization.
     More precisely, the resulting transform is of the form:
@@ -1485,6 +1490,28 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
     (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+
+    Parameters
+    ----------
+    d : array, shape (S', R', C', 3)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (4, 4)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (4, 4)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (4, 4)
+        the matrix W in eq. (1) above
+    out_shape : array, shape (3,)
+        the number of slices, rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = out_shape
+        the deformation field `out` associated with `T` in eq. (1) such that:
+        T[i] = i + out[i]
+
+    Notes
+    -----
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
     in this form:
 
@@ -1509,24 +1536,6 @@ def simplify_warp_function_3d(floating[:, :, :, :] d,
              (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
-
-    Parameters
-    ----------
-    d : array, shape (S', R', C', 3)
-        the non-linear part of the transformation (displacement field)
-    affine_idx_in : array, shape (4, 4)
-        the matrix U in eq. (1) above
-    affine_idx_out : array, shape (4, 4)
-        the matrix V in eq. (1) above
-    affine_disp : array, shape (4, 4)
-        the matrix W in eq. (1) above
-    out_shape : array, shape (3,)
-        the number of slices, rows and columns of the sampling grid
-
-    Returns
-    -------
-    out : array, shape = out_shape
-        the simplified transformation given by one single displacement field
 
     """
     cdef:
@@ -1871,19 +1880,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, a volume with
-    grid-to-space transformation T and let's say we want to sample the warped
-    volume on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    volume is given by:
-
-    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -1904,6 +1901,21 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed volume
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, a volume with grid-to-space
+    transformation T and let's say we want to sample the warped volume on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped volume is
+    given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
@@ -2068,19 +2080,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, a volume with
-    grid-to-space transformation T and let's say we want to sample the warped
-    volume on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    volume is given by:
-
-    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2101,6 +2101,21 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed volume
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, a volume with grid-to-space
+    transformation T and let's say we want to sample the warped volume on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped volume is
+    given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
@@ -2263,19 +2278,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, an image with
-    grid-to-space transformation T and let's say we want to sample the warped
-    image on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    image is given by:
-
-    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2296,6 +2299,21 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed image
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, an image with grid-to-space
+    transformation T and let's say we want to sample the warped image on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped image is
+    given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nrows = image.shape[0]
@@ -2437,19 +2455,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
 
     where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
     the discrete coordinates of a voxel in the sampling grid of
-    shape = out_shape. To illustrate the use of this function, consider a
-    displacement field d1 with grid-to-space transformation R, an image with
-    grid-to-space transformation T and let's say we want to sample the warped
-    image on a grid with grid-to-space transformation S (sampling grid). For
-    each voxel in the sampling grid with discrete coordinates i, the warped
-    image is given by:
-
-    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
-
-    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
-    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
-    input image.
-
+    shape = out_shape.
 
     Parameters
     ----------
@@ -2470,6 +2476,21 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
     -------
     warped : array, shape = out_shape
         the transformed image
+
+    Notes
+    -----
+    To illustrate the use of this function, consider a displacement field d1
+    with grid-to-space transformation R, an image with grid-to-space
+    transformation T and let's say we want to sample the warped image on a
+    grid with grid-to-space transformation S (sampling grid). For each voxel
+    in the sampling grid with discrete coordinates i, the warped image is
+    given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ]
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the
+    input image.
     """
     cdef:
         cnp.npy_intp nrows = image.shape[0]

@@ -9,9 +9,11 @@
  reconst_dsi_metrics.py
  reconst_dsi.py
  reconst_dti.py
+ reconst_fwdti.py
  reconst_gqi.py
  reconst_dsid.py
  reconst_ivim.py
+ reconst_mapmri.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
@@ -20,8 +22,8 @@
  segment_clustering_metrics.py
  snr_in_cc.py
  streamline_formats.py
- tracking_eudx_odf.py
- tracking_eudx_tensor.py
+# tracking_eudx_odf.py
+# tracking_eudx_tensor.py
  sfm_tracking.py
  sfm_reconst.py
  gradients_spheres.py
@@ -33,21 +35,24 @@
  streamline_tools.py
  linear_fascicle_evaluation.py
  denoise_nlmeans.py
- denoise_ascm.py
+ denoise_localpca.py
+ fiber_to_bundle_coherence.py
+# denoise_ascm.py
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
  deterministic_fiber_tracking.py
  affine_registration_3d.py
  syn_registration_2d.py
  syn_registration_3d.py
+ tissue_classification.py
  bundle_registration.py
  tracking_tissue_classifier.py
- piesno.py
+# piesno.py
  viz_advanced.py
  viz_slice.py
  viz_bundles.py
- viz_widgets.py
  contextual_enhancement.py
  workflow_creation.py
  combined_workflow_creation.py
  viz_surfaces.py
+ viz_ui.py

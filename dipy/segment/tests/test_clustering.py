@@ -116,7 +116,7 @@ def test_cluster_getitem():
         assert_array_equal(cluster[i], data[indices[i]])
 
     # Test advanced indexing
-    assert_array_equal(cluster[advanced_indices],
+    assert_arrays_equal(cluster[advanced_indices],
                        [data[indices[i]] for i in advanced_indices])
 
     # Test index out of bounds
@@ -245,8 +245,8 @@ def test_cluster_centroid_getitem():
         assert_array_equal(cluster[i], data[indices[i]])
 
     # Test advanced indexing
-    assert_array_equal(cluster[advanced_indices],
-                       [data[indices[i]] for i in advanced_indices])
+    assert_arrays_equal(cluster[advanced_indices],
+                        [data[indices[i]] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))
@@ -377,8 +377,8 @@ def test_cluster_map_iter():
 
     # Set refdata
     cluster_map.refdata = data
-    assert_array_equal(cluster_map, [[data[i] for i in cluster.indices]
-                                     for cluster in clusters])
+    for c1, c2 in zip(cluster_map, clusters):
+        assert_arrays_equal(c1, [data[i] for i in c2.indices])
 
     # Remove refdata, i.e. back to indices
     cluster_map.refdata = None
@@ -403,8 +403,8 @@ def test_cluster_map_getitem():
         assert_equal(cluster_map[i], clusters[i])
 
     # Test advanced indexing
-    assert_array_equal(cluster_map[advanced_indices],
-                       [clusters[i] for i in advanced_indices])
+    assert_arrays_equal(cluster_map[advanced_indices],
+                        [clusters[i] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))
@@ -650,8 +650,8 @@ def test_cluster_map_centroid_iter():
 
     # Set refdata
     cluster_map.refdata = data
-    assert_array_equal(cluster_map, [[data[i] for i in cluster.indices]
-                                     for cluster in clusters])
+    for c1, c2 in zip(cluster_map, clusters):
+        assert_arrays_equal(c1, [data[i] for i in c2.indices])
 
 
 def test_cluster_map_centroid_getitem():
@@ -673,8 +673,8 @@ def test_cluster_map_centroid_getitem():
         assert_equal(cluster_map[i], clusters[i])
 
     # Test advanced indexing
-    assert_array_equal(cluster_map[advanced_indices],
-                       [clusters[i] for i in advanced_indices])
+    assert_arrays_equal(cluster_map[advanced_indices],
+                        [clusters[i] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster_map.__getitem__, len(clusters))

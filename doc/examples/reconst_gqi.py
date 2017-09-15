@@ -59,7 +59,7 @@ The parameter `sampling_length` is used here to
 Lets just use one slice only from the data.
 """
 
-dataslice = data[:, :, data.shape[2] / 2]
+dataslice = data[:, :, data.shape[2] // 2]
 
 mask = dataslice[..., 0] > 50
 

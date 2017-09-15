@@ -165,14 +165,16 @@ plt.show()
 fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_measures.png')
 
 """
+
 .. figure:: In_vivo_free_water_DTI_and_standard_DTI_measures.png
    :align: center
-   ** In vivo diffusion measures obtain from the free water DTI and standard
+
+   In vivo diffusion measures obtain from the free water DTI and standard
    DTI. The values of Fractional Anisotropy for the free water DTI model and
    standard DTI model and their difference are shown in the upper panels (A-C),
    while respective MD values are shown in the lower panels (D-F). In addition
    the free water volume fraction estimated from the fwDTI model is shown in
-   panel G**.
+   panel G.
 
 From the figure, one can observe that the free water elimination model
 produces in general higher values of FA and lower values of MD than the
@@ -212,12 +214,14 @@ plt.show()
 fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_corrected.png')
 
 """
+
 .. figure:: In_vivo_free_water_DTI_and_standard_DTI_corrected.png
    :align: center
-   ** In vivo FA measures obtain from the free water DTI (A) and standard
+
+   In vivo FA measures obtain from the free water DTI (A) and standard
    DTI (B) and their difference (C). Problematic inflated FA values of the
    images were removed by dismissing voxels above a volume fraction threshold
-   of 0.7 **.
+   of 0.7.
 
 References:
 

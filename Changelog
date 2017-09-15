@@ -24,7 +24,25 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 0.11 (Sunday, February 21st, 2016)
+
+* 0.12 (Tuesday, 26 June 2017)
+
+- IVIM Simultaneous modeling of perfusion and diffusion.
+- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
+- DKI-based microstructural modelling.
+- Free water diffusion tensor imaging.
+- Denoising using Local PCA.
+- Streamline-based registration (SLR).
+- Fiber to bundle coherence (FBC) measures.
+- Bayesian MRF-based tissue classification.
+- New API for integrated user interfaces.
+- New hdf5 file (.pam5) for saving reconstruction results.
+- Intreractive slicing of images, ODFS and peaks.
+- Updated API to support latest numpy versions.
+- New system for automatically generating command line interfaces.
+- Faster computation of Cross Correlation metric for registration.
+
+* 0.11 (Sunday, 21 February 2016)
 
 - New framework for contextual enhancement of ODFs.
 - Compatibility with numpy (1.11).
@@ -36,7 +54,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - DSI now can use datasets with multiple b0s.
 - Fixed different issues with Windows 64bit and Python 3.5.
 
-* 0.10 (Thursday, December 2nd, 2015)
+* 0.10 (Thursday, 2 December 2015)
 
 * Compatibility with new versions of scipy (0.16) and numpy (1.10).
 * New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.

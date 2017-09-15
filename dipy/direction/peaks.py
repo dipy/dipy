@@ -12,9 +12,10 @@ from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import scipy.optimize as opt
 
+from dipy.reconst.odf import gfa
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
-from dipy.core.sphere import HemiSphere, Sphere
+from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
@@ -24,7 +25,7 @@ from dipy.reconst.peak_direction_getter import PeaksAndMetricsDirectionGetter
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
                        min_separation_angle=25, sphere=default_sphere,
                        xtol=1e-7):
-    """Non Linear Direction Finder
+    """Non Linear Direction Finder.
 
     Parameters
     ----------
@@ -91,7 +92,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 def peak_directions(odf, sphere, relative_peak_threshold=.5,
                     min_separation_angle=25, minmax_norm=True):
-    """Get the directions of odf peaks
+    """Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
     neighbor and greater than or equal to all neighbors. Peaks are sorted in
@@ -157,8 +158,67 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
+def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
+                    gfa, qa, shm_coeff, B, odf):
+    """
+    Construct PeaksAndMetrics object (or subclass) from its attributes.
+
+    This is also useful for pickling/unpickling of these objects (see also
+    :func:`__reduce__` below).
+
+    Parameters
+    ----------
+    klass : class
+        The class of object to be created.
+    sphere : `Sphere` class instance.
+        Sphere for discretization.
+    peak_indices : ndarray
+        Indices (in sphere vertices) of the peaks in each voxel.
+    peak_values : ndarray
+        The value of the peaks.
+    peak_dirs : ndarray
+        The direction of each peak.
+    gfa : ndarray
+        The Generalized Fractional Anisotropy in each voxel.
+    qa : ndarray
+        Quantitative Anisotropy in each voxel.
+    shm_coeff : ndarray
+        The coefficients of the spherical harmonic basis for the ODF in
+        each voxel.
+    B : ndarray
+        The spherical harmonic matrix, for multiplication with the
+        coefficients.
+    odf : ndarray
+        The orientation distribution function on the sphere in each voxel.
+
+    Returns
+    -------
+    pam : Instance of the class `klass`.
+    """
+    this_pam = klass()
+    this_pam.sphere = sphere
+    this_pam.peak_dirs = peak_dirs
+    this_pam.peak_values = peak_values
+    this_pam.peak_indices = peak_indices
+    this_pam.gfa = gfa
+    this_pam.qa = qa
+    this_pam.shm_coeff = shm_coeff
+    this_pam.B = B
+    this_pam.odf = odf
+    return this_pam
+
+
 class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
-    pass
+    def __reduce__(self): return _pam_from_attrs, (self.__class__,
+                                                   self.sphere,
+                                                   self.peak_indices,
+                                                   self.peak_values,
+                                                   self.peak_dirs,
+                                                   self.gfa,
+                                                   self.qa,
+                                                   self.shm_coeff,
+                                                   self.B,
+                                                   self.odf)
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
@@ -337,7 +397,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, npeaks=5, B=None,
                      invB=None, parallel=False, nbr_processes=None):
-    """Fits the model to data and computes peaks and metrics
+    """Fit the model to data and computes peaks and metrics
 
     Parameters
     ----------
@@ -393,7 +453,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         An object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
     """
-
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(
             sphere, sh_order, sh_basis_type, return_inv=True)
@@ -480,37 +539,17 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     qa_array /= global_max
 
-    pam = PeaksAndMetrics()
-    pam.sphere = sphere
-    pam.peak_dirs = peak_dirs
-    pam.peak_values = peak_values
-    pam.peak_indices = peak_indices
-    pam.gfa = gfa_array
-    pam.qa = qa_array
+    return _pam_from_attrs(PeaksAndMetrics,
+                           sphere,
+                           peak_indices,
+                           peak_values,
+                           peak_dirs,
+                           gfa_array,
+                           qa_array,
+                           shm_coeff if return_sh else None,
+                           B if return_sh else None,
+                           odf_array if return_odf else None)
 
-    if return_sh:
-        pam.shm_coeff = shm_coeff
-        pam.B = B
-    else:
-        pam.shm_coeff = None
-        pam.B = None
-
-    if return_odf:
-        pam.odf = odf_array
-    else:
-        pam.odf = None
-
-    return pam
-
-
-def gfa(samples):
-    """The general fractional anisotropy of a function evaluated
-    on the unit sphere"""
-    diff = samples - samples.mean(-1)[..., None]
-    n = samples.shape[-1]
-    numer = n * (diff * diff).sum(-1)
-    denom = (n - 1) * (samples * samples).sum(-1)
-    return np.sqrt(numer / denom)
 
 
 def reshape_peaks_for_visualization(peaks):
@@ -528,7 +567,6 @@ def reshape_peaks_for_visualization(peaks):
     --------
     peaks : nd array (..., 3*N)
     """
-
     if isinstance(peaks, PeaksAndMetrics):
         peaks = peaks.peak_dirs
 

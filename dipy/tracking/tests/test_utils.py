@@ -1,6 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
-from ...utils.six.moves import xrange
+from dipy.utils.six.moves import xrange
 
 import numpy as np
 import nose

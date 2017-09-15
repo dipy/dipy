@@ -23,7 +23,8 @@ ext: recspeed.so propspeed.so vox2track.so \
     vec_val_sum.so quick_squash.so vector_fields.so \
     crosscorr.so sumsqdiff.so expectmax.so bundlemin.so \
     cythonutils.so featurespeed.so metricspeed.so \
-    clusteringspeed.so clustering_algorithms.so
+    clusteringspeed.so clustering_algorithms.so \
+    mrf.so
 
 test: ext
 	nosetests .
@@ -34,6 +35,7 @@ recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
 cythonutils.so: ${PKGDIR}/segment/cythonutils.pyx
 featurespeed.so: ${PKGDIR}/segment/featurespeed.pyx
 metricspeed.so: ${PKGDIR}/segment/metricspeed.pyx
+mrf.so: ${PKGDIR}/segment/mrf.pyx
 clusteringspeed.so: ${PKGDIR}/segment/clusteringspeed.pyx
 clustering_algorithms.so: ${PKGDIR}/segment/clustering_algorithms.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx

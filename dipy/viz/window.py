@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
 from __future__ import division, print_function, absolute_import
 
 import gzip
+from warnings import warn
+
 import numpy as np
 from scipy import ndimage
 from copy import copy
@@ -231,6 +234,11 @@ def renderer(background=None):
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)
     """
+
+    deprecation_msg = ("Method 'dipy.viz.window.renderer' is deprecated, instead"
+                       " use class 'dipy.viz.window.Renderer'.")
+    warn(DeprecationWarning(deprecation_msg))
+
     ren = Renderer()
     if background is not None:
         ren.SetBackground(background)
@@ -317,7 +325,7 @@ class ShowManager(object):
     interactor.
     """
 
-    def __init__(self, ren, title='DIPY', size=(300, 300),
+    def __init__(self, ren=None, title='DIPY', size=(300, 300),
                  png_magnify=1, reset_camera=True, order_transparent=False,
                  interactor_style='custom'):
 
@@ -381,7 +389,8 @@ class ShowManager(object):
         >>> # showm.render()
         >>> # showm.start()
         """
-
+        if ren is None:
+            ren = Renderer()
         self.ren = ren
         self.title = title
         self.size = size

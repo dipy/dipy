@@ -1,18 +1,20 @@
 #!/usr/bin/env python
-''' Installation script for dipy package '''
+""" Installation script for dipy package """
 
 import os
 import sys
+import platform
 from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
-if exists('MANIFEST'): os.remove('MANIFEST')
+if exists('MANIFEST'):
+    os.remove('MANIFEST')
 
 # force_setuptools can be set from the setup_egg.py script
-if not 'force_setuptools' in globals():
+if 'force_setuptools' not in globals():
     # For some commands, always use setuptools
     if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
                 'bdist_mpkg', 'bdist_wheel', 'install_egg_info', 'egg_info',
@@ -52,7 +54,7 @@ if using_setuptools:
         tests_require=['nose'],
         test_suite='nose.collector',
         zip_safe=False,
-        extras_require = dict(
+        extras_require=dict(
             doc=['Sphinx>=1.0'],
             test=['nose>=0.10.1']))
 
@@ -60,50 +62,51 @@ if using_setuptools:
 EXTS = []
 
 # We use some defs from npymath, but we don't want to link against npymath lib
-ext_kwargs = {'include_dirs':['src']}  # We add np.get_include() later
+ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
-    ('dipy.reconst.peak_direction_getter', [], 'c'),
-    ('dipy.reconst.recspeed', [], 'c'),
-    ('dipy.reconst.vec_val_sum', [], 'c'),
-    ('dipy.reconst.quick_squash', [], 'c'),
-    ('dipy.tracking.distances', [], 'c'),
-    ('dipy.tracking.streamlinespeed', [], 'c'),
-    ('dipy.tracking.local.localtrack', [], 'c'),
-    ('dipy.tracking.local.direction_getter', [], 'c'),
-    ('dipy.tracking.local.tissue_classifier', [], 'c'),
-    ('dipy.tracking.local.interpolation', [], 'c'),
-    ('dipy.tracking.vox2track', [], 'c'),
-    ('dipy.tracking.propspeed', [], 'c'),
-    ('dipy.tracking.fbcmeasures', [], 'c'),
-    ('dipy.segment.cythonutils', [], 'c'),
-    ('dipy.segment.featurespeed', [], 'c'),
-    ('dipy.segment.metricspeed', [], 'c'),
-    ('dipy.segment.clusteringspeed', [], 'c'),
-    ('dipy.segment.clustering_algorithms', [], 'c'),
-    ('dipy.denoise.denspeed', [], 'c'),
-    ('dipy.denoise.nlmeans_block', [],'c'),
-    ('dipy.denoise.enhancement_kernel', [], 'c'),
-    ('dipy.denoise.shift_twist_convolution', [], 'c'),
-    ('dipy.align.vector_fields', [], 'c'),
-    ('dipy.align.sumsqdiff', [], 'c'),
-    ('dipy.align.expectmax', [], 'c'),
-    ('dipy.align.crosscorr', [], 'c'),
-    ('dipy.align.bundlemin', [], 'c'),
-    ('dipy.align.transforms', [], 'c'),
-    ('dipy.align.parzenhist', [], 'c')):
-
+        ('dipy.reconst.peak_direction_getter', [], 'c'),
+        ('dipy.reconst.recspeed', [], 'c'),
+        ('dipy.reconst.vec_val_sum', [], 'c'),
+        ('dipy.reconst.quick_squash', [], 'c'),
+        ('dipy.tracking.distances', [], 'c'),
+        ('dipy.tracking.streamlinespeed', [], 'c'),
+        ('dipy.tracking.local.localtrack', [], 'c'),
+        ('dipy.tracking.local.direction_getter', [], 'c'),
+        ('dipy.tracking.local.tissue_classifier', [], 'c'),
+        ('dipy.tracking.local.interpolation', [], 'c'),
+        ('dipy.tracking.vox2track', [], 'c'),
+        ('dipy.tracking.propspeed', [], 'c'),
+        ('dipy.tracking.fbcmeasures', [], 'c'),
+        ('dipy.segment.cythonutils', [], 'c'),
+        ('dipy.segment.featurespeed', [], 'c'),
+        ('dipy.segment.metricspeed', [], 'c'),
+        ('dipy.segment.clusteringspeed', [], 'c'),
+        ('dipy.segment.clustering_algorithms', [], 'c'),
+        ('dipy.segment.mrf', [], 'c'),
+        ('dipy.denoise.denspeed', [], 'c'),
+        ('dipy.denoise.pca_noise_estimate', [], 'c'),
+        ('dipy.denoise.nlmeans_block', [], 'c'),
+        ('dipy.denoise.enhancement_kernel', [], 'c'),
+        ('dipy.denoise.shift_twist_convolution', [], 'c'),
+        ('dipy.align.vector_fields', [], 'c'),
+        ('dipy.align.sumsqdiff', [], 'c'),
+        ('dipy.align.expectmax', [], 'c'),
+        ('dipy.align.crosscorr', [], 'c'),
+        ('dipy.align.bundlemin', [], 'c'),
+        ('dipy.align.transforms', [], 'c'),
+        ('dipy.align.parzenhist', [], 'c'),
+        ('dipy.utils.omp', [], 'c')):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
-
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
 # We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec
-# We may make tripwire versions of build_ext, build_py, install
+# building, rather than unconditionally in the setup.py import or exec We may
+# make tripwire versions of build_ext, build_py, install
 need_cython = True
 pybuilder = get_comrec_build('dipy')
 # Cython is a dependency for building extensions, iff we don't have stamped
@@ -115,11 +118,21 @@ build_ext, need_cython = cyproc_exts(EXTS,
 simple_test_c = """int main(int argc, char** argv) { return(0); }"""
 omp_test_c = """#include <omp.h>
 int main(int argc, char** argv) { return(0); }"""
-extbuilder = add_flag_checking(
-    build_ext, [
-        [['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'],
-        [['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
-        [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']], 'dipy')
+
+msc_flag_defines = [[['/openmp'], [], omp_test_c, 'HAVE_VC_OPENMP'],
+                    ]
+gcc_flag_defines = [[['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
+                    [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP'],
+                    ]
+
+# Test if it is a 32 bits version
+if not sys.maxsize > 2 ** 32:
+    # This flag is needed only on 32 bits
+    msc_flag_defines += [[['/arch:SSE2'], [], simple_test_c, 'USING_VC_SSE2'], ]
+
+flag_defines = msc_flag_defines if 'msc' in platform.python_compiler().lower() else gcc_flag_defines
+
+extbuilder = add_flag_checking(build_ext, flag_defines, 'dipy')
 
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
@@ -161,69 +174,65 @@ def main(**extra_args):
           version=info.VERSION,
           requires=info.REQUIRES,
           provides=info.PROVIDES,
-          packages     = ['dipy',
-                          'dipy.tests',
-                          'dipy.align',
-                          'dipy.align.tests',
-                          'dipy.core',
-                          'dipy.core.tests',
-                          'dipy.direction',
-                          'dipy.direction.tests',
-                          'dipy.tracking',
-                          'dipy.tracking.local',
-                          'dipy.tracking.local.tests',
-                          'dipy.tracking.tests',
-                          'dipy.tracking.benchmarks',
-                          'dipy.reconst',
-                          'dipy.reconst.benchmarks',
-                          'dipy.reconst.tests',
-                          'dipy.io',
-                          'dipy.io.tests',
-                          'dipy.viz',
-                          'dipy.viz.tests',
-                          'dipy.testing',
-                          'dipy.testing.tests',
-                          'dipy.boots',
-                          'dipy.data',
-                          'dipy.utils',
-                          'dipy.data.tests',
-                          'dipy.utils.tests',
-                          'dipy.fixes',
-                          'dipy.external',
-                          'dipy.external.tests',
-                          'dipy.segment',
-                          'dipy.segment.benchmarks',
-                          'dipy.segment.tests',
-                          'dipy.sims',
-                          'dipy.sims.tests',
-                          'dipy.denoise',
-                          'dipy.denoise.tests',
-                          'dipy.workflows',
-                          'dipy.workflows.tests'],
+          packages=['dipy',
+                    'dipy.tests',
+                    'dipy.align',
+                    'dipy.align.tests',
+                    'dipy.core',
+                    'dipy.core.tests',
+                    'dipy.direction',
+                    'dipy.direction.tests',
+                    'dipy.tracking',
+                    'dipy.tracking.local',
+                    'dipy.tracking.local.tests',
+                    'dipy.tracking.tests',
+                    'dipy.tracking.benchmarks',
+                    'dipy.reconst',
+                    'dipy.reconst.benchmarks',
+                    'dipy.reconst.tests',
+                    'dipy.io',
+                    'dipy.io.tests',
+                    'dipy.viz',
+                    'dipy.viz.tests',
+                    'dipy.testing',
+                    'dipy.testing.tests',
+                    'dipy.boots',
+                    'dipy.data',
+                    'dipy.utils',
+                    'dipy.data.tests',
+                    'dipy.utils.tests',
+                    'dipy.fixes',
+                    'dipy.external',
+                    'dipy.external.tests',
+                    'dipy.segment',
+                    'dipy.segment.benchmarks',
+                    'dipy.segment.tests',
+                    'dipy.sims',
+                    'dipy.sims.tests',
+                    'dipy.denoise',
+                    'dipy.denoise.tests',
+                    'dipy.workflows',
+                    'dipy.workflows.tests'],
 
-          ext_modules = EXTS,
+          ext_modules=EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source
           # distribution -- not sure if it has something to do with the magic
           # above, but distutils is surely the worst piece of code in all of
           # python -- duplicating things into MANIFEST.in but this is admittedly
           # only a workaround to get things started -- not a solution
-          package_data = {'dipy':
-                          [pjoin('data', 'files', '*')
-                          ]},
+          package_data={'dipy':
+                            [pjoin('data', 'files', '*')
+                             ]},
           data_files=[('share/doc/dipy/examples',
-                       glob(pjoin('doc', 'examples','*.py')))],
-          scripts      = [pjoin('bin', 'dipy_reconst_dti'),
-                          pjoin('bin', 'dipy_median_otsu'),
-                          pjoin('bin', 'dipy_nlmeans'),
-                          ],
-
-          cmdclass = cmdclass,
+                       glob(pjoin('doc', 'examples', '*.py')))],
+          scripts=glob(pjoin('bin', 'dipy_*')),
+          cmdclass=cmdclass,
           **extra_args
-        )
+          )
 
 
-#simple way to test what setup will do
-#python setup.py install --prefix=/tmp
+# simple way to test what setup will do
+# python setup.py install --prefix=/tmp
 if __name__ == "__main__":
     main(**extra_setuptools_args)

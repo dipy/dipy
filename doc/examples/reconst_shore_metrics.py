@@ -47,7 +47,7 @@ asm = ShoreModel(gtab)
 Lets just use only one slice only from the data.
 """
 
-dataslice = data[30:70, 20:80, data.shape[2] / 2]
+dataslice = data[30:70, 20:80, data.shape[2] // 2]
 
 """
 Fit the signal with the model and calculate the SHORE coefficients.

@@ -1,9 +1,10 @@
 from __future__ import division, print_function, absolute_import
-from .base import ReconstModel, ReconstFit
+from dipy.reconst.base import ReconstModel, ReconstFit
 import numpy as np
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
+
 
 class OdfModel(ReconstModel):
 
@@ -27,13 +28,43 @@ class OdfFit(ReconstFit):
 
 
 def gfa(samples):
-    """The general fractional anisotropy of a function evaluated
-    on the unit sphere"""
+    r"""The general fractional anisotropy of a function evaluated
+    on the unit sphere
+
+    Parameters
+    ----------
+    samples : ndarray
+        Values of data on the unit sphere.
+
+    Returns
+    -------
+    gfa : ndarray
+        GFA evaluated in each entry of the array, along the last dimension.
+        An `np.nan` is returned for coordinates that contain all-zeros in
+        `samples`.
+
+    Notes
+    -----
+    The GFA is defined as [1]_ ::
+
+        \sqrt{\frac{n \sum_i{(\Psi_i - <\Psi>)^2}}{(n-1) \sum{\Psi_i ^ 2}}}
+
+    Where $\Psi$ is an orientation distribution function sampled discretely on
+    the unit sphere and angle brackets denote average over the samples on the
+    sphere.
+
+    .. [1] Quality assessment of High Angular Resolution Diffusion Imaging
+           data using bootstrap on Q-ball reconstruction. J. Cohen Adad, M.
+           Descoteaux, L.L. Wald. JMRI 33: 1194-1208.
+    """
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
-    numer = n * (diff * diff).sum(-1)
-    denom = (n - 1) * (samples * samples).sum(-1)
-    return np.sqrt(numer / denom)
+    numer = np.array([n * (diff ** 2).sum(-1)])
+    denom = np.array([(n - 1) * (samples ** 2).sum(-1)])
+    result = np.ones_like(denom) * np.nan
+    idx = np.where(denom > 0)
+    result[idx] = np.sqrt(numer[idx] / denom[idx])
+    return result.squeeze()
 
 
 def minmax_normalize(samples, out=None):
@@ -67,4 +98,3 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
-

@@ -56,7 +56,6 @@ class GradientTable(object):
     using the factory function gradient_table
 
     """
-
     def __init__(self, gradients, big_delta=None, small_delta=None,
                  b0_threshold=0):
         """Constructor for GradientTable class"""
@@ -145,8 +144,11 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
-    if bvecs.shape[1] != 3 or not np.all(bvecs_close_to_1[dwi_mask]):
-        raise ValueError("bvecs should be (N, 3), a set of N unit vectors")
+    if bvecs.shape[1] != 3:
+        raise ValueError("bvecs should be (N, 3)")
+    if not np.all(bvecs_close_to_1[dwi_mask]):
+        raise ValueError("The vectors in bvecs should be unit (The tolerance "
+                         "can be modified as an input parameter)")
 
     bvecs = np.where(bvecs_close_to_1[:, None], bvecs, 0)
     bvals = bvals * bvecs_close_to_1
@@ -322,23 +324,66 @@ def reorient_bvecs(gtab, affines):
 def generate_bvecs(N, iters=5000):
     """Generates N bvectors.
 
-    Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on a unit sphere. 
+    Uses dipy.core.sphere.disperse_charges to model electrostatic repulsion on
+    a unit sphere.
 
     Parameters
     ----------
     N : int
-        The number of bvectors to generate. This should be equal to the number of bvals used.
+        The number of bvectors to generate. This should be equal to the number
+        of bvals used.
     iters : int
         Number of iterations to run.
 
     Returns
     -------
     bvecs : (N,3) ndarray
-        The generated directions, represented as a unit vector, of each gradient."""
-
+        The generated directions, represented as a unit vector, of each
+        gradient.
+    """
     theta = np.pi * np.random.rand(N)
     phi = 2 * np.pi * np.random.rand(N)
     hsph_initial = HemiSphere(theta=theta, phi=phi)
     hsph_updated, potential = disperse_charges(hsph_initial, iters)
     bvecs = hsph_updated.vertices
     return bvecs
+
+
+def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
+    """
+    Check if you have enough different b-values in your gradient table
+
+    Parameters
+    ----------
+    gtab : GradientTable class instance.
+
+    n_bvals : int
+        The number of different b-values you are checking for.
+    non_zero : bool
+        Whether to check only non-zero bvalues. In this case, we will require
+        at least `n_bvals` *non-zero* b-values (where non-zero is defined
+        depending on the `gtab` object's `b0_threshold` attribute)
+    bmag : int
+        The order of magnitude of the b-values used. The function will
+        normalize the b-values relative $10^{bmag - 1}$. Default: derive this
+        value from the maximal b-value provided: $bmag=log_{10}(max(bvals))$.
+
+    Returns
+    -------
+    bool : Whether there are at least `n_bvals` different b-values in the
+    gradient table used.
+    """
+    bvals = gtab.bvals.copy()
+    if non_zero:
+        bvals = bvals[~gtab.b0s_mask]
+
+    if bmag is None:
+        bmag = int(np.log10(np.max(bvals)))
+
+    b = bvals / (10 ** (bmag - 1))  # normalize b units
+    b = b.round()
+    uniqueb = np.unique(b)
+    if uniqueb.shape[0] < n_bvals:
+        return False
+    else:
+        return True

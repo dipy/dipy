@@ -1,5 +1,6 @@
 from dipy.core.onetime import auto_attr
 
+
 class Cache(object):
     """Cache values based on a key object (such as a sphere or gradient table).
 

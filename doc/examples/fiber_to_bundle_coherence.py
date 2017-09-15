@@ -14,13 +14,13 @@ poorly aligned with their neighbors, see Fig. 1.
    :scale: 60 %
    :align: center
 
-   On the left this figure illustrates (in 2D) the contribution of two fiber 
-   points to the kernel density estimator. The kernel density estimator is the 
-   sum over all such locally aligned kernels. The local fiber to bundle 
-   coherence shown on the right color-coded for each fiber, is obtained by 
-   evaluating the kernel density estimator along the fibers. One spurious 
-   fiber is present which is isolated and badly aligned with the other fibers, 
-   and can be identified by a low LFBC value in the region where it deviates 
+   On the left this figure illustrates (in 2D) the contribution of two fiber
+   points to the kernel density estimator. The kernel density estimator is the
+   sum over all such locally aligned kernels. The local fiber to bundle
+   coherence shown on the right color-coded for each fiber, is obtained by
+   evaluating the kernel density estimator along the fibers. One spurious
+   fiber is present which is isolated and badly aligned with the other fibers,
+   and can be identified by a low LFBC value in the region where it deviates
    from the bundle. Figure adapted from [Portegies2015_PLoSOne]_.
 
 Here we implement FBC measures based on kernel density estimation in the
@@ -39,6 +39,7 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 (150 orientations, b=2000s/mm^2) which is one of the standard example datasets
 in DIPY.
 """
+
 import numpy as np
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
@@ -50,7 +51,7 @@ np.random.seed(1)
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 fetch_stanford_t1()
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
@@ -247,13 +248,13 @@ fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
 .. figure:: OR_before.png
    :align: center
 
-   The optic radiation obtained through probabilistic tractography colored by 
+   The optic radiation obtained through probabilistic tractography colored by
    local fiber to bundle coherence.
 
 .. figure:: OR_after.png
    :align: center
 
-   The tractography result is cleaned (shown in bottom) by removing fibers 
+   The tractography result is cleaned (shown in bottom) by removing fibers
    with a relative FBC (RFBC) lower than the threshold tau=0.2.
 
 Acknowledgments
