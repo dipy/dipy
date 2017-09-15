@@ -13,15 +13,15 @@ def test_resample():
     fimg, _, _ = get_data("small_25")
     img = nib.load(fimg)
     data = img.get_data()
-    affine = img.get_affine()
-    zooms = img.get_header().get_zooms()[:3]
+    affine = img.affine
+    zooms = img.header.get_zooms()[:3]
 
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)
     data2, affine2 = reslice(data[..., 0], affine, zooms, new_zooms, order=1,
                              mode='constant')
     img2 = nib.Nifti1Image(data2, affine2)
-    new_zooms_confirmed = img2.get_header().get_zooms()[:3]
+    new_zooms_confirmed = img2.header.get_zooms()[:3]
     assert_almost_equal(new_zooms, new_zooms_confirmed)
 
     # test that shape changes correctly for the first 3 dimensions (check 4D)

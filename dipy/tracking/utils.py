@@ -21,7 +21,7 @@ As an example, lets take a 2d image where the affine is::
      [0., 2., 0.],
      [0., 0., 1.]]
 
-The pixels of an image with this affine would look something like:
+The pixels of an image with this affine would look something like::
 
     A------------
     |   |   |   |
@@ -57,16 +57,16 @@ from scipy.spatial.distance import cdist
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
-from ..utils.six.moves import xrange, map
+from dipy.utils.six.moves import xrange, map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
 from dipy.tracking import metrics
-from .vox2track import _streamlines_in_mask
+from dipy.tracking.vox2track import _streamlines_in_mask
 
 # Import helper functions shared with vox2track
-from ._utils import (_mapping_to_voxel, _to_voxel_coordinates)
+from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
 from dipy.io.bvectxt import orientation_from_string
 import nibabel as nib
 
@@ -240,11 +240,8 @@ def ndbincount(x, weights=None, shape=None):
         shape = x.max(1) + 1
 
     x = ravel_multi_index(x, shape)
-    # out = np.bincount(x, weights, minlength=np.prod(shape))
-    # out.shape = shape
-    # Use resize to be compatible with numpy < 1.6, minlength new in 1.6
-    out = np.bincount(x, weights)
-    out.resize(shape)
+    out = np.bincount(x, weights, minlength=np.prod(shape))
+    out.shape = shape
 
     return out
 

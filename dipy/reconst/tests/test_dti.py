@@ -139,12 +139,14 @@ def test_tensor_model():
     # Test fitting with different methods:
     for fit_method in ['OLS', 'WLS', 'NLLS']:
         tensor_model = dti.TensorModel(gtab,
-                                       fit_method=fit_method)
+                                       fit_method=fit_method,
+                                       return_S0_hat=True)
 
         tensor_fit = tensor_model.fit(Y)
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
+        assert_array_almost_equal(tensor_fit.S0_hat, b0, decimal=3)
         # Test that the eigenvectors are correct, one-by-one:
         for i in range(3):
             # Eigenvectors have intrinsic sign ambiguity
@@ -196,6 +198,12 @@ def test_tensor_model():
     tensor_model = dti.TensorModel(gtab)
     fit = tensor_model.fit(data)
     assert_array_almost_equal(fit[0].evals, evals)
+
+    # Return S0_test
+    tensor_model = dti.TensorModel(gtab, return_S0_hat=True)
+    fit = tensor_model.fit(data)
+    assert_array_almost_equal(fit[0].evals, evals)
+    assert_array_almost_equal(fit[0].S0_hat, b0)
 
     # Evals should be high for high diffusion voxel
     assert_(all(fit[1].evals > evals[0] * .9))
@@ -352,7 +360,7 @@ def test_wls_and_ls_fit():
                       min_signal=-1)
 
     # Estimate tensor from test signals
-    model = TensorModel(gtab, fit_method='WLS')
+    model = TensorModel(gtab, fit_method='WLS', return_S0_hat=True)
     tensor_est = model.fit(Y)
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
@@ -360,6 +368,7 @@ def test_wls_and_ls_fit():
                               err_msg="Calculation of tensor from Y does not "
                                       "compare to analytical solution")
     assert_almost_equal(tensor_est.md[0], md)
+    assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
 
     # Test that we can fit a single voxel's worth of data (a 1d array)
     y = Y[0]
@@ -492,6 +501,23 @@ def test_mask():
     assert_array_equal(dtifit_w_mask.fa[~mask], 0)
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+
+    # Test with returning S0_hat
+    dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
+    mask = np.zeros(data.shape[:-1], dtype=bool)
+    mask[0, 0, 0] = True
+    dtifit = dm.fit(data)
+    dtifit_w_mask = dm.fit(data, mask=mask)
+    # Without a mask it has some value
+    assert_(not np.isnan(dtifit.fa[0, 0, 0]))
+    # Where mask is False, evals, evecs and fa should all be 0
+    assert_array_equal(dtifit_w_mask.evals[~mask], 0)
+    assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
+    assert_array_equal(dtifit_w_mask.fa[~mask], 0)
+    assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
+    # Except for the one voxel that was selected by the mask:
+    assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+    assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0])
 
 
 def test_nnls_jacobian_fucn():
@@ -631,6 +657,12 @@ def test_restore():
     tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001)
     tensor_model.fit(Y.copy())
 
+    # Test return_S0_hat
+    tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=0.0001,
+                                   return_S0_hat=True)
+    tmf = tensor_model.fit(Y.copy())
+    assert_almost_equal(tmf[0].S0_hat, b0)
+
 
 def test_adc():
     """
@@ -671,9 +703,10 @@ def test_predict():
               np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
     S = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
 
-    dm = dti.TensorModel(gtab, 'LS')
+    dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
     dmfit = dm.fit(S)
     assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
+    assert_array_almost_equal(dmfit.predict(gtab), S)
     assert_array_almost_equal(dm.predict(dmfit.model_params, S0=100), S)
 
     fdata, fbvals, fbvecs = get_data()
@@ -682,6 +715,20 @@ def test_predict():
     data = np.tile(data.T, 2).T
     gtab = grad.gradient_table(fbvals, fbvecs)
     dtim = dti.TensorModel(gtab)
+    dtif = dtim.fit(data)
+    S0 = np.mean(data[..., gtab.b0s_mask], -1)
+    p = dtif.predict(gtab, S0)
+    assert_equal(p.shape, data.shape)
+    # Predict using S0_hat:
+    dtim = dti.TensorModel(gtab, return_S0_hat=True)
+    dtif = dtim.fit(data)
+    p = dtif.predict(gtab)
+    assert_equal(p.shape, data.shape)
+    p = dtif.predict(gtab, S0)
+    assert_equal(p.shape, data.shape)
+
+    # Test iter_fit_tensor with S0_hat
+    dtim = dti.TensorModel(gtab, step=2, return_S0_hat=True)
     dtif = dtim.fit(data)
     S0 = np.mean(data[..., gtab.b0s_mask], -1)
     p = dtif.predict(gtab, S0)
@@ -700,6 +747,9 @@ def test_predict():
     assert_equal(p.shape, data.shape)
     # Assign the step through kwarg:
     p = dtif.predict(gtab, S0, step=1)
+    assert_equal(p.shape, data.shape)
+    # And without S0:
+    p = dtif.predict(gtab, step=1)
     assert_equal(p.shape, data.shape)
 
 def test_eig_from_lo_tri():

@@ -1,6 +1,6 @@
-''' Distutils / setuptools helpers
+""" Distutils / setuptools helpers
 
-'''
+"""
 import os
 import sys
 from os.path import join as pjoin, split as psplit, splitext, dirname, exists
@@ -14,7 +14,7 @@ from distutils.errors import CompileError, LinkError
 from distutils import log
 
 BAT_TEMPLATE = \
-r"""@echo off
+    r"""@echo off
 REM wrapper to use shebang first line of {FNAME}
 set mypath=%~dp0
 set pyscript="%mypath%{FNAME}"
@@ -54,6 +54,7 @@ class install_scripts_bat(install_scripts):
     example at git://github.com/matthew-brett/myscripter.git for more
     background.
     """
+
     def run(self):
         install_scripts.run(self)
         if not os.name == "nt":
@@ -63,10 +64,8 @@ class install_scripts_bat(install_scripts):
             # file, make .bat wrapper for script.
             with open(filepath, 'rt') as fobj:
                 first_line = fobj.readline()
-            if not (first_line.startswith('#!') and
-                    'python' in first_line.lower()):
-                log.info("No #!python executable found, skipping .bat "
-                            "wrapper")
+            if not (first_line.startswith('#!') and 'python' in first_line.lower()):
+                log.info("No #!python executable found, skipping .bat wrapper")
                 continue
             pth, fname = psplit(filepath)
             froot, ext = splitext(fname)
@@ -116,6 +115,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
         ``link_flags`` to ``extra_link_args`` attributes of extensions, before
         compiling.
     """
+
     class Checker(build_ext_class):
         flag_defs = tuple(flag_defines)
 
@@ -225,8 +225,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
             pkg_name, min_ver)
     if LooseVersion(found_ver) >= LooseVersion(min_ver):
         return None
-    return 'We need {0} version {1}, but found version {2}'.format(
-        pkg_name, found_ver, min_ver)
+    return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 
 
 class SetupDependency(object):
@@ -283,7 +282,7 @@ class SetupDependency(object):
         ver_err_msg = version_error_msg(self.import_name,
                                         found_ver,
                                         self.min_ver)
-        if not 'setuptools' in sys.modules:
+        if 'setuptools' not in sys.modules:
             # Not using setuptools; raise error for any unmet dependencies
             if ver_err_msg is not None:
                 raise RuntimeError(ver_err_msg)
@@ -346,8 +345,8 @@ def make_np_ext_builder(build_ext_class):
         ``distutils.command.build_ext.build_ext``, that adds libraries in
         ``np.get_include()`` to include directories of extension.
     """
-    class NpExtBuilder(build_ext_class):
 
+    class NpExtBuilder(build_ext_class):
         def build_extensions(self):
             """ Hook into extension building to add np include dirs
             """

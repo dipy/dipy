@@ -5,6 +5,7 @@ import itertools
 from nose.tools import assert_equal, assert_raises
 from numpy.testing import assert_array_equal, run_module_suite
 from dipy.testing.memory import get_type_refcount
+from dipy.testing import assert_arrays_equal
 
 from dipy.segment.clustering import QuickBundles
 
@@ -59,8 +60,8 @@ def test_quickbundles_shape_uncompatibility():
     qb = QuickBundles(threshold=20., metric=metric)
     clusters2 = qb.cluster(data)
 
-    assert_array_equal(list(itertools.chain(*clusters1)),
-                       list(itertools.chain(*clusters2)))
+    assert_arrays_equal(list(itertools.chain(*clusters1)),
+                        list(itertools.chain(*clusters2)))
 
 
 def test_quickbundles_2D():

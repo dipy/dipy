@@ -1,18 +1,27 @@
 """Testing visualization with fvtk."""
 import os
+import warnings
 import numpy as np
+from distutils.version import LooseVersion
 
 from dipy.viz import fvtk
 from dipy import data
 
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
+from dipy.utils.optpkg import optional_package
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
     skip_it = True
 else:
     skip_it = False
+
+cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+
+if have_matplotlib:
+    import matplotlib
+    mpl_version = LooseVersion(matplotlib.__version__)
 
 
 @npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
@@ -109,13 +118,28 @@ def test_colormap():
 @npt.dec.skipif(not fvtk.have_matplotlib)
 def test_colormaps_matplotlib():
     v = np.random.random(1000)
-    for name in 'jet', 'Blues', 'Accent', 'bone':
-        # Matplotlib version of get_cmap
-        rgba1 = fvtk.get_cmap(name)(v)
-        # Dipy version of get_cmap
-        rgba2 = data.get_cmap(name)(v)
-        # dipy's colormaps are close to matplotlibs colormaps, but not perfect
-        npt.assert_array_almost_equal(rgba1, rgba2, 1)
+    # The "Accent" colormap is deprecated as of 0.12:
+    with warnings.catch_warnings(record=True) as w:
+        accent_cm = data.get_cmap("Accent")
+        # Test that the deprecation warning was raised:
+        npt.assert_(len(w) > 0)
+
+    names = ['jet', 'Blues', 'bone']
+
+    if have_matplotlib and mpl_version < "2":
+        names.append('Accent')
+
+    for name in names:
+        with warnings.catch_warnings(record=True) as w:
+            # Matplotlib version of get_cmap
+            rgba1 = fvtk.get_cmap(name)(v)
+            # Dipy version of get_cmap
+            rgba2 = data.get_cmap(name)(v)
+            # dipy's colormaps are close to matplotlibs colormaps, but not
+            # perfect:
+            npt.assert_array_almost_equal(rgba1, rgba2, 1)
+            npt.assert_(len(w) == (1 if name == 'Accent' else 0))
+
 
 
 if __name__ == "__main__":

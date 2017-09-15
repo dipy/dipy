@@ -71,7 +71,7 @@ class MedianOtsuFlow(Workflow):
 
             if save_masked:
                 save_nifti(masked_out_path, masked_volume, affine,
-                           img.get_header())
+                           img.header)
 
                 logging.info('Masked volume saved as {0}'.
                              format(masked_out_path))

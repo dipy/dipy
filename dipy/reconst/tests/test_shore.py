@@ -5,19 +5,19 @@ import numpy as np
 
 from scipy.special import genlaguerre, gamma
 
-from ...data import get_gtab_taiwan_dsi
-from ..shore import ShoreModel
-from ...sims.voxel import MultiTensor
+from dipy.data import get_gtab_taiwan_dsi
+from dipy.reconst.shore import ShoreModel
+from dipy.sims.voxel import MultiTensor
 
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite,
                            dec)
 
-from ...utils.optpkg import optional_package
-cvxopt, have_cvxopt, _ = optional_package("cvxopt")
+from dipy.utils.optpkg import optional_package
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxopt = dec.skipif(not have_cvxopt)
+needs_cvxpy = dec.skipif(not have_cvxpy)
 
 
 # Object to hold module global data
@@ -40,7 +40,7 @@ def setup():
     data.lambdaL = 1e-12
 
 
-@needs_cvxopt
+@needs_cvxpy
 def test_shore_positive_constrain():
     asm = ShoreModel(data.gtab,
                      radial_order=data.radial_order,
@@ -64,7 +64,7 @@ def test_shore_fitting_no_constrain_e0():
     assert_almost_equal(compute_e0(asmfit), 1)
 
 
-@needs_cvxopt
+@needs_cvxpy
 def test_shore_fitting_constrain_e0():
     asm = ShoreModel(data.gtab, radial_order=data.radial_order,
                      zeta=data.zeta, lambdaN=data.lambdaN,

@@ -17,13 +17,18 @@ addons:
 
 env:
     global:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt"
+        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxpy"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
+        - EXTRA_WHEELS="https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
+        - PRE_WHEELS="https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com"
+        - EXTRA_PIP_FLAGS="--timeout=60 --find-links=$EXTRA_WHEELS"
+
 python:
-    - 3.3
     - 3.4
     - 3.5
+    - 3.6
+
 matrix:
   include:
     - python: 2.7
@@ -31,13 +36,14 @@ matrix:
     - python: 2.7
       env:
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.18 numpy==1.7.1 scipy==0.9.0 nibabel==1.2.0"
+        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.1.0"
     - python: 2.7
       env:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
+        - DEPENDS="$DEPENDS scikit_learn tables"
     - python: 3.5
       env:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxopt scikit_learn tables"
+        - COVERAGE=1
+        - DEPENDS="$DEPENDS scikit_learn tables"
     # To test vtk functionality
     - python: 2.7
       sudo: true   # This is set to true for apt-get
@@ -48,6 +54,8 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
+        - DEPENDS="$DEPENDS scikit_learn tables"
+
     - python: 2.7
       env:
         - INSTALL_TYPE=sdist
@@ -63,15 +71,25 @@ matrix:
       env:
         - INSTALL_TYPE=requirements
         - DEPENDS=""
+    - python: 3.5
+      # Check against latest available pre-release version of all packages
+      env:
+        - USE_PRE=1
+
 before_install:
-    - source tools/travis_tools.sh
+    - PIPI="pip install $EXTRA_PIP_FLAGS"
+    - if [ -n "$USE_PRE" ]; then
+        PIPI="$PIPI --find-links=$PRE_WHEELS --pre";
+      fi
+    - pip install --upgrade virtualenv
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
-    - pip install -U pip
-    - retry pip install nose;
-    - if [ -n "$DEPENDS" ]; then wheelhouse_pip_install $DEPENDS; fi
+    - $PIPI --upgrade pip setuptools
+    - $PIPI nose;
+    - $PIPI numpy;
+    - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
     - if [ "${VTK}" == "1" ]; then
           sudo apt-get update;
@@ -79,24 +97,24 @@ before_install:
           sudo apt-get install -y xvfb;
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
-          retry pip install xvfbwrapper;
+          $PIPI xvfbwrapper;
       fi
 install:
     - |
       if [ "$INSTALL_TYPE" == "setup" ]; then
-          python setup.py install
+        python setup.py install
       elif [ "$INSTALL_TYPE" == "pip" ]; then
-          wheelhouse_pip_install .
+        $PIPI .
       elif [ "$INSTALL_TYPE" == "sdist" ]; then
         python setup_egg.py egg_info  # check egg_info while we're here
         python setup_egg.py sdist
-        wheelhouse_pip_install dist/*.tar.gz
+        $PIPI dist/*.tar.gz
       elif [ "$INSTALL_TYPE" == "wheel" ]; then
         pip install wheel
         python setup_egg.py bdist_wheel
-        wheelhouse_pip_install dist/*.whl
+        $PIPI dist/*.whl
       elif [ "$INSTALL_TYPE" == "requirements" ]; then
-        wheelhouse_pip_install -r requirements.txt
+        $PIPI -r requirements.txt
         python setup.py install
       fi
 # command to run tests, e.g. python setup.py test

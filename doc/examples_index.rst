@@ -39,16 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Robust noise estimation with PIESNO
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :ref:`example_piesno`
 
 Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
-- :ref:`example_denoise_ascm`
+- :ref:`example_denoise_localpca`
 
 Reslice
 ~~~~~~~
@@ -70,15 +66,20 @@ Simple Harmonic Oscillator based Reconstruction and Estimation
 - :ref:`example_reconst_shore`
 - :ref:`example_reconst_shore_metrics`
 
+Mean Apparent Propagator (MAP)-MRI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_mapmri`
 
 Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_dti`
 - :ref:`example_restore_dti`
+- :ref:`example_reconst_fwdti`
 
 
-Diffusion Kurtosis Imaging (NEW)
+Diffusion Kurtosis Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_reconst_dki`
 
@@ -111,32 +112,36 @@ Sparse Fascicle Model
 
 - :ref:`example_sfm_reconst`
 
+Intravoxel incoherent motion (IVIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_ivim`
+
+
 Statistical evaluation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_kfold_xval`
 
 ------------------------------------------------
-Contextual enhancement (NEW)
+Contextual enhancement
 ------------------------------------------------
 
 - :ref:`example_contextual_enhancement`
+- :ref:`example_fiber_to_bundle_coherence`
 
-
---------------------
-Fiber tracking (NEW)
---------------------
+--------------
+Fiber tracking
+--------------
 
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
 - :ref:`example_deterministic_fiber_tracking`
 - :ref:`example_tracking_tissue_classifier`
 - :ref:`example_sfm_tracking`
-- :ref:`example_tracking_eudx_tensor`
-- :ref:`example_tracking_eudx_odf`
 
 -------------------------------------
-Fiber tracking validation
+Fiber tracking evaluation
 -------------------------------------
 
 - :ref:`example_linear_fascicle_evaluation`
@@ -154,13 +159,13 @@ Streamline analysis and connectivity
 Registration
 ------------------
 
-Image-based Registration (NEW)
+Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 
-Streamline-based Registration (NEW)
+Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_bundle_registration`
 
@@ -180,6 +185,11 @@ Brain Segmentation
 ~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_brain_extraction_dwi`
+
+Tissue Classification
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_tissue_classification`
 
 -----------
 Simulations
@@ -202,20 +212,17 @@ File Formats
 - :ref:`example_streamline_formats`
 
 -------------------
-Visualization (NEW)
+Visualization
 -------------------
 
 - :ref:`example_viz_advanced`
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
-- :ref:`example_viz_widgets`
 - :ref:`example_viz_surfaces`
+- :ref:`example_viz_ui`
 
 ---------------
-Workflows (NEW)
+Workflows
 ---------------
 - :ref:`example_workflow_creation`
 - :ref:`example_combined_workflow_creation`
-
-.. In order to build the examples, you'll need (on Debian)
-    sudo apt-get install python-tables python-matplotib python-vtk

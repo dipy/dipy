@@ -43,7 +43,7 @@ fetch_sherbrooke_3shell()
 img, gtab = read_sherbrooke_3shell()
 
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 mask = data[..., 0] > 80
 data = data[..., 1]
@@ -102,7 +102,7 @@ To access the quality of this denoising procedure, we plot the an axial slice
 of the original data, it's denoised output and residuals.
 """
 
-axial_middle = data.shape[2] / 2
+axial_middle = data.shape[2] // 2
 
 original = data[:, :, axial_middle].T
 final_output = den_final[:, :, axial_middle].T

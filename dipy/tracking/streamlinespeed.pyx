@@ -1,19 +1,18 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
-import numpy as np
-cimport numpy as np
 import cython
-
+import numpy as np
 from libc.math cimport sqrt
+from libc.stdlib cimport malloc, free
+
+cimport numpy as np
+
+from dipy.tracking import Streamlines
+
 
 cdef extern from "dpy_math.h" nogil:
     bint dpy_isnan(double x)
-
-cdef extern from "stdlib.h" nogil:
-    ctypedef unsigned long size_t
-    void free(void *ptr)
-    void *malloc(size_t size)
 
 
 cdef double c_length(Streamline streamline) nogil:
@@ -33,21 +32,49 @@ cdef double c_length(Streamline streamline) nogil:
     return out
 
 
+cdef void c_arclengths_from_arraysequence(Streamline points,
+                                          np.npy_intp[:] offsets,
+                                          np.npy_intp[:] lengths,
+                                          double[:] arclengths) nogil:
+    cdef:
+        np.npy_intp i, j, k
+        np.npy_intp offset
+        double dn, sum_dn_sqr
+
+    for i in range(offsets.shape[0]):
+        offset = offsets[i]
+
+        arclengths[i] = 0
+        for j in range(1, lengths[i]):
+            sum_dn_sqr = 0.0
+            for k in range(points.shape[1]):
+                dn = points[offset+j, k] - points[offset+j-1, k]
+                sum_dn_sqr += dn*dn
+
+            arclengths[i] += sqrt(sum_dn_sqr)
+
+
 def length(streamlines):
     ''' Euclidean length of streamlines
 
-    This will give length in mm if streamlines are expressed in world coordinates.
+    Length is in mm only if streamlines are expressed in world coordinates.
 
     Parameters
     ------------
-    streamlines : one or a list of array-like shape (N,3)
-       array representing x,y,z of N points in a streamline
+    streamlines : ndarray or a list or :class:`dipy.tracking.Streamlines`
+        If ndarray, must have shape (N,3) where N is the number of points
+        of the streamline.
+        If list, each item must be ndarray shape (Ni,3) where Ni is the number
+        of points of streamline i.
+        If :class:`dipy.tracking.Streamlines`, its `common_shape` must be 3.
 
     Returns
     ---------
-    lengths : scalar or array shape (N,)
-       scalar representing the length of one streamline, or
-       array representing the lengths of multiple streamlines.
+    lengths : scalar or ndarray shape (N,)
+       If there is only one streamline, a scalar representing the length of the
+       streamline.
+       If there are several streamlines, ndarray containing the length of every
+       streamline.
 
     Examples
     ----------
@@ -59,7 +86,8 @@ def length(streamlines):
     True
     >>> streamlines = [streamline, np.vstack([streamline, streamline[::-1]])]
     >>> expected_lengths = [expected_length, 2*expected_length]
-    >>> np.allclose(expected_lengths, [length(streamlines[0]), length(streamlines[1])])
+    >>> lengths = [length(streamlines[0]), length(streamlines[1])]
+    >>> np.allclose(lengths, expected_lengths)
     True
     >>> length([])
     0.0
@@ -67,6 +95,28 @@ def length(streamlines):
     0.0
 
     '''
+    if isinstance(streamlines, Streamlines):
+        if len(streamlines) == 0:
+            return 0.0
+
+        arclengths = np.zeros(len(streamlines), dtype=np.float64)
+
+        if streamlines.data.dtype == np.float32:
+            c_arclengths_from_arraysequence[float2d](
+                                    streamlines.data,
+                                    streamlines._offsets.astype(np.intp),
+                                    streamlines._lengths.astype(np.intp),
+                                    arclengths)
+        else:
+            c_arclengths_from_arraysequence[double2d](
+                                      streamlines.data,
+                                      streamlines._offsets.astype(np.intp),
+                                      streamlines._lengths.astype(np.intp),
+                                      arclengths)
+
+
+        return arclengths
+
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
@@ -92,7 +142,8 @@ def length(streamlines):
             # HACK: To avoid memleaks we have to recast with astype(dtype).
             streamline = streamlines[i].astype(dtype)
             if dtype != np.float32 and dtype != np.float64:
-                dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+                is_integer = dtype == np.int64 or dtype == np.uint64
+                dtype = np.float64 if is_integer else np.float32
                 streamline = streamlines[i].astype(dtype)
 
             if dtype == np.float32:
@@ -113,12 +164,14 @@ def length(streamlines):
             streamline = streamlines[i].astype(dtype)
             streamlines_length[i] = c_length[double2d](streamline)
     elif dtype == np.int64 or dtype == np.uint64:
-        # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
+        # All streamlines are composed of int64 or uint64 points so convert
+        # them in float64 one at the time.
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
             streamlines_length[i] = c_length[double2d](streamline)
     else:
-        # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
+        # All streamlines are composed of points with a dtype fitting in
+        # 32 bits so convert them in float32 one at the time.
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
             streamlines_length[i] = c_length[float2d](streamline)
@@ -242,7 +295,7 @@ def set_number_of_points(streamlines, nb_points=3):
 
     if nb_points < 2:
         raise ValueError("nb_points must be at least 2")
-        
+
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:

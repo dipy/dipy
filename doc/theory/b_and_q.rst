@@ -125,6 +125,7 @@ named the reciprocal space ``q-space`` with units of
 $\mathrm{seconds}.\mathrm{mm}^{-1}$. 
 
 .. math::
+   :label: fourier
 
    q = \gamma \delta G /{2\pi}
 

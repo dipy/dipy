@@ -1,5 +1,5 @@
 # Check against .travis.yml file and dipy/info.py
+cython>=0.25.1
 numpy>=1.7.1
 scipy>=0.9
-cython>=0.18
-nibabel>=1.2
+nibabel>=2.1.0

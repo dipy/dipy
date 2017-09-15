@@ -115,7 +115,7 @@ class EuDX(object):
         >>> from dipy.core.gradients import gradient_table
         >>> fimg,fbvals,fbvecs = get_data('small_101D')
         >>> img = nib.load(fimg)
-        >>> affine = img.get_affine()
+        >>> affine = img.affine
         >>> data = img.get_data()
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)

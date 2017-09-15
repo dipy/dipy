@@ -13,11 +13,11 @@ import scipy.optimize as opt
 from dipy.utils.six.moves import range
 from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
-from ..core.gradients import gradient_table
-from ..core.geometry import vector_norm
-from .vec_val_sum import vec_val_vect
-from ..core.onetime import auto_attr
-from .base import ReconstModel
+from dipy.core.gradients import gradient_table
+from dipy.core.geometry import vector_norm
+from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.core.onetime import auto_attr
+from dipy.reconst.base import ReconstModel
 
 
 MIN_POSITIVE_SIGNAL = 0.0001
@@ -468,7 +468,7 @@ def mode(q_form):
 
     Notes
     -----
-    Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
+    Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
     with 0 representing orthotropy. Mode is calculated with the
     following equation (equation 9 in [1]_):
 
@@ -673,7 +673,8 @@ class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
 
-    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args,
+                 **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
@@ -695,6 +696,9 @@ class TensorModel(ReconstModel):
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
+
+        return_S0_hat : bool
+            Boolean to return (True) or not (False) the S0 values for the fit.
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
@@ -739,6 +743,7 @@ class TensorModel(ReconstModel):
                 e_s += 'function or one of the common fit methods'
                 raise ValueError(e_s)
         self.fit_method = fit_method
+        self.return_S0_hat = return_S0_hat
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -761,15 +766,14 @@ class TensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[:-1]
 
         """
-        if mask is None:
-            # Flatten it to 2D either way:
-            data_in_mask = np.reshape(data, (-1, data.shape[-1]))
-        else:
+        S0_params = None
+
+        if mask is not None:
             # Check for valid shape of the mask
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
             mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         if self.min_signal is None:
             min_signal = MIN_POSITIVE_SIGNAL
@@ -777,17 +781,29 @@ class TensorModel(ReconstModel):
             min_signal = self.min_signal
 
         data_in_mask = np.maximum(data_in_mask, min_signal)
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
+
+        params_in_mask = self.fit_method(
+                self.design_matrix,
+                data_in_mask,
+                return_S0_hat=self.return_S0_hat,
+                *self.args,
+                **self.kwargs)
+        if self.return_S0_hat:
+            params_in_mask, model_S0 = params_in_mask
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
+            if self.return_S0_hat:
+                S0_params = model_S0.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
+            if self.return_S0_hat:
+                S0_params = np.zeros(data.shape[:-1] + (1,))
+                S0_params[mask] = model_S0
 
-        return TensorFit(self, dti_params)
+        return TensorFit(self, dti_params, model_S0=S0_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -808,21 +824,29 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, model_S0=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
+        self.model_S0 = model_S0
 
     def __getitem__(self, index):
         model_params = self.model_params
+        model_S0 = self.model_S0
         N = model_params.ndim
         if type(index) is not tuple:
             index = (index,)
         elif len(index) >= model_params.ndim:
             raise IndexError("IndexError: invalid index")
         index = index + (slice(None),) * (N - len(index))
-        return type(self)(self.model, model_params[index])
+        if model_S0 is not None:
+            model_S0 = model_S0[index[:-1]]
+        return type(self)(self.model, model_params[index], model_S0=model_S0)
+
+    @property
+    def S0_hat(self):
+        return self.model_S0
 
     @property
     def shape(self):
@@ -886,7 +910,7 @@ class TensorFit(object):
     @auto_attr
     def md(self):
         r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues.
+        Mean diffusivity (MD) calculated from cached eigenvalues.
 
         Returns
         ---------
@@ -907,7 +931,7 @@ class TensorFit(object):
     @auto_attr
     def rd(self):
         r"""
-        Radial diffusitivity (RD) calculated from cached eigenvalues.
+        Radial diffusivity (RD) calculated from cached eigenvalues.
 
         Returns
         ---------
@@ -983,7 +1007,7 @@ class TensorFit(object):
         .. math::
 
             Sphericity =
-            \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+            \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
         Notes
         -----
@@ -1122,7 +1146,7 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-    def predict(self, gtab, S0=1., step=None):
+    def predict(self, gtab, S0=None, step=None):
         r"""
         Given a model fit, predict the signal on the vertices of a sphere
 
@@ -1132,7 +1156,8 @@ class TensorFit(object):
             This encodes the directions for which a prediction is made
 
         S0 : float array
-           The mean non-diffusion weighted signal in each voxel. Default: 1 in
+           The mean non-diffusion weighted signal in each voxel. Default:
+           The fitted S0 value in all voxels if it was fitted. Otherwise 1 in
            all voxels.
 
         step : int
@@ -1162,6 +1187,10 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction
         """
+        if S0 is None:
+            S0 = self.model_S0
+            if S0 is None:  # if we didn't input or estimate S0 just use 1
+                S0 = 1.
         shape = self.model_params.shape[:-1]
         size = np.prod(shape)
         if step is None:
@@ -1218,8 +1247,8 @@ def iter_fit_tensor(step=1e4):
         """
 
         @functools.wraps(fit_tensor)
-        def wrapped_fit_tensor(design_matrix, data, step=step,
-                               *args, **kwargs):
+        def wrapped_fit_tensor(design_matrix, data, return_S0_hat=False,
+                               step=step, *args, **kwargs):
             """Iterate fit_tensor function over the data chunks
 
             Parameters
@@ -1230,6 +1259,9 @@ def iter_fit_tensor(step=1e4):
             data : array ([X, Y, Z, ...], g)
                 Data or response variables holding the data. Note that the last
                 dimension should contain the data. It makes no copies of data.
+            return_S0_hat : bool
+                Boolean to return (True) or not (False) the S0 values for the
+                fit.
             step : int
                 The chunk size as a number of voxels. Overrides `step` value
                 of `iter_fit_tensor`.
@@ -1242,14 +1274,29 @@ def iter_fit_tensor(step=1e4):
             size = np.prod(shape)
             step = int(step) or size
             if step >= size:
-                return fit_tensor(design_matrix, data, *args, **kwargs)
+                return fit_tensor(design_matrix, data,
+                                  return_S0_hat=return_S0_hat,
+                                  *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
+            if return_S0_hat:
+                S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
-                dtiparams[i:i + step] = fit_tensor(design_matrix,
-                                                   data[i:i + step],
-                                                   *args, **kwargs)
-            return dtiparams.reshape(shape + (12, ))
+                if return_S0_hat:
+                    dtiparams[i:i + step], S0params[i:i + step] \
+                        = fit_tensor(design_matrix,
+                                     data[i:i + step],
+                                     return_S0_hat=return_S0_hat,
+                                     *args, **kwargs)
+                else:
+                    dtiparams[i:i + step] = fit_tensor(design_matrix,
+                                                       data[i:i + step],
+                                                       *args, **kwargs)
+            if return_S0_hat:
+                return (dtiparams.reshape(shape + (12, )),
+                        S0params.reshape(shape + (1, )))
+            else:
+                return dtiparams.reshape(shape + (12, ))
 
         return wrapped_fit_tensor
 
@@ -1257,7 +1304,7 @@ def iter_fit_tensor(step=1e4):
 
 
 @iter_fit_tensor()
-def wls_fit_tensor(design_matrix, data):
+def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1270,6 +1317,8 @@ def wls_fit_tensor(design_matrix, data):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
     Returns
     -------
@@ -1294,7 +1343,7 @@ def wls_fit_tensor(design_matrix, data):
         1. calculate OLS estimates of the data
         2. apply the OLS estimates as weights to the WLS fit of the data
 
-    This ensured heteroscadasticity could be properly modeled for various
+    This ensured heteroscedasticity could be properly modeled for various
     types of bootstrap resampling (namely residual bootstrap).
 
     .. math::
@@ -1320,16 +1369,20 @@ def wls_fit_tensor(design_matrix, data):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    return eig_from_lo_tri(
-        np.einsum('...ij,...j',
-                  pinv(design_matrix * w[..., None]),
-                  w * log_s),
-        min_diffusivity=tol / -design_matrix.min(),
-    )
+    fit_result = np.einsum('...ij,...j',
+                           pinv(design_matrix * w[..., None]),
+                           w * log_s)
+    if return_S0_hat:
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                np.exp(-fit_result[:, -1]))
+    else:
+        return eig_from_lo_tri(fit_result,
+                               min_diffusivity=tol / -design_matrix.min())
 
 
 @iter_fit_tensor()
-def ols_fit_tensor(design_matrix, data):
+def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1342,6 +1395,8 @@ def ols_fit_tensor(design_matrix, data):
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
     Returns
     -------
@@ -1374,10 +1429,15 @@ def ols_fit_tensor(design_matrix, data):
     """
     tol = 1e-6
     data = np.asarray(data)
-    return eig_from_lo_tri(
-        np.einsum('...ij,...j', np.linalg.pinv(design_matrix), np.log(data)),
-        min_diffusivity=tol / -design_matrix.min(),
-    )
+    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix),
+                           np.log(data))
+    if return_S0_hat:
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                np.exp(-fit_result[:, -1]))
+    else:
+        return eig_from_lo_tri(fit_result,
+                               min_diffusivity=tol / -design_matrix.min())
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1417,7 +1477,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         The voxel signal in all gradient directions
 
     weighting : str (optional).
-         Whether to use the Geman McClure weighting criterion (see [1]_
+         Whether to use the Geman-McClure weighting criterion (see [1]_
          for details)
 
     sigma : float or float array (optional)
@@ -1430,7 +1490,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     Notes
     -----
-    The GemanMcClure M-estimator is described as follows [1]_ (page 1089): "The
+    The Geman-McClure M-estimator is described as follows [1]_ (page 1089): "The
     scale factor C affects the shape of the GMM [Geman-McClure M-estimator]
     weighting function and represents the expected spread of the residuals
     (i.e., the SD of the residuals) due to Gaussian distributed noise. The
@@ -1474,7 +1534,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         w = 1 / (sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
@@ -1513,7 +1573,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
     Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors (Basser et al., 1994a). Some fit approaches can produce nan
-    tensor elements in background voxels (particularly non-linear approachs).
+    tensor elements in background voxels (particularly non-linear approaches).
     This function avoids the eigen decomposition errors of nan tensor elements
     by replacing tensor with nan elements by a given alternative tensor
     estimate.
@@ -1553,7 +1613,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
 
 def nlls_fit_tensor(design_matrix, data, weighting=None,
-                    sigma=None, jac=True):
+                    sigma=None, jac=True, return_S0_hat=False):
     """
     Fit the tensor params using non-linear least-squares.
 
@@ -1581,6 +1641,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     jac : bool
         Use the Jacobian? Default: True
 
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
+
     Returns
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
@@ -1598,6 +1661,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
+    if return_S0_hat:
+        model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1624,6 +1689,8 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
                 from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
+            if return_S0_hat:
+                model_S0[vox] = np.exp(-this_tensor[6])
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
@@ -1631,12 +1698,19 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
                 from_lower_triangular(start_params[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
+            if return_S0_hat:
+                model_S0[vox] = np.exp(-start_params[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
-    return dti_params
+    if return_S0_hat:
+        model_S0.shape = data.shape[:-1] + (1,)
+        return (dti_params, model_S0)
+    else:
+        return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
+def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
+                       return_S0_hat=False):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
@@ -1658,8 +1732,11 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
 
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
-        optimization procedure used to fit the tensor paramters (see also
+        optimization procedure used to fit the tensor parameters (see also
         :func:`nlls_fit_tensor`). Default: True
+
+    return_S0_hat : bool
+        Boolean to return (True) or not (False) the S0 values for the fit.
 
 
     Returns
@@ -1681,6 +1758,8 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
+    if return_S0_hat:
+        model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
         if np.all(flat_data[vox] == 0):
             raise ValueError("The data in this voxel contains only zeros")
@@ -1757,10 +1836,16 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True):
             from_lower_triangular(start_params[:6]))
         dti_params[vox, :3] = evals
         dti_params[vox, 3:] = evecs.ravel()
+        if return_S0_hat:
+            model_S0[vox] = np.exp(-this_tensor[6])
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
-    return restore_params
+    if return_S0_hat:
+        model_S0.shape = data.shape[:-1] + (1,)
+        return (restore_params, model_S0)
+    else:
+        return restore_params
 
 
 _lt_indices = np.array([[0, 1, 3],
@@ -1771,8 +1856,9 @@ _lt_indices = np.array([[0, 1, 3],
 def from_lower_triangular(D):
     """ Returns a tensor given the six unique tensor elements
 
-    Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
-    Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+    Given the six unique tensor elements (in the order: Dxx, Dxy, Dyy, Dxz,
+    Dyz, Dzz) returns a 3 by 3 tensor. All elements after the sixth are
+    ignored.
 
     Parameters
     -----------

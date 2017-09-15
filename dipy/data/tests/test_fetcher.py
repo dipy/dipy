@@ -104,3 +104,23 @@ def test_fetch_data():
         server.shutdown()
         # change to original working directory
         os.chdir(current_dir)
+
+    def test_dipy_home():
+        test_path = 'TEST_PATH'
+        if 'DIPY_HOME' in os.environ:
+            old_home = os.environ['DIPY_HOME']
+            del os.environ['DIPY_HOME']
+        else:
+            old_home = None
+
+        reload(fetcher)
+
+        npt.assert_string_equal(fetcher.dipy_home,
+                                op.join(os.path.expanduser('~'), '.dipy'))
+        os.environ['DIPY_HOME'] = test_path
+        reload(fetcher)
+        npt.assert_string_equal(fetcher.dipy_home, test_path)
+
+        # return to previous state
+        if old_home:
+            os.environ['DIPY_HOME'] = old_home
