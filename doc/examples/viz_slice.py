@@ -13,7 +13,7 @@ from __future__ import division
 import os
 import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
-from dipy.viz import window, actor
+from dipy.viz import window, actor, ui
 
 """
 Let's download and load a T1.
@@ -35,7 +35,7 @@ Create a Renderer object which holds all the actors which we want to visualize.
 """
 
 renderer = window.Renderer()
-renderer.background((1, 1, 1))
+renderer.background((0.5, 0.5, 0.5))
 
 """
 Render slices from T1 with a specific value range
@@ -147,9 +147,86 @@ window.record(renderer, out_path='slices_lut.png', size=(600, 600),
 .. figure:: slices_lut.png
    :align: center
 
-   Simple slice viewer with an HSV colormap.
+   **Simple slice viewer with an HSV colormap**.
+"""
+
+"""
+Now we would like to add the ability to click on a voxel and show its value
+on a panel in the window. The panel is a widget which requires access to
+different areas of the visualization pipeline and therefore we don't recommend
+using it with ``window.show``. The more appropriate way is to use the
+``ShowManager`` object, which allows accessing the pipline in different areas.
+"""
+
+show_m = window.ShowManager(renderer, size=(1200, 900))
+show_m.initialize()
+
+"""
+We'll start by creating the panel and adding it to the ``ShowManager``
+"""
 
 
+def build_textblock(text):
+    """Generate a textblock for the panel."""
+    textblock = ui.TextBlock2D()
+    textblock.message = text
+    textblock.font_size = 18
+    textblock.font_family = 'Arial'
+    textblock.justification = 'left'
+    textblock.bold = False
+    textblock.italic = False
+    textblock.shadow = False
+    textblock.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+    textblock.actor.GetTextProperty().SetBackgroundOpacity(0.0)
+    textblock.color = (1, 1, 1)
+
+    return textblock
+
+label_position = build_textblock(text='Position:')
+label_value = build_textblock(text='Value:')
+
+result_position = build_textblock(text='')
+result_value = build_textblock(text='')
+
+panel_picking = ui.Panel2D(center=(200, 120),
+                           size=(250, 125),
+                           color=(0, 0, 0),
+                           opacity=0.75,
+                           align="left")
+
+panel_picking.add_element(label_position, 'relative', (0.1, 0.55))
+panel_picking.add_element(label_value, 'relative', (0.1, 0.25))
+
+panel_picking.add_element(result_position, 'relative', (0.45, 0.55))
+panel_picking.add_element(result_value, 'relative', (0.45, 0.25))
+
+show_m.ren.add(panel_picking)
+
+"""
+Add a left-click callback to the slicer. Also disable interpolation so you can
+see what you are picking.
+"""
+
+
+def left_click_callback(obj, ev):
+    """Get the value of the clicked voxel and show it in the panel."""
+    event_pos = show_m.iren.GetEventPosition()
+
+    obj.picker.Pick(event_pos[0],
+                    event_pos[1],
+                    0,
+                    show_m.ren)
+
+    i, j, k = obj.picker.GetPointIJK()
+    result_position.message = '(' + str(i) + ', ' + str(j) + ', ' + str(k) + ')'
+    result_value.message = '%.8f' % data[i, j, k]
+
+fa_actor.SetInterpolate(False)
+fa_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
+# show_m.start()
+
+"""
 Create a mosaic
 ================
 
@@ -162,6 +239,7 @@ parallel.
 
 renderer.clear()
 renderer.projection('parallel')
+
 
 """
 Now we need to create two nested for loops which will set the positions of
@@ -184,6 +262,10 @@ for j in range(rows):
         slice_mosaic.SetPosition((X + border) * i,
                                  0.5 * cols * (Y + border) - (Y + border) * j,
                                  0)
+        slice_mosaic.SetInterpolate(False)
+        slice_mosaic.AddObserver('LeftButtonPressEvent',
+                                 left_click_callback,
+                                 1.0)
         renderer.add(slice_mosaic)
         cnt += 1
         if cnt > Z:
@@ -194,12 +276,14 @@ for j in range(rows):
 renderer.reset_camera()
 renderer.zoom(1.6)
 
-# window.show(renderer, size=(900, 600), reset_camera=False)
+
+# show_m.ren.add(panel_picking)
+# show_m.start()
 
 """
-If you uncomment the ``window.show`` line above, you will be able to move the
-mosaic up/down and left/right using the middle mouse button pressed. And zoom
-in/out using the scroll wheel.
+If you uncomment the two lines above, you will be able to move
+the mosaic up/down and left/right using the middle mouse button drag,
+zoom in/out using the scroll wheel, and pick voxels with left click.
 """
 
 window.record(renderer, out_path='mosaic.png', size=(900, 600),
