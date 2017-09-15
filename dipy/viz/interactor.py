@@ -60,8 +60,6 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.default_interactor = vtk.vtkInteractorStyleTrackballCamera()
         # The picker allows us to know which object/actor is under the mouse.
         self.picker = vtk.vtkPropPicker()
-        self.cell_picker = vtk.vtkCellPicker()
-        self.cell_picker.SetTolerance(0.002)
         self.chosen_element = None
         self.event = Event()
 
@@ -74,8 +72,6 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         self.selected_props = {"left_button": set(),
                                "right_button": set(),
                                "middle_button": set()}
-
-        self.selected_cell = None
 
     def add_active_prop(self, prop):
         self.active_props.add(prop)
@@ -98,18 +94,6 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         prop = node.GetViewProp()
         return prop
 
-    def get_cell_at_event_position(self):
-        """ Returns the cell that lays at the event position. """
-        event_pos = self.GetInteractor().GetEventPosition()
-        self.cell_picker.Pick(event_pos[0],
-                              event_pos[1],
-                              0,
-                              self.GetCurrentRenderer())
-
-        cell = self.cell_picker.GetCellIJK()
-
-        return cell
-
     def propagate_event(self, evt, *props):
         for prop in props:
             # Propagate event to the prop.
@@ -121,14 +105,9 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
     def on_left_button_down(self, obj, evt):
         self.left_button_down = True
         prop = self.get_prop_at_event_position()
-        cell = self.get_cell_at_event_position()
-        # print(prop)
         if prop is not None:
             self.selected_props["left_button"].add(prop)
             self.propagate_event(evt, prop)
-
-        if cell is not None:
-            self.selected_cell = cell
 
         if not self.event.abort_flag:
             self.default_interactor.OnLeftButtonDown()
