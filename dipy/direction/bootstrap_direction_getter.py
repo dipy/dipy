@@ -99,7 +99,8 @@ class BootDirectionGetter(BaseDirectionGetter):
             Angular threshold for excluding ODF peaks.
 
         """
-        boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order)
+        boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order,
+                              max_attempts=max_attempts)
         return cls(boot_gen, max_angle, sphere, **kwargs)
 
     def initial_direction(self, point):
