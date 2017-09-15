@@ -10,7 +10,7 @@ import numpy as np
 import cvxpy as cvx
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
-from dipy.reconst.recspeed import S1, S2, S2_new, fast_inv, activeax_cost_one
+from dipy.reconst.recspeed import S1, S2, S2_new, fast_inv, activeax_cost_one, func_exp
 from dipy.data import get_data
 import nibabel as nib
 from numba import jit
@@ -210,13 +210,14 @@ class ActiveAxModel(ReconstModel):
 
     def __init__(self, gtab, fit_method='MIX'):
 
-        self.maxiter = 5
-        self.xtol = 1e-3
+        self.maxiter = 6  # The maximum number of generations, genetic algorithm 11 default
+        self.xtol = 1e-3  # Tolerance for termination, nonlinear least square 1e-5 default
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta
         self.gamma = gamma
         self.G = G
+        self.G2 = self.G ** 2
         D_iso = 2 * 10 ** 3
         self.yhat_ball = D_iso * self.gtab.bvals
         self.L = self.gtab.bvals * D_intra
@@ -227,13 +228,16 @@ class ActiveAxModel(ReconstModel):
         self.exp_phi1 = np.zeros((self.small_delta.shape[0], 4))
         self.exp_phi1[:, 2] = np.exp(-self.yhat_ball)
         self.exp_phi1[:, 3] = np.ones(self.gtab.bvals.shape)
+        self.x2 = np.zeros(3)
+#        self.x_fe = np.zeros(7)
 
+#    @profile
     def x_to_xs(self, x):
         x1 = x[0:3]
-        x2 = np.zeros((3))
-        x2[0:2] = x[0:2]
-        x2[2] = x[3]
-        return x1, x2
+#        x2 = np.zeros((3))
+        self.x2[0:2] = x[0:2]
+        self.x2[2] = x[3]
+        return x1, self.x2
 
 #    @profile
     def S2_slow(self, x2):
@@ -289,14 +293,17 @@ class ActiveAxModel(ReconstModel):
 
 #    @profile
     def Phi(self, x):
-        x1, x2 = self.x_to_xs(x)
-        S2(x2, self.gtab.bvals, self.gtab.bvecs, self.yhat_zeppelin)
-        S1(x1, am, self.gtab.bvecs, self.gtab.bvals, small_delta, big_delta,
-           G2, self.L, self.yhat_cylinder)
+        x1, self.x2 = self.x_to_xs(x)
+        S2(self.x2, self.gtab.bvals, self.gtab.bvecs, self.yhat_zeppelin)
+        S1(x1, am, self.gtab.bvecs, self.gtab.bvals, self.small_delta,
+           self.big_delta, self.G2, self.L, self.yhat_cylinder)
         self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
         self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
+#        func_exp(-self.yhat_cylinder, self.exp_phi1[:, 0])
+#        func_exp(-self.yhat_zeppelin, self.exp_phi1[:, 1])
         return self.exp_phi1
 
+#    @profile
     def Phi2(self, x_fe):
         x, fe = self.x_fe_to_x_and_fe(x_fe)
         x1 = x[0:3]
@@ -305,10 +312,13 @@ class ActiveAxModel(ReconstModel):
            self.gtab.big_delta, G2, self.L, self.yhat_cylinder)
         self.exp_phi1[:, 0] = np.exp(-self.yhat_cylinder)
         self.exp_phi1[:, 1] = np.exp(-self.yhat_zeppelin)
+#        func_exp(-self.yhat_cylinder, self.exp_phi1[:, 0])
+#        func_exp(-self.yhat_zeppelin, self.exp_phi1[:, 1])
         return self.exp_phi1
 
+#    @profile
     def x_and_fe_to_x_fe(self, x, fe):
-        x_fe = np.zeros([7])
+        x_fe = np.zeros(7)
         fe = fe[:, 0]
         x_fe[:3] = fe[:3]
         x_fe[3:6] = x[:3]
@@ -318,7 +328,7 @@ class ActiveAxModel(ReconstModel):
     def estimate_signal(self, x_fe):
         x, fe = self.x_fe_to_x_and_fe(x_fe)
         x1, x2 = self.x_to_xs(x)
-        S = fe[0] * S1(x1) + fe[1] * self.S2(x2) + fe[2] * self.S3()
+        S = fe[0] * self.S1_slow(x1) + fe[1] * self.S2_slow(x2) + fe[2] * self.S3()
         + fe[3] * self.S4()
         return S
 
@@ -364,7 +374,8 @@ class ActiveAxModel(ReconstModel):
 #        error_one = self.activeax_cost_one_slow(phi, signal)
 #        return error_one
         return activeax_cost_one(phi, signal)
-    @profile
+
+#    @profile
     def nls_cost(self, x_fe, signal):
 
         """
@@ -475,10 +486,10 @@ class ActiveAxModel(ReconstModel):
         fe = cvx.Variable(4)
         # Create four constraints.
         constraints = [cvx.sum_entries(fe) == 1,
-                       fe[0] >= 0,
-                       fe[1] >= 0,
-                       fe[2] >= 0,
-                       fe[3] >= 0]
+                       fe[0] >= 0.011,
+                       fe[1] >= 0.011,
+                       fe[2] >= 0.011,
+                       fe[3] >= 0.011]
 
         # Form objective.
         obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal)))
