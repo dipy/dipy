@@ -270,8 +270,9 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
 
         super(ReconstDtiRestoreFlow, self).\
             run(input_files, bvalues, bvectors, mask_files, b0_threshold,
-                save_metrics, out_dir, out_tensor, out_fa, out_ga, out_rgb,
-                out_md, out_ad, out_rd, out_mode, out_evec, out_eval)
+                bvecs_tol, save_metrics, out_dir, out_tensor, out_fa, 
+                out_ga, out_rgb, out_md, out_ad, out_rd, out_mode,
+                out_evec, out_eval)
 
 
 class ReconstCSDFlow(Workflow):
