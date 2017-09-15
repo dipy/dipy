@@ -10,6 +10,8 @@ from dipy.direction.closest_peak import BaseDirectionGetter
 
 
 default_SH = 4
+
+
 class BootOdfGen(object):
 
     def __init__(self, data, model, sphere, sh_order=None, tol=1e-2):
@@ -18,7 +20,7 @@ class BootOdfGen(object):
                 sh_order = model.sh_order
             else:
                 sh_order = default_SH
-            
+
         self.where_dwi = shm.lazy_index(~model.gtab.b0s_mask)
         if not isinstance(self.where_dwi, slice):
             msg = ("For optimal bootstrap tracking consider reordering the "
@@ -71,7 +73,7 @@ class BootDirectionGetter(BaseDirectionGetter):
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
                   sh_order=None, max_attempts=5, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
-        
+
         Parameters
         ----------
         data : ndarray, float, (..., N)
@@ -95,7 +97,7 @@ class BootDirectionGetter(BaseDirectionGetter):
             Relative threshold for excluding ODF peaks.
         min_separation_angle : float in [0, 90]
             Angular threshold for excluding ODF peaks.
-        
+
         """
         boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order)
         return cls(boot_gen, max_angle, sphere, **kwargs)

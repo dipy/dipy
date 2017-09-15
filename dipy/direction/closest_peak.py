@@ -113,7 +113,7 @@ class BaseDirectionGetter(DirectionGetter):
 
     def get_direction(self, point, direction):
         pmf = self.pmf_gen.get_pmf(point)
-        pmf.clip(min=self.pmf_threshold, out=pmf) 
+        pmf.clip(min=self.pmf_threshold, out=pmf)
         peaks = self._peak_directions(pmf)
         if len(peaks) == 0:
             return 1
@@ -131,8 +131,8 @@ class ClosestPeakDirectionGetter(BaseDirectionGetter):
 
     """
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere=default_sphere, pmf_threshold=0.1,
-                 **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
+                 pmf_threshold=0.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -171,7 +171,8 @@ class ClosestPeakDirectionGetter(BaseDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
-    def from_shcoeff(klass, shcoeff, max_angle, sphere=default_sphere, pmf_threshold=0.1,
+    def from_shcoeff(klass, shcoeff, max_angle, sphere=default_sphere,
+                     pmf_threshold=0.1,
                      basis_type=None, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere.
@@ -210,4 +211,3 @@ class ClosestPeakDirectionGetter(BaseDirectionGetter):
         """
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
-

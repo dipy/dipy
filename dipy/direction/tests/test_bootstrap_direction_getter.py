@@ -41,7 +41,7 @@ def uniform_toy_data():
 
     # make a slice roi that should track in-plane only
     toy_roi_long_plane = np.zeros(toy_data.shape[:-1])
-    toy_roi_long_plane[:, :, 0]=1
+    toy_roi_long_plane[:, :, 0] = 1
     # make a slice roi that should track directly across the whole volume
     toy_roi_radial_plane = np.zeros(toy_data.shape[:-1])
     toy_roi_radial_plane[0, :, :] = 1
@@ -62,7 +62,6 @@ def uniform_toy_data():
 
 def test_bdg_initial_direction():
     # test that we get one direction when we have a single tensor
-    toydict = {}
 
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
 
@@ -115,6 +114,7 @@ def test_bdg_get_direction():
 
     class Fakepmf():
         count = 0
+
         def get_pmf(self, point):
             pmf = np.zeros(len(sphere.vertices))
             pmf[two_neighbors[0]] = 1
@@ -123,7 +123,6 @@ def test_bdg_get_direction():
 
         def pmf_no_boot(self, point):
             pass
-
 
     myfakepmf = Fakepmf()
     mydirgetter = bdg.BootDirectionGetter(myfakepmf, angle/2., sphere=sphere)
@@ -160,7 +159,7 @@ def test_bdg_get_direction():
 
 def test_bdg_bog_pmfnoboot():
     # does it return the right size of the sphere we give it?
-    #check the model you explicitly fit is the one that is returned
+    # check the model you explicitly fit is the one that is returned
 
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
 
@@ -180,7 +179,7 @@ def test_bdg_bog_pmfnoboot():
     tensor_model = dti.TensorModel(gtab)
 
     mybog = bdg.BootOdfGen(toy_data, model=tensor_model, sphere=hsph_updated)
-    odf_fit = mybog.pmf_no_boot(np.array([1.,1.,1.]))
+    odf_fit = mybog.pmf_no_boot(np.array([1., 1., 1.]))
 
     myfit = tensor_model.fit(toy_voxel).odf(hsph_updated)
 
@@ -189,8 +188,8 @@ def test_bdg_bog_pmfnoboot():
 
 
 def test_bdg_bog_pmfboot():
-    #test if residuals = 0
-    #make a perfect dataset that can be fit
+    # test if residuals = 0
+    # make a perfect dataset that can be fit
 
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
     vertices = hsph_updated.vertices
@@ -216,8 +215,7 @@ def test_bdg_bog_pmfboot():
     toy_voxel = np.concatenate((np.zeros(1), sphere_func))
     toy_data = np.tile(toy_voxel, (3, 3, 3, 1))
 
-    csd_model = csd.ConstrainedSphericalDeconvModel(gtab,
-                                                None, sh_order=6)
+    csd_model = csd.ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
 
     mybog = bdg.BootOdfGen(toy_data, model=csd_model, sphere=hsph_updated,
                            sh_order=6)
@@ -230,7 +228,7 @@ def test_bdg_bog_pmfboot():
     # A boot sample with less sh coeffs should have residuals, thus the two
     # should be different
     mybog2 = bdg.BootOdfGen(toy_data, model=csd_model, sphere=hsph_updated,
-                           sh_order=4)
+                            sh_order=4)
     myodf1 = mybog2.get_pmf(np.array([1.5, 1.5, 1.5]))
     myodf2 = mybog2.get_pmf(np.array([1.5, 1.5, 1.5]))
 
@@ -240,25 +238,26 @@ def test_bdg_bog_pmfboot():
     bvals[-1] = 2000
     gtab = gradient_table(bvals, bvecs)
 
-    csd_model = csd.ConstrainedSphericalDeconvModel(gtab,
-                                                None, sh_order=6)
-    npt.assert_raises(ValueError, bdg.BootOdfGen, toy_data, csd_model, hsph_updated,6)
+    csd_model = csd.ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+    npt.assert_raises(ValueError, bdg.BootOdfGen, toy_data, csd_model,
+                      hsph_updated, 6)
 
 
 def test_num_sls():
 
     toydict = uniform_toy_data()
-    csd_model = csd.ConstrainedSphericalDeconvModel(toydict['gtab'],
-                                                None, sh_order=6)
+    csd_model = csd.ConstrainedSphericalDeconvModel(toydict['gtab'], None,
+                                                    sh_order=6)
     csd_fit = csd_model.fit(toydict['toy_data'])
 
     sltest_list = [('toy_roi_long_plane', 121),
-                   ('toy_roi_radial_plane', 121), 
+                   ('toy_roi_radial_plane', 121),
                    ('toy_roi_center_vox', 1)]
 
-    classifier = ThresholdTissueClassifier(toydict['toy_tissue_classifier'], .1)
+    classifier = ThresholdTissueClassifier(toydict['toy_tissue_classifier'],
+                                           0.1)
     detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-        csd_fit.shm_coeff,max_angle=30.)
+        csd_fit.shm_coeff, max_angle=30.)
 
     expected_sl_length = 11
     for roi, num_sl in sltest_list:

@@ -140,4 +140,3 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         else:
             direction[:] = -newdir
         return 0
-

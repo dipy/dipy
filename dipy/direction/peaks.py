@@ -14,7 +14,7 @@ import scipy.optimize as opt
 
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
-from dipy.core.sphere import HemiSphere, Sphere
+from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
