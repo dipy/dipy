@@ -5,15 +5,15 @@ from dipy.tracking.local.direction_getter import DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 
-def _closest_peak(peak_directions, prev_step, cos_similarity):
-    """Return the closest direction to prev_step from peak_directions.
+def _closest_peak(peak_dirs, prev_step, cos_similarity):
+    """Return the closest direction to prev_step from peak_dirs.
 
     All directions should be unit vectors. Antipodal symmetry is assumed, ie
     direction x is the same as -x.
 
     Parameters
     ----------
-    peak_directions : array (N, 3)
+    peak_dirs : array (N, 3)
         N unit vectors.
     prev_step : array (3,) or None
         Previous direction.
@@ -24,17 +24,17 @@ def _closest_peak(peak_directions, prev_step, cos_similarity):
     Returns
     -------
     direction : array or None
-        If prev_step is None, returns peak_directions. Otherwise returns the
+        If prev_step is None, returns peak_dirs. Otherwise returns the
         closest direction to prev_step. If no directions are close enough to
         prev_step, returns None
     """
-    peak_dots = np.dot(peak_directions, prev_step)
+    peak_dots = np.dot(peak_dirs, prev_step)
     closest_peak = abs(peak_dots).argmax()
     dot_closest_peak = peak_dots[closest_peak]
     if dot_closest_peak >= cos_similarity:
-        return peak_directions[closest_peak]
+        return peak_dirs[closest_peak]
     elif dot_closest_peak <= -cos_similarity:
-        return -peak_directions[closest_peak]
+        return -peak_dirs[closest_peak]
     else:
         return None
 
@@ -84,7 +84,7 @@ class BaseDirectionGetter(DirectionGetter):
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
 
-    def _peak_directions(self, blob):
+    def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
 
         Blob can be any function defined on ``self.sphere``, ie an ODF, PMF,
@@ -109,12 +109,12 @@ class BaseDirectionGetter(DirectionGetter):
         """
         pmf = self.pmf_gen.get_pmf(point)
         pmf.clip(min=self.pmf_threshold, out=pmf)
-        return self._peak_directions(pmf)
+        return self._get_peak_directions(pmf)
 
     def get_direction(self, point, direction):
         pmf = self.pmf_gen.get_pmf(point)
         pmf.clip(min=self.pmf_threshold, out=pmf)
-        peaks = self._peak_directions(pmf)
+        peaks = self._get_peak_directions(pmf)
         if len(peaks) == 0:
             return 1
         new_dir = _closest_peak(peaks, direction, self.cos_similarity)

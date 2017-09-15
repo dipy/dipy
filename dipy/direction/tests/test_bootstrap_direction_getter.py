@@ -112,7 +112,7 @@ def test_bdg_get_direction():
     direction2 = sphere.vertices[two_neighbors[1]]
     angle = np.rad2deg(direction1.dot(direction2))
 
-    class Fakepmf():
+    class Fakepmf(object):
         count = 0
 
         def get_pmf(self, point):
