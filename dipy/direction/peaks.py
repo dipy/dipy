@@ -551,7 +551,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                            odf_array if return_odf else None)
 
 
-
 def reshape_peaks_for_visualization(peaks):
     """Reshape peaks for visualization.
 
