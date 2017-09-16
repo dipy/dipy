@@ -48,6 +48,12 @@ class IoInfoFlow(Workflow):
                     return_voxsize=True,
                     return_coords=True)
                 logging.info('Data size {0}'.format(data.shape))
+                logging.info('Data type {0}'.format(data.dtype))
+                logging.info('Data min {0} max {0} avg {0}'
+                             .format(data.min(), data.max(), data.mean()))
+                logging.info('2% percentile {0} 98% percentile {0}'
+                             .format(np.percentile(data, 2),
+                                     np.percentile(data, 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
                 logging.info('Affine to RAS1mm \n{0}'.format(affine))
