@@ -82,7 +82,7 @@ class IoInfoFlow(Workflow):
                 if rows < cols:
                     bvecs = bvecs.T
                 logging.info('Bvectors are \n{0}'.format(bvecs))
-                norms = np.linalg.norm(bvecs, axis=1)
+                norms = np.array([np.linalg.norm(bvec) for bvec in bvecs])
                 res = np.where(
                         (norms <= 1 + bvecs_tol) & (norms >= 1 - bvecs_tol))
                 ncl1 = np.sum(norms < 1 - bvecs_tol)

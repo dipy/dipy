@@ -7,8 +7,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
                return_coords=False):
     img = nib.load(fname)
     data = img.get_data()
-    # vox_size = hdr.get_zooms()[:3]
-    vox_size = nib.affines.voxel_sizes(img.affine)
+    vox_size = img.header.get_zooms()[:3]
     
     ret_val = [data, img.affine]
 
