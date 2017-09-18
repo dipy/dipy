@@ -8,16 +8,17 @@ from dipy.workflows.workflow import Workflow
 
 
 class IoInfoFlow(Workflow):
-    
+
     @classmethod
     def get_short_name(cls):
         return 'io_info'
-            
-    def run(self, input_files, b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
 
-        """ Provides useful information about different files used in 
+    def run(self, input_files,
+            b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
+
+        """ Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
-        program identifies the type of file by its extension. 
+        program identifies the type of file by its extension.
 
         Parameters
         ----------
@@ -26,22 +27,22 @@ class IoInfoFlow(Workflow):
         b0_threshold : float, optional
             (default 50)
         bvecs_tol : float, optional
-            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol 
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors (default 0.01)
         bshell_thr : float, optional
-            Threshold for distinguishing b-values in different shells 
+            Threshold for distinguishing b-values in different shells
             (default 100)
         """
-        
+
         np.set_printoptions(3, suppress=True)
-        
+
         for input_path in input_files:
             logging.info('------------------------------------------')
             logging.info('Looking at {0}'.format(input_path))
             logging.info('------------------------------------------')
-            
+
             if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
-                
+
                 data, affine, img, vox_sz, affcodes = load_nifti(
                     input_path,
                     return_img=True,
@@ -62,7 +63,7 @@ class IoInfoFlow(Workflow):
                     msg = \
                     'Voxel size is not isotropic. Recommending reslicing.\n'
                     logging.warning(msg)
-                                
+
             if os.path.basename(input_path).find('bval') > -1:
                 bvals = np.loadtxt(input_path)
                 logging.info('Bvalues \n{0}'.format(bvals))
@@ -72,9 +73,9 @@ class IoInfoFlow(Workflow):
                 logging.info('Number of b0s {0} (b0_thr {1})\n'
                              .format(np.sum(bvals <= b0_threshold),
                                      b0_threshold))
-                
+
             if os.path.basename(input_path).find('bvec') > -1:
-                
+
                 bvecs = np.loadtxt(input_path)
                 logging.info('Bvectors shape on disk is {0}'
                              .format(bvecs.shape))
@@ -88,8 +89,7 @@ class IoInfoFlow(Workflow):
                 ncl1 = np.sum(norms < 1 - bvecs_tol)
                 logging.info('Total number of unit bvectors {0}'
                              .format(len(res[0])))
-                logging.info('Total number of non-unit bvectors {0}\n'.format(ncl1))           
-                    
+                logging.info('Total number of non-unit bvectors {0}\n'.format(ncl1))
+
         np.set_printoptions()
-                
-                
+
