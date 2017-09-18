@@ -118,7 +118,7 @@ class BootDirectionGetter(BaseDirectionGetter):
 
         """
         odf = self.pmf_gen.pmf_no_boot(point)
-        return self._peak_directions(odf)
+        return self._get_peak_directions(odf)
 
     def get_direction(self, point, direction):
         """Attempt direction getting on a few bootstrap samples.
