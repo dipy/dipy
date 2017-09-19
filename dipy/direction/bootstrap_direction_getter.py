@@ -9,7 +9,7 @@ from dipy.data import default_sphere
 from dipy.direction.closest_peak import BaseDirectionGetter
 
 
-default_SH = 4
+DEFAULT_SH = 4
 
 
 class BootOdfGen(object):
@@ -19,7 +19,7 @@ class BootOdfGen(object):
             if hasattr(model, "sh_order"):
                 sh_order = model.sh_order
             else:
-                sh_order = default_SH
+                sh_order = DEFAULT_SH
 
         self.where_dwi = shm.lazy_index(~model.gtab.b0s_mask)
         if not isinstance(self.where_dwi, slice):
