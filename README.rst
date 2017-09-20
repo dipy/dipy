@@ -64,4 +64,4 @@ Please see `LICENSE file <https://github.com/nipy/dipy/blob/master/LICENSE>`_.
 Contributing
 ============
 
-We welcome contributions from the community. Please read our `contributor guidlines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`.
+We welcome contributions from the community. Please read our `contributor guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`.
