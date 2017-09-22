@@ -19,6 +19,36 @@ am = np.array([1.84118307861360])
 class ActiveAxModel(ReconstModel):
 
     def __init__(self, gtab, fit_method='MIX'):
+        r""" MIX framework (MIX) [1]_.
+
+        The MIX computes the ActiveAx parameters. ActiveAx is a multi
+        compartment model, (sum of exponentials).
+        This algorithm uses three different optimizer. It starts with a
+        differential evolutionary algorithm and fits the parameters in the
+        power of exponentials. Then the fitted parameters in the first step are
+        utilized to make a linear convex problem. Using a convex optimization,
+        the volume fractions are determined. Then the last step is non linear
+        least square fitting on all the parameters. The results of the first
+        and second step are utilized as the initial values for the last step
+        of the algorithm. (see [1]_ for a comparison and a through discussion).
+
+        Parameters
+        ----------
+        gtab : GradientTable
+
+        fit_method : str or callable
+
+        Returns
+        -------
+        ActiveAx parameters
+
+        References
+        ----------
+        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+
+        """
 
         self.maxiter = 1  # The maximum number of generations, genetic
 #        algorithm 11 default
@@ -42,25 +72,26 @@ class ActiveAxModel(ReconstModel):
         self.exp_phi1[:, 3] = np.ones(self.gtab.bvals.shape)
         self.x2 = np.zeros(3)
 
-    def fit(self, data, mask=None):
+    def fit(self, data):
+        """ Fit method of the ActiveAx model class
 
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel.
+
+        """
         bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
-
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,))
-
         x = res_one.x
         phi = self.Phi(x)
-
-        fe = self.estimate_f(data, phi)
-
+        fe = self.cvx_fit(data, phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
-
         bounds = ([0.01, 0.01,  0.01, 0.01, 0.01, 0.1, 0.01], [0.9,  0.9,  0.9,
                   np.pi, np.pi, 11, 0.9])
-        res = least_squares(self.nls_cost, x_fe, bounds=(bounds),
+        res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
-
         result = res.x
         return result
 
@@ -103,7 +134,7 @@ class ActiveAxModel(ReconstModel):
         phi = self.Phi(x)
         return activeax_cost_one(phi, signal)
 
-    def estimate_f(self, signal, phi):
+    def cvx_fit(self, signal, phi):
         """
         Linear parameters fit using cvx
 
@@ -146,13 +177,10 @@ class ActiveAxModel(ReconstModel):
         # Form and solve problem.
         prob = cvx.Problem(obj, constraints)
         prob.solve()  # Returns the optimal value.
-
         return np.array(fe.value)
 
-    def nls_cost(self, x_fe, signal):
+    def nlls_cost(self, x_fe, signal):
         """
-        Aax_exvivo_eval
-
         cost function for the least square problem
 
         Parameters
