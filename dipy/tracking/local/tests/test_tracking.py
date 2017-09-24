@@ -288,21 +288,21 @@ def test_ParticleFilteringTractography():
                           [0, 1, 1, 1, 0, 0],
                           [0, 1, 1, 1, 0, 0],
                           [0, 0, 0, 0, 0, 0]])
-    simple_wm = np.stack([np.zeros(simple_wm.shape),
-                          simple_wm,
-                          simple_wm,
-                          simple_wm,
-                          np.zeros(simple_wm.shape)])
+    simple_wm = np.dstack([np.zeros(simple_wm.shape),
+                           simple_wm,
+                           simple_wm,
+                           simple_wm,
+                           np.zeros(simple_wm.shape)])
     simple_gm = np.array([[0, 0, 0, 0, 0, 0],
                           [0, 1, 0, 0, 0, 0],
                           [0, 1, 0, 0, 1, 0],
                           [0, 0, 0, 0, 1, 0],
                           [0, 0, 0, 0, 0, 0]])
-    simple_gm = np.stack([np.zeros(simple_gm.shape),
-                          simple_gm,
-                          simple_gm,
-                          simple_gm,
-                          np.zeros(simple_gm.shape)])
+    simple_gm = np.dstack([np.zeros(simple_gm.shape),
+                           simple_gm,
+                           simple_gm,
+                           simple_gm,
+                           np.zeros(simple_gm.shape)])
     simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
     tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
     seeds = seeds_from_mask(simple_wm, density=2)
