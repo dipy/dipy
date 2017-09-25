@@ -4,6 +4,7 @@ from warnings import warn
 import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.shm import real_sph_harm
 from scipy.special import erf
 from dipy.core.geometry import cart2sphere
@@ -244,37 +245,9 @@ class ForecastModel(OdfModel, Cache):
             coef = np.r_[c0, coef]
 
         if self.csd:
-            values = np.dot(self.fod, coef)
-            low_peak_mean = np.mean(values)
-            low_peaks = values < (0.1*low_peak_mean)
-
-            lpl = np.ones((300, 1))
-
-            L = self.fod[low_peaks, :]
-            counter = 0
-
-            while not np.array_equal(low_peaks, lpl) and L.shape[0] > 0:
-                lpl = low_peaks
-                pseudo_inv = np.linalg.inv(
-                    np.dot(M.T, M) + self.lambda_csd*np.dot(L.T, L))
-                data_corr = np.dot(M.T, data_single_b0[:, None])
-
-                coef = np.dot(pseudo_inv, data_corr)[:, 0]
-
-                coef = coef/coef[0] * c0
-
-                values = np.dot(self.fod, coef)
-
-                low_peak_mean = np.mean(values)
-                low_peaks = values < (0.1*low_peak_mean)
-
-                L = self.fod[low_peaks, :]
-                counter = counter + 1
-
-                if counter > 50:
-                    warn('CSD convergence not reached')
-                    break
-
+            coef, num_it = csdeconv(data_single_b0, M, self.fod, tau=0.1, convergence=50)
+            coef = coef/coef[0] * c0
+            
         if self.pos:
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
