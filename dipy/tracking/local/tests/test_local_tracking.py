@@ -4,7 +4,6 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.tracking.local import (LocalTracking, ThresholdTissueClassifier,
                                  DirectionGetter, TissueClassifier,

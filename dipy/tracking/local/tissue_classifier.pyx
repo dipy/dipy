@@ -1,17 +1,27 @@
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: initializedcheck=False
+# cython: wraparound=False
+
 cimport cython
 cimport numpy as np
 
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
-from .interpolation cimport(trilinear_interpolate4d,
-                            _trilinear_interpolate_c_4d)
+from .interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
 
 cdef class TissueClassifier:
-    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
-        pass
+    cpdef TissueClass check_point(self, double[::1] point):
+        if point.shape[0] != 3:
+            raise ValueError("Point has wrong shape")
+
+        return self.check_point_c(&point[0])
+
+    cdef TissueClass check_point_c(self, double* point):
+         pass
 
 
 cdef class BinaryTissueClassifier(TissueClassifier):
@@ -24,17 +34,11 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
+    cdef TissueClass check_point_c(self, double* point):
         cdef:
             unsigned char result
             int err
             int voxel[3]
-
-        if point.shape[0] != 3:
-            raise ValueError("Point has wrong shape")
 
         voxel[0] = int(dpy_rint(point[0]))
         voxel[1] = int(dpy_rint(point[1]))
@@ -62,25 +66,22 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
         double[:, :, :] metric_map
     """
 
-    def __cinit__(self, metric_map, threshold):
+    def __cinit__(self, metric_map, double threshold):
         self.interp_out_view = self.interp_out_double
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
+    cdef TissueClass check_point_c(self, double* point):
         cdef:
             double result
             int err
 
-        err = _trilinear_interpolate_c_4d(self.metric_map[..., None], point,
-                                          self.interp_out_view)
+        err = trilinear_interpolate4d_c(
+            self.metric_map[..., None],
+            point,
+            self.interp_out_view)
         if err == -1:
             return OUTSIDEIMAGE
-        elif err == -2:
-            raise ValueError("Point has wrong shape")
         elif err != 0:
             # This should never happen
             raise RuntimeError(
@@ -106,7 +107,6 @@ cdef class ActTissueClassifier(TissueClassifier):
         double interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
         double[:, :, :] include_map, exclude_map
-
     References
     ----------
     .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
@@ -120,26 +120,25 @@ cdef class ActTissueClassifier(TissueClassifier):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cpdef TissueClass check_point(self, double[::1] point) except PYERROR:
+    cdef TissueClass check_point_c(self, double* point):
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
 
-        include_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
-                                                  point, self.interp_out_view)
+        include_err = trilinear_interpolate4d_c(
+            self.include_map[..., None],
+            point,
+            self.interp_out_view)
         include_result = self.interp_out_view[0]
 
-        exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None],
-                                                  point, self.interp_out_view)
+        exclude_err = trilinear_interpolate4d_c(
+            self.exclude_map[..., None],
+            point,
+            self.interp_out_view)
         exclude_result = self.interp_out_view[0]
 
         if include_err == -1 or exclude_err == -1:
             return OUTSIDEIMAGE
-        elif include_err == -2 or exclude_err == -2:
-            raise ValueError("Point has wrong shape")
         elif include_err != 0:
             # This should never happen
             raise RuntimeError("Unexpected interpolation error " +
