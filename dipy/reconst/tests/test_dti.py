@@ -779,7 +779,7 @@ def test_min_signal_alone():
     ten_model = dti.TensorModel(gtab)
     fit_alone = ten_model.fit(data[idx])
     fit_together = ten_model.fit(data)
-    npt.assert_equal(fit_together.model_params[idx], fit_alone.model_params)
+    npt.assert_array_almost_equal(fit_together.model_params[idx], fit_alone.model_params, decimal=12)
 
 def test_decompose_tensor_nan():
     D_fine = np.array([1.7e-3, 0.0, 0.3e-3, 0.0, 0.0, 0.2e-3])
