@@ -65,6 +65,8 @@ EXTS = []
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
+        ('dipy.direction.pmf', [], 'c'),
+        ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.reconst.peak_direction_getter', [], 'c'),
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
