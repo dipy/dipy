@@ -134,10 +134,10 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
         output_strategy : string
             Controls the behavior of the IOIterator for output paths.
         mix_names : bool
-            Whether or not to append a mix of input names at the begining.
+            Whether or not to append a mix of input names at the beginning.
     Returns
     -------
-        Properly instanciated IOIterator object.
+        Properly instantiated IOIterator object.
     """
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
@@ -162,10 +162,10 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
         output_strategy : string
             Controls the behavior of the IOIterator for output paths.
         mix_names : bool
-            Whether or not to append a mix of input names at the begining.
+            Whether or not to append a mix of input names at the beginning.
     Returns
     -------
-        Properly instanciated IOIterator object.
+        Properly instantiated IOIterator object.
     """
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')
