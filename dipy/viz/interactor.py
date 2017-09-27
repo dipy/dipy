@@ -36,7 +36,7 @@ class Event(object):
         """ Aborts the event i.e. do not propagate it any further. """
         self._abort_flag = True
 
-    def done(self):
+    def reset(self):
         """ Done with the current event. Reset the attributes. """
         self.position = None
         self.name = None
@@ -179,7 +179,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelForward()
 
-        self.event.done()
+        self.event.reset()
 
     def on_mouse_wheel_backward(self, obj, evt):
         # First, propagate mouse wheel event to underneath prop.
@@ -195,7 +195,7 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelBackward()
 
-        self.event.done()
+        self.event.reset()
 
     def on_char(self, obj, evt):
         self.propagate_event(evt, *self.active_props)

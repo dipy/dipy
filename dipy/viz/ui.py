@@ -1910,7 +1910,8 @@ class DiskSlider2D(UI):
 class FileSelectMenu2D(UI):
     """ A menu to select files in the current folder.
 
-    Can go to new folder, previous folder and select a file and keep in a variable.
+    Can go to new folder, previous folder and select a file
+    and keep it in a variable.
 
     Attributes
     ----------
@@ -1920,10 +1921,10 @@ class FileSelectMenu2D(UI):
         Current selected file.
     text_item_list: list(:class:`FileSelectMenuText2D`)
         List of FileSelectMenuText2Ds - both visible and invisible.
-    window: int
+    window_offset: int
         Used for scrolling.
-        Basically, tells you the index of the first visible
-        FileSelectMenuText2D object.
+        Tells you the index of the first visible FileSelectMenuText2D
+        object.
     size: (float, float)
         The size of the system (x, y) in pixels.
     font_size: int
@@ -1972,7 +1973,7 @@ class FileSelectMenu2D(UI):
         self.n_text_actors = 0  # Initialisation Value
         self.text_item_list = []
         self.selected_file = ""
-        self.window = 0
+        self.window_offset = 0
         self.current_directory = os.getcwd()
         self.buttons = dict()
 
@@ -2050,9 +2051,9 @@ class FileSelectMenu2D(UI):
         all_file_names = file_select_menu.get_all_file_names()
 
         if (file_select_menu.n_text_actors +
-                file_select_menu.window) <= len(all_file_names):
-            if file_select_menu.window > 0:
-                file_select_menu.window -= 1
+                file_select_menu.window_offset) <= len(all_file_names):
+            if file_select_menu.window_offset > 0:
+                file_select_menu.window_offset -= 1
                 file_select_menu.fill_text_actors()
 
         i_ren.force_render()
@@ -2073,8 +2074,8 @@ class FileSelectMenu2D(UI):
         all_file_names = file_select_menu.get_all_file_names()
 
         if (file_select_menu.n_text_actors +
-                file_select_menu.window) < len(all_file_names):
-            file_select_menu.window += 1
+                file_select_menu.window_offset) < len(all_file_names):
+            file_select_menu.window_offset += 1
             file_select_menu.fill_text_actors()
 
         i_ren.force_render()
@@ -2094,7 +2095,7 @@ class FileSelectMenu2D(UI):
 
         all_file_names = self.get_all_file_names()
 
-        clipped_file_names = all_file_names[self.window:self.n_text_actors+self.window]
+        clipped_file_names = all_file_names[self.window_offset:self.n_text_actors + self.window_offset]
 
         # Allot file names as in the above list
         i = 0
@@ -2238,7 +2239,6 @@ class FileSelectMenuText2D(UI):
 
         self.file_name = ""
         self.file_type = ""
-
         self.file_select = file_select
 
         self.text_actor = self.build_actor(position=position, font_size=font_size)
@@ -2259,7 +2259,7 @@ class FileSelectMenuText2D(UI):
         position: (float, float)
             The text position (x, y) in pixels.
         color: (float, float, float)
-            Values must be between 0-1.
+            Values must be between 0-1 (RGB).
         font_family: string
             Currently only supports Arial.
         justification: string
@@ -2308,7 +2308,9 @@ class FileSelectMenuText2D(UI):
         return [self.text_actor.get_actor()]
 
     def set_attributes(self, file_name, file_type):
-        """ This function is for use by a FileSelectMenu2D to set the
+        """  Set attributes (file name and type) of this component.
+
+        This function is for use by a FileSelectMenu2D to set the
         current file_name and file_type for this FileSelectMenuText2D
         component.
 
