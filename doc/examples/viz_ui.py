@@ -9,6 +9,7 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
+import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 
@@ -176,6 +177,7 @@ file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
                                        position=(300, 300),
                                        font_size=16,
                                        extensions=["py", "png"],
+                                       directory_path=os.getcwd(),
                                        parent=None)
 
 """
