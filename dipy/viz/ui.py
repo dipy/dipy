@@ -1938,8 +1938,8 @@ class FileSelectMenu2D(UI):
 
     """
 
-    def __init__(self, size, font_size, position, parent,
-                 extensions, reverse_scrolling=False, line_spacing=1.4):
+    def __init__(self, size, font_size, position, parent, extensions,
+                 directory_path, reverse_scrolling=False, line_spacing=1.4):
         """
         Parameters
         ----------
@@ -1959,6 +1959,9 @@ class FileSelectMenu2D(UI):
             Distance between menu text items in pixels.
         extensions: list(string)
             List of extensions to be shown as files.
+        directory_path: string
+            Path of the directory where this dialog should open.
+            Example: os.getcwd()
 
         """
         super(FileSelectMenu2D, self).__init__()
@@ -1974,7 +1977,7 @@ class FileSelectMenu2D(UI):
         self.text_item_list = []
         self.selected_file = ""
         self.window_offset = 0
-        self.current_directory = os.getcwd()
+        self.current_directory = directory_path
         self.buttons = dict()
 
         self.menu = self.build_actors(position)

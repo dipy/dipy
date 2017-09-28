@@ -330,6 +330,7 @@ def test_ui_file_select_menu_2d(recording=False):
                                            position=(300, 300),
                                            font_size=16,
                                            extensions=["py", "png"],
+                                           directory_path=os.getcwd(),
                                            parent=None)
     file_select_menu.set_center((300, 300))
 
