@@ -120,7 +120,7 @@ class ActiveAxModel(ReconstModel):
 
         self.sigma = 0
         self.xtol = 1e-3  # Tolerance for termination, nonlinear least square 1e-3 default
-        self.maxiter = 5  # The maximum number of generations, genetic algorithm 5 default
+        self.maxiter = 10  # The maximum number of generations, genetic algorithm 5 default
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta

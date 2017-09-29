@@ -616,6 +616,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def func_mul(x, am2, small_delta, big_delta, summ_rows):
@@ -1198,3 +1199,20 @@ cdef double fast_activeax_cost_one(double [:, :] phi, double [:] signal) nogil:
 
     free(yhat)
     free(phi_mp)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def func_exp(double [:] x, double [:] exp_x):
+    fast_func_exp(x, exp_x)
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef double fast_func_exp(double [:] x, double [:] exp_x) nogil:
+    cdef cnp.npy_intp k
+    cdef cnp.npy_intp K = x.shape[0]
+#    cdef cnp.npy_intp J = x.shape[1]
+
+    for k in range(K):
+        exp_x[k] = exp(x[k])
