@@ -152,10 +152,10 @@ window.record(renderer, out_path='slices_lut.png', size=(600, 600),
 
 """
 Now we would like to add the ability to click on a voxel and show its value
-on a panel in the window. The panel is a widget which requires access to
+on a panel in the window. The panel is a UI element which requires access to
 different areas of the visualization pipeline and therefore we don't recommend
 using it with ``window.show``. The more appropriate way is to use the
-``ShowManager`` object, which allows accessing the pipline in different areas.
+``ShowManager`` object, which allows accessing the pipeline in different areas.
 """
 
 show_m = window.ShowManager(renderer, size=(1200, 900))
@@ -218,7 +218,7 @@ def left_click_callback(obj, ev):
                     show_m.ren)
 
     i, j, k = obj.picker.GetPointIJK()
-    result_position.message = '(' + str(i) + ', ' + str(j) + ', ' + str(k) + ')'
+    result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
     result_value.message = '%.8f' % data[i, j, k]
 
 fa_actor.SetInterpolate(False)
@@ -275,7 +275,6 @@ for j in range(rows):
 
 renderer.reset_camera()
 renderer.zoom(1.6)
-
 
 # show_m.ren.add(panel_picking)
 # show_m.start()
