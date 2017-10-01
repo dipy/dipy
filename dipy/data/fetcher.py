@@ -505,9 +505,9 @@ def read_qtdMRI_test_retest_2subjects():
     .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
         Representation of dMRI in Space and Time", Medical Image Analysis,
         2017.
-    .. [2] Wassermann, Demian, et al. "Test-Retest qt-dMRI datasets for
-        'Non-Parametric GraphNet-Regularized Representation of dMRI in Space
-        and Time' [Data set]". Zenodo. http://doi.org/10.5281/zenodo.996889
+    .. [2] Wassermann, Demian, et al., "Test-Retest qt-dMRI datasets for
+        `Non-Parametric GraphNet-Regularized Representation of dMRI in Space
+        and Time'". doi:10.5281/zenodo.996889, 2017.
     """
     data = []
     data_names = [
