@@ -28,7 +28,7 @@ else:
 
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
-  "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
+    "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
 
 
 class FetcherError(Exception):
@@ -327,7 +327,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets" + \
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets" +
         " please visit http://dsi-studio.labsolver.org",
     data_size="91MB")
 
@@ -368,7 +368,7 @@ fetch_scil_b0 = _make_fetcher(
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     ["e9810fa5bf21b99da786647994d7d5b7"],
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, " + \
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, " +
         "Siemens) and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
     unzip=True)
@@ -447,6 +447,27 @@ fetch_target_tractogram_hcp = _make_fetcher(
     doc="Download tractogram of one of the hcp dataset subjects",
     data_size="541MB",
     unzip=True)
+
+
+fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
+    "fetch_qtdMRI_test_retest_2subjects",
+    pjoin(dipy_home, 'qtdMRI_test_retest_2subjects'),
+    'https://zenodo.org/record/996889/files/',
+    ['subject1_dwis_test.nii.gz', 'subject2_dwis_test.nii.gz',
+     'subject1_dwis_retest.nii.gz', 'subject2_dwis_retest.nii.gz',
+     'subject1_ccmask_test.nii.gz', 'subject2_ccmask_test.nii.gz',
+     'subject1_ccmask_retest.nii.gz', 'subject2_ccmask_retest.nii.gz',
+     'subject1_scheme_test.txt', 'subject2_scheme_test.txt',
+     'subject1_scheme_retest.txt', 'subject2_scheme_retest.txt'],
+    ['subject1_dwis_test.nii.gz', 'subject2_dwis_test.nii.gz',
+     'subject1_dwis_retest.nii.gz', 'subject2_dwis_retest.nii.gz',
+     'subject1_ccmask_test.nii.gz', 'subject2_ccmask_test.nii.gz',
+     'subject1_ccmask_retest.nii.gz', 'subject2_ccmask_retest.nii.gz',
+     'subject1_scheme_test.txt', 'subject2_scheme_test.txt',
+     'subject1_scheme_retest.txt', 'subject2_scheme_retest.txt'],
+    doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 wild-type "
+    doc += "mice, acquired on an 11.7 Tesla Bruker scanner.",
+    data_size="298.2MB")
 
 
 def read_scil_b0():
@@ -900,7 +921,7 @@ CENIR_notes = \
     -----
     Details of the acquisition and processing, and additional meta-data are
     available through UW researchworks:
-    
+
     https://digital.lib.washington.edu/researchworks/handle/1773/33311
     """
 
