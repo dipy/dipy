@@ -465,8 +465,7 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
      'subject1_ccmask_retest.nii.gz', 'subject2_ccmask_retest.nii.gz',
      'subject1_scheme_test.txt', 'subject2_scheme_test.txt',
      'subject1_scheme_retest.txt', 'subject2_scheme_retest.txt'],
-    doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 wild-type "
-    doc += "mice, acquired on an 11.7 Tesla Bruker scanner.",
+    doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 mice.",
     data_size="298.2MB")
 
 
