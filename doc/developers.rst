@@ -35,7 +35,8 @@ And here is the rest of the wonderful contributors:
 - **Kimberly Chan**, Stanford University, CA, USA
 - **Chantal Tax**, Cardiff University, Cardiff, UK
 - **Demian Wassermann**, INRIA, Sophia Antipolis, FR
-- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, USA
+- **Rutger FIck**, INRIA, Sophia Antipolis, FR
+- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, US
 - **Endolith**, New-York, NY, USA
 - **Matthias Ekman**, Donders Institute for Brain, Cognition and Behaviour, Nijmegen, NL
 - **Andrew Lawrence**, University of Cambridge, Cambridge, UK
