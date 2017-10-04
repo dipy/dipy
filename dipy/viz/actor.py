@@ -790,7 +790,7 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
 
     See Also
     --------
-    dipy.viz.fvtk.sphere_funcs
+    dipy.viz.actor.odf_slicer
 
     """
     peaks_dirs = np.asarray(peaks_dirs)
@@ -862,3 +862,194 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                               int(np.floor(szz / 2)), int(np.floor(szz / 2)))
 
     return peak_actor
+
+
+def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
+    """ Create one or more 3d points
+
+    Parameters
+    ----------
+    points : ndarray, (N, 3)
+    color : tuple (3,)
+    opacity : float
+    dot_size : int
+
+    Returns
+    --------
+    vtkActor
+
+    See Also
+    ---------
+    dipy.viz.actor.point
+
+    """
+
+    if points.ndim == 2:
+        points_no = points.shape[0]
+    else:
+        points_no = 1
+
+    polyVertexPoints = vtk.vtkPoints()
+    polyVertexPoints.SetNumberOfPoints(points_no)
+    aPolyVertex = vtk.vtkPolyVertex()
+    aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
+
+    cnt = 0
+    if points.ndim > 1:
+        for point in points:
+            polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
+            aPolyVertex.GetPointIds().SetId(cnt, cnt)
+            cnt += 1
+    else:
+        polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
+        aPolyVertex.GetPointIds().SetId(cnt, cnt)
+        cnt += 1
+
+    aPolyVertexGrid = vtk.vtkUnstructuredGrid()
+    aPolyVertexGrid.Allocate(1, 1)
+    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(),
+                                   aPolyVertex.GetPointIds())
+
+    aPolyVertexGrid.SetPoints(polyVertexPoints)
+    aPolyVertexMapper = vtk.vtkDataSetMapper()
+    if major_version <= 5:
+        aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    else:
+        aPolyVertexMapper.SetInputData(aPolyVertexGrid)
+    aPolyVertexActor = vtk.vtkActor()
+    aPolyVertexActor.SetMapper(aPolyVertexMapper)
+
+    aPolyVertexActor.GetProperty().SetColor(color)
+    aPolyVertexActor.GetProperty().SetOpacity(opacity)
+    aPolyVertexActor.GetProperty().SetPointSize(dot_size)
+    return aPolyVertexActor
+
+
+def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
+    """ Visualize points as sphere glyphs
+
+    Parameters
+    ----------
+    points : ndarray, shape (N, 3)
+    colors : ndarray (N,3) or tuple (3,)
+    point_radius : float
+    theta : int
+    phi : int
+
+    Returns
+    -------
+    vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> pts = np.random.rand(5, 3)
+    >>> point_actor = actor.point(pts, window.colors.coral)
+    >>> ren.add(point_actor)
+    >>> #window.show(ren)
+    """
+
+    if np.array(colors).ndim == 1:
+        # return dots(points,colors,opacity)
+        colors = np.tile(colors, (len(points), 1))
+
+    scalars = vtk.vtkUnsignedCharArray()
+    scalars.SetNumberOfComponents(3)
+
+    pts = vtk.vtkPoints()
+    cnt_colors = 0
+
+    for p in points:
+
+        pts.InsertNextPoint(p[0], p[1], p[2])
+        scalars.InsertNextTuple3(
+            round(255 * colors[cnt_colors][0]),
+            round(255 * colors[cnt_colors][1]),
+            round(255 * colors[cnt_colors][2]))
+        cnt_colors += 1
+
+    src = vtk.vtkSphereSource()
+    src.SetRadius(point_radius)
+    src.SetThetaResolution(theta)
+    src.SetPhiResolution(phi)
+
+    polyData = vtk.vtkPolyData()
+    polyData.SetPoints(pts)
+    polyData.GetPointData().SetScalars(scalars)
+
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetSourceConnection(src.GetOutputPort())
+    if major_version <= 5:
+        glyph.SetInput(polyData)
+    else:
+        glyph.SetInputData(polyData)
+    glyph.SetColorModeToColorByScalar()
+    glyph.SetScaleModeToDataScalingOff()
+    glyph.Update()
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(glyph.GetOutput())
+    else:
+        mapper.SetInputData(glyph.GetOutput())
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetOpacity(opacity)
+
+    return actor
+
+
+def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
+          color=(1, 1, 1)):
+    """ Create a label actor.
+
+    This actor will always face the camera
+
+    Parameters
+    ----------
+    ren : vtkRenderer() object
+       Renderer as returned by ``ren()``.
+    text : str
+        Text for the label.
+    pos : (3,) array_like, optional
+        Left down position of the label.
+    scale : (3,) array_like
+        Changes the size of the label.
+    color : (3,) array_like
+        Label color as ``(r,g,b)`` tuple.
+
+    Returns
+    -------
+    l : vtkActor object
+        Label.
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> r = window.Renderer()
+    >>> l = actor.label(r)
+    >>> ren.add(l)
+    >>> #window.show(r)
+    """
+
+    atext = vtk.vtkVectorText()
+    atext.SetText(text)
+
+    textm = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        textm.SetInput(atext.GetOutput())
+    else:
+        textm.SetInputData(atext.GetOutput())
+
+    texta = vtk.vtkFollower()
+    texta.SetMapper(textm)
+    texta.SetScale(scale)
+
+    texta.GetProperty().SetColor(color)
+    texta.SetPosition(pos)
+
+    ren.AddActor(texta)
+    texta.SetCamera(ren.GetActiveCamera())
+
+    return texta
