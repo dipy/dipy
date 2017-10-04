@@ -244,7 +244,8 @@ if __name__ == "__main__":
 
     # """
 
-    # r=fvtk.ren()
-    # fvtk.add(r,fvtk.volume(vol234[...,0]))
-    # fvtk.show(r)
+    # from dipy.viz import window, actor
+    # ren = window.Renderer()
+    # ren.add(actor.volume(vol234[...,0]))
+    # window.show(r)
     # vol234n=add_rician_noise(vol234,20)
