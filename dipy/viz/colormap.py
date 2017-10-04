@@ -241,7 +241,7 @@ def orient2rgb(v):
 
 
 def line_colors(streamlines, cmap='rgb_standard'):
-    """ Create colors for streamlines to be used in fvtk.line
+    """ Create colors for streamlines to be used in actor.line
 
     Parameters
     ----------
