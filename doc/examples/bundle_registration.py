@@ -10,7 +10,7 @@ To show the concept we will use two pre-saved cingulum bundles. The algorithm
 used here is called Streamline-based Linear Registration (SLR) [Garyfallidis15]_.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from time import sleep
 from dipy.data import two_cingulum_bundles
 
@@ -48,25 +48,25 @@ After the optimization is finished we can apply the transformation to
 cb_subj2_aligned = srm.transform(cb_subj2)
 
 
-def show_both_bundles(bundles, colors=None, show=False, fname=None):
+def show_both_bundles(bundles, colors=None, show=True, fname=None):
 
-    ren = fvtk.ren()
+    ren = window.Renderer()
     ren.SetBackground(1., 1, 1)
     for (i, bundle) in enumerate(bundles):
         color = colors[i]
-        lines = fvtk.streamtube(bundle, color, linewidth=0.3)
-        lines.RotateX(-90)
-        lines.RotateZ(90)
-        fvtk.add(ren, lines)
+        lines_actor = actor.streamtube(bundle, color, linewidth=0.3)
+        lines_actor.RotateX(-90)
+        lines_actor.RotateZ(90)
+        ren.add(lines_actor)
     if show:
-        fvtk.show(ren)
+        window.show(ren)
     if fname is not None:
         sleep(1)
-        fvtk.record(ren, n_frames=1, out_path=fname, size=(900, 900))
+        window.record(ren, n_frames=1, out_path=fname, size=(900, 900))
 
 
 show_both_bundles([cb_subj1, cb_subj2],
-                  colors=[fvtk.colors.orange, fvtk.colors.red],
+                  colors=[window.colors.orange, window.colors.red],
                   fname='before_registration.png')
 
 """
@@ -77,7 +77,7 @@ show_both_bundles([cb_subj1, cb_subj2],
 """
 
 show_both_bundles([cb_subj1, cb_subj2_aligned],
-                  colors=[fvtk.colors.orange, fvtk.colors.red],
+                  colors=[window.colors.orange, window.colors.red],
                   fname='after_registration.png')
 
 """
