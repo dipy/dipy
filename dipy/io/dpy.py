@@ -9,27 +9,13 @@
 """
 
 import numpy as np
-
-from distutils.version import LooseVersion
-
-# Conditional testing machinery for pytables
-from dipy.testing import doctest_skip_parser
-
-# Conditional import machinery for pytables
-from dipy.utils.optpkg import optional_package
-
-# Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables')
-
-# Useful variable for backward compatibility.
-TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
+import h5py
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
 
 
 class Dpy(object):
-    @doctest_skip_parser
     def __init__(self, fname, mode='r', compression=0):
         """ Advanced storage system for tractography based on HDF5
 
@@ -39,7 +25,6 @@ class Dpy(object):
         mode : 'r' read
          'w' write
          'r+' read and write only if file already exists
-         'a'  read and write even if file doesn't exist (not used yet)
         compression : 0 no compression to 9 maximum compression
 
         Examples
@@ -69,44 +54,37 @@ class Dpy(object):
         """
 
         self.mode = mode
-        self.f = tables.openFile(fname, mode=self.mode) if TABLES_LESS_3_0 else tables.open_file(fname, mode=self.mode)
+        self.f = h5py.File(fname, mode=self.mode)
         self.N = 5 * 10**9
         self.compression = compression
 
         if self.mode == 'w':
-            if TABLES_LESS_3_0:
-                func_create_group = self.f.createGroup
-                func_create_array = self.f.createArray
-                func_create_earray = self.f.createEArray
-            else:
-                func_create_group = self.f.create_group
-                func_create_array = self.f.create_array
-                func_create_earray = self.f.create_earray
 
-            self.streamlines = func_create_group(self.f.root, 'streamlines')
+            self.streamlines = f.create_group('streamlines')
+
             # create a version number
-            self.version = func_create_array(self.f.root, 'version',
-                                             [b"0.0.1"], 'Dpy Version Number')
+            self.version = self.streamlines.create_dataset(
+                    'version',
+                    [b"0.0.2"])
 
-            self.tracks = func_create_earray(self.f.root.streamlines,
-                                             'tracks',
-                                             tables.Float32Atom(),
-                                             (0, 3),
-                                             "scalar Float32 earray",
-                                             tables.Filters(self.compression),
-                                             expectedrows=self.N)
-            self.offsets = func_create_earray(self.f.root.streamlines,
-                                              'offsets',
-                                              tables.Int64Atom(), (0,),
-                                              "scalar Int64 earray",
-                                              tables.Filters(self.compression),
-                                              expectedrows=self.N + 1)
+            self.tracks = self.streamlines.create_dataset(
+                    'tracks',
+                    shape=(0, 3),
+                    dtype='f4',
+                    maxshape=(None, 3))
+
+            self.offsets = self.streamlines.create_dataset(
+                    'offsets',
+                    shape=(0,),
+                    dtype='i8',
+                    maxshape=(None))
+
             self.curr_pos = 0
             self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
 
         if self.mode == 'r':
-            self.tracks = self.f.root.streamlines.tracks
-            self.offsets = self.f.root.streamlines.offsets
+            self.tracks = self.f['streamlines']['tracks']
+            self.offsets = self.f['streamlines']['offsets']
             self.track_no = len(self.offsets) - 1
             self.offs_pos = 0
 

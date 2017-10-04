@@ -3,7 +3,7 @@ import numpy as np
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from dipy.io.dpy import Dpy, have_tables
+from dipy.io.dpy import Dpy
 
 
 from nose.tools import assert_true, assert_false, \
@@ -12,12 +12,7 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 
-# Decorator to protect tests from being run without pytables present
-iftables = npt.dec.skipif(not have_tables,
-                          'Pytables does not appear to be installed')
 
-
-@iftables
 def test_dpy():
     fname = 'test.bin'
     with InTemporaryDirectory():
