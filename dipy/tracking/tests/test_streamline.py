@@ -302,8 +302,8 @@ def test_set_number_of_points():
         streamlines_readonly.append(s.copy())
         streamlines_readonly[-1].setflags(write=False)
 
-    assert_equal(len(set_number_of_points_python(streamlines_readonly,
-                                                 nb_points=42)),
+    assert_equal(len(set_number_of_points(streamlines_readonly,
+                                          nb_points=42)),
                  len(streamlines_readonly))
 
     streamlines_readonly = []

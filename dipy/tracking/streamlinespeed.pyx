@@ -379,18 +379,15 @@ def set_number_of_points(streamlines, nb_points=3):
 
                 streamline = streamline.astype(dtype)
 
-            new_modified_streamline = np.empty((nb_points,
-                                                streamline.shape[1]),
-                                               dtype=dtype)
+            new_streamline = np.empty((nb_points, streamline.shape[1]),
+                                      dtype=dtype)
             if dtype == np.float32:
-                c_set_number_of_points[float2d](streamline,
-                                                modified_streamline)
+                c_set_number_of_points[float2d](streamline, new_streamline)
             else:
-                c_set_number_of_points[double2d](streamline,
-                                                 modified_streamline)
+                c_set_number_of_points[double2d](streamline, new_streamline)
 
             # HACK: To avoid memleaks we have to recast with astype(dtype).
-            new_streamlines.append(modified_streamline.astype(dtype))
+            new_streamlines.append(new_streamline.astype(dtype))
 
     elif dtype == np.float32:
         # All streamlines have composed of float32 points
