@@ -53,7 +53,7 @@ plt.savefig('t1_image.png', bbox_inches='tight', pad_inches=0)
 .. figure:: t1_image.png
    :align: center
 
-   **T1-weighted image of healthy adult**.
+   T1-weighted image of healthy adult.
 
 Now we will define the other two parameters for the segmentation algorithm.
 We will segment three classes, namely corticospinal fluid (CSF), white matter
@@ -107,8 +107,8 @@ Now we plot the resulting segmentation.
 .. figure:: final_seg.png
    :align: center
 
-   **Each tissue class is color coded separately, red for the WM, yellow for
-   the GM and light blue for the CSF**.
+   Each tissue class is color coded separately, red for the WM, yellow for
+   the GM and light blue for the CSF.
 
 And we will also have a look at the probability maps for each tissue class.
 """
@@ -137,8 +137,15 @@ plt.show()
    :align: center
    :scale: 120
 
-   **These are the probability maps of each of the three tissue classes**.
+   These are the probability maps of each of the three tissue classes.
 
-.. [Zhang2001] Zhang, Y., Brady, M. and Smith, S. Segmentation of Brain MR Images Through a Hidden Markov Random Field Model and the Expectation-Maximization Algorithm IEEE Transactions on Medical Imaging, 20(1): 45-56, 2001
-.. [Avants2011] Avants, B. B., Tustison, N. J., Wu, J., Cook, P. A. and Gee, J. C. An open source multivariate framework for n-tissue segmentation with evaluation on public data. Neuroinformatics, 9(4): 381–400, 2011.
+.. [Zhang2001] Zhang, Y., Brady, M. and Smith, S. Segmentation of Brain MR
+   Images Through a Hidden Markov Random Field Model and the
+   Expectation-Maximization Algorithm IEEE Transactions on Medical Imaging,
+   20(1): 45-56, 2001
+
+.. [Avants2011] Avants, B. B., Tustison, N. J., Wu, J., Cook, P. A. and Gee,
+   J. C. An open source multivariate framework for n-tissue segmentation with
+   evaluation on public data. Neuroinformatics, 9(4): 381–400, 2011.
+
 """

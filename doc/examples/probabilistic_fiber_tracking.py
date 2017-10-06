@@ -14,9 +14,9 @@ point can be represented as a probability mass function (PMF) if the possible
 tracking directions are restricted to discrete numbers of well distributed
 points on a sphere.
 
-This example is an extension of the "introduction to basic tracking" example.
-We'll begin by repeating a few steps from that example, loading the data and
-fitting a constrained spherical deconvolution (CSD) model.
+This example is an extension of the :ref:`intro_basic_tracking` example. We'll
+begin by repeating a few steps from that example, loading the data and fitting
+a Constrained Spherical Deconvolution (CSD) model.
 """
 
 from dipy.data import read_stanford_labels
@@ -47,14 +47,14 @@ gfa = csa_model.fit(data, mask=white_matter).gfa
 classifier = ThresholdTissueClassifier(gfa, .25)
 
 """
-The fiber orientation distribution (FOD) of the CSD model estimates the
+The Fiber Orientation Distribution (FOD) of the CSD model estimates the
 distribution of small fiber bundles within each voxel. We can use this
 distribution for probabilistic fiber tracking. One way to do this is to
 represent the FOD using a discrete sphere. This discrete FOD can be used by the
-Probabilistic Direction Getter as a PMF for sampling tracking directions. We
+``ProbabilisticDirectionGetter`` as a PMF for sampling tracking directions. We
 need to clip the FOD to use it as a PMF because the latter cannot have negative
-values. (Ideally the FOD should be strictly positive, but because of noise
-and/or model failures sometimes it can have negative values).
+values. Ideally, the FOD should be strictly positive, but because of noise
+and/or model failures sometimes it can have negative values.
 """
 
 from dipy.direction import ProbabilisticDirectionGetter

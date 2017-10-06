@@ -50,7 +50,7 @@ signal, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
                          fractions=fractions, snr=None)
 
 """
-We can also add rician noise with a specific SNR.
+We can also add Rician noise with a specific SNR.
 """
 
 signal_noisy, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
@@ -76,7 +76,7 @@ plt.savefig('simulated_signal.png')
 """
 For the ODF simulation we will need a sphere. Because we are interested in a
 simulation of only a single voxel, we can use a sphere with very high
-resolution. We generate that by subdividing the triangles of one of Dipy's
+resolution. We generate that by subdividing the triangles of one of dipy_'s
 cached spheres, which we can read in the following way.
 """
 
@@ -101,5 +101,8 @@ fvtk.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
 .. figure:: multi_tensor_simulation.png
    :align: center
 
-   **Simulating a MultiTensor ODF**
+   Simulating a MultiTensor ODF.
+
+.. include:: ../links_names.inc
+
 """

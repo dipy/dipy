@@ -201,11 +201,13 @@ fvtk.record(ren, n_frames=1, out_path='cosine_metric.png', size=(600, 600))
 .. figure:: cosine_metric.png
    :align: center
 
-   **Showing the streamlines colored according to their orientation**.
+   Showing the streamlines colored according to their orientation.
 
 .. include:: ../links_names.inc
 
+References
+----------
+
 .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-                    tractography simplification, Frontiers in Neuroscience, vol
-                    6, no 175, 2012.
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.
 """

@@ -99,7 +99,7 @@ window.record(renderer, out_path='slices.png', size=(600, 600),
 .. figure:: slices.png
    :align: center
 
-   **Simple slice viewer**.
+   Simple slice viewer.
 
 Render slices from FA with your colormap
 ========================================
@@ -137,6 +137,10 @@ renderer.add(fa_actor)
 
 renderer.reset_camera()
 renderer.zoom(1.4)
+
+"""
+In order to interact with the data you will need to uncomment the line below.
+"""
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
 
@@ -223,6 +227,10 @@ def left_click_callback(obj, ev):
 
 fa_actor.SetInterpolate(False)
 fa_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
+"""
+To try picking, uncomment the line below.
+"""
 
 # show_m.start()
 
@@ -311,5 +319,5 @@ window.record(renderer, out_path='mosaic.png', size=(900, 600),
 .. figure:: mosaic.png
    :align: center
 
-   **A mosaic of all the slices in the T1 volume**.
+   A mosaic of all the slices in the T1 volume.
 """

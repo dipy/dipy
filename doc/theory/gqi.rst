@@ -4,7 +4,7 @@
 Generalised Q-Sampling Imaging
 ==============================
 
-These notes are to help the user of the dipy module understand 
+These notes are to help the user of the DIPY module understand 
 Frank Yeh's Generalised Q-Sampling Imaging (GQI) [reference?].
 
 The starting point is the classical formulation of joint k-space 

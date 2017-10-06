@@ -5,7 +5,7 @@
 =============================
 
 These are the instructions if you just want to follow the latest
-*dipy* source, but you don't need to do any development for now.
+DIPY source, but you don't need to do any development for now.
 
 The steps are:
 

@@ -1,5 +1,5 @@
 ===================================
- Release notes for dipy version 0.6
+ Release notes for DIPY version 0.6
 ===================================
 
 GitHub stats for 2011/02/12 - 2013/03/20 
