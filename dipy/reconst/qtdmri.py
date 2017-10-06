@@ -91,6 +91,9 @@ class QtdmriModel(Cache):
         bval_threshold : float
             the threshold b-value to be used, such that only data points below
             that threshold are used when estimating the scale factors.
+        eigenvalue_threshold : float,
+            Sets the minimum of the tensor eigenvalues in order to avoid
+            stability problem.
         cvxpy_solver : str, optional
             cvxpy solver name. Optionally optimize the positivity constraint
             with a particular cvxpy solver. See See http://www.cvxpy.org/ for
@@ -156,6 +159,8 @@ class QtdmriModel(Cache):
             elif isinstance(laplacian_weighting, float):
                 if laplacian_weighting < 0:
                     raise ValueError(msg)
+            else:
+                raise ValueError(msg)
 
         if not isinstance(l1_regularization, bool):
             msg = "l1_regularization must be True or False."
@@ -172,6 +177,8 @@ class QtdmriModel(Cache):
             elif isinstance(l1_weighting, float):
                 if l1_weighting < 0:
                     raise ValueError(msg)
+            else:
+                raise ValueError(msg)
 
         if not isinstance(cartesian, bool):
             msg = "cartesian must be True or False."
@@ -258,6 +265,7 @@ class QtdmriModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
+        cvxpy_status, cvxpy_value = None, None
         bval_mask = self.gtab.bvals < self.bval_threshold
         data_norm = data / data[self.gtab.b0s_mask].mean()
         tau = self.gtab.tau
@@ -273,11 +281,8 @@ class QtdmriModel(Cache):
                                                        tau[bval_mask])
                 tau_scaling = ut / us.mean()
                 tau_scaled = tau * tau_scaling
-                us, ut, R = qtdmri_anisotropic_scaling(data_norm[bval_mask],
-                                                       qvals[bval_mask],
-                                                       bvecs[bval_mask],
-                                                       tau_scaled[bval_mask])
-                us = np.clip(us, 1e-4, np.inf)
+                ut /= tau_scaling
+                us = np.clip(us, self.eigenvalue_threshold, np.inf)
                 q = np.dot(bvecs, R) * qvals[:, None]
                 M = qtdmri_signal_matrix_(
                     self.radial_order, self.time_order, us, ut, q, tau_scaled,
@@ -287,8 +292,7 @@ class QtdmriModel(Cache):
                 us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
                 tau_scaling = ut / us
                 tau_scaled = tau * tau_scaling
-                us, ut = qtdmri_isotropic_scaling(data_norm, qvals,
-                                                  tau_scaled)
+                ut /= tau_scaling
                 R = np.eye(3)
                 us = np.tile(us, 3)
                 q = bvecs * qvals[:, None]
@@ -300,7 +304,7 @@ class QtdmriModel(Cache):
             us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau)
             tau_scaling = ut / us
             tau_scaled = tau * tau_scaling
-            us, ut = qtdmri_isotropic_scaling(data_norm, qvals, tau_scaled)
+            ut /= tau_scaling
             R = np.eye(3)
             us = np.tile(us, 3)
             q = bvecs * qvals[:, None]
@@ -360,9 +364,11 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
+                cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
+                cvxpy_solution_optimal = False
         elif self.l1_regularization and not self.laplacian_regularization:
             if self.l1_weighting == 'CV':
                 alpha = l1_crossvalidation(b0s_mask, data_norm, M)
@@ -383,9 +389,11 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
+                cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
+                cvxpy_solution_optimal = False
         elif self.l1_regularization and self.laplacian_regularization:
             if self.cartesian:
                 laplacian_matrix = qtdmri_laplacian_reg_matrix(
@@ -428,9 +436,11 @@ class QtdmriModel(Cache):
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
+                cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
             except:
                 qtdmri_coef = np.zeros(M.shape[1])
+                cvxpy_solution_optimal = False
         elif not self.l1_regularization and not self.laplacian_regularization:
             # just use least squares with the observation matrix
             pseudoInv = np.linalg.pinv(M)
@@ -439,15 +449,22 @@ class QtdmriModel(Cache):
             # solver often fails, so only first tau-position is manually
             # normalized.
             qtdmri_coef /= np.dot(M0[0], qtdmri_coef)
+            cvxpy_solution_optimal = None
 
+        if cvxpy_solution_optimal is False:
+            msg = "cvxpy optimization resulted in non-optimal solution. Check "
+            msg += "cvxpy_solution_optimal attribute in fitted object to see "
+            msg += "which voxels are affected."
+            warn(msg)
         return QtdmriFit(
-            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha)
+            self, qtdmri_coef, us, ut, tau_scaling, R, lopt, alpha,
+            cvxpy_solution_optimal)
 
 
 class QtdmriFit():
 
     def __init__(self, model, qtdmri_coef, us, ut, tau_scaling, R, lopt,
-                 alpha):
+                 alpha, cvxpy_solution_optimal):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -460,10 +477,17 @@ class QtdmriFit():
             spatial scaling factors
         ut : float
             temporal scaling factor
+        tau_scaling : float,
+            the temporal scaling that used to scale tau to the size of us
         R : 3x3 numpy array,
             tensor eigenvectors
         lopt : float,
             laplacian regularization weight
+        alpha : float,
+            the l1 regularization weight
+        cvxpy_solution_optimal: bool,
+            indicates whether the cvxpy coefficient estimation reach an optimal
+            solution
         """
 
         self.model = model
@@ -474,30 +498,7 @@ class QtdmriFit():
         self.R = R
         self.lopt = lopt
         self.alpha = alpha
-
-    @property
-    def qtdmri_coeff(self):
-        """The qtdmri coefficients
-        """
-        return self._qtdmri_coef
-
-    @property
-    def qtdmri_R(self):
-        """The qtdmri rotation matrix
-        """
-        return self.R
-
-    @property
-    def qtdmri_us(self):
-        """The qtdmri spatial scale factors
-        """
-        return self.us
-
-    @property
-    def qtdmri_ut(self):
-        """The qtdmri temporal scale factor
-        """
-        return self.ut
+        self.cvxpy_solution_optimal = cvxpy_solution_optimal
 
     def qtdmri_to_mapmri_coef(self, tau):
         """This function converts the qtdmri coefficients to mapmri
