@@ -98,7 +98,6 @@ plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 
 """
 
-
 """
 Load an odf reconstruction sphere
 """
