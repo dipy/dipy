@@ -3,7 +3,7 @@
 Advanced interactive visualization
 ==================================
 
-In DIPY we created a thin interface to access many of the capabilities
+In dipy_ we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
 needs of structural and diffusion imaging. Initially the 3D visualization
 module was named ``fvtk``, meaning functions using vtk. This is still available
@@ -41,8 +41,8 @@ from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 fetch_bundles_2_subjects()
 
 """
-The following function outputs a dictionary with the required bundles e.g., af
-left (left arcuate fasciculus) and maps, e.g., FA for a specific subject.
+The following function outputs a dictionary with the required bundles e.g. ``af
+left`` (left arcuate fasciculus) and maps, e.g. FA for a specific subject.
 """
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
@@ -281,8 +281,8 @@ def win_callback(obj, event):
 show_m.initialize()
 
 """
-Finally, please set the following variable to True to interact with the 
-datasetsin 3D.
+Finally, please set the following variable to ``True`` to interact with the
+datasets in 3D.
 """
 
 interactive = False
@@ -305,7 +305,13 @@ else:
 .. figure:: bundles_and_3_slices.png
    :align: center
 
-   **A few bundles with interactive slicing**.
+   A few bundles with interactive slicing.
 """
 
 del show_m
+
+"""
+
+.. include:: ../links_names.inc
+
+"""

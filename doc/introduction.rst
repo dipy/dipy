@@ -1,7 +1,7 @@
 .. _introduction:
 
 ===============
- What is dipy?
+ What is DIPY?
 ===============
 
 * **a python package** for analyzing ``diffusion MRI data``
@@ -16,7 +16,7 @@ e-mail list neuroimaging@python.org with subject starting with ``[Dipy]``.
 .. figure:: _static/pretty_tracks.png
    :align: center
 
-   **This is a depiction of tractography created with dipy**
+   This is a depiction of tractography created with DIPY.
 
    If you want to learn more how you can create these with your datasets 
    read the examples in our :ref:`documentation` .

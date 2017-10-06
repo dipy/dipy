@@ -31,7 +31,7 @@ data = img.get_data()
 
 """
 You can verify the b-values of the datasets by looking at the attribute
-`gtab.bvals`.
+``gtab.bvals``.
 
 In CSD there is an important pre-processing step: the estimation of the fiber
 response function. In order to do this we look for regions of the brain where
@@ -94,7 +94,7 @@ fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 .. figure:: csd_response.png
    :align: center
 
-   **Estimated response function**.
+   Estimated response function.
 
 """
 
@@ -155,7 +155,7 @@ fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
 .. figure:: csd_recursive_response.png
    :align: center
 
-   **Estimated response function using recursive calibration**.
+   Estimated response function using recursive calibration.
 
 """
 
@@ -197,7 +197,7 @@ fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
 .. figure:: csd_odfs.png
    :align: center
 
-   **CSD ODFs**.
+   CSD ODFs.
 
 In Dipy we also provide tools for finding the peak directions (maxima) of the
 ODFs. For this purpose we recommend using ``peaks_from_model``.
@@ -223,7 +223,7 @@ fvtk.record(ren, out_path='csd_peaks.png', size=(600, 600))
 .. figure:: csd_peaks.png
    :align: center
 
-   **CSD Peaks**.
+   CSD Peaks.
 
 We can finally visualize both the ODFs and peaks in the same space.
 """
@@ -240,10 +240,19 @@ fvtk.record(ren, out_path='csd_both.png', size=(600, 600))
 .. figure:: csd_both.png
    :align: center
 
-   **CSD Peaks and ODFs**.
+   CSD Peaks and ODFs.
 
-.. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
-.. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans, "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80, 2014.
+References
+----------
+
+.. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust
+   determination of the fibre orientation distribution in diffusion MRI:
+   Non-negativity constrained super-resolved spherical deconvolution",
+   Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+
+.. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans,
+   "Recursive calibration of the fiber response function for spherical
+   deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80, 2014.
 
 .. include:: ../links_names.inc
 

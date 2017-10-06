@@ -3,8 +3,8 @@
 Reconstruct with Constant Solid Angle (Q-Ball)
 =================================================
 
-We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
-al (MRM 2010) to your datasets.
+We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et
+al. [Aganj2010]_ to your datasets.
 
 First import the necessary modules:
 """
@@ -36,7 +36,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 data.shape ``(81, 106, 76, 160)``
 
-Remove most of the background using dipy's mask module.
+Remove most of the background using DIPY's mask module.
 """
 
 from dipy.segment.mask import median_otsu
@@ -112,9 +112,18 @@ fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 .. figure:: csa_odfs.png
    :align: center
 
-   **Constant Solid Angle ODFs**.
+   Constant Solid Angle ODFs.
 
 .. include:: ../links_names.inc
+
+References
+----------
+
+.. [Aganj2010] Aganj I, Lenglet C, Sapiro G, Yacoub E, Ugurbil K, Harel N.
+   "Reconstruction of the orientation distribution function in single- and
+   multiple-shell q-ball imaging within constant solid angle", Magnetic
+   Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
+
 
 """
 
