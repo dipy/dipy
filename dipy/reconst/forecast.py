@@ -6,7 +6,7 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.shm import real_sph_harm
-from scipy.special import erf
+from scipy.special import gamma, hyp1f1
 from dipy.core.geometry import cart2sphere
 from dipy.data import get_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
@@ -232,38 +232,38 @@ class ForecastModel(OdfModel, Cache):
         n_c = int((self.sh_order + 1)*(self.sh_order + 2)/2)
         coef = np.zeros(n_c)
         coef[0] = c0
+        if int(np.round(d_par*1e05)) > int(np.round(d_perp*1e05)):
+            if self.wls:
+                data_r = data_single_b0 - M0*c0
 
-        if self.wls:
-            data_r = data_single_b0 - M0*c0
+                Mr = M[:, 1:]
+                Lr = self.lb_matrix[1:, 1:]
 
-            Mr = M[:, 1:]
-            Lr = self.lb_matrix[1:, 1:]
+                pseudo_inv = np.dot(np.linalg.inv(
+                    np.dot(Mr.T, Mr) + self.lambda_lb*Lr), Mr.T)
+                coef = np.dot(pseudo_inv, data_r)
+                coef = np.r_[c0, coef]
 
-            pseudo_inv = np.dot(np.linalg.inv(
-                np.dot(Mr.T, Mr) + self.lambda_lb*Lr), Mr.T)
-            coef = np.dot(pseudo_inv, data_r)
-            coef = np.r_[c0, coef]
+            if self.csd:
+                coef, num_it = csdeconv(data_single_b0, M, self.fod, tau=0.1, convergence=50)
+                coef = coef/coef[0] * c0
+                
+            if self.pos:
+                c = cvxpy.Variable(M.shape[1])
+                design_matrix = cvxpy.Constant(M)
+                objective = cvxpy.Minimize(
+                    cvxpy.sum_squares(design_matrix * c - data_single_b0) +
+                    self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
 
-        if self.csd:
-            coef, num_it = csdeconv(data_single_b0, M, self.fod, tau=0.1, convergence=50)
-            coef = coef/coef[0] * c0
-            
-        if self.pos:
-            c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
-            objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_single_b0) +
-                self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
-
-            constraints = [c[0] == c0, self.fod * c >= 0]
-            prob = cvxpy.Problem(objective, constraints)
-            try:
-                prob.solve()
-                coef = np.asarray(c.value).squeeze()
-            except:
-                warn('Optimization did not find a solution')
-                coef = np.zeros(M.shape[1])
-                coef[0] = c0
+                constraints = [c[0] == c0, self.fod * c >= 0]
+                prob = cvxpy.Problem(objective, constraints)
+                try:
+                    prob.solve()
+                    coef = np.asarray(c.value).squeeze()
+                except:
+                    warn('Optimization did not find a solution')
+                    coef = np.zeros(M.shape[1])
+                    coef[0] = c0
 
         return ForecastFit(self, data, coef, d_par, d_perp)
 
@@ -438,111 +438,11 @@ def forecast_error_func(x, b_unique, E):
     return v
 
 
-def I_l(l, b):
-    if np.isscalar(b):
-        if b <= 1e-08:
-            v = 2.0/(l+1)
-        else:
-            if l == 0:
-                v = (np.sqrt(np.pi)*erf(np.sqrt(b))) / (b**(0.5))
-
-            if l == 2:
-                v = (np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)) / (2*b**(1.5))
-
-            if l == 4:
-                v = (3 * np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)*(2*b+3)) / (4*b**(2.5))
-
-            if l == 6:
-                v = (15 * np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)*(4*b**2 + 10*b+15)) / (8*b**(3.5))
-
-            if l == 8:
-                v = (105 * np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)*(8*b**3 + 28*b**2 + 70*b+105)) / (16*b**(4.5))
-
-            if l == 10:
-                v = (945 * np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)*(16*b**4 + 72*b**3 + 252*b**2 + 630*b+945)) /\
-                    (32*b**(5.5))
-
-            if l == 12:
-                v = (10395 * np.sqrt(np.pi)*erf(np.sqrt(b)) - 2*np.exp(-b) *
-                     np.sqrt(b)*(32*b**5 + 176*b**4 + 792*b**3 + 2772*b**2 +
-                     6930*b+10395)) / (64*b**(6.5))
-
-    else:
-        v = np.zeros(len(b))
-        ind = b <= 1e-08
-        v[ind] = 2.0/(l+1)
-        b_not = b[~ind]
-        if l == 0:
-            v[~ind] = (np.sqrt(np.pi)*erf(np.sqrt(b_not))) / (b_not**(0.5))
-
-        if l == 2:
-            v[~ind] = (np.sqrt(np.pi)*erf(np.sqrt(b_not)) - 2*np.exp(-b_not) *
-                       np.sqrt(b_not)) / (2*b_not**(1.5))
-
-        if l == 4:
-            v[~ind] = (3 * np.sqrt(np.pi)*erf(np.sqrt(b_not)) - 2 * \
-                       np.exp(-b_not)*np.sqrt(b_not)*(2*b_not+3)) / \
-                      (4*b_not**(2.5))
-
-        if l == 6:
-            v[~ind] = (15 * np.sqrt(np.pi)*erf(np.sqrt(b_not)) - 2 * \
-                       np.exp(-b_not) * np.sqrt(b_not)*(4*b_not**2 + \
-                       10*b_not+15)) / (8*b_not**(3.5))
-
-        if l == 8:
-            v[~ind] = (105 * np.sqrt(np.pi)*erf(np.sqrt(b_not)) - \
-                       2*np.exp(-b_not) * np.sqrt(b_not)*(8*b_not**3 + 28 * \
-                       b_not**2 + 70*b_not+105)) / (16*b_not**(4.5))
-
-        if l == 10:
-            v[~ind] = (945 * np.sqrt(np.pi)*erf(np.sqrt(b_not)) - 2 * \
-                       np.exp(-b_not)*np.sqrt(b_not) * (16*b_not**4 + 72 * \
-                       b_not**3 + 252*b_not**2 + 630*b_not+945)) / \
-                      (32*b_not**(5.5))
-
-        if l == 12:
-            v[~ind] = (10395 * np.sqrt(np.pi)*erf(np.sqrt(b_not)) - 2 *\
-                       np.exp(-b_not)*np.sqrt(b_not)*(32*b_not**5 + \
-                       176*b_not**4 + 792*b_not**3 + 2772*b_not**2 + 6930*
-                       b_not+10395)) / (64*b_not**(6.5))
-
-    return v
-
-
-def Psi_l(l, b):
-    if l == 0:
-        v = I_l(0, b)
-
-    if l == 2:
-        v = 0.5*(3*I_l(2, b) - I_l(0, b))
-
-    if l == 4:
-        v = (1.0/8)*(35*I_l(4, b) - 30*I_l(2, b) + 3*I_l(0, b))
-
-    if l == 6:
-        v = (1.0/16)*(231*I_l(6, b) - 315 * \
-             I_l(4, b) + 105*I_l(2, b) - 5*I_l(0, b))
-
-    if l == 8:
-        v = (1.0/128)*(6435*I_l(8, b) - 12012*I_l(6, b) + \
-            6930 * I_l(4, b) - 1260*I_l(2, b) + 35*I_l(0, b))
-
-    if l == 10:
-        v = (46189/256.0)*I_l(10, b) - (109395/256.0)*I_l(8, b) + \
-            (90090/256.0) * I_l(6, b)-(30030/256.0)*I_l(4, b) + \
-            (3465/256.0)*I_l(2, b) - (63/256.0)*I_l(0, b)
-
-    if l == 12:
-        v = (676039/1024.0)*I_l(12, b) - (1939938/1024.0)*I_l(10, b) + \
-            (2078505/1024.0)*I_l(8, b) - (1021020 / 1024.0)*I_l(6, b) + \
-            (225225/1024.0)*I_l(4, b) - (18018/1024.0)*I_l(2, b) + \
-            (231/1024.0)*I_l(0, b)
-
+def Psi_l(l,b):
+    n = l//2
+    v = (-b)**n
+    v *= gamma(n + 1./2) / gamma(2*n + 3./2)
+    v *= hyp1f1(n + 1./2, 2*n + 3./2, -b)
     return v
 
 
