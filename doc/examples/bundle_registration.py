@@ -73,7 +73,7 @@ show_both_bundles([cb_subj1, cb_subj2],
 .. figure:: before_registration.png
    :align: center
 
-   **Before bundle registration**.
+   Before bundle registration.
 """
 
 show_both_bundles([cb_subj1, cb_subj2_aligned],
@@ -84,7 +84,7 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
 .. figure:: after_registration.png
    :align: center
 
-   **After bundle registration**.
+   After bundle registration.
 
 As you can see the two cingulum bundles are well aligned although they contain
 many streamlines of different length and shape.

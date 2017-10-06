@@ -127,7 +127,7 @@ plt.savefig('rtop.png')
 .. figure:: rtop.png
    :align: center
 
-   **Return to origin probability**.
+   Return to origin probability.
 
 Show the msd images and save them in msd.png. 
 """
@@ -147,19 +147,18 @@ plt.savefig('msd.png')
 .. figure:: msd.png
    :align: center
 
-   **Mean square displacement**.
+   Mean square displacement.
 
-.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion 
-					propagator imaging", Medical Image Analysis, vol 15,
-					No. 4, p. 603-621, 2011.
+.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion
+   propagator imaging", Medical Image Analysis, vol 15, no 4, p. 603-621,
+   2011.
 
 .. [Wu2007] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        	p. 617-629, 2007.
+   p. 617-629, 2007.
 
-.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures
-			in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-			IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
-			2008
+.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures in
+   q-Space Using Magnetic Resonance Hybrid Diffusion Imaging", IEEE
+   Transactions on Medical Imaging, vol 27, no 6, p. 858-865, 2008.
 
 .. include:: ../links_names.inc
 

@@ -29,9 +29,9 @@ streams, hdr = trackvis.read(fname)
 streamlines = [s[0] for s in streams]
 
 """
-Similarly you can use `trackvis.write` to save the streamlines.
+Similarly you can use ``trackvis.write`` to save the streamlines.
 
-2. Read/writh streamlines with numpy.
+2. Read/write streamlines with numpy.
 """
 
 streamlines_np = np.array(streamlines, dtype=np.object)
@@ -43,9 +43,9 @@ streamlines2 = list(np.load('fornix.npy'))
 3. We also work on our HDF5 based file format which can read/write massive datasets
 (as big as the size of you free disk space). With `Dpy` we can support
 
-	* direct indexing from the disk
-	* memory usage always low
-	* extentions to include different arrays in the same file
+  * direct indexing from the disk
+  * memory usage always low
+  * extensions to include different arrays in the same file
 
 Here is a simple example.
 """

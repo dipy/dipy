@@ -25,7 +25,7 @@ If you are on Debian or Ubuntu Linux we recommend you try
 Using Anaconda:
 ===============
 
-On all platforms, you can use Anaconda_ to install Dipy. To do so issue the following command in a terminal::
+On all platforms, you can use Anaconda_ to install DIPY. To do so issue the following command in a terminal::
 
     conda install dipy -c conda-forge
 
@@ -47,22 +47,22 @@ use the Anaconda_ distribution (see below for :ref:`alternatives`).
 library, which supports reading and writing of neuroimaging data formats. Open
 a terminal and type ::
 
-        pip install nibabel
+    pip install nibabel
 
-#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above,
+#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above,
 we will type at the terminal shell command line ::
 
-		pip install dipy
+    pip install dipy
 
 When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
 
-		>>> import dipy
+    >>> import dipy
 
 This should work with no error.
 
 #. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
 
-		conda install vtk
+    conda install vtk
 
 
 OSX
@@ -74,21 +74,21 @@ OSX
 
 #. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
 
-        pip install nibabel
+    pip install nibabel
 
-#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
+#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
 
-        pip install dipy
+    pip install dipy
 
 When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
 
-		>>> import dipy
+    >>> import dipy
 
 This should work with no error.
 
 #. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
 
-		conda install vtk
+    conda install vtk
 
 Linux
 -----
@@ -141,7 +141,7 @@ Common problems:
 Multiple installations
 ----------------------
 
-Make sure that you have uninstalled all previous versions of Dipy before installing a new one. A simple and general way to uninstall Dipy is by removing the installation directory. You can find where Dipy is installed by using::
+Make sure that you have uninstalled all previous versions of DIPY before installing a new one. A simple and general way to uninstall DIPY is by removing the installation directory. You can find where DIPY is installed by using::
 
     import dipy
     dipy.__file__
@@ -156,16 +156,16 @@ If you have problems installing Anaconda_ we recommend using Canopy_ or pythonxy
 
 Memory issues
 -------------
-Dipy can process large diffusion datasets. For this reason we recommend using a 64bit operating system which can allocate larger memory chunks than 32bit operating systems. If you don't have a 64bit computer that is okay Dipy works with 32bit too.
+DIPY can process large diffusion datasets. For this reason we recommend using a 64bit operating system which can allocate larger memory chunks than 32bit operating systems. If you don't have a 64bit computer that is okay DIPY works with 32bit too.
 
 .. _python-versions:
 
 Note on python versions
 -----------------------
 
-Most of the functionality in Dipy supports versions of Python from 2.6 to 3.5.
+Most of the functionality in DIPY supports versions of Python from 2.6 to 3.5.
 However, some visualization functionality depends on VTK_, which currently does not work with Python 3 versions.
-Therefore, if you want to use the visualization functions in Dipy, please use it with Python 2.
+Therefore, if you want to use the visualization functions in DIPY, please use it with Python 2.
 
 .. _from-source:
 
@@ -184,8 +184,8 @@ latest changes.  In that case, you can use::
 For more information about this see :ref:`following-latest`.
 
 After you've cloned the repository, you will have a new directory, containing
-the dipy ``setup.py`` file, among others.  We'll call this directory - that
-contains the ``setup.py`` file - the *dipy source root directory*.  Sometimes
+the DIPY ``setup.py`` file, among others.  We'll call this directory - that
+contains the ``setup.py`` file - the *DIPY source root directory*.  Sometimes
 we'll also call it the ``<dipy root>`` directory.
 
 Building and installing
@@ -196,17 +196,17 @@ Building and installing
 Install from source for Unix (e.g Linux, OSX)
 ---------------------------------------------
 
-Change directory into the *dipy source root directory* .
+Change directory into the *DIPY source root directory*.
 
 To install for the system::
 
     python setup.py install
 
-To build dipy in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
+To build DIPY in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run::
 
     python setup.py build_ext --inplace
 
-add the *dipy source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
+add the *DIPY source root directory* into your ``PYTHONPATH`` environment variable. Search google for ``PYTHONPATH`` for details or see `python module path`_ for an introduction.
 
 When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
 the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
@@ -265,13 +265,13 @@ To build from source, you will also need to install a compiler. The easiest way
 to do that is to install a current version of Visual Studio.
 
 Start a command shell like ``cmd`` or Powershell_ and change directory into the
-*dipy source root directory*.
+*DIPY source root directory*.
 
 To install into your system::
 
     python setup.py install --compiler=mingw32
 
-To install inplace - so that dipy is running out of the source code directory::
+To install inplace - so that DIPY is running out of the source code directory::
 
     python setup.py develop
 
@@ -299,11 +299,11 @@ From here follow the :ref:`install-source-nix` instructions.
 OpenMP with OSX
 ---------------
 OpenMP_ is a standard library for efficient multithreaded applications. This
-is used in Dipy for speeding up many different parts of the library (e.g., denoising
+is used in DIPY for speeding up many different parts of the library (e.g., denoising
 and bundle registration). If you do not have an OpenMP-enabled compiler, you can
-still compile Dipy from source using the above instructions, but it might not take
+still compile DIPY from source using the above instructions, but it might not take
 advantage of the multithreaded parts of the code. To be able to compile
-Dipy from source with OpenMP on Mac OSX, you will have to do a few more things. First
+DIPY from source with OpenMP on Mac OSX, you will have to do a few more things. First
 of all, you will need to install the Homebrew_ package manager. Next you will need
 to install and configure the compiler. You have two options: using the GCC compiler
 or the CLANG compiler. This depends on your python installation:
@@ -313,12 +313,12 @@ Under Anaconda
 
 If you are using Anaconda, you will need to use GCC. Run the following::
 
-	brew reinstall gcc --without-multilib
+    brew reinstall gcc --without-multilib
 
 This should take about 45 minutes to complete. Then add to your bash
 configuration (usually in ``~/.bash_profile``), the following::
 
-	export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH
+    export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH
 
 
 Under Homebrew Python or python.org Python
@@ -327,12 +327,12 @@ Under Homebrew Python or python.org Python
 If you are already using the Homebrew Python, or the standard python.org Python,
 you will need to use the CLANG compiler with OMP. Run::
 
-	brew install clang-omp
+    brew install clang-omp
 
 And then edit the ``setup.py`` file to include the following line (e.g., on line 14,
 at the top of the file, but after the initial imports)::
 
-	os.environ['CC'] = '/usr/local/bin/clang-omp'
+    os.environ['CC'] = '/usr/local/bin/clang-omp'
 
 
 Building and installing

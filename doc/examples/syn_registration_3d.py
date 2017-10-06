@@ -20,7 +20,7 @@ from dipy.viz import regtools
 
 """
 Let's fetch two b0 volumes, the first one will be the b0 from the Stanford
-HARDI dataset 
+HARDI dataset
 """
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
@@ -85,7 +85,7 @@ regtools.overlay_slices(static, resampled, None, 1, 'Static', 'Moving', 'input_3
 .. figure:: input_3d.png
    :align: center
 
-   **Static image in red on top of the pre-aligned moving image (in green)**.
+   Static image in red on top of the pre-aligned moving image (in green).
 """
 
 """
@@ -98,8 +98,8 @@ metric = CCMetric(3)
 """
 Now we define an instance of the registration class. The SyN algorithm uses
 a multi-resolution approach by building a Gaussian Pyramid. We instruct the
-registration object to perform at most [n_0, n_1, ..., n_k] iterations at
-each level of the pyramid. The 0-th level corresponds to the finest resolution.  
+registration object to perform at most $[n_0, n_1, ..., n_k]$ iterations at
+each level of the pyramid. The 0-th level corresponds to the finest resolution.
 """
 
 level_iters = [10, 10, 5]
@@ -130,7 +130,9 @@ regtools.overlay_slices(static, warped_moving, None, 1, 'Static', 'Warped moving
 .. figure:: warped_moving.png
    :align: center
 
-   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
+   Moving image transformed under the (direct) transformation in green on top
+   of the static image (in red).
+
 """
 
 """
@@ -145,10 +147,19 @@ regtools.overlay_slices(warped_static, moving, None, 1, 'Warped static', 'Moving
 .. figure:: warped_static.png
    :align: center
 
-   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green). Note that the moving image has lower resolution**.
+   Static image transformed under the (inverse) transformation in red on top of
+   the moving image (in green). Note that the moving image has lower resolution.
 
-.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009). Symmetric Diffeomorphic Image Registration with Cross- Correlation: Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1), 26-41.
-.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
+References
+----------
+
+.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+   Symmetric Diffeomorphic Image Registration with Cross- Correlation:
+   Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
+   26-41.
+
+.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
+   Normalization Tools ( ANTS ), 1-35.
 
 .. include:: ../links_names.inc
 

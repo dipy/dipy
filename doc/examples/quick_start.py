@@ -1,13 +1,13 @@
 """
 =========================
-Getting started with Dipy
+Getting started with DIPY
 =========================
 
 In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
 diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
-In Dipy we provide tools to load and process these files and we also provide
+In dipy_ we provide tools to load and process these files and we also provide
 access to publically available datasets for those who haven't acquired yet
 their own datasets.
 
@@ -18,7 +18,7 @@ from dipy.data import fetch_sherbrooke_3shell
 fetch_sherbrooke_3shell()
 
 """
-By default these datasets will go in the .dipy folder inside your home directory.
+By default these datasets will go in the ``.dipy`` folder inside your home directory.
 Here is how you can access them.
 """
 
@@ -105,7 +105,7 @@ plt.savefig('data.png', bbox_inches='tight')
 .. figure:: data.png
    :align: center
 
-   **Showing the middle axial slice without (left) and with (right) diffusion weighting**.
+   Showing the middle axial slice without (left) and with (right) diffusion weighting.
 
 The next step is to load the b-values and b-vectors from the disk using
 the function ``read_bvals_bvecs``.
@@ -115,9 +115,9 @@ from dipy.io import read_bvals_bvecs
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
 """
-In Dipy, we use an object called ``GradientTable`` which holds all the acquision
-specific parameters, e.g. b-values, b-vectors, timings and others. To create this
-object you can use the function ``gradient_table``.
+In DIPY, we use an object called ``GradientTable`` which holds all the
+acquisition specific parameters, e.g. b-values, b-vectors, timings and others.
+To create this object you can use the function ``gradient_table``.
 """
 
 from dipy.core.gradients import gradient_table

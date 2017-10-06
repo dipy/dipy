@@ -12,7 +12,7 @@ biological tissues is non-Gaussian using the kurtosis tensor (KT)
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters, such
-as the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
+as the density of axonal fibres and diffusion tortuosity [Fieremans2011]_.
 Moreover, DKI can be used to resolve crossing fibers in tractography and to
 obtain invariant rotational measures not limited to well-aligned fiber
 populations [NetoHe2015]_.
@@ -107,7 +107,7 @@ suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
 fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
 [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
 are comparable to these studies, it is important to note that more advanced
-noise and artifact suppression algorithms are available in Dipy (e.g. the
+noise and artifact suppression algorithms are available in dipy_ (e.g. the
 non-local means filter :ref:`example-denoise-nlmeans`).
 """
 
@@ -149,12 +149,12 @@ AD = dkifit.ad
 RD = dkifit.rd
 
 """
-Note that these four standard measures could also be computed from Dipy's DTI
+Note that these four standard measures could also be computed from DIPY's DTI
 module. Theoretically, computing these measures from both models should be
 analogous. However, according to recent studies, the diffusion statistics from
 the kurtosis model are expected to have better accuracy [Veraar2011]_,
 [NetoHe2012]_. For comparison purposes, we calculate below the FA, MD, AD, and
-RD using Dipy's TensorModel.
+RD using DIPY's ``TensorModel``.
 """
 
 tenmodel = dti.TensorModel(gtab)
@@ -204,8 +204,8 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
    :align: center
 
-   **Diffusion tensor measures obtained from the diffusion tensor estimated
-    from DKI (upper panels) and DTI (lower panels).**.
+   Diffusion tensor measures obtained from the diffusion tensor estimated
+   from DKI (upper panels) and DTI (lower panels).
 
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 instance can be used to estimate the non-Gaussian measures of mean kurtosis
@@ -244,7 +244,7 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
 
-   **Kurtosis tensor standard measures obtained from the kurtosis tensor.**.
+   Kurtosis tensor standard measures obtained from the kurtosis tensor.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
 diffusion is restricted by compartments and barriers (e.g., myelin sheath).
@@ -254,9 +254,9 @@ than for the radial directions (larger amplitudes shown in the RK map).
 
 As mentioned above, DKI can also be used to derive concrete biophysical
 parameters by applying microstructural models to DT and KT estimated from DKI.
-For instance,  Fieremans et al. (2011) showed that DKI can be used to estimate
-the contribution of hindered and restricted diffusion for well-aligned fibers.
-These tensors can be also interpreted as the influences of intra- and
+For instance,  Fieremans et al. [Fieremans2011]_ showed that DKI can be used to
+estimate the contribution of hindered and restricted diffusion for well-aligned
+fibers. These tensors can be also interpreted as the influences of intra- and
 extra-cellular compartments and can be used to estimate the axonal volume
 fraction and diffusion extra-cellular tortuosity. According to recent studies,
 these latter measures can be used to distinguish processes of axonal loss from
@@ -343,12 +343,13 @@ fig3.savefig('Kurtosis_Microstructural_measures.png')
 .. figure:: Kurtosis_Microstructural_measures.png
    :align: center
 
-   ** Axonal water fraction (left panel) and tortuosity (right panel) values
+   Axonal water fraction (left panel) and tortuosity (right panel) values
    of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
-   image.**.
+   image.
 
 
-References:
+References
+----------
 
 .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
@@ -361,10 +362,10 @@ References:
 .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
                 non-Gaussian water diffusion by kurtosis analysis. NMR in
                 Biomedicine 23(7): 698-710
-.. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
+.. [Fieremans2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
-.. [Fierem2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
+.. [Fieremans2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
                 Inglese M, Novikov DS. (2012). Diffusion distinguishes between
                 axonal loss and demyelination in brain white matter.
                 Proceedings of the 20th Annual Meeting of the International

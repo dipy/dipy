@@ -23,9 +23,11 @@ fetch_taiwan_ntu_dsi()
 img, gtab = read_taiwan_ntu_dsi()
 
 """
-img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
-it is possible to write print(gtab.bvals).
+img contains a nibabel Nifti1Image object (data) and gtab contains a
+``GradientTable`` object (gradient information e.g. b-values). For example to
+read the b-values it is possible to write::
+
+   ``print(gtab.bvals)``
 
 Load the raw diffusion data and the affine.
 """
@@ -48,13 +50,13 @@ Read the voxel size from the image header.
 voxel_size = img.header.get_zooms()[:3]
 
 """
-Instantiate the Model and apply it to the data.
+Instantiate the model and apply it to the data.
 """
 
 gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=3)
 
 """
-The parameter `sampling_length` is used here to
+The parameter ``sampling_length`` is used here to
 
 Lets just use one slice only from the data.
 """
@@ -66,7 +68,7 @@ mask = dataslice[..., 0] > 50
 gqfit = gqmodel.fit(dataslice, mask=mask)
 
 """
-Load an odf reconstruction sphere
+Load an ODF reconstruction sphere
 """
 
 sphere = get_sphere('symmetric724')
@@ -82,7 +84,7 @@ print('ODF.shape (%d, %d, %d)' % ODF.shape)
 """
 ODF.shape ``(96, 96, 724)``
 
-Using peaks_from_model we can find the main peaks of the ODFs and other
+Using ``peaks_from_model`` we can find the main peaks of the ODFs and other
 properties.
 """
 
@@ -98,7 +100,7 @@ gqpeaks = peaks_from_model(model=gqmodel,
 gqpeak_values = gqpeaks.peak_values
 
 """
-gqpeak_indices show which sphere points have the maximum values.
+``gqpeak_indices`` show which sphere points have the maximum values.
 """
 
 gqpeak_indices = gqpeaks.peak_indices
@@ -112,7 +114,7 @@ GFA = gqpeaks.gfa
 print('GFA.shape (%d, %d)' % GFA.shape)
 
 """
-With parameter `return_odf=True` we can obtain the ODF using gqpeaks.ODF
+With parameter ``return_odf=True`` we can obtain the ODF using ``gqpeaks.ODF``
 """
 
 gqpeaks = peaks_from_model(model=gqmodel,
@@ -134,11 +136,11 @@ np.sum(gqpeaks.odf != ODF) == 0
 """
 True
 
-The advantage of using peaks_from_models is that it calculates the ODF only once and
-saves it or deletes if it is not necessary to keep.
+The advantage of using ``peaks_from_model`` is that it calculates the ODF only
+once and saves it or deletes if it is not necessary to keep.
 
-.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE
-             Transactions on Medical Imaging, vol 29, no 9, 2010.
+.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE Transactions
+   on Medical Imaging, vol 29, no 9, 2010.
 
 .. include:: ../links_names.inc
 

@@ -7,7 +7,7 @@ This example shows how to calculate the lengths of a set of streamlines and
 also how to compress the streamlines without considerably reducing their
 lengths or overall shape.
 
-A streamline in Dipy is represented as a numpy array of size
+A streamline in dipy_ is represented as a numpy array of size
 :math:`(N \times 3)` where each row of the array represent a 3D point of the
 streamline. A set of streamlines is represented with a list of
 numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
@@ -135,7 +135,8 @@ fvtk.record(ren, out_path='simulated_cosine_bundle.png', size=(900, 900))
 .. figure:: simulated_cosine_bundle.png
    :align: center
 
-   **Initial bundle (down), downsampled at 12 equidistant points (middle), downsampled not equidistantly(up)**
+   Initial bundle (down), downsampled at 12 equidistant points (middle),
+   downsampled not equidistantly (up).
 
 From the figure above we can see that all 3 bundles look quite similar. However,
 when we plot the histogram of the number of points used for each streamline, it
@@ -159,7 +160,7 @@ plt.savefig('n_pts_histogram.png')
 .. figure:: n_pts_histogram.png
    :align: center
 
-   **Histogram of the number of points of the streamlines**
+   Histogram of the number of points of the streamlines.
 
 Finally, we can also show that the lengths of the streamlines haven't changed
 considerably after applying the two methods of downsampling.
@@ -182,6 +183,8 @@ plt.savefig('lengths_plots.png')
 .. figure:: lengths_plots.png
    :align: center
 
-   **Lengths of each streamline for every one of the 3 bundles**
+   Lengths of each streamline for every one of the 3 bundles.
+
+.. include:: ../links_names.inc
 
 """

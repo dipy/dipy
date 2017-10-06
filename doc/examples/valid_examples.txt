@@ -28,6 +28,7 @@
  sfm_reconst.py
  gradients_spheres.py
  simulate_multi_tensor.py
+ simulate_dki.py
  restore_dti.py
  streamline_length.py
  reconst_shore.py

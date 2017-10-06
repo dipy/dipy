@@ -1,6 +1,6 @@
  .. _development:
 
-DiPy development
+DIPY development
 ================
 
 Contents:
