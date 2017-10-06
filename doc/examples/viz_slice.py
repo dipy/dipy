@@ -234,12 +234,31 @@ By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
 easy and efficient to create a mosaic of all the slices.
 
 So, let's clear the renderer and change the projection from perspective to
-parallel.
+parallel. We'll also need a new show manager and an associated callback.
 """
 
 renderer.clear()
 renderer.projection('parallel')
 
+result_position.message = ''
+result_value.message = ''
+
+show_m_mosaic = window.ShowManager(renderer, size=(1200, 900))
+show_m_mosaic.initialize()
+
+
+def left_click_callback_mosaic(obj, ev):
+    """Get the value of the clicked voxel and show it in the panel."""
+    event_pos = show_m_mosaic.iren.GetEventPosition()
+
+    obj.picker.Pick(event_pos[0],
+                    event_pos[1],
+                    0,
+                    show_m_mosaic.ren)
+
+    i, j, k = obj.picker.GetPointIJK()
+    result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
+    result_value.message = '%.8f' % data[i, j, k]
 
 """
 Now we need to create two nested for loops which will set the positions of
@@ -264,7 +283,7 @@ for j in range(rows):
                                  0)
         slice_mosaic.SetInterpolate(False)
         slice_mosaic.AddObserver('LeftButtonPressEvent',
-                                 left_click_callback,
+                                 left_click_callback_mosaic,
                                  1.0)
         renderer.add(slice_mosaic)
         cnt += 1
@@ -276,8 +295,8 @@ for j in range(rows):
 renderer.reset_camera()
 renderer.zoom(1.6)
 
-# show_m.ren.add(panel_picking)
-# show_m.start()
+# show_m_mosaic.ren.add(panel_picking)
+# show_m_mosaic.start()
 
 """
 If you uncomment the two lines above, you will be able to move
