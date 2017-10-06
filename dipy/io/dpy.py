@@ -60,12 +60,9 @@ class Dpy(object):
 
         if self.mode == 'w':
 
-            self.streamlines = f.create_group('streamlines')
+            self.f.attrs['version'] = np.string_('0.0.1')
 
-            # create a version number
-            self.version = self.streamlines.create_dataset(
-                    'version',
-                    [b"0.0.2"])
+            self.streamlines = self.f.create_group('streamlines')
 
             self.tracks = self.streamlines.create_dataset(
                     'tracks',
@@ -75,12 +72,12 @@ class Dpy(object):
 
             self.offsets = self.streamlines.create_dataset(
                     'offsets',
-                    shape=(0,),
+                    shape=(1,),
                     dtype='i8',
                     maxshape=(None))
 
             self.curr_pos = 0
-            self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
+            self.offsets[:] = np.array([self.curr_pos]).astype(np.int64)
 
         if self.mode == 'r':
             self.tracks = self.f['streamlines']['tracks']
@@ -89,8 +86,10 @@ class Dpy(object):
             self.offs_pos = 0
 
     def version(self):
-        ver = self.f.root.version[:]
-        return ver[0].decode()
+
+        # ver = self.f.root.version[:]
+        # return ver[0].decode()
+        return self.f.attrs['version'][:]
 
     def write_track(self, track):
         """ write on track each time
