@@ -265,7 +265,6 @@ class QtdmriModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-        cvxpy_status, cvxpy_value = None, None
         bval_mask = self.gtab.bvals < self.bval_threshold
         data_norm = data / data[self.gtab.b0s_mask].mean()
         tau = self.gtab.tau
