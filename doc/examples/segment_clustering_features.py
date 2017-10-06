@@ -139,10 +139,13 @@ streamline.
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import CenterOfMassFeature
 from dipy.segment.metric import EuclideanMetric
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
@@ -158,19 +161,20 @@ clusters = qb.cluster(streamlines)
 centers = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each center of mass according to the cluster they belong to.
-rng = np.random.RandomState(42)
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.streamtube(streamlines, fvtk.colors.white, opacity=0.05))
-fvtk.add(ren, fvtk.point(centers[:, 0, :], colormap_full, point_radius=0.2))
-fvtk.record(ren, n_frames=1, out_path='center_of_mass_feature.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+ren.add(actor.point(centers[:, 0, :], colormap_full, point_radius=0.2))
+window.record(ren, n_frames=1, out_path='center_of_mass_feature.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: center_of_mass_feature.png
@@ -193,7 +197,7 @@ spatial position of a streamline. This can also be an alternative to the
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import MidpointFeature
 from dipy.segment.metric import EuclideanMetric
@@ -211,19 +215,20 @@ clusters = qb.cluster(streamlines)
 midpoints = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each midpoint according to the cluster they belong to.
-rng = np.random.RandomState(42)
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
-fvtk.add(ren, fvtk.streamtube(streamlines, fvtk.colors.white, opacity=0.05))
-fvtk.record(ren, n_frames=1, out_path='midpoint_feature.png', size=(600, 600))
+ren.add(actor.point(midpoints[:, 0, :], colormap_full, point_radius=0.2))
+ren.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+window.record(ren, n_frames=1, out_path='midpoint_feature.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: midpoint_feature.png
@@ -245,7 +250,7 @@ length of a streamline.
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import ArcLengthFeature
 from dipy.segment.metric import EuclideanMetric
@@ -259,17 +264,19 @@ qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.ravel(clusters.centroids))
+colormap = actor.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='arclength_feature.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='arclength_feature.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: arclength_feature.png
@@ -295,7 +302,7 @@ using this feature.
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
@@ -309,17 +316,19 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='vector_of_endpoints_feature.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='vector_of_endpoints_feature.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: vector_of_endpoints_feature.png

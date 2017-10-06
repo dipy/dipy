@@ -1,9 +1,6 @@
 from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.tracking.fbcmeasures import FBCMeasures
 
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
-from dipy.viz import window, actor
 
 from dipy.core.sphere import Sphere
 
