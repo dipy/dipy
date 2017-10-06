@@ -12,7 +12,7 @@ First import the necessary modules:
 
 import matplotlib.pyplot as plt
 from dipy.reconst.forecast import ForecastModel
-from dipy.viz import fvtk
+from dipy.viz import actor, window
 from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
 
 """
@@ -29,7 +29,7 @@ img, gtab = read_cenir_multib(bvals)
 data = img.get_data()
 
 """
-Let us consider only a single slice for the FORECAST fitting	
+Let us consider only a single slice for the FORECAST fitting  
 """
 
 data_small = data[18:87, 51:52, 10:70]
@@ -116,12 +116,13 @@ print('fODF.shape (%d, %d, %d, %d)' % odf.shape)
 Display a part of the fODFs
 """
 
-r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf[16:36, :, 30:45], sphere, colormap='jet')
-sfu.RotateX(-90)
-fvtk.add(r, sfu)
-fvtk.record(r, n_frames=1, out_path='fODFs.png', size=(600, 600),
-            magnification=4)
+odf_actor = actor.odf_slicer(odf[16:36, :, 30:45], sphere=sphere,
+                             colormap='jet', scale=0.6)
+odf_actor.display(y=0)
+odf_actor.RotateX(-90)
+ren = window.Renderer()
+ren.add(odf_actor)
+window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
 
 """
 .. figure:: fODFs.png
