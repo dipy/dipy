@@ -3,13 +3,13 @@
 Creating a new combined workflow.
 ============================================================
 
-A combined workflow is a series of dipy workflows organized together in a way
-that the output of a workflow serves as input for the next one.
+A ``CombinedWorkflow`` is a series of dipy_ workflows organized together in a
+way that the output of a workflow serves as input for the next one.
 """
 
 """
-First create your combined workflow class. Your combine workflow class file
-is usually located in the ../dipy/workflows directory.
+First create your ``CombinedWorkflow`` class. Your ``CombinedWorkflow`` class
+file is usually located in the ``dipy/workflows`` directory.
 """
 
 from dipy.workflows.combined_workflow import CombinedWorkflow
@@ -19,7 +19,7 @@ from dipy.workflows.combined_workflow import CombinedWorkflow
 combined workflow.
 """
 
-from dipy.workflows.denoise import  NLMeansFlow
+from dipy.workflows.denoise import NLMeansFlow
 from dipy.workflows.segment import MedianOtsuFlow
 
 """
@@ -83,7 +83,7 @@ class DenoiseAndSegment(CombinedWorkflow):
             self.run_sub_flow(me_flow, denoised, out_dir=out_dir)
 
 """
-Use self.get_io_iterator() in every workflow you create. This creates
+Use ``self.get_io_iterator()`` in every workflow you create. This creates
 an ``IOIterator`` object that create output file names and directory structure
 based on the inputs and some other advanced output strategy parameters.
 
@@ -91,20 +91,21 @@ Iterating on the ``IOIterator`` object you created previously you
 conveniently get all input and output paths for every input file
 found when globbin the input parameters.
 
-In the IOIterator loop you can see how we create a new NLMeans workflow then
-run it using self.run_sub_flow. Running it this way will pass any workflow
-specific parameter that was retreived from the command line and will append the
-ones you specify as optional parameters (out_dir in this case).
+In the ``IOIterator`` loop you can see how we create a new ``NLMeans`` workflow
+then run it using ``self.run_sub_flow``. Running it this way will pass any
+workflow specific parameter that was retreived from the command line and will
+append the ones you specify as optional parameters (``out_dir`` in this case).
 
-Lastly, the outputs paths are retrived using workflow.last_generated_outputs.
-This allows to use ``denoise`` as the input for the ``MedianOtsuFlow``
+Lastly, the outputs paths are retrived using
+``workflow.last_generated_outputs``. This allows to use ``denoise`` as the
+input for the ``MedianOtsuFlow``.
 """
 
 """
 
 This is it for the combined workflow class! Now to be able to call it easily via
 command line, you need this last bit of code. It is usually in an executable
-file located in ../dipy/bin/.
+file located in ``bin``.
 """
 
 from dipy.workflows.flow_runner import run_flow
@@ -119,9 +120,10 @@ if __name__ == "__main__":
 This is the only thing needed to make your workflow available through command
 line.
 
-Now just call the script you just made with -h to see the argparser help text.
+Now just call the script you just made with ``-h`` to see the argparser help
+text::
 
-`python combined_workflow_creation.py --help`
+   python combined_workflow_creation.py --help
 
 You should see all your parameters available along with some extra common ones
 like logging file and force overwrite. Also all the documentation you wrote
@@ -129,9 +131,12 @@ about each parameter is there. Also note that every sub workflow optional
 parameter is available.
 
 Now call it for real with a nifti file to see the results. Experiment
-with the parameters and see the results.
+with the parameters and see the results::
 
-`python combined_workflow_creation.py volume.nii.gz`
+   python combined_workflow_creation.py volume.nii.gz
+
+.. include:: ../links_names.inc
+
 """
 
 

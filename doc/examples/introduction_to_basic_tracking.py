@@ -1,4 +1,7 @@
 """
+
+.. _intro_basic_tracking:
+
 ==============================
 Introduction to Basic Tracking
 ==============================
@@ -43,7 +46,7 @@ white_matter = (labels == 1) | (labels == 2)
 1. The first thing we need to begin fiber tracking is a way of getting
 directions from this diffusion data set. In order to do that, we can fit the
 data to a Constant Solid Angle ODF Model. This model will estimate the
-orientation distribution function (ODF) at each voxel. The ODF is the
+Orientation Distribution Function (ODF) at each voxel. The ODF is the
 distribution of water diffusion as a function of direction. The peaks of an ODF
 are good estimates for the orientation of tract segments at a point in the
 image.
@@ -74,10 +77,10 @@ classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
 """
 3. Before we can begin tracking is to specify where to "seed" (begin) the fiber
 tracking. Generally, the seeds chosen will depend on the pathways one is
-interested in modeling. In this example, we'll use a 2x2x2 grid of seeds per
-voxel, in a sagittal slice of the Corpus Callosum.  Tracking from this region
-will give us a model of the Corpus Callosum tract.  This slice has label value
-2 in the labels image.
+interested in modeling. In this example, we'll use a $2 \times 2 \times 2$ grid
+of seeds per voxel, in a sagittal slice of the corpus callosum. Tracking from
+this region will give us a model of the corpus callosum tract. This slice has
+label value ``2`` in the labels image.
 """
 
 from dipy.tracking import utils
@@ -87,7 +90,7 @@ seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
 
 """
 Finally, we can bring it all together using ``LocalTracking``. We will then
-display the resulting streamlines using the fvtk module.
+display the resulting streamlines using the ``fvtk`` module.
 """
 
 from dipy.tracking.local import LocalTracking
@@ -106,7 +109,7 @@ color = line_colors(streamlines)
 if fvtk.have_vtk:
     streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-    # Create the 3d display.
+    # Create the 3D display.
     r = fvtk.ren()
     fvtk.add(r, streamlines_actor)
 
@@ -196,7 +199,7 @@ color = line_colors(streamlines)
 if fvtk.have_vtk:
     streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 
-    # Create the 3d display.
+    # Create the 3D display.
     r = fvtk.ren()
     fvtk.add(r, streamlines_actor)
 
@@ -208,7 +211,7 @@ if fvtk.have_vtk:
 .. figure:: probabilistic.png
    :align: center
 
-   **Corpus Callosum Probabilistic**
+   Corpus callosum probabilistic tracking.
 """
 
 save_trk("CSD_prob.trk", streamlines, affine, labels.shape)

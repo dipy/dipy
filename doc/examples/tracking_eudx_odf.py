@@ -5,7 +5,7 @@ Deterministic Tracking with EuDX on ODF Peaks
 =============================================
 
 .. NOTE::
-    Dipy has updated tools for fiber tracking. Our new machinery for fiber
+    DIPY has updated tools for fiber tracking. Our new machinery for fiber
     tracking is featured in the example titled Introduction to Basic Tracking.
     The tools demonstrated in this example are no longer actively being
     maintained and will likely be deprecated at some point.
@@ -79,7 +79,7 @@ fvtk.record(r, n_frames=1, out_path='csa_tracking.png', size=(600, 600))
 .. figure:: csa_tracking.png
    :align: center
 
-   **Deterministic streamlines with EuDX on ODF peaks field modulated by GFA**.
+   Deterministic streamlines with EuDX on ODF peaks field modulated by GFA.
 
 It is also possible to use EuDX with multiple ODF peaks, which is very helpful when
 tracking in crossing areas.
@@ -106,7 +106,7 @@ fvtk.record(r, n_frames=1, out_path='csa_tracking_mpeaks.png', size=(600, 600))
 .. figure:: csa_tracking_mpeaks.png
    :align: center
 
-   **Deterministic streamlines with EuDX on multiple ODF peaks**.
+   Deterministic streamlines with EuDX on multiple ODF peaks.
 
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 

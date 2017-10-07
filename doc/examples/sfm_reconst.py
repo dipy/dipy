@@ -5,8 +5,8 @@
 Reconstruction with the Sparse Fascicle Model
 ==============================================
 
-In this example, we will use the Sparse Fascicle Model [Rokem2015]_, to
-reconstruct the fiber orientation distribution function (fODF) in every voxel.
+In this example, we will use the Sparse Fascicle Model (SFM) [Rokem2015]_, to
+reconstruct the fiber Orientation Distribution Function (fODF) in every voxel.
 
 First, we import the modules we will use in this example:
 """
@@ -65,7 +65,7 @@ the data, and the regularization constraints. The regularization parameter
 $\lambda$ sets the `l1_ratio`, which controls the balance between L1-sparsity
 (low sum of weights), and low L2-sparsity (low sum-of-squares of the weights).
 
-Just like constrained spherical deconvolution (see :ref:`reconst-csd`), the SFM
+Just like Constrained Spherical Deconvolution (see :ref:`reconst-csd`), the SFM
 requires the definition of a response function. We'll take advantage of the
 automated algorithm in the :mod:`csdeconv` module to find this response
 function:
@@ -80,8 +80,8 @@ The ``response`` return value contains two entries. The first is an array with
 the eigenvalues of the response function and the second is the average S0 for
 this response.
 
-It is a very good practice to always validate the result of auto_response. For,
-this purpose we can print it and have a look at its values.
+It is a very good practice to always validate the result of ``auto_response``.
+For, this purpose we can print it and have a look at its values.
 """
 
 print(response)
@@ -155,7 +155,7 @@ fvtk.record(ren, out_path='sf_both.png', size=(1000, 1000))
 .. figure:: sf_both.png
    :align: center
 
-   **SFM Peaks and ODFs**.
+   SFM Peaks and ODFs.
 
 To see how to use this information in tracking, proceed to :ref:`sfm-track`.
 

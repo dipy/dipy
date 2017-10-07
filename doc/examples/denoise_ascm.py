@@ -36,7 +36,7 @@ from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 
 """
-Choose one of the data from the datasets in DIPY
+Choose one of the data from the datasets in dipy_
 """
 
 fetch_sherbrooke_3shell()
@@ -127,7 +127,7 @@ print("The ascm result saved in denoised_ascm.png")
 .. figure:: denoised_ascm.png
    :align: center
 
-   **Showing the axial slice without (left) and with (middle) ASCM denoising**.
+   Showing the axial slice without (left) and with (middle) ASCM denoising.
 """
 
 """
@@ -168,7 +168,7 @@ print("The comparison result saved in ascm_comparison.png")
 .. figure:: ascm_comparison.png
    :align: center
 
-   **Comparing outputs of the NLMEANS and ASCM**.
+   Comparing outputs of the NLMEANS and ASCM.
 """
 
 """
