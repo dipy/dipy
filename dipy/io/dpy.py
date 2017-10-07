@@ -11,6 +11,8 @@
 import numpy as np
 import h5py
 
+from dipy.tracking.streamline import Streamlines
+
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']
 
@@ -68,13 +70,13 @@ class Dpy(object):
                     'tracks',
                     shape=(0, 3),
                     dtype='f4',
-                    maxshape=(None, 3))
+                    maxshape=(None, 3), chunks=True)
 
             self.offsets = self.streamlines.create_dataset(
                     'offsets',
                     shape=(1,),
                     dtype='i8',
-                    maxshape=(None))
+                    maxshape=(None,), chunks=True)
 
             self.curr_pos = 0
             self.offsets[:] = np.array([self.curr_pos]).astype(np.int64)
@@ -94,17 +96,28 @@ class Dpy(object):
     def write_track(self, track):
         """ write on track each time
         """
-        self.tracks.append(track.astype(np.float32))
+        self.tracks.resize(self.tracks.shape[0] + track.shape[0], axis=0)
+        self.tracks[-track.shape[0]:] = track.astype(np.float32)
         self.curr_pos += track.shape[0]
-        self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
 
-    def write_tracks(self, T):
+        #from pdb import set_trace
+        #set_trace()
+        self.offsets.resize(self.offsets.shape[0] + 1, axis=0)
+        self.offsets[-1] = self.curr_pos
+
+    def write_tracks(self, tracks):
         """ write many tracks together
         """
-        for track in T:
-            self.tracks.append(track.astype(np.float32))
-            self.curr_pos += track.shape[0]
-            self.offsets.append(np.array([self.curr_pos]).astype(np.int64))
+
+        self.tracks.resize(self.tracks.shape[0] + tracks._data.shape[0],
+                           axis=0)
+        self.tracks[-tracks._data.shape[0]:] = tracks._data
+
+        self.offsets.resize(self.offsets.shape[0] + tracks._offsets.shape[0],
+                            axis=0)
+        self.offsets[-tracks._offsets.shape[0]:] = \
+            self.offsets[-tracks._offsets.shape[0] - 1] + \
+            tracks._offsets + tracks._lengths
 
     def read_track(self):
         """ read one track each time
@@ -116,23 +129,22 @@ class Dpy(object):
     def read_tracksi(self, indices):
         """ read tracks with specific indices
         """
-        T = []
+        tracks = Streamlines()
         for i in indices:
-            # print(self.offsets[i:i+2])
             off0, off1 = self.offsets[i:i + 2]
-            T.append(self.tracks[off0:off1])
-        return T
+            tracks.append(self.tracks[off0:off1])
+        return tracks
 
     def read_tracks(self):
         """ read the entire tractography
         """
         I = self.offsets[:]
         TR = self.tracks[:]
-        T = []
+        tracks = Streamlines()
         for i in range(len(I) - 1):
             off0, off1 = I[i:i + 2]
-            T.append(TR[off0:off1])
-        return T
+            tracks.append(TR[off0:off1])
+        return tracks
 
     def close(self):
         self.f.close()
