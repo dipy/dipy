@@ -2369,6 +2369,7 @@ class FileSelectMenuText2D(UI):
 
         if file_select_text.file_type == "directory":
             file_select_text.file_select.select_file(file_name="")
+            file_select_text.file_select.window_offset = 0
             file_select_text.file_select.current_directory = os.path.abspath(
                 os.path.join(file_select_text.file_select.current_directory,
                              file_select_text.text_actor.message))
