@@ -44,7 +44,7 @@ Instantiate the Model.
 asm = ShoreModel(gtab)
 
 """
-Lets just use only one slice only from the data.
+Let's just use only one slice only from the data.
 """
 
 dataslice = data[30:70, 20:80, data.shape[2] // 2]
@@ -88,7 +88,7 @@ print('Calculating... msd')
 msd = asmfit.msd()
 
 """
-Show the maps and save them in SHORE_maps.png.
+Show the maps and save them to a file.
 """
 
 fig = plt.figure(figsize=(6, 6))
@@ -110,20 +110,21 @@ plt.savefig('SHORE_maps.png')
 .. figure:: SHORE_maps.png
    :align: center
 
-   **rtop and msd calculated using the SHORE model**.
+   rtop and msd calculated using the SHORE model.
 
+References
+----------
 
 .. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion
-					propagator imaging", Medical Image Analysis, vol 15,
-					No. 4, p. 603-621, 2011.
+   propagator imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621,
+   2011.
 
-.. [Wu2007] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36,
-        	p. 617-629, 2007.
+.. [Wu2007] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36, p.
+   617-629, 2007.
 
-.. [Wu2008] Wu Y. et. al, "Computation of Diffusion Function Measures
-			in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-			IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
-			2008.
+.. [Wu2008] Wu Y. et. al, "Computation of Diffusion Function Measures in
+   q-Space Using Magnetic Resonance Hybrid Diffusion Imaging", IEEE
+   TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008.
 
 .. include:: ../links_names.inc
 

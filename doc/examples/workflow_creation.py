@@ -3,16 +3,18 @@
 Creating a new workflow.
 ============================================================
 
-A workflow is a series of dipy operations with fixed inputs and outputs
+A workflow is a series of dipy_ operations with fixed inputs and outputs
 that is callable via command line or another interface.
 
-For example, after installing dipy, you can call anywhere from your command line:
+For example, after installing dipy_, you can call anywhere from your command
+line::
+
 $ dipy_nlmeans t1.nii.gz t1_denoised.nii.gz
 """
 
 """
 First create your workflow. Usually this would be in its own python file in
-the ../dipy/workflows directory.
+the ``<../dipy/workflows>`` directory.
 """
 
 import shutil
@@ -91,7 +93,7 @@ For the example, it just appends text to an input file.
 
 This is it for the workflow! Now to be able to call it easily via command
 line, you need to add this bit of code. Usually this is in a separate
-executable file located in ../dipy/bin/.
+executable file located in ``bin``.
 """
 
 from dipy.workflows.flow_runner import run_flow
@@ -106,17 +108,22 @@ if __name__ == "__main__":
 This is the only thing needed to make your workflow available through command
 line.
 
-Now just call the script you just made with -h to see the argparser help text.
+Now just call the script you just made with ``-h`` to see the argparser help
+text::
 
-`python workflow_creation.py --help`
+   python workflow_creation.py --help
 
 You should see all your parameters available along with some extra common ones
 like logging file and force overwrite. Also all the documentation you wrote
 about each parameter is there.
 
-Now call it for real with a text file
+Now call it for real with a text file::
 
-`python workflow_creation.py ./text_file.txt`
+   python workflow_creation.py ./text_file.txt
+
+
+.. include:: ../links_names.inc
+
 """
 
 

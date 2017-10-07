@@ -105,7 +105,7 @@ print("The result saved in denoised_localpca.png")
 .. figure:: denoised_localpca.png
    :align: center
 
-   **Showing the middle axial slice of the local PCA denoised output**.
+   Showing the middle axial slice of the local PCA denoised output.
 """
 
 nib.save(nib.Nifti1Image(denoised_arr,

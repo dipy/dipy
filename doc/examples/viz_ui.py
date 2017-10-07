@@ -211,5 +211,5 @@ window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 .. figure:: viz_ui.png
    :align: center
 
-   **User interface example**.
+   User interface example.
 """

@@ -46,11 +46,11 @@ You can find our sources and single-click downloads:
 Installing DIPY
 ===============
 
-DIPY can be installed using `pip`:
+DIPY can be installed using `pip`::
 
     pip install dipy
 
-or using `conda`:
+or using `conda`::
 
     conda install -c conda-forge dipy vtk
 

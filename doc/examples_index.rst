@@ -197,6 +197,7 @@ Simulations
 
 - :ref:`example_simulate_multi_tensor`
 - :ref:`example_reconst_dsid`
+- :ref:`example_simulate_dki`
 
 ---------------
 Multiprocessing

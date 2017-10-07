@@ -1,6 +1,6 @@
 .. _using-git:
 
-Working with *dipy* source code
+Working with DIPY source code
 ================================================
 
 Contents:

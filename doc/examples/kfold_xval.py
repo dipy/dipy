@@ -6,8 +6,8 @@ K-fold cross-validation for model comparison
 
 Different models of diffusion MRI can be compared based on their accuracy in
 fitting the diffusion signal. Here, we demonstrate this by comparing two
-models: the diffusion tensor model (DTI) and constrained spherical
-deconvolution (CSD). These models differ from each other substantially. DTI
+models: the diffusion tensor model (DTI) and Constrained Spherical
+Deconvolution (CSD). These models differ from each other substantially. DTI
 approximates the diffusion pattern as a 3D Gaussian distribution, and has only
 6 free parameters. CSD, on the other hand, fits many more parameters. The
 models aare also not nested, so they cannot be compared using the
@@ -22,7 +22,7 @@ set. This method has been used for comparison of models such as DTI and CSD
 differences in the number of parameters in the model, and it can be used to
 compare models that are not nested.
 
-In `dipy`, we include an implementation of k-fold cross-validation. In this
+In dipy_, we include an implementation of k-fold cross-validation. In this
 method, the data is divided into $k$ different segments. In each iteration
 $\frac{1}{k}th$ of the data is held out and the model is fit to the other
 $\frac{k-1}{k}$ parts of the data. A prediction of the held out data is done
@@ -112,7 +112,7 @@ fig.savefig("model_predictions.png")
 .. figure:: model_predictions.png
    :align: center
 
-   **Model predictions**.
+   Model predictions.
 
 """
 
