@@ -2105,6 +2105,8 @@ class FileSelectMenu2D(UI):
         for file_name in clipped_file_names:
             self.text_item_list[i].text_actor.actor.SetVisibility(True)
             self.text_item_list[i].set_attributes(file_name[0], file_name[1])
+            if file_name[0] == self.selected_file:
+                self.text_item_list[i].mark_selected()
             i += 1
 
     def get_all_file_names(self):
@@ -2342,6 +2344,16 @@ class FileSelectMenuText2D(UI):
                 self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(1, 1, 1)
                 self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
 
+    def mark_selected(self):
+        """ Changes the background color of the actor.
+
+        """
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
+        else:
+            self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
+            self.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+
     @staticmethod
     def left_button_clicked(i_ren, obj, file_select_text):
         """ A callback to handle left click for this UI element.
@@ -2356,22 +2368,17 @@ class FileSelectMenuText2D(UI):
         """
 
         if file_select_text.file_type == "directory":
+            file_select_text.file_select.select_file(file_name="")
             file_select_text.file_select.current_directory = os.path.abspath(
-                os.path.join(file_select_text.file_select.current_directory, 
-                file_select_text.text_actor.message))
-
+                os.path.join(file_select_text.file_select.current_directory,
+                             file_select_text.text_actor.message))
             file_select_text.file_select.window = 0
             file_select_text.file_select.fill_text_actors()
-            file_select_text.file_select.select_file(file_name="")
         else:
             file_select_text.file_select.select_file(
                 file_name=file_select_text.file_name)
             file_select_text.file_select.fill_text_actors()
-            if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-                file_select_text.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
-            else:
-                file_select_text.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
-                file_select_text.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+            file_select_text.mark_selected()
 
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
