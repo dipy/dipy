@@ -60,16 +60,16 @@ def load_peaks(fname, verbose=False):
     except KeyError:
         affine = None
 
-    peak_dirs = pamh.peak_dirs[:]
-    peak_values = pamh.peak_values[:]
-    peak_indices = pamh.peak_indices[:]
+    peak_dirs = pamh['peak_dirs'][:]
+    peak_values = pamh['peak_values'][:]
+    peak_indices = pamh['peak_indices'][:]
 
     try:
         shm_coeff = pamh['shm_coeff'][:]
     except KeyError:
         shm_coeff = None
 
-    sphere_vertices = pamh.sphere_vertices[:]
+    sphere_vertices = pamh['sphere_vertices'][:]
 
     try:
         odf = pamh['odf'][:]
@@ -82,11 +82,11 @@ def load_peaks(fname, verbose=False):
     pam.peak_indices = peak_indices
     pam.shm_coeff = shm_coeff
     pam.sphere = Sphere(xyz=sphere_vertices)
-    pam.B = pamh.B[:]
-    pam.total_weight = pamh.total_weight[:][0]
-    pam.ang_thr = pamh.ang_thr[:][0]
-    pam.gfa = pamh.gfa[:]
-    pam.qa = pamh.qa[:]
+    pam.B = pamh['B'][:]
+    pam.total_weight = pamh['total_weight'][:][0]
+    pam.ang_thr = pamh['ang_thr'][:][0]
+    pam.gfa = pamh['gfa'][:]
+    pam.qa = pamh['qa'][:]
     pam.odf = odf
 
     f.close()
