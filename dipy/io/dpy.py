@@ -1,6 +1,6 @@
 """ A class for handling large tractography datasets.
 
-    It is built using the pytables tools which in turn implement
+    It is built using the h5py which in turn implement
     key features of the HDF5 (hierachical data format) API [1]_.
 
     References
