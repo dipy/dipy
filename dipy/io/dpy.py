@@ -51,8 +51,7 @@ class Dpy(object):
         ...     T=dpr.read_tracksi([0,1,2,0,0,2])
         ...     dpr.close()
         ...     os.remove(fname) #delete file from disk
-        >>> dpy_example()  # skip if not have_tables
-
+        >>> dpy_example()
         """
 
         self.mode = mode
