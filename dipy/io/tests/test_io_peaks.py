@@ -127,4 +127,6 @@ def test_io_save_peaks_error():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    #npt.run_module_suite()
+    test_io_peaks()
+    test_io_save_peaks_error()
