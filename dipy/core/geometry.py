@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import
 import math
 import numpy as np
 import numpy.linalg as npl
+from dipy.testing import setup_test
 
 # epsilon for testing whether a number is close to zero
 _EPS = np.finfo(float).eps * 4.0
