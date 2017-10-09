@@ -13,6 +13,7 @@ import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 import dipy.align.vector_fields as vfu
+from dipy.testing import setup_test
 
 
 def unlist_streamlines(streamlines):
