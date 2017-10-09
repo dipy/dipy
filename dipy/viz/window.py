@@ -231,7 +231,7 @@ def renderer(background=None):
     >>> r = window.Renderer()
     >>> lines=[np.random.rand(10,3)]
     >>> c=actor.line(lines, window.colors.red)
-    >>> r.add(r,c)
+    >>> r.add(c)
     >>> #window.show(r)
     """
 
@@ -635,7 +635,7 @@ def show(ren, title='DIPY', size=(300, 300),
     >>> colors=np.array([[0.2,0.2,0.2],[0.8,0.8,0.8]])
     >>> c=actor.line(lines,colors)
     >>> r.add(c)
-    >>> l=window.label(r)
+    >>> l=actor.label(r)
     >>> r.add(l)
     >>> #window.show(r)
 

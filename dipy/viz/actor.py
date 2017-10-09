@@ -1153,10 +1153,10 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     Examples
     --------
     >>> from dipy.viz import window, actor
-    >>> r = window.Renderer()
-    >>> l = actor.label(r)
+    >>> ren = window.Renderer()
+    >>> l = actor.label(ren)
     >>> ren.add(l)
-    >>> #window.show(r)
+    >>> #window.show(ren)
     """
 
     atext = vtk.vtkVectorText()
