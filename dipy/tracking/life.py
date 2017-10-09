@@ -17,6 +17,7 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
+from dipy.testing import setup_test
 
 
 def gradient(f):
