@@ -83,6 +83,7 @@ CYTHON_MIN_VERSION='0.25.1'
 NUMPY_MIN_VERSION='1.7.1'
 SCIPY_MIN_VERSION='0.9'
 NIBABEL_MIN_VERSION='2.1.0'
+H5PY_MIN_VERSION='2.4.0'
 
 # Main setup parameters
 NAME                = 'dipy'
@@ -105,4 +106,5 @@ VERSION             = __version__
 PROVIDES            = ["dipy"]
 REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "scipy (>=%s)" % SCIPY_MIN_VERSION,
-                       "nibabel (>=%s)" % NIBABEL_MIN_VERSION]
+                       "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
+                       "h5py (>=%s)" % H5PY_MIN_VERSION]
