@@ -41,7 +41,7 @@ def load_peaks(fname, verbose=False):
     pam : PeaksAndMetrics object
     """
 
-    if os.path.splitext(fname)[1] != '.pam5':
+    if os.path.splitext(fname)[1].lower() != '.pam5':
         raise IOError('This function supports only PAM5 (HDF5) files')
 
     f = h5py.File(fname, 'r')
