@@ -332,13 +332,13 @@ def set_number_of_points(streamlines, nb_points=3):
 
         if dtype == np.float32:
             c_set_number_of_points_from_arraysequence[float2d](
-                streamlines._data, streamlines._offsets,
-                streamlines._lengths, nb_points,
+                streamlines._data, streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
         else:
             c_set_number_of_points_from_arraysequence[double2d](
-                streamlines._data, streamlines._offsets,
-                streamlines._lengths, nb_points,
+                streamlines._data, streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp), nb_points,
                 new_streamlines._data)
 
         return new_streamlines
