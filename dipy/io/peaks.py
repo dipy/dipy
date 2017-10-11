@@ -149,7 +149,7 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     f = h5py.File(fname, 'w')
 
     group = f.create_group('pam')
-    f.attrs['version'] = '0.0.1'
+    f.attrs['version'] = u'0.0.1'
 
     version_string = f.attrs['version']
 
