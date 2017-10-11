@@ -96,15 +96,16 @@ display the resulting streamlines using the ``dipy.viz`` package.
 from dipy.tracking.local import LocalTracking
 from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
+from dipy.tracking.streamline import Streamlines
 
 # Enables/disables interactive visualization
 interactive = False
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines and store as a list.
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 # Prepare the display objects.
 color = line_colors(streamlines)
@@ -134,8 +135,10 @@ file so it can be loaded into other software for visualization or further
 analysis.
 """
 
-from dipy.io.trackvis import save_trk
-save_trk("CSA_detr.trk", streamlines, affine, labels.shape)
+from dipy.io.streamline import save_trk
+save_trk("CSA_detr.trk", streamlines, affine,
+         shape=labels.shape,
+         vox_size=labels_img.header.get_zooms())
 
 """
 Next let's try some probabilistic fiber tracking. For this, we'll be using the
@@ -190,11 +193,11 @@ Next we can pass this direction getter, along with the ``classifier`` and
 callosum.
 """
 
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine,
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                             step_size=.5, max_cross=1)
 
 # Compute streamlines and store as a list.
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 if window.have_vtk:
     streamlines_actor = actor.line(streamlines, line_colors(streamlines))
@@ -215,4 +218,6 @@ if window.have_vtk:
    Corpus callosum probabilistic tracking.
 """
 
-save_trk("CSD_prob.trk", streamlines, affine, labels.shape)
+save_trk("CSD_prob.trk", streamlines, affine,
+         shape=labels.shape,
+         vox_size=labels_img.header.get_zooms())
