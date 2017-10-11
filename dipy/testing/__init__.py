@@ -29,9 +29,8 @@ def setup_test():
 
     If imported into a file, nosetest will run this before any doctests.
 
-    Note:
-
-    More informations :
+    References
+    -----------
     https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
     https://github.com/nipy/nibabel/pull/556
     """
