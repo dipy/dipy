@@ -56,12 +56,11 @@ class Dpy(object):
 
         self.mode = mode
         self.f = h5py.File(fname, mode=self.mode)
-        self.N = 5 * 10**9
         self.compression = compression
 
         if self.mode == 'w':
 
-            self.f.attrs['version'] = np.string_('0.0.1')
+            self.f.attrs['version'] = '0.0.1'
 
             self.streamlines = self.f.create_group('streamlines')
 
@@ -88,9 +87,7 @@ class Dpy(object):
 
     def version(self):
 
-        # ver = self.f.root.version[:]
-        # return ver[0].decode()
-        return self.f.attrs['version'][:]
+        return self.f.attrs['version']
 
     def write_track(self, track):
         """ write on track each time
@@ -99,8 +96,6 @@ class Dpy(object):
         self.tracks[-track.shape[0]:] = track.astype(np.float32)
         self.curr_pos += track.shape[0]
 
-        #from pdb import set_trace
-        #set_trace()
         self.offsets.resize(self.offsets.shape[0] + 1, axis=0)
         self.offsets[-1] = self.curr_pos
 
