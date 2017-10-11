@@ -64,6 +64,7 @@ from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
 from dipy.tracking import metrics
 from dipy.tracking.vox2track import _streamlines_in_mask
+from dipy.testing import setup_test
 
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
