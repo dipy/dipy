@@ -60,7 +60,7 @@ class Dpy(object):
 
         if self.mode == 'w':
 
-            self.f.attrs['version'] = '0.0.1'
+            self.f.attrs['version'] = u'0.0.1'
 
             self.streamlines = self.f.create_group('streamlines')
 
