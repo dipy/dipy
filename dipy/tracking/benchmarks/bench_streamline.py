@@ -99,8 +99,8 @@ def bench_length():
     print("Speed up of {0:.2f}x".format(python_time/cython_time))
 
     # Make sure it produces the same results.
-    assert_array_equal([length_python(s) for s in DATA["streamlines"]],
-                       length(DATA["streamlines"]))
+    assert_array_almost_equal([length_python(s) for s in DATA["streamlines"]],
+                              length(DATA["streamlines"]))
 
     streamlines = DATA['streamlines_arrseq']
     cython_time_arrseq = measure("length(streamlines)", repeat)
