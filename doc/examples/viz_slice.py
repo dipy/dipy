@@ -165,28 +165,11 @@ show_m.initialize()
 We'll start by creating the panel and adding it to the ``ShowManager``
 """
 
+label_position = ui.TextBlock2D(text='Position:')
+label_value = ui.TextBlock2D(text='Value:')
 
-def build_textblock(text):
-    """Generate a textblock for the panel."""
-    textblock = ui.TextBlock2D()
-    textblock.message = text
-    textblock.font_size = 18
-    textblock.font_family = 'Arial'
-    textblock.justification = 'left'
-    textblock.bold = False
-    textblock.italic = False
-    textblock.shadow = False
-    textblock.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-    textblock.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-    textblock.color = (1, 1, 1)
-
-    return textblock
-
-label_position = build_textblock(text='Position:')
-label_value = build_textblock(text='Value:')
-
-result_position = build_textblock(text='')
-result_value = build_textblock(text='')
+result_position = ui.TextBlock2D(text='')
+result_value = ui.TextBlock2D(text='')
 
 panel_picking = ui.Panel2D(center=(200, 120),
                            size=(250, 125),
