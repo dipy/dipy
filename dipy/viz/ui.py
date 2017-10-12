@@ -681,12 +681,63 @@ class TextBlock2D(UI):
     Attributes
     ----------
     actor : :class:`vtkTextActor`
-
+        The text actor.
+    message : str
+        The initial text while building the actor.
+    position : (float, float)
+        (x, y) in pixels.
+    color : (float, float, float)
+        RGB: Values must be between 0-1.
+    font_size : int
+        Size of the text font.
+    font_family : str
+        Currently only supports Arial.
+    justification : str
+        left, right or center.
+    bold : bool
+        Makes text bold.
+    italic : bool
+        Makes text italicised.
+    shadow : bool
+        Adds text shadow.
     """
 
-    def __init__(self):
+    def __init__(self, text="Text Block", font_size=18, font_family='Arial',
+                 justification='left', bold=False, italic=False, shadow=False,
+                 color=(1, 1, 1), position=(0, 0, 0)):
+        """
+        Parameters
+        ----------
+        text : str
+            The initial text while building the actor.
+        position : (float, float)
+            (x, y) in pixels.
+        color : (float, float, float)
+            RGB: Values must be between 0-1.
+        font_size : int
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        justification : str
+            left, right or center.
+        bold : bool
+            Makes text bold.
+        italic : bool
+            Makes text italicised.
+        shadow : bool
+            Adds text shadow.
+        """
         super(TextBlock2D, self).__init__()
         self.actor = vtkTextActor()
+        self.message = text
+        self.font_size = font_size
+        self.font_family = font_family
+        self.justification = justification
+        self.bold = bold
+        self.italic = italic
+        self.shadow = shadow
+        self.color = color
+        self.position = position
 
     def get_actor(self):
         """ Returns the actor composing this element.
@@ -948,30 +999,30 @@ class TextBlock2D(UI):
 class TextBox2D(UI):
     """ An editable 2D text box that behaves as a UI component.
 
-        Currently supports:
-        - Basic text editing.
-        - Cursor movements.
-        - Single and multi-line text boxes.
-        - Pre text formatting (text needs to be formatted beforehand).
+    Currently supports:
+    - Basic text editing.
+    - Cursor movements.
+    - Single and multi-line text boxes.
+    - Pre text formatting (text needs to be formatted beforehand).
 
-        Attributes
-        ----------
-        text : str
-            The current text state.
-        actor : :class:`vtkActor2d`
-            The text actor.
-        width : int
-            The number of characters in a single line of text.
-        height : int
-            The number of lines in the textbox.
-        window_left : int
-            Left limit of visible text in the textbox.
-        window_right : int
-            Right limit of visible text in the textbox.
-        caret_pos : int
-            Position of the caret in the text.
-        init : bool
-            Flag which says whether the textbox has just been initialized.
+    Attributes
+    ----------
+    text : str
+        The current text state.
+    actor : :class:`vtkActor2d`
+        The text actor.
+    width : int
+        The number of characters in a single line of text.
+    height : int
+        The number of lines in the textbox.
+    window_left : int
+        Left limit of visible text in the textbox.
+    window_right : int
+        Right limit of visible text in the textbox.
+    caret_pos : int
+        Position of the caret in the text.
+    init : bool
+        Flag which says whether the textbox has just been initialized.
 
     """
     def __init__(self, width, height, text="Enter Text", position=(100, 10),
