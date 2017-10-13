@@ -123,7 +123,6 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     # Adding this will allow to support anisotropic voxels
     # and also gives the opportunity to slice per voxel coordinates
-
     RZS = affine[:3, :3]
     zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
     image_resliced.SetOutputSpacing(*zooms)
@@ -210,13 +209,14 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
 def surface_actor(data, affine=None,
                   color=np.array([1, 0, 0]), opacity=1):
-    """Take a binary roi and generate a surface actor of the specified color
-    and opacity
+    """Generates surface actor from a binary ROI.
+
+    The color and opacity of the surface can be customized.
 
     Parameters
     ----------
     data : array, shape (X, Y, Z)
-        an ROI file that will be binarized and displayed
+        An ROI file that will be binarized and displayed.
     affine : array, shape (4, 4)
         Grid to space (usually RAS 1mm) transformation matrix. Default is None.
         If None then the identity matrix is used.
@@ -238,7 +238,7 @@ def surface_actor(data, affine=None,
     else:
         nb_components = 1
 
-    data = (data>0)*1
+    data = (data > 0) * 1
     vol = np.interp(data, xp=[data.min(), data.max()], fp=[0, 255])
     vol = vol.astype('uint8')
 
@@ -302,11 +302,11 @@ def surface_actor(data, affine=None,
 
     skin_extractor = vtk.vtkContourFilter()
     if major_version <= 5:
-        skin_extractor.SetInput(image_resliced)
+        skin_extractor.SetInput(image_resliced.GetOutput())
     else:
         skin_extractor.SetInputData(image_resliced.GetOutput())
 
-    skin_extractor.SetValue(0,1)
+    skin_extractor.SetValue(0, 1)
 
     skin_normals = vtk.vtkPolyDataNormals()
     skin_normals.SetInputConnection(skin_extractor.GetOutputPort())
@@ -322,9 +322,6 @@ def surface_actor(data, affine=None,
     skin_actor.GetProperty().SetOpacity(opacity)
 
     skin_actor.GetProperty().SetColor(color[0], color[1], color[2])
-
-    del skin_mapper
-    del skin_extractor
 
     return skin_actor
 
