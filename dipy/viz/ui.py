@@ -725,7 +725,7 @@ class TextBlock2D(UI):
 
     def __init__(self, text="Text Block", font_size=18, font_family='Arial',
                  justification='left', bold=False, italic=False, shadow=False,
-                 color=(1, 1, 1), position=(0, 0, 0)):
+                 color=(1, 1, 1), position=(0, 0)):
         """
         Parameters
         ----------
