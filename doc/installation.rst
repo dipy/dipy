@@ -244,7 +244,7 @@ then::
 
 You might want the optional packages too (highly recommended)::
 
-    sudo apt-get install ipython python-tables python-vtk python-matplotlib
+    sudo apt-get install ipython python-h5py python-vtk python-matplotlib
 
 
 Now follow :ref:`install-source-nix`.
