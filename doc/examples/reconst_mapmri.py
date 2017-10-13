@@ -21,7 +21,7 @@ the parallel and perpendicular Non-Gaussianity.
 The estimation of these properties from noisy DWIs requires that the
 fitting of the MAPMRI basis is regularized. We will show that this can
 be done using both constraining the diffusion propagator to positive
-values [Ozarslan2013]_ and analytic Laplacian Regularization [Fick2016_].
+values [Ozarslan2013]_ and analytic Laplacian Regularization [Fick2016a]_.
 
 First import the necessary modules:
 """
@@ -48,13 +48,15 @@ fetch_cenir_multib(with_raw=False)
 For this example we select only the shell with b-values equal to the one of the
 Human Connectome Project (HCP).
 
-data contains the voxel data and gtab contains a GradientTable
+``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
 object (gradient information e.g. b-values). For example, to show the b-values
-it is possible to write print(gtab.bvals).
+it is possible to write::
 
-For the values of the q-space
-indices to make sense it is necessary to explicitly state the big_delta and
-small_delta parameters in the gradient table.
+   ``print(gtab.bvals)``
+
+For the values of the q-space indices to make sense it is necessary to
+explicitly state the ``big_delta`` and ``small_delta`` parameters in the
+gradient table.
 """
 
 bvals = [1000, 2000, 3000]
@@ -62,20 +64,20 @@ img, gtab = read_cenir_multib(bvals)
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
 gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-                      small_delta=big_delta,
-                      big_delta=small_delta)
+                      big_delta=big_delta,
+                      small_delta=small_delta)
 data = img.get_data()
 data_small = data[40:65, 50:51, 35:60]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-The MAPMRI Model can now be instantiated. The radial_order determines the
+The MAPMRI Model can now be instantiated. The ``radial_order`` determines the
 expansion order of the basis, i.e., how many basis functions are used to
 approximate the signal.
 
 First, we must decide to use the anisotropic or isotropic MAPMRI basis. As was
-shown in [Fick2016]_, the isotropic basis is best used for tractography
+shown in [Fick2016a]_, the isotropic basis is best used for tractography
 purposes, as the anisotropic basis has a bias towards smaller crossing angles
 in the ODF. For signal fitting and estimation of scalar quantities the
 anisotropic basis is suggested. The choice can be made by setting
@@ -84,13 +86,13 @@ anisotropic basis is suggested. The choice can be made by setting
 First, we must select the method of regularization and/or constraining the
 basis fitting.
 - "laplacian_regularization=True" makes it use Laplacian regularization
-  [Fick2016]_. This method essentially reduces spurious oscillations in the
+  [Fick2016a]_. This method essentially reduces spurious oscillations in the
   reconstruction by minimizing the Laplacian of the fitted signal.
   Several options can be given to select the regularization weight:
       -"regularization_weighting="GCV"" uses generalized cross-validation
        [Craven1978]_ to find an optimal weight.
       -"regularization_weighting=0.2" for example would omit the GCV and
-       just set it to 0.2 (found to be reasonable in HCP data [Fick2016]_).
+       just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
       -"regularization_weighting=np.array(weights)" would make the GCV use
        a custom range to find an optimal weight.
 - "positivity_constraint=True" makes it use the positivity constraint on the
@@ -135,7 +137,7 @@ Note that when we use only Laplacian regularization, the "GCV" option may
 select very low regularization weights in very anisotropic white matter such
 as the corpus callosum, resulting in corrupted scalar indices. In this example
 we therefore choose a preset value of 0.2, which has shown to be quite robust
-and also faster in practice [Fick2016]_.
+and also faster in practice [Fick2016a]_.
 
 We can then fit the MAPMRI model to the data.
 """
@@ -272,8 +274,9 @@ From left to right:
 - Return to axis probability (RTAP) is a directional index that quantifies
   the probability that a proton will be along the axis of the main eigenvector
   of a diffusion tensor during both diffusion gradient pulses. RTAP has been
-  related to the apparent axon diameter [Ozarslan2013, Fick2016]_ under several
-  strong assumptions on the tissue composition and acquisition protocol.
+  related to the apparent axon diameter [Ozarslan2013]_ [Fick2016a]_ under
+  several strong assumptions on the tissue composition and acquisition
+  protocol.
 - Return to plane probability (RTPP) is a directional index that quantifies the
   probability that a proton will be on the plane perpendicular to the main
   eigenvector of a diffusion tensor during both gradient pulses. RTPP is
@@ -288,6 +291,7 @@ physically meaningful we must use a b-value threshold in the MAPMRI model. This
 threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
+
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                        laplacian_regularization=True,
                                        laplacian_weighting=.05,
@@ -338,16 +342,18 @@ values in the CSF and higher in the white matter.
 Increases or decreases in these values do not point to a specific
 microstructural change, but can indicate clues as to what is happening, similar
 to Fractional Anisotropy. An initial simulation study that quantifies the added
-value of q-space indices over DTI indices is given in [Fick2016b]_
+value of q-space indices over DTI indices is given in [Fick2016b]_.
 
-The MAPMRI framework also allows for the estimation of orientation distribution
-functions (ODFs). We recommend to use the isotropic implementation for this
+The MAPMRI framework also allows for the estimation of Orientation Distribution
+Functions (ODFs). We recommend to use the isotropic implementation for this
 purpose, as the anisotropic implementation has a bias towards smaller crossing
 angles.
 
-For the isotropic basis we recommend to use a higher_order of 8, as the basis
-needs more generic and needs more basis functions to approximate the signal.
+For the isotropic basis we recommend to use a ``radial_order`` of 8, as the
+basis needs more generic and needs more basis functions to approximate the
+signal.
 """
+
 radial_order = 8
 map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                         laplacian_regularization=True,
@@ -364,16 +370,17 @@ Load an odf reconstruction sphere
 sphere = get_sphere('symmetric724')
 
 """
-Compute the ODFs
-The radial order s can be increased to sharpen the results, but it might
-also make the odfs noisier. Always check the results visually.
+Compute the ODFs.
+
+The radial order ``s`` can be increased to sharpen the results, but it might
+also make the ODFs noisier. Always check the results visually.
 """
 
 odf = mapfit_both_iso.odf(sphere, s=2)
 print('odf.shape (%d, %d, %d, %d)' % odf.shape)
 
 """
-Display the ODFs
+Display the ODFs.
 """
 
 r = fvtk.ren()
@@ -385,26 +392,30 @@ fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 .. figure:: odfs.png
    :align: center
 
-   **Orientation distribution functions**.
+   Orientation distribution functions (ODFs).
 
-.. [Ozarslan2013]_ Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A
-               novel diffusion imaging method for mapping tissue
-               microstructure", NeuroImage, 2013.
+References
+----------
 
-.. [Fick2016]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-               using Laplacian-regularized MAP-MRI and its application to HCP
-               data." NeuroImage (2016).
+.. [Ozarslan2013] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A
+   novel diffusion imaging method for mapping tissue microstructure",
+   NeuroImage, 2013.
 
-.. [Craven1978]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
-               NUMER MATH 31.4 (1978): 377-403.
+.. [Fick2016a] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+   using Laplacian-regularized MAP-MRI and its application to HCP data."
+   NeuroImage (2016).
 
-.. [Hosseinbor2013]_ Hosseinbor et al. "Bessel fourier orientation
-               reconstruction (bfor): an analytical diffusion propagator
-               reconstruction for hybrid diffusion imaging and computation
-               of q-space indices. NeuroImage 64, 650–670.
-.. [Fick2016b]_ Fick et al. "A sensitivity analysis of Q-space indices with
-               respect to changes in axonal diameter, dispersion and tissue
-               composition. ISBI 2016.
+.. [Craven1978] Craven et al. "Smoothing Noisy Data with Spline Functions."
+   NUMER MATH 31.4 (1978): 377-403.
+
+.. [Hosseinbor2013] Hosseinbor et al. "Bessel fourier orientation
+   reconstruction (bfor): an analytical diffusion propagator reconstruction
+   for hybrid diffusion imaging and computation of q-space indices. NeuroImage
+   64, 650–670.
+
+.. [Fick2016b] Fick et al. "A sensitivity analysis of Q-space indices with
+   respect to changes in axonal diameter, dispersion and tissue composition.
+   ISBI 2016.
 
 .. include:: ../links_names.inc
 

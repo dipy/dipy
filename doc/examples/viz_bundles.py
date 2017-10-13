@@ -67,7 +67,7 @@ window.record(renderer, out_path='bundle1.png', size=(600, 600))
 .. figure:: bundle1.png
    :align: center
 
-   **One orientation color for every streamline**.
+   One orientation color for every streamline.
 
 You may wonder how we knew how to set the camera. This is very easy. You just
 need to run ``window.show`` once see how you want to see the object and then
@@ -103,12 +103,12 @@ window.record(renderer, out_path='bundle2.png', size=(600, 600))
 .. figure:: bundle2.png
    :align: center
 
-   **Every point with a color from FA**.
+   Every point with a color from FA.
 
 Show every point with a value from a volume with your colormap
 ==============================================================
 
-Here we will need to input the ``fa`` map in ``streamtube`` or ``
+Here we will need to input the ``fa`` map in ``streamtube``
 """
 
 renderer.clear()
@@ -133,13 +133,14 @@ window.record(renderer, out_path='bundle3.png', size=(600, 600))
 .. figure:: bundle3.png
    :align: center
 
-   **Every point with a color from FA using a non default colormap**.
+   Every point with a color from FA using a non default colormap.
 
 
 Show every bundle with a specific color
 ========================================
 
-You can have a bundle with a specific color. Here orange.
+You can have a bundle with a specific color. In this example, we are chosing
+orange.
 """
 
 renderer.clear()
@@ -154,7 +155,7 @@ window.record(renderer, out_path='bundle4.png', size=(600, 600))
 .. figure:: bundle4.png
    :align: center
 
-   **Entire bundle with a specific color**.
+   Entire bundle with a specific color.
 
 Show every streamline of a bundle with a different color
 ========================================================
@@ -217,7 +218,7 @@ window.record(renderer, out_path='bundle6.png', size=(600, 600))
 .. figure:: bundle6.png
    :align: center
 
-   **Random colors per points per streamline**.
+   Random colors per points per streamline.
 
 In summary, we showed that there are many useful ways for visualizing maps
 on bundles.

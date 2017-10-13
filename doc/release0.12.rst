@@ -1,7 +1,7 @@
 .. _release0.12:
 
 ====================================
- Release notes for Dipy version 0.12
+ Release notes for DIPY version 0.12
 ====================================
 
 

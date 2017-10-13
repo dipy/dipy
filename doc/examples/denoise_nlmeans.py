@@ -31,7 +31,7 @@ data = data[..., 1]
 
 print("vol size", data.shape)
 
-# lets create a noisy data with gaussian data
+# lets create a noisy data with Gaussian data
 
 """
 In order to call ``non_local_means`` first you need to estimate the standard
