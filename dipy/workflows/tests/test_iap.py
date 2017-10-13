@@ -4,7 +4,7 @@ import sys
 from dipy.workflows.base import IntrospectiveArgumentParser
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import TestFlow, \
-    DummyCombinedWorkflow
+    DummyCombinedWorkflow, DummyWorkflow1
 
 
 def test_iap():
@@ -36,6 +36,13 @@ def test_iap():
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow.run(**args)
     npt.assert_array_equal(return_values, all_results + [2.0])
+
+
+def test_iap_epilog():
+    parser = IntrospectiveArgumentParser()
+    dummy_flow = DummyWorkflow1()
+    parser.add_workflow(dummy_flow)
+    assert "dummy references" in parser.epilog
 
 
 def test_flow_runner():
