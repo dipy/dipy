@@ -20,8 +20,9 @@ from dipy.viz import actor, window
 from dipy.viz.colormap import line_colors
 
 """
-First, we need to generate some streamlines. For a more complete description of
-these steps, please refer to the CSA Probabilistic Tracking Tutorial.
+First, we need to generate some streamlines. For a more complete
+description of these steps, please refer to the CSA Probabilistic Tracking
+Tutorial.
 """
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -33,9 +34,9 @@ white_matter = (labels == 1) | (labels == 2)
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                                 relative_peak_threshold=.8,
-                                 min_separation_angle=45,
-                                 mask=white_matter)
+                             relative_peak_threshold=.8,
+                             min_separation_angle=45,
+                             mask=white_matter)
 
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
 
@@ -44,13 +45,13 @@ seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
 
 # Initialization of LocalTracking. The computation happens in the next step.
 streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
-                                step_size=2)
+                            step_size=2)
 
 # Compute streamlines and store as a list.
 streamlines = list(streamlines)
 
 """
-We will create a streamline actor from the streamlines
+We will create a streamline actor from the streamlines.
 """
 
 streamlines_actor = actor.line(streamlines, line_colors(streamlines))
@@ -62,13 +63,13 @@ a decimal between zero and one. Here, we set the color as blue/green with
 50% opacity.
 """
 surface_opacity = 0.5
-surface_color = [0,1,1]
+surface_color = [0, 1, 1]
 
 seedroi_actor = actor.surface_actor(seed_mask, affine,
-                                         surface_color, surface_opacity)
+                                    surface_color, surface_opacity)
 
 """
-Next, we initialize a ''Renderer'' object and add both of the actors
+Next, we initialize a ''Renderer'' object and add both actors
 to the rendering.
 """
 
@@ -77,11 +78,11 @@ ren.add(streamlines_actor)
 ren.add(seedroi_actor)
 
 """
-If you uncomment the following line, the rendering will pop up in an interactive
-window.
+If you uncomment the following line, the rendering will pop up in an
+interactive window.
 """
 
-#window.show(ren)
+# window.show(ren)
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
