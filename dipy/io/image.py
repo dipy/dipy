@@ -3,17 +3,20 @@ from __future__ import division, print_function, absolute_import
 import nibabel as nib
 
 
-def load_nifti(fname, return_img=False, return_voxsize=False):
+def load_nifti(fname, return_img=False, return_voxsize=False,
+               return_coords=False):
     img = nib.load(fname)
-    hdr = img.header
     data = img.get_data()
-    vox_size = hdr.get_zooms()[:3]
-
+    vox_size = img.header.get_zooms()[:3]
+    
     ret_val = [data, img.affine]
-    if return_voxsize:
-        ret_val.append(vox_size)
+
     if return_img:
         ret_val.append(img)
+    if return_voxsize:
+        ret_val.append(vox_size)
+    if return_coords:
+        ret_val.append(nib.aff2axcodes(img.affine))
 
     return tuple(ret_val)
 
