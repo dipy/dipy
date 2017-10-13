@@ -97,6 +97,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         self.doc = npds['Parameters']
         self.description = ' '.join(npds['Extended Summary'])
 
+        if npds['References']:
+            ref_text = [text if text else "\n" for text in npds['References']]
+            self.epilog += "\n{}".format(''.join([text for text in ref_text]))
+
         self.outputs = [param for param in npds['Parameters'] if
                         'out_' in param[0]]
 

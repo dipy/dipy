@@ -10,26 +10,15 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
 
-# Conditional import machinery for pytables
-from dipy.utils.optpkg import optional_package
 
-# Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables')
-
-# Decorator to protect tests from being run without pytables present
-iftables = npt.dec.skipif(not have_tables,
-                          'Pytables does not appear to be installed')
-
-
-@iftables
 def test_reconst_csa():
     reconst_flow_core(ReconstCSAFlow)
 
-@iftables
+
 def test_reconst_csd():
     reconst_flow_core(ReconstCSDFlow)
 
-@iftables
+
 def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_data('small_64D')
@@ -73,7 +62,7 @@ def reconst_flow_core(flow):
 
         pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])
         npt.assert_allclose(pam.peak_dirs.reshape(peaks_dir_data.shape),
-                                   peaks_dir_data)
+                            peaks_dir_data)
         npt.assert_allclose(pam.peak_values, peaks_vals_data)
         npt.assert_allclose(pam.peak_indices, peaks_idx_data)
         npt.assert_allclose(pam.shm_coeff, shm_data)

@@ -35,12 +35,12 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving', 'input_im
 .. figure:: input_images.png
    :align: center
 
-   **Input images**.
+   Input images.
 """
 
 """
 We want to find an invertible map that transforms the moving image (circle)
-into the static image (the C letter)
+into the static image (the C letter).
 
 The first decision we need to make is what similarity metric is appropriate
 for our problem. In this example we are using two binary images, so the Sum
@@ -53,8 +53,8 @@ metric = SSDMetric(dim)
 """
 Now we define an instance of the registration class. The SyN algorithm uses
 a multi-resolution approach by building a Gaussian Pyramid. We instruct the
-registration instance to perform at most [n_0, n_1, ..., n_k] iterations at
-each level of the pyramid. The 0-th level corresponds to the finest resolution.  
+registration instance to perform at most $[n_0, n_1, ..., n_k]$ iterations at
+each level of the pyramid. The 0-th level corresponds to the finest resolution.
 """
 
 level_iters = [200, 100, 50, 25]
@@ -80,7 +80,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 .. figure:: diffeomorphic_map.png
    :align: center
 
-   **Deformed lattice under the resulting diffeomorphic map**.
+   Deformed lattice under the resulting diffeomorphic map.
 """
 
 """
@@ -95,7 +95,7 @@ regtools.overlay_images(static, warped_moving, 'Static','Overlay','Warped moving
 .. figure:: direct_warp_result.png
    :align: center
 
-   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
+   Moving image transformed under the (direct) transformation in green on top of the static image (in red).
 """
 
 """
@@ -111,11 +111,11 @@ regtools.overlay_images(warped_static, moving,'Warped static','Overlay','Moving'
 .. figure:: inverse_warp_result.png
    :align: center
 
-   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green)**.
+   Static image transformed under the (inverse) transformation in red on top of the moving image (in green).
 """
 
 """
-Now let's register a couple of slices from a B0 image using the Cross
+Now let's register a couple of slices from a b0 image using the Cross
 Correlation metric. Also, let's inspect the evolution of the registration.
 To do this we will define a function that will be called by the registration
 object at each stage of the optimization process. We will draw the current
@@ -146,7 +146,7 @@ t1, b0 = read_syn_data()
 data = np.array(b0.get_data(), dtype = np.float64)
 
 """
-We first remove the skull from the B0 volume
+We first remove the skull from the b0 volume
 """
 
 b0_mask, mask = median_otsu(data, 4, 4)
@@ -198,7 +198,7 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
 .. figure:: t1_slices_input.png
    :align: center
 
-   **Input images**.
+   Input images.
 """
 
 regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
@@ -208,7 +208,7 @@ regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
 .. figure:: t1_slices_res.png
    :align: center
 
-   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
+   Moving image transformed under the (direct) transformation in green on top of the static image (in red).
 """
 
 '''
@@ -223,7 +223,7 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving'
 .. figure:: t1_slices_res2.png
    :align: center
 
-   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green)**.
+   Static image transformed under the (inverse) transformation in red on top of the moving image (in green).
 """
 
 '''
@@ -236,10 +236,18 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 .. figure:: diffeomorphic_map_b0s.png
    :align: center
 
-   **Deformed lattice under the resulting diffeomorphic map**.
+   Deformed lattice under the resulting diffeomorphic map.
 
-.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009). Symmetric Diffeomorphic Image Registration with Cross- Correlation: Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1), 26-41.\
-.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
+References
+----------
+
+.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+   Symmetric Diffeomorphic Image Registration with Cross- Correlation:
+   Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
+   26-41.
+
+.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
+   Normalization Tools ( ANTS ), 1-35.
 
 .. include:: ../links_names.inc
 
