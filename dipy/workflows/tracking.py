@@ -88,6 +88,11 @@ class DetTrackPAMFlow(GenericTrackFlow):
         out_tractogram : string, optional
            Name of the tractogram file to be saved
            (default 'tractogram.trk')
+           
+        References
+        ----------
+        Garyfallidis, University of Cambridge, PhD thesis 2012.
+        Amirbekian, University of California San Francisco, PhD thesis 2017.
         """
         io_it = self.get_io_iterator()
 
