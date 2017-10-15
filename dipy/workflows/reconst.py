@@ -90,6 +90,21 @@ class ReconstDtiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
+        
+        References
+        ----------
+        Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+           the effective self-diffusion tensor from the NMR spin echo. J Magn
+           Reson B 103, 247-254.
+           
+        Basser, P., Pierpaoli, C., 1996. Microstructural and
+           physiological features of tissues elucidated by quantitative
+           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+        
+        Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
+            
+        
         """
         io_it = self.get_io_iterator()
 
@@ -204,67 +219,83 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
 
         """ Workflow for tensor reconstruction and for computing DTI metrics.
-            Performs a tensor reconstruction on the files by 'globing'
-            ``input_files`` and saves the DTI metrics in a directory specified by
-            ``out_dir``.
+        
+        Performs a tensor reconstruction on the files by 'globing'
+        ``input_files`` and saves the DTI metrics in a directory specified
+        by ``out_dir``.
 
-            Parameters
-            ----------
-            input_files : string
-                Path to the input volumes. This path may contain wildcards to
-                process multiple inputs at once.
-            bvalues : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
-            bvectors : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
-            mask_files : string
-                Path to the input masks. This path may contain wildcards to use
-                multiple masks at once. (default: No mask used)
-            sigma : float
-                An estimate of the variance.
-            b0_threshold : float, optional
-                Threshold used to find b=0 directions (default 0.0)
-            bvecs_tol : float, optional
-                Threshold used so that norm(bvec)=1 (default 0.01)
-            save_metrics : variable string, optional
-                List of metrics to save.
-                Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
-                (default [] (all))
-            jacobian : bool, optional
-                Whether to use the Jacobian of the tensor to speed the
-                non-linear optimization procedure used to fit the tensor
-                parameters (default True)
-            out_dir : string, optional
-                Output directory (default input file directory)
-            out_tensor : string, optional
-                Name of the tensors volume to be saved (default 'tensors.nii.gz')
-            out_fa : string, optional
-                Name of the fractional anisotropy volume to be saved
-                (default 'fa.nii.gz')
-            out_ga : string, optional
-                Name of the geodesic anisotropy volume to be saved
-                (default 'ga.nii.gz')
-            out_rgb : string, optional
-                Name of the color fa volume to be saved (default 'rgb.nii.gz')
-            out_md : string, optional
-                Name of the mean diffusivity volume to be saved
-                (default 'md.nii.gz')
-            out_ad : string, optional
-                Name of the axial diffusivity volume to be saved
-                (default 'ad.nii.gz')
-            out_rd : string, optional
-                Name of the radial diffusivity volume to be saved
-                (default 'rd.nii.gz')
-            out_mode : string, optional
-                Name of the mode volume to be saved (default 'mode.nii.gz')
-            out_evec : string, optional
-                Name of the eigenvectors volume to be saved
-                (default 'evecs.nii.gz')
-            out_eval : string, optional
-                Name of the eigenvalues to be saved (default 'evals.nii.gz')
-            """
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        sigma : float
+            An estimate of the variance.
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        bvecs_tol : float, optional
+            Threshold used so that norm(bvec)=1 (default 0.01)
+        save_metrics : variable string, optional
+            List of metrics to save.
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+            (default [] (all))
+        jacobian : bool, optional
+            Whether to use the Jacobian of the tensor to speed the
+            non-linear optimization procedure used to fit the tensor
+            parameters (default True)
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_tensor : string, optional
+            Name of the tensors volume to be saved (default 'tensors.nii.gz')
+        out_fa : string, optional
+            Name of the fractional anisotropy volume to be saved
+            (default 'fa.nii.gz')
+        out_ga : string, optional
+            Name of the geodesic anisotropy volume to be saved
+            (default 'ga.nii.gz')
+        out_rgb : string, optional
+            Name of the color fa volume to be saved (default 'rgb.nii.gz')
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved
+            (default 'md.nii.gz')
+        out_ad : string, optional
+            Name of the axial diffusivity volume to be saved
+            (default 'ad.nii.gz')
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved
+            (default 'rd.nii.gz')
+        out_mode : string, optional
+            Name of the mode volume to be saved (default 'mode.nii.gz')
+        out_evec : string, optional
+            Name of the eigenvectors volume to be saved
+            (default 'evecs.nii.gz')
+        out_eval : string, optional
+            Name of the eigenvalues to be saved (default 'evals.nii.gz')
+            
+            
+        References
+        ----------
+        Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+           the effective self-diffusion tensor from the NMR spin echo. J Magn
+           Reson B 103, 247-254.
+           
+        Basser, P., Pierpaoli, C., 1996. Microstructural and
+           physiological features of tissues elucidated by quantitative
+           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+        
+        Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
+
+        """
         self.sigma = sigma
         self.jacobian = jacobian
 
@@ -349,6 +380,13 @@ class ReconstCSDFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            
+            
+        References
+        ----------
+        Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+        the fibre orientation distribution in diffusion MRI:
+        Non-negativity constrained super-resolved spherical deconvolution.
         """
         io_it = self.get_io_iterator()
 
@@ -494,6 +532,12 @@ class ReconstCSAFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            
+            
+        References
+        ----------
+        Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
+           Solid Angle Consideration.
         """
         io_it = self.get_io_iterator()
 
