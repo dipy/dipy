@@ -447,6 +447,7 @@ def test_degenerative_cases():
     assert_equal(len(values), 1)
 
 
+
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 

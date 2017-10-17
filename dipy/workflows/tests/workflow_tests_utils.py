@@ -21,6 +21,10 @@ class DummyWorkflow1(Workflow):
             fake output directory (default '')
         out_combined : string
             fake out file (default out_combined.txt)
+
+        References
+        -----------
+        dummy references
         """
         return param1
 

@@ -15,7 +15,7 @@ Run this benchmark with:
 """
 import numpy as np
 from numpy.testing import measure
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.data import get_data
 from nibabel import trackvis as tv
@@ -54,29 +54,34 @@ def generate_streamlines(nb_streamlines, min_nb_points, max_nb_points, rng):
 
 
 def bench_set_number_of_points():
-    repeat = 1
-    nb_points_per_streamline = 100
+    repeat = 5
     nb_points = 42
-    nb_streamlines = int(1e4)
-    streamlines = [np.random.rand(nb_points_per_streamline,
-                                  3).astype("float32")
-                   for i in range(nb_streamlines)]
+    nb_streamlines = DATA['nb_streamlines']
+    streamlines = DATA["streamlines"]  # Streamlines as a list of ndarrays.
 
-    print("Timing set_number_of_points() in Cython"
-          "({0} streamlines)".format(nb_streamlines))
+    msg = "Timing set_number_of_points() with {0:,} streamlines."
+    print(msg.format(nb_streamlines * repeat))
     cython_time = measure("set_number_of_points(streamlines, nb_points)",
                           repeat)
-    print("Cython time: {0:.3}sec".format(cython_time))
-    del streamlines
+    print("Cython time: {0:.3f} sec".format(cython_time))
 
-    streamlines = [np.random.rand(nb_points_per_streamline,
-                                  3).astype("float32")
-                   for i in range(nb_streamlines)]
     python_time = measure("[set_number_of_points_python(s, nb_points)"
                           " for s in streamlines]", repeat)
-    print("Python time: {0:.2}sec".format(python_time))
-    print("Speed up of {0}x".format(python_time/cython_time))
-    del streamlines
+    print("Python time: {0:.2f} sec".format(python_time))
+    print("Speed up of {0:.2f}x".format(python_time/cython_time))
+
+    # Make sure it produces the same results.
+    assert_array_almost_equal([set_number_of_points_python(s) for s in DATA["streamlines"]],
+                              set_number_of_points(DATA["streamlines"]))
+
+    streamlines = DATA['streamlines_arrseq']
+    cython_time_arrseq = measure("set_number_of_points(streamlines, nb_points)", repeat)
+    print("Cython time (ArrSeq): {0:.3f} sec".format(cython_time_arrseq))
+    print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
+
+    # Make sure it produces the same results.
+    assert_array_equal(set_number_of_points(DATA["streamlines"]),
+                       set_number_of_points(DATA["streamlines_arrseq"]))
 
 
 def bench_length():
@@ -84,21 +89,22 @@ def bench_length():
     nb_streamlines = DATA['nb_streamlines']
     streamlines = DATA["streamlines"]  # Streamlines as a list of ndarrays.
 
-    print("Timing length() with {0:,} streamlines.".format(nb_streamlines))
+    msg = "Timing length() with {0:,} streamlines."
+    print(msg.format(nb_streamlines * repeat))
     python_time = measure("[length_python(s) for s in streamlines]", repeat)
-    print("Python time: {0:.2}sec".format(python_time))
+    print("Python time: {0:.2f} sec".format(python_time))
 
     cython_time = measure("length(streamlines)", repeat)
-    print("Cython time: {0:.3}sec".format(cython_time))
+    print("Cython time: {0:.3f} sec".format(cython_time))
     print("Speed up of {0:.2f}x".format(python_time/cython_time))
 
     # Make sure it produces the same results.
-    assert_array_equal([length_python(s) for s in DATA["streamlines"]],
-                       length(DATA["streamlines"]))
+    assert_array_almost_equal([length_python(s) for s in DATA["streamlines"]],
+                              length(DATA["streamlines"]))
 
     streamlines = DATA['streamlines_arrseq']
     cython_time_arrseq = measure("length(streamlines)", repeat)
-    print("Cython time (ArrSeq): {0:.3}sec".format(cython_time_arrseq))
+    print("Cython time (ArrSeq): {0:.3f} sec".format(cython_time_arrseq))
     print("Speed up of {0:.2f}x".format(python_time/cython_time_arrseq))
 
     # Make sure it produces the same results.
