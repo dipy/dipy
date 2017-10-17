@@ -7,39 +7,22 @@ from dipy.direction.peaks import (PeaksAndMetrics,
                                   reshape_peaks_for_visualization)
 from dipy.core.sphere import Sphere
 from dipy.io.image import save_nifti
-
-from distutils.version import LooseVersion
-
-# Conditional import machinery for pytables
-from dipy.utils.optpkg import optional_package
-
-# Allow import, but disable doctests, if we don't have pytables
-tables, have_tables, _ = optional_package('tables', 'PyTables is not installed')
-
-# Useful variable for backward compatibility.
-TABLES_LESS_3_0 = LooseVersion(tables.__version__) < "3.0" if have_tables else False
+import h5py
 
 
-def _safe_save(f, group, array, name):
+def _safe_save(group, array, name):
     """ Safe saving of arrays with specific names
 
     Parameters
     ----------
-    f : HDF5 file handle
     group : HDF5 group
     array : array
     name : string
     """
 
-    if not have_tables:
-        # We generate a TripWireError via this call
-        _ = tables.any_attributes
-
-    func_create_carray = f.createCArray if TABLES_LESS_3_0 else f.create_carray
-
     if array is not None:
-        atom = tables.Atom.from_dtype(array.dtype)
-        ds = func_create_carray(group, name, atom, array.shape)
+        ds = group.create_dataset(name, shape=array.shape,
+                                  dtype=array.dtype, chunks=True)
         ds[:] = array
 
 
@@ -58,44 +41,39 @@ def load_peaks(fname, verbose=False):
     pam : PeaksAndMetrics object
     """
 
-    if os.path.splitext(fname)[1] != '.pam5':
+    if os.path.splitext(fname)[1].lower() != '.pam5':
         raise IOError('This function supports only PAM5 (HDF5) files')
 
-    if TABLES_LESS_3_0:
-        func_open_file = tables.openFile
-    else:
-        func_open_file = tables.open_file
-
-    f = func_open_file(fname, 'r')
+    f = h5py.File(fname, 'r')
 
     pam = PeaksAndMetrics()
 
-    pamh = f.root.pam
+    pamh = f['pam']
 
-    version = f.root.version[0].decode()
+    version = f.attrs['version']
 
     if version != '0.0.1':
-        raise IOError('Incorrect PAM5 file version')
+        raise IOError('Incorrect PAM5 file version {0}'.format(version,))
 
     try:
-        affine = pamh.affine[:]
-    except tables.NoSuchNodeError:
+        affine = pamh['affine'][:]
+    except KeyError:
         affine = None
 
-    peak_dirs = pamh.peak_dirs[:]
-    peak_values = pamh.peak_values[:]
-    peak_indices = pamh.peak_indices[:]
+    peak_dirs = pamh['peak_dirs'][:]
+    peak_values = pamh['peak_values'][:]
+    peak_indices = pamh['peak_indices'][:]
 
     try:
-        shm_coeff = pamh.shm_coeff[:]
-    except tables.NoSuchNodeError:
+        shm_coeff = pamh['shm_coeff'][:]
+    except KeyError:
         shm_coeff = None
 
-    sphere_vertices = pamh.sphere_vertices[:]
+    sphere_vertices = pamh['sphere_vertices'][:]
 
     try:
-        odf = pamh.odf[:]
-    except tables.NoSuchNodeError:
+        odf = pamh['odf'][:]
+    except KeyError:
         odf = None
 
     pam.affine = affine
@@ -104,11 +82,11 @@ def load_peaks(fname, verbose=False):
     pam.peak_indices = peak_indices
     pam.shm_coeff = shm_coeff
     pam.sphere = Sphere(xyz=sphere_vertices)
-    pam.B = pamh.B[:]
-    pam.total_weight = pamh.total_weight[:][0]
-    pam.ang_thr = pamh.ang_thr[:][0]
-    pam.gfa = pamh.gfa[:]
-    pam.qa = pamh.qa[:]
+    pam.B = pamh['B'][:]
+    pam.total_weight = pamh['total_weight'][:][0]
+    pam.ang_thr = pamh['ang_thr'][:][0]
+    pam.gfa = pamh['gfa'][:]
+    pam.qa = pamh['qa'][:]
     pam.odf = odf
 
     f.close()
@@ -168,41 +146,29 @@ def save_peaks(fname, pam, affine=None, verbose=False):
         msg += ' and peak_indices'
         raise ValueError(msg)
 
-    if TABLES_LESS_3_0:
-        func_open_file = tables.openFile
-    else:
-        func_open_file = tables.open_file
+    f = h5py.File(fname, 'w')
 
-    f = func_open_file(fname, 'w')
+    group = f.create_group('pam')
+    f.attrs['version'] = u'0.0.1'
 
-    if TABLES_LESS_3_0:
-        func_create_group = f.createGroup
-        func_create_array = f.createArray
-    else:
-        func_create_group = f.create_group
-        func_create_array = f.create_array
-
-    group = func_create_group(f.root, 'pam')
-    version = func_create_array(f.root, 'version',
-                                [b"0.0.1"], 'PAM5 version number')
-    version_string = f.root.version[0].decode()
+    version_string = f.attrs['version']
 
     affine = pam.affine if hasattr(pam, 'affine') else affine
     shm_coeff = pam.shm_coeff if hasattr(pam, 'shm_coeff') else None
     odf = pam.odf if hasattr(pam, 'odf') else None
 
-    _safe_save(f, group, affine, 'affine')
-    _safe_save(f, group, pam.peak_dirs, 'peak_dirs')
-    _safe_save(f, group, pam.peak_values, 'peak_values')
-    _safe_save(f, group, pam.peak_indices, 'peak_indices')
-    _safe_save(f, group, shm_coeff, 'shm_coeff')
-    _safe_save(f, group, pam.sphere.vertices, 'sphere_vertices')
-    _safe_save(f, group, pam.B, 'B')
-    _safe_save(f, group, np.array([pam.total_weight]), 'total_weight')
-    _safe_save(f, group, np.array([pam.ang_thr]), 'ang_thr')
-    _safe_save(f, group, pam.gfa, 'gfa')
-    _safe_save(f, group, pam.qa, 'qa')
-    _safe_save(f, group, odf, 'odf')
+    _safe_save(group, affine, 'affine')
+    _safe_save(group, pam.peak_dirs, 'peak_dirs')
+    _safe_save(group, pam.peak_values, 'peak_values')
+    _safe_save(group, pam.peak_indices, 'peak_indices')
+    _safe_save(group, shm_coeff, 'shm_coeff')
+    _safe_save(group, pam.sphere.vertices, 'sphere_vertices')
+    _safe_save(group, pam.B, 'B')
+    _safe_save(group, np.array([pam.total_weight]), 'total_weight')
+    _safe_save(group, np.array([pam.ang_thr]), 'ang_thr')
+    _safe_save(group, pam.gfa, 'gfa')
+    _safe_save(group, pam.qa, 'qa')
+    _safe_save(group, odf, 'odf')
 
     f.close()
 

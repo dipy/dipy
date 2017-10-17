@@ -121,7 +121,7 @@ doctest:
 
 rstexamples: rstexamples-stamp
 rstexamples-stamp:
-	../tools/make_examples.py
+	cd examples_built && ../../tools/make_examples.py
 	touch $@
 
 pdf: pdf-stamp
@@ -131,3 +131,9 @@ pdf-stamp: latex
 
 upload: html
 	./upload-gh-pages.sh _build/html/ dipy nipy
+
+xvfb:
+	export TEST_WITH_XVFB=true && make html
+
+memory_profile:
+	export TEST_WITH_MEMPROF=true && make html

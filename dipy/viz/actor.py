@@ -22,7 +22,7 @@ if have_vtk:
 
 
 def slicer(data, affine=None, value_range=None, opacity=1.,
-           lookup_colormap=None, interpolation='linear'):
+           lookup_colormap=None, interpolation='linear', picking_tol=0.025):
     """ Cuts 3D scalar or rgb volumes into 2D images
 
     Parameters
@@ -44,6 +44,9 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         If 'linear' (default) then linear interpolation is used on the final
         texture mapping. If 'nearest' then nearest neighbor interpolation is
         used on the final texture mapping.
+    picking_tol : float
+        The tolerance for the vtkCellPicker, specified as a fraction of
+        rendering window size.
 
     Returns
     -------
@@ -142,6 +145,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     class ImageActor(vtk.vtkImageActor):
+        def __init__(self):
+            self.picker = vtk.vtkCellPicker()
 
         def input_connection(self, output):
             if vtk.VTK_MAJOR_VERSION <= 5:
@@ -172,11 +177,15 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             else:
                 self.GetProperty().SetOpacity(value)
 
+        def tolerance(self, value):
+            self.picker.SetTolerance(value)
+
         def copy(self):
             im_actor = ImageActor()
             im_actor.input_connection(self.output)
             im_actor.SetDisplayExtent(*self.GetDisplayExtent())
             im_actor.opacity(opacity)
+            im_actor.tolerance(picking_tol)
             if interpolation == 'nearest':
                 im_actor.SetInterpolate(False)
             else:
@@ -196,6 +205,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         image_actor.input_connection(image_resliced)
     image_actor.display()
     image_actor.opacity(opacity)
+    image_actor.tolerance(picking_tol)
 
     if interpolation == 'nearest':
         image_actor.SetInterpolate(False)
