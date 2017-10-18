@@ -99,7 +99,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         if npds['References']:
             ref_text = [text if text else "\n" for text in npds['References']]
-            self.epilog += "\n{}".format(''.join([text for text in ref_text]))
+            ref_idx = self.epilog.find('References: \n') + len('References: \n')
+            self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
+                                               ''.join([text for text in ref_text]),
+                                               self.epilog[ref_idx:])
 
         self.outputs = [param for param in npds['Parameters'] if
                         'out_' in param[0]]
