@@ -27,6 +27,9 @@ Neuroscience, 6 (175).
 
 [12] Ocegueda O, Dalmau O, Garyfallidis E, Descoteaux M, Rivera M, `On the computation of integrals over fixed-size rectangles of arbitrary dimension. <http://www.sciencedirect.com/science/article/pii/S0167865516300861>`
 
+[13] Rafael Neto Henriques, Ariel Rokem, Eleftherios Garyfallidis, Samuel St-Jean, Eric Thomas Peterson, Marta Morgado Correia, ReScience volume 3, issue 1, article number 2, 2017
+     `[Re] Optimization of a free water elimination two-compartment model for diffusion tensor imaging. <https://www.biorxiv.org/content/early/2017/02/15/108795>`
+
 
 A note on citing our work
 --------------------------
