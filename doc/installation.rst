@@ -46,7 +46,7 @@ Windows
 #. First, install the python library dependencies. One easy way to do that is to
 use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_
+#. Even with Anaconda_ installed, you will still need to install the nibabel_
 library, which supports reading and writing of neuroimaging data formats. Open
 a terminal and type ::
 
@@ -63,7 +63,7 @@ When the installation has finished we can check if it is successful in the follo
 
 This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
 
     conda install -c conda-forge vtk
 
@@ -75,7 +75,7 @@ OSX
 
 #. Next, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
+#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
 
     pip install nibabel
 
@@ -89,7 +89,7 @@ When the installation has finished we can check if it is successful in the follo
 
 This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
 
     conda install -c clinicalgraphics vtk
 
@@ -326,11 +326,11 @@ or the CLANG compiler. This depends on your python installation:
 Under Anaconda
 ~~~~~~~~~~~~~~~~
 
-If you are using Anaconda, you will need to use GCC. THe first option is to run the following command::
+If you are using Anaconda_, you will need to use GCC. THe first option is to run the following command::
 
     conda install gcc
 
-After this installation, gcc will be your default compiler in anaconda environment.
+After this installation, gcc will be your default compiler in Anaconda_ environment.
 
 The second option is to install gcc via homebrew. Run the following::
 
@@ -358,7 +358,7 @@ at the top of the file, but after the initial imports)::
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
-Whether you are using Anaconda or Hombrew/python.org Python, you will need to then
+Whether you are using Anaconda_ or Hombrew/python.org Python, you will need to then
 run ``python setup.py install``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
