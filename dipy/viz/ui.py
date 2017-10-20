@@ -1079,8 +1079,15 @@ class TextBox2D(UI):
         """
         super(TextBox2D, self).__init__()
         self.text = text
-        self.actor = self.build_actor(self.text, position, color, font_size,
-                                      font_family, justification, bold, italic, shadow)
+        self.actor = TextBlock2D(self.text, font_size, font_family,
+                                 justification, bold, italic, shadow, color,
+                                 position)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            self.actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            self.actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+
         self.width = width
         self.height = height
         self.window_left = 0
@@ -1092,55 +1099,6 @@ class TextBox2D(UI):
 
         self.on_left_mouse_button_pressed = self.left_button_press
         self.on_key_press = self.key_press
-
-    def build_actor(self, text, position, color, font_size,
-                    font_family, justification, bold, italic, shadow):
-
-        """ Builds a text actor.
-
-        Parameters
-        ----------
-        text : str
-            The initial text while building the actor.
-        position : (float, float)
-            (x, y) in pixels.
-        color : (float, float, float)
-            RGB: Values must be between 0-1.
-        font_size : int
-            Size of the text font.
-        font_family : str
-            Currently only supports Arial.
-        justification : str
-            left, right or center.
-        bold : bool
-            Makes text bold.
-        italic : bool
-            Makes text italicised.
-        shadow : bool
-            Adds text shadow.
-
-        Returns
-        -------
-        :class:`TextBlock2D`
-
-        """
-        text_block = TextBlock2D()
-        text_block.position = position
-        text_block.message = text
-        text_block.font_size = font_size
-        text_block.font_family = font_family
-        text_block.justification = justification
-        text_block.bold = bold
-        text_block.italic = italic
-        text_block.shadow = shadow
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
-        else:
-            text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_block.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-            text_block.color = color
-
-        return text_block
 
     def set_message(self, message):
         """ Set custom text to textbox.
@@ -1525,9 +1483,9 @@ class LineSlider2D(UI):
         # /Slider Disk
 
         # Slider Text
-        self.text = TextBlock2D()
-        self.text.position = (self.left_x_position - 50, self.center[1] - 10)
-        self.text.font_size = text_size
+        self.text = TextBlock2D(font_size=text_size,
+                                position=(self.left_x_position - 50,
+                                          self.center[1] - 10))
         # /Slider Text
 
     def get_actors(self):
@@ -1799,10 +1757,9 @@ class DiskSlider2D(UI):
         self.handle = vtk.vtkActor2D()
         self.handle.SetMapper(handle_mapper)
 
-        self.text = TextBlock2D()
         offset = np.array((16., 8.))
-        self.text.position = self.center - offset
-        self.text.font_size = self.text_size
+        self.text = TextBlock2D(font_size=self.text_size,
+                                position=(self.center - offset))
 
     @property
     def value(self):
@@ -2297,65 +2254,18 @@ class FileSelectMenuText2D(UI):
         self.file_type = ""
         self.file_select = file_select
 
-        self.text_actor = self.build_actor(position=position, font_size=font_size)
+        self.text_actor = TextBlock2D(position=position, font_size=font_size,
+                                      color=(0, 0, 0))
+        self.text_actor.actor.GetTextProperty().SetLineSpacing(1)
+        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            pass
+        else:
+            self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
+            self.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
 
         self.handle_events(self.text_actor.get_actor())
 
         self.on_left_mouse_button_clicked = self.left_button_clicked
-
-    def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
-                    justification='left', bold=False, italic=False,
-                    shadow=False, font_size='14'):
-        """ Builds a text actor.
-
-        Parameters
-        ----------
-        text: string
-            The initial text while building the actor.
-        position: (float, float)
-            The text position (x, y) in pixels.
-        color: (float, float, float)
-            Values must be between 0-1 (RGB).
-        font_family: string
-            Currently only supports Arial.
-        justification: string
-            Text justification - left, right or center.
-        bold: bool
-            Whether or not the text is bold.
-        italic: bool
-            Whether or not the text is italicized.
-        shadow: bool
-            Whether or not the text has shadow.
-        font_size: int
-            The font size of the text in pixels.
-
-        Returns
-        -------
-        text_actor: :class:`TextBlock2D`
-            The base text actor.
-
-        """
-        text_actor = TextBlock2D()
-        text_actor.position = position
-        text_actor.message = text
-        text_actor.font_size = font_size
-        text_actor.font_family = font_family
-        text_actor.justification = justification
-        text_actor.bold = bold
-        text_actor.italic = italic
-        text_actor.shadow = shadow
-        text_actor.color = color
-
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
-        else:
-            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-
-        text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
-        text_actor.actor.GetTextProperty().SetLineSpacing(1)
-
-        return text_actor
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
