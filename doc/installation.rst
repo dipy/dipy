@@ -214,8 +214,6 @@ This command will do the following :
     - build dipy (equivalent to `python setup.py build_ext --inplace`)
     - install dipy locally on your user environment
 
-Dipy should now be available so enjoy!
-
 .. _install-source-nix:
 
 Install from source for Unix (e.g Linux, OSX)
