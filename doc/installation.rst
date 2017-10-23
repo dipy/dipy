@@ -194,6 +194,28 @@ we'll also call it the ``<dipy root>`` directory.
 Building and installing
 =======================
 
+Install from source (all operating systems)
+-------------------------------------------
+
+Change directory into the *DIPY source root directory*.
+
+To clean your directory from temporary file, use::
+
+    git clean -fxd
+
+This command will delete all files not present in your github repository.
+
+Then, complete your installation by using this command::
+
+    pip install --user -e .
+
+This command will do the following :
+    - remove the old dipy installation if present
+    - build dipy (equivalent to `python setup.py build_ext --inplace`)
+    - install dipy locally on your user environment
+
+Dipy should now be available so enjoy!
+
 .. _install-source-nix:
 
 Install from source for Unix (e.g Linux, OSX)
