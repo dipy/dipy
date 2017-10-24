@@ -29,10 +29,13 @@ On all platforms, you can use Anaconda_ to install DIPY. To do so issue the foll
 
     conda install dipy -c conda-forge
 
-Some of the visualization methods require the VTK_ library and this can be installed separately (for the time being only on Python 2.7)::
+Some of the visualization methods require the VTK_ library and this can be installed separately (for the time being only on Python 2.7 and Python 3.6)::
 
-    conda install vtk
+    conda install -c conda-forge vtk
 
+For OSX users, VTK_ is not available on conda-forge channel, so we recommend to use the following one::
+
+    conda install -c clinicalgraphics vtk
 
 Using packages:
 ===============
@@ -43,7 +46,7 @@ Windows
 #. First, install the python library dependencies. One easy way to do that is to
 use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_
+#. Even with Anaconda_ installed, you will still need to install the nibabel_
 library, which supports reading and writing of neuroimaging data formats. Open
 a terminal and type ::
 
@@ -60,9 +63,9 @@ When the installation has finished we can check if it is successful in the follo
 
 This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
 
-    conda install vtk
+    conda install -c conda-forge vtk
 
 
 OSX
@@ -72,7 +75,7 @@ OSX
 
 #. Next, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
+#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
 
     pip install nibabel
 
@@ -86,9 +89,9 @@ When the installation has finished we can check if it is successful in the follo
 
 This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
 
-    conda install vtk
+    conda install -c clinicalgraphics vtk
 
 Linux
 -----
@@ -191,6 +194,26 @@ we'll also call it the ``<dipy root>`` directory.
 Building and installing
 =======================
 
+Install from source (all operating systems)
+-------------------------------------------
+
+Change directory into the *DIPY source root directory*.
+
+To clean your directory from temporary file, use::
+
+    git clean -fxd
+
+This command will delete all files not present in your github repository.
+
+Then, complete your installation by using this command::
+
+    pip install --user -e .
+
+This command will do the following :
+    - remove the old dipy installation if present
+    - build dipy (equivalent to `python setup.py build_ext --inplace`)
+    - install dipy locally on your user environment
+
 .. _install-source-nix:
 
 Install from source for Unix (e.g Linux, OSX)
@@ -261,15 +284,33 @@ Windows
 -------
 
 Anaconda_ is probably the easiest way to install the dependencies that you need.
-To build from source, you will also need to install a compiler. The easiest way
-to do that is to install a current version of Visual Studio.
+To build from source, you will also need to install the exact compiler which is
+used with your specific version of python.
 
-Start a command shell like ``cmd`` or Powershell_ and change directory into the
-*DIPY source root directory*.
+For getting this information, type this command in shell like ``cmd`` or Powershell_::
+
+    python -c "import platform;print(platform.python_compiler())"
+
+This command should print an information of this form::
+
+    MSC v.1900 64 bit (AMD64)
+
+Now that you find the relevant compiler, you have to install the VisualStudioBuildTools_
+by respecting the following table::
+
+    Visual C++ 2008  (9.0)          MSC_VER=1500
+    Visual C++ 2010 (10.0)          MSC_VER=1600
+    Visual C++ 2012 (11.0)          MSC_VER=1700
+    Visual C++ 2013 (12.0)          MSC_VER=1800
+    Visual C++ 2015 (14.0)          MSC_VER=1900
+    Visual C++ 2017 (15.0)          MSC_VER=1910
+
+After the VisualStudioBuildTools_ installation,  restart a command shell and
+change directory into the *DIPY source root directory*.
 
 To install into your system::
 
-    python setup.py install --compiler=mingw32
+    python setup.py install
 
 To install inplace - so that DIPY is running out of the source code directory::
 
@@ -280,14 +321,8 @@ get an error with ``python setup.py develop`` make sure you have installed
 `setuptools`_.
 
 If you get an error saying  "unable to find vcvarsall.bat" then you need to
-create a file called "pydistutils.cfg" in notepad and give it the contents ::
-
-  [build]
-  compiler=mingw32
-
-Save this into your system python ``distutils`` directory as ``distutils.cfg``.
-This will be something like ``C:\Python26\Lib\distutils\distutils.cfg``.
-
+check your environment variable ``PATH`` or reinstall VisualStudioBuildTools_.
+Distutils should automatically detect the compiler and use it.
 
 OSX
 ---
@@ -311,7 +346,13 @@ or the CLANG compiler. This depends on your python installation:
 Under Anaconda
 ~~~~~~~~~~~~~~~~
 
-If you are using Anaconda, you will need to use GCC. Run the following::
+If you are using Anaconda_, you will need to use GCC. THe first option is to run the following command::
+
+    conda install gcc
+
+After this installation, gcc will be your default compiler in Anaconda_ environment.
+
+The second option is to install gcc via homebrew. Run the following::
 
     brew reinstall gcc --without-multilib
 
@@ -337,7 +378,7 @@ at the top of the file, but after the initial imports)::
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
-Whether you are using Anaconda or Hombrew/python.org Python, you will need to then
+Whether you are using Anaconda_ or Hombrew/python.org Python, you will need to then
 run ``python setup.py install``. When you do that, it should now
 compile the code with this OpenMP-enabled compiler, and things should go faster!
 
