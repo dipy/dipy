@@ -5,6 +5,16 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+Dipy 0.13 Changes
+-----------------
+
+No major API changes.
+
+**Notes**
+
+``dipy.viz.fvtk`` module will be deprecated on release 0.14. Use ``dipy.viz.ui`` instead.
+``dipy.io.trackvis`` module will be deprecated on release 0.14. Use ``dipy.io.streamline`` instead.
+
 Dipy 0.12 Changes
 -----------------
 **Dropped support for Python 2.6***
