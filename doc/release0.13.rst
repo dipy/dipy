@@ -5,13 +5,14 @@
 ====================================
 
 
-GitHub stats for 2017/06/27 - 2017/10/23 (tag: 0.12.0)
+GitHub stats for 2017/06/27 - 2017/10/24 (tag: 0.12.0)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 13 authors contributed 211 commits.
+The following 13 authors contributed 212 commits.
 
 * Ariel Rokem
+* Bennet Fauber
 * David Reagan
 * Eleftherios Garyfallidis
 * Guillaume Theaud
@@ -23,15 +24,15 @@ The following 13 authors contributed 211 commits.
 * Rutger Fick
 * Saber Sheybani
 * Serge Koudoro
-* Bennet Fauber
 
 
-We closed a total of 112 issues, 38 pull requests and 74 regular issues;
+We closed a total of 115 issues, 39 pull requests and 76 regular issues;
 this is the full list (generated with the script 
 :file:`tools/github_stats.py`):
 
-Pull Requests (38):
+Pull Requests (39):
 
+* :ghpull:`1367`: BF: Import Streamlines object directly from nibabel.
 * :ghpull:`1361`: Windows instructions update + citation update
 * :ghpull:`1316`: DOC: Add a coding style guideline.
 * :ghpull:`1360`: [FIX] references order in workflow
@@ -71,8 +72,10 @@ Pull Requests (38):
 * :ghpull:`1278`: Moving ahead with 0.13 (dev version)
 * :ghpull:`1277`: One test (decimal issue) and a fix in viz_ui tutorial.
 
-Issues (74):
+Issues (76):
 
+* :ghissue:`1367`: BF: Import Streamlines object directly from nibabel.
+* :ghissue:`1366`: Circular imports in dipy.tracking.utils?
 * :ghissue:`1146`: Installation instructions for windows need to be updated
 * :ghissue:`1084`: Installation for windows developers using Anaconda needs to be updated
 * :ghissue:`1361`: Windows instructions update + citation update

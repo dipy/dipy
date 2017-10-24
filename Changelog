@@ -24,7 +24,7 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 0.13 (Monday, 23 October 2017)
+* 0.13 (Monday, 24 October 2017)
 
 - Faster local PCA implementation.
 - Fixed different issues with OpenMP and Windows / OSX.
