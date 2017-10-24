@@ -14,6 +14,16 @@ Highlights
 **********
 
 
+**DIPY 0.13.0** is now available. New features include:
+
+- Faster local PCA implementation.
+- Fixed different issues with OpenMP and Windows / OSX.
+- Replacement of cvxopt by cvxpy.
+- Replacement of Pytables by h5py.
+- Updated API to support latest numpy version (1.14).
+- New user interfaces for visualization.
+- Large documentation update.
+
 **DIPY 0.12.0** is now available. New features include:
 
 - IVIM Simultaneous modeling of perfusion and diffusion.
@@ -59,6 +69,7 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
+- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
 - :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
 - :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
 - :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
