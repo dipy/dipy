@@ -69,7 +69,7 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`DIPY 0.13 <release0.13>` released October 23, 2017.
+- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
 - :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
 - :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
 - :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
