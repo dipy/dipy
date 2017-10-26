@@ -24,6 +24,15 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 0.13 (Monday, 24 October 2017)
+
+- Faster local PCA implementation.
+- Fixed different issues with OpenMP and Windows / OSX.
+- Replacement of cvxopt by cvxpy.
+- Replacement of Pytables by h5py.
+- Updated API to support latest numpy version (1.14).
+- New user interfaces for visualization.
+- Large documentation update.
 
 * 0.12 (Tuesday, 26 June 2017)
 
