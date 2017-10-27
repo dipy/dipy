@@ -21,8 +21,8 @@ And here is the rest of the wonderful contributors:
 
 - **Mauro Zucchelli**, University of Verona, IT
 - **Matthieu Dumont**, PAVI, Sherbrooke, QC, CA
-- **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, The Netherlands
-- **Gabriel Girard**, University of Sherbrooke, QC, CA
+- **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, NL
+- **Gabriel Girard**, Swiss Federal Institute of Technology, Lausanne, CH
 - **Michael Paquette**, University of Sherbrooke, QC, CA
 - **Jean-Christophe Houde**, University of Sherbrooke, QC, CA
 - **Christopher Nguyen**,  Massachusetts General Hospital, MA, USA
@@ -32,7 +32,7 @@ And here is the rest of the wonderful contributors:
 - **Sylvain Merlet**, INRIA, Sophia-Antipolis, FR
 - **Erick Ziegler**, Université de Liège, BE
 - **Kimberly Chan**, Stanford University, CA, USA
-- **Chantal Tax**, University Medical Center, Utrecht, NL
+- **Chantal Tax**, Cardiff University, Cardiff, UK
 - **Demian Wassermann**, INRIA, Sophia Antipolis, FR
 - **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, US
 - **Endolith**, New-York, NY, USA
