@@ -519,5 +519,4 @@ def test_affine_transformations():
 
 
 if __name__ == "__main__":
-    # npt.run_module_suite()
-    test_PeakDirectionTracker()
+    npt.run_module_suite()
