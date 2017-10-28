@@ -19,7 +19,7 @@ def test_det_track():
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.get_affine())
+        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
@@ -44,7 +44,7 @@ def test_det_track():
         # Put identity in gfa path to prevent impossible to use
         # local tracking because of affine containing shearing.
         gfa_img = nib.load(gfa_path)
-        save_nifti(gfa_path, gfa_img.get_data(), np.eye(4), gfa_img.get_header())
+        save_nifti(gfa_path, gfa_img.get_data(), np.eye(4), gfa_img.header)
 
         # Test tracking with pam no sh
         det_track_pam = DetTrackPAMFlow()
