@@ -547,7 +547,7 @@ class ReconstCSAFlow(Workflow):
             logging.info('Loading {0}'.format(dwi))
             vol = nib.load(dwi)
             data = vol.get_data()
-            affine = vol.get_affine()
+            affine = vol.affine
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             gtab = gradient_table(bvals, bvecs,
