@@ -45,13 +45,11 @@ class ResliceFlow(Workflow):
             Name of the resliced dataset to be saved
             (default 'resliced.nii.gz')
         """
-        print(input_files)
-        print(new_vox_size)
+        
         io_it = self.get_io_iterator()
 
         for inputfile, outpfile in io_it:
             
-            print(inputfile, outpfile)
             data, affine, vox_sz = load_nifti(inputfile, return_voxsize=True)
             logging.info('Processing {0}'.format(inputfile))
             new_data, new_affine = reslice(data, affine, vox_sz, new_vox_size,
