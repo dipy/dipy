@@ -106,3 +106,104 @@ class DetTrackPAMFlow(GenericTrackFlow):
             self._core_run(stopping_path, stopping_thr, seeding_path,
                            seed_density, use_sh, pam, out_tract)
 
+
+class DetTrackPeaksFlow(GenericTrackFlow):
+    @classmethod
+    def get_short_name(cls):
+        return 'tracking'
+
+    def run(self, peaks_values, peaks_idxs, peaks_dirs, stopping_files,
+            seeding_files, stopping_thr=0.2, seed_density=1, out_dir='',
+            out_tractogram='tractogram.trk'):
+
+        """ Workflow for deterministic tracking using peaks
+
+        Parameters
+        ----------
+        peaks_values : string
+           Path to the peaks values files. This path may contain
+           wildcards to use multiple masks at once.
+        peaks_idxs : string
+           Path to the peaks indices files. This path may contain
+           wildcards to use multiple masks at once.
+        peaks_dirs : string
+           Path to the peaks directions files. This path may contain
+           wildcards to use multiple masks at once.
+        stopping_files : string
+            Path of FA or other images used for stopping criteria for tracking.
+        seeding_files : string
+            A binary image showing where we need to seed for tracking.
+        stopping_thr : float, optional
+            Threshold applied to stopping volume's data to identify where
+            tracking has to stop. (default 0.25)
+        seed_density : int, optional
+            Number of seeds per dimension inside voxel (default 1).
+        out_dir : string, optional
+           Output directory (default input file directory)
+        out_tractogram : string, optional
+           Name of the tractogram file to be saved
+           (default 'tractogram.trk')
+        """
+        io_it = self.get_io_iterator()
+
+        for peaks_vals_path, peaks_idx_path, peaks_dirs_path, stopping_path,\
+            seeding_path, out_tract in io_it:
+
+            logging.info('Deterministic tracking on {0}'
+                         .format(peaks_vals_path))
+
+            sphere = get_sphere('symmetric362')
+            pam = PeaksAndMetrics()
+            pam.sphere = sphere
+            pam.peak_dirs = nib.load(peaks_dirs_path).get_data()
+            pam.peak_values = nib.load(peaks_vals_path).get_data()
+            pam.peak_indices = nib.load(peaks_idx_path).get_data()
+
+            self._core_run(stopping_path, stopping_thr, seeding_path,
+                           seed_density, False, pam, out_tract)
+
+
+class DetTrackSHFlow(GenericTrackFlow):
+    @classmethod
+    def get_short_name(cls):
+        return 'tracking'
+
+    def run(self, sh_files, stopping_files, seeding_files, stopping_thr=0.2,
+            seed_density=1, out_dir='', out_tractogram='tractogram.trk'):
+
+        """ Workflow for deterministic tracking using spherical harmonics
+
+        Parameters
+        ----------
+        sh_files : string
+           Path to the peaks values files. This path may contain
+           wildcards to use multiple masks at once.
+        stopping_files : string
+            Path of FA or other images used for stopping criteria for tracking.
+        seeding_files : string
+            A binary image showing where we need to seed for tracking.
+        stopping_thr : float, optional
+            Threshold applied to stopping volume's data to identify where
+            tracking has to stop. (default 0.25)
+        seed_density : int, optional
+            Number of seeds per dimension inside voxel (default 1).
+        out_dir : string, optional
+           Output directory (default input file directory)
+        out_tractogram : string, optional
+           Name of the tractogram file to be saved
+           (default 'tractogram.trk')
+        """
+        io_it = self.get_io_iterator()
+
+        for sh_path, stopping_path, seeding_path, out_tract in io_it:
+
+            logging.info('Deterministic tracking on {0}'
+                         .format(sh_path))
+
+            sphere = get_sphere('symmetric362')
+            pam = PeaksAndMetrics()
+            pam.sphere = sphere
+            pam.shm_coeff = nib.load(sh_path).get_data().astype('float64')
+
+            self._core_run(stopping_path, stopping_thr, seeding_path,
+                           seed_density, True, pam, out_tract)
