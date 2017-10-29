@@ -80,6 +80,9 @@ class DetTrackPAMFlow(GenericTrackFlow):
             tracking has to stop. (default 0.25)
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
+            For example, seed_density of 2 means 8 regularly distributed points
+            in the voxel. And seed density of 1 means 1 point at the center
+            of the voxel.
         use_sh : bool, optional
             Use spherical harmonics saved in peask to find the
             maximum peak cone. (default False)
@@ -138,6 +141,9 @@ class DetTrackPeaksFlow(GenericTrackFlow):
             tracking has to stop. (default 0.25)
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
+            For example, seed_density of 2 means 8 regularly distributed points
+            in the voxel. And seed density of 1 means 1 point at the center
+            of the voxel.
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
@@ -187,6 +193,9 @@ class DetTrackSHFlow(GenericTrackFlow):
             tracking has to stop. (default 0.25)
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
+            For example, seed_density of 2 means 8 regularly distributed points
+            in the voxel. And seed density of 1 means 1 point at the center
+            of the voxel.
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
