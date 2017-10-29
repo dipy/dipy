@@ -9,8 +9,7 @@ from dipy.data import get_data
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
-from dipy.workflows.tracking import DetTrackSHFlow, DetTrackPAMFlow, \
-    DetTrackPeaksFlow
+from dipy.workflows.tracking import DetTrackPAMFlow
 
 
 def test_det_track():
