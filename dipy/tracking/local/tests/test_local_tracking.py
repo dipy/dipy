@@ -4,12 +4,10 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
-from dipy.reconst.peaks import PeaksAndMetricsDirectionGetter
 from dipy.tracking.local import (ActTissueClassifier,
                                  BinaryTissueClassifier,
                                  DirectionGetter,
@@ -189,7 +187,7 @@ def test_trilinear_interpolate():
     npt.assert_raises(IndexError, trilinear_interpolate4d, data, point)
 
 
-def test_ProbabilisticOdfWeightedTracker():
+def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabalistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -262,7 +260,7 @@ def test_ProbabilisticOdfWeightedTracker():
         npt.assert_(np.allclose(sl, expected[1]))
 
 
-def test_MaximumDeterministicTracker():
+def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -334,6 +332,68 @@ def test_MaximumDeterministicTracker():
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[2]))
+
+
+def test_peak_direction_tracker():
+    """This tests that the Peaks And Metrics Direction Getter plays nice
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    peaks_values_lookup = np.array([[0., 0.],
+                                    [1., 0.],
+                                    [1., 0.],
+                                    [0.5, 0.5]])
+    peaks_indices_lookup = np.array([[-1, -1],
+                                     [0, -1],
+                                     [1, -1],
+                                     [0,  1]])
+    # PeaksAndMetricsDirectionGetter needs at 3 slices on each axis to work
+    simple_image = np.zeros([5, 6, 3], dtype=int)
+    simple_image[:, :, 1] = np.array([[0, 1, 0, 1, 0, 0],
+                                      [0, 1, 0, 1, 0, 0],
+                                      [0, 3, 2, 2, 2, 0],
+                                      [0, 1, 0, 0, 0, 0],
+                                      [0, 1, 0, 0, 0, 0],
+                                      ])
+
+    dg = PeaksAndMetrics()
+    dg.sphere = sphere
+    dg.peak_values = peaks_values_lookup[simple_image]
+    dg.peak_indices = peaks_indices_lookup[simple_image]
+    dg.ang_thr = 90
+
+    mask = (simple_image >= 0).astype(float)
+    tc = ThresholdTissueClassifier(mask, 0.5)
+    seeds = [np.array([1., 1., 1.]),
+             np.array([2., 4., 1.]),
+             np.array([1., 3., 1.]),
+             np.array([4., 4., 1.])]
+
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+
+    expected = [np.array([[0., 1., 1.],
+                          [1., 1., 1.],
+                          [2., 1., 1.],
+                          [3., 1., 1.],
+                          [4., 1., 1.]]),
+                np.array([[2., 0., 1.],
+                          [2., 1., 1.],
+                          [2., 2., 1.],
+                          [2., 3., 1.],
+                          [2., 4., 1.],
+                          [2., 5., 1.]]),
+                np.array([[0., 3., 1.],
+                          [1., 3., 1.],
+                          [2., 3., 1.],
+                          [2., 4., 1.],
+                          [2., 5., 1.]]),
+                np.array([[4., 4., 1.]])]
+
+    for i, sl in enumerate(streamlines):
+        npt.assert_(np.allclose(sl, expected[i]))
 
 
 def test_affine_transformations():

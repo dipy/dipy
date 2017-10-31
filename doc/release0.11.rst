@@ -1,7 +1,7 @@
 .. _release0.11:
 
 ====================================
- Release notes for Dipy version 0.11
+ Release notes for DIPY version 0.11
 ====================================
 
 GitHub stats for 2015/12/03 - 2016/02/21 (tag: 0.10)

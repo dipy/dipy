@@ -205,26 +205,26 @@ fvtk.record(ren, out_path='all_streamlines_binary_classifier.png',
 ACT Tissue Classifier
 ---------------------
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
-anatomical images to determine when the tractography stops. The 'include_map'
+anatomical images to determine when the tractography stops. The ``include_map``
 defines when the streamline reached a 'valid' stopping region (e.g. gray
-matter partial volume estimation (PVE) map) and the 'exclude_map' defines when
+matter partial volume estimation (PVE) map) and the ``exclude_map`` defines when
 the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
 PVE map). The background of the anatomical image should be added to the
-'include_map' to keep streamlines exiting the brain (e.g. through the
+``include_map`` to keep streamlines exiting the brain (e.g. through the
 brain stem). The ACT tissue classifier uses a trilinear interpolation
 at the tracking position.
 
 **Parameters**
 
-- include_map: numpy array [:, :, :],
-- exclude_map: numpy array [:, :, :],
+- ``include_map``: numpy array ``[:, :, :]``,
+- ``exclude_map``: numpy array ``[:, :, :]``,
 
 **Stopping criterion**
 
-- 'ENDPOINT': include_map > 0.5,
-- 'OUTSIDEIMAGE': tracking point outside of include_map or exclude_map,
+- 'ENDPOINT': ``include_map`` > 0.5,
+- 'OUTSIDEIMAGE': tracking point outside of ``include_map`` or ``exclude_map``,
 - 'TRACKPOINT': no direction is available,
-- 'INVALIDPOINT': exclude_map > 0.5.
+- 'INVALIDPOINT': ``exclude_map`` > 0.5.
 """
 
 from dipy.tracking.local import ActTissueClassifier

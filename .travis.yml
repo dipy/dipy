@@ -12,7 +12,6 @@ cache:
 addons:
   apt:
     packages:
-      # For runs with pytables
       - libhdf5-serial-dev
 
 env:
@@ -36,14 +35,14 @@ matrix:
     - python: 2.7
       env:
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.1.0"
+        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.1.0 h5py==2.4.0"
     - python: 2.7
       env:
-        - DEPENDS="$DEPENDS scikit_learn tables"
+        - DEPENDS="$DEPENDS scikit_learn"
     - python: 3.5
       env:
         - COVERAGE=1
-        - DEPENDS="$DEPENDS scikit_learn tables"
+        - DEPENDS="$DEPENDS scikit_learn"
     # To test vtk functionality
     - python: 2.7
       sudo: true   # This is set to true for apt-get
@@ -54,7 +53,7 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
-        - DEPENDS="$DEPENDS scikit_learn tables"
+        - DEPENDS="$DEPENDS scikit_learn"
 
     - python: 2.7
       env:
