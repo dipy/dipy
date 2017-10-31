@@ -18,10 +18,10 @@ acquisition:
 
 ..  math::
 
-   R   =  \int_0^T ( \int_0^t \rho ( \tau ) \, d{ \tau } )^2 \, d{t}.
+   R = \int_0^T ( \int_0^t \rho ( \tau ) \, d{ \tau } )^2 \, d{t}.
 
 (See Basser, Matiello and LeBihan, 1994.) Another formulation involves
-the introduction of `k-space`. In standard in-plane MR image encoding
+the introduction of k-space. In standard in-plane MR image encoding
 
 .. math::
 

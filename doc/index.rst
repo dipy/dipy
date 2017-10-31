@@ -14,7 +14,17 @@ Highlights
 **********
 
 
-**Dipy 0.12.0** is now available. New features include:
+**DIPY 0.13.0** is now available. New features include:
+
+- Faster local PCA implementation.
+- Fixed different issues with OpenMP and Windows / OSX.
+- Replacement of cvxopt by cvxpy.
+- Replacement of Pytables by h5py.
+- Updated API to support latest numpy version (1.14).
+- New user interfaces for visualization.
+- Large documentation update.
+
+**DIPY 0.12.0** is now available. New features include:
 
 - IVIM Simultaneous modeling of perfusion and diffusion.
 - MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
@@ -31,7 +41,7 @@ Highlights
 - New system for automatically generating command line interfaces.
 - Faster computation of cross correlation for image registration.
 
-**Dipy 0.11.0** is now available. New features include:
+**DIPY 0.11.0** is now available. New features include:
 
 - New framework for contextual enhancement of ODFs.
 - Compatibility with numpy (1.11).
@@ -43,7 +53,7 @@ Highlights
 - DSI now can use datasets with multiple b0s.
 - Fixed different issues with Windows 64bit and Python 3.5.
 
-**Dipy 0.10.1** is now available. New features in this release include:
+**DIPY 0.10.1** is now available. New features in this release include:
 
 - Compatibility with new versions of scipy (0.16) and numpy (1.10).
 - New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
@@ -59,14 +69,15 @@ See :ref:`older highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`Dipy 0.12 <release0.12>` released June 26, 2017.
-- :ref:`Dipy 0.11 <release0.11>` released February 21, 2016.
-- :ref:`Dipy 0.10 <release0.10>` released December 4, 2015.
-- :ref:`Dipy 0.9.2 <release0.9>` released, March 18, 2015.
-- :ref:`Dipy 0.8.0 <release0.8>` released, January 6, 2015.
-- Dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
-- Dipy was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
-- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
+- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
+- :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
+- :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
+- :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
+- :ref:`DIPY 0.9.2 <release0.9>` released, March 18, 2015.
+- :ref:`DIPY 0.8.0 <release0.8>` released, January 6, 2015.
+- dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
+- DIPY was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
+- `DIPY paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
 See some of our :ref:`past announcements <old_news>`
 
@@ -109,7 +120,7 @@ a slice should look like.
 Next Steps
 **********
 
-You can learn more about how you to use Dipy_ with  your datasets by reading the examples in our :ref:`documentation`.
+You can learn more about how you to use dipy_ with  your datasets by reading the examples in our :ref:`documentation`.
 
 .. We need the following toctree directive to include the documentation
 .. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html

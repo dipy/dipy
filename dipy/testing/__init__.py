@@ -3,6 +3,8 @@ from os.path import dirname, abspath, join as pjoin
 from dipy.testing.spherepoints import sphere_points
 from dipy.testing.decorators import doctest_skip_parser
 from numpy.testing import assert_array_equal
+import numpy as np
+from distutils.version import LooseVersion
 
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
@@ -21,3 +23,16 @@ else:
 def assert_arrays_equal(arrays1, arrays2):
     for arr1, arr2 in zip(arrays1, arrays2):
         assert_array_equal(arr1, arr2)
+
+def setup_test():
+    """ Set numpy print options to "legacy" for new versions of numpy
+
+    If imported into a file, nosetest will run this before any doctests.
+
+    References
+    -----------
+    https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
+    https://github.com/nipy/nibabel/pull/556
+    """
+    if LooseVersion(np.__version__) >= LooseVersion('1.14'):
+        np.set_printoptions(sign='legacy')

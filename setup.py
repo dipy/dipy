@@ -152,6 +152,9 @@ SetupDependency('scipy', info.SCIPY_MIN_VERSION,
 SetupDependency('nibabel', info.NIBABEL_MIN_VERSION,
                 req_type='install_requires',
                 heavy=False).check_fill(extra_setuptools_args)
+SetupDependency('h5py', info.H5PY_MIN_VERSION,
+                req_type='install_requires',
+                heavy=False).check_fill(extra_setuptools_args)
 
 cmdclass = dict(
     build_py=pybuilder,

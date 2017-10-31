@@ -3,7 +3,7 @@
 Tracking Quick Start
 ====================
 
-This example shows how to perform fast fiber tracking using DIPY
+This example shows how to perform fast fiber tracking using dipy_
 [Garyfallidis12]_.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
@@ -32,6 +32,7 @@ from dipy.tracking.streamline import Streamlines
 """
 Enables/disables interactive visualization
 """
+
 interactive = False
 
 """
@@ -53,7 +54,7 @@ maskdata, mask = median_otsu(data, 3, 1, False,
                              vol_idx=range(10, 50), dilate=2)
 
 """
-For the constrained spherical deconvolution we need to estimate the response
+For the Constrained Spherical Deconvolution we need to estimate the response
 function (see :ref:`example_reconst_csd`) and create a model.
 """
 
@@ -78,9 +79,9 @@ csd_peaks = peaks_from_model(model=csd_model,
 
 """
 For the tracking part, we will use the fiber directions from the ``csd_model``
-but stop tracking in areas where fractional anisotropy (FA) is low (< 0.1).
+but stop tracking in areas where fractional anisotropy is low (< 0.1).
 To derive the FA, used here as a stopping criterion, we would need to fit a
-tensor model first. Here, we fit the Tensor using weighted least squares (WLS).
+tensor model first. Here, we fit the tensor using weighted least squares (WLS).
 """
 
 tensor_model = TensorModel(gtab, fit_method='WLS')
@@ -98,7 +99,7 @@ tissue_classifier = ThresholdTissueClassifier(fa, 0.1)
 """
 Now, we need to set starting points for propagating each track. We call those
 seeds. Using ``random_seeds_from_mask`` we can select a specific number of
-seeds (``seeds_count``) in each voxel where the mask `fa > 0.3` is true.
+seeds (``seeds_count``) in each voxel where the mask ``fa > 0.3`` is true.
 """
 
 seeds = random_seeds_from_mask(fa > 0.3, seeds_count=1)
@@ -180,13 +181,23 @@ save_nifti('fa_map.nii.gz', fa, img.affine)
 In Windows if you get a runtime error about frozen executable please start
 your script by adding your code above in a ``main`` function and use:
 
+``
 if __name__ == '__main__':
     import multiprocessing
     multiprocessing.freeze_support()
     main()
+``
 
-.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
-.. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+References
+----------
+
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography",
+   PhD thesis, University of Cambridge, 2012.
+
+.. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust
+   determination of the fibre orientation distribution in diffusion MRI:
+   Non-negativity constrained super-resolved spherical deconvolution",
+   Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
 
 
 .. include:: ../links_names.inc

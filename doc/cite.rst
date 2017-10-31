@@ -19,6 +19,17 @@ Publications
 [8] Garyfallidis E, Brett M, Correia M.M, Williams G.B, Nimmo-Smith I. (2012), "QuickBundles, a method for tractography simplification", Frontiers in
 Neuroscience, 6 (175).
 
+[9] Garyfallidis E, Cote M-A, Rheault F, Sidhu J, Hau J, Petit L, Fortin D, Cunanne S, Descoteaux M,  `Recognition of white matter bundles using local and global streamline-based registration and clustering. <http://www.sciencedirect.com/science/article/pii/S1053811917305839>`
+
+[10] Garyfallidis E, Ocegueda O, Wassermann D, Descoteaux M. `Robust and efficient linear registration of white-matter fascicles in the space of streamlines. <http://www.sciencedirect.com/science/article/pii/S1053811915003961>`
+
+[11] Rokem A, Yeatman JD, Pestilli F, Kay KN, Mezer A, et al. (2015), `Evaluating the Accuracy of Diffusion MRI Models in White Matter. <http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0123272>`
+
+[12] Ocegueda O, Dalmau O, Garyfallidis E, Descoteaux M, Rivera M, `On the computation of integrals over fixed-size rectangles of arbitrary dimension. <http://www.sciencedirect.com/science/article/pii/S0167865516300861>`
+
+[13] Rafael Neto Henriques, Ariel Rokem, Eleftherios Garyfallidis, Samuel St-Jean, Eric Thomas Peterson, Marta Morgado Correia, ReScience volume 3, issue 1, article number 2, 2017
+     `[Re] Optimization of a free water elimination two-compartment model for diffusion tensor imaging. <https://www.biorxiv.org/content/early/2017/02/15/108795>`
+
 
 A note on citing our work
 --------------------------
