@@ -23,7 +23,6 @@ from dipy.workflows.workflow import Workflow
 
 from dipy.reconst import mapmri
 import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -32,65 +31,103 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, small_delta, big_delta):
-        img = nib.load(data_file)
-        bvals,bvecs = read_bvals_bvecs(data_bval,data_bvec)
+    def run(self, data_file, data_bvecs, data_bvals, small_delta=0.0129, big_delta=0.0218
+            save_metrics = [], out_dir='', out_mapmri='MAPMRI_maps_regularization.png'):  
+        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org). 
+        Generates RTOP graphs saved in a .png format in input files provided by 
+        `data_file` and saves the png file to an output directory specified by 
+        `out_dir`.
 
-        # big_delta = 0.0218  # seconds
-        # small_delta = 0.0129  # seconds
-        gtab = gradient_table(bvals=bvals, bvecs=bvecs,
-                            small_delta=small_delta,
-                            big_delta=big_delta, b0_threshold=50)
+        Parameters
+        ----------
+        data_file : string
+            Path to the input volume.
+        data_bvecs : string
+            Path to the bvec files.
+        data_bvals : 
+            Path to the bval files.
+        small_delta :
+            Small delta value used in generation of gradient table of provided
+            bval and bvec. (default: 0.0129)
+        big_delta :
+            Big delta value used in generation of gradient table of provided 
+            bval and bvec. (default: 0.0218)
+        save_metrics :
+            List of metrics to save.
+            Possible values: mmri
+            (default: [] (all))
+        out_dir : string, optional
+            Output directory (default: input file directory)
+        out_mapmri : string, optional
+            Name of the png file to be saved (default: MAPMRI_maps_regularization.png))
+        """
+        io_it = self.get_io_iterator()
+        for dwi, bval, bvec, mapname in io_it:
 
-        data = img.get_data()
+            logging.info('Computing DTI metrics for {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            bvals,bvecs = read_bvals_bvecs(bval, bvec)
 
-        data_small = data[60:85, 80:81, 60:85]
+        
+            gtab = gradient_table(bvals=bvals, bvecs=bvecs,
+                                small_delta=small_delta,
+                                big_delta=big_delta, b0_threshold=50)
 
-        # print('data.shape (%d, %d, %d, %d)' % data.shape)
 
-        radial_order = 6
-        map_model_laplacian_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
+            data_small = data[60:85, 80:81, 60:85]
+
+            if not save_metrics:
+                save_metrics = ['mmri']
+
+            # print('data.shape (%d, %d, %d, %d)' % data.shape)
+
+            radial_order = 6
+            map_model_laplacian_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
+                                                        laplacian_regularization=True,
+                                                        laplacian_weighting=.2)
+
+            map_model_positivity_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
+                                                            laplacian_regularization=False,
+                                                            positivity_constraint=True)
+
+            map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                     laplacian_regularization=True,
-                                                    laplacian_weighting=.2)
+                                                    laplacian_weighting=.05,
+                                                    positivity_constraint=True)
 
-        map_model_positivity_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                        laplacian_regularization=False,
-                                                        positivity_constraint=True)
+            mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
+            mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
+            mapfit_both_aniso = map_model_both_aniso.fit(data_small)
 
-        map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                laplacian_regularization=True,
-                                                laplacian_weighting=.05,
-                                                positivity_constraint=True)
+            if 'mmri' in save_metrics:
+                # generating RTOP plots
+                fig = plt.figure(figsize=(10, 5))
+                ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
+                ax1.set_axis_off()
+                ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
+                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
+                                vmin=0, vmax=5e7)
 
-        mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
-        mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
-        mapfit_both_aniso = map_model_both_aniso.fit(data_small)
+                ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
+                ax2.set_axis_off()
+                ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
+                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
+                                vmin=0, vmax=5e7)
 
-        # generating RTOP plots
-        fig = plt.figure(figsize=(10, 5))
-        ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
-        ax1.set_axis_off()
-        ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
-                        interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                        vmin=0, vmax=5e7)
+                ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
+                ax3.set_axis_off()
+                ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
+                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
+                                vmin=0, vmax=5e7)
+                divider = make_axes_locatable(ax3)
+                cax = divider.append_axes("right", size="5%", pad=0.05)
+                plt.colorbar(ind, cax=cax)
 
-        ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
-        ax2.set_axis_off()
-        ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
-                        interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                        vmin=0, vmax=5e7)
+                plt.savefig('MAPMRI_maps_regularization.png')
 
-        ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
-        ax3.set_axis_off()
-        ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
-                        interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                        vmin=0, vmax=5e7)
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(ind, cax=cax)
-
-        plt.savefig('MAPMRI_maps_regularization.png')
-
+            logging.info('MAPMRI saved in {0}'.
+                         format(os.path.dirname(mapname)))
 
 
 class ReconstDtiFlow(Workflow):
@@ -118,8 +155,8 @@ class ReconstDtiFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
@@ -278,8 +315,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
                 Path to the bvalues files. This path may contain wildcards to use
                 multiple bvalues files at once.
             bvectors : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
+                Path to the bvectors files. This path may contain wildcards to use
+                multiple bvectors files at once.
             mask_files : string
                 Path to the input masks. This path may contain wildcards to use
                 multiple masks at once. (default: No mask used)
@@ -359,8 +396,8 @@ class ReconstCSDFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
@@ -485,8 +522,8 @@ class ReconstCSAFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
