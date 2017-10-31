@@ -203,7 +203,7 @@ def test_trilinear_interpolate():
     npt.assert_raises(IndexError, trilinear_interpolate4d, data, point)
 
 
-def test_ProbabilisticOdfWeightedTracker():
+def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabalistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -276,7 +276,7 @@ def test_ProbabilisticOdfWeightedTracker():
         npt.assert_(np.allclose(sl, expected[1]))
 
 
-def test_MaximumDeterministicTracker():
+def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -350,7 +350,7 @@ def test_MaximumDeterministicTracker():
         npt.assert_(np.allclose(sl, expected[2]))
 
 
-def test_PeakDirectionTracker():
+def test_peak_direction_tracker():
     """This tests that the Peaks And Metrics Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
@@ -376,7 +376,7 @@ def test_PeakDirectionTracker():
                                       ])
 
     dg = PeaksAndMetrics()
-    dg.sphere = HemiSphere.from_sphere(unit_octahedron)
+    dg.sphere = sphere
     dg.peak_values = peaks_values_lookup[simple_image]
     dg.peak_indices = peaks_indices_lookup[simple_image]
     dg.ang_thr = 90
