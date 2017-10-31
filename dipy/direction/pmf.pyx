@@ -57,13 +57,15 @@ cdef class SHCoeffPmfGen(PmfGen):
 
     cdef double[:] get_pmf_c(self, double* point) nogil:
         cdef:
-            size_t i, j, len_pmf = self.pmf.shape[0]
+            size_t i, j
+            size_t len_pmf = self.pmf.shape[0]
+            size_t len_B = self.B.shape[1]
             double _sum
 
         trilinear_interpolate4d_c(self.shcoeff, point, self.coeff)
         for i in range(len_pmf):
             _sum = 0
-            for j in range(self.B.shape[1]):
+            for j in range(len_B):
                 _sum += self.B[i, j] * self.coeff[j]
             self.pmf[i] = _sum
             if self.pmf[i] < 0.0:
