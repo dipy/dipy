@@ -512,10 +512,12 @@ class ShowManager(object):
             self.initialize()
             self.render()
             self.iren.Start()
-
+            # Deleting this object is the unique way
+            # to close the file.
+            del recorder
             # Retrieved recorded events.
-            events = open(filename).read()
-
+            with open(filename, 'r') as f:
+                events = f.read()
         return events
 
     def record_events_to_file(self, filename="record.log"):
@@ -534,9 +536,11 @@ class ShowManager(object):
 
         # Compress file if needed
         if filename.endswith(".gz"):
-            gzip.open(filename, 'wb').write(asbytes(events))
+            with gzip.open(filename, 'wb') as fgz:
+                fgz.write(asbytes(events))
         else:
-            open(filename, 'w').write(events)
+            with open(filename, 'w') as f:
+                f.write(events)
 
     def play_events(self, events):
         """ Plays recorded events of a past interaction.
