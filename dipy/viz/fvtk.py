@@ -72,7 +72,10 @@ if have_vtk:
     from dipy.viz.actor import line, streamtube, slicer, axes
 
     try:
-        from vtk import vtkVolumeTextureMapper2D
+        if major_version < 7:
+            from vtk import vtkVolumeTextureMapper2D as VolumeMapper
+        else:
+            from vtk import vtkSmartVolumeMapper as VolumeMapper
         have_vtk_texture_mapper2D = True
     except:
         have_vtk_texture_mapper2D = False
@@ -516,7 +519,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
         if info:
             print('mapper VolumeTextureMapper2D')
-        mapper = vtk.vtkVolumeTextureMapper2D()
+        mapper = VolumeMapper()  # vtk.vtkVolumeTextureMapper2D()
         if affine is None:
             if major_version <= 5:
                 mapper.SetInput(im)
