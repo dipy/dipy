@@ -514,7 +514,7 @@ class ShowManager(object):
             self.iren.Start()
             # Deleting this object is the unique way
             # to close the file.
-            del recorder
+            recorder = None
             # Retrieved recorded events.
             with open(filename, 'r') as f:
                 events = f.read()
