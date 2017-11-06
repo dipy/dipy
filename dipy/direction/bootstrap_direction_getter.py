@@ -43,7 +43,7 @@ class BootOdfGen(object):
         self.H = H
         self.R = R
 
-    def get_pmf(self, point):
+    def get_pmf_boot(self, point):
         """Produces an ODF from a SH bootstrap sample"""
         single_vox_data = trilinear_interpolate4d(self.data, point)
 
@@ -55,7 +55,7 @@ class BootOdfGen(object):
         pmf = fit.odf(self.sphere)
         return pmf
 
-    def pmf_no_boot(self, point):
+    def get_pmf(self, point):
         data = trilinear_interpolate4d(self.data, point)
         fit = self.model.fit(data)
         return fit.odf(self.sphere)
@@ -102,24 +102,6 @@ class BootDirectionGetter(BaseDirectionGetter):
         boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order)
         return cls(boot_gen, max_angle, sphere, max_attempts, **kwargs)
 
-    def initial_direction(self, point):
-        """Returns best directions at seed location to start tracking.
-
-        Parameters
-        ----------
-        point : ndarray, shape (3,)
-            The point in an image at which to lookup tracking directions.
-
-        Returns
-        -------
-        directions : ndarray, shape (N, 3)
-            Possible tracking directions from point. ``N`` may be 0, all
-            directions should be unique.
-
-        """
-        odf = self.pmf_gen.pmf_no_boot(point)
-        return self._get_peak_directions(odf)
-
     def get_direction(self, point, direction):
         """Attempt direction getting on a few bootstrap samples.
         """
@@ -127,7 +109,7 @@ class BootDirectionGetter(BaseDirectionGetter):
         no_valid_direction = True
         while count < self.max_attempts:
             count += 1
-            pmf = self.pmf_gen.get_pmf(point)
+            pmf = self.pmf_gen.get_pmf_boot(point)
             pmf.clip(min=self.pmf_threshold, out=pmf)
             peaks = self._get_peak_directions(pmf)
             if len(peaks) > 0:
