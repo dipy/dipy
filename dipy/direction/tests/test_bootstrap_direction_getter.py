@@ -115,13 +115,13 @@ def test_bdg_get_direction():
     class Fakepmf(object):
         count = 0
 
-        def get_pmf(self, point):
+        def get_pmf_boot(self, point):
             pmf = np.zeros(len(sphere.vertices))
             pmf[two_neighbors[0]] = 1
             self.count += 1
             return pmf
 
-        def pmf_no_boot(self, point):
+        def get_pmf(self, point):
             pass
 
     myfakepmf = Fakepmf()
@@ -179,7 +179,7 @@ def test_bdg_bog_pmfnoboot():
     tensor_model = dti.TensorModel(gtab)
 
     mybog = bdg.BootOdfGen(toy_data, model=tensor_model, sphere=hsph_updated)
-    odf_fit = mybog.pmf_no_boot(np.array([1., 1., 1.]))
+    odf_fit = mybog.get_pmf(np.array([1., 1., 1.]))
 
     myfit = tensor_model.fit(toy_voxel).odf(hsph_updated)
 
@@ -220,8 +220,8 @@ def test_bdg_bog_pmfboot():
     mybog = bdg.BootOdfGen(toy_data, model=csd_model, sphere=hsph_updated,
                            sh_order=6)
     # Two boot samples should be the same if there are no residuales
-    myodf1 = mybog.get_pmf(np.array([1.5, 1.5, 1.5]))
-    myodf2 = mybog.get_pmf(np.array([1.5, 1.5, 1.5]))
+    myodf1 = mybog.get_pmf_boot(np.array([1.5, 1.5, 1.5]))
+    myodf2 = mybog.get_pmf_boot(np.array([1.5, 1.5, 1.5]))
 
     npt.assert_array_almost_equal(myodf1, myodf2)
 
@@ -229,8 +229,8 @@ def test_bdg_bog_pmfboot():
     # should be different
     mybog2 = bdg.BootOdfGen(toy_data, model=csd_model, sphere=hsph_updated,
                             sh_order=4)
-    myodf1 = mybog2.get_pmf(np.array([1.5, 1.5, 1.5]))
-    myodf2 = mybog2.get_pmf(np.array([1.5, 1.5, 1.5]))
+    myodf1 = mybog2.get_pmf_boot(np.array([1.5, 1.5, 1.5]))
+    myodf2 = mybog2.get_pmf_boot(np.array([1.5, 1.5, 1.5]))
 
     npt.assert_(np.any(myodf1 != myodf2))
 
