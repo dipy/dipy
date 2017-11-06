@@ -5,7 +5,7 @@ from dipy.tracking.local.direction_getter import DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 
-def _closest_peak(peak_dirs, prev_step, cos_similarity):
+def closest_peak(peak_dirs, prev_step, cos_similarity):
     """Return the closest direction to prev_step from peak_dirs.
 
     All directions should be unit vectors. Antipodal symmetry is assumed, ie
@@ -111,21 +111,9 @@ class BaseDirectionGetter(DirectionGetter):
         pmf.clip(min=self.pmf_threshold, out=pmf)
         return self._get_peak_directions(pmf)
 
-    def get_direction(self, point, direction):
-        pmf = self.pmf_gen.get_pmf(point)
-        pmf.clip(min=self.pmf_threshold, out=pmf)
-        peaks = self._get_peak_directions(pmf)
-        if len(peaks) == 0:
-            return 1
-        new_dir = _closest_peak(peaks, direction, self.cos_similarity)
-        if new_dir is None:
-            return 1
-        else:
-            direction[:] = new_dir
-            return 0
 
 
-class ClosestPeakDirectionGetter(BaseDirectionGetter):
+class PmfGenDirectionGetter(BaseDirectionGetter):
     """A direction getter that returns the closest odf peak to previous tracking
     direction.
 
@@ -211,3 +199,21 @@ class ClosestPeakDirectionGetter(BaseDirectionGetter):
         """
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+
+class ClosestDirectionGetter(PmfGenDirectionGetter):
+    """A direction getter that returns the closest odf peak to previous tracking
+    direction.
+    """
+
+    def get_direction(self, point, direction):
+        pmf = self.pmf_gen.get_pmf(point)
+        pmf.clip(min=self.pmf_threshold, out=pmf)
+        peaks = self._get_peak_directions(pmf)
+        if len(peaks) == 0:
+            return 1
+        new_dir = closest_peak(peaks, direction, self.cos_similarity)
+        if new_dir is None:
+            return 1
+        else:
+            direction[:] = new_dir
+            return 0

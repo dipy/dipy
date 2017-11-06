@@ -6,7 +6,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 from dipy.data import default_sphere
-from dipy.direction.closest_peak import BaseDirectionGetter
+from dipy.direction.closest_peak import closest_peak, BaseDirectionGetter
 
 
 DEFAULT_SH = 4
@@ -125,8 +125,14 @@ class BootDirectionGetter(BaseDirectionGetter):
         """
         count = 0
         no_valid_direction = True
-        super_get_direction = super(BootDirectionGetter, self).get_direction
-        while no_valid_direction and count < self.max_attempts:
+        while count < self.max_attempts:
             count += 1
-            no_valid_direction = super_get_direction(point, direction)
-        return no_valid_direction
+            pmf = self.pmf_gen.get_pmf(point)
+            pmf.clip(min=self.pmf_threshold, out=pmf)
+            peaks = self._get_peak_directions(pmf)
+            if len(peaks) > 0:
+                new_dir = closest_peak(peaks, direction, self.cos_similarity)
+                if new_dir is not None:
+                    direction[:] = new_dir
+                    return 0
+        return 1
