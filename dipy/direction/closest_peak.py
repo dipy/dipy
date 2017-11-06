@@ -80,7 +80,7 @@ class BaseDirectionGetter(DirectionGetter):
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
         if pmf_threshold < 0:
-            raise ValueError("pmf threshould must be >= 0.")
+            raise ValueError("pmf threshold must be >= 0.")
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
 
@@ -114,10 +114,7 @@ class BaseDirectionGetter(DirectionGetter):
 
 
 class PmfGenDirectionGetter(BaseDirectionGetter):
-    """A direction getter that returns the closest odf peak to previous tracking
-    direction.
-
-    """
+    """A base class for direction getter using a pmf"""
     @classmethod
     def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
                  pmf_threshold=0.1, **kwargs):
