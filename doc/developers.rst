@@ -14,6 +14,7 @@ The core development team consists of the following individuals:
 - **Marc-Alexandre Côté**,  Maluuba, Sherbrooke, QC, CA
 - **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - **Maxime Descoteaux**, University of Sherbrooke, QC, CA
+- **Serge Koudoro**, University of Indiana, IN, USA
 
 
 And here is the rest of the wonderful contributors:
