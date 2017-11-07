@@ -9,7 +9,7 @@ The core development team consists of the following individuals:
 - **Ariel Rokem**, University of Washington, WA, USA
 - **Matthew Brett**, Birmingham University, Birmingham, UK
 - **Bago Amirbekian**, Databricks, San Francisco, CA, USA
-- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, Mexico
+- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, MX
 - **Stefan Van der Walt**, University of California, Berkeley, CA, USA
 - **Marc-Alexandre Côté**,  Maluuba, Sherbrooke, QC, CA
 - **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
@@ -34,7 +34,7 @@ And here is the rest of the wonderful contributors:
 - **Kimberly Chan**, Stanford University, CA, USA
 - **Chantal Tax**, Cardiff University, Cardiff, UK
 - **Demian Wassermann**, INRIA, Sophia Antipolis, FR
-- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, US
+- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, USA
 - **Endolith**, New-York, NY, USA
 - **Matthias Ekman**, Donders Institute for Brain, Cognition and Behaviour, Nijmegen, NL
 - **Andrew Lawrence**, University of Cambridge, Cambridge, UK
