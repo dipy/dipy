@@ -501,7 +501,8 @@ class ShowManager(object):
             recorder.SetFileName(filename)
 
             def _stop_recording_and_close(obj, evt):
-                recorder.Stop()
+                if recorder:
+                    recorder.Stop()
                 self.iren.TerminateApp()
 
             self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
