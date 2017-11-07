@@ -6,7 +6,8 @@ from dipy.core.geometry import cart2sphere
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 from dipy.data import default_sphere
-from dipy.direction.closest_peak import closest_peak, BaseDirectionGetter
+from dipy.direction.closest_peak_direction_getter import (closest_peak,
+                                                          BaseDirectionGetter)
 
 
 DEFAULT_SH = 4

@@ -2,7 +2,7 @@
 Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
-from dipy.direction.closest_peak import PmfGenDirectionGetter
+from dipy.direction.closest_peak_direction_getter import PmfGenDirectionGetter
 
 
 def _asarray(cython_memview):

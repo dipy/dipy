@@ -197,7 +197,7 @@ class PmfGenDirectionGetter(BaseDirectionGetter):
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
-class ClosestDirectionGetter(PmfGenDirectionGetter):
+class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
     """A direction getter that returns the closest odf peak to previous tracking
     direction.
     """
