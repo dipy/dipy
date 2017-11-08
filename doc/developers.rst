@@ -5,38 +5,39 @@ Developers
 
 The core development team consists of the following individuals:
 
-- **Eleftherios Garyfallidis**, University of Sherbrooke, QC, CA
+- **Eleftherios Garyfallidis**, University of Indiana, IN, USA
 - **Ariel Rokem**, University of Washington, WA, USA
-- **Matthew Brett**, University of California, Berkeley, CA, USA
-- **Bago Amirbekian**, University of California, San Francisco, CA, USA
-- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, Mexico
+- **Matthew Brett**, Birmingham University, Birmingham, UK
+- **Bago Amirbekian**, Databricks, San Francisco, CA, USA
+- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, MX
 - **Stefan Van der Walt**, University of California, Berkeley, CA, USA
-- **Marc-Alexandre Cote**, University of Sherbrooke, QC, CA
-- **Ian Nimmo-Smith**, MRC Cognition and Brain Sciences Unit, Cambridge, UK
+- **Marc-Alexandre Côté**,  Maluuba, Sherbrooke, QC, CA
+- **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - **Maxime Descoteaux**, University of Sherbrooke, QC, CA
+- **Serge Koudoro**, University of Indiana, IN, USA
 
 
 And here is the rest of the wonderful contributors:
 
 - **Mauro Zucchelli**, University of Verona, IT
 - **Matthieu Dumont**, PAVI, Sherbrooke, QC, CA
-- **Samuel St-Jean**, University of Sherbrooke, QC, CA
-- **Gabriel Girard**, University of Sherbrooke, QC, CA
+- **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, NL
+- **Gabriel Girard**, Swiss Federal Institute of Technology, Lausanne, CH
 - **Michael Paquette**, University of Sherbrooke, QC, CA
 - **Jean-Christophe Houde**, University of Sherbrooke, QC, CA
-- **Christopher Nguyen**, University of California, Los Angeles, CA, USA
+- **Christopher Nguyen**,  Massachusetts General Hospital, MA, USA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, IT
 - **Yaroslav Halchenco**, PBS Department, Dartmouth, NH, USA
-- **Emmanuel Caruyer**, University of Pensylvania, USA
+- **Emmanuel Caruyer**, Institut de Recherche en Informatique et Systèmes Aléatoires (IRISA), University of Rennes I, Rennes, FR
 - **Sylvain Merlet**, INRIA, Sophia-Antipolis, FR
 - **Erick Ziegler**, Université de Liège, BE
 - **Kimberly Chan**, Stanford University, CA, USA
-- **Chantal Tax**, University Medical Center, Utrecht, NL
+- **Chantal Tax**, Cardiff University, Cardiff, UK
 - **Demian Wassermann**, INRIA, Sophia Antipolis, FR
-- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, US
+- **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, USA
 - **Endolith**, New-York, NY, USA
 - **Matthias Ekman**, Donders Institute for Brain, Cognition and Behaviour, Nijmegen, NL
-- **Andrew Lawrence**
+- **Andrew Lawrence**, University of Cambridge, Cambridge, UK
 - **Kesshi Jordan**, University of California, San Francisco, CA, USA
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
