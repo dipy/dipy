@@ -17,6 +17,8 @@ def test_renderer():
 
     ren = window.Renderer()
 
+    npt.assert_equal(ren.size(), (0, 0))
+
     # background color for renderer (1, 0.5, 0)
     # 0.001 added here to remove numerical errors when moving from float
     # to int values
