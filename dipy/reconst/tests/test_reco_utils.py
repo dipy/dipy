@@ -11,7 +11,8 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises)
 =======
 from dipy.reconst.utils import (probabilistic_least_squares,
-                                compute_S,
+                                compute_unscaled_posterior_precision,
+                                covariance_from_precision,
                                 sample_multivariate_normal,
                                 sample_multivariate_t,
                                 percentiles_of_function)
@@ -85,18 +86,34 @@ def test_probabilistic_least_squares():
     assert_almost_equal(uncertainty_quantities.residual_variance, variance_ground_truth, decimal=2)
 
 
-def test_S():
+def test_unscaled_posterior_precision():
     A = np.array([[1, 0], [1, 1], [1, 2]])
     regularization_matrix = np.arange(4).reshape(2, 2)
 
-    out = compute_S(A)
+    out = compute_unscaled_posterior_precision(A)
     out_expected = np.dot(A.T, A)
     assert_array_almost_equal(out, out_expected)
 
-    out = compute_S(
+    out = compute_unscaled_posterior_precision(
         A, regularization_matrix=regularization_matrix)
     out_expected = np.dot(A.T, A) + regularization_matrix
     assert_array_almost_equal(out, out_expected)
+
+
+def test_covariance_from_precision():
+    # Single voxel case
+    Q = np.diag([1, 2, 3])
+    expected_inverse = np.diag([1, 1/2, 1/3])
+
+    out = covariance_from_precision(Q)
+    assert_array_almost_equal(out, expected_inverse)
+
+    # Multi voxel case
+    Q = np.diag([1, 2, 3])
+    Q = np.array([1, 2]).reshape(2, 1, 1) * Q[None, :, :]
+    expected_inverse = np.stack((np.diag([1, 1/2, 1/3]), np.diag([1/2, 1/4, 1/6])), axis=0)
+    out = covariance_from_precision(Q)
+    assert_array_almost_equal(out, expected_inverse)
 
 
 def test_sample_multivariate_normal():

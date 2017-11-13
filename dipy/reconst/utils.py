@@ -157,15 +157,19 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None):
 
 def get_data_independent_estimation_quantities(design_matrix, regularization_matrix=None):
 
-    S = compute_S(design_matrix, regularization_matrix)
-    pseudoInv = np.linalg.solve(S, np.swapaxes(design_matrix, -1, -2))
-    unscaled_posterior_covariance = np.einsum('...ik, ...jk->...ij', pseudoInv, pseudoInv)
+    Q = compute_unscaled_posterior_precision(design_matrix, regularization_matrix)
+    unscaled_posterior_covariance = covariance_from_precision(Q)
+
+    # TODO: evaluate whether using the explicit inverse leads to numerical instability
+    pseudoInv = np.einsum('...ij, ...kj->...ik', unscaled_posterior_covariance, design_matrix)
+    # pseudoInv = np.linalg.solve(S, np.swapaxes(design_matrix, -1, -2))
+
     degrees_of_freedom = compute_degrees_of_freedom(design_matrix, pseudoInv)
 
     return unscaled_posterior_covariance, pseudoInv, degrees_of_freedom
 
 
-def compute_S(design_matrix, regularization_matrix=None):
+def compute_unscaled_posterior_precision(design_matrix, regularization_matrix=None):
 
     if regularization_matrix is None:
         # In single voxel case: np.dot(design_matrix.T, design_matrix)
@@ -175,6 +179,10 @@ def compute_S(design_matrix, regularization_matrix=None):
         S = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
                                         + regularization_matrix)
     return S
+
+
+def covariance_from_precision(Q):
+    return np.linalg.inv(Q)
 
 
 def compute_degrees_of_freedom(design_matrix, pseudoInv):
