@@ -5,20 +5,51 @@ import cvxpy as cvx
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from dipy.reconst.recspeed import S1, S2, S2_new, activeax_cost_one
-from dipy.data import get_data
+# from dipy.data import get_data
 
 gamma = 2.675987 * 10 ** 8
-D_intra = 0.6 * 10 ** 3
-fname, fscanner = get_data('ActiveAx_synth_2d')
-params = np.loadtxt(fscanner)
-G = params[:, 3] / 10 ** 6  # gradient strength
-D_iso = 2 * 10 ** 3
-am = np.array([1.84118307861360])
+#D_intra = 0.6 * 10 ** 3
+# fname, fscanner = get_data('ActiveAx_synth_2d')
+# params = np.loadtxt(fscanner)
+# G = params[:, 3] / 10 ** 6  # gradient strength
+#D_iso = 2 * 10 ** 3
+
+am = np.array([1.84118307861360, 5.33144196877749,
+               8.53631578218074, 11.7060038949077,
+               14.8635881488839, 18.0155278304879,
+               21.1643671187891, 24.3113254834588,
+               27.4570501848623, 30.6019229722078,
+               33.7461812269726, 36.8899866873805,
+               40.0334439409610, 43.1766274212415,
+               46.3195966792621, 49.4623908440429,
+               52.6050411092602, 55.7475709551533,
+               58.8900018651876, 62.0323477967829,
+               65.1746202084584, 68.3168306640438,
+               71.4589869258787, 74.6010956133729,
+               77.7431620631416, 80.8851921057280,
+               84.0271895462953, 87.1691575709855,
+               90.3110993488875, 93.4530179063458,
+               96.5949155953313, 99.7367932203820,
+               102.878653768715, 106.020498619541,
+               109.162329055405, 112.304145672561,
+               115.445950418834, 118.587744574512,
+               121.729527118091, 124.871300497614,
+               128.013065217171, 131.154821965250,
+               134.296570328107, 137.438311926144,
+               140.580047659913, 143.721775748727,
+               146.863498476739, 150.005215971725,
+               153.146928691331, 156.288635801966,
+               159.430338769213, 162.572038308643,
+               165.713732347338, 168.855423073845,
+               171.997111729391, 175.138794734935,
+               178.280475036977, 181.422152668422,
+               184.563828222242, 187.705499575101])
+#am = np.array([1.84118307861360])
 
 
 class ActiveAxModel(ReconstModel):
 
-    def __init__(self, gtab, fit_method='MIX'):
+    def __init__(self, gtab, params, D_intra, D_iso, fit_method='MIX'):
         r""" MIX framework (MIX) [1]_.
 
         The MIX computes the ActiveAx parameters. ActiveAx is a multi
@@ -50,17 +81,16 @@ class ActiveAxModel(ReconstModel):
 
         """
 
-        self.maxiter = 1  # The maximum number of generations, genetic
-#        algorithm 11 default
-        self.xtol = 1e-3  # Tolerance for termination, nonlinear least square
-#        1e-5 default
+        self.maxiter = 1000  # The maximum number of generations, genetic
+#        algorithm 1000 default, 1
+        self.xtol = 1e-8  # Tolerance for termination, nonlinear least square
+#        1e-8 default, 1e-3
         self.gtab = gtab
         self.big_delta = gtab.big_delta
         self.small_delta = gtab.small_delta
         self.gamma = gamma
-        self.G = G
+        self.G = params[:, 3] / 10 ** 6  # gradient strength
         self.G2 = self.G ** 2
-        D_iso = 2 * 10 ** 3
         self.yhat_ball = D_iso * self.gtab.bvals
         self.L = self.gtab.bvals * D_intra
         self.phi_inv = np.zeros((4, 4))
@@ -81,7 +111,7 @@ class ActiveAxModel(ReconstModel):
             The measured signal from one voxel.
 
         """
-        bounds = [(0.01, np.pi), (0.01, np.pi), (0.1, 11), (0.1, 0.8)]
+        bounds = [(0.011, np.pi), (0.011, np.pi), (0.11, 11), (0.11, 0.8)]
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,))
         x = res_one.x
@@ -169,7 +199,11 @@ class ActiveAxModel(ReconstModel):
                        fe[0] >= 0.011,
                        fe[1] >= 0.011,
                        fe[2] >= 0.011,
-                       fe[3] >= 0.011]
+                       fe[3] >= 0.011,
+                       fe[0] <= 0.89,
+                       fe[1] <= 0.89,
+                       fe[2] <= 0.89,
+                       fe[3] <= 0.89]
 
         # Form objective.
         obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal)))
