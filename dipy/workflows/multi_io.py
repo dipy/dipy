@@ -173,7 +173,7 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
 
     try:
         specs = inspect.getfullargspec(fnc)
-    except AttributeError():
+    except AttributeError:
         specs = inspect.getargspec(fnc)
 
     spargs = specs.args
