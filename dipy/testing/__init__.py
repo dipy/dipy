@@ -36,4 +36,4 @@ def setup_test():
     https://github.com/nipy/nibabel/pull/556
     """
     if LooseVersion(np.__version__) >= LooseVersion('1.14'):
-        np.set_printoptions(legacy=True)
+        np.set_printoptions(legacy='1.13')
