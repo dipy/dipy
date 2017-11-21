@@ -15,6 +15,7 @@ cimport numpy as np
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
 from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 
 cdef class PeakDirectionGetter(DirectionGetter):
@@ -39,33 +40,6 @@ cdef class PeakDirectionGetter(DirectionGetter):
         FOD.
         """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
-
-
-cdef inline int where_to_insert(
-        np.float_t* arr,
-        np.float_t number,
-        int size) nogil:
-    cdef:
-        int idx
-        np.float_t current
-    for idx in range(size - 1, -1, -1):
-        current = arr[idx]
-        if number >= current:
-            return idx + 1
-
-    return 0
-
-
-cdef inline void cumsum(
-        np.float_t* arr_in,
-        np.float_t* arr_out,
-        int N) nogil:
-    cdef:
-        int i = 0
-        np.float_t sum = 0
-    for i in range(N):
-        sum += arr_in[i]
-        arr_out[i] = sum
 
 
 cdef class ProbabilisticDirectionGetter(PeakDirectionGetter):
