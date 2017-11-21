@@ -4,13 +4,12 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.core.gradients import gradient_table
 from dipy.data import get_data
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
-from dipy.reconst.peaks import PeaksAndMetricsDirectionGetter
-from dipy.tracking.local import (BinaryTissueClassifier,
+from dipy.tracking.local import (ActTissueClassifier,
+                                 BinaryTissueClassifier,
                                  DirectionGetter,
                                  LocalTracking,
                                  ThresholdTissueClassifier,
@@ -35,27 +34,10 @@ def test_stop_conditions():
                        [1, 0, 1, 1, 1]])
     tissue = tissue[None]
 
-    class SimpleTissueClassifier(TissueClassifier):
-        def check_point(self, point):
-            p = np.round(point).astype(int)
-            if any(p < 0) or any(p >= tissue.shape):
-                return TissueTypes.OUTSIDEIMAGE
-            return tissue[p[0], p[1], p[2]]
-
-    class SimpleDirectionGetter(DirectionGetter):
-        def initial_direction(self, point):
-            # Test tracking along the rows (z direction)
-            # of the tissue array above
-            p = np.round(point).astype(int)
-            if (any(p < 0) or
-                any(p >= tissue.shape) or
-                    tissue[p[0], p[1], p[2]] == TissueTypes.INVALIDPOINT):
-                return np.array([])
-            return np.array([[0., 0., 1.]])
-
-        def get_direction(self, p, d):
-            # Always keep previous direction
-            return 0
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf_lookup = np.array([[0., 0., 0., ],
+                           [0., 0., 1.]])
+    pmf = pmf_lookup[(tissue > 0).astype("int")]
 
     # Create a seeds along
     x = np.array([0., 0, 0, 0, 0, 0, 0])
@@ -64,8 +46,10 @@ def test_stop_conditions():
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
-    dg = SimpleDirectionGetter()
-    tc = SimpleTissueClassifier()
+    endpoint_mask = tissue == TissueTypes.ENDPOINT
+    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
     streamlines_not_all = LocalTracking(direction_getter=dg,
                                         tissue_classifier=tc,

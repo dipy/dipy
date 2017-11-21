@@ -1,62 +1,35 @@
+# cython: boundscheck=False
+# cython: initializedcheck=False
+# cython: wraparound=False
+
 """
 Implementation of a probabilistic direction getter based on sampling from
-discrete distribution (pmf) at each step of the tracking."""
+discrete distribution (pmf) at each step of the tracking.
+"""
+
+from random import random
+
 import numpy as np
+cimport numpy as np
+
 from dipy.direction.peaks import peak_directions, default_sphere
-from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
-from dipy.tracking.local.direction_getter import DirectionGetter
-from dipy.tracking.local.interpolation import trilinear_interpolate4d
+from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
+from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 
-def _asarray(cython_memview):
-    # TODO: figure out the best way to get an array from a memory view.
-    # `np.array(view)` works, but is quite slow. Views are also "array_like",
-    # but using them as arrays seems to also be quite slow.
-    return np.fromiter(cython_memview, float)
-
-
-class PmfGen(object):
-    pass
-
-
-class SimplePmfGen(PmfGen):
-
-    def __init__(self, pmf_array):
-        if pmf_array.min() < 0:
-            raise ValueError("pmf should not have negative values")
-        self.pmf_array = pmf_array
-
-    def get_pmf(self, point):
-        return trilinear_interpolate4d(self.pmf_array, point)
-
-
-class SHCoeffPmfGen(PmfGen):
-
-    def __init__(self, shcoeff, sphere, basis_type):
-        self.shcoeff = shcoeff
-        self.sphere = sphere
-        sh_order = order_from_ncoef(shcoeff.shape[-1])
-        try:
-            basis = sph_harm_lookup[basis_type]
-        except KeyError:
-            raise ValueError("%s is not a known basis type." % basis_type)
-        self._B, m, n = basis(sh_order, sphere.theta, sphere.phi)
-
-    def get_pmf(self, point):
-        coeff = trilinear_interpolate4d(self.shcoeff, point)
-        pmf = np.dot(self._B, coeff)
-        pmf.clip(0, out=pmf)
-        return pmf
-
-
-class PeakDirectionGetter(DirectionGetter):
+cdef class PeakDirectionGetter(DirectionGetter):
     """An abstract class for DirectionGetters that use the peak_directions
     machinery."""
 
-    sphere = default_sphere
+    cdef:
+        object sphere
+        dict _pf_kwargs
 
     def __init__(self, sphere=None, **kwargs):
-        if sphere is not None:
+        if sphere is None:
+            self.sphere = default_sphere
+        else:
             self.sphere = sphere
         self._pf_kwargs = kwargs
 
@@ -69,7 +42,7 @@ class PeakDirectionGetter(DirectionGetter):
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
 
-class ProbabilisticDirectionGetter(PeakDirectionGetter):
+cdef class ProbabilisticDirectionGetter(PeakDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
     function (pmf).
 
@@ -80,6 +53,14 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
     set to 0 and the result is normalized.
 
     """
+
+    cdef:
+        PmfGen pmf_gen
+        double pmf_threshold
+        double[:, :] vertices
+        dict _adj_matrix
+        # double[:] pmf
+
     @classmethod
     def from_pmf(klass, pmf, max_angle, sphere, pmf_threshold=0.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
@@ -202,14 +183,15 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         each value is a boolean array indicating which directions are less than
         max_angle degrees from the key"""
         matrix = np.dot(sphere.vertices, sphere.vertices.T)
-        matrix = abs(matrix) >= cos_similarity
+        matrix = (abs(matrix) >= cos_similarity).astype('uint8')
         keys = [tuple(v) for v in sphere.vertices]
         adj_matrix = dict(zip(keys, matrix))
         keys = [tuple(-v) for v in sphere.vertices]
         adj_matrix.update(zip(keys, matrix))
         self._adj_matrix = adj_matrix
 
-    def initial_direction(self, point):
+    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
+            self, double[::1] point):
         """Returns best directions at seed location to start tracking.
 
         Parameters
@@ -224,10 +206,10 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             directions should be unique.
 
         """
-        pmf = self.pmf_gen.get_pmf(point)
+        cdef double[:] pmf = self.pmf_gen.get_pmf(point)
         return self._peak_directions(pmf)
 
-    def get_direction(self, point, direction):
+    cdef int get_direction_c(self, double* point, double* direction):
         """Samples a pmf to updates ``direction`` array with a new direction.
 
         Parameters
@@ -244,29 +226,55 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
             1 otherwise.
 
         """
-        # point and direction are passed in as cython memory views
-        pmf = self.pmf_gen.get_pmf(point)
-        pmf[pmf < self.pmf_threshold] = 0
-        cdf = (self._adj_matrix[tuple(direction)] * pmf).cumsum()
-        if cdf[-1] == 0:
-            return 1
-        random_sample = np.random.random() * cdf[-1]
-        idx = cdf.searchsorted(random_sample, 'right')
+        cdef:
+            size_t i, idx, _len
+            double[:] newdir, pmf, cdf
+            double last_cdf, random_sample
+            np.uint8_t[:] bool_array
 
-        newdir = self.vertices[idx]
+        # point and direction are passed in as cython memory views
+        pmf = self.pmf_gen.get_pmf_c(point)
+        _len = pmf.shape[0]
+        for i in range(_len):
+            if pmf[i] < self.pmf_threshold:
+                pmf[i] = 0.0
+
+        bool_array = self._adj_matrix[
+            (direction[0], direction[1], direction[2])]
+
+        cdf = pmf
+        for i in range(_len):
+            if bool_array[i] == 0:
+                cdf[i] = 0.0
+        cumsum(&cdf[0], &cdf[0], _len)
+
+        last_cdf = cdf[_len - 1]
+        if last_cdf == 0:
+            return 1
+
+        random_sample = random() * last_cdf
+        idx = where_to_insert(&cdf[0], random_sample, _len)
+
+        newdir = self.vertices[idx, :]
         # Update direction and return 0 for error
-        if np.dot(newdir, _asarray(direction)) > 0:
-            direction[:] = newdir
+        if direction[0] * newdir[0] \
+         + direction[1] * newdir[1] \
+         + direction[2] * newdir[2] > 0:
+            direction[0] = newdir[0]
+            direction[1] = newdir[1]
+            direction[2] = newdir[2]
         else:
-            direction[:] = -newdir
+            direction[0] = -newdir[0]
+            direction[1] = -newdir[1]
+            direction[2] = -newdir[2]
         return 0
 
 
-class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
+cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     """Return direction of a sphere with the highest probability mass
     function (pmf).
     """
-    def get_direction(self, point, direction):
+    cdef int get_direction_c(self, double* point, double* direction):
         """Find direction with the highest pmf to updates ``direction`` array
         with a new direction.
         Parameters
@@ -281,19 +289,40 @@ class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
             Returns 0 `direction` was updated with a new tracking direction, or
             1 otherwise.
         """
-        # point and direction are passed in as cython memory views
-        pmf = self.pmf_gen.get_pmf(point)
-        pmf[pmf < self.pmf_threshold] = 0
-        cdf = self._adj_matrix[tuple(direction)] * pmf
-        idx = np.argmax(cdf)
+        cdef:
+            size_t _len, max_idx
+            double[:] newdir, pmf, cdf
+            double max_value
 
-        if pmf[idx] == 0:
+        # point and direction are passed in as cython memory views
+        pmf = self.pmf_gen.get_pmf_c(point)
+        _len = pmf.shape[0]
+        for i in range(_len):
+            if pmf[i] < self.pmf_threshold:
+                pmf[i] = 0.0
+
+        cdf = self._adj_matrix[
+            (direction[0], direction[1], direction[2])] * pmf
+        max_idx = 0
+        max_value = 0.0
+        for i in range(_len):
+            if cdf[i] > max_value:
+                max_idx = i
+                max_value = cdf[i]
+
+        if pmf[max_idx] == 0:
             return 1
 
-        newdir = self.vertices[idx]
+        newdir = self.vertices[max_idx]
         # Update direction and return 0 for error
-        if np.dot(newdir, _asarray(direction)) > 0:
-            direction[:] = newdir
+        if direction[0] * newdir[0] \
+         + direction[1] * newdir[1] \
+         + direction[2] * newdir[2] > 0:
+            direction[0] = newdir[0]
+            direction[1] = newdir[1]
+            direction[2] = newdir[2]
         else:
-            direction[:] = -newdir
+            direction[0] = -newdir[0]
+            direction[1] = -newdir[1]
+            direction[2] = -newdir[2]
         return 0

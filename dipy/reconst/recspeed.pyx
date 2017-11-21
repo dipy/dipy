@@ -264,7 +264,7 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.profile(True)
-def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
+def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
     """Local maxima of a function evaluated on a discrete set of points.
 
     If a function is evaluated on some set of points where each pair of
@@ -307,7 +307,7 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
         raise ValueError("odf can not have nans")
     indices = wpeak[:count].copy()
     # Get peak values return
-    values = odf.take(indices)
+    values = np.take(odf, indices)
     # Sort both values and indices
     _cosort(values, indices)
     return values, indices

@@ -8,8 +8,10 @@ from libc.math cimport floor
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int _trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
-                                     double[::1] result) nogil:
+cdef int trilinear_interpolate4d_c(
+        double[:, :, :, :] data,
+        double* point,
+        double[:] result) nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
@@ -38,8 +40,6 @@ cdef int _trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
         np.npy_intp index[3][2]
         double weight[3][2]
 
-    if point.shape[0] != 3:
-        return -2
     if data.shape[3] != result.shape[0]:
         return -3
 
@@ -97,7 +97,7 @@ cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
         out = np.empty(data.shape[3])
     outview = out
 
-    err = _trilinear_interpolate_c_4d(data, point, out)
+    err = trilinear_interpolate4d_c(data, &point[0], out)
 
     if err == 0:
         return out
