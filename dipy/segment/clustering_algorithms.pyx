@@ -106,3 +106,129 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
         qb.update_step(cluster_id)
 
     return clusters_centroid2clustermap_centroid(qb.clusters)
+
+
+def quickbundles_online(features_shape, Metric metric, double threshold,
+                        long max_nb_clusters=BIGGEST_INT, bvh=False):
+    """ Clusters streamlines using QuickBundles in a online fashion.
+
+    Parameters
+    ----------
+    features_shape : tuple
+        Expected shape of the features (used to preallocate centroids).
+    metric : `Metric` object
+        Tells how to compute the distance between two streamlines.
+    threshold : double
+        The maximum distance from a cluster for a streamline to be still
+        considered as part of it.
+    max_nb_clusters : int, optional
+        Limits the creation of bundles. (Default: inf)
+    bvh : bool
+        Boundary volume hierarchy
+
+    Returns
+    -------
+    function(streamline, idx)
+        When called this function cluster a `streamline` with id `idx` and returns
+        the state of the QuickBundles Cython object and the cluster id where the
+        streamine has been assigned to.
+    """
+
+    # Threshold of np.inf is not supported, set it to 'biggest_double'
+    threshold = min(threshold, BIGGEST_DOUBLE)
+    # Threshold of -np.inf is not supported, set it to 0
+    threshold = max(threshold, 0)
+
+    cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters, bvh)
+    cdef int cluster_id
+
+    def _step(streamline, int idx):
+        if not streamline.flags.writeable or streamline.dtype != np.float32:
+            streamline = streamline.astype(np.float32)
+
+        cluster_id = qb.assignment_step(streamline, idx)
+        # The update step is performed right after the assignement step instead
+        # of after all streamlines have been assigned like k-means algorithm.
+        qb.update_step(cluster_id)
+        return qb, cluster_id
+
+    return _step
+
+
+def quickbundlesX(streamlines, Metric metric, thresholds, ordering=None):
+    """ Clusters streamlines using QuickBundles.
+
+    Parameters
+    ----------
+    streamlines : list of 2D arrays
+        List of streamlines to cluster.
+    metric : `Metric` object
+        Tells how to compute the distance between two streamlines.
+    thresholds : list of double
+        Thresholds to use for each clustering layer. A threshold represents the
+        maximum distance from a cluster for a streamline to be still considered
+        as part of it.
+    ordering : iterable of indices, optional
+        Iterate through `data` using the given ordering.
+
+    Returns
+    -------
+    `QuickBundlesX` object
+        Result of the clustering.
+
+    """
+    if ordering is None:
+        ordering = xrange(len(streamlines))
+
+    # Check if `ordering` or `streamlines` are empty
+    first_idx, ordering = peek(ordering)
+    if first_idx is None or len(streamlines) == 0:
+        return ClusterMapCentroid()
+
+    features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(DTYPE)))
+    cdef QuickBundlesX qbx = QuickBundlesX(features_shape, thresholds, metric)
+    cdef int idx
+
+    for idx in ordering:
+        streamline = streamlines[idx]
+        if not streamline.flags.writeable or streamline.dtype != DTYPE:
+            streamline = streamline.astype(DTYPE)
+
+        qbx.insert(streamline, idx)
+
+    return qbx
+
+
+def quickbundlesX_online(features_shape, Metric metric, thresholds):
+    """ Clusters streamlines using QuickBundles.
+
+    Parameters
+    ----------
+    features_shape : tuple
+        Expected shape of the features (used to preallocate centroids).
+    metric : `Metric` object
+        Tells how to compute the distance between two streamlines.
+    thresholds : list of double
+        Thresholds to use for each clustering layer. A threshold represents the
+        maximum distance from a cluster for a streamline to be still considered
+        as part of it.
+
+    Returns
+    -------
+    function(streamline, idx)
+        When called this function cluster a `streamline` with id `idx` and returns
+        the state of the QuickBundles Cython object and the cluster id where the
+        streamine has been assigned to.
+    """
+
+    cdef QuickBundlesX qbx = QuickBundlesX(features_shape, thresholds, metric)
+    cdef int cluster_id
+
+    def _step(streamline, int idx):
+        if not streamline.flags.writeable or streamline.dtype != np.float32:
+            streamline = streamline.astype(np.float32)
+
+        path = qbx.insert(streamline, idx)
+        return qbx, path
+
+    return _step
