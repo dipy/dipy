@@ -1,8 +1,14 @@
+
+from random import random
+
 cimport cython
 cimport numpy as np
+import numpy as np
 from .direction_getter cimport DirectionGetter
-from .tissue_classifier cimport (TissueClassifier, TissueClass, TRACKPOINT,
-                                 ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
+from .tissue_classifier cimport(
+    TissueClass, TissueClassifier,
+    TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
+from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
 
 
 cdef extern from "dpy_math.h" nogil:
@@ -25,8 +31,8 @@ cdef inline double stepsize(double point, double increment) nogil:
         return dist / increment
 
 
-cdef void step_to_boundary(double *point, double *direction,
-                          double overstep) nogil:
+cdef void step_to_boundary(double * point, double * direction,
+                           double overstep) nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
     Parameters
@@ -59,7 +65,7 @@ cdef void step_to_boundary(double *point, double *direction,
         point[i] += smallest_step * direction[i]
 
 
-cdef void fixed_step(double *point, double *direction, double stepsize) nogil:
+cdef void fixed_step(double * point, double * direction, double stepsize) nogil:
     """Updates point by stepping in direction.
 
     Parameters
@@ -76,21 +82,44 @@ cdef void fixed_step(double *point, double *direction, double stepsize) nogil:
         point[i] += direction[i] * stepsize
 
 
-cdef inline void copypoint(double *a, double *b) nogil:
+cdef inline void copypoint(double * a, double * b) nogil:
     for i in range(3):
         b[i] = a[i]
+
+
+def local_tracker(
+        DirectionGetter dg, TissueClassifier tc,
+        np.float_t[:] seed,
+        np.float_t[:] first_step,
+        np.float_t[:] voxel_size,
+        np.float_t[:,:] streamline,
+        double stepsize,
+        int fixedstep):
+    cdef:
+        int i
+        TissueClass tissue_class
+
+    if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
+            voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
+        raise ValueError()
+
+    i = _local_tracker(dg, tc, seed, first_step, voxel_size, streamline,
+                       stepsize, fixedstep, &tissue_class)
+    return i, tissue_class
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def local_tracker(DirectionGetter dg, TissueClassifier tc,
-                  np.ndarray[np.float_t, ndim=1] seed,
-                  np.ndarray[np.float_t, ndim=1] first_step,
-                  np.ndarray[np.float_t, ndim=1] voxel_size,
-                  np.ndarray[np.float_t, ndim=2, mode='c'] streamline,
-                  double stepsize,
-                  int fixedstep):
+cdef int _local_tracker(
+        DirectionGetter dg, TissueClassifier tc,
+        np.float_t[:] seed,
+        np.float_t[:] first_step,
+        np.float_t[:] voxel_size,
+        np.float_t[:,:] streamline,
+        double stepsize,
+        int fixedstep,
+        TissueClass* tissue_class):
     """Tracks one direction from a seed.
 
     This function is the main workhorse of the ``LocalTracking`` class defined
@@ -143,16 +172,10 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
                 Last point is INVALIDPOINT.
 
     """
-    if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
-        voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError()
-
     cdef:
-        int i
-        TissueClass tissue_class
+        size_t i
         double point[3], dir[3], vs[3], voxdir[3]
-        double[::1] pview = point, dview = dir
-        void (*step)(double*, double*, double) nogil
+        void (*step)(double * , double*, double) nogil
 
     if fixedstep:
         step = fixed_step
@@ -164,24 +187,24 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         dir[i] = first_step[i]
         vs[i] = voxel_size[i]
 
-    tissue_class = TRACKPOINT
+    tissue_class[0] = TRACKPOINT
     for i in range(1, streamline.shape[0]):
-        if dg.get_direction(pview, dview):
+        if dg.get_direction_c(point, dir):
             break
         for j in range(3):
             voxdir[j] = dir[j] / vs[j]
         step(point, voxdir, stepsize)
-        copypoint(point, &streamline[i, 0])
-        tissue_class = tc.check_point(pview)
-        if tissue_class == TRACKPOINT:
+        copypoint(point, & streamline[i, 0])
+        tissue_class[0] = tc.check_point_c(point)
+        if tissue_class[0] == TRACKPOINT:
             continue
-        elif (tissue_class == ENDPOINT or
-              tissue_class == INVALIDPOINT):
+        elif (tissue_class[0] == ENDPOINT or
+              tissue_class[0] == INVALIDPOINT):
             i += 1
             break
-        elif tissue_class == OUTSIDEIMAGE:
+        elif tissue_class[0] == OUTSIDEIMAGE:
             break
     else:
         # maximum length of streamline has been reached, return everything
         i = streamline.shape[0]
-    return i, tissue_class
+    return i
