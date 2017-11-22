@@ -764,3 +764,83 @@ class QuickBundlesXOnline(Clustering):
         self._qbx_state, path = self._cluster_fct(streamline, self._idx)
         self._dirty = True
         return path
+
+
+class TreeCluster(ClusterCentroid):
+    def __init__(self, threshold, centroid, indices=None):
+        super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
+        self.threshold = threshold
+        self.parent = None
+        self.children = []
+
+    def add(self, child):
+        child.parent = self
+        self.children.append(child)
+
+    @property
+    def is_leaf(self):
+        return len(self.children) == 0
+
+
+class TreeClusterMap(ClusterMap):
+    def __init__(self, root):
+        self.root = root
+        self.leaves = []
+
+        def _retrieves_leaves(node):
+            if node.is_leaf:
+                self.leaves.append(node)
+
+        self.traverse_postorder(self.root, _retrieves_leaves)
+
+    @property
+    def refdata(self):
+        return self._refdata
+
+    @refdata.setter
+    def refdata(self, value):
+        if value is None:
+            value = Identity()
+
+        self._refdata = value
+
+        def _set_refdata(node):
+            node.refdata = self._refdata
+
+        self.traverse_postorder(self.root, _set_refdata)
+
+    def traverse_postorder(self, node, visit):
+        for child in node.children:
+            self.traverse_postorder(child, visit)
+
+        visit(node)
+
+    def iter_preorder(self, node):
+        parent_stack = []
+        while len(parent_stack) > 0 or node is not None:
+            if node is not None:
+                yield node
+                if len(node.children) > 0:
+                    parent_stack += node.children[1:]
+                    node = node.children[0]
+                else:
+                    node = None
+            else:
+                node = parent_stack.pop()
+
+    def __iter__(self):
+        return self.iter_preorder(self.root)
+
+    def get_clusters(self, wanted_level):
+        clusters = ClusterMapCentroid()
+
+        def _traverse(node, level=0):
+            if level == wanted_level:
+                clusters.add_cluster(node)
+                return
+
+            for child in node.children:
+                _traverse(child, level+1)
+
+        _traverse(self.root)
+        return clusters
