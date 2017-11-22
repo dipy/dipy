@@ -179,22 +179,30 @@ fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(FA[:, :, axial_slice], cmap='gray', vmin=0, vmax=0.7)
+ax.flat[0].imshow(FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
+                  origin='lower')
 ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[1].imshow(MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[2].imshow(AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[3].imshow(RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[3].set_title('RD (DKI)')
 
-ax.flat[4].imshow(dti_FA[:, :, axial_slice], cmap='gray', vmin=0, vmax=0.7)
+ax.flat[4].imshow(dti_FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
+                  origin='lower')
 ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[6].imshow(dti_AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[7].imshow(dti_RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
@@ -230,11 +238,14 @@ fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[0].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[0].set_title('MK')
-ax.flat[1].imshow(AK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[1].imshow(AK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[1].set_title('AK')
-ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[2].imshow(RK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[2].set_title('RK')
 
 plt.show()
@@ -327,14 +338,16 @@ fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
 AWF[AWF == 0] = np.nan
 TORT[TORT == 0] = np.nan
 
-ax[0].imshow(MK[:, :, axial_slice], cmap=plt.cm.gray, interpolation='nearest')
-im0 = ax[0].imshow(AWF[:, :, axial_slice], cmap=plt.cm.Reds, alpha=0.9,
-                   vmin=0.3, vmax=0.7, interpolation='nearest')
+ax[0].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
+             origin='lower')
+im0 = ax[0].imshow(AWF[:, :, axial_slice].T, cmap=plt.cm.Reds, alpha=0.9,
+                   vmin=0.3, vmax=0.7, interpolation='nearest', origin='lower')
 fig3.colorbar(im0, ax=ax.flat[0])
 
-ax[1].imshow(MK[:, :, axial_slice], cmap=plt.cm.gray, interpolation='nearest')
-im1 = ax[1].imshow(TORT[:, :, axial_slice], cmap=plt.cm.Blues, alpha=0.9,
-                   vmin=2, vmax=6, interpolation='nearest')
+ax[1].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
+             origin='lower')
+im1 = ax[1].imshow(TORT[:, :, axial_slice].T, cmap=plt.cm.Blues, alpha=0.9,
+                   vmin=2, vmax=6, interpolation='nearest', origin='lower')
 fig3.colorbar(im1, ax=ax.flat[1])
 
 fig3.savefig('Kurtosis_Microstructural_measures.png')
