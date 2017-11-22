@@ -258,6 +258,92 @@ def test_text_block_2d():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_text_block_2d_part2():
+    window_size = (700, 700)
+    show_manager = window.ShowManager(size=window_size, title="Test TextBlock")
+
+    # To help visualize the text positions.
+    lines = []
+    grid_size = (500, 500)
+    bottom, middle, top = 50, 300, 550
+    left, center, right = 50, 300, 550
+    grid_top = ui.Rectangle2D(center=(center, top), size=(grid_size[0], 1), color=(1, 1, 1))
+    grid_bottom = ui.Rectangle2D(center=(center, bottom), size=(grid_size[0], 1), color=(1, 1, 1))
+    grid_left = ui.Rectangle2D(center=(left, middle), size=(1, grid_size[1]), color=(1, 1, 1))
+    grid_right = ui.Rectangle2D(center=(right, middle), size=(1, grid_size[1]), color=(1, 1, 1))
+    grid_middle = ui.Rectangle2D(center=(center, middle), size=(grid_size[0], 1), color=(1, 1, 1))
+    grid_center = ui.Rectangle2D(center=(center, middle), size=(1, grid_size[1]), color=(1, 1, 1))
+
+    grid_lines = [grid_top, grid_bottom, grid_left, grid_right, grid_middle, grid_center]
+    show_manager.ren.add(*grid_lines)
+
+    font_size = 60
+    bg_color = (1, 1, 1)
+    texts = []
+    texts += [ui.TextBlock2D("HH", position=(left, top),
+                             font_size=font_size,
+                             color=(1, 0, 0), bg_color=bg_color,
+                             justification="left",
+                             vertical_justification="top")]
+    texts += [ui.TextBlock2D("HH", position=(center, top),
+                             font_size=font_size,
+                             color=(0, 1, 0), bg_color=bg_color,
+                             justification="center",
+                             vertical_justification="top")]
+    texts += [ui.TextBlock2D("HH", position=(right, top),
+                             font_size=font_size,
+                             color=(0, 0, 1), bg_color=bg_color,
+                             justification="right",
+                             vertical_justification="top")]
+
+    texts += [ui.TextBlock2D("HH", position=(left, middle),
+                             font_size=font_size,
+                             color=(1, 1, 0), bg_color=bg_color,
+                             justification="left",
+                             vertical_justification="middle")]
+    texts += [ui.TextBlock2D("HH", position=(center, middle),
+                             font_size=font_size,
+                             color=(0, 1, 1), bg_color=bg_color,
+                             justification="center",
+                             vertical_justification="middle")]
+    texts += [ui.TextBlock2D("HH", position=(right, middle),
+                             font_size=font_size,
+                             color=(1, 0, 1), bg_color=bg_color,
+                             justification="right",
+                             vertical_justification="middle")]
+
+    texts += [ui.TextBlock2D("HH", position=(left, bottom),
+                             font_size=font_size,
+                             color=(0.5, 0, 1), bg_color=bg_color,
+                             justification="left",
+                             vertical_justification="bottom")]
+    texts += [ui.TextBlock2D("HH", position=(center, bottom),
+                             font_size=font_size,
+                             color=(1, 0.5, 0), bg_color=bg_color,
+                             justification="center",
+                             vertical_justification="bottom")]
+    texts += [ui.TextBlock2D("HH", position=(right, bottom),
+                             font_size=font_size,
+                             color=(0, 1, 0.5), bg_color=bg_color,
+                             justification="right",
+                             vertical_justification="bottom")]
+
+    show_manager.ren.add(*texts)
+
+    # Uncomment this to start the visualisation
+    show_manager.start()
+
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr, find_objects=True)
+    from ipdb import set_trace as dbg
+    dbg()
+
+    # show_m = window.ShowManager(ren)
+    # show_m.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_line_slider_2d(recording=False):
     filename = "test_ui_line_slider_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
