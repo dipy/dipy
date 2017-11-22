@@ -50,6 +50,42 @@ def reconst_mmri_core(flow, extra_args=[]):
 
         pos_msd = mmri_flow.last_generated_outputs('pos_msd')
 
+def reconst_mmri_core(flow, extra_args=[]):
+    with TemporaryDirectory() as out_dir:
+        data_path, bval_path, bvec_path = get_data('small_25')
+        vol_img = nib.load(data_path)
+        volume = vol_img.get_data()
+        # mask = np.ones_like(volume[:, :, :, 0])
+        # mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        # mask_path = join(out_dir, 'tmp_mask.nii.gz')
+        # nib.save(mask_img, mask_path)
+
+        mmri_flow = flow()
+
+        args = [data_path, bval_path, bvec_path]
+
+        mmri_flow.run(*args, out_dir=out_dir)
+
+        # Not sure what to be testing here or how to be testing
+
+        lap_rtop = mmri_flow.last_generated_outputs['lap_rtop']
+
+        lap_lapnorm = mmri_flow.last_generated_outputs('lap_lapnorm')
+
+        lap_msd = mmri_flow.last_generated_outputs('lap_msd')
+
+        lap_qiv = mmri_flow.last_generated_outputs('lap_qiv')
+
+        lap_rtap = mmri_flow.last_generated_outputs('lap_rtap')
+
+        lap_rtpp = mmri_flow.last_generated_outputs('lap_rtpp')
+
+        pos_rtop = mmri_flow.last_generated_outputs['pos_rtop']
+
+        pos_lapnorm = mmri_flow.last_generated_outputs('pos_lapnorm')
+
+        pos_msd = mmri_flow.last_generated_outputs('pos_msd')
+
         pos_qiv = mmri_flow.last_generated_outputs('pos_qiv')
 
         pos_rtap = mmri_flow.last_generated_outputs('pos_rtap')
