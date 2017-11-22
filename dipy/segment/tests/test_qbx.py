@@ -114,7 +114,7 @@ def test_3D_segments():
     thresholds = [4, 2, 1]
     qbx_class = QuickBundlesX(thresholds)
     qbx = qbx_class.cluster(points)
-    print qbx
+    print(qbx)
 
 
 def test_3D_points():
@@ -331,4 +331,5 @@ def test_show_qbx():
 if __name__ == '__main__':
     #test_with_simulated_bundles2()
     #test_show_qbx_tree()
-    test_show_qbx()
+    #test_show_qbx()
+    test_3D_segments()
