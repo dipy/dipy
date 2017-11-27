@@ -8,7 +8,8 @@ import numpy as np
 from nose.tools import assert_equal
 
 from dipy.data import get_data
-from dipy.workflows.reconst import ReconstDtiFlow
+from dipy.workflows.reconst import ReconstDtiFlow, ReconstDtiRestoreFlow, \
+    ReconstMAPMRILaplacian, ReconstMAPMRIBoth, ReconstMAPMRIPositivity
 
 
 def test_reconst_dti_wls():
@@ -30,27 +31,29 @@ def reconst_mmri_core(flow, extra_args=[]):
 
         mmri_flow.run(*args, out_dir=out_dir)
 
-        # Not sure what to be testing here or how to be testing
+def test_reconst_dti_nlls():
+    reconst_flow_core(ReconstDtiFlow)
 
-        lap_rtop = mmri_flow.last_generated_outputs['lap_rtop']
 
-        lap_lapnorm = mmri_flow.last_generated_outputs('lap_lapnorm')
+def test_reconst_mmri_laplacian():
+    prefix = 'lap_'
+    model_type = 'laplacian'
+    reconst_mmri_core(ReconstMAPMRILaplacian, model_type=model_type, prefix=prefix)
 
-        lap_msd = mmri_flow.last_generated_outputs('lap_msd')
 
-        lap_qiv = mmri_flow.last_generated_outputs('lap_qiv')
+def test_reconst_mmri_both():
+    prefix = 'both_'
+    model_type = 'both'
+    reconst_mmri_core(ReconstMAPMRIBoth, model_type=model_type, prefix=prefix)
 
-        lap_rtap = mmri_flow.last_generated_outputs('lap_rtap')
 
-        lap_rtpp = mmri_flow.last_generated_outputs('lap_rtpp')
+def test_reconst_mmri_positivity():
+    prefix = 'pos_'
+    model_type = 'positivity'
+    reconst_mmri_core(ReconstMAPMRIBoth, model_type=model_type, prefix=prefix)
 
-        pos_rtop = mmri_flow.last_generated_outputs['pos_rtop']
 
-        pos_lapnorm = mmri_flow.last_generated_outputs('pos_lapnorm')
-
-        pos_msd = mmri_flow.last_generated_outputs('pos_msd')
-
-def reconst_mmri_core(flow, extra_args=[]):
+def reconst_mmri_core(flow, model_type, prefix):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_data('small_25')
         vol_img = nib.load(data_path)
@@ -62,47 +65,34 @@ def reconst_mmri_core(flow, extra_args=[]):
 
         mmri_flow = flow()
 
-        args = [data_path, bval_path, bvec_path]
+        args = [data_path, bval_path, bvec_path, model_type]
 
         mmri_flow.run(*args, out_dir=out_dir)
 
-        # Not sure what to be testing here or how to be testing
+        rtop = mmri_flow.last_generated_outputs[prefix+'rtop']
+        rtop_data = nib.load(rtop).get_data()
+        assert_true(rtop_data.shape == volume.shape[:-1])
 
-        lap_rtop = mmri_flow.last_generated_outputs['lap_rtop']
+        lapnorm = mmri_flow.last_generated_outputs[prefix+'lapnorm']
+        lapnorm_data = nib.load(lapnorm).get_data()
+        assert_true(lapnorm_data.shape == volume.shape[:-1])
 
-        lap_lapnorm = mmri_flow.last_generated_outputs('lap_lapnorm')
+        msd = mmri_flow.last_generated_outputs[prefix+'msd']
+        msd_data = nib.load(msd).get_data()
+        assert_true(msd_data.shape == volume.shape[:-1])
 
-        lap_msd = mmri_flow.last_generated_outputs('lap_msd')
+        qiv = mmri_flow.last_generated_outputs[prefix+'qiv']
+        qiv_data = nib.load(qiv).get_data()
+        assert_true(qiv_data.shape == volume.shape[:-1])
 
-        lap_qiv = mmri_flow.last_generated_outputs('lap_qiv')
+        rtap = mmri_flow.last_generated_outputs[prefix+'rtap']
+        rtap_data = nib.load(rtap).get_data()
+        assert_true(rtap_data.shape == volume.shape[:-1])
 
-        lap_rtap = mmri_flow.last_generated_outputs('lap_rtap')
+        rtpp = mmri_flow.last_generated_outputs[prefix+'rtpp']
+        rtpp_data = nib.load(rtpp).get_data()
+        assert_true(rtpp_data.shape == volume.shape[:-1])
 
-        lap_rtpp = mmri_flow.last_generated_outputs('lap_rtpp')
-
-        pos_rtop = mmri_flow.last_generated_outputs['pos_rtop']
-
-        pos_lapnorm = mmri_flow.last_generated_outputs('pos_lapnorm')
-
-        pos_msd = mmri_flow.last_generated_outputs('pos_msd')
-
-        pos_qiv = mmri_flow.last_generated_outputs('pos_qiv')
-
-        pos_rtap = mmri_flow.last_generated_outputs('pos_rtap')
-
-        pos_rtpp = mmri_flow.last_generated_outputs('pos_rtpp')
-
-        both_rtop = mmri_flow.last_generated_outputs['both_rtop']
-
-        both_lapnorm = mmri_flow.last_generated_outputs('both_lapnorm')
-
-        both_msd = mmri_flow.last_generated_outputs('both_msd')
-
-        both_qiv = mmri_flow.last_generated_outputs('both_qiv')
-
-        both_rtap = mmri_flow.last_generated_outputs('both_rtap')
-
-        both_rtpp = mmri_flow.last_generated_outputs('both_rtpp')
 
 def reconst_flow_core(flow, extra_args=[]):
     with TemporaryDirectory() as out_dir:
@@ -166,5 +156,10 @@ def reconst_flow_core(flow, extra_args=[]):
         assert_equal(evals_data.shape[:-1], volume.shape[:-1])
 
 
+
 if __name__ == '__main__':
-    test_reconst_dti_wls()
+    test_reconst_dti_restore()
+    test_reconst_dti_nlls()
+    test_reconst_mmri_laplacian()
+    test_reconst_mmri_positivity()
+    test_reconst_mmri_both()
