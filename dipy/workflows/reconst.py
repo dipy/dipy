@@ -96,7 +96,7 @@ class ReconstMAPMRIFlow(Workflow):
             # print('data.shape (%d, %d, %d, %d)' % data.shape)
 
             radial_order = 6
-
+            
             # How do I save the rtop in a useful form? A picture? A numpy array?
             # Save them as nifti image
 
