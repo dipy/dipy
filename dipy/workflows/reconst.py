@@ -74,7 +74,7 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the rtpp to be saved
         """
         io_it = self.get_io_iterator()
-        for dwi, bval, bvec, mapname in io_it:
+        for dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv, out_rtap, out_rtpp in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -199,7 +199,7 @@ class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
                 (default: lap_rtpp)
             """
         
-        super(ReconstMAPMRIFlow, self). \
+        super(ReconstMAPMRILaplacian, self). \
             run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
                 out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
 
@@ -261,7 +261,7 @@ class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
                 (default: pos_rtpp)
             """
 
-        super(ReconstMAPMRIFlow, self). \
+        super(ReconstMAPMRIPositivity, self). \
             run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
                 out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
         
@@ -323,7 +323,7 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
                 (default: both_rtpp)
             """
 
-        super(ReconstMAPMRIFlow, self). \
+        super(ReconstMAPMRIBoth, self). \
             run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
                 out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
 
