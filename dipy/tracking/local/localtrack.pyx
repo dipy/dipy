@@ -224,7 +224,7 @@ def pft_tracker(
         int pft_nbr_back_steps,
         int pft_max_steps,
         int pft_max_trial,
-        int pft_nbr_particles,
+        int particle_count,
         np.float_t[:,:,:,:] particle_paths,
         np.float_t[:,:,:,:] particle_dirs,
         np.float_t[:,:] particle_weights,
@@ -239,7 +239,7 @@ def pft_tracker(
 
     i = _pft_tracker(dg, tc, seed, first_step, voxel_size, streamline,
                      directions, step_size, &tissue_class, pft_nbr_back_steps,
-                     pft_max_steps, pft_max_trial, pft_nbr_particles,
+                     pft_max_steps, pft_max_trial, particle_count,
                      particle_paths, particle_dirs, particle_weights,
                      particle_states)
     return i, tissue_class
@@ -260,7 +260,7 @@ cdef _pft_tracker(DirectionGetter dg,
                   int pft_nbr_back_steps,
                   int pft_max_steps,
                   int pft_max_trial,
-                  int pft_nbr_particles,
+                  int particle_count,
                   np.float_t[:,:,:,:] particle_paths,
                   np.float_t[:,:,:,:] particle_dirs,
                   np.float_t[:,:] particle_weights,
@@ -317,7 +317,7 @@ cdef _pft_tracker(DirectionGetter dg,
                          step_size,
                          tissue_class,
                          pft_nbr_steps,
-                         pft_nbr_particles,
+                         particle_count,
                          particle_paths,
                          particle_dirs,
                          particle_weights,
@@ -351,7 +351,7 @@ cdef _pft(np.float_t[:,:]  streamline,
           double step_size,
           TissueClass* tissue_class,
           int pft_nbr_steps,
-          int pft_nbr_particles,
+          int particle_count,
           np.float_t[:,:,:,:] particle_paths,
           np.float_t[:,:,:,:] particle_dirs,
           np.float_t[:,:] particle_weights,
@@ -367,16 +367,16 @@ cdef _pft(np.float_t[:,:]  streamline,
     for j in range(3):
         vs[j] = voxel_size[j]
 
-    for p in range(pft_nbr_particles):
+    for p in range(particle_count):
         for j in range(3):
             particle_paths[0, p, 0, j] = streamline[streamline_i, j]
             particle_dirs[0, p, 0, j] = directions[streamline_i, j]
-        particle_weights[0, p] = 1. / pft_nbr_particles
+        particle_weights[0, p] = 1. / particle_count
         particle_states[0, p, 0] = TRACKPOINT
         particle_states[0, p, 1] = 0
 
     for s in range(pft_nbr_steps):
-        for p in range(pft_nbr_particles):
+        for p in range(particle_count):
             if not particle_states[0, p, 0] == TRACKPOINT:
                 for j in range(3):
                     particle_paths[0, p, s, j] = 0
@@ -404,10 +404,10 @@ cdef _pft(np.float_t[:,:]  streamline,
                     particle_states[0, p, 0] = TRACKPOINT
 
         sum_weights = 0
-        for p in range(pft_nbr_particles):
+        for p in range(particle_count):
             sum_weights += particle_weights[0, p]
         sum_squared = 0
-        for p in range(pft_nbr_particles):
+        for p in range(particle_count):
             particle_weights[0, p] = particle_weights[0, p] / sum_weights
             sum_squared += particle_weights[0, p] * particle_weights[0, p]
 
@@ -415,9 +415,9 @@ cdef _pft(np.float_t[:,:]  streamline,
         # Particles with negligable weights are replaced by duplicates of
         # those with high weigths through resamplingip
         N_effective = 1. / sum_squared
-        if N_effective < pft_nbr_particles / 10.:
+        if N_effective < particle_count / 10.:
             # copy data in the temp arrays
-            for pp in range(pft_nbr_particles):
+            for pp in range(particle_count):
                 for ss in range(pft_nbr_steps):
                     for j in range(3):
                         particle_paths[1, pp, ss,
@@ -431,13 +431,12 @@ cdef _pft(np.float_t[:,:]  streamline,
             # sample N new particle
             cumsum(& particle_weights[1, 0],
                    & particle_weights[1, 0],
-                   pft_nbr_particles)
-            #the cdf is stored in particle_weights[1, :]
-            for pp in range(pft_nbr_particles):
-                rdm_sample = random() * particle_weights[1, pft_nbr_particles - 1]
+                   particle_count)
+            for pp in range(particle_count):
+                rdm_sample = random() * particle_weights[1, particle_count - 1]
                 p_source = where_to_insert(& particle_weights[1, 0],
                                            rdm_sample,
-                                           pft_nbr_particles)
+                                           particle_count)
                 for ss in range(pft_nbr_steps):
                     for j in range(3):
                         particle_paths[0, pp, ss,
@@ -446,21 +445,15 @@ cdef _pft(np.float_t[:,:]  streamline,
                                       j] = particle_dirs[1, p_source, ss, j]
                 particle_states[0, pp, 0] = particle_states[1, p_source, 0]
                 particle_states[0, pp, 1] = particle_states[1, p_source, 1]
-                particle_weights[0, pp] = 1. / pft_nbr_particles
+                particle_weights[0, pp] = 1. / particle_count
 
     # update the streamline with the trajectory of one particle
-    ###
     cumsum(& particle_weights[0, 0],
            & particle_weights[0, 0],
-           pft_nbr_particles)
-    #the cdf is stored in particle_weights[0, :]
-    rdm_sample = random() * particle_weights[0, pft_nbr_particles - 1]
-    p = where_to_insert(& particle_weights[0, 0], rdm_sample, pft_nbr_particles)
+           particle_count)
+    rdm_sample = random() * particle_weights[0, particle_count - 1]
+    p = where_to_insert(& particle_weights[0, 0], rdm_sample, particle_count)
 
-
-###
-    #p = particle_weights[0, :].cumsum().searchsorted(
-    #    np.random.random(), 'right')
     for s in range(particle_states[0, p, 1]):
         for j in range(3):
             streamline[streamline_i + s, j] = particle_paths[0, p, s, j]

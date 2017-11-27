@@ -145,7 +145,7 @@ class ParticleFilteringTracking(LocalTracking):
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
-                 pft_max_trial=20, pft_nbr_particles=15, return_all=True):
+                 pft_max_trial=20, particle_count=15, return_all=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -185,7 +185,7 @@ class ParticleFilteringTracking(LocalTracking):
         pft_pft_max_trial : int
             Maximum number of trial for the particle filtering tractography
             (Prevents infinit loops).
-        pft_nbr_particles : int
+        particle_count : int
             Number of particles to use in the particle filter.
         return_all : bool
             If true, return all generated streamlines, otherwise only
@@ -206,16 +206,16 @@ class ParticleFilteringTracking(LocalTracking):
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
 
         self.pft_max_trial = pft_max_trial
-        self.pft_nbr_particles = pft_nbr_particles
-        self.particle_paths = np.empty((2, self.pft_nbr_particles,
+        self.particle_count = particle_count
+        self.particle_paths = np.empty((2, self.particle_count,
                                         self.pft_max_steps + 1, 3),
                                        dtype=float)
-        self.particle_weights = np.empty((2, self.pft_nbr_particles),
+        self.particle_weights = np.empty((2, self.particle_count),
                                          dtype=float)
-        self.particle_dirs = np.empty((2, self.pft_nbr_particles,
+        self.particle_dirs = np.empty((2, self.particle_count,
                                        self.pft_max_steps + 1, 3),
                                       dtype=float)
-        self.particle_states = np.empty((2, self.pft_nbr_particles, 2),
+        self.particle_states = np.empty((2, self.particle_count, 2),
                                         dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
@@ -239,7 +239,7 @@ class ParticleFilteringTracking(LocalTracking):
                            self.pft_nbr_back_steps,
                            self.pft_max_steps,
                            self.pft_max_trial,
-                           self.pft_nbr_particles,
+                           self.particle_count,
                            self.particle_paths,
                            self.particle_dirs,
                            self.particle_weights,
