@@ -95,7 +95,7 @@ pft_streamlines = ParticleFilteringTracking(dg,
                                             maxlen=1000,
                                             pft_back_tracking_dist=2,
                                             pft_front_tracking_dist=1,
-                                            pft_nbr_particles=15,
+                                            particle_count=15,
                                             return_all=False)
 streamlines = [s for s in pft_streamlines]
 save_trk("pft_streamline.trk", streamlines, affine, shape)
