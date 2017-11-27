@@ -23,13 +23,7 @@ from dipy.workflows.workflow import Workflow
 
 from dipy.reconst import mapmri
 
-
-# import matplotlib
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 class ReconstMAPMRIFlow(Workflow):
-    # Make Laplacian, Positivity, Both into seperate objects and move to a superclass
     @classmethod
     def get_short_name(cls):
         return 'mapmri'
@@ -332,7 +326,6 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
         super(ReconstMAPMRIFlow, self). \
             run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
                 out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
-
 
 class ReconstDtiFlow(Workflow):
     @classmethod

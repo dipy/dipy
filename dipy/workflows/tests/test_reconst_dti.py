@@ -78,7 +78,6 @@ def reconst_mmri_core(flow, model_type, prefix):
         rtpp_data = nib.load(rtpp).get_data()
         assert_true(rtpp_data.shape == volume.shape[:-1])
 
-
 def reconst_flow_core(flow, extra_args=[]):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_data('small_25')
