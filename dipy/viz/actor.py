@@ -36,7 +36,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         If None then the values will be interpolated from (data.min(),
         data.max()) to (0, 255). Otherwise from (value_range[0],
         value_range[1]) to (0, 255).
-    opacity : float
+    opacity : float, optional
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
         If None (default) then a grayscale map is created.
@@ -133,14 +133,6 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    if nb_components == 1:
-        if lookup_colormap is None:
-            # Create a black/white lookup table.
-            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
-        else:
-            lut = lookup_colormap
-
-    x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     class ImageActor(vtk.vtkImageActor):
@@ -195,6 +187,11 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     image_actor = ImageActor()
     if nb_components == 1:
+        lut = lookup_colormap
+        if lookup_colormap is None:
+            # Create a black/white lookup table.
+            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+
         plane_colors = vtk.vtkImageMapToColors()
         plane_colors.SetLookupTable(lut)
         plane_colors.SetInputConnection(image_resliced.GetOutputPort())
@@ -362,7 +359,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
     linewidth : float
         Default is 0.01.
     tube_sides : int
@@ -506,7 +503,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float, optional
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
 
     linewidth : float, optional
         Line thickness. Default is 1.
@@ -616,8 +613,8 @@ def scalar_bar(lookup_table=None, title=" "):
 
 
 def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
-    ''' Internal function for generating arrow actors.
-    '''
+    """ Internal function for generating arrow actors.
+    """
     arrow = vtk.vtkArrowSource()
     # arrow.SetTipLength(length)
 
@@ -653,6 +650,8 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
         y-axis color. Default green (0, 1, 0).
     colorz : tuple (3,)
         z-axis color. Default blue (0, 0, 1).
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
 
     Returns
     -------
@@ -696,7 +695,7 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     radial_scale : bool
         Scale sphere points according to odf values.
     opacity : float
-        Takes values from 0 (fully transparent) to 1 (opaque)
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
     colormap : None or str
         If None then white color is used. Otherwise the name of colormap is
         given. Matplotlib colormaps are supported (e.g., 'inferno').
@@ -878,7 +877,7 @@ def _makeNd(array, ndim):
 
 
 def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
-                colors=(1, 0, 0), opacity=1, linewidth=1,
+                colors=(1, 0, 0), opacity=1., linewidth=1,
                 lod=False, lod_points=10 ** 4, lod_points_size=3):
     """ Visualize peak directions as given from ``peaks_from_model``
 
@@ -890,13 +889,16 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
     peaks_values : ndarray
         Peak values. The shape of the array can be (M, ) or (X, M) or
         (X, Y, M) or (X, Y, Z, M)
-
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
     colors : tuple or None
         Default red color. If None then every peak gets an orientation color
         in similarity to a DEC map.
 
     opacity : float, optional
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque)
 
     linewidth : float, optional
         Line thickness. Default is 1.
@@ -997,7 +999,8 @@ def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     ----------
     points : ndarray, (N, 3)
     color : tuple (3,)
-    opacity : float
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque)
     dot_size : int
 
     Returns
@@ -1051,7 +1054,7 @@ def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     return aPolyVertexActor
 
 
-def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
+def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     """ Visualize points as sphere glyphs
 
     Parameters
@@ -1061,6 +1064,8 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
     point_radius : float
     theta : int
     phi : int
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque)
 
     Returns
     -------
