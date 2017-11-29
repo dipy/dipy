@@ -459,14 +459,5 @@ cdef _pft(np.float_t[:,:]  streamline,
             streamline[streamline_i + s, j] = particle_paths[0, p, s, j]
             directions[streamline_i + s, j] = particle_dirs[0, p, s, j]
 
-    ###TODO fix this
-    if particle_states[0, p, 0] == -1:
-        tissue_class[0] = OUTSIDEIMAGE
-    elif particle_states[0, p, 0] == 0:
-        tissue_class[0] = INVALIDPOINT
-    elif particle_states[0, p, 0] == 1:
-        tissue_class[0] = TRACKPOINT
-    else:
-        tissue_class[0] = ENDPOINT
-    #tissue_class[0] = TissueClass(particle_states[0, p, 0])
+    tissue_class[0] = <TissueClass>particle_states[0, p, 0]
     return streamline_i + particle_states[0, p, 1] - 1
