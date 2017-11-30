@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import numpy as np
 
 from os.path import join as pjoin
 import numpy.testing as npt
@@ -260,22 +261,26 @@ def test_text_block_2d():
 @xvfb_it
 def test_text_block_2d_part2():
     window_size = (700, 700)
-    show_manager = window.ShowManager(size=window_size, title="Test TextBlock")
+    show_manager = window.ShowManager(size=window_size)
 
     # To help visualize the text positions.
     lines = []
     grid_size = (500, 500)
     bottom, middle, top = 50, 300, 550
     left, center, right = 50, 300, 550
-    grid_top = ui.Rectangle2D(center=(center, top), size=(grid_size[0], 1), color=(1, 1, 1))
-    grid_bottom = ui.Rectangle2D(center=(center, bottom), size=(grid_size[0], 1), color=(1, 1, 1))
-    grid_left = ui.Rectangle2D(center=(left, middle), size=(1, grid_size[1]), color=(1, 1, 1))
-    grid_right = ui.Rectangle2D(center=(right, middle), size=(1, grid_size[1]), color=(1, 1, 1))
-    grid_middle = ui.Rectangle2D(center=(center, middle), size=(grid_size[0], 1), color=(1, 1, 1))
-    grid_center = ui.Rectangle2D(center=(center, middle), size=(1, grid_size[1]), color=(1, 1, 1))
+    line_color = (1, 0, 0)
 
-    grid_lines = [grid_top, grid_bottom, grid_left, grid_right, grid_middle, grid_center]
-    show_manager.ren.add(*grid_lines)
+    grid_top = (center, top), (grid_size[0], 1)
+    grid_bottom = (center, bottom), (grid_size[0], 1)
+    grid_left = (left, middle), (1, grid_size[1])
+    grid_right = (right, middle), (1, grid_size[1])
+    grid_middle = (center, middle), (grid_size[0], 1)
+    grid_center = (center, middle), (1, grid_size[1])
+    grid_specs = [grid_top, grid_bottom, grid_left, grid_right,
+                  grid_middle, grid_center]
+    for spec in grid_specs:
+        line = ui.Rectangle2D(center=spec[0], size=spec[1], color=line_color)
+        show_manager.ren.add(line)
 
     font_size = 60
     bg_color = (1, 1, 1)
@@ -334,12 +339,9 @@ def test_text_block_2d_part2():
     show_manager.start()
 
     arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
-    report = window.analyze_snapshot(arr, find_objects=True)
-    from ipdb import set_trace as dbg
-    dbg()
-
-    # show_m = window.ShowManager(ren)
-    # show_m.start()
+    if vtk.vtkVersion.GetVTKMajorVersion() >= 6:
+        expected = np.load(pjoin(DATA_DIR, "test_ui_text_block.npz"))
+        npt.assert_array_equal(arr, expected["arr_0"])
 
 
 @npt.dec.skipif(not have_vtk or skip_it)

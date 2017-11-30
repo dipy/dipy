@@ -14,7 +14,7 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    version = vtk.vtkVersion.GetVTKVersion()
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
     vtkTextActor = vtk.vtkTextActor
 else:
@@ -1079,7 +1079,7 @@ class TextBlock2D(UI):
             Otherwise, background color in RGB.
 
         """
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             if self._background is None:
                 return None
 
@@ -1104,13 +1104,13 @@ class TextBlock2D(UI):
 
         if color is None:
             # Remove background.
-            if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
                 self._background = None
             else:
                 self.actor.GetTextProperty().SetBackgroundOpacity(0.)
 
         else:
-            if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+            if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
                 self._background = vtk.vtkActor2D()
                 self._background.GetProperty().SetColor(*color)
                 self._background.GetProperty().SetOpacity(1)
@@ -1274,7 +1274,7 @@ class TextBox2D(UI):
         text_block.bold = bold
         text_block.italic = italic
         text_block.shadow = shadow
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             pass
         else:
             text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
@@ -2487,7 +2487,7 @@ class FileSelectMenuText2D(UI):
         text_actor.shadow = shadow
         text_actor.color = color
 
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             pass
         else:
             text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
@@ -2523,7 +2523,7 @@ class FileSelectMenuText2D(UI):
         self.file_type = file_type
         self.text_actor.message = file_name
 
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
             if file_type != "file":
                 self.text_actor.get_actor().GetTextProperty().SetBold(True)
@@ -2540,7 +2540,7 @@ class FileSelectMenuText2D(UI):
         """ Changes the background color of the actor.
 
         """
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
         else:
             self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
