@@ -207,8 +207,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     return image_actor
 
 
-def surface_actor(data, affine=None,
-                  color=np.array([1, 0, 0]), opacity=1):
+def contour_from_roi(data, affine=None,
+                     color=np.array([1, 0, 0]), opacity=1):
     """Generates surface actor from a binary ROI.
 
     The color and opacity of the surface can be customized.
@@ -297,8 +297,6 @@ def surface_actor(data, affine=None,
 
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
-
-    # code from fvtk contour function
 
     skin_extractor = vtk.vtkContourFilter()
     if major_version <= 5:
