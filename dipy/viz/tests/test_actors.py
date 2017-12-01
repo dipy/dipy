@@ -168,9 +168,9 @@ def test_contour_from_roi():
     data[20:30, 25, 25] = 1.
     data[25, 20:30, 25] = 1.
     affine = np.eye(4)
-    surface = actor.surface_actor(data, affine,
-                                  color=np.array([1, 0, 1]),
-                                  opacity=.5)
+    surface = actor.contour_from_roi(data, affine,
+                                     color=np.array([1, 0, 1]),
+                                     opacity=.5)
     renderer.add(surface)
 
     renderer.reset_camera()
@@ -183,9 +183,9 @@ def test_contour_from_roi():
     data2[20:30, 25, 25] = 1.
     data2[35:40, 25, 25] = 1.
     affine = np.eye(4)
-    surface2 = actor.surface_actor(data2, affine,
-                                   color=np.array([0, 1, 1]),
-                                   opacity=.5)
+    surface2 = actor.contour_from_roi(data2, affine,
+                                      color=np.array([0, 1, 1]),
+                                      opacity=.5)
     renderer2.add(surface2)
 
     renderer2.reset_camera()
@@ -239,7 +239,7 @@ def test_contour_from_roi():
 
     # Prepare the display objects.
     streamlines_actor = actor.line(streamlines, line_colors(streamlines))
-    seedroi_actor = actor.surface_actor(seed_mask, affine, [0, 1, 1], 0.5)
+    seedroi_actor = actor.contour_from_roi(seed_mask, affine, [0, 1, 1], 0.5)
 
     # Create the 3d display.
     r = window.ren()
