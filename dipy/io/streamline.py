@@ -4,22 +4,22 @@ from nibabel.orientations import aff2axcodes
 
 
 def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None):
-    """ function Helper for saving trk files.
+    """ Saves tractogram files (*.trk)
 
     Parameters
     ----------
     fname : str
         output trk filename
-    streamlines : list of 2D arrays
+    streamlines : list of 2D arrays or generator
         Each 2D array represents a sequence of 3D points (points, 3).
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
-    vox_size : array_like (3,)
-        The sizes of the voxels in the reference image.
-    shape : array, shape (dim,)
-        The shape of the reference image.
-    header : dict
-        header from a trk file
+    vox_size : array_like (3,), optional
+        The sizes of the voxels in the reference image (default: None)
+    shape : array, shape (dim,), optional
+        The shape of the reference image (default: None)
+    header : dict, optional
+        Metadata associated to the tractogram file(*.trk). (default: None)
 
     """
     if vox_size and shape:
@@ -37,7 +37,7 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
 
 
 def load_trk(filename):
-    """ function Helper for Loading trk files.
+    """ Loads tractogram files(*.trk)
 
     Parameters
     ----------

@@ -104,7 +104,7 @@ interactive = False
 # Initialization of LocalTracking. The computation happens in the next step.
 streamlines_generator = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
 
-# Compute streamlines and store as a list.
+# Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
 
 # Prepare the display objects.
@@ -196,7 +196,7 @@ callosum.
 streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                             step_size=.5, max_cross=1)
 
-# Compute streamlines and store as a list.
+# Generate streamlines object.
 streamlines = Streamlines(streamlines_generator)
 
 if window.have_vtk:
