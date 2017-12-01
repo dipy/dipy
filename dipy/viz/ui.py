@@ -721,11 +721,20 @@ class TextBlock2D(UI):
         Makes text italicised.
     shadow : bool
         Adds text shadow.
+    background_color: (float, float, float)
+        RGB: Values must be between 0-1.
+    background_opacity: float
+        Must be between 0-1, with 0 being fully transparent and 1 being fully
+        opaque.
+    line_spacing: float
+        Spacing between lines, expressed as a text height multiplication
+        factor.
     """
 
     def __init__(self, text="Text Block", font_size=18, font_family='Arial',
                  justification='left', bold=False, italic=False, shadow=False,
-                 color=(1, 1, 1), position=(0, 0)):
+                 color=(1, 1, 1), position=(0, 0), background_color=(0, 0, 0),
+                 background_opacity=0.0, line_spacing=1.0):
         """
         Parameters
         ----------
@@ -747,6 +756,14 @@ class TextBlock2D(UI):
             Makes text italicised.
         shadow : bool
             Adds text shadow.
+        background_color: (float, float, float)
+            RGB: Values must be between 0-1.
+        background_opacity: float
+            Must be between 0-1, where 0 is completely transparent and 1 is
+            completely opaque.
+        line_spacing: float
+            Spacing between lines, expressed as a text height multiplication
+            factor.
         """
         super(TextBlock2D, self).__init__()
         self.actor = vtkTextActor()
@@ -759,6 +776,9 @@ class TextBlock2D(UI):
         self.shadow = shadow
         self.color = color
         self.position = position
+        self.background_color = background_color
+        self.background_opacity = background_opacity
+        self.line_spacing = line_spacing
 
     def get_actor(self):
         """ Returns the actor composing this element.
@@ -884,7 +904,7 @@ class TextBlock2D(UI):
         elif justification == 'right':
             text_property.SetJustificationToRight()
         else:
-            raise ValueError("Text can only be justified left, right and center.")
+            raise ValueError("Text can only be justified left, right, and center.")
 
     @property
     def bold(self):
@@ -1016,6 +1036,78 @@ class TextBlock2D(UI):
         """
         self.position = position
 
+    @property
+    def background_color(self):
+        """ Gets background color.
+
+        Returns
+        -------
+        (float, float, float)
+            Returns background color in RGB.
+
+        """
+        return self.actor.GetTextProperty().GetBackgroundColor()
+
+    @background_color.setter
+    def background_color(self, background_color=(1, 0, 0)):
+        """ Set text color.
+
+        Parameters
+        ----------
+        background_color : (float, float, float)
+            RGB: Values must be between 0-1.
+
+        """
+        self.actor.GetTextProperty().SetBackgroundColor(*background_color)
+
+    @property
+    def background_opacity(self):
+        """ Gets background opacity.
+
+        Returns
+        ----------
+        float
+            Background opacity.
+
+        """
+        return self.actor.GetTextProperty().GetBackgroundOpacity()
+
+    @background_opacity.setter
+    def background_opacity(self, opacity):
+        """ Sets background opacity.
+
+        Parameters
+        ----------
+        opacity : float
+            Background opacity.
+
+        """
+        self.actor.GetTextProperty().SetBackgroundOpacity(opacity)
+
+    @property
+    def line_spacing(self):
+        """ Gets line spacing.
+
+        Returns
+        ----------
+        float
+            Line spacing, expresssed as a text height multiplier.
+
+        """
+        return self.actor.GetTextProperty().GetLineSpacing()
+
+    @line_spacing.setter
+    def line_spacing(self, line_spacing):
+        """ Sets line spacing.
+
+        Parameters
+        ----------
+        line_spacing : float
+            Line spacing, expressed as a text height multiplier.
+
+        """
+        self.actor.GetTextProperty().SetLineSpacing(line_spacing)
+
 
 class TextBox2D(UI):
     """ An editable 2D text box that behaves as a UI component.
@@ -1048,8 +1140,8 @@ class TextBox2D(UI):
     """
     def __init__(self, width, height, text="Enter Text", position=(100, 10),
                  color=(0, 0, 0), font_size=18, font_family='Arial',
-                 justification='left', bold=False,
-                 italic=False, shadow=False):
+                 justification='left', bold=False, italic=False, shadow=False,
+                 background_color=(1, 1, 1), background_opacity=1.0):
         """
         Parameters
         ----------
@@ -1075,18 +1167,19 @@ class TextBox2D(UI):
             Makes text italicised.
         shadow : bool
             Adds text shadow.
+        background_color: (float, float, float)
+            RGB: Values must be between 0-1.
+        background_opacity: float
+            Value must be between 0-1, where 0 is completely transparent and 1
+            is completely opaque.
 
         """
         super(TextBox2D, self).__init__()
         self.text = text
         self.actor = TextBlock2D(self.text, font_size, font_family,
                                  justification, bold, italic, shadow, color,
-                                 position)
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
-        else:
-            self.actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            self.actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+                                 position, background_color,
+                                 background_opacity)
 
         self.width = width
         self.height = height
@@ -2255,13 +2348,9 @@ class FileSelectMenuText2D(UI):
         self.file_select = file_select
 
         self.text_actor = TextBlock2D(position=position, font_size=font_size,
-                                      color=(0, 0, 0))
-        self.text_actor.actor.GetTextProperty().SetLineSpacing(1)
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
-        else:
-            self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            self.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
+                                      color=(0, 0, 0), line_spacing=1.0,
+                                      background_color=(1, 1, 1),
+                                      background_opacity=1.0)
 
         self.handle_events(self.text_actor.get_actor())
 
