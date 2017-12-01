@@ -1,6 +1,6 @@
 """
 ==================================
-Visualization of 3D Surface Rendered ROI with Streamlines
+Visualization of ROI Surface Rendered with Streamlines
 ==================================
 
 Here is a simple tutorial following the probabilistic CSA Tracking Example in
@@ -65,8 +65,8 @@ a decimal between zero and one. Here, we set the color as blue/green with
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 
-seedroi_actor = actor.surface_actor(seed_mask, affine,
-                                    surface_color, surface_opacity)
+seedroi_actor = actor.contour_from_roi(seed_mask, affine,
+                                       surface_color, surface_opacity)
 
 """
 Next, we initialize a ''Renderer'' object and add both actors
@@ -87,11 +87,11 @@ interactive window.
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='surface_actor_tutorial.png', size=(1200, 900),
+window.record(ren, out_path='contour_from_roi_tutorial.png', size=(1200, 900),
               reset_camera=False)
 
 """
-.. figure:: surface_actor_tutorial.png
+.. figure:: contour_from_roi_tutorial.png
    :align: center
 
    **A top view of corpus callosum streamlines with the blue transparent

@@ -160,7 +160,7 @@ def test_slicer():
 
 @npt.dec.skipif(not run_test)
 @xvfb_it
-def test_surface():
+def test_contour_from_roi():
 
     # Render volume
     renderer = window.renderer()
