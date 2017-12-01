@@ -145,6 +145,7 @@
 .. _powershell: http://www.microsoft.com/powershell
 .. _msysgit: http://code.google.com/p/msysgit
 .. _putty: http://www.chiark.greenend.org.uk/~sgtatham/putty
+.. _visualstudiobuildtools: http://landinghub.visualstudio.com/visual-cpp-build-tools
 
 .. Functional imaging labs
 .. _`functional imaging laboratory`: http://www.fil.ion.ucl.ac.uk

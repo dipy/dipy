@@ -11,7 +11,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 target_line_based, _rmi, unique_rows, near_roi,
+                                 target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
                                  get_flexi_tvis_affine, _min_at)
 
@@ -449,34 +449,6 @@ def test_streamline_mapping():
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
     assert_equal(mapping, expected)
-
-
-def test_rmi():
-    I1 = _rmi([3, 4], [10, 10])
-    assert_equal(I1, 34)
-    I1 = _rmi([0, 0], [10, 10])
-    assert_equal(I1, 0)
-    assert_raises(ValueError, _rmi, [10, 0], [10, 10])
-
-    try:
-        from numpy import ravel_multi_index
-    except ImportError:
-        raise nose.SkipTest()
-
-    # Dtype of random integers is system dependent
-    A, B, C, D = np.random.randint(0, 1000, size=[4, 100])
-    I1 = _rmi([A, B], dims=[1000, 1000])
-    I2 = ravel_multi_index([A, B], dims=[1000, 1000])
-    assert_array_equal(I1, I2)
-    I1 = _rmi([A, B, C, D], dims=[1000] * 4)
-    I2 = ravel_multi_index([A, B, C, D], dims=[1000] * 4)
-    assert_array_equal(I1, I2)
-    # Check for overflow with small int types
-    indices = np.random.randint(0, 255, size=(2, 100))
-    dims = (1000, 1000)
-    I1 = _rmi(indices, dims=dims)
-    I2 = ravel_multi_index(indices, dims=dims)
-    assert_array_equal(I1, I2)
 
 
 def test_affine_for_trackvis():

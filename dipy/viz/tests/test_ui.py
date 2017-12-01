@@ -56,7 +56,7 @@ class EventCounter(object):
 
     def save(self, filename):
         with open(filename, 'wb') as f:
-            pickle.dump(self.events_counts, f, protocol=-1)
+            pickle.dump(self.events_counts, f, protocol=2)
 
     @classmethod
     def load(cls, filename):
@@ -308,6 +308,13 @@ def test_ui_disk_slider_2d(recording=False):
     show_manager.ren.add(disk_slider_2d_test)
 
     if recording:
+        # Record the following events
+        # 1. Left Click on the disk and hold it
+        # 2. Move to the left the disk and make 1.5 tour
+        # 3. Release the disk
+        # 4. Left Click on the disk and hold it
+        # 5. Move to the right the disk and make 1 tour
+        # 6. Release the disk
         show_manager.record_events_to_file(recording_filename)
         print(list(event_counter.events_counts.items()))
         event_counter.save(expected_events_counts_filename)

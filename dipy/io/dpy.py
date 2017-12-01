@@ -11,7 +11,7 @@
 import numpy as np
 import h5py
 
-from dipy.tracking.streamline import Streamlines
+from nibabel.streamlines import ArraySequence as Streamlines
 
 # Make sure not to carry across setup module from * import
 __all__ = ['Dpy']

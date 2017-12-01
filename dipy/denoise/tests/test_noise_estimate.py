@@ -10,7 +10,6 @@ from dipy.denoise.noise_estimate import _piesno_3D
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 import dipy.data as dpd
 import dipy.core.gradients as dpg
-import dipy.sims.voxel as vox
 
 
 def test_inv_nchi():
@@ -77,6 +76,16 @@ def test_piesno():
     sigma = _piesno_3D(1000*np.ones_like(rician_noise), N=1, alpha=0.01, l=1,
                        eps=1e-10, return_mask=False, initial_estimation=10)
     assert_(np.all(sigma == 10))
+
+
+def test_piesno_type():
+    # This is testing if the `sum_m2` cast is overflowing
+    data = np.ones((10, 10, 10), dtype=np.int16)
+    for i in range(10):
+        data[:, i, :] = i * 26
+
+    sigma = piesno(data, N=2, alpha=0.01, l=1, eps=1e-10, return_mask=False)
+    assert_almost_equal(sigma, 79.970003117424739)
 
 
 def test_estimate_sigma():
