@@ -6,7 +6,8 @@ from dipy.core.geometry import cart2sphere
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 from dipy.data import default_sphere
-from dipy.direction.closest_peak import BaseDirectionGetter
+from dipy.direction.closest_peak_direction_getter import (closest_peak,
+                                                          BaseDirectionGetter)
 
 
 DEFAULT_SH = 4
@@ -43,7 +44,7 @@ class BootOdfGen(object):
         self.H = H
         self.R = R
 
-    def get_pmf(self, point):
+    def get_pmf_boot(self, point):
         """Produces an ODF from a SH bootstrap sample"""
         single_vox_data = trilinear_interpolate4d(self.data, point)
 
@@ -55,7 +56,7 @@ class BootOdfGen(object):
         pmf = fit.odf(self.sphere)
         return pmf
 
-    def pmf_no_boot(self, point):
+    def get_pmf(self, point):
         data = trilinear_interpolate4d(self.data, point)
         fit = self.model.fit(data)
         return fit.odf(self.sphere)
@@ -102,31 +103,19 @@ class BootDirectionGetter(BaseDirectionGetter):
         boot_gen = BootOdfGen(data, model, sphere, sh_order=sh_order)
         return cls(boot_gen, max_angle, sphere, max_attempts, **kwargs)
 
-    def initial_direction(self, point):
-        """Returns best directions at seed location to start tracking.
-
-        Parameters
-        ----------
-        point : ndarray, shape (3,)
-            The point in an image at which to lookup tracking directions.
-
-        Returns
-        -------
-        directions : ndarray, shape (N, 3)
-            Possible tracking directions from point. ``N`` may be 0, all
-            directions should be unique.
-
-        """
-        odf = self.pmf_gen.pmf_no_boot(point)
-        return self._get_peak_directions(odf)
-
     def get_direction(self, point, direction):
         """Attempt direction getting on a few bootstrap samples.
         """
         count = 0
         no_valid_direction = True
-        super_get_direction = super(BootDirectionGetter, self).get_direction
-        while no_valid_direction and count < self.max_attempts:
+        while count < self.max_attempts:
             count += 1
-            no_valid_direction = super_get_direction(point, direction)
-        return no_valid_direction
+            pmf = self.pmf_gen.get_pmf_boot(point)
+            pmf.clip(min=self.pmf_threshold, out=pmf)
+            peaks = self._get_peak_directions(pmf)
+            if len(peaks) > 0:
+                new_dir = closest_peak(peaks, direction, self.cos_similarity)
+                if new_dir is not None:
+                    direction[:] = new_dir
+                    return 0
+        return 1

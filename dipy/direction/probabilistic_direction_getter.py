@@ -2,7 +2,7 @@
 Implementation of a probabilistic direction getter based on sampling from
 discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
-from dipy.direction.closest_peak import ClosestPeakDirectionGetter
+from dipy.direction.closest_peak_direction_getter import PmfGenDirectionGetter
 
 
 def _asarray(cython_memview):
@@ -12,7 +12,7 @@ def _asarray(cython_memview):
     return np.fromiter(cython_memview, float)
 
 
-class ProbabilisticDirectionGetter(ClosestPeakDirectionGetter):
+class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
     function (pmf).
 
@@ -52,8 +52,8 @@ class ProbabilisticDirectionGetter(ClosestPeakDirectionGetter):
         dipy.direction.peaks.peak_directions
 
         """
-        ClosestPeakDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                            pmf_threshold, **kwargs)
+        PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                    pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
         self._set_adjacency_matrix(sphere, self.cos_similarity)
