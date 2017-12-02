@@ -107,7 +107,6 @@ class BootDirectionGetter(BaseDirectionGetter):
         """Attempt direction getting on a few bootstrap samples.
         """
         count = 0
-        no_valid_direction = True
         while count < self.max_attempts:
             count += 1
             pmf = self.pmf_gen.get_pmf_boot(point)
