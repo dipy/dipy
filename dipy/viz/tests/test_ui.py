@@ -108,6 +108,40 @@ def test_wrong_interactor_style():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_rectangle_2d():
+    window_size = (700, 700)
+    show_manager = window.ShowManager(size=window_size)
+
+    rect = ui.Rectangle2D(size=(100, 50))
+    rect.set_position((50, 80))
+    npt.assert_equal(rect.position, (50, 80))
+
+    rect.color = (1, 0.5, 0)
+    npt.assert_equal(rect.color, (1, 0.5, 0))
+
+    rect.opacity = 0.5
+    npt.assert_equal(rect.opacity, 0.5)
+
+    # Check the rectangle is drawn at right place.
+    show_manager.ren.add(rect)
+    # Uncomment this to start the visualisation
+    # show_manager.start()
+
+    colors = [rect.color]
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr, colors=colors)
+    assert report.objects == 1
+    assert report.colors_found
+
+    # Test visibility off.
+    rect.set_visibility(False)
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr)
+    assert report.objects == 0
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_button_panel(recording=False):
     filename = "test_ui_button_panel"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -226,40 +260,39 @@ def test_ui_textbox(recording=False):
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_text_block_2d():
-    # TextBlock2D
     text_block = ui.TextBlock2D()
-    text_block.message = "Hello World!"
-    npt.assert_equal("Hello World!", text_block.message)
-    text_block.font_size = 18
-    npt.assert_equal("18", str(text_block.font_size))
-    text_block.font_family = "Arial"
-    npt.assert_equal("Arial", text_block.font_family)
+
+    def _check_property(obj, attr, values):
+        for value in values:
+            setattr(obj, attr, value)
+            npt.assert_equal(getattr(obj, attr), value)
+
+    _check_property(text_block, "bold", [True, False])
+    _check_property(text_block, "italic", [True, False])
+    _check_property(text_block, "shadow", [True, False])
+    _check_property(text_block, "font_size", range(100))
+    _check_property(text_block, "message", ["", "Hello World", "Line\nBreak"])
+    _check_property(text_block, "justification", ["left", "center", "right"])
+    _check_property(text_block, "position", [(350, 350), (0.5, 0.5)])
+    _check_property(text_block, "color", [(0., 0.5, 1.)])
+    _check_property(text_block, "background_color", [(0., 0.5, 1.), None])
+    _check_property(text_block, "vertical_justification",
+                        ["top", "middle", "bottom"])
+    _check_property(text_block, "font_family", ["Arial", "Courier"])
+
     with npt.assert_raises(ValueError):
         text_block.font_family = "Verdana"
-    text_block.justification = "left"
-    text_block.justification = "right"
-    text_block.justification = "center"
-    npt.assert_equal("Centered", text_block.justification)
+
     with npt.assert_raises(ValueError):
         text_block.justification = "bottom"
-    text_block.bold = True
-    text_block.bold = False
-    npt.assert_equal(False, text_block.bold)
-    text_block.italic = True
-    text_block.italic = False
-    npt.assert_equal(False, text_block.italic)
-    text_block.shadow = True
-    text_block.shadow = False
-    npt.assert_equal(False, text_block.shadow)
-    text_block.color = (1, 0, 0)
-    npt.assert_equal((1, 0, 0), text_block.color)
-    text_block.position = (2, 3)
-    npt.assert_equal((2, 3), text_block.position)
+
+    with npt.assert_raises(ValueError):
+        text_block.vertical_justification = "left"
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_text_block_2d_part2():
+def test_text_block_2d_justification():
     window_size = (700, 700)
     show_manager = window.ShowManager(size=window_size)
 
@@ -336,10 +369,10 @@ def test_text_block_2d_part2():
     show_manager.ren.add(*texts)
 
     # Uncomment this to start the visualisation
-    show_manager.start()
+    # show_manager.start()
 
     arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
-    if vtk.vtkVersion.GetVTKMajorVersion() >= 6:
+    if vtk.vtkVersion.GetVTKVersion() == "6.0.0":
         expected = np.load(pjoin(DATA_DIR, "test_ui_text_block.npz"))
         npt.assert_array_equal(arr, expected["arr_0"])
 
