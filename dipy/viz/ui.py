@@ -16,9 +16,6 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 if have_vtk:
     version = vtk.vtkVersion.GetVTKVersion()
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
-    vtkTextActor = vtk.vtkTextActor
-else:
-    vtkTextActor = object
 
 TWO_PI = 2 * np.pi
 
@@ -573,6 +570,30 @@ class Rectangle2D(UI):
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
+    @property
+    def position(self):
+        """ Gets text actor position.
+
+        Returns
+        -------
+        (float, float)
+            The current actor position. (x, y) in pixels.
+
+        """
+        return self.actor.GetPosition()
+
+    @position.setter
+    def position(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            The new position. (x, y) in pixels.
+
+        """
+        self.actor.SetPosition(*position)
+
 
 class Panel2D(UI):
     """ A 2D UI Panel.
@@ -794,9 +815,9 @@ class TextBlock2D(UI):
             Adds text shadow.
         """
         super(TextBlock2D, self).__init__()
-        self.actor = vtkTextActor()
+        self.actor = vtk.vtkTextActor()
 
-        self._background = None  # For VTK <= 6.2
+        self._background = None  # For VTK < 7
         self.position = position
         self.color = color
         self.background_color = bg_color
@@ -917,7 +938,13 @@ class TextBlock2D(UI):
             Text justification.
 
         """
-        return self.actor.GetTextProperty().GetJustificationAsString()
+        justification = self.actor.GetTextProperty().GetJustificationAsString()
+        if justification == 'Left':
+            return "left"
+        elif justification == 'Centered':
+            return "center"
+        elif justification == 'Right':
+            return "right"
 
     @justification.setter
     def justification(self, justification):
@@ -949,7 +976,14 @@ class TextBlock2D(UI):
             Text vertical justification.
 
         """
-        return self.actor.GetTextProperty().GetVerticalJustificationAsString()
+        text_property = self.actor.GetTextProperty()
+        vjustification = text_property.GetVerticalJustificationAsString()
+        if vjustification == 'Bottom':
+            return "bottom"
+        elif vjustification == 'Centered':
+            return "middle"
+        elif vjustification == 'Top':
+            return "top"
 
     @vertical_justification.setter
     def vertical_justification(self, vertical_justification):
@@ -1079,7 +1113,7 @@ class TextBlock2D(UI):
             Otherwise, background color in RGB.
 
         """
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
+        if major_version < 7:
             if self._background is None:
                 return None
 
@@ -1104,13 +1138,13 @@ class TextBlock2D(UI):
 
         if color is None:
             # Remove background.
-            if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
+            if major_version < 7:
                 self._background = None
             else:
                 self.actor.GetTextProperty().SetBackgroundOpacity(0.)
 
         else:
-            if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
+            if major_version < 7:
                 self._background = vtk.vtkActor2D()
                 self._background.GetProperty().SetColor(*color)
                 self._background.GetProperty().SetOpacity(1)
@@ -1274,9 +1308,8 @@ class TextBox2D(UI):
         text_block.bold = bold
         text_block.italic = italic
         text_block.shadow = shadow
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            pass
-        else:
+
+        if major_version >= 7:
             text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
             text_block.actor.GetTextProperty().SetBackgroundOpacity(1.0)
             text_block.color = color
