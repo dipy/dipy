@@ -225,6 +225,7 @@ Visualization
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
 - :ref:`example_viz_surfaces`
+- :ref:`example_viz_roi_contour`
 - :ref:`example_viz_ui`
 
 ---------------
