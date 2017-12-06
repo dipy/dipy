@@ -32,338 +32,9 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, small_delta=0.0129, big_delta=0.0218
-            save_metrics = [], out_dir='', out_mapmri='MAPMRI_maps_regularization.png'):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates RTOP graphs saved in a .png format in input files provided by
-        `data_file` and saves the png file to an output directory specified by
-        `out_dir`.
-
-        Parameters
-        ----------
-        data_file : string
-            Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
-        data_bvals :
-            Path to the bval files.
-        small_delta :
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta :
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
-        save_metrics :
-            List of metrics to save.
-            Possible values: mmri
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
-        out_mapmri : string, optional
-            Name of the png file to be saved (default: MAPMRI_maps_regularization.png))
-        """
-        io_it = self.get_io_iterator()
-        for dwi, bval, bvec, mapname in io_it:
-
-            logging.info('Computing DTI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            bvals,bvecs = read_bvals_bvecs(bval, bvec)
-
-
-            gtab = gradient_table(bvals=bvals, bvecs=bvecs,
-                                small_delta=small_delta,
-                                big_delta=big_delta, b0_threshold=50)
-
-
-            data_small = data[60:85, 80:81, 60:85]
-
-            if not save_metrics:
-                save_metrics = ['mmri']
-
-            # print('data.shape (%d, %d, %d, %d)' % data.shape)
-
-            radial_order = 6
-            map_model_laplacian_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                        laplacian_regularization=True,
-                                                        laplacian_weighting=.2)
-
-            map_model_positivity_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                            laplacian_regularization=False,
-                                                            positivity_constraint=True)
-
-            map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                    laplacian_regularization=True,
-                                                    laplacian_weighting=.05,
-                                                    positivity_constraint=True)
-
-            mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
-            mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
-            mapfit_both_aniso = map_model_both_aniso.fit(data_small)
-
-            if 'mmri' in save_metrics:
-                # generating RTOP plots
-                fig = plt.figure(figsize=(10, 5))
-                ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
-                ax1.set_axis_off()
-                ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
-                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                                vmin=0, vmax=5e7)
-
-                ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
-                ax2.set_axis_off()
-                ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
-                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                                vmin=0, vmax=5e7)
-
-                ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
-                ax3.set_axis_off()
-                ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
-                                interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                                vmin=0, vmax=5e7)
-                divider = make_axes_locatable(ax3)
-                cax = divider.append_axes("right", size="5%", pad=0.05)
-                plt.colorbar(ind, cax=cax)
-
-                plt.savefig('MAPMRI_maps_regularization.png')
-
-            logging.info('MAPMRI saved in {0}'.
-                         format(os.path.dirname(mapname)))
-
-from dipy.reconst import mapmri
-# import matplotlib
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-class ReconstMAPMRIFlow(Workflow):
-    @classmethod
-    def get_short_name(cls):
-        return 'mapmri'
-
-    def run(self, data_file, data_bvecs, data_bvals, small_delta=0.0129, big_delta=0.0218,
-            model_type = [], save_metrics = [], out_dir='', out_lap_rtop = 'lap_rtop',
-            out_lap_lapnorm = 'lap_lapnorm', out_lap_msd = 'lap_msd',
-            out_lap_qiv = 'lap_qiv', out_lap_rtap = 'lap_rtap', out_lap_rtpp = 'lap_rtpp',
-            out_pos_rtop = 'pos_rtop', out_pos_lapnorm = 'pos_lapnorm', out_pos_msd = 'pos_msd',
-            out_pos_qiv = 'pos_qiv', out_pos_rtap = 'pos_rtap', out_pos_rtpp = 'pos_rtpp',
-            out_both_rtop = 'both_rtop', out_both_lapnorm = 'both_lapnorm', out_both_msd = 'both_msd',
-            out_both_qiv = 'both_qiv', out_both_rtap = 'both_rtap', out_both_rtpp = 'both_rtpp'):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates RTOP ??? saved in a ??? format in input files provided by
-        `data_file` and saves the png file to an output directory specified by
-        `out_dir`.
-
-        Parameters
-        ----------
-        data_file : string
-            Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
-        data_bvals :
-            Path to the bval files.
-        small_delta :
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta :
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
-        model_type:
-            Model type to fit.
-            Possible values: laplacian, positivity, both
-            (default: [] (all))
-        save_metrics :
-            List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
-        out_lap_rtop : string, optional
-            Name of the laplacian rtop to be saved (default 'lap_rtop')
-        out_lap_lapnorm : string, optional
-            Name of the laplacian norm of laplacian signal to be saved (default 'lap_lapnorm')
-        out_lap_msd : string, optional
-            Name of the laplacian msd to be saved (default 'lap_msd')
-        out_lap_qiv : string, optional
-            Name of the laplacian qiv to be saved (default 'lap_qiv')
-        out_lap_rtap : string, optional
-            Name of the laplacian rtap to be saved (default 'lap_rtap')
-        out_lap_rtpp : string, optional
-            Name of the laplacian rtpp to be saved (default 'lap_rtpp')
-        out_pos_rtop : string, optional
-            Name of the positivity rtop to be saved (default 'pos_rtop')
-        out_pos_lapnorm : string, optional
-            Name of the positivity norm of laplacian signal to be saved (default 'pos_lapnorm')
-        out_pos_msd : string, optional
-            Name of the positivity msd to be saved (default 'pos_msd')
-        out_pos_qiv : string, optional
-            Name of the positivity qiv to be saved (default 'pos_qiv')
-        out_pos_rtap : string, optional
-            Name of the positivity rtap to be saved (default 'pos_rtap')
-        out_pos_rtpp : string, optional
-            Name of the positivity rtpp to be saved (default 'pos_rtpp')
-        out_both_rtop : string, optional
-            Name of the both rtop to be saved (default 'both_rtop')
-        out_both_lapnorm : string, optional
-            Name of the both norm of laplacian signal to be saved (default 'both_lapnorm')
-        out_both_msd : string, optional
-            Name of the both msd to be saved (default 'both_msd')
-        out_both_qiv : string, optional
-            Name of the both qiv to be saved (default 'both_qiv')
-        out_both_rtap : string, optional
-            Name of the both rtap to be saved (default 'both_rtap')
-        out_both_rtpp : string, optional
-            Name of the both rtpp to be saved (default 'both_rtpp')
-        """
-        io_it = self.get_io_iterator()
-        for dwi, bval, bvec, mapname in io_it:
-
-            logging.info('Computing DTI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            bvals,bvecs = read_bvals_bvecs(bval, bvec)
-
-
-            gtab = gradient_table(bvals=bvals, bvecs=bvecs,
-                                small_delta=small_delta,
-                                big_delta=big_delta, b0_threshold=50)
-
-
-            data_small = data[60:85, 80:81, 60:85]
-
-            if not model_type:
-                model_type = ['laplacian', 'positivity', 'both']
-
-            if not save_metrics:
-                save_metrics = ['rtop', 'laplacian_signal', 'msd', 'qiv', 'rtap', 'rtpp']
-
-            # print('data.shape (%d, %d, %d, %d)' % data.shape)
-
-            radial_order = 6
-
-            # How do I save the rtop in a useful form? A picture? A numpy array?
-
-            if 'laplacian' in model_type:
-                map_model_laplacian_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                            laplacian_regularization=True,
-                                                            laplacian_weighting=.2)
-                mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
-
-                if 'rtop' in save_metrics:
-                    return mapfit_laplacian_aniso.rtop()
-
-                if 'laplacian_signal' in save_metrics:
-                    return mapfit_laplacian_aniso.norm_of_laplacian_signal()
-
-                if 'msd' in save_metrics:
-                    return mapfit_laplacian_aniso.msd()
-
-                if 'qiv' in save_metrics:
-                    return mapfit_laplacian_aniso.qiv()
-
-                if 'rtap' in save_metrics:
-                    return mapfit_laplacian_aniso.rtap()
-
-                if 'rtpp' in save_metrics:
-                    return mapfit_laplacian_aniso.rtop()
-
-            if 'positivity' in model_type:
-
-                map_model_positivity_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                                laplacian_regularization=False,
-                                                                positivity_constraint=True)
-                mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
-
-                if 'rtop' in save_metrics:
-                    return mapfit_positivity_aniso.rtop()
-
-                if 'laplacian_signal' in save_metrics:
-                    return mapfit_positivity_aniso.norm_of_laplacian_signal()
-
-                if 'msd' in save_metrics:
-                    return mapfit_positivity_aniso.msd()
-
-                if 'qiv' in save_metrics:
-                    return mapfit_positivity_aniso.qiv()
-
-                if 'rtap' in save_metrics:
-                    return mapfit_positivity_aniso.rtap()
-
-                if 'rtpp' in save_metrics:
-                    return mapfit_positivity_aniso.rtop()
-
-            if 'both' in model_type:
-                map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                        laplacian_regularization=True,
-                                                        laplacian_weighting=.05,
-                                                        positivity_constraint=True)
-                mapfit_both_aniso = map_model_both_aniso.fit(data_small)
-
-                if 'rtop' in save_metrics:
-                    return mapfit_both_aniso.rtop()
-
-                if 'laplacian_signal' in save_metrics:
-                    return mapfit_both_aniso.norm_of_laplacian_signal()
-
-                if 'msd' in save_metrics:
-                    return mapfit_both_aniso.msd()
-
-                if 'qiv' in save_metrics:
-                    return mapfit_both_aniso.qiv()
-
-                if 'rtap' in save_metrics:
-                    return mapfit_both_aniso.rtap()
-
-                if 'rtpp' in save_metrics:
-                    return mapfit_both_aniso.rtop()
-
-            logging.info('MAPMRI saved in {0}'.
-                    format(os.path.dirname(mapname)))
-
-            # if 'mmri' in save_metrics:
-            #     # generating RTOP plots
-            #     fig = plt.figure(figsize=(10, 5))
-            #     ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
-            #     ax1.set_axis_off()
-            #     ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
-            #                     interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-            #                     vmin=0, vmax=5e7)
-            #
-            #     ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
-            #     ax2.set_axis_off()
-            #     ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
-            #                     interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-            #                     vmin=0, vmax=5e7)
-            #
-            #     ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
-            #     ax3.set_axis_off()
-            #     ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
-            #                     interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-            #                     vmin=0, vmax=5e7)
-            #     divider = make_axes_locatable(ax3)
-            #     cax = divider.append_axes("right", size="5%", pad=0.05)
-            #     plt.colorbar(ind, cax=cax)
-            #
-            #     plt.savefig('MAPMRI_maps_regularization.png')
-            #
-            # logging.info('MAPMRI saved in {0}'.
-            #              format(os.path.dirname(mapname)))
-
-from dipy.reconst import mapmri
-
-
-# import matplotlib
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-class ReconstMAPMRIFlow(Workflow):
-    # Make Laplacian, Positivity, Both into seperate objects and move to a superclass
-    @classmethod
-    def get_short_name(cls):
-        return 'mapmri'
-
-    def run(self, data_file, data_bvecs, data_bvals, model_type, out_rtop='rtop', out_lapnorm='lapnorm',
-            out_msd='msd', out_qiv='qiv', out_rtap='rtap', out_rtpp='rtpp', small_delta=0.0129, big_delta=0.0218,
-            save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, model_type, out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
+            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz', out_rtpp='rtpp.nii.gz',
+            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
         Generates RTOP ??? saved in a ??? format in input files provided by
         `data_file` and saves the png file to an output directory specified by
@@ -412,12 +83,14 @@ class ReconstMAPMRIFlow(Workflow):
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
             data = img.get_data()
+            affine = img.affine
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
                                   big_delta=big_delta, b0_threshold=50)
 
+            # For testing purposes, will change later
             data_small = data[60:85, 80:81, 60:85]
 
             if not model_type:
@@ -453,26 +126,33 @@ class ReconstMAPMRIFlow(Workflow):
                                                      positivity_constraint=True)
                 mapfit_aniso = map_model_aniso.fit(data_small)
 
+            # Not sure where to get affine or metadata?
             if 'rtop' in save_metrics:
-                nib.save(mapfit_aniso.rtop(), out_rtop)
+                rtop = nib.nifti1.Nifti1Image(mapfit_aniso.rtop(), affine)
+                nib.save(rtop, out_rtop)
 
             if 'laplacian_signal' in save_metrics:
-                nib.save(mapfit_aniso.norm_of_laplacian_signal(), out_lapnorm)
+                lap = nib.nifti1.Nifti1Image(mapfit_aniso.norm_of_laplacian_signal(), affine)
+                nib.save(lap, out_lapnorm)
 
             if 'msd' in save_metrics:
-                nib.save(mapfit_aniso.msd(), out_msd)
+                msd = nib.nifti1.Nifti1Image(mapfit_aniso.msd(), affine)
+                nib.save(msd, out_msd)
 
             if 'qiv' in save_metrics:
-                nib.save(mapfit_aniso.qiv(), out_qiv)
+                qiv = nib.nifti1.Nifti1Image(mapfit_aniso.qiv(), affine)
+                nib.save(qiv, out_qiv)
 
             if 'rtap' in save_metrics:
-                nib.save(mapfit_aniso.rtap(), out_rtap)
+                rtap = nib.nifti1.Nifti1Image(mapfit_aniso.rtap(), affine)
+                nib.save(rtap, out_rtap)
 
             if 'rtpp' in save_metrics:
-                nib.save(mapfit_aniso.rtpp(), out_rtpp)
+                rtpp = nib.nifti1.Nifti1Image(mapfit_aniso.rtpp(), affine)
+                nib.save(rtpp, out_rtpp)
 
             logging.info('MAPMRI saved in {0}'.
-                         format(os.path.dirname(mapname)))
+                         format(os.path.dirname(out_rtpp)))
 
 
 class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
@@ -480,9 +160,9 @@ class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_laplacian"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='lap_rtop', out_lapnorm='lap_lapnorm', out_msd='lap_msd',
-            out_qiv='lap_qiv', out_rtap='lap_rtap', out_rtpp='lap_rtpp', model_type='laplacian',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='lap_rtop.nii.gz', out_lapnorm='lap_lapnorm.nii.gz',
+            out_msd='lap_msd.nii.gz', out_qiv='lap_qiv.nii.gz', out_rtap='lap_rtap.nii.gz', out_rtpp='lap_rtpp.nii.gz',
+            model_type='laplacian', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a laplacian mapmri saved in a nifti format in input files
             provided by `data_file` and saves the nifti files to an output directory specified by
@@ -542,9 +222,9 @@ class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_positivity"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='pos_rtop', out_lapnorm='pos_lapnorm', out_msd='pos_msd',
-            out_qiv='pos_qiv', out_rtap='pos_rtap', out_rtpp='pos_rtpp', model_type='positivity',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='pos_rtop.nii.gz', out_lapnorm='pos_lapnorm.nii.gz',
+            out_msd='pos_msd.nii.gz', out_qiv='pos_qiv.nii.gz', out_rtap='pos_rtap.nii.gz', out_rtpp='pos_rtpp.nii.gz',
+            model_type='positivity', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a positivity mapmri saved
             in a nifti format in input files provided by `data_file` and saves the nifti files
@@ -604,9 +284,10 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_both"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='both_rtop', out_lapnorm='both_lapnorm', out_msd='both_msd',
-            out_qiv='both_qiv', out_rtap='both_rtap', out_rtpp='both_rtpp', model_type='both',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='both_rtop.nii.gz', out_lapnorm='both_lapnorm.nii.gz',
+            out_msd='both_msd.nii.gz', out_qiv='both_qiv.nii.gz', out_rtap='both_rtap.nii.gz',
+            out_rtpp='both_rtpp.nii.gz', model_type='both', small_delta=0.0129, big_delta=0.0218, save_metrics=[],
+            out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a laplacian mapmri
             saved in a nifti format in input files provided by `data_file`
@@ -639,7 +320,7 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
             out_rtop : string, optional
                 Name of the rtop to be saved
                 (default: both_rtop)
-            out_bothnorm : string, optional
+            out_lapnorm : string, optional
                 Name of the norm of bothlacian signal to be saved
                 (default: both_lapnorm)
             out_msd : string, optional
