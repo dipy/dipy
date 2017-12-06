@@ -69,27 +69,27 @@ def reconst_mmri_core(flow, model_type, prefix):
 
         mmri_flow.run(*args, out_dir=out_dir)
 
-        rtop = mmri_flow.last_generated_outputs[prefix+'rtop']
+        rtop = mmri_flow.last_generated_outputs['out_rtop']
         rtop_data = nib.load(rtop).get_data()
         assert_true(rtop_data.shape == volume.shape[:-1])
 
-        lapnorm = mmri_flow.last_generated_outputs[prefix+'lapnorm']
+        lapnorm = mmri_flow.last_generated_outputs['out_lapnorm']
         lapnorm_data = nib.load(lapnorm).get_data()
         assert_true(lapnorm_data.shape == volume.shape[:-1])
 
-        msd = mmri_flow.last_generated_outputs[prefix+'msd']
+        msd = mmri_flow.last_generated_outputs['out_msd']
         msd_data = nib.load(msd).get_data()
         assert_true(msd_data.shape == volume.shape[:-1])
 
-        qiv = mmri_flow.last_generated_outputs[prefix+'qiv']
+        qiv = mmri_flow.last_generated_outputs['out_qiv']
         qiv_data = nib.load(qiv).get_data()
         assert_true(qiv_data.shape == volume.shape[:-1])
 
-        rtap = mmri_flow.last_generated_outputs[prefix+'rtap']
+        rtap = mmri_flow.last_generated_outputs['out_rtap']
         rtap_data = nib.load(rtap).get_data()
         assert_true(rtap_data.shape == volume.shape[:-1])
 
-        rtpp = mmri_flow.last_generated_outputs[prefix+'rtpp']
+        rtpp = mmri_flow.last_generated_outputs['out_rtpp']
         rtpp_data = nib.load(rtpp).get_data()
         assert_true(rtpp_data.shape == volume.shape[:-1])
 
