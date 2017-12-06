@@ -28,9 +28,9 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, model_type, out_rtop='rtop', out_lapnorm='lapnorm',
-            out_msd='msd', out_qiv='qiv', out_rtap='rtap', out_rtpp='rtpp', small_delta=0.0129, big_delta=0.0218,
-            save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, model_type, out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
+            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz', out_rtpp='rtpp.nii.gz',
+            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org). 
         Generates RTOP ??? saved in a ??? format in input files provided by
         `data_file` and saves the png file to an output directory specified by 
@@ -79,12 +79,14 @@ class ReconstMAPMRIFlow(Workflow):
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
             data = img.get_data()
+            affine = img.affine
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
 
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
                                   big_delta=big_delta, b0_threshold=50)
 
+            # For testing purposes, will change later
             data_small = data[60:85, 80:81, 60:85]
             
             if not model_type:
@@ -120,26 +122,33 @@ class ReconstMAPMRIFlow(Workflow):
                                                      positivity_constraint=True)
                 mapfit_aniso = map_model_aniso.fit(data_small)
 
+            # Not sure where to get affine or metadata?
             if 'rtop' in save_metrics:
-                nib.save(mapfit_aniso.rtop(), out_rtop)
+                rtop = nib.nifti1.Nifti1Image(mapfit_aniso.rtop(), affine)
+                nib.save(rtop, out_rtop)
 
             if 'laplacian_signal' in save_metrics:
-                nib.save(mapfit_aniso.norm_of_laplacian_signal(), out_lapnorm)
+                lap = nib.nifti1.Nifti1Image(mapfit_aniso.norm_of_laplacian_signal(), affine)
+                nib.save(lap, out_lapnorm)
 
             if 'msd' in save_metrics:
-                nib.save(mapfit_aniso.msd(), out_msd)
+                msd = nib.nifti1.Nifti1Image(mapfit_aniso.msd(), affine)
+                nib.save(msd, out_msd)
 
             if 'qiv' in save_metrics:
-                nib.save(mapfit_aniso.qiv(), out_qiv)
+                qiv = nib.nifti1.Nifti1Image(mapfit_aniso.qiv(), affine)
+                nib.save(qiv, out_qiv)
 
             if 'rtap' in save_metrics:
-                nib.save(mapfit_aniso.rtap(), out_rtap)
+                rtap = nib.nifti1.Nifti1Image(mapfit_aniso.rtap(), affine)
+                nib.save(rtap, out_rtap)
 
             if 'rtpp' in save_metrics:
-                nib.save(mapfit_aniso.rtpp(), out_rtpp)
+                rtpp = nib.nifti1.Nifti1Image(mapfit_aniso.rtpp(), affine)
+                nib.save(rtpp, out_rtpp)
 
             logging.info('MAPMRI saved in {0}'.
-                         format(os.path.dirname(mapname)))
+                         format(os.path.dirname(out_rtpp)))
             
 
 class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
@@ -147,9 +156,9 @@ class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_laplacian"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='lap_rtop', out_lapnorm='lap_lapnorm', out_msd='lap_msd',
-            out_qiv='lap_qiv', out_rtap='lap_rtap', out_rtpp='lap_rtpp', model_type='laplacian',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='lap_rtop.nii.gz', out_lapnorm='lap_lapnorm.nii.gz',
+            out_msd='lap_msd.nii.gz', out_qiv='lap_qiv.nii.gz', out_rtap='lap_rtap.nii.gz', out_rtpp='lap_rtpp.nii.gz',
+            model_type='laplacian', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a laplacian mapmri saved in a nifti format in input files
             provided by `data_file` and saves the nifti files to an output directory specified by
@@ -209,9 +218,9 @@ class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_positivity"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='pos_rtop', out_lapnorm='pos_lapnorm', out_msd='pos_msd',
-            out_qiv='pos_qiv', out_rtap='pos_rtap', out_rtpp='pos_rtpp', model_type='positivity',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='pos_rtop.nii.gz', out_lapnorm='pos_lapnorm.nii.gz',
+            out_msd='pos_msd.nii.gz', out_qiv='pos_qiv.nii.gz', out_rtap='pos_rtap.nii.gz', out_rtpp='pos_rtpp.nii.gz',
+            model_type='positivity', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a positivity mapmri saved
             in a nifti format in input files provided by `data_file` and saves the nifti files
@@ -271,9 +280,10 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_both"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='both_rtop', out_lapnorm='both_lapnorm', out_msd='both_msd',
-            out_qiv='both_qiv', out_rtap='both_rtap', out_rtpp='both_rtpp', model_type='both',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, out_rtop='both_rtop.nii.gz', out_lapnorm='both_lapnorm.nii.gz',
+            out_msd='both_msd.nii.gz', out_qiv='both_qiv.nii.gz', out_rtap='both_rtap.nii.gz',
+            out_rtpp='both_rtpp.nii.gz', model_type='both', small_delta=0.0129, big_delta=0.0218, save_metrics=[],
+            out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a laplacian mapmri
             saved in a nifti format in input files provided by `data_file`
@@ -306,7 +316,7 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
             out_rtop : string, optional
                 Name of the rtop to be saved
                 (default: both_rtop)
-            out_bothnorm : string, optional
+            out_lapnorm : string, optional
                 Name of the norm of bothlacian signal to be saved
                 (default: both_lapnorm)
             out_msd : string, optional
