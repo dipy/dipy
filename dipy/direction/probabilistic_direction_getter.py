@@ -53,7 +53,7 @@ class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                    pmf_threshold, **kwargs)
+                                       pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
         self._set_adjacency_matrix(sphere, self.cos_similarity)
