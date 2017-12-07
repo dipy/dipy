@@ -227,7 +227,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
 
     phi = np.arange(1, l + 1) * m / l
     K = data.shape[-1]
-    sum_m2 = np.sum(data**2, axis=-1, dtype=np.float32)
+    sum_m2 = np.sum(data.astype(np.float32)**2, axis=2)
 
     sigma_prev = 0
     sigma = m
