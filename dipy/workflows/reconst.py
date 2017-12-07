@@ -129,37 +129,31 @@ class ReconstMAPMRIFlow(Workflow):
             # Not sure where to get affine or metadata?
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()
-                print(type(r))
                 rtop = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
                 nib.save(rtop, out_rtop)
 
             if 'laplacian_signal' in save_metrics:
                 l = mapfit_aniso.norm_of_laplacian_signal()
-                print(type(l))
                 lap = nib.nifti1.Nifti1Image(l.astype(np.float32), affine)
                 nib.save(lap, out_lapnorm)
 
             if 'msd' in save_metrics:
                 m = mapfit_aniso.msd()
-                print(type(m))
                 msd = nib.nifti1.Nifti1Image(m.astype(np.float32), affine)
                 nib.save(msd, out_msd)
 
             if 'qiv' in save_metrics:
                 q = mapfit_aniso.qiv()
-                print(type(q))
                 qiv = nib.nifti1.Nifti1Image(q.astype(np.float32), affine)
                 nib.save(qiv, out_qiv)
 
             if 'rtap' in save_metrics:
                 r = mapfit_aniso.rtap()
-                print(type(r))
                 rtap = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
                 nib.save(rtap, out_rtap)
 
             if 'rtpp' in save_metrics:
                 r = mapfit_aniso.rtpp()
-                print(type(r))
                 rtpp = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
                 nib.save(rtpp, out_rtpp)
 

@@ -71,6 +71,8 @@ def reconst_mmri_core(flow, model_type, prefix):
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
         rtop_data = nib.load(rtop).get_data()
+        print(rtop_data.shape)
+        print(volume.shape[:-1])
         assert_true(rtop_data.shape == volume.shape[:-1])
 
         lapnorm = mmri_flow.last_generated_outputs['out_lapnorm']
