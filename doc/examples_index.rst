@@ -147,6 +147,7 @@ Fiber tracking (NEW)
 - :ref:`example_sfm_tracking`
 - :ref:`example_tracking_eudx_tensor`
 - :ref:`example_tracking_eudx_odf`
+- :ref:`example_tracking_comparison_direction_getters`
 
 -------------------------------------
 Fiber tracking validation
