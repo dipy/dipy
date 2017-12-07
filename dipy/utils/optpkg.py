@@ -63,7 +63,8 @@ def optional_package(name, trip_msg=None):
     >>> pkg.some_function() #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
-    TripWireError: We need package not_a_package for these functions, but ``import not_a_package`` raised an ImportError
+    TripWireError: We need package not_a_package for these functions, but
+    ``import not_a_package`` raised an ImportError
 
     If the module does exist - we get the module
 

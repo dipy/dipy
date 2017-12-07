@@ -56,4 +56,5 @@
  workflow_creation.py
  combined_workflow_creation.py
  viz_surfaces.py
+ viz_roi_contour.py
  viz_ui.py
