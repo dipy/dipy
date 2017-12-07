@@ -32,11 +32,11 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, model_type, out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
-            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz', out_rtpp='rtpp.nii.gz',
-            small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, model_type='', out_rtop='rtop.nii.gz',
+            out_lapnorm='lapnorm.nii.gz',out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz',
+            out_rtpp='rtpp.nii.gz', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates RTOP ??? saved in a ??? format in input files provided by
+        Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved in a nifti format in input files provided by
         `data_file` and saves the png file to an output directory specified by
         `out_dir`.
 
@@ -90,10 +90,7 @@ class ReconstMAPMRIFlow(Workflow):
                                   small_delta=small_delta,
                                   big_delta=big_delta, b0_threshold=50)
 
-            # For testing purposes, will change later
-            data_small = data[60:85, 80:81, 60:85]
-
-            if not model_type:
+            if model_type is None:
                 model_type = 'both'
 
             if not save_metrics:
@@ -110,21 +107,21 @@ class ReconstMAPMRIFlow(Workflow):
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=True,
                                                      laplacian_weighting=.2)
-                mapfit_aniso = map_model_aniso.fit(data_small)
+                mapfit_aniso = map_model_aniso.fit(data)
 
             elif model_type is 'positivity':
 
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=False,
                                                      positivity_constraint=True)
-                mapfit_aniso = map_model_aniso.fit(data_small)
+                mapfit_aniso = map_model_aniso.fit(data)
 
             elif model_type is 'both':
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=True,
                                                      laplacian_weighting=.05,
                                                      positivity_constraint=True)
-                mapfit_aniso = map_model_aniso.fit(data_small)
+                mapfit_aniso = map_model_aniso.fit(data)
 
             # Not sure where to get affine or metadata?
             if 'rtop' in save_metrics:
@@ -166,9 +163,10 @@ class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
     def get_short_name(cls):
         return "mmri_laplacian"
 
-    def run(self, data_file, data_bvecs, data_bvals, out_rtop='lap_rtop.nii.gz', out_lapnorm='lap_lapnorm.nii.gz',
-            out_msd='lap_msd.nii.gz', out_qiv='lap_qiv.nii.gz', out_rtap='lap_rtap.nii.gz', out_rtpp='lap_rtpp.nii.gz',
-            model_type='laplacian', small_delta=0.0129, big_delta=0.0218, save_metrics=[], out_dir=''):
+    def run(self, data_file, data_bvecs, data_bvals, model_type='laplacian', out_rtop='lap_rtop.nii.gz',
+            out_lapnorm='lap_lapnorm.nii.gz', out_msd='lap_msd.nii.gz', out_qiv='lap_qiv.nii.gz',
+            out_rtap='lap_rtap.nii.gz', out_rtpp='lap_rtpp.nii.gz',small_delta=0.0129, big_delta=0.0218,
+            save_metrics=[], out_dir=''):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
             Generates rtop, lapnorm, msd, qiv, rtap, rtpp for a laplacian mapmri saved in a nifti format in input files
             provided by `data_file` and saves the nifti files to an output directory specified by
@@ -217,10 +215,11 @@ class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
                 Name of the rtpp to be saved
                 (default: lap_rtpp)
             """
-
         super(ReconstMAPMRILaplacian, self). \
-            run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
-                out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
+            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
+                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
+                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
+                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
 
 
 class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
@@ -281,8 +280,10 @@ class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
             """
 
         super(ReconstMAPMRIPositivity, self). \
-            run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
-                out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
+            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
+                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
+                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
+                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
 
 
 class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
@@ -344,8 +345,10 @@ class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
             """
 
         super(ReconstMAPMRIBoth, self). \
-            run(data_file, data_bvecs, data_bvals, out_rtop, out_lapnorm, out_msd, out_qiv,
-                out_rtap, out_rtpp, model_type, small_delta, big_delta, save_metrics, out_dir)
+            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
+                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
+                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
+                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
 
 
 class ReconstDtiFlow(Workflow):
