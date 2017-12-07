@@ -2,7 +2,7 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-cdef inline int where_to_insert(
+cdef int where_to_insert(
         np.float_t* arr,
         np.float_t number,
         int size) nogil:
@@ -17,7 +17,7 @@ cdef inline int where_to_insert(
     return 0
 
 
-cdef inline void cumsum(
+cdef void cumsum(
         np.float_t* arr_in,
         np.float_t* arr_out,
         int N) nogil:
