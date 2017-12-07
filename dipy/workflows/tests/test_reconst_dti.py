@@ -56,6 +56,8 @@ def reconst_mmri_core(flow, model_type, prefix):
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
         rtop_data = nib.load(rtop).get_data()
+        print(rtop_data.shape)
+        print(volume.shape[:-1])
         assert_true(rtop_data.shape == volume.shape[:-1])
 
         lapnorm = mmri_flow.last_generated_outputs['out_lapnorm']
@@ -77,6 +79,7 @@ def reconst_mmri_core(flow, model_type, prefix):
         rtpp = mmri_flow.last_generated_outputs['out_rtpp']
         rtpp_data = nib.load(rtpp).get_data()
         assert_true(rtpp_data.shape == volume.shape[:-1])
+
 
 def reconst_flow_core(flow, extra_args=[]):
     with TemporaryDirectory() as out_dir:
