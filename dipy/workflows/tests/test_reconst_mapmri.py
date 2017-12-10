@@ -6,6 +6,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 
 from nose.tools import eq_
+from dipy.reconst import mapmri
 
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstMAPMRILaplacian, ReconstMAPMRIBoth, ReconstMAPMRIPositivity
@@ -14,11 +15,11 @@ from dipy.workflows.reconst import ReconstMAPMRILaplacian, ReconstMAPMRIBoth, Re
 def test_reconst_mmri_laplacian():
     reconst_mmri_core(ReconstMAPMRILaplacian)
 
-
+@np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIBoth)
 
-
+@np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
     reconst_mmri_core(ReconstMAPMRIPositivity)
 
@@ -56,6 +57,7 @@ def reconst_mmri_core(flow):
         rtpp = mmri_flow.last_generated_outputs['out_rtpp']
         rtpp_data = nib.load(rtpp).get_data()
         eq_(rtpp_data.shape, volume.shape[:-1])
+
 
 if __name__ == '__main__':
     test_reconst_mmri_laplacian()
