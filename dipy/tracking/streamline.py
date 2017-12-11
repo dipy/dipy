@@ -622,8 +622,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         interploation of 4D volumes without looping over the elements of the
         last dimension.
 
-    Return
-    ------
+    Returns
+    ---------
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline
     """
@@ -691,8 +691,8 @@ def values_from_volume(data, streamlines, affine=None):
         coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
         would be returned as the value for that streamline coordinate
 
-    Return
-    ------
+    Returns
+    ---------
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline.
 

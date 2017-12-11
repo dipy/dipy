@@ -5,8 +5,8 @@ Collect extension modules in <pkg_name>
 
 Run doctests in each extension module
 
-Example:
-
+Examples
+----------
     %prog dipy
 """
 

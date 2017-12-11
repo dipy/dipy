@@ -1460,8 +1460,8 @@ def _ols_fit_matrix(design_matrix):
     ---------
     wls_fit_tensor, ols_fit_tensor
 
-    Example:
-    --------
+    Examples
+    ---------
     ols_fit = _ols_fit_matrix(design_mat)
     ols_data = np.dot(ols_fit, data)
     """

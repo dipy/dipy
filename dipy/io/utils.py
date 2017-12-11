@@ -8,14 +8,14 @@ from nibabel import Nifti1Image
 def nifti1_symmat(image_data, *args, **kwargs):
     """Returns a Nifti1Image with a symmetric matrix intent
 
-    Parameters:
+    Parameters
     -----------
     image_data : array-like
         should have lower triangular elements of a symmetric matrix along the
         last dimension
     all other arguments and keywords are passed to Nifti1Image
 
-    Returns:
+    Returns
     --------
     image : Nifti1Image
         5d, extra dimensions addes before the last. Has symmetric matrix intent

@@ -95,8 +95,8 @@ def check_md5(filename, stored_md5=None):
     Computes the md5 of filename and check if it matches with the supplied
     string md5
 
-    Input
-    -----
+    Parameters
+    -----------
     filename : string
         Path to a file.
     md5 : string
