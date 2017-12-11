@@ -38,13 +38,13 @@ mask_small = data_small[..., 0] > 1000
 """
 Instantiate the FORECAST Model.
 
-sh_order is the spherical harmonics order used for the fODF.
+"sh_order" is the spherical harmonics order used for the fODF.
 
-optimizer is the algorithm used for the FORECAST basis fitting, in this case
+dec_alg is the spherical deconvolution algorithm used for the FORECAST basis fitting, in this case
 we used the Constrained Spherical Deconvolution (CSD) algorithm.
 """
 
-fm = ForecastModel(gtab, sh_order=6, optimizer='CSD')
+fm = ForecastModel(gtab, sh_order=6, dec_alg='CSD')
 
 """
 Fit the FORECAST to the data

@@ -47,7 +47,7 @@ class ForecastModel(OdfModel, Cache):
                  gtab,
                  sh_order=8,
                  lambda_lb=1e-3,
-                 optimizer='WLS',
+                 dec_alg='CSD',
                  sphere=None,
                  lambda_csd=1.0):
         r""" Analytical and continuous modeling of the diffusion signal with
@@ -80,13 +80,13 @@ class ForecastModel(OdfModel, Cache):
             an even integer that represent the SH order of the basis (max 12)
         lambda_lb: float,
             Laplace-Beltrami regularization weight.
-        optimizer : str,
-            optimizer. The possible values are Weighted Least Squares ('WLS'),
+        dec_alg : str,
+            Spherical deconvolution algorithm. The possible values are Weighted Least Squares ('WLS'),
             Positivity Constraints using CVXPY ('POS') and the Constraint 
-            Spherical Deconvolution algorithm ('CSD'). Default is 'WLS'.
+            Spherical Deconvolution algorithm ('CSD'). Default is 'CSD'.
         sphere : array, shape (N,3),
             sphere points where to enforce positivity when 'POS' or 'CSD'
-            optimizer are selected.
+            dec_alg are selected.
         lambda_csd : float,
             CSD regularization weight.
 
@@ -145,7 +145,7 @@ class ForecastModel(OdfModel, Cache):
             raise ValueError(msg)
 
         if sphere is None:
-            sphere = get_sphere('repulsion100')
+            sphere = get_sphere('repulsion724')
             self.vertices = sphere.vertices[
                 0:int(sphere.vertices.shape[0]/2), :]
 
@@ -168,7 +168,7 @@ class ForecastModel(OdfModel, Cache):
         self.csd = False
         self.pos = False
 
-        if optimizer.upper() == 'POS':
+        if dec_alg.upper() == 'POS':
             if have_cvxpy:
                 self.wls = False
                 self.pos = True
@@ -176,7 +176,7 @@ class ForecastModel(OdfModel, Cache):
                 msg = 'cvxpy is needed to inforce positivity constraints.'
                 raise ValueError(msg)
 
-        if optimizer.upper() == 'CSD':
+        if dec_alg.upper() == 'CSD':
             self.csd = True
 
         self.lb_matrix = lb_forecast(self.sh_order)
@@ -204,19 +204,17 @@ class ForecastModel(OdfModel, Cache):
                             args=(self.b_unique, means))
 
         # transform to bound the diffusivities from 0 to 3e-03
-        c0 = np.cos(x[0])**2 * 3e-03
-        c1 = np.cos(x[1])**2 * 3e-03
+        d_par = np.cos(x[0])**2 * 3e-03
+        d_perp = np.cos(x[1])**2 * 3e-03
 
-        if c0 >= c1:
-            d_par = c0 
-            d_perp = c1
-        else:
-            d_par = c1
-            d_perp = c0
+        if d_perp >= d_par:
+            temp = d_par
+            d_par = d_perp
+            d_perp = temp
 
         # round to avoid memory explosion
-        diff_key = str(int(np.round(d_par*1e05))) + \
-            str(int(np.round(d_perp*1e05)))
+        diff_key = str(int(np.round(d_par * 1e05))) + \
+            str(int(np.round(d_perp * 1e05)))
 
         M_diff = self.cache_get('forecast_matrix', key=diff_key)
         if M_diff is None:
@@ -246,7 +244,7 @@ class ForecastModel(OdfModel, Cache):
 
             if self.csd:
                 coef, num_it = csdeconv(data_single_b0, M, self.fod, tau=0.1, convergence=50)
-                coef = coef/coef[0] * c0
+                coef = coef / coef[0] * c0
                 
             if self.pos:
                 c = cvxpy.Variable(M.shape[1])
@@ -398,7 +396,6 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
         the average of the signal for each b-values
 
     """
-
     lb = len(b_unique)
     means = np.zeros(lb)
     for u in range(lb):
@@ -422,23 +419,21 @@ def forecast_error_func(x, b_unique, E):
     r""" Calculates the difference between the mean signal calculated using 
     the parameter vector x and the average signal E using FORECAST and SMT
     """
-    c0 = np.cos(x[0])**2 * 3e-03
-    c1 = np.cos(x[1])**2 * 3e-03
+    d_par = np.cos(x[0])**2 * 3e-03
+    d_perp = np.cos(x[1])**2 * 3e-03
 
-    if c0 >= c1:
-        d_par = c0
-        d_perp = c1
-    else:
-        d_par = c1
-        d_perp = c0
+    if d_perp >= d_par:
+        temp = d_par
+        d_par = d_perp
+        d_perp = temp
 
-    E_ = 0.5 * np.exp(-b_unique*d_perp) * Psi_l(0, (b_unique * (d_par-d_perp)))
+    E_reconst = 0.5 * np.exp(-b_unique * d_perp) * psi_l(0, (b_unique * (d_par - d_perp)))
 
-    v = E-E_
+    v = E-E_reconst
     return v
 
 
-def Psi_l(l,b):
+def psi_l(l,b):
     n = l//2
     v = (-b)**n
     v *= gamma(n + 1./2) / gamma(2*n + 3./2)
@@ -449,13 +444,13 @@ def Psi_l(l,b):
 def forecast_matrix(sh_order,  d_par, d_perp, bvals):
     r"""Compute the FORECAST radial matrix 
     """
-    n_c = int((sh_order + 1)*(sh_order + 2)/2)
+    n_c = int((sh_order + 1) * (sh_order + 2) / 2)
     M = np.zeros((bvals.shape[0], n_c))
     counter = 0
     for l in range(0, sh_order + 1, 2):
         for m in range(-l, l + 1):
-            M[:, counter] = 2*np.pi * \
-                np.exp(-bvals*d_perp) * Psi_l(l, bvals*(d_par-d_perp))
+            M[:, counter] = 2 * np.pi * \
+                np.exp(-bvals * d_perp) * psi_l(l, bvals * (d_par - d_perp))
             counter += 1
     return M
 
@@ -467,7 +462,7 @@ def rho_matrix(sh_order, vecs):
     r, theta, phi = cart2sphere(vecs[:, 0], vecs[:, 1], vecs[:, 2])
     theta[np.isnan(theta)] = 0
 
-    n_c = int((sh_order + 1)*(sh_order + 2)/2)
+    n_c = int((sh_order + 1) * (sh_order + 2) / 2)
     rho = np.zeros((vecs.shape[0], n_c))
     counter = 0
     for l in range(0, sh_order + 1, 2):
