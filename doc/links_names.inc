@@ -12,7 +12,7 @@
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
 .. _dipy: http://dipy.org
 .. _`dipy github`: http://github.com/nipy/dipy
-.. _dipy pypi: http://pypi.python.org/pypi/dipy
+.. _`dipy pypi`: http://pypi.python.org/pypi/dipy
 .. _nipy issues: http://github.com/nipy/nipy/issues
 .. _dipy issues: http://github.com/nipy/dipy/issues
 .. _dipy paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
@@ -35,7 +35,6 @@
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/
-.. _Sphinx: http://sphinx.pocoo.org/
 .. _`Sphinx reST`: http://sphinx.pocoo.org/rest.html
 .. _reST: http://docutils.sourceforge.net/rst.html
 .. _docutils: http://docutils.sourceforge.net
@@ -99,8 +98,12 @@
 .. _datapkg: http://okfn.org/projects/datapkg
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
+<<<<<<< HEAD
 .. _pypi: https://pypi.python.org/pypi
 .. _FURY: https://fury.gl
+=======
+.. _h5py: www.h5py.org
+>>>>>>> * typo
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org

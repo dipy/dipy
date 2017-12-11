@@ -54,7 +54,7 @@ Pull Requests (100):
 * :ghpull:`103`: Major update of the website, with a few examples and with some additional minor RFs
 * :ghpull:`121`: NF: Allow the smoothing parameter to come through to rbf interpolation.
 * :ghpull:`120`: Fast squash fix
-* :ghpull:`116`: RF: common dtype for squash_ without result_type
+* :ghpull:`116`: RF: common dtype for squash without result_type
 * :ghpull:`117`: Fix directions on TensorFit and add getitem
 * :ghpull:`119`: RF: raise errors for Python version dependencies
 * :ghpull:`118`: Seperate fa
@@ -164,7 +164,7 @@ Issues (125):
 * :ghissue:`103`: Major update of the website, with a few examples and with some additional minor RFs
 * :ghissue:`121`: NF: Allow the smoothing parameter to come through to rbf interpolation.
 * :ghissue:`120`: Fast squash fix
-* :ghissue:`116`: RF: common dtype for squash_ without result_type
+* :ghissue:`116`: RF: common dtype for squash without result_type
 * :ghissue:`117`: Fix directions on TensorFit and add getitem
 * :ghissue:`119`: RF: raise errors for Python version dependencies
 * :ghissue:`118`: Seperate fa
@@ -257,4 +257,3 @@ Issues (125):
 * :ghissue:`11`: BF explicit type declaration and initialization for longest_track_len[AB] -- for cython 0.15 compatibility
 * :ghissue:`5`: Add DSI reconstruction in Dipy
 * :ghissue:`9`: Bug in dipy.tracking.metrics.downsampling when we downsample a track to more than 20 points
-
