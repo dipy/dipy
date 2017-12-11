@@ -125,8 +125,11 @@ Displacement (MSD).
 In this example we don't extrapolate the data beyond the maximum diffusion
 time, so we estimate q$\tau$ indices between the minimum and maximum diffusion
 times of the data at 5 equally spaced points. However, it should the noted that
-qt-dMRI's combined smoothness and sparsity regularization ensures smooth
-interpolation at any q$\tau$ position.
+qt-dMRI's combined smoothness and sparsity regularization allows for smooth
+interpolation at any q$\tau$ position. In other words, once the basis is
+fitted to the data, its coefficients describe the the entire q$\tau$-space, and
+any q$\tau$-position can be freely recovered. This including points beyond the
+dataset's maximum q/$\tau$ value (although this should be done with caution).
 """
 
 tau_min = gtabs[0].tau.min()
