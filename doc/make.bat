@@ -30,13 +30,16 @@ if "%1" == "help" (
 if "%1" == "clean" (
 	for /d %%i in (_build\*) do rmdir /q /s %%i
 	del /q /s _build\*
+	call :api-clean
+	call :examples-clean
 	goto end
 )
 
 if "%1" == "api-clean" (
+    :api-clean
 	del /q /s reference reference_cmd
 	rmdir reference reference_cmd
-	goto end
+	exit /B
 	)
 
 if "%1" == "api" (
@@ -51,7 +54,7 @@ if "%1" == "api" (
 
 if "%1" == "examples-clean" (
     :examples-clean
-	cd examples_built && rm -rf *.py *.rst *.png fig
+	cd examples_built && del /q /s *.py *.rst *.png fig
 	cd ..
 	exit /B
 	)
