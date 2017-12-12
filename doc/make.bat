@@ -61,14 +61,14 @@ if "%1" == "examples-clean" (
 
 if "%1" == "examples-clean-tgz" (
     call :examples-clean
-    call :examples-tgz
+    call :examples-tgz %*
 	%PYTHON% ../tools/pack_examples.py ../dist
 	exit /B
 	)
 
 if "%1" == "examples-tgz" (
     :examples-tgz
-    call :rstexamples
+    call :rstexamples %*
 	%PYTHON% ../tools/pack_examples.py ../dist
 	exit /B
 	)
@@ -83,7 +83,7 @@ if "%1" == "gitwash-update" (
 if "%1" == "rstexamples" (
     :rstexamples
 	cd examples_built && %PYTHON% ..\\..\\tools\\make_examples.py
-	type nul > %1
+	type nul > %*
 	exit /B
 	)
 
@@ -91,7 +91,7 @@ if "%1" == "html" (
     :html
     echo "build full docs including examples"
     call :api
-    call :rstexamples
+    call :rstexamples %*
     call :html-after-examples
     exit /B
 	)
@@ -146,7 +146,7 @@ if "%1" == "qthelp" (
 
 if "%1" == "latex" (
     :latex
-    call :rstexamples
+    call :rstexamples %*
     call :latex-after-examples
     exit /B
 )
@@ -187,12 +187,12 @@ results in _build/doctest/output.txt.
 if "%1" == "pdf" (
     call :latex
 	cd _build/latex && make all-pdf
-	type nul > %1
+	type nul > %*
 	goto end
 	)
 
 if "%1" == "upload" (
-    call :html
+    call :html %*
 	./upload-gh-pages.sh _build/html/ dipy nipy
 	goto end
 	)
