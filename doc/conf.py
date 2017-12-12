@@ -49,6 +49,9 @@ extensions = ['sphinx.ext.autodoc',
               'numpydoc',
               'github']
 
+numpydoc_show_class_members = True
+numpydoc_class_members_toctree = False
+
 # ghissue config
 github_project_url = "https://github.com/nipy/dipy"
 
