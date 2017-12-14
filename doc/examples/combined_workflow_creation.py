@@ -138,11 +138,3 @@ with the parameters and see the results::
 .. include:: ../links_names.inc
 
 """
-
-
-
-
-
-
-
-
