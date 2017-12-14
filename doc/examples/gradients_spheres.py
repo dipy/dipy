@@ -78,7 +78,7 @@ fvtk.record(ren, out_path='full_sphere.png', size=(300, 300))
 
    Full sphere.
 
-It is time to create the Gradients. For this reason we will need to use the
+It is time to create the Gradients. For this purpose we will use the
 function ``gradient_table`` and fill it with the ``hsph_updated`` vectors that 
 we created above.
 """
@@ -98,7 +98,7 @@ bvecs = np.vstack((vertices, vertices))
 bvals = np.hstack((1000 * values, 2500 * values))
 
 """
-We can also add some b0s. Let's add one in the beginning and one at the end.
+We can also add some b0s. Let's add one at the beginning and one at the end.
 """
 
 bvecs = np.insert(bvecs, (0, bvecs.shape[0]), np.array([0, 0, 0]), axis=0)
@@ -159,8 +159,8 @@ gtab = gradient_table(bvals, bvecs)
 fvtk.rm_all(ren)
 
 """
-We can also visualize the gradients. Let's color with blue the first shell and
-with cyan the second shell.
+We can also visualize the gradients. Let's color the first shell blue and
+the second shell cyan.
 """
 
 colors_b1000 = fvtk.colors.blue * np.ones(vertices.shape)
@@ -190,4 +190,3 @@ References
 .. include:: ../links_names.inc
 
 """
-
