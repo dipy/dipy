@@ -263,7 +263,7 @@ def test_probabilistic_odf_weighted_tracker():
 
 def test_ParticleFilteringTractography():
     """This tests that the ParticleFilteringTracking produces
-    more streamlines connecting the gray matter then LocalTracking.
+    more streamlines connecting the gray matter than LocalTracking.
     """
     #sphere = HemiSphere.from_sphere(unit_octahedron)
     sphere = get_sphere('repulsion100')

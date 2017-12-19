@@ -3,11 +3,11 @@
 Particle Filtering Tractography
 =================================================
 Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
-volume estimation (PVE) to reconstruct tracjectories connecting the gray matter,
+volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
-It relies on a tissue classifier that identify the tissue where the streamline
+It relies on a tissue classifier that identifies the tissue where the streamline
 stopped. If the streamline correctly stopped in the gray matter, the trajectory
-is keep. If the streamline incorrecly stopped in the white matter or in the
+is kept. If the streamline incorrecly stopped in the white matter or in the
 corticospinal fluid, PFT uses anatomical information to find an alternative
 streamline segment to extend the trajectory. When this segment is found,
 the tractography continues until the streamline correctly stops in the gray
@@ -61,11 +61,11 @@ CMC/ACT Tissue Classifiers
 Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
 tractography (ACT) [Smith2012]_ both uses PVEs information from
 anatomical images to determine when the tractography stops.
-The both tissue classifier use a trilinear interpolation
+Both tissue classifiers use a trilinear interpolation
 at the tracking position. CMC tissue classifier uses a probability derived from
-the PVE maps to determine if the streamline reach a 'valid' or 'invalid' region.
-ACT uses a fixed threshold on the PVE maps. Both tissue classifier can be used
-in conjunction PFT. In this exemple, we used CMC.
+the PVE maps to determine if the streamline reaches a 'valid' or 'invalid' region.
+ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can be used
+in conjunction with PFT. In this example, we used CMC.
 """
 
 import matplotlib.pyplot as plt

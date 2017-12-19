@@ -264,16 +264,16 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:,:,:,:] particle_paths,
                   np.float_t[:,:,:,:] particle_dirs,
                   np.float_t[:,:] particle_weights,
-                  np.int_t[:,:,:]  particle_states):
+                  np.int_t[:,:,:] particle_states):
 
     if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError()
     cdef:
-        int i, pft_trial, pft_streamline_i, pft_nbr_steps
+        int i, pft_trial, pft_streamline_i, pft_nbr_steps, strl_array_len
         double point[3], dir[3], vs[3], voxdir[3]
 
-        void (*step)(double * , double*, double) nogil
+        void (*step)(double* , double*, double) nogil
     pft_trial = 0
 
     for j in range(3):
@@ -284,9 +284,10 @@ cdef _pft_tracker(DirectionGetter dg,
 
     tissue_class[0] = TRACKPOINT
     i = 0
-    while i < streamline.shape[0] - 1:
+    strl_array_len = streamline.shape[0]
+    while i < strl_array_len - 1:
         if dg.get_direction(point, dir):
-            # no valid diffusion directions to follow
+            # no valid diffusion direction to follow
             tissue_class[0] = INVALIDPOINT
         else:
             for j in range(3):
@@ -307,7 +308,7 @@ cdef _pft_tracker(DirectionGetter dg,
             if pft_trial < pft_max_trial and i > 1:
                 pft_streamline_i = min(i - 1, pft_nbr_back_steps)
                 pft_nbr_steps = min(pft_max_steps,
-                                    streamline.shape[0] - pft_streamline_i - 1)
+                                    strl_array_len - pft_streamline_i - 1)
                 i = _pft(streamline,
                          pft_streamline_i,
                          directions,
@@ -342,12 +343,12 @@ cdef _pft_tracker(DirectionGetter dg,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef _pft(np.float_t[:,:]  streamline,
+cdef _pft(np.float_t[:,:] streamline,
           int streamline_i,
-          np.float_t[:,:]  directions,
+          np.float_t[:,:] directions,
           DirectionGetter dg,
           ConstrainedTissueClassifier tc,
-          np.float_t[:]  voxel_size,
+          np.float_t[:] voxel_size,
           double step_size,
           TissueClass* tissue_class,
           int pft_nbr_steps,
@@ -355,9 +356,9 @@ cdef _pft(np.float_t[:,:]  streamline,
           np.float_t[:,:,:,:] particle_paths,
           np.float_t[:,:,:,:] particle_dirs,
           np.float_t[:,:] particle_weights,
-          np.int_t[:,:,:]  particle_states):
+          np.int_t[:,:,:] particle_states):
     cdef:
-        double sum_weights, sum_squared, N_effective, rdm_sample#
+        double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3], dir[3], vs[3], voxdir[3]
         int s, p, j
 
@@ -413,7 +414,7 @@ cdef _pft(np.float_t[:,:]  streamline,
 
         # Resample the particles if the weights are too uneven.
         # Particles with negligable weights are replaced by duplicates of
-        # those with high weigths through resamplingip
+        # those with high weigths through resampling
         N_effective = 1. / sum_squared
         if N_effective < particle_count / 10.:
             # copy data in the temp arrays
