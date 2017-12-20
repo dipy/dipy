@@ -404,7 +404,7 @@ class QtdmriModel(Cache):
                 )
             else:
                 laplacian_matrix = qtdmri_isotropic_laplacian_reg_matrix(
-                    self.ind_mat, self.us, self.ut, self.part1_uq_iso_precomp,
+                    self.ind_mat, us, ut, self.part1_uq_iso_precomp,
                     self.part1_reg_mat_tau, self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
                     normalization=self.model.normalization
