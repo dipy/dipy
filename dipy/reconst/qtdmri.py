@@ -407,7 +407,7 @@ class QtdmriModel(Cache):
                     self.ind_mat, us, ut, self.part1_uq_iso_precomp,
                     self.part1_reg_mat_tau, self.part23_reg_mat_tau,
                     self.part4_reg_mat_tau,
-                    normalization=self.model.normalization
+                    normalization=self.normalization
                 )
             if self.laplacian_weighting == 'GCV':
                 lopt = generalized_crossvalidation(data_norm, M,
