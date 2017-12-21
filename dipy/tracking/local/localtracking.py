@@ -1,7 +1,7 @@
 import numpy as np
 
-from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
+from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
 
 from dipy.align import Bunch
 from dipy.tracking import utils
@@ -181,10 +181,10 @@ class ParticleFilteringTracking(LocalTracking):
             Distance in mm to run the particle filtering tractography after the
             the back track distance. The total particle filtering tractography
             distance is equal to back_tracking_dist + front_tracking_dist. By
-            default this is set to 1 mm. By default this is set to 1 mm.
+            default this is set to 1 mm.
         pft_pft_max_trial : int
             Maximum number of trial for the particle filtering tractography
-            (Prevents infinit loops).
+            (Prevents infinite loops).
         particle_count : int
             Number of particles to use in the particle filter.
         return_all : bool
