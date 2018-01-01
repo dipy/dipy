@@ -533,10 +533,11 @@ class ReconstDkiFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
             save_metrics=[],
-            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
+            out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
+            out_dk_tensor="dki_tensors.nii.gz",
             out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz"):
         """ Workflow for Diffusion Kurtosis reconstruction and for computing
         DKI metrics. Performs a DKI reconstruction on the files by 'globing'
@@ -595,7 +596,7 @@ class ReconstDkiFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
-             omode, oevecs, oevals, omk, oak, ork) in io_it:
+             omode, oevecs, oevals, odk_tensor, omk, oak, ork) in io_it:
 
             logging.info('Computing DKI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -612,21 +613,25 @@ class ReconstDkiFlow(Workflow):
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
-                                'rgb', 'mode', 'evec', 'eval', 'tensor']
+                                'rgb', 'mode', 'evec', 'eval', 'dt_tensor',
+                                'dk_tensor']
 
             evals, evecs, kt = split_dki_param(dkfit.model_params)
             FA = fractional_anisotropy(evals)
             FA[np.isnan(FA)] = 0
             FA = np.clip(FA, 0, 1)
 
-
-            if 'tensor' in save_metrics:
+            if 'dt_tensor' in save_metrics:
                 tensor_vals = lower_triangular(dkfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
                 fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
                     np.float32), affine)
                 nib.save(fiber_tensors, otensor)
+
+            if 'dk_tensor' in save_metrics:
+                kt_img = nib.Nifti1Image(dkfit.kt.astype(np.float32), affine)
+                nib.save(kt_img, odk_tensor)
 
             if 'fa' in save_metrics:
                 fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)

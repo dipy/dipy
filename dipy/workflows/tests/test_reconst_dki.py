@@ -31,7 +31,7 @@ def test_reconst_dki():
         fa_data = nib.load(fa_path).get_data()
         assert_true(fa_data.shape == volume.shape[:-1])
 
-        tensor_path = dki_flow.last_generated_outputs['out_tensor']
+        tensor_path = dki_flow.last_generated_outputs['out_dt_tensor']
         tensor_data = nib.load(tensor_path)
         assert_true(tensor_data.shape[-1] == 6)
         assert_true(tensor_data.shape[:-1] == volume.shape[:-1])
@@ -56,6 +56,23 @@ def test_reconst_dki():
         rd_path = dki_flow.last_generated_outputs['out_rd']
         rd_data = nib.load(rd_path).get_data()
         assert_true(rd_data.shape == volume.shape[:-1])
+
+        mk_path = dki_flow.last_generated_outputs['out_mk']
+        mk_data = nib.load(mk_path).get_data()
+        assert_true(mk_data.shape == volume.shape[:-1])
+
+        ak_path = dki_flow.last_generated_outputs['out_ak']
+        ak_data = nib.load(ak_path).get_data()
+        assert_true(ak_data.shape == volume.shape[:-1])
+
+        rk_path = dki_flow.last_generated_outputs['out_rk']
+        rk_data = nib.load(rk_path).get_data()
+        assert_true(rk_data.shape == volume.shape[:-1])
+
+        kt_path = dki_flow.last_generated_outputs['out_dk_tensor']
+        kt_data = nib.load(kt_path)
+        assert_true(kt_data.shape[-1] == 15)
+        assert_true(kt_data.shape[:-1] == volume.shape[:-1])
 
         mode_path = dki_flow.last_generated_outputs['out_mode']
         mode_data = nib.load(mode_path).get_data()
