@@ -20,7 +20,7 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
 from dipy.reconst.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
-from dipy.reconst.dki import DiffusionKurtosisModel
+from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 
 
 class ReconstDtiFlow(Workflow):
@@ -614,9 +614,11 @@ class ReconstDkiFlow(Workflow):
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
                                 'rgb', 'mode', 'evec', 'eval', 'tensor']
 
-            FA = fractional_anisotropy(dkfit.evals)
+            evals, evecs, kt = split_dki_param(dkfit.model_params)
+            FA = fractional_anisotropy(evals)
             FA[np.isnan(FA)] = 0
             FA = np.clip(FA, 0, 1)
+
 
             if 'tensor' in save_metrics:
                 tensor_vals = lower_triangular(dkfit.quadratic_form)
@@ -688,7 +690,7 @@ class ReconstDkiFlow(Workflow):
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
 
-    def get_tensor_model(self, gtab):
+    def get_dki_model(self, gtab):
         return DiffusionKurtosisModel(gtab)
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
@@ -696,7 +698,7 @@ class ReconstDkiFlow(Workflow):
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
 
-        dkmodel = self.get_tensor_model(gtab)
+        dkmodel = self.get_dki_model(gtab)
         dkfit = dkmodel.fit(data, mask)
 
-        return dkmodel, gtab
+        return dkfit, gtab

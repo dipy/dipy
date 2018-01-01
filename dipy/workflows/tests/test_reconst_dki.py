@@ -11,9 +11,9 @@ from dipy.data import get_data
 from dipy.workflows.reconst import ReconstDkiFlow
 
 
-def test_reconst_dki(flow, extra_args=[]):
+def test_reconst_dki():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_25')
+        data_path, bval_path, bvec_path = get_data('small_101D')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])
@@ -24,7 +24,6 @@ def test_reconst_dki(flow, extra_args=[]):
         dki_flow = ReconstDkiFlow()
 
         args = [data_path, bval_path, bvec_path, mask_path]
-        args.extend(extra_args)
 
         dki_flow.run(*args, out_dir=out_dir)
 
