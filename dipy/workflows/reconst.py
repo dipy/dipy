@@ -32,11 +32,12 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals,
-            model_type='', out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
+    def run(self, data_file, data_bvecs, data_bvals, b0_threshold=0.0,
+            laplacian=True, positivity=True, out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
             out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz',
-            out_rtpp='rtpp.nii.gz', small_delta=0.0129, big_delta=0.0218,
-            save_metrics=[], out_dir='', laplacian_weighting=0.05):
+            out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz', out_perng='perng.nii.gz',
+            out_parng='parng.nii.gz', small_delta=0.0129, big_delta=0.0218, save_metrics=[],
+            out_dir='', laplacian_weighting=0.05):
         """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
         Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved
         in a nifti format in input files provided by
@@ -49,21 +50,27 @@ class ReconstMAPMRIFlow(Workflow):
             Path to the input volume.
         data_bvecs : string
             Path to the bvec files.
-        data_bvals :
+        data_bvals : string
             Path to the bval files.
-        small_delta :
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        small_delta : float
             Small delta value used in generation of gradient table of provided
             bval and bvec. (default: 0.0129)
-        big_delta :
+        big_delta : float
             Big delta value used in generation of gradient table of provided
             bval and bvec. (default: 0.0218)
-        model_type : string
-            Model type to fit.
-            Possible values: laplacian, positivity, both
-            (default: both)
-        save_metrics :
+        laplacian : boolean
+            Boolean value to indicate Laplacian model type
+            (default: True)
+        positivity : boolean
+            Boolean value to indicate Positivity model type
+            If both positivity and laplacian are True, then both are applied
+            (default: True)
+        save_metrics : list of strings
             List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp
+            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
+            ng, perng, parng
             (default: [] (all))
         out_dir : string, optional
             Output directory (default: input file directory)
@@ -79,12 +86,19 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the rtap to be saved
         out_rtpp : string, optional
             Name of the rtpp to be saved
+        out_ng : string, optional
+            Name of the Non-Gaussianity to be saved
+        out_perng :  string, optional
+            Name of the Non-Gaussianity perpendicular to be saved
+        out_parng : string, optional
+            Name of the Non-Gaussianity parallel to be saved
         laplacian_weighting :
             Weighting value used in fitting the MAPMRI model in the laplacian
             and both model types. (default: 0.05)
         """
         io_it = self.get_io_iterator()
-        for dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv, out_rtap, out_rtpp in io_it:
+        for dwi, bval, bvec, out_rtop, out_lapnorm, \
+            out_msd, out_qiv, out_rtap, out_rtpp in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -94,36 +108,32 @@ class ReconstMAPMRIFlow(Workflow):
 
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
-                                  big_delta=big_delta, b0_threshold=50)
-
-            if model_type is None:
-                model_type = 'both'
+                                  big_delta=big_delta, b0_threshold=b0_threshold)
 
             if not save_metrics:
-                save_metrics = ['rtop', 'laplacian_signal', 'msd', 'qiv', 'rtap', 'rtpp']
-
-            # print('data.shape (%d, %d, %d, %d)' % data.shape)
+                save_metrics = ['rtop', 'laplacian_signal', 'msd', 'qiv', 'rtap', 'rtpp',
+                                'ng', 'perng', 'parng']
 
             radial_order = 6
 
-            if model_type is 'laplacian':
+            if laplacian and positivity:
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=True,
-                                                     laplacian_weighting=laplacian_weighting)
+                                                     laplacian_weighting=laplacian_weighting,
+                                                     positivity_constraint=True)
                 mapfit_aniso = map_model_aniso.fit(data)
 
-            elif model_type is 'positivity':
+            elif positivity:
 
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=False,
                                                      positivity_constraint=True)
                 mapfit_aniso = map_model_aniso.fit(data)
 
-            elif model_type is 'both':
+            elif laplacian:
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=True,
-                                                     laplacian_weighting=laplacian_weighting,
-                                                     positivity_constraint=True)
+                                                     laplacian_weighting=laplacian_weighting)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             if 'rtop' in save_metrics:
@@ -156,215 +166,23 @@ class ReconstMAPMRIFlow(Workflow):
                 rtpp = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
                 nib.save(rtpp, out_rtpp)
 
+            if 'ng' in save_metrics:
+                n = mapfit_aniso.ng()
+                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_ng)
+
+            if 'perng' in save_metrics:
+                n = mapfit_aniso.ng_perpendicular()
+                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_ng)
+
+            if 'parng' in save_metrics:
+                n = mapfit_aniso.ng_parallel()
+                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_ng)
+
             logging.info('MAPMRI saved in {0}'.
                          format(os.path.dirname(out_rtpp)))
-
-
-class ReconstMAPMRILaplacian(ReconstMAPMRIFlow):
-    @classmethod
-    def get_short_name(cls):
-        return "mmri_laplacian"
-
-    def run(self, data_file, data_bvecs, data_bvals,
-            model_type='laplacian', out_rtop='lap_rtop.nii.gz', out_lapnorm='lap_lapnorm.nii.gz',
-            out_msd='lap_msd.nii.gz', out_qiv='lap_qiv.nii.gz', out_rtap='lap_rtap.nii.gz',
-            out_rtpp='lap_rtpp.nii.gz', small_delta=0.0129, big_delta=0.0218,
-            save_metrics=[], out_dir='', laplacian_weighting=0.05):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved
-        in a nifti format in input files provided by
-        `data_file` and saves the nifti files to an output
-        directory specified by `out_dir`.
-
-        Parameters
-        ----------
-        data_file : string
-            Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
-        data_bvals :
-            Path to the bval files.
-        small_delta :
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta :
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
-        model_type : string
-            Model type to fit.
-            Possible values: laplacian, positivity, both
-            (default: laplacian)
-        save_metrics :
-            List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
-        out_rtop : string, optional
-            Name of the rtop to be saved
-            (default: lap_rtop)
-        out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
-            (default: lap_lapnorm)
-        out_msd : string, optional
-            Name of the msd to be saved
-            (default: lap_msd)
-        out_qiv : string, optional
-            Name of the qiv to be saved
-            (default: lap_qiv)
-        out_rtap : string, optional
-            Name of the rtap to be saved
-            (default: lap_rtap)
-        out_rtpp : string, optional
-            Name of the rtpp to be saved
-            (default: lap_rtpp)
-        laplacian_weighting :
-            Weighting value used in fitting the MAPMRI model in the laplacian
-            and both model types. (default: 0.05)
-        """
-        super(ReconstMAPMRILaplacian, self). \
-            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
-                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
-                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
-                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
-
-
-class ReconstMAPMRIPositivity(ReconstMAPMRIFlow):
-    @classmethod
-    def get_short_name(cls):
-        return "mmri_positivity"
-
-    def run(self, data_file, data_bvecs, data_bvals,
-            model_type='positivity', out_rtop='pos_rtop.nii.gz', out_lapnorm='pos_lapnorm.nii.gz',
-            out_msd='pos_msd.nii.gz', out_qiv='pos_qiv.nii.gz', out_rtap='pos_rtap.nii.gz',
-            out_rtpp='pos_rtpp.nii.gz', small_delta=0.0129, big_delta=0.0218 ,
-            save_metrics=[], out_dir='', laplacian_weighting=0.05):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved
-        in a nifti format in input files provided by
-        `data_file` and saves the nifti files to an output
-        directory specified by `out_dir`.
-
-        Parameters
-        ----------
-        data_file : string
-            Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
-        data_bvals :
-            Path to the bval files.
-        small_delta :
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta :
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
-        model_type : string
-            Model type to fit.
-            Possible values: laplacian, positivity, both
-            (default: laplacian)
-        save_metrics :
-            List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
-        out_rtop : string, optional
-            Name of the rtop to be saved
-            (default: lap_rtop)
-        out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
-            (default: lap_lapnorm)
-        out_msd : string, optional
-            Name of the msd to be saved
-            (default: lap_msd)
-        out_qiv : string, optional
-            Name of the qiv to be saved
-            (default: lap_qiv)
-        out_rtap : string, optional
-            Name of the rtap to be saved
-            (default: lap_rtap)
-        out_rtpp : string, optional
-            Name of the rtpp to be saved
-            (default: lap_rtpp)
-        laplacian_weighting :
-            Weighting value used in fitting the MAPMRI model in the laplacian
-            and both model types. (default: 0.05)
-        """
-        super(ReconstMAPMRIPositivity, self). \
-            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
-                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
-                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
-                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
-
-
-class ReconstMAPMRIBoth(ReconstMAPMRIFlow):
-    @classmethod
-    def get_short_name(cls):
-        return "mmri_both"
-
-    def run(self, data_file, data_bvecs, data_bvals,
-            model_type='both', out_rtop='both_rtop.nii.gz', out_lapnorm='both_lapnorm.nii.gz',
-            out_msd='both_msd.nii.gz', out_qiv='both_qiv.nii.gz', out_rtap='both_rtap.nii.gz',
-            out_rtpp='both_rtpp.nii.gz', small_delta=0.0129, big_delta=0.0218,
-            save_metrics=[], out_dir='', laplacian_weighting=0.05):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved
-        in a nifti format in input files provided by
-        `data_file` and saves the nifti files to an output
-        directory specified by `out_dir`.
-
-        Parameters
-        ----------
-        data_file : string
-            Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
-        data_bvals :
-            Path to the bval files.
-        small_delta :
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta :
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
-        model_type : string
-            Model type to fit.
-            Possible values: laplacian, positivity, both
-            (default: laplacian)
-        save_metrics :
-            List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
-        out_rtop : string, optional
-            Name of the rtop to be saved
-            (default: lap_rtop)
-        out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
-            (default: lap_lapnorm)
-        out_msd : string, optional
-            Name of the msd to be saved
-            (default: lap_msd)
-        out_qiv : string, optional
-            Name of the qiv to be saved
-            (default: lap_qiv)
-        out_rtap : string, optional
-            Name of the rtap to be saved
-            (default: lap_rtap)
-        out_rtpp : string, optional
-            Name of the rtpp to be saved
-            (default: lap_rtpp)
-        laplacian_weighting :
-            Weighting value used in fitting the MAPMRI model in the laplacian
-            and both model types. (default: 0.05)
-        """
-        super(ReconstMAPMRIBoth, self). \
-            run(data_file, data_bvecs, data_bvals, model_type=model_type, out_rtop=out_rtop,
-                out_lapnorm=out_lapnorm, out_msd=out_msd, out_qiv=out_qiv,
-                out_rtap=out_rtap, out_rtpp=out_rtpp, small_delta=small_delta,
-                big_delta=big_delta, save_metrics=save_metrics, out_dir=out_dir)
 
 
 class ReconstDtiFlow(Workflow):
