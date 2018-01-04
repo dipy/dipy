@@ -9,22 +9,20 @@ from nose.tools import eq_
 from dipy.reconst import mapmri
 
 from dipy.data import get_data
-from dipy.workflows.reconst import ReconstMAPMRILaplacian, ReconstMAPMRIPositivity, ReconstMAPMRIBoth
-
+from dipy.workflows.reconst import ReconstMAPMRIFlow
 
 def test_reconst_mmri_laplacian():
-    reconst_mmri_core(ReconstMAPMRILaplacian)
+    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
-    reconst_mmri_core(ReconstMAPMRIBoth)
+    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
 
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
-    reconst_mmri_core(ReconstMAPMRIPositivity)
+    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
-
-def reconst_mmri_core(flow):
+def reconst_mmri_core(flow, lap, pos):
     with TemporaryDirectory() as out_dir:
         data_path, bvec_path, bval_path = get_data('small_25')
         vol_img = nib.load(data_path)
@@ -32,7 +30,8 @@ def reconst_mmri_core(flow):
 
         mmri_flow = flow()
 
-        mmri_flow.run(data_file=data_path, data_bvals=bval_path, data_bvecs=bvec_path, out_dir=out_dir)
+        mmri_flow.run(data_file=data_path, data_bvals=bval_path, data_bvecs=bvec_path,
+                      out_dir=out_dir, laplacian=lap, positivity=pos)
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
         print(rtop)
@@ -58,6 +57,18 @@ def reconst_mmri_core(flow):
         rtpp = mmri_flow.last_generated_outputs['out_rtpp']
         rtpp_data = nib.load(rtpp).get_data()
         eq_(rtpp_data.shape, volume.shape[:-1])
+
+        ng = mmri_flow.last_generated_outputs['out_ng']
+        ng_data = nib.load(ng).get_data()
+        eq_(ng_data.shape, volume.shape[:-1])
+
+        parng = mmri_flow.last_generated_outputs['out_parng']
+        parng_data = nib.load(parng).get_data()
+        eq_(parng_data.shape, volume.shape[:-1])
+
+        perng = mmri_flow.last_generated_outputs['out_perng']
+        perng_data = nib.load(perng).get_data()
+        eq_(perng_data.shape, volume.shape[:-1])
 
 
 if __name__ == '__main__':
