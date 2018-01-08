@@ -126,13 +126,13 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         wm_map : array
             The partial volume fraction of white matter at each voxel.
         gm_map : array
-            The partial volume fraction of grey matter at each voxel.
+            The partial volume fraction of gray matter at each voxel.
         csf_map : array
             The partial volume fraction of corticospinal fluid at each
             voxel.
 
         """
-        # include map = grey matter + image background
+        # include map = gray matter + image background
         include_map = np.copy(gm_map)
         include_map[(wm_map + gm_map + csf_map) == 0] = 1
         # exclude map = csf
