@@ -286,7 +286,7 @@ cdef _pft_tracker(DirectionGetter dg,
     i = 0
     strl_array_len = streamline.shape[0]
     while i < strl_array_len - 1:
-        if dg.get_direction(point, dir):
+        if dg.get_direction_c(point, dir):
             # no valid diffusion direction to follow
             tissue_class[0] = INVALIDPOINT
         else:
@@ -326,9 +326,8 @@ cdef _pft_tracker(DirectionGetter dg,
 
                 pft_trial += 1
                 # update the current point with the PFT results
-                for j in range(3):
-                    point[j] = streamline[i, j]
-                    dir[j] = directions[i, j]
+                copypoint(&streamline[i, 0], point)
+                copypoint(&directions[i, 0], dir)
 
                 if not tissue_class[0] == TRACKPOINT:
                     break
@@ -369,9 +368,8 @@ cdef _pft(np.float_t[:, :] streamline,
         vs[j] = voxel_size[j]
 
     for p in range(particle_count):
-        for j in range(3):
-            particle_paths[0, p, 0, j] = streamline[streamline_i, j]
-            particle_dirs[0, p, 0, j] = directions[streamline_i, j]
+        copypoint(&streamline[streamline_i, 0], &particle_paths[0, p, 0, 0])
+        copypoint(&directions[streamline_i, 0], &particle_dirs[0, p, 0, 0])
         particle_weights[0, p] = 1. / particle_count
         particle_states[0, p, 0] = TRACKPOINT
         particle_states[0, p, 1] = 0
@@ -383,20 +381,17 @@ cdef _pft(np.float_t[:, :] streamline,
                     particle_paths[0, p, s, j] = 0
                     particle_dirs[0, p, s, j] = 0
                 continue  # move to the next particle
-            for j in range(3):
-                point[j] = particle_paths[0, p, s, j]
-                dir[j] = particle_dirs[0, p, s, j]
-            if dg.get_direction(point, dir):
+            copypoint(&particle_paths[0, p, s, 0], point)
+            copypoint(&particle_dirs[0, p, s, 0], dir)
+
+            if dg.get_direction_c(point, dir):
                 particle_states[0, p, 0] = INVALIDPOINT
             else:
                 for j in range(3):
                     voxdir[j] = dir[j] / vs[j]
                 fixed_step(point, voxdir, step_size)
-
-                for j in range(3):
-                    particle_paths[0, p, s + 1, j] = point[j]
-                    particle_dirs[0, p, s + 1, j] = dir[j]
-
+                copypoint(point, &particle_paths[0, p, s + 1, 0])
+                copypoint(dir, &particle_dirs[0, p, s + 1, 0])
                 particle_states[0, p, 0] = tc.check_point_c(point)
                 particle_states[0, p, 1] = s + 1
                 particle_weights[0, p] *= 1 - tc.get_exclude_c(point)
@@ -420,11 +415,10 @@ cdef _pft(np.float_t[:, :] streamline,
             # copy data in the temp arrays
             for pp in range(particle_count):
                 for ss in range(pft_nbr_steps):
-                    for j in range(3):
-                        particle_paths[1, pp, ss,
-                                       j] = particle_paths[0, pp, ss, j]
-                        particle_dirs[1, pp, ss,
-                                      j] = particle_dirs[0, pp, ss, j]
+                    copypoint(&particle_paths[0, pp, ss, 0],
+                              &particle_paths[1, pp, ss, 0])
+                    copypoint(&particle_dirs[0, pp, ss, 0],
+                              &particle_dirs[1, pp, ss, 0])
                 particle_weights[1, pp] = particle_weights[0, pp]
                 particle_states[1, pp, 0] = particle_states[0, pp, 0]
                 particle_states[1, pp, 1] = particle_states[0, pp, 1]
@@ -439,11 +433,10 @@ cdef _pft(np.float_t[:, :] streamline,
                                            rdm_sample,
                                            particle_count)
                 for ss in range(pft_nbr_steps):
-                    for j in range(3):
-                        particle_paths[0, pp, ss,
-                                       j] = particle_paths[1, p_source, ss, j]
-                        particle_dirs[0, pp, ss,
-                                      j] = particle_dirs[1, p_source, ss, j]
+                    copypoint(&particle_paths[1, p_source, ss, 0],
+                              &particle_paths[0, pp, ss, 0])
+                    copypoint(&particle_dirs[1, p_source, ss, 0],
+                              &particle_dirs[0, pp, ss, 0])
                 particle_states[0, pp, 0] = particle_states[1, p_source, 0]
                 particle_states[0, pp, 1] = particle_states[1, p_source, 1]
                 particle_weights[0, pp] = 1. / particle_count
@@ -456,9 +449,7 @@ cdef _pft(np.float_t[:, :] streamline,
     p = where_to_insert(&particle_weights[0, 0], rdm_sample, particle_count)
 
     for s in range(particle_states[0, p, 1]):
-        for j in range(3):
-            streamline[streamline_i + s, j] = particle_paths[0, p, s, j]
-            directions[streamline_i + s, j] = particle_dirs[0, p, s, j]
-
+        copypoint(&particle_paths[0, p, s, 0], &streamline[streamline_i + s, 0])
+        copypoint(&particle_dirs[0, p, s, 0], &directions[streamline_i + s, 0])
     tissue_class[0] = <TissueClass> particle_states[0, p, 0]
     return streamline_i + particle_states[0, p, 1] - 1
