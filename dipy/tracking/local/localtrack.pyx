@@ -94,7 +94,7 @@ def local_tracker(
         np.float_t[:] seed,
         np.float_t[:] first_step,
         np.float_t[:] voxel_size,
-        np.float_t[:,:] streamline,
+        np.float_t[:, :] streamline,
         double step_size,
         int fixedstep):
     cdef:
@@ -118,7 +118,7 @@ cdef int _local_tracker(DirectionGetter dg,
                         np.float_t[:] seed,
                         np.float_t[:] first_step,
                         np.float_t[:] voxel_size,
-                        np.float_t[:,:] streamline,
+                        np.float_t[:, :] streamline,
                         double step_size,
                         int fixedstep,
                         TissueClass* tissue_class):
@@ -177,7 +177,7 @@ cdef int _local_tracker(DirectionGetter dg,
     cdef:
         size_t i
         double point[3], dir[3], vs[3], voxdir[3]
-        void (*step)(double * , double*, double) nogil
+        void (*step)(double*, double*, double) nogil
 
     if fixedstep:
         step = fixed_step
@@ -196,7 +196,7 @@ cdef int _local_tracker(DirectionGetter dg,
         for j in range(3):
             voxdir[j] = dir[j] / vs[j]
         step(point, voxdir, step_size)
-        copypoint(point, & streamline[i, 0])
+        copypoint(point, &streamline[i, 0])
         tissue_class[0] = tc.check_point_c(point)
         if tissue_class[0] == TRACKPOINT:
             continue
@@ -218,17 +218,17 @@ def pft_tracker(
         np.float_t[:] seed,
         np.float_t[:] first_step,
         np.float_t[:] voxel_size,
-        np.float_t[:,:] streamline,
-        np.float_t[:,:] directions,
+        np.float_t[:, :] streamline,
+        np.float_t[:, :] directions,
         double step_size,
         int pft_nbr_back_steps,
         int pft_max_steps,
         int pft_max_trial,
         int particle_count,
-        np.float_t[:,:,:,:] particle_paths,
-        np.float_t[:,:,:,:] particle_dirs,
-        np.float_t[:,:] particle_weights,
-        np.int_t[:,:,:]  particle_states):
+        np.float_t[:, :, :, :] particle_paths,
+        np.float_t[:, :, :, :] particle_dirs,
+        np.float_t[:, :] particle_weights,
+        np.int_t[:, :, :]  particle_states):
     cdef:
         int i
         TissueClass tissue_class
@@ -253,18 +253,18 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:] seed,
                   np.float_t[:] first_step,
                   np.float_t[:] voxel_size,
-                  np.float_t[:,:] streamline,
-                  np.float_t[:,:] directions,
+                  np.float_t[:, :] streamline,
+                  np.float_t[:, :] directions,
                   double step_size,
-                  TissueClass* tissue_class,
+                  TissueClass * tissue_class,
                   int pft_nbr_back_steps,
                   int pft_max_steps,
                   int pft_max_trial,
                   int particle_count,
-                  np.float_t[:,:,:,:] particle_paths,
-                  np.float_t[:,:,:,:] particle_dirs,
-                  np.float_t[:,:] particle_weights,
-                  np.int_t[:,:,:] particle_states):
+                  np.float_t[:, :, :, :] particle_paths,
+                  np.float_t[:, :, :, :] particle_dirs,
+                  np.float_t[:, :] particle_weights,
+                  np.int_t[:, :, :] particle_states):
 
     if (seed.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
@@ -294,8 +294,8 @@ cdef _pft_tracker(DirectionGetter dg,
                 voxdir[j] = dir[j] / vs[j]
             i += 1
             fixed_step(point, voxdir, step_size)
-            copypoint(point, & streamline[i, 0])
-            copypoint(dir, & directions[i, 0])
+            copypoint(point, &streamline[i, 0])
+            copypoint(dir, &directions[i, 0])
 
             tissue_class[0] = tc.check_point_c(point)
 
@@ -343,20 +343,20 @@ cdef _pft_tracker(DirectionGetter dg,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef _pft(np.float_t[:,:] streamline,
+cdef _pft(np.float_t[:, :] streamline,
           int streamline_i,
-          np.float_t[:,:] directions,
+          np.float_t[:, :] directions,
           DirectionGetter dg,
           ConstrainedTissueClassifier tc,
           np.float_t[:] voxel_size,
           double step_size,
-          TissueClass* tissue_class,
+          TissueClass * tissue_class,
           int pft_nbr_steps,
           int particle_count,
-          np.float_t[:,:,:,:] particle_paths,
-          np.float_t[:,:,:,:] particle_dirs,
-          np.float_t[:,:] particle_weights,
-          np.int_t[:,:,:] particle_states):
+          np.float_t[:, :, :, :] particle_paths,
+          np.float_t[:, :, :, :] particle_dirs,
+          np.float_t[:, :] particle_weights,
+          np.int_t[:, :, :] particle_states):
     cdef:
         double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3], dir[3], vs[3], voxdir[3]
@@ -430,12 +430,12 @@ cdef _pft(np.float_t[:,:] streamline,
                 particle_states[1, pp, 1] = particle_states[0, pp, 1]
 
             # sample N new particle
-            cumsum(& particle_weights[1, 0],
-                   & particle_weights[1, 0],
+            cumsum(&particle_weights[1, 0],
+                   &particle_weights[1, 0],
                    particle_count)
             for pp in range(particle_count):
                 rdm_sample = random() * particle_weights[1, particle_count - 1]
-                p_source = where_to_insert(& particle_weights[1, 0],
+                p_source = where_to_insert(&particle_weights[1, 0],
                                            rdm_sample,
                                            particle_count)
                 for ss in range(pft_nbr_steps):
@@ -449,16 +449,16 @@ cdef _pft(np.float_t[:,:] streamline,
                 particle_weights[0, pp] = 1. / particle_count
 
     # update the streamline with the trajectory of one particle
-    cumsum(& particle_weights[0, 0],
-           & particle_weights[0, 0],
+    cumsum(&particle_weights[0, 0],
+           &particle_weights[0, 0],
            particle_count)
     rdm_sample = random() * particle_weights[0, particle_count - 1]
-    p = where_to_insert(& particle_weights[0, 0], rdm_sample, particle_count)
+    p = where_to_insert(&particle_weights[0, 0], rdm_sample, particle_count)
 
     for s in range(particle_states[0, p, 1]):
         for j in range(3):
             streamline[streamline_i + s, j] = particle_paths[0, p, s, j]
             directions[streamline_i + s, j] = particle_dirs[0, p, s, j]
 
-    tissue_class[0] = <TissueClass>particle_states[0, p, 0]
+    tissue_class[0] = <TissueClass> particle_states[0, p, 0]
     return streamline_i + particle_states[0, p, 1] - 1
