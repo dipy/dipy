@@ -10,6 +10,6 @@ from .tissue_classifier import (ActTissueClassifier,
 from dipy.tracking import utils
 
 __all__ = ["ActTissueClassifier", "BinaryTissueClassifier",
-           "ConstrainedTissueClassifier", "CmcTissueClassifier",
-           "LocalTracking", "ParticleFilteringTracking",
-           "ThresholdTissueClassifier"]
+           "CmcTissueClassifier", "ConstrainedTissueClassifier",
+           "DirectionGetter", "LocalTracking", "ParticleFilteringTracking",
+           "ThresholdTissueClassifier", "TissueClassifier"]
