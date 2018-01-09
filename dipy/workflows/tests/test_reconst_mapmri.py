@@ -11,6 +11,7 @@ from dipy.reconst import mapmri
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstMAPMRIFlow
 
+
 def test_reconst_mmri_laplacian():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
@@ -22,6 +23,7 @@ def test_reconst_mmri_both():
 def test_reconst_mmri_positivity():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
+
 def reconst_mmri_core(flow, lap, pos):
     with TemporaryDirectory() as out_dir:
         data_path, bvec_path, bval_path = get_data('small_25')
@@ -30,8 +32,10 @@ def reconst_mmri_core(flow, lap, pos):
 
         mmri_flow = flow()
 
+        print(mmri_flow)
+
         mmri_flow.run(data_file=data_path, data_bvals=bval_path, data_bvecs=bvec_path,
-                      out_dir=out_dir, laplacian=lap, positivity=pos)
+                      laplacian=lap, positivity=pos, out_dir=out_dir)
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
         print(rtop)

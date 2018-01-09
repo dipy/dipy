@@ -98,7 +98,8 @@ class ReconstMAPMRIFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, bvec, out_rtop, out_lapnorm, \
-            out_msd, out_qiv, out_rtap, out_rtpp in io_it:
+            out_msd, out_qiv, out_rtap, out_rtpp, out_ng,\
+            out_perng, out_parng in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -168,18 +169,18 @@ class ReconstMAPMRIFlow(Workflow):
 
             if 'ng' in save_metrics:
                 n = mapfit_aniso.ng()
-                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
                 nib.save(ng, out_ng)
 
             if 'perng' in save_metrics:
                 n = mapfit_aniso.ng_perpendicular()
-                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
-                nib.save(ng, out_ng)
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_perng)
 
             if 'parng' in save_metrics:
                 n = mapfit_aniso.ng_parallel()
-                ng = nib.nift1.Nifti1Image(n.astype(np.float32), affine)
-                nib.save(ng, out_ng)
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_parng)
 
             logging.info('MAPMRI saved in {0}'.
                          format(os.path.dirname(out_rtpp)))
