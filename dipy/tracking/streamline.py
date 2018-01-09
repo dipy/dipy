@@ -88,6 +88,47 @@ def center_streamlines(streamlines):
     center = np.mean(np.concatenate(streamlines, axis=0), axis=0)
     return [s - center for s in streamlines], center
 
+def deform_streamlines(streamlines,deformationField,streams2grid,grid2world):
+    """ Apply deformation field to streamlines 
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 2D ndarrays of shape[-1]==3
+    deformationField : 4D numpy array 
+        x,y,z displacements stored in volume, shape[-1]==3
+    streams2grid : array, (4,4)
+        transform matrix voxmm space to image space
+    grid2world : array (4,4)
+        transform matrix image space to world coordinates
+
+    Returns
+    -------
+    new_streamlines : list
+        List of the transformed 2D ndarrays of shape[-1]==3
+    """
+
+    if deformationField.shape[-1] != 3:
+        raise ValueError("Last dimension of deformationField needs shape==3")
+
+    streams_in_grid = transform_streamlines(streamlines,streams2grid)
+    displacements = values_from_volume(deformationField,streams_in_grid)
+    streams_in_world = transform_streamlines(streams_in_grid,grid2world)
+    new_streams_in_world = []
+    for i,s in enumerate(streams_in_world):
+        new_s = []
+        for j,pt in enumerate(s):
+            new_pt = np.array([pt[0]+displacements[i][j][0],
+                pt[1]+displacements[i][j][1],
+                pt[2]+displacements[i][j][2]])
+            new_s.append(new_pt)
+        new_streams_in_world.append(np.array(new_s))
+
+    new_streams_grid = transform_streamlines(new_streams_in_world,
+        np.linalg.inv(grid2world))
+    new_streamlines = transform_streamlines(new_streams_grid,
+        np.linalg.inv(streams2grid))
+    return new_streamlines
 
 def transform_streamlines(streamlines, mat):
     """ Apply affine transformation to streamlines

@@ -24,7 +24,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       compress_streamlines,
                                       select_by_rois,
                                       orient_by_rois,
-                                      values_from_volume)
+                                      values_from_volume,
+                                      deform_streamlines)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -515,6 +516,44 @@ def test_unlist_relist_streamlines():
     for i in range(len(streamlines)):
         assert_array_equal(streamlines[i], streamlines2[i])
 
+def test_deform_streamlines():
+    # streamlines needs to be a list of streamlines
+    A = streamlines =  np.array([[1, 2, 3], [1, 2, 3.]])
+    streamlines = [A for i in range(10)]
+    # Create Random deformation field
+    deformationField = np.empty((4,4,4,3))
+    shape = deformationField.shape
+    for i in range(shape[0]):
+      for j in range(shape[1]):
+        for k in range(shape[2]):
+          deformationField[i][j][k] = np.random.rand(3)
+
+    # Specify stream2grid and grid2world
+    stream2grid = np.eye(4)
+    grid2world = np.eye(4)
+
+    # Deform streamlines
+    new_streamlines = deform_streamlines(streamlines,
+      deformationField,
+      stream2grid,
+      grid2world)
+
+    # Interpolate displacements onto original streamlines
+    displacements = values_from_volume(deformationField,streamlines)
+
+    # Subtract displacements from deformed streamlines
+    new_streamlines_orig_space = []
+    for i,s in enumerate(new_streamlines):
+        new_s = []
+        for j,pt in enumerate(s):
+            new_pt = np.array([pt[0]-displacements[i][j][0],
+                pt[1]-displacements[i][j][1],
+                pt[2]-displacements[i][j][2]])
+            new_s.append(new_pt)
+        new_streamlines_orig_space.append(np.array(new_s,dtype=np.float32))
+
+    # Check to see if streamlines the same
+    assert_array_equal(streamlines,new_streamlines_orig_space)
 
 def test_center_and_transform():
     A = np.array([[1, 2, 3], [1, 2, 3.]])
