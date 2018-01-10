@@ -90,14 +90,14 @@ def center_streamlines(streamlines):
     return [s - center for s in streamlines], center
 
 
-def deform_streamlines(streamlines, deformField, streams2grid, grid2world):
+def deform_streamlines(streamlines, deform_field, streams2grid, grid2world):
     """ Apply deformation field to streamlines
 
     Parameters
     ----------
     streamlines : list
         List of 2D ndarrays of shape[-1]==3
-    deformField : 4D numpy array
+    deform_field : 4D numpy array
         x,y,z displacements stored in volume, shape[-1]==3
     streams2grid : array, (4,4)
         transform matrix voxmm space to image space
@@ -110,11 +110,11 @@ def deform_streamlines(streamlines, deformField, streams2grid, grid2world):
         List of the transformed 2D ndarrays of shape[-1]==3
     """
 
-    if deformField.shape[-1] != 3:
-        raise ValueError("Last dimension of deformField needs shape==3")
+    if deform_field.shape[-1] != 3:
+        raise ValueError("Last dimension of deform_field needs shape==3")
 
     streams_in_grid = transform_streamlines(streamlines, streams2grid)
-    displacements = values_from_volume(deformField, streams_in_grid)
+    displacements = values_from_volume(deform_field, streams_in_grid)
     streams_in_world = transform_streamlines(streams_in_grid, grid2world)
     new_streams_in_world = add_displacements(streams_in_world, displacements)
     new_streams_grid = transform_streamlines(new_streams_in_world,
