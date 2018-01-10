@@ -506,18 +506,22 @@ def test_mask():
     dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
     mask = np.zeros(data.shape[:-1], dtype=bool)
     mask[0, 0, 0] = True
-    dtifit = dm.fit(data)
-    dtifit_w_mask = dm.fit(data, mask=mask)
-    # Without a mask it has some value
-    assert_(not np.isnan(dtifit.fa[0, 0, 0]))
-    # Where mask is False, evals, evecs and fa should all be 0
-    assert_array_equal(dtifit_w_mask.evals[~mask], 0)
-    assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
-    assert_array_equal(dtifit_w_mask.fa[~mask], 0)
-    assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
-    # Except for the one voxel that was selected by the mask:
-    assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
-    assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0], dtifit.S0_hat[0, 0, 0])
+    for mask_more in [True, False]:
+        if mask_more:
+            mask[0, 0, 1] = True
+        dtifit = dm.fit(data)
+        dtifit_w_mask = dm.fit(data, mask=mask)
+        # Without a mask it has some value
+        assert_(not np.isnan(dtifit.fa[0, 0, 0]))
+        # Where mask is False, evals, evecs and fa should all be 0
+        assert_array_equal(dtifit_w_mask.evals[~mask], 0)
+        assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
+        assert_array_equal(dtifit_w_mask.fa[~mask], 0)
+        assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
+        # Except for the one voxel that was selected by the mask:
+        assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+        assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0],
+                            dtifit.S0_hat[0, 0, 0])
 
 
 def test_nnls_jacobian_fucn():
@@ -791,7 +795,7 @@ def test_decompose_tensor_nan():
                                          from_lower_triangular(D_alter))
     assert_array_almost_equal(lfine, np.array([1.7e-3, 0.3e-3, 0.2e-3]))
     assert_array_almost_equal(vfine, vref)
-    
+
     lref, vref = decompose_tensor(from_lower_triangular(D_alter))
     lalter, valter = _decompose_tensor_nan(from_lower_triangular(D_nan),
                                            from_lower_triangular(D_alter))
