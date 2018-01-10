@@ -94,34 +94,41 @@ above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor, fvtk
 from dipy.viz.colormap import line_colors
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Make display objects
 color = line_colors(cc_streamlines)
-cc_streamlines_actor = fvtk.line(cc_streamlines, line_colors(cc_streamlines))
+cc_streamlines_actor = actor.line(cc_streamlines, line_colors(cc_streamlines))
 cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
                             opacities=[1.])
 
-vol_actor = fvtk.slicer(t1_data)
+vol_actor = actor.slicer(t1_data)
 
-vol_actor.display(40, None, None)
+vol_actor.display(x=40)
 vol_actor2 = vol_actor.copy()
-vol_actor2.display(None, None, 35)
+vol_actor2.display(z=35)
 
 # Add display objects to canvas
-r = fvtk.ren()
-fvtk.add(r, vol_actor)
-fvtk.add(r, vol_actor2)
-fvtk.add(r, cc_streamlines_actor)
-fvtk.add(r, cc_ROI_actor)
+r = window.Renderer()
+r.add(vol_actor)
+r.add(vol_actor2)
+r.add(cc_streamlines_actor)
+r.add(cc_ROI_actor)
 
 # Save figures
-fvtk.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
-            size=(800, 800))
-fvtk.camera(r, [-1, 0, 0], [0, 0, 0], viewup=[0, 0, 1])
-fvtk.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
-            size=(800, 800))
+window.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
+              size=(800, 800))
+if interactive:
+    window.show(r)
+r.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
+window.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
+              size=(800, 800))
+if interactive:
+    window.show(r)
 
 """
 .. figure:: corpuscallosum_axial.png
