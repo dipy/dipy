@@ -10,7 +10,7 @@ from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite)
+                           assert_raises, run_module_suite, assert_allclose)
 
 from dipy.tracking import Streamlines
 import dipy.tracking.utils as ut
@@ -519,42 +519,59 @@ def test_unlist_relist_streamlines():
 
 def test_deform_streamlines():
     # streamlines needs to be a list of streamlines
-    A = streamlines = np.array([[1, 2, 3], [1, 2, 3.]])
+    A = np.array([[1, 2, 3], [1, 2, 3.]])
     streamlines = [A for i in range(10)]
+
     # Create Random deformation field
-    deformationField = np.empty((4, 4, 4, 3))
-    shape = deformationField.shape
+    deformation_field = np.empty((8, 8, 8, 3))
+    shape = deformation_field.shape
     for i in range(shape[0]):
         for j in range(shape[1]):
             for k in range(shape[2]):
-                deformationField[i][j][k] = np.random.rand(3)
+                deformation_field[i][j][k] = np.random.randn(3)
 
     # Specify stream2grid and grid2world
-    stream2grid = np.eye(4)
-    grid2world = np.eye(4)
+    stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                            [0, np.random.randn(1)[0], 0, 0],
+                            [0, 0, np.random.randn(1)[0], 0],
+                            [0, 0, 0, 1]])
+    grid2world = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                           [0, np.random.randn(1)[0], 0, 0],
+                           [0, 0, np.random.randn(1)[0], 0],
+                           [0, 0, 0, 1]])
+    stream2world = np.dot(stream2grid, grid2world)
 
     # Deform streamlines
     new_streamlines = deform_streamlines(streamlines,
-                                         deformationField,
+                                         deformation_field,
                                          stream2grid,
                                          grid2world)
 
     # Interpolate displacements onto original streamlines
-    displacements = values_from_volume(deformationField, streamlines)
+    streamlines_in_grid = transform_streamlines(streamlines, stream2grid)
+    displacements = values_from_volume(deformation_field, streamlines_in_grid)
 
-    # Subtract displacements from deformed streamlines
-    new_streamlines_orig_space = []
-    for i, s in enumerate(new_streamlines):
+    # Put new_streamlines into world space
+    new_streamlines_world = transform_streamlines(new_streamlines,
+                                                  stream2world)
+
+    # Subtract displacements from new_streamlines in world space
+    orig_streamlines_world = []
+    for i, s in enumerate(new_streamlines_world):
         new_s = []
         for j, pt in enumerate(s):
             new_pt = np.array([pt[0]-displacements[i][j][0],
                                pt[1]-displacements[i][j][1],
                                pt[2]-displacements[i][j][2]])
             new_s.append(new_pt)
-        new_streamlines_orig_space.append(np.array(new_s, dtype=np.float32))
+        orig_streamlines_world.append(np.array(new_s))
 
-    # Check to see if streamlines the same
-    assert_array_equal(streamlines, new_streamlines_orig_space)
+    # Put orig_streamlines_world into voxmm
+    orig_streamlines = transform_streamlines(orig_streamlines_world,
+                                             np.linalg.inv(stream2world))
+
+    # All close because of floating pt inprecision
+    assert_allclose(streamlines, orig_streamlines, rtol=1e-10, atol=0)
 
 
 def test_center_and_transform():
