@@ -111,25 +111,30 @@ Both, ``downsample`` and ``approx_polygon_track`` can be thought as methods for
 lossy compression of streamlines.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
-ren = fvtk.ren()
-ren.SetBackground(*fvtk.colors.white)
-bundle_actor = fvtk.streamtube(bundle, fvtk.colors.red, linewidth=0.3)
+# Enables/disables interactive visualization
+interactive = False
 
-fvtk.add(ren, bundle_actor)
+ren = window.Renderer()
+ren.SetBackground(*window.colors.white)
+bundle_actor = actor.streamtube(bundle, window.colors.red, linewidth=0.3)
 
-bundle_actor2 = fvtk.streamtube(bundle_downsampled, fvtk.colors.red, linewidth=0.3)
+ren.add(bundle_actor)
+
+bundle_actor2 = actor.streamtube(bundle_downsampled, window.colors.red, linewidth=0.3)
 bundle_actor2.SetPosition(0, 40, 0)
 
-bundle_actor3 = fvtk.streamtube(bundle_downsampled2, fvtk.colors.red, linewidth=0.3)
+bundle_actor3 = actor.streamtube(bundle_downsampled2, window.colors.red, linewidth=0.3)
 bundle_actor3.SetPosition(0, 80, 0)
 
-fvtk.add(ren, bundle_actor2)
-fvtk.add(ren, bundle_actor3)
+ren.add(bundle_actor2)
+ren.add(bundle_actor3)
 
-fvtk.camera(ren, pos=(0, 0, 0), focal=(30, 0, 0))
-fvtk.record(ren, out_path='simulated_cosine_bundle.png', size=(900, 900))
+ren.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
+window.record(out_path='simulated_cosine_bundle.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: simulated_cosine_bundle.png

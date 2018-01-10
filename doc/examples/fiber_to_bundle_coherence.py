@@ -218,34 +218,40 @@ after the cleaning procedure via RFBC thresholding (see
 """
 
 # Visualize the results
-from dipy.viz import fvtk, actor
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Create renderer
-ren = fvtk.ren()
+ren = window.Renderer()
 
 # Original lines colored by LFBC
 lineactor = actor.line(fbc_sl_orig, clrs_orig, linewidth=0.2)
-fvtk.add(ren, lineactor)
+ren.add(lineactor)
 
 # Horizontal (axial) slice of T1 data
-vol_actor1 = fvtk.slicer(t1_data, affine=affine)
-vol_actor1.display(None, None, 20)
-fvtk.add(ren, vol_actor1)
+vol_actor1 = actor.slicer(t1_data, affine=affine)
+vol_actor1.display(z=20)
+ren.add(vol_actor1)
 
 # Vertical (sagittal) slice of T1 data
-vol_actor2 = fvtk.slicer(t1_data, affine=affine)
-vol_actor2.display(35, None, None)
-fvtk.add(ren, vol_actor2)
+vol_actor2 = actor.slicer(t1_data, affine=affine)
+vol_actor2.display(x=35)
+ren.add(vol_actor2)
 
 # Show original fibers
-fvtk.camera(ren, pos=(-264, 285, 155), focal=(0, -14, 9), viewup=(0, 0, 1),
-            verbose=False)
-fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
+ren.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+window.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 # Show thresholded fibers
-fvtk.rm(ren, lineactor)
-fvtk.add(ren, actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
-fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
+ren.rm(lineactor)
+ren.add(actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
+window.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 .. _optic_radiation_before_cleaning:
