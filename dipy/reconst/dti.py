@@ -800,7 +800,7 @@ class TensorModel(ReconstModel):
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
-                S0_params = np.zeros(data.shape[:-1] + (1,))
+                S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
 
         return TensorFit(self, dti_params, model_S0=S0_params)

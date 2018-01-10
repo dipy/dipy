@@ -125,11 +125,3 @@ Now call it for real with a text file::
 .. include:: ../links_names.inc
 
 """
-
-
-
-
-
-
-
-
