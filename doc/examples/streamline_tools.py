@@ -94,7 +94,7 @@ above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
 
-from dipy.viz import window, actor, fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
 # Enables/disables interactive visualization
@@ -103,8 +103,8 @@ interactive = False
 # Make display objects
 color = line_colors(cc_streamlines)
 cc_streamlines_actor = actor.line(cc_streamlines, line_colors(cc_streamlines))
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
-                            opacities=[1.])
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
+                                      opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
 
