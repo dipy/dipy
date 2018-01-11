@@ -58,15 +58,14 @@ anatomical structure of this brain:
 """
 
 from dipy.viz.colormap import line_colors
-from dipy.viz import window, actor, fvtk
+from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
 
 candidate_streamlines_actor = actor.streamtube(candidate_sl, line_colors(candidate_sl))
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1],
-                            colors=[(1., 1., 0.)],
-                            opacities=[1.])
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
+                                      opacity=0.5)
 
 vol_actor = actor.slicer(t1_data)
 
