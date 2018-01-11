@@ -41,7 +41,9 @@ class IoInfoFlow(Workflow):
             logging.info('Looking at {0}'.format(input_path))
             logging.info('------------------------------------------')
 
-            if input_path.endswith('.nii') or input_path.endswith('.nii.gz'):
+            ipath_lower = input_path.lower()
+
+            if ipath_lower.endswith('.nii') or ipath_lower.endswith('.nii.gz'):
 
                 data, affine, img, vox_sz, affcodes = load_nifti(
                     input_path,
@@ -61,10 +63,10 @@ class IoInfoFlow(Workflow):
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
-                    'Voxel size is not isotropic. Recommending reslicing.\n'
+                        'Voxel size is not isotropic. Please reslice.\n'
                     logging.warning(msg)
 
-            if os.path.basename(input_path).find('bval') > -1:
+            if os.path.basename(input_path).lower().find('bval') > -1:
                 bvals = np.loadtxt(input_path)
                 logging.info('Bvalues \n{0}'.format(bvals))
                 logging.info('Total number of bvalues {}'.format(len(bvals)))
@@ -74,7 +76,7 @@ class IoInfoFlow(Workflow):
                              .format(np.sum(bvals <= b0_threshold),
                                      b0_threshold))
 
-            if os.path.basename(input_path).find('bvec') > -1:
+            if os.path.basename(input_path).lower().find('bvec') > -1:
 
                 bvecs = np.loadtxt(input_path)
                 logging.info('Bvectors shape on disk is {0}'
@@ -89,7 +91,7 @@ class IoInfoFlow(Workflow):
                 ncl1 = np.sum(norms < 1 - bvecs_tol)
                 logging.info('Total number of unit bvectors {0}'
                              .format(len(res[0])))
-                logging.info('Total number of non-unit bvectors {0}\n'.format(ncl1))
+                logging.info('Total number of non-unit bvectors {0}\n'
+                             .format(ncl1))
 
         np.set_printoptions()
-
