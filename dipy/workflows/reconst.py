@@ -27,22 +27,33 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+
 class ReconstMAPMRIFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'mapmri'
 
     def run(self, data_file, data_bvecs, data_bvals, b0_threshold=0.0,
-            laplacian=True, positivity=True, out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
-            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz', out_rtap='rtap.nii.gz',
-            out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz', out_perng='perng.nii.gz',
-            out_parng='parng.nii.gz', small_delta=0.0129, big_delta=0.0218, save_metrics=[],
+            laplacian=True, positivity=True, out_rtop='rtop.nii.gz',
+            out_lapnorm='lapnorm.nii.gz',
+            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
+            out_rtap='rtap.nii.gz',
+            out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
+            out_perng='perng.nii.gz',
+            out_parng='parng.nii.gz', small_delta=0.0129,
+            big_delta=0.0218, save_metrics=[],
             out_dir='', laplacian_weighting=0.05):
-        """ Workflow for the app-dipy-mapmri on Brain-Life (www.brain-life.org).
-        Generates rtop, lapnorm, msd, qiv, rtap, rtpp saved
-        in a nifti format in input files provided by
+        """ Workflow for fitting the MAPMRI model
+        (with optional Laplacian regularization).
+        Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
+        non-gaussian (ng), parallel ng, perpendicular ng
+        saved in a nifti format in input files provided by
         `data_file` and saves the nifti files to an output
         directory specified by `out_dir`.
+
+        In order for the MAPMRI workflow to work in the way
+        intended either the laplacian or positivity or both must
+        be set to True.
 
         Parameters
         ----------
@@ -65,7 +76,7 @@ class ReconstMAPMRIFlow(Workflow):
             (default: True)
         positivity : boolean
             Boolean value to indicate Positivity model type
-            If both positivity and laplacian are True, then both are applied
+            If both positivity and laplacian are True, then both are applied.
             (default: True)
         save_metrics : list of strings
             List of metrics to save.
@@ -98,7 +109,7 @@ class ReconstMAPMRIFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, bvec, out_rtop, out_lapnorm, \
-            out_msd, out_qiv, out_rtap, out_rtpp, out_ng,\
+            out_msd, out_qiv, out_rtap, out_rtpp, out_ng, \
             out_perng, out_parng in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
@@ -109,16 +120,19 @@ class ReconstMAPMRIFlow(Workflow):
 
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
-                                  big_delta=big_delta, b0_threshold=b0_threshold)
+                                  big_delta=big_delta,
+                                  b0_threshold=b0_threshold)
 
             if not save_metrics:
-                save_metrics = ['rtop', 'laplacian_signal', 'msd', 'qiv', 'rtap', 'rtpp',
+                save_metrics = ['rtop', 'laplacian_signal', 'msd',
+                                'qiv', 'rtap', 'rtpp',
                                 'ng', 'perng', 'parng']
 
             radial_order = 6
 
             if laplacian and positivity:
-                map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
+                map_model_aniso = mapmri.MapmriModel(gtab,
+                                                     radial_order=radial_order,
                                                      laplacian_regularization=True,
                                                      laplacian_weighting=laplacian_weighting,
                                                      positivity_constraint=True)
@@ -307,45 +321,54 @@ class ReconstDtiFlow(Workflow):
                 nib.save(fiber_tensors, otensor)
 
             if 'fa' in save_metrics:
-                fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
+                fa_img = nib.Nifti1Image(FA.astype(np.float32),
+                                         affine)
                 nib.save(fa_img, ofa)
 
             if 'ga' in save_metrics:
                 GA = geodesic_anisotropy(tenfit.evals)
-                ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
+                ga_img = nib.Nifti1Image(GA.astype(np.float32),
+                                         affine)
                 nib.save(ga_img, oga)
 
             if 'rgb' in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
+                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'),
+                                          affine)
                 nib.save(rgb_img, orgb)
 
             if 'md' in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
-                md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
+                md_img = nib.Nifti1Image(MD.astype(np.float32),
+                                         affine)
                 nib.save(md_img, omd)
 
             if 'ad' in save_metrics:
                 AD = axial_diffusivity(tenfit.evals)
-                ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
+                ad_img = nib.Nifti1Image(AD.astype(np.float32),
+                                         affine)
                 nib.save(ad_img, oad)
 
             if 'rd' in save_metrics:
                 RD = radial_diffusivity(tenfit.evals)
-                rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
+                rd_img = nib.Nifti1Image(RD.astype(np.float32),
+                                         affine)
                 nib.save(rd_img, orad)
 
             if 'mode' in save_metrics:
                 MODE = get_mode(tenfit.quadratic_form)
-                mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
+                mode_img = nib.Nifti1Image(MODE.astype(np.float32),
+                                           affine)
                 nib.save(mode_img, omode)
 
             if 'evec' in save_metrics:
-                evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), affine)
+                evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32),
+                                            affine)
                 nib.save(evecs_img, oevecs)
 
             if 'eval' in save_metrics:
-                evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
+                evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32),
+                                            affine)
                 nib.save(evals_img, oevals)
 
             dname_ = os.path.dirname(oevals)
@@ -385,8 +408,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
             Performs a tensor reconstruction on the files by 'globing'
-            ``input_files`` and saves the DTI metrics in a directory specified by
-            ``out_dir``.
+            ``input_files`` and saves the DTI metrics in a
+            directory specified by``out_dir``.
 
             Parameters
             ----------
@@ -394,11 +417,12 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
                 Path to the input volumes. This path may contain wildcards to
                 process multiple inputs at once.
             bvalues : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
+                Path to the bvalues files. This path may contain
+                wildcards to use multiple bvalues files at once.
             bvectors : string
-                Path to the bvectors files. This path may contain wildcards to use
-                multiple bvectors files at once.
+                Path to the bvectors files. This path may
+                contain wildcards to use multiple bvectors files
+                at once.
             mask_files : string
                 Path to the input masks. This path may contain wildcards to use
                 multiple masks at once. (default: No mask used)
@@ -408,7 +432,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
                 Threshold used to find b=0 directions (default 0.0)
             save_metrics : variable string, optional
                 List of metrics to save.
-                Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+                Possible values: fa, ga, rgb, md, ad, rd, mode,
+                                tensor, evec, eval
                 (default [] (all))
             jacobian : bool, optional
                 Whether to use the Jacobian of the tensor to speed the
@@ -417,7 +442,8 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             out_dir : string, optional
                 Output directory (default input file directory)
             out_tensor : string, optional
-                Name of the tensors volume to be saved (default 'tensors.nii.gz')
+                Name of the tensors volume to be saved
+                (default 'tensors.nii.gz')
             out_fa : string, optional
                 Name of the fractional anisotropy volume to be saved
                 (default 'fa.nii.gz')
