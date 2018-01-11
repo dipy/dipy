@@ -56,7 +56,7 @@ class ReconstDtiFlow(Workflow):
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bvecs_tol : float, optional
-            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol 
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
             b-vectors are unit vectors (default 0.01)
         save_metrics : variable string, optional
             List of metrics to save.
@@ -90,21 +90,21 @@ class ReconstDtiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
-        
+
         References
         ----------
         Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
            the effective self-diffusion tensor from the NMR spin echo. J Magn
            Reson B 103, 247-254.
-           
+
         Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-        
+
         Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
-            
-        
+
+
         """
         io_it = self.get_io_iterator()
 
@@ -188,11 +188,11 @@ class ReconstDtiFlow(Workflow):
             else:
                 logging.info(
                         'DTI metrics saved in {0}'.format(dname_))
-            
+
     def get_tensor_model(self, gtab):
         return TensorModel(gtab, fit_method="WLS")
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, 
+    def get_fitted_tensor(self, data, mask, bval, bvec,
                           b0_threshold=0, bvecs_tol=0.01):
 
         logging.info('Tensor estimation...')
@@ -219,7 +219,7 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
 
         """ Workflow for tensor reconstruction and for computing DTI metrics.
-        
+
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified
         by ``out_dir``.
@@ -280,18 +280,18 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
-            
-            
+
+
         References
         ----------
         Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
            the effective self-diffusion tensor from the NMR spin echo. J Magn
            Reson B 103, 247-254.
-           
+
         Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
-        
+
         Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
@@ -301,7 +301,7 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
 
         super(ReconstDtiRestoreFlow, self).\
             run(input_files, bvalues, bvectors, mask_files, b0_threshold,
-                bvecs_tol, save_metrics, out_dir, out_tensor, out_fa, 
+                bvecs_tol, save_metrics, out_dir, out_tensor, out_fa,
                 out_ga, out_rgb, out_md, out_ad, out_rd, out_mode,
                 out_evec, out_eval)
 
@@ -318,9 +318,10 @@ class ReconstCSDFlow(Workflow):
             roi_center=None,
             roi_radius=10,
             fa_thr=0.7,
-            frf=None, extract_pam_values=False, out_dir='',
+            frf=None, extract_pam_values=False,
             sh_order=8,
             odf_to_sh_order=8,
+            out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
@@ -353,15 +354,15 @@ class ReconstCSDFlow(Workflow):
         fa_thr : float, optional
             FA threshold for calculating the response function (default 0.7)
         frf : tuple, optional
-            Fiber response function 15, 4, 4 to be mutiplied by 10**-4 
+            Fiber response function 15, 4, 4 to be mutiplied by 10**-4
             (default: None)
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
             Spherical harmonics order (default 6) used in the CSA fit.
         odf_to_sh_order : int, optional
             Spherical harmonics order used for peak_from_model to compress
             the ODF to spherical harmonics coefficients (default 8)
-        extract_pam_values : bool, optional
-            Wheter or not to save pam volumes as single nifti files.
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
@@ -380,8 +381,8 @@ class ReconstCSDFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
-            
-            
+
+
         References
         ----------
         Tournier, J.D., et al. NeuroImage 2007. Robust determination of
@@ -397,7 +398,7 @@ class ReconstCSDFlow(Workflow):
             img = nib.load(dwi)
             data = img.get_data()
             affine = img.affine
-            
+
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
@@ -413,7 +414,7 @@ class ReconstCSDFlow(Workflow):
                 sh_order = 6
 
             if frf is None:
-                logging.info('Computing response function')                
+                logging.info('Computing response function')
                 response, ratio, nvox = auto_response(
                         gtab, data,
                         roi_center=roi_center,
@@ -435,7 +436,7 @@ class ReconstCSDFlow(Workflow):
             logging.info(
                 'Eigenvalues for the response of the input data are :\n{0}'
                 .format(response[0]))
-            
+
             peaks_sphere = get_sphere('repulsion724')
 
             logging.info('CSD computation started.')
@@ -455,7 +456,7 @@ class ReconstCSDFlow(Workflow):
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
-            
+
             logging.info('CSD computation completed.')
 
             if extract_pam_values:
@@ -468,7 +469,7 @@ class ReconstCSDFlow(Workflow):
             else:
                 logging.info(
                         'Pam5 file saved in {0}'.format(dname_))
-            
+
             return io_it
 
 
@@ -487,8 +488,8 @@ class ReconstCSAFlow(Workflow):
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Constant Solid Angle. 
-        
+        """ Constant Solid Angle.
+
         Parameters
         ----------
         input_files : string
@@ -532,8 +533,8 @@ class ReconstCSAFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
-            
-            
+
+
         References
         ----------
         Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
@@ -557,7 +558,7 @@ class ReconstCSAFlow(Workflow):
             peaks_sphere = get_sphere('repulsion724')
 
             logging.info('Starting CSA computations {0}'.format(dwi))
-    
+
             csa_model = CsaOdfModel(gtab, sh_order)
 
             peaks_csa = peaks_from_model(model=csa_model,
@@ -573,9 +574,9 @@ class ReconstCSAFlow(Workflow):
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
-            
+
             logging.info('Finished CSA {0}'.format(dwi))
-    
+
             if extract_pam_values:
                 peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
                                 opeaks_values,
