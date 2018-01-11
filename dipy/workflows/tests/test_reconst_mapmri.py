@@ -15,9 +15,11 @@ from dipy.workflows.reconst import ReconstMAPMRIFlow
 def test_reconst_mmri_laplacian():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
+
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
+
 
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
@@ -31,14 +33,11 @@ def reconst_mmri_core(flow, lap, pos):
         volume = vol_img.get_data()
 
         mmri_flow = flow()
-
-        print(mmri_flow)
-
-        mmri_flow.run(data_file=data_path, data_bvals=bval_path, data_bvecs=bvec_path,
-                      laplacian=lap, positivity=pos, out_dir=out_dir)
+        mmri_flow.run(data_file=data_path, data_bvals=bval_path,
+                      data_bvecs=bvec_path, laplacian=lap,
+                      positivity=pos, out_dir=out_dir)
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
-        print(rtop)
         rtop_data = nib.load(rtop).get_data()
         eq_(rtop_data.shape, volume.shape[:-1])
 
@@ -79,4 +78,3 @@ if __name__ == '__main__':
     test_reconst_mmri_laplacian()
     test_reconst_mmri_positivity()
     test_reconst_mmri_both()
-
