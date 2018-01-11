@@ -108,15 +108,15 @@ Practical
 
 3. **What do you use for visualization?**
 
-  For 3D visualization we use ``fvtk`` which depends in turn on ``python-vtk``::
+  For 3D visualization we use ``dipy.viz`` which depends in turn on ``python-vtk``::
 
-    from dipy.viz import fvtk
+    from dipy.viz import window, actor
 
   For 2D visualization we use matplotlib_.
 
 4. **What about interactive visualization?**
 
-  There is already interaction in the ``fvtk`` module, but we have started a
+  There is already interaction in the ``dipy.viz`` module, but we have started a
   new project only for visualization which we plan to integrate in dipy_
   in the near future.  For more information, have a look at http://fos.me
 
