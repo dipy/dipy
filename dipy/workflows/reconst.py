@@ -151,6 +151,10 @@ class ReconstMAPMRIFlow(Workflow):
                                                      laplacian_weighting=laplacian_weighting)
                 mapfit_aniso = map_model_aniso.fit(data)
 
+            else:
+                raise ValueError('Need to have either laplacian, positivity, or both parameters'
+                                 'to be set to true for Workflow to function correctly!')
+
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()
                 rtop = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
