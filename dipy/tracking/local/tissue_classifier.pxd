@@ -1,5 +1,4 @@
 
-
 cdef enum TissueClass:
     PYERROR = -2
     OUTSIDEIMAGE = -1
@@ -29,6 +28,23 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
     pass
 
 
-cdef class ActTissueClassifier(TissueClassifier):
+cdef class ConstrainedTissueClassifier(TissueClassifier):
     cdef:
         double[:, :, :] include_map, exclude_map
+    cpdef double get_exclude(self, double[::1] point)
+    cdef double get_exclude_c(self, double* point)
+    cpdef double get_include(self, double[::1] point)
+    cdef double get_include_c(self, double* point)
+    pass
+
+
+cdef class ActTissueClassifier(ConstrainedTissueClassifier):
+    pass
+
+
+cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
+    cdef:
+        double step_size
+        double average_voxel_size
+        double correction_factor
+    pass
