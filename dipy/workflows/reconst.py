@@ -416,9 +416,9 @@ class ReconstCSDFlow(Workflow):
             if frf is None:
                 logging.info('Computing response function')
                 if roi_center is not None:
-                    logging.info('Response ROI center :\n{0}'
+                    logging.info('Response ROI center:\n{0}'
                                  .format(roi_center))
-                    logging.info('Response ROI radius :\n{0}'
+                    logging.info('Response ROI radius:\n{0}'
                                  .format(roi_radius))
                 response, ratio, nvox = auto_response(
                         gtab, data,
@@ -441,7 +441,7 @@ class ReconstCSDFlow(Workflow):
                 response = (response, ratio)
 
             logging.info(
-                'Eigenvalues for the response of the input data are :\n{0}'
+                'Eigenvalues for the response of the input data are:\n{0}'
                 .format(response[0]))
 
             peaks_sphere = get_sphere('repulsion724')
