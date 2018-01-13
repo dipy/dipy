@@ -109,7 +109,7 @@ class ReconstDtiFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
-            omode, oevecs, oevals in io_it:
+                omode, oevecs, oevals in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -424,6 +424,7 @@ class ReconstCSDFlow(Workflow):
                 response = list(response)
 
             else:
+                logging.info('Using response function')
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
@@ -544,7 +545,7 @@ class ReconstCSAFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, \
-            opeaks_values, opeaks_indices, ogfa in io_it:
+                opeaks_values, opeaks_indices, ogfa in io_it:
 
             logging.info('Loading {0}'.format(dwi))
             vol = nib.load(dwi)
