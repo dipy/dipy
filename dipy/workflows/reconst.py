@@ -392,7 +392,7 @@ class ReconstCSDFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values, \
-            opeaks_indices, ogfa in io_it:
+                opeaks_indices, ogfa in io_it:
 
             logging.info('Loading {0}'.format(dwi))
             img = nib.load(dwi)
@@ -415,6 +415,11 @@ class ReconstCSDFlow(Workflow):
 
             if frf is None:
                 logging.info('Computing response function')
+                if roi_center is not None:
+                    logging.info('Response ROI center :\n{0}'
+                                 .format(roi_center))
+                    logging.info('Response ROI radius :\n{0}'
+                                 .format(roi_radius))
                 response, ratio, nvox = auto_response(
                         gtab, data,
                         roi_center=roi_center,

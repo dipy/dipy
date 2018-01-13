@@ -75,6 +75,13 @@ def reconst_flow_core(flow):
             reconst_flow = flow()
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, frf='15, 5, 5')
+            reconst_flow = flow()
+            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                             out_dir=out_dir, frf=None)
+            reconst_flow = flow()
+            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                             out_dir=out_dir, frf=None,
+                             roi_center=[10, 10, 10])
 
 
 if __name__ == '__main__':
