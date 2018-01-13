@@ -353,9 +353,9 @@ class ReconstCSDFlow(Workflow):
             radius of cubic ROI in voxels (default 10)
         fa_thr : float, optional
             FA threshold for calculating the response function (default 0.7)
-        frf : tuple, optional
-            Fiber response function 15, 4, 4 to be mutiplied by 10**-4
-            (default: None)
+        frf : variable float, optional
+            Fiber response function can be for example inputed as 15,4,4 to be
+            converted to float and mutiplied by 10**-4 (default: None)
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
@@ -430,8 +430,9 @@ class ReconstCSDFlow(Workflow):
                     l01 = np.array(frf)
 
                 l01 *= 10 ** -4
-                response[0] = np.array([l01[0], l01[1], l01[1]])
+                response = np.array([l01[0], l01[1], l01[1]])
                 ratio = l01[1] / l01[0]
+                response = (response, ratio)
 
             logging.info(
                 'Eigenvalues for the response of the input data are :\n{0}'
@@ -581,7 +582,6 @@ class ReconstCSAFlow(Workflow):
                 peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
                                 opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
-
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
