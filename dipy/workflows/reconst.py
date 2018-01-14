@@ -433,7 +433,7 @@ class ReconstCSDFlow(Workflow):
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
-                    l01 = np.array(frf)
+                    l01 = np.array(frf, dtype=np.float64)
 
                 l01 *= 10 ** -4
                 response = np.array([l01[0], l01[1], l01[1]])

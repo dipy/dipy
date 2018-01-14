@@ -1,3 +1,7 @@
+import logging
+logging.getLogger().setLevel(logging.INFO)
+import os
+
 import numpy as np
 from nose.tools import assert_true
 from os.path import join
@@ -69,20 +73,26 @@ def reconst_flow_core(flow):
         npt.assert_allclose(pam.gfa, gfa_data)
 
         if flow.get_short_name() == 'csd':
+
             reconst_flow = flow()
+            reconst_flow._force_overwrite = True
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, frf=[15, 5, 5])
             reconst_flow = flow()
+            reconst_flow._force_overwrite = True
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, frf='15, 5, 5')
             reconst_flow = flow()
+            reconst_flow._force_overwrite = True
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, frf=None)
-            reconst_flow = flow()
-            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                             out_dir=out_dir, frf=None,
-                             roi_center=[10, 10, 10])
+            reconst_flow2 = flow()
+            reconst_flow2._force_overwrite = True
+            reconst_flow2.run(data_path, bval_path, bvec_path, mask_path,
+                              out_dir=out_dir, frf=None,
+                              roi_center=[10, 10, 10])
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    test_reconst_csa()
+    test_reconst_csd()
