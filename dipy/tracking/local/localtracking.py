@@ -78,7 +78,8 @@ class LocalTracking(object):
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         self.affine = affine
-        self._voxel_size = self._get_voxel_size(affine)
+        self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
+                                                dtype=float)
         self.step_size = step_size
         self.fixed_stepsize = fixedstep
         self.max_cross = max_cross
@@ -210,13 +211,10 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_paths = np.empty((2, self.particle_count,
                                         self.pft_max_steps + 1, 3),
                                        dtype=float)
-        self.particle_weights = np.empty((2, self.particle_count),
-                                         dtype=float)
+        self.particle_weights = np.empty((2, self.particle_count), dtype=float)
         self.particle_dirs = np.empty((2, self.particle_count,
-                                       self.pft_max_steps + 1, 3),
-                                      dtype=float)
-        self.particle_states = np.empty((2, self.particle_count, 2),
-                                        dtype=int)
+                                       self.pft_max_steps + 1, 3), dtype=float)
+        self.particle_states = np.empty((2, self.particle_count, 2), dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
                                                         seeds,
