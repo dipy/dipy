@@ -9,9 +9,7 @@ from dipy.data import get_data
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
-from dipy.workflows.tracking import (DetTrackPAMFlow,
-                                     DetTrackPeaksFlow,
-                                     DetTrackSHFlow)
+from dipy.workflows.tracking import DetTrackPAMFlow
 
 
 def test_det_track():
@@ -26,14 +24,8 @@ def test_det_track():
 
         reconst_csd_flow = ReconstCSDFlow()
         reconst_csd_flow.run(data_path, bval_path, bvec_path, mask_path,
-                         out_dir=out_dir, extract_pam_values=True)
+                             out_dir=out_dir, extract_pam_values=True)
 
-        peaks_dir_path = reconst_csd_flow.last_generated_outputs['out_peaks_dir']
-        peaks_idx_path = \
-            reconst_csd_flow.last_generated_outputs['out_peaks_indices']
-        peaks_vals_path = \
-            reconst_csd_flow.last_generated_outputs['out_peaks_values']
-        shm_path = reconst_csd_flow.last_generated_outputs['out_shm']
         pam_path = reconst_csd_flow.last_generated_outputs['out_pam']
         gfa_path = reconst_csd_flow.last_generated_outputs['out_gfa']
 
@@ -50,26 +42,14 @@ def test_det_track():
         # Test tracking with pam no sh
         det_track_pam = DetTrackPAMFlow()
         det_track_pam.run(pam_path, gfa_path, seeds_path)
-        tractogram_path = det_track_pam.last_generated_outputs['out_tractogram']
+        tractogram_path = \
+            det_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh
         det_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True)
-        tractogram_path = det_track_pam.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-
-        # Test tracking with peaks
-        peaks_tracking = DetTrackPeaksFlow()
-        peaks_tracking.run(peaks_vals_path, peaks_idx_path, peaks_dir_path,
-                           gfa_path, seeds_path)
-        tractogram_path = peaks_tracking.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-        # Test tracking with sh
-        sh_tracking = DetTrackSHFlow()
-        sh_tracking.run(shm_path, gfa_path, seeds_path)
-        tractogram_path = sh_tracking.last_generated_outputs['out_tractogram']
+        tractogram_path = \
+            det_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
 
