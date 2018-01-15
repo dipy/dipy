@@ -1,5 +1,5 @@
 import numpy as np
-from nose.tools import assert_false
+from nose import assert_false, assert_equal
 from os.path import join
 
 import nibabel as nib
@@ -41,6 +41,7 @@ def test_det_track():
 
         # Test tracking with pam no sh
         det_track_pam = DetTrackPAMFlow()
+        assert_equal(det_track_pam.get_short_name(), 'det_track')
         det_track_pam.run(pam_path, gfa_path, seeds_path)
         tractogram_path = \
             det_track_pam.last_generated_outputs['out_tractogram']

@@ -51,7 +51,7 @@ class GenericTrackFlow(Workflow):
 class DetTrackPAMFlow(GenericTrackFlow):
     @classmethod
     def get_short_name(cls):
-        return 'tracking'
+        return 'det_track'
 
     def run(self, pam_files, stopping_files, seeding_files,
             stopping_thr=0.2,
