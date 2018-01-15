@@ -1,6 +1,4 @@
 import logging
-logging.getLogger().setLevel(logging.INFO)
-import os
 
 import numpy as np
 from nose.tools import assert_true
@@ -13,6 +11,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
+logging.getLogger().setLevel(logging.INFO)
 
 
 def test_reconst_csa():
