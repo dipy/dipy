@@ -354,8 +354,11 @@ class ReconstCSDFlow(Workflow):
         fa_thr : float, optional
             FA threshold for calculating the response function (default 0.7)
         frf : variable float, optional
-            Fiber response function can be for example inputed as 15,4,4 to be
-            converted to float and mutiplied by 10**-4 (default: None)
+            Fiber response function can be for example inputed as 15 4 4
+            (from the command line) or [15, 4, 4] from a Python script to be
+            converted to float and mutiplied by 10**-4 . If None
+            the fiber response function will be computed automatically
+            (default: None).
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
