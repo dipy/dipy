@@ -147,7 +147,7 @@ where more than one population of white matter fibers crosses.
 """
 
 print('Computing anisotropy measures (FA, MD, RGB)')
-from dipy.reconst.dti import fractional_anisotropy, color_fa, lower_triangular
+from dipy.reconst.dti import fractional_anisotropy, color_fa
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -236,7 +236,7 @@ contrast.
 cfa = RGB[13:43, 44:74, 28:29]
 cfa /= cfa.max()
 
-ren.add(fvtk.tensor(evals, evecs, cfa, sphere))
+ren.add(actor.tensor_slicer(evals, evecs, scalar_colors=cfa, sphere=sphere, scale=0.3))
 
 print('Saving illustration as tensor_ellipsoids.png')
 window.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
@@ -259,7 +259,8 @@ for the same area as we did with the ellipsoids.
 
 tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 
-ren.add(actor.odf_slicer(tensor_odfs, sphere, colormap=None))
+odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
+ren.add(odf_actor)
 print('Saving illustration as tensor_odfs.png')
 window.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 if interactive:

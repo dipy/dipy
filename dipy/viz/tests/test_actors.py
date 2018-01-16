@@ -560,5 +560,44 @@ def test_peak_slicer(interactive=False):
     npt.assert_equal(report.actors_classnames, ex)
 
 
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_tensor_slicer(interactive=False):
+
+    evals = np.array([1.4, .35, .35]) * 10 ** (-3)
+    evecs = np.eye(3)
+
+    mevals = np.zeros((3, 2, 4, 3))
+    mevecs = np.zeros((3, 2, 4, 3, 3))
+
+    mevals[..., :] = evals
+    mevecs[..., :, :] = evecs
+
+    from dipy.data import get_sphere
+
+    sphere = get_sphere('symmetric724')
+
+    affine = np.eye(4)
+    renderer = window.Renderer()
+
+    # mask = np.ones(mevals.shape[:3])
+    # mask[:4, :4, :4] = 0
+
+    tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                       sphere=sphere,  scale=.3)
+    I, J, K = mevals.shape[:3]
+    renderer.add(tensor_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    tensor_actor.display_extent(0, 1, 0, J, 0, K)
+    tensor_actor.GetProperty().SetOpacity(1.0)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+    tensor_actor.display_extent(0, 2, 0, J, 0, K)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+
 if __name__ == "__main__":
     npt.run_module_suite()
