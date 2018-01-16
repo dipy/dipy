@@ -78,7 +78,7 @@ interest (ROI) surrounding the Corpus Callosum. We define that ROI as the
 following indices:
 """
 
-roi_idx = (slice(20,50), slice(55,85), slice(38,39))
+roi_idx = (slice(20, 50), slice(55, 85), slice(38, 39))
 
 """
 And use them to index into the data:
@@ -101,11 +101,11 @@ cfa1 = dti.color_fa(fa1, evecs1)
 sphere = dpd.get_sphere('symmetric724')
 
 """
-We visualize the ODFs in the ROI using fvtk:
+We visualize the ODFs in the ROI using ``dipy.viz`` module:
 """
 
 ren = window.Renderer()
-ren.add(ren, fvtk.tensor(evals1, evecs1, cfa1, sphere))
+ren.add(actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls.png')
 window.record(ren, out_path='tensor_ellipsoids_wls.png', size=(600, 600))
 if interactive:
@@ -140,7 +140,7 @@ evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
 ren = window.Renderer()
-ren.add(ren, fvtk.tensor(evals2, evecs2, cfa2, sphere))
+ren.add(actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
 window.record(ren, out_path='tensor_ellipsoids_wls_noisy.png', size=(600, 600))
 if interactive:
@@ -178,7 +178,7 @@ evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
 ren = window.Renderer()
-ren.add(ren, fvtk.tensor(evals3, evecs3, cfa3, sphere))
+ren.add(actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
 window.record(ren, out_path='tensor_ellipsoids_restore_noisy.png', size=(600, 600))
 if interactive:

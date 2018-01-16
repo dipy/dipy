@@ -702,6 +702,11 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
+
+    Returns
+    ---------
+    actor : vtkActor
+        Spheres
     """
 
     if mask is None:
@@ -777,6 +782,11 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
+
+    Returns
+    ---------
+    mapper : vtkPolyDataMapper
+        Spheres mapper
     """
     if mask is None:
         mask = np.ones(odfs.shape[:3])
@@ -874,6 +884,194 @@ def _makeNd(array, ndim):
     array ndim dimensions."""
     new_shape = (1,) * (ndim - array.ndim) + array.shape
     return array.reshape(new_shape)
+
+
+def tensor_slicer(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
+                  norm=True, opacity=1., scalar_colors=None):
+    """ Slice many tensors as ellipsoids in native or world coordinates
+
+    Parameters
+    ----------
+    evals : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        eigenvalues
+    evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
+        eigenvectors
+    affine : array-
+        4x4 transformation array from native coordinates to world coordinates*
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids using ``color_fa``
+
+    Returns
+    ---------
+    actor : vtkActor
+        Ellipsoid
+    """
+
+    if mask is None:
+        mask = np.ones(evals.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
+    szx, szy, szz = evals.shape[:3]
+
+    class TensorSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+            tmp_mask = np.zeros(evals.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2 + 1, y1:y2 + 1, z1:z2 + 1] = True
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
+
+            self.mapper = _tensor_slicer_mapper(evals=evals,
+                                                evecs=evecs,
+                                                affine=affine,
+                                                mask=tmp_mask,
+                                                sphere=sphere,
+                                                scale=scale,
+                                                norm=norm,
+                                                opacity=opacity,
+                                                scalar_colors=scalar_colors)
+            self.SetMapper(self.mapper)
+
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(0, szx - 1, 0, szy - 1,
+                                    int(np.floor(szz/2)), int(np.floor(szz/2)))
+            if x is not None:
+                self.display_extent(x, x, 0, szy - 1, 0, szz - 1)
+            if y is not None:
+                self.display_extent(0, szx - 1, y, y, 0, szz - 1)
+            if z is not None:
+                self.display_extent(0, szx - 1, 0, szy - 1, z, z)
+
+    tensor_actor = TensorSlicerActor()
+    tensor_actor.display_extent(0, szx - 1, 0, szy - 1,
+                             int(np.floor(szz/2)), int(np.floor(szz/2)))
+
+    return tensor_actor
+
+
+def _tensor_slicer_mapper(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
+                          norm=True, opacity=1., scalar_colors=None):
+    """ Helper function for slicing spherical fields
+
+    Parameters
+    ----------
+    evals : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        eigenvalues
+    evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
+        eigenvectors
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque)
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids using ``color_fa``
+
+    Returns
+    ---------
+    mapper : vtkPolyDataMapper
+        Ellipsoid mapper
+    """
+    if mask is None:
+        mask = np.ones(evals.shape[:3])
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+    if len(ijk) == 0:
+        return None
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    if scalar_colors is None:
+        from dipy.reconst.dti import color_fa, fractional_anisotropy
+        cfa = color_fa(fractional_anisotropy(evals), evecs)
+    else:
+        cfa = _makeNd(scalar_colors, 4)
+
+    cols = np.zeros((ijk.shape[0],) + sphere.vertices.shape,
+                    dtype='f4')
+
+    all_xyz = []
+    all_faces = []
+    for (k, center) in enumerate(ijk):
+        ea = evals[tuple(center.astype(np.int))]
+        if norm:
+            ea /= ea.max()
+        ea = np.diag(ea.copy())
+
+        ev = evecs[tuple(center.astype(np.int))].copy()
+        xyz = np.dot(ev, np.dot(ea, vertices.T))
+
+        xyz = xyz.T
+        all_xyz.append(scale * xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
+
+        cols[k, ...] = np.interp(cfa[tuple(center.astype(np.int))], [0, 1], [0, 255]).astype('ubyte')
+
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(ncells, all_faces_vtk)
+
+    cols = np.ascontiguousarray(
+        np.reshape(cols, (cols.shape[0] * cols.shape[1],
+                   cols.shape[2])), dtype='f4')
+
+    vtk_colors = numpy_support.numpy_to_vtk(
+        cols,
+        deep=True,
+        array_type=vtk.VTK_UNSIGNED_CHAR)
+
+    vtk_colors.SetName("Colors")
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+    polydata.GetPointData().SetScalars(vtk_colors)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    return mapper
 
 
 def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
