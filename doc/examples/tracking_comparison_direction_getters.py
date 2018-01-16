@@ -45,7 +45,7 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 
 
 """
-we use the CSA fit to calculate the GFA, which will serve as our tissue
+we use the CSA fit to calculate GFA, which will serve as our tissue
 classifier
 """
 
@@ -89,7 +89,7 @@ if fvtk.have_vtk:
 
    **Corpus Callosum Bootstrap Probabilistic Direction Getter**
 
-We've created a bootstrapped probabilistic set of streamlines. If you repeat the fiber tracking (keeping all the inputs the same) you will NOT get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
+We have created a bootstrapped probabilistic set of streamlines. If you repeat the fiber tracking (keeping all inputs the same) you will NOT get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
 """
 
 save_trk("bootstrap_dg_CSD.trk", streamlines_boot_csd, affine, labels.shape)
@@ -125,7 +125,7 @@ if fvtk.have_vtk:
 
    **Corpus Callosum Closest Peak Deterministic Direction Getter**
 
-We've created a set of streamlines using the closest peak direction getter, which is a type of deterministic tracking. If you repeat the fiber tracking (keeping all the inputs the same) you will get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
+We have created a set of streamlines using the closest peak direction getter, which is a type of deterministic tracking. If you repeat the fiber tracking (keeping all inputs the same) you will get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
 """
 
 save_trk("closest_peak_dg_CSD.trk", streamlines_cp_csd, affine, labels.shape)
