@@ -44,7 +44,7 @@ class MedianOtsuFlow(Workflow):
             1D array representing indices of ``axis=3`` of a 4D `input_volume`
             'None' (the default) corresponds to ``(0,)`` (assumes first volume
             in 4D array)
-        dilate : string, optional
+        dilate : int, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional
             Output directory (default input file directory)
