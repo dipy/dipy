@@ -130,7 +130,7 @@ def cart2sphere(x, y, z):
     # zero, so it's safe to convert it to a 1 in this case, and prevents
     # warnings from being raised in the following statement (z / r):
     r = np.where(r > 0, r, 1)
-    theta = np.arccos(z / r, where=r>0)
+    theta = np.arccos(z / r, where=r > 0)
     theta = np.where(r > 0, theta, 0.)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
