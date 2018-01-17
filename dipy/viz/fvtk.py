@@ -87,7 +87,7 @@ else:
 
 
 deprecation_msg = ("Module 'dipy.viz.fvtk' is deprecated as of version"
-                   " 0.13 of dipy and will be removed in a future version."
+                   " 0.14 of dipy and will be removed in a future version."
                    " Please, instead use module 'dipy.viz.window' or "
                    " 'dipy.viz.actor'.")
 warn(DeprecationWarning(deprecation_msg))
