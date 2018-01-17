@@ -249,7 +249,7 @@ class ReconstDtiRestoreFlow(ReconstDtiFlow):
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
             (default [] (all))
         jacobian : bool, optional
-            Whether to use the Jacobian of the tensor to speed the
+            Whether to use the Jacobian of the tensor to speedup the
             non-linear optimization procedure used to fit the tensor
             parameters (default True)
         out_dir : string, optional
