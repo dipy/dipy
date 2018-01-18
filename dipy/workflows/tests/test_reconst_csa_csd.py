@@ -1,5 +1,4 @@
 import logging
-
 import numpy as np
 from nose.tools import assert_true
 from os.path import join
