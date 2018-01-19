@@ -580,9 +580,6 @@ def test_tensor_slicer(interactive=False):
     affine = np.eye(4)
     renderer = window.Renderer()
 
-    # mask = np.ones(mevals.shape[:3])
-    # mask[:4, :4, :4] = 0
-
     tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
                                        sphere=sphere,  scale=.3)
     I, J, K = mevals.shape[:3]
@@ -594,7 +591,108 @@ def test_tensor_slicer(interactive=False):
     tensor_actor.GetProperty().SetOpacity(1.0)
     if interactive:
         window.show(renderer, reset_camera=False)
-    tensor_actor.display_extent(0, 2, 0, J, 0, K)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    # Test extent
+    big_extent = renderer.GetActors().GetLastActor().GetBounds()
+    big_extent_x = abs(big_extent[1] - big_extent[0])
+    tensor_actor.display(x=2)
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    small_extent = renderer.GetActors().GetLastActor().GetBounds()
+    small_extent_x = abs(small_extent[1] - small_extent[0])
+    npt.assert_equal(big_extent_x > small_extent_x, True)
+
+    # Test empty mask
+    empty_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                      mask=np.zeros(mevals.shape[:3]),
+                                      sphere=sphere,  scale=.3)
+    npt.assert_equal(empty_actor.GetMapper(), None)
+
+    # Test mask
+    mask = np.ones(mevals.shape[:3])
+    mask[:2, :3, :3] = 0
+    tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine, mask=mask,
+                                       sphere=sphere,  scale=.3)
+    renderer.clear()
+    renderer.add(tensor_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    mask_extent = renderer.GetActors().GetLastActor().GetBounds()
+    mask_extent_x = abs(mask_extent[1] - mask_extent[0])
+    npt.assert_equal(big_extent_x > mask_extent_x, True)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_dots(interactive=False):
+    points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
+
+    dots_actor = actor.dots(points, color=(0, 255, 0))
+
+    renderer = window.Renderer()
+    renderer.add(dots_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    extent = renderer.GetActors().GetLastActor().GetBounds()
+    npt.assert_equal(extent, (0.0, 1.0, 0.0, 1.0, 0.0, 0.0))
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=(0, 255, 0))
+    npt.assert_equal(report.objects, 3)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_points(interactive=False):
+    points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
+    colors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    points_actor = actor.point(points,  colors)
+
+    renderer = window.Renderer()
+    renderer.add(points_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=colors)
+    npt.assert_equal(report.objects, 3)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_labels(interactive=False):
+
+    text_actor = actor.label("Hello")
+
+    renderer = window.Renderer()
+    renderer.add(text_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
 
     npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
 
