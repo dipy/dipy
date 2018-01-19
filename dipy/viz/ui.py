@@ -14,7 +14,7 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    version = vtk.vtkVersion.GetVTKVersion()
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
     vtkTextActor = vtk.vtkTextActor
 else:
@@ -535,7 +535,8 @@ class Rectangle2D(UI):
             The new center of the rectangle (x, y).
 
         """
-        self.actor.SetPosition(position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
+        self.actor.SetPosition(position[0] - self.size[0] / 2,
+                               position[1] - self.size[1] / 2)
 
 
 class Panel2D(UI):
@@ -766,6 +767,7 @@ class TextBlock2D(UI):
             factor.
         """
         super(TextBlock2D, self).__init__()
+        self._background = None  # For VTK <= 6.2
         self.actor = vtkTextActor()
         self.message = text
         self.font_size = font_size
@@ -794,6 +796,9 @@ class TextBlock2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
+        if self._background is not None:
+            return [self._background, self.actor]
+
         return [self.actor]
 
     @property
@@ -1025,6 +1030,8 @@ class TextBlock2D(UI):
 
         """
         self.actor.SetPosition(*position)
+        if self._background is not None:
+            self._background.SetPosition(*self.actor.GetPosition())
 
     def set_center(self, position):
         """ Sets the text center to position.
@@ -1038,51 +1045,105 @@ class TextBlock2D(UI):
 
     @property
     def background_color(self):
-        """ Gets background color.
+        """ Get background color.
 
         Returns
         -------
-        (float, float, float)
-            Returns background color in RGB.
+        (float, float, float) or None
+            If None, there is no background color.
+            Otherwise, returns background color in RGB.
 
         """
+        if version <= "6.2.0":
+            if self._background is None:
+                return None
+
+            return self._background.GetProperty().GetColor()
+
+        if self.actor.GetTextProperty().GetBackgroundOpacity() == 0:
+            return None
+
         return self.actor.GetTextProperty().GetBackgroundColor()
 
     @background_color.setter
-    def background_color(self, background_color=(1, 0, 0)):
-        """ Set text color.
+    def background_color(self, color):
+        """ Set background color.
 
         Parameters
         ----------
-        background_color : (float, float, float)
-            RGB: Values must be between 0-1.
+        color : (float, float, float) or None
+            If None, remove background.
+            Otherwise RGB values (must be between 0-1).
 
         """
-        self.actor.GetTextProperty().SetBackgroundColor(*background_color)
+        if color is None:
+            # Remove background.
+            if version < "6.2.0":
+                self._background = None
+            else:
+                self.actor.GetTextProperty().SetBackgroundOpacity(0.)
+
+        else:
+            if version <= "6.2.0":
+                self._background = vtk.vtkActor2D()
+                self._background.GetProperty().SetColor(*color)
+                self._background.GetProperty().SetOpacity(self.background_opacity)
+                self._background.SetMapper(self.actor.GetMapper())
+                self._background.SetPosition(*self.actor.GetPosition())
+
+            else:
+                self.actor.GetTextProperty().SetBackgroundColor(*color)
 
     @property
     def background_opacity(self):
-        """ Gets background opacity.
+        """ Get background opacity.
 
         Returns
         ----------
-        float
-            Background opacity.
+        float or None
+            If None, there is no background opacity.
+            Otherwise, background opacity.
 
         """
+        if version < "6.2.0":
+            if self._background is None:
+                return None
+
+            return self._background.GetProperty().GetOpacity()
+
+        if self.actor.GetTextProperty().GetBackgroundOpacity() == 0:
+            return None
+
         return self.actor.GetTextProperty().GetBackgroundOpacity()
 
     @background_opacity.setter
     def background_opacity(self, opacity):
-        """ Sets background opacity.
+        """ Set background opacity.
 
         Parameters
         ----------
-        opacity : float
-            Background opacity.
+        opacity : float or None
+            If None, remove background.
+            Otherwise, background opacity (must be between 0-1).
 
         """
-        self.actor.GetTextProperty().SetBackgroundOpacity(opacity)
+        if opacity is None:
+            # Remove background
+            if version <= "6.2.0":
+                self._background = None
+            else:
+                self.actor.GetTextProperty().SetBackgroundOpacity(0.)
+
+        else:
+            if version < "6.2.0":
+                self._background = vtk.vtkActor2D()
+                self._background.GetProperty().SetColor(*self.background_color)
+                self._background.GetProperty().SetOpacity(opacity)
+                self._background.SetMapper(self.actor.GetMapper())
+                self._background.SetPosition(*self.actor.GetPosition())
+
+            else:
+                self.actor.GetTextProperty().SetBackgroundOpacity(opacity)
 
     @property
     def line_spacing(self):
@@ -2381,7 +2442,7 @@ class FileSelectMenuText2D(UI):
         self.file_type = file_type
         self.text_actor.message = file_name
 
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if version <= "6.2.0":
             self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
             if file_type != "file":
                 self.text_actor.get_actor().GetTextProperty().SetBold(True)
@@ -2398,7 +2459,7 @@ class FileSelectMenuText2D(UI):
         """ Changes the background color of the actor.
 
         """
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if version <= "6.2.0":
             self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
         else:
             self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
