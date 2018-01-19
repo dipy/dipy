@@ -635,7 +635,7 @@ def show(ren, title='DIPY', size=(300, 300),
     >>> colors=np.array([[0.2,0.2,0.2],[0.8,0.8,0.8]])
     >>> c=actor.line(lines,colors)
     >>> r.add(c)
-    >>> l=actor.label(r)
+    >>> l=actor.label(text="Hello")
     >>> r.add(l)
     >>> #window.show(r)
 

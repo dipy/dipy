@@ -69,7 +69,7 @@ if have_vtk:
 
     from dipy.viz.window import (ren, renderer, add, clear, rm, rm_all,
                                  show, record, snapshot)
-    from dipy.viz.actor import line, streamtube, slicer, axes, dots, label, point
+    from dipy.viz.actor import line, streamtube, slicer, axes, dots, point
 
     try:
         if major_version < 7:
@@ -829,6 +829,56 @@ def tensor(evals, evecs, scalar_colors=None,
     actor.SetMapper(mapper)
 
     return actor
+
+
+def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
+          color=(1, 1, 1)):
+    """ Create a label actor.
+    This actor will always face the camera
+    Parameters
+    ----------
+    ren : vtkRenderer() object
+       Renderer as returned by ``ren()``.
+    text : str
+        Text for the label.
+    pos : (3,) array_like, optional
+        Left down position of the label.
+    scale : (3,) array_like
+        Changes the size of the label.
+    color : (3,) array_like
+        Label color as ``(r,g,b)`` tuple.
+    Returns
+    -------
+    l : vtkActor object
+        Label.
+    Examples
+    --------
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()
+    >>> l=fvtk.label(r)
+    >>> fvtk.add(r,l)
+    >>> #fvtk.show(r)
+    """
+    atext = vtk.vtkVectorText()
+    atext.SetText(text)
+
+    textm = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        textm.SetInput(atext.GetOutput())
+    else:
+        textm.SetInputData(atext.GetOutput())
+
+    texta = vtk.vtkFollower()
+    texta.SetMapper(textm)
+    texta.SetScale(scale)
+
+    texta.GetProperty().SetColor(color)
+    texta.SetPosition(pos)
+
+    ren.AddActor(texta)
+    texta.SetCamera(ren.GetActiveCamera())
+
+    return texta
 
 
 def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
