@@ -123,8 +123,8 @@ Every streamline will be coloured according to its orientation
 from dipy.viz.colormap import line_colors
 
 """
-`actor.line` create a streamline actor for streamline visualization
-and `ren.add` adds this actor in the scene
+`actor.line` creates a streamline actor for streamline visualization
+and `ren.add` adds this actor to the scene
 """
 
 ren.add(actor.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))

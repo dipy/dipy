@@ -90,7 +90,7 @@ seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
 
 """
 Finally, we can bring it all together using ``LocalTracking``. We will then
-display the resulting streamlines using the viz package.
+display the resulting streamlines using the ``dipy.viz`` package.
 """
 
 from dipy.tracking.local import LocalTracking
@@ -112,7 +112,7 @@ color = line_colors(streamlines)
 if window.have_vtk:
     streamlines_actor = actor.line(streamlines, line_colors(streamlines))
 
-    # Create the 3d display.
+    # Create the 3D display.
     r = window.Renderer()
     r.add(streamlines_actor)
 
@@ -199,7 +199,7 @@ streamlines = list(streamlines)
 if window.have_vtk:
     streamlines_actor = actor.line(streamlines, line_colors(streamlines))
 
-    # Create the 3d display.
+    # Create the 3D display.
     r = window.Renderer()
     r.add(streamlines_actor)
 
