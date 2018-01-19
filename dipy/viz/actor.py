@@ -896,7 +896,7 @@ def tensor_slicer(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
         eigenvalues
     evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
         eigenvectors
-    affine : array-
+    affine : array
         4x4 transformation array from native coordinates to world coordinates*
     mask : ndarray
         3D mask
@@ -963,7 +963,7 @@ def tensor_slicer(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
 
 def _tensor_slicer_mapper(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
                           norm=True, opacity=1., scalar_colors=None):
-    """ Helper function for slicing spherical fields
+    """ Helper function for slicing tensor fields
 
     Parameters
     ----------
@@ -1329,7 +1329,7 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     return actor
 
 
-def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
+def label(text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
           color=(1, 1, 1)):
     """ Create a label actor.
 
@@ -1337,8 +1337,6 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
 
     Parameters
     ----------
-    ren : vtkRenderer() object
-       Renderer as returned by ``ren()``.
     text : str
         Text for the label.
     pos : (3,) array_like, optional
@@ -1357,7 +1355,7 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     --------
     >>> from dipy.viz import window, actor
     >>> ren = window.Renderer()
-    >>> l = actor.label(ren)
+    >>> l = actor.label('Hello')
     >>> ren.add(l)
     >>> #window.show(ren)
     """
@@ -1377,8 +1375,5 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
 
     texta.GetProperty().SetColor(color)
     texta.SetPosition(pos)
-
-    ren.AddActor(texta)
-    texta.SetCamera(ren.GetActiveCamera())
 
     return texta
