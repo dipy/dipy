@@ -1355,7 +1355,7 @@ def label(text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     --------
     >>> from dipy.viz import window, actor
     >>> ren = window.Renderer()
-    >>> l = actor.label('Hello')
+    >>> l = actor.label(text='Hello')
     >>> ren.add(l)
     >>> #window.show(ren)
     """
