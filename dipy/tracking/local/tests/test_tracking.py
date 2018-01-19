@@ -4,15 +4,13 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.core.gradients import gradient_table
 from dipy.data import get_data, get_sphere
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
 from dipy.tracking.local import (ActTissueClassifier, BinaryTissueClassifier,
-                                 DirectionGetter, LocalTracking,
-                                 ParticleFilteringTracking,
-                                 ThresholdTissueClassifier, TissueClassifier)
+                                 LocalTracking, ParticleFilteringTracking,
+                                 ThresholdTissueClassifier)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 from dipy.tracking.local.localtracking import TissueTypes
 from dipy.tracking.utils import seeds_from_mask
@@ -261,11 +259,10 @@ def test_probabilistic_odf_weighted_tracker():
         npt.assert_(np.allclose(sl, expected[1]))
 
 
-def test_ParticleFilteringTractography():
+def test_particle_filtering_tractography():
     """This tests that the ParticleFilteringTracking produces
     more streamlines connecting the gray matter than LocalTracking.
     """
-    #sphere = HemiSphere.from_sphere(unit_octahedron)
     sphere = get_sphere('repulsion100')
 
     # Simple tissue masks
@@ -319,17 +316,32 @@ def test_ParticleFilteringTractography():
 
     # Test with wrong tissueclassifier type
     tc_bin = BinaryTissueClassifier(simple_wm)
+    npt.assert_raises(ValueError,
+                      lambda: ParticleFilteringTracking(dg, tc_bin, seeds,
+                                                        np.eye(4), 0.2))
+    # Test with invalid back/front tracking distances
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                          pft_back_tracking_dist=0,
+                                          pft_front_tracking_dist=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                          pft_back_tracking_dist=-1))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                          pft_back_tracking_dist=0,
+                                          pft_front_tracking_dist=-2))
 
-    def test_PFT_init():
-        pft_streamlines = ParticleFilteringTracking(dg, tc_bin, seeds,
-                                                    np.eye(4), 0.2)
-        pft_streamlines = ParticleFilteringTracking(dg, tc_bin, seeds,
-                                                    np.eye(4), 0.2,
-                                                    pft_nbr_steps=0)
-    npt.assert_raises(ValueError, test_PFT_init)
+    # Test with invalid affine shape
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(3), 0.2))
 
 
-def test_MaximumDeterministicTracker():
+def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
