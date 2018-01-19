@@ -140,7 +140,7 @@ def local_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError()
+        raise ValueError('Invalid input parameter dimensions.')
 
     for i in range(3):
         dir[i] = first_step[i]
@@ -220,8 +220,8 @@ def pft_tracker(
         np.int_t[:, :, :]  particle_states):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
-    This function is the main workhorse of the ``LocalTracking`` class defined
-    in ``dipy.tracking.local.localtracking``.
+    This function is the main workhorse of the ``ParticleFilteringTracking``
+    class defined in ``dipy.tracking.local.localtracking``.
 
     Parameters
     ----------
@@ -281,7 +281,7 @@ def pft_tracker(
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
-        raise ValueError()
+        raise ValueError('Invalid input parameter dimensions.')
 
     for i in range(3):
         dir[i] = first_step[i]
