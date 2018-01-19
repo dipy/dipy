@@ -5,13 +5,13 @@ Particle Filtering Tractography
 Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
 volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
-It relies on a tissue classifier that identifies the tissue where the streamline
-stopped. If the streamline correctly stopped in the gray matter, the trajectory
-is kept. If the streamline incorrecly stopped in the white matter or in the
-corticospinal fluid, PFT uses anatomical information to find an alternative
-streamline segment to extend the trajectory. When this segment is found,
-the tractography continues until the streamline correctly stops in the gray
-matter.
+It relies on a tissue classifier that identifies the tissue where the
+streamline stopped. If the streamline correctly stopped in the gray matter, the
+trajectory is kept. If the streamline incorrecly stopped in the white matter or
+in the corticospinal fluid, PFT uses anatomical information to find an
+alternative streamline segment to extend the trajectory. When this segment is
+found, the tractography continues until the streamline correctly stops in the
+gray matter.
 
 PFT finds an alternative streamline segment whenever the tissue classifier
 returns a position classified as 'INVALIDPOINT'.
@@ -32,11 +32,11 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
 from dipy.tracking import utils
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
 
-ren = fvtk.ren()
+renderer = window.Renderer()
 
 img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -63,9 +63,9 @@ tractography (ACT) [Smith2012]_ both uses PVEs information from
 anatomical images to determine when the tractography stops.
 Both tissue classifiers use a trilinear interpolation
 at the tracking position. CMC tissue classifier uses a probability derived from
-the PVE maps to determine if the streamline reaches a 'valid' or 'invalid' region.
-ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can be used
-in conjunction with PFT. In this example, we used CMC.
+the PVE maps to determine if the streamline reaches a 'valid' or 'invalid'
+region. ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can
+be used in conjunction with PFT. In this example, we used CMC.
 """
 
 import matplotlib.pyplot as plt
@@ -101,9 +101,9 @@ streamlines = [s for s in pft_streamlines]
 save_trk("pft_streamline.trk", streamlines, affine, shape)
 
 
-fvtk.clear(ren)
-fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
-fvtk.record(ren, out_path='pft_streamlines.png', size=(600, 600))
+renderer.clear()
+renderer.add(actor.line(streamlines, line_colors(streamlines)))
+window.record(renderer, out_path='pft_streamlines.png', size=(600, 600))
 
 # Local Probabilistic Tractography
 local_prob_streamlines = LocalTracking(dg,
@@ -117,10 +117,10 @@ local_prob_streamlines = LocalTracking(dg,
 streamlines = [s for s in local_prob_streamlines]
 save_trk("local_prob_streamlines.trk", streamlines, affine, shape)
 
-fvtk.clear(ren)
-fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
-fvtk.record(ren, out_path='probabilistic_local_streamlines.png',
-            size=(600, 600))
+renderer.clear()
+renderer.add(actor.line(streamlines, line_colors(streamlines)))
+window.record(renderer, out_path='probabilistic_local_streamlines.png',
+              size=(600, 600))
 
 
 """
