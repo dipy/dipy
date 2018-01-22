@@ -79,6 +79,8 @@ class LocalTracking(object):
             raise ValueError("affine should be a (4, 4) array.")
         if step_size <= 0:
             raise ValueError("step_size must be greater than 0.")
+        if maxlen < 1:
+            raise ValueError("maxlen must be greater than 0.")
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
                                                 dtype=float)
@@ -132,7 +134,6 @@ class LocalTracking(object):
                         tissue_class == TissueTypes.ENDPOINT or
                         tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
-
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
@@ -198,12 +199,12 @@ class ParticleFilteringTracking(LocalTracking):
         if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
             raise ValueError("expecting ConstrainedTissueClassifier")
 
-        self.pft_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
-                                              / step_size))
+        self.pft_max_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
+                                                  / step_size))
         self.pft_max_steps = int(np.ceil((pft_back_tracking_dist
                                           + pft_front_tracking_dist)
                                          / step_size))
-        if not self.pft_max_steps > 0 or not self.pft_nbr_back_steps >= 0:
+        if not self.pft_max_steps > 0 or not self.pft_max_nbr_back_steps >= 0:
             raise ValueError("The number of PFT steps must be greater than 0.")
 
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
@@ -236,7 +237,7 @@ class ParticleFilteringTracking(LocalTracking):
                            streamline,
                            self.directions,
                            self.step_size,
-                           self.pft_nbr_back_steps,
+                           self.pft_max_nbr_back_steps,
                            self.pft_max_steps,
                            self.pft_max_trial,
                            self.particle_count,
