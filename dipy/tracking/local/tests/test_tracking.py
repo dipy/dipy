@@ -258,6 +258,14 @@ def test_probabilistic_odf_weighted_tracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
+    # Test non WM seed position
+    seeds = [[0, 0, 0], [5, 5, 5]]
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
+                                return_all=True)
+    streamlines = list(streamlines)
+    npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
+    npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
+
 
 def test_particle_filtering_tractography():
     """This tests that the ParticleFilteringTracking produces
@@ -276,8 +284,8 @@ def test_particle_filtering_tractography():
                            simple_wm,
                            simple_wm,
                            np.zeros(simple_wm.shape)])
-    simple_gm = np.array([[0, 0, 0, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0],
+    simple_gm = np.array([[1, 1, 0, 0, 0, 0],
+                          [1, 1, 0, 0, 0, 0],
                           [0, 1, 0, 0, 1, 0],
                           [0, 0, 0, 0, 1, 0],
                           [0, 0, 0, 0, 0, 0]])
@@ -300,12 +308,23 @@ def test_particle_filtering_tractography():
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
     local_streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2,
                                       max_cross=1, return_all=False)
-    local_streamlines = [s for s in local_streamlines]
+    local_streamlines = list(local_streamlines)
     pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
-                                                max_cross=1, return_all=False)
-    pft_streamlines = [s for s in pft_streamlines]
+                                                max_cross=1, return_all=False,
+                                                pft_back_tracking_dist=1,
+                                                pft_front_tracking_dist=0.5)
+    pft_streamlines = list(pft_streamlines)
     npt.assert_(np.array([len(pft_streamlines) > 0]))
     npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
+
+    # Test that all points are equally spaced
+    for l in [1, 2, 5, 10, 100]:
+        pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                    0.2, max_cross=1,
+                                                    return_all=True, maxlen=l)
+        for s in pft_streamlines:
+            for i in range(len(s) - 1):
+                npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]), 0.2)
 
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
@@ -313,6 +332,15 @@ def test_particle_filtering_tractography():
                                                 max_cross=1, return_all=True)
     pft_streamlines = [s for s in pft_streamlines]
     npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+
+    # Test non WM seed position
+    seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
+    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                                max_cross=1, return_all=True)
+    pft_streamlines = list(pft_streamlines)
+    npt.assert_(len(pft_streamlines[0]) == 3)  # INVALIDPOINT
+    npt.assert_(len(pft_streamlines[1]) == 3)  # ENDPOINT
+    npt.assert_(len(pft_streamlines[2]) == 1)  # OUTSIDEIMAGE
 
     # Test with wrong tissueclassifier type
     tc_bin = BinaryTissueClassifier(simple_wm)
@@ -340,6 +368,15 @@ def test_particle_filtering_tractography():
         ValueError,
         lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(3), 0.2))
 
+    # Test with invalid maxlen
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                          maxlen=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                          maxlen=-1))
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
