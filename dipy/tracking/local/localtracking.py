@@ -201,10 +201,14 @@ class ParticleFilteringTracking(LocalTracking):
 
         self.pft_max_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
                                                   / step_size))
-        self.pft_max_steps = int(np.ceil((pft_back_tracking_dist
-                                          + pft_front_tracking_dist)
-                                         / step_size))
-        if not self.pft_max_steps > 0 or not self.pft_max_nbr_back_steps >= 0:
+        self.pft_max_nbr_front_steps = int(np.ceil(pft_front_tracking_dist
+                                                   / step_size))
+        self.pft_max_steps = (self.pft_max_nbr_back_steps
+                              + self.pft_max_nbr_front_steps)
+
+        if (self.pft_max_nbr_front_steps < 0
+                or self.pft_max_nbr_back_steps < 0
+                or self.pft_max_steps < 1):
             raise ValueError("The number of PFT steps must be greater than 0.")
 
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
@@ -238,7 +242,7 @@ class ParticleFilteringTracking(LocalTracking):
                            self.directions,
                            self.step_size,
                            self.pft_max_nbr_back_steps,
-                           self.pft_max_steps,
+                           self.pft_max_nbr_front_steps,
                            self.pft_max_trial,
                            self.particle_count,
                            self.particle_paths,

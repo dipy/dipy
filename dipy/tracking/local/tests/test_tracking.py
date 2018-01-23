@@ -298,10 +298,10 @@ def test_particle_filtering_tractography():
     tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
     seeds = seeds_from_mask(simple_wm, density=2)
 
-    # Random pfm in every voxels
+    # Random pmf in every voxel
     shape_img = list(simple_wm.shape)
     shape_img.extend([sphere.vertices.shape[0]])
-    np.random.seed(0)  # fix the randominity
+    np.random.seed(0)  # Random number generator initialization
     pmf = np.random.random(shape_img)
 
     # Test that PFT recover equal or more streamlines than localTracking
@@ -377,6 +377,7 @@ def test_particle_filtering_tractography():
         ValueError,
         lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), 0.2,
                                           maxlen=-1))
+
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
