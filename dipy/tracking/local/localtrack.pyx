@@ -7,7 +7,7 @@ import numpy as np
 from .direction_getter cimport DirectionGetter
 from .tissue_classifier cimport(
     TissueClass, TissueClassifier, ConstrainedTissueClassifier,
-    TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT)
+    TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
 from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
@@ -211,7 +211,7 @@ def pft_tracker(
         np.float_t[:, :] directions,
         double step_size,
         int pft_max_nbr_back_steps,
-        int pft_max_steps,
+        int pft_max_nbr_front_steps,
         int pft_max_trials,
         int particle_count,
         np.float_t[:, :, :, :] particle_paths,
@@ -248,8 +248,8 @@ def pft_tracker(
     pft_max_nbr_back_steps : int
         Number of tracking steps to back track before starting the particle
         filtering tractography.
-    pft_max_steps : int
-        Maximum number of steps for the particle filtering tractography.
+    pft_max_nbr_front_steps : int
+        Number of additional tracking steps to track.
     pft_max_trials : int
         Maximum number of trials for the particle filtering tractography
         (Prevents infinite loops).
@@ -290,7 +290,7 @@ def pft_tracker(
 
     i = _pft_tracker(dg, tc, seed, dir, vs, streamline,
                      directions, step_size, &tissue_class, pft_max_nbr_back_steps,
-                     pft_max_steps, pft_max_trials, particle_count,
+                     pft_max_nbr_front_steps, pft_max_trials, particle_count,
                      particle_paths, particle_dirs, particle_weights,
                      particle_states)
     return i, tissue_class
@@ -309,7 +309,7 @@ cdef _pft_tracker(DirectionGetter dg,
                   double step_size,
                   TissueClass * tissue_class,
                   int pft_max_nbr_back_steps,
-                  int pft_max_steps,
+                  int pft_max_nbr_front_steps,
                   int pft_max_trials,
                   int particle_count,
                   np.float_t[:, :, :, :] particle_paths,
@@ -317,8 +317,8 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:] particle_weights,
                   np.int_t[:, :, :] particle_states):
     cdef:
-        int i, pft_trial, pft_streamline_i, pft_nbr_back_steps, strl_array_len
-        int pft_nbr_steps
+        int i, pft_trial, pft_streamline_i, back_steps, front_steps
+        int strl_array_len
         double point[3]
         double voxdir[3]
         void (*step)(double* , double*, double) nogil
@@ -344,34 +344,40 @@ cdef _pft_tracker(DirectionGetter dg,
             copypoint(dir, &directions[i, 0])
             tissue_class[0] = tc.check_point_c(point)
             i += 1
-
         if tissue_class[0] == TRACKPOINT:
+            # The tracking continues normally
             continue
-        elif tissue_class[0] == ENDPOINT:
-            break
         elif tissue_class[0] == INVALIDPOINT:
             if pft_trial < pft_max_trials and i > 1:
-                pft_nbr_back_steps = min(i - 1, pft_max_nbr_back_steps)
-                pft_nbr_steps = min(pft_max_steps,
-                                    strl_array_len - i - pft_nbr_back_steps - 1)
-                pft_nbr_steps = max(pft_nbr_steps, 1)
-                i = _pft(streamline, i - pft_nbr_back_steps, directions, dg, tc,
-                         voxel_size, step_size, tissue_class, pft_nbr_steps,
-                         particle_count, particle_paths, particle_dirs,
-                         particle_weights, particle_states)
-
+                back_steps = min(i - 1, pft_max_nbr_back_steps)
+                front_steps = min(strl_array_len - i - back_steps - 1,
+                                  pft_max_nbr_front_steps)
+                front_steps = max(0, front_steps)
+                i = _pft(streamline, i - back_steps, directions, dg, tc,
+                         voxel_size, step_size, tissue_class,
+                         back_steps + front_steps, particle_count,
+                         particle_paths, particle_dirs, particle_weights,
+                         particle_states)
                 pft_trial += 1
                 # update the current point with the PFT results
                 copypoint(&streamline[i-1, 0], point)
                 copypoint(&directions[i-1, 0], dir)
 
-
-                if not tissue_class[0] == TRACKPOINT:
+                if tissue_class[0] != TRACKPOINT:
+                    # The tracking stops. PFT returned a valid stopping point
+                    # (ENDPOINT, OUTSIDEIMAGE) or failed to find one
+                    # (INVALIDPOINT, PYERROR)
                     break
             else:
+                # PFT was run more times than `pft_max_trials` without finding
+                # a valid stopping point. The tracking stops with INVALIDPOINT.
                 break
+        else:
+            # The tracking stops with a valid point (ENDPOINT, OUTSIDEIMAGE)
+            # or an invalid point (PYERROR)
+            break
 
-    if tissue_class[0] == OUTSIDEIMAGE:
+    if tissue_class[0] == OUTSIDEIMAGE or tissue_class[0] == PYERROR:
         i -= 1
     return i
 
@@ -402,7 +408,7 @@ cdef _pft(np.float_t[:, :] streamline,
         int s, p, j
 
     if pft_nbr_steps <= 0:
-        return INVALIDPOINT, streamline_i
+        return streamline_i
 
     for p in range(particle_count):
         copypoint(&streamline[streamline_i, 0], &particle_paths[0, p, 0, 0])
@@ -413,7 +419,7 @@ cdef _pft(np.float_t[:, :] streamline,
 
     for s in range(pft_nbr_steps):
         for p in range(particle_count):
-            if not particle_states[0, p, 0] == TRACKPOINT:
+            if particle_states[0, p, 0] != TRACKPOINT:
                 for j in range(3):
                     particle_paths[0, p, s, j] = 0
                     particle_dirs[0, p, s, j] = 0
@@ -423,6 +429,7 @@ cdef _pft(np.float_t[:, :] streamline,
 
             if dg.get_direction_c(point, dir):
                 particle_states[0, p, 0] = INVALIDPOINT
+                particle_weights[p] = 0
             else:
                 for j in range(3):
                     voxdir[j] = dir[j] / voxel_size[j]
