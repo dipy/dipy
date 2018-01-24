@@ -44,12 +44,15 @@ import dipy.reconst.dti as dti
 import dipy.data as dpd
 
 """
-``dipy.viz.fvtk`` is used for 3D visualization and matplotlib for 2D
+``dipy.viz`` package is used for 3D visualization and matplotlib for 2D
 visualizations:
 """
 
-import dipy.viz.fvtk as fvtk
+from dipy.viz import window, actor
 import matplotlib.pyplot as plt
+
+# Enables/disables interactive visualization
+interactive = False
 
 """
 If needed, the ``fetch_stanford_hardi`` function will download the raw dMRI
@@ -75,7 +78,7 @@ interest (ROI) surrounding the Corpus Callosum. We define that ROI as the
 following indices:
 """
 
-roi_idx = (slice(20,50), slice(55,85), slice(38,39))
+roi_idx = (slice(20, 50), slice(55, 85), slice(38, 39))
 
 """
 And use them to index into the data:
@@ -98,14 +101,15 @@ cfa1 = dti.color_fa(fa1, evecs1)
 sphere = dpd.get_sphere('symmetric724')
 
 """
-We visualize the ODFs in the ROI using fvtk:
+We visualize the ODFs in the ROI using ``dipy.viz`` module:
 """
 
-ren = fvtk.ren()
-fvtk.add(ren, fvtk.tensor(evals1, evecs1, cfa1, sphere))
+ren = window.Renderer()
+ren.add(actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls.png')
-fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_wls.png',
-            size=(600, 600))
+window.record(ren, out_path='tensor_ellipsoids_wls.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: tensor_ellipsoids_wls.png
@@ -114,7 +118,7 @@ fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_wls.png',
    Tensor Ellipsoids.
 """
 
-fvtk.clear(ren)
+window.clear(ren)
 
 """
 Next, we corrupt the data with some noise. To simulate a subject that moves
@@ -135,12 +139,12 @@ evals2 = fit_wls_noisy.evals
 evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
-ren = fvtk.ren()
-fvtk.add(ren, fvtk.tensor(evals2, evecs2, cfa2, sphere))
+ren = window.Renderer()
+ren.add(actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
-fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
-            size=(600, 600))
-
+window.record(ren, out_path='tensor_ellipsoids_wls_noisy.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 In places where the tensor model is particularly sensitive to noise, the
@@ -166,18 +170,19 @@ to identify the outliers in each voxel and is given as an input when
 initializing the TensorModel object:
 """
 
-dti_restore = dti.TensorModel(gtab,fit_method='RESTORE', sigma=sigma)
+dti_restore = dti.TensorModel(gtab, fit_method='RESTORE', sigma=sigma)
 fit_restore_noisy = dti_restore.fit(noisy_data)
 fa3 = fit_restore_noisy.fa
 evals3 = fit_restore_noisy.evals
 evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
-ren = fvtk.ren()
-fvtk.add(ren, fvtk.tensor(evals3, evecs3, cfa3, sphere))
+ren = window.Renderer()
+ren.add(actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3))
 print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
-fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
-            size=(600, 600))
+window.record(ren, out_path='tensor_ellipsoids_restore_noisy.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: tensor_ellipsoids_restore_noisy.png

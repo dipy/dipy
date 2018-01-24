@@ -2,7 +2,7 @@ import os
 import numpy as np
 from os.path import join as pjoin
 
-from dipy.viz import actor, window, widget, fvtk
+from dipy.viz import actor, window, widget
 from dipy.data import DATA_DIR
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
@@ -148,7 +148,7 @@ def test_text_widget():
     interactive = False
 
     renderer = window.Renderer()
-    axes = fvtk.axes()
+    axes = actor.axes()
     window.add(renderer, axes)
     renderer.ResetCamera()
 

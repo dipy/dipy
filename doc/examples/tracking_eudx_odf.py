@@ -61,19 +61,24 @@ csa_sl_fname = 'csa_streamline.trk'
 nib.trackvis.write(csa_sl_fname, csa_streamlines_trk, hdr, points_space='voxel')
 
 """
-Visualize the streamlines with fvtk (python vtk is required).
+Visualize the streamlines with `dipy.viz` module (python vtk is required).
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
-r = fvtk.ren()
+# Enables/disables interactive visualization
+interactive = False
 
-fvtk.add(r, fvtk.line(csa_streamlines, line_colors(csa_streamlines)))
+ren = window.Renderer()
+
+ren.add(actor.line(csa_streamlines, line_colors(csa_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
 
-fvtk.record(r, n_frames=1, out_path='csa_tracking.png', size=(600, 600))
+window.record(ren, out_path='csa_tracking.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csa_tracking.png
@@ -94,13 +99,15 @@ eu = EuDX(csapeaks.peak_values,
 
 csa_streamlines_mult_peaks = [streamline for streamline in eu]
 
-fvtk.clear(r)
+window.clear(ren)
 
-fvtk.add(r, fvtk.line(csa_streamlines_mult_peaks, line_colors(csa_streamlines_mult_peaks)))
+ren.add(actor.line(csa_streamlines_mult_peaks, line_colors(csa_streamlines_mult_peaks)))
 
 print('Saving illustration as csa_tracking_mpeaks.png')
 
-fvtk.record(r, n_frames=1, out_path='csa_tracking_mpeaks.png', size=(600, 600))
+window.record(ren, out_path='csa_tracking_mpeaks.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csa_tracking_mpeaks.png

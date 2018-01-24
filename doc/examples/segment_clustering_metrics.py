@@ -50,7 +50,6 @@ saving some computational time.
 **Note:** Inputs must be sequences of same length.
 """
 
-from dipy.viz import fvtk
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
@@ -171,10 +170,13 @@ orientation of a streamline.
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
@@ -185,17 +187,19 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='cosine_metric.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='cosine_metric.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: cosine_metric.png
