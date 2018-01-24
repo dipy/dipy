@@ -7,6 +7,7 @@ import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
+from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.testing.decorators import xvfb_it
 from dipy.data import get_sphere
 from tempfile import mkstemp
@@ -615,8 +616,9 @@ def test_tensor_slicer(interactive=False):
     # Test mask
     mask = np.ones(mevals.shape[:3])
     mask[:2, :3, :3] = 0
+    cfa = color_fa(fractional_anisotropy(mevals), mevecs)
     tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine, mask=mask,
-                                       sphere=sphere,  scale=.3)
+                                       scalar_colors=cfa, sphere=sphere,  scale=.3)
     renderer.clear()
     renderer.add(tensor_actor)
     renderer.reset_camera()
@@ -628,6 +630,30 @@ def test_tensor_slicer(interactive=False):
     mask_extent = renderer.GetActors().GetLastActor().GetBounds()
     mask_extent_x = abs(mask_extent[1] - mask_extent[0])
     npt.assert_equal(big_extent_x > mask_extent_x, True)
+
+    # test display
+    tensor_actor.display()
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_x = abs(current_extent[1] - current_extent[0])
+    npt.assert_equal(big_extent_x > current_extent_x, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    tensor_actor.display(y=1)
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_y = abs(current_extent[3] - current_extent[2])
+    big_extent_y = abs(big_extent[3] - big_extent[2])
+    npt.assert_equal(big_extent_y > current_extent_y, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    tensor_actor.display(z=1)
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_z = abs(current_extent[5] - current_extent[4])
+    big_extent_z = abs(big_extent[5] - big_extent[4])
+    npt.assert_equal(big_extent_z > current_extent_z, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
 
 
 @npt.dec.skipif(not run_test)
@@ -654,6 +680,20 @@ def test_dots(interactive=False):
     report = window.analyze_snapshot(arr,
                                      colors=(0, 255, 0))
     npt.assert_equal(report.objects, 3)
+
+    # Test one point
+    points = np.array([0, 0, 0])
+    dot_actor = actor.dots(points, color=(0, 0, 255))
+
+    renderer.clear()
+    renderer.add(dot_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=(0, 0, 255))
+    npt.assert_equal(report.objects, 1)
 
 
 @npt.dec.skipif(not run_test)
