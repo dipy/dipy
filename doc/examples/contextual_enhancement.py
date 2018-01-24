@@ -81,7 +81,6 @@ spherical deconvolution is used to model the fiber orientations.
 import numpy as np
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 from dipy.sims.voxel import add_noise
-from dipy.core.gradients import gradient_table
 
 # Read data
 fetch_stanford_hardi()
@@ -96,9 +95,15 @@ np.random.seed(1)
 data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
 
 # Select a small part of it.
-padding = 3 # Include a larger region to avoid boundary effects
+padding = 3  # Include a larger region to avoid boundary effects
 data_small = data[25-padding:40+padding, 65-padding:80+padding, 35:42]
 data_noisy_small = data_noisy[25-padding:40+padding, 65-padding:80+padding, 35:42]
+
+"""
+Enables/disables interactive visualization
+"""
+
+interactive = False
 
 """
 Fit an initial model to the data, in this case Constrained Spherical
@@ -141,10 +146,10 @@ k = EnhancementKernel(D33, D44, t)
 Visualize the kernel
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
-ren = fvtk.ren()
+ren = window.Renderer()
 
 # convolve kernel with delta spike
 spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
@@ -154,13 +159,16 @@ spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k,
 
 sphere = get_sphere('symmetric724')
 spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
-model_kernel = fvtk.sphere_funcs((spike_sf_conv * 6)[3,:,:,:],
-                                  sphere,
-                                  norm=False,
-                                  radial_scale=True)
-fvtk.add(ren, model_kernel)
-fvtk.camera(ren, pos=(30, 0, 0), focal=(0, 0, 0), viewup=(0, 0, 1), verbose=False)
-fvtk.record(ren, out_path='kernel.png', size=(900, 900))
+model_kernel = actor.odf_slicer(spike_sf_conv * 6,
+                                sphere=sphere,
+                                norm=False,
+                                scale=0.4)
+model_kernel.display(x=3)
+ren.add(model_kernel)
+ren.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
+window.record(ren, out_path='kernel.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: kernel.png
@@ -199,50 +207,44 @@ The end results are visualized. It can be observed that the end result after
 diffusion and sharpening is closer to the original noiseless dataset.
 """
 
-csd_sf_orig_slice = csd_sf_orig[padding:-padding, padding:-padding, [3], :]
-csd_sf_noisy_slice = csd_sf_noisy[padding:-padding, padding:-padding, [3], :]
-csd_sf_enh_slice = csd_sf_enh[padding:-padding, padding:-padding, [3], :]
-csd_sf_enh_sharp_slice = csd_sf_enh_sharp[padding:-padding, padding:-padding, [3], :]
-
-ren = fvtk.ren()
+ren = window.Renderer()
 
 # original ODF field
-fodf_spheres_org = fvtk.sphere_funcs(csd_sf_orig_slice,
-                                     sphere,
-                                     scale=2,
-                                     norm=False,
-                                     radial_scale=True)
-fodf_spheres_org.SetPosition(0, 35, 0)
-fvtk.add(ren, fodf_spheres_org)
+fodf_spheres_org = actor.odf_slicer(csd_sf_orig,
+                                    sphere=sphere,
+                                    scale=0.4,
+                                    norm=False)
+fodf_spheres_org.display(z=3)
+fodf_spheres_org.SetPosition(0, 25, 0)
+ren.add(fodf_spheres_org)
 
 # ODF field with added noise
-fodf_spheres = fvtk.sphere_funcs(csd_sf_noisy_slice,
-                                 sphere,
-                                 scale=2,
-                                 norm=False,
-                                 radial_scale=True)
+fodf_spheres = actor.odf_slicer(csd_sf_noisy,
+                                sphere=sphere,
+                                scale=0.4,
+                                norm=False,)
 fodf_spheres.SetPosition(0, 0, 0)
-fvtk.add(ren, fodf_spheres)
+ren.add(fodf_spheres)
 
 # Enhancement of noisy ODF field
-fodf_spheres_enh = fvtk.sphere_funcs(csd_sf_enh_slice,
-                                     sphere,
-                                     scale=2,
-                                     norm=False,
-                                     radial_scale=True)
-fodf_spheres_enh.SetPosition(35, 0, 0)
-fvtk.add(ren, fodf_spheres_enh)
+fodf_spheres_enh = actor.odf_slicer(csd_sf_enh,
+                                    sphere=sphere,
+                                    scale=0.4,
+                                    norm=False)
+fodf_spheres_enh.SetPosition(25, 0, 0)
+ren.add(fodf_spheres_enh)
 
 # Additional sharpening
-fodf_spheres_enh_sharp = fvtk.sphere_funcs(csd_sf_enh_sharp_slice,
-                                           sphere,
-                                           scale=2,
-                                           norm=False,
-                                           radial_scale=True)
-fodf_spheres_enh_sharp.SetPosition(35, 35, 0)
-fvtk.add(ren, fodf_spheres_enh_sharp)
+fodf_spheres_enh_sharp = actor.odf_slicer(csd_sf_enh_sharp,
+                                          sphere=sphere,
+                                          scale=0.4,
+                                          norm=False)
+fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
+ren.add(fodf_spheres_enh_sharp)
 
-fvtk.record(ren, out_path='enhancements.png', size=(900, 900))
+window.record(ren, out_path='enhancements.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 

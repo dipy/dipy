@@ -36,7 +36,7 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
         If None then the values will be interpolated from (data.min(),
         data.max()) to (0, 255). Otherwise from (value_range[0],
         value_range[1]) to (0, 255).
-    opacity : float
+    opacity : float, optional
         Opacity of 0 means completely transparent and 1 completely visible.
     lookup_colormap : vtkLookupTable
         If None (default) then a grayscale map is created.
@@ -133,14 +133,6 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
     image_resliced.SetInterpolationModeToLinear()
     image_resliced.Update()
 
-    if nb_components == 1:
-        if lookup_colormap is None:
-            # Create a black/white lookup table.
-            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
-        else:
-            lut = lookup_colormap
-
-    x1, x2, y1, y2, z1, z2 = im.GetExtent()
     ex1, ex2, ey1, ey2, ez1, ez2 = image_resliced.GetOutput().GetExtent()
 
     class ImageActor(vtk.vtkImageActor):
@@ -195,6 +187,11 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
 
     image_actor = ImageActor()
     if nb_components == 1:
+        lut = lookup_colormap
+        if lookup_colormap is None:
+            # Create a black/white lookup table.
+            lut = colormap_lookup_table((0, 255), (0, 0), (0, 0), (0, 1))
+
         plane_colors = vtk.vtkImageMapToColors()
         plane_colors.SetLookupTable(lut)
         plane_colors.SetInputConnection(image_resliced.GetOutputPort())
@@ -362,7 +359,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
     linewidth : float
         Default is 0.01.
     tube_sides : int
@@ -506,7 +503,7 @@ def line(lines, colors=None, opacity=1, linewidth=1,
         colormap are interpolated automatically using trilinear interpolation.
 
     opacity : float, optional
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
 
     linewidth : float, optional
         Line thickness. Default is 1.
@@ -616,8 +613,8 @@ def scalar_bar(lookup_table=None, title=" "):
 
 
 def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
-    ''' Internal function for generating arrow actors.
-    '''
+    """ Internal function for generating arrow actors.
+    """
     arrow = vtk.vtkArrowSource()
     # arrow.SetTipLength(length)
 
@@ -653,6 +650,8 @@ def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
         y-axis color. Default green (0, 1, 0).
     colorz : tuple (3,)
         z-axis color. Default blue (0, 0, 1).
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
 
     Returns
     -------
@@ -696,13 +695,18 @@ def odf_slicer(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     radial_scale : bool
         Scale sphere points according to odf values.
     opacity : float
-        Takes values from 0 (fully transparent) to 1 (opaque)
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
     colormap : None or str
         If None then white color is used. Otherwise the name of colormap is
         given. Matplotlib colormaps are supported (e.g., 'inferno').
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
+
+    Returns
+    ---------
+    actor : vtkActor
+        Spheres
     """
 
     if mask is None:
@@ -778,6 +782,11 @@ def _odf_slicer_mapper(odfs, affine=None, mask=None, sphere=None, scale=2.2,
     global_cm : bool
         If True the colormap will be applied in all ODFs. If False
         it will be applied individually at each voxel (default False).
+
+    Returns
+    ---------
+    mapper : vtkPolyDataMapper
+        Spheres mapper
     """
     if mask is None:
         mask = np.ones(odfs.shape[:3])
@@ -877,8 +886,196 @@ def _makeNd(array, ndim):
     return array.reshape(new_shape)
 
 
+def tensor_slicer(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
+                  norm=True, opacity=1., scalar_colors=None):
+    """ Slice many tensors as ellipsoids in native or world coordinates
+
+    Parameters
+    ----------
+    evals : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        eigenvalues
+    evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
+        eigenvectors
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates*
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque). Default is 1.
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids using ``color_fa``
+
+    Returns
+    ---------
+    actor : vtkActor
+        Ellipsoid
+    """
+
+    if mask is None:
+        mask = np.ones(evals.shape[:3], dtype=np.bool)
+    else:
+        mask = mask.astype(np.bool)
+
+    szx, szy, szz = evals.shape[:3]
+
+    class TensorSlicerActor(vtk.vtkLODActor):
+
+        def display_extent(self, x1, x2, y1, y2, z1, z2):
+            tmp_mask = np.zeros(evals.shape[:3], dtype=np.bool)
+            tmp_mask[x1:x2 + 1, y1:y2 + 1, z1:z2 + 1] = True
+            tmp_mask = np.bitwise_and(tmp_mask, mask)
+
+            self.mapper = _tensor_slicer_mapper(evals=evals,
+                                                evecs=evecs,
+                                                affine=affine,
+                                                mask=tmp_mask,
+                                                sphere=sphere,
+                                                scale=scale,
+                                                norm=norm,
+                                                opacity=opacity,
+                                                scalar_colors=scalar_colors)
+            self.SetMapper(self.mapper)
+
+        def display(self, x=None, y=None, z=None):
+            if x is None and y is None and z is None:
+                self.display_extent(0, szx - 1, 0, szy - 1,
+                                    int(np.floor(szz/2)), int(np.floor(szz/2)))
+            if x is not None:
+                self.display_extent(x, x, 0, szy - 1, 0, szz - 1)
+            if y is not None:
+                self.display_extent(0, szx - 1, y, y, 0, szz - 1)
+            if z is not None:
+                self.display_extent(0, szx - 1, 0, szy - 1, z, z)
+
+    tensor_actor = TensorSlicerActor()
+    tensor_actor.display_extent(0, szx - 1, 0, szy - 1,
+                             int(np.floor(szz/2)), int(np.floor(szz/2)))
+
+    return tensor_actor
+
+
+def _tensor_slicer_mapper(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
+                          norm=True, opacity=1., scalar_colors=None):
+    """ Helper function for slicing tensor fields
+
+    Parameters
+    ----------
+    evals : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        eigenvalues
+    evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
+        eigenvectors
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
+    sphere : Sphere
+        a sphere
+    scale : float
+        Distance between spheres.
+    norm : bool
+        Normalize `sphere_values`.
+    opacity : float
+        Takes values from 0 (fully transparent) to 1 (opaque)
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids using ``color_fa``
+
+    Returns
+    ---------
+    mapper : vtkPolyDataMapper
+        Ellipsoid mapper
+    """
+    if mask is None:
+        mask = np.ones(evals.shape[:3])
+
+    ijk = np.ascontiguousarray(np.array(np.nonzero(mask)).T)
+    if len(ijk) == 0:
+        return None
+
+    if affine is not None:
+        ijk = np.ascontiguousarray(apply_affine(affine, ijk))
+
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    if scalar_colors is None:
+        from dipy.reconst.dti import color_fa, fractional_anisotropy
+        cfa = color_fa(fractional_anisotropy(evals), evecs)
+    else:
+        cfa = _makeNd(scalar_colors, 4)
+
+    cols = np.zeros((ijk.shape[0],) + sphere.vertices.shape,
+                    dtype='f4')
+
+    all_xyz = []
+    all_faces = []
+    for (k, center) in enumerate(ijk):
+        ea = evals[tuple(center.astype(np.int))]
+        if norm:
+            ea /= ea.max()
+        ea = np.diag(ea.copy())
+
+        ev = evecs[tuple(center.astype(np.int))].copy()
+        xyz = np.dot(ev, np.dot(ea, vertices.T))
+
+        xyz = xyz.T
+        all_xyz.append(scale * xyz + center)
+        all_faces.append(faces + k * xyz.shape[0])
+
+        cols[k, ...] = np.interp(cfa[tuple(center.astype(np.int))], [0, 1], [0, 255]).astype('ubyte')
+
+    all_xyz = np.ascontiguousarray(np.concatenate(all_xyz))
+    all_xyz_vtk = numpy_support.numpy_to_vtk(all_xyz, deep=True)
+
+    all_faces = np.concatenate(all_faces)
+    all_faces = np.hstack((3 * np.ones((len(all_faces), 1)),
+                           all_faces))
+    ncells = len(all_faces)
+
+    all_faces = np.ascontiguousarray(all_faces.ravel(), dtype='i8')
+    all_faces_vtk = numpy_support.numpy_to_vtkIdTypeArray(all_faces,
+                                                          deep=True)
+
+    points = vtk.vtkPoints()
+    points.SetData(all_xyz_vtk)
+
+    cells = vtk.vtkCellArray()
+    cells.SetCells(ncells, all_faces_vtk)
+
+    cols = np.ascontiguousarray(
+        np.reshape(cols, (cols.shape[0] * cols.shape[1],
+                   cols.shape[2])), dtype='f4')
+
+    vtk_colors = numpy_support.numpy_to_vtk(
+        cols,
+        deep=True,
+        array_type=vtk.VTK_UNSIGNED_CHAR)
+
+    vtk_colors.SetName("Colors")
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(cells)
+    polydata.GetPointData().SetScalars(vtk_colors)
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
+    return mapper
+
+
 def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
-                colors=(1, 0, 0), opacity=1, linewidth=1,
+                colors=(1, 0, 0), opacity=1., linewidth=1,
                 lod=False, lod_points=10 ** 4, lod_points_size=3):
     """ Visualize peak directions as given from ``peaks_from_model``
 
@@ -890,13 +1087,16 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
     peaks_values : ndarray
         Peak values. The shape of the array can be (M, ) or (X, M) or
         (X, Y, M) or (X, Y, Z, M)
-
+    affine : array
+        4x4 transformation array from native coordinates to world coordinates
+    mask : ndarray
+        3D mask
     colors : tuple or None
         Default red color. If None then every peak gets an orientation color
         in similarity to a DEC map.
 
     opacity : float, optional
-        Default is 1.
+        Takes values from 0 (fully transparent) to 1 (opaque)
 
     linewidth : float, optional
         Line thickness. Default is 1.
@@ -916,7 +1116,7 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
 
     See Also
     --------
-    dipy.viz.fvtk.sphere_funcs
+    dipy.viz.actor.odf_slicer
 
     """
     peaks_dirs = np.asarray(peaks_dirs)
@@ -988,3 +1188,192 @@ def peak_slicer(peaks_dirs, peaks_values=None, mask=None, affine=None,
                               int(np.floor(szz / 2)), int(np.floor(szz / 2)))
 
     return peak_actor
+
+
+def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
+    """ Create one or more 3d points
+
+    Parameters
+    ----------
+    points : ndarray, (N, 3)
+    color : tuple (3,)
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque)
+    dot_size : int
+
+    Returns
+    --------
+    vtkActor
+
+    See Also
+    ---------
+    dipy.viz.actor.point
+
+    """
+
+    if points.ndim == 2:
+        points_no = points.shape[0]
+    else:
+        points_no = 1
+
+    polyVertexPoints = vtk.vtkPoints()
+    polyVertexPoints.SetNumberOfPoints(points_no)
+    aPolyVertex = vtk.vtkPolyVertex()
+    aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
+
+    cnt = 0
+    if points.ndim > 1:
+        for point in points:
+            polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
+            aPolyVertex.GetPointIds().SetId(cnt, cnt)
+            cnt += 1
+    else:
+        polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
+        aPolyVertex.GetPointIds().SetId(cnt, cnt)
+        cnt += 1
+
+    aPolyVertexGrid = vtk.vtkUnstructuredGrid()
+    aPolyVertexGrid.Allocate(1, 1)
+    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(),
+                                   aPolyVertex.GetPointIds())
+
+    aPolyVertexGrid.SetPoints(polyVertexPoints)
+    aPolyVertexMapper = vtk.vtkDataSetMapper()
+    if major_version <= 5:
+        aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    else:
+        aPolyVertexMapper.SetInputData(aPolyVertexGrid)
+    aPolyVertexActor = vtk.vtkActor()
+    aPolyVertexActor.SetMapper(aPolyVertexMapper)
+
+    aPolyVertexActor.GetProperty().SetColor(color)
+    aPolyVertexActor.GetProperty().SetOpacity(opacity)
+    aPolyVertexActor.GetProperty().SetPointSize(dot_size)
+    return aPolyVertexActor
+
+
+def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
+    """ Visualize points as sphere glyphs
+
+    Parameters
+    ----------
+    points : ndarray, shape (N, 3)
+    colors : ndarray (N,3) or tuple (3,)
+    point_radius : float
+    theta : int
+    phi : int
+    opacity : float, optional
+        Takes values from 0 (fully transparent) to 1 (opaque)
+
+    Returns
+    -------
+    vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> pts = np.random.rand(5, 3)
+    >>> point_actor = actor.point(pts, window.colors.coral)
+    >>> ren.add(point_actor)
+    >>> #window.show(ren)
+    """
+
+    if np.array(colors).ndim == 1:
+        # return dots(points,colors,opacity)
+        colors = np.tile(colors, (len(points), 1))
+
+    scalars = vtk.vtkUnsignedCharArray()
+    scalars.SetNumberOfComponents(3)
+
+    pts = vtk.vtkPoints()
+    cnt_colors = 0
+
+    for p in points:
+
+        pts.InsertNextPoint(p[0], p[1], p[2])
+        scalars.InsertNextTuple3(
+            round(255 * colors[cnt_colors][0]),
+            round(255 * colors[cnt_colors][1]),
+            round(255 * colors[cnt_colors][2]))
+        cnt_colors += 1
+
+    src = vtk.vtkSphereSource()
+    src.SetRadius(point_radius)
+    src.SetThetaResolution(theta)
+    src.SetPhiResolution(phi)
+
+    polyData = vtk.vtkPolyData()
+    polyData.SetPoints(pts)
+    polyData.GetPointData().SetScalars(scalars)
+
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetSourceConnection(src.GetOutputPort())
+    if major_version <= 5:
+        glyph.SetInput(polyData)
+    else:
+        glyph.SetInputData(polyData)
+    glyph.SetColorModeToColorByScalar()
+    glyph.SetScaleModeToDataScalingOff()
+    glyph.Update()
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(glyph.GetOutput())
+    else:
+        mapper.SetInputData(glyph.GetOutput())
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    actor.GetProperty().SetOpacity(opacity)
+
+    return actor
+
+
+def label(text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
+          color=(1, 1, 1)):
+    """ Create a label actor.
+
+    This actor will always face the camera
+
+    Parameters
+    ----------
+    text : str
+        Text for the label.
+    pos : (3,) array_like, optional
+        Left down position of the label.
+    scale : (3,) array_like
+        Changes the size of the label.
+    color : (3,) array_like
+        Label color as ``(r,g,b)`` tuple.
+
+    Returns
+    -------
+    l : vtkActor object
+        Label.
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> l = actor.label(text='Hello')
+    >>> ren.add(l)
+    >>> #window.show(ren)
+    """
+
+    atext = vtk.vtkVectorText()
+    atext.SetText(text)
+
+    textm = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        textm.SetInput(atext.GetOutput())
+    else:
+        textm.SetInputData(atext.GetOutput())
+
+    texta = vtk.vtkFollower()
+    texta.SetMapper(textm)
+    texta.SetScale(scale)
+
+    texta.GetProperty().SetColor(color)
+    texta.SetPosition(pos)
+
+    return texta
