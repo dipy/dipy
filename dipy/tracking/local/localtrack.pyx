@@ -404,7 +404,7 @@ cdef _pft(np.float_t[:, :] streamline,
         double point[3]
         double dir[3]
         double voxdir[3]
-        double eps = np.finfo(np.float).eps
+        double eps = 1e-16
         int s, p, j
 
     if pft_nbr_steps <= 0:
@@ -448,51 +448,56 @@ cdef _pft(np.float_t[:, :] streamline,
         sum_weights = 0
         for p in range(particle_count):
             sum_weights += particle_weights[p]
-        sum_squared = 0
-        for p in range(particle_count):
-            particle_weights[p] = particle_weights[p] / sum_weights
-            sum_squared += particle_weights[p] * particle_weights[p]
 
-        # Resample the particles if the weights are too uneven.
-        # Particles with negligable weights are replaced by duplicates of
-        # those with high weigths through resampling
-        N_effective = 1. / sum_squared
-        if N_effective < particle_count / 10.:
-            # copy data in the temp arrays
-            for pp in range(particle_count):
-                for ss in range(pft_nbr_steps):
-                    copypoint(&particle_paths[0, pp, ss, 0],
-                              &particle_paths[1, pp, ss, 0])
-                    copypoint(&particle_dirs[0, pp, ss, 0],
-                              &particle_dirs[1, pp, ss, 0])
-                particle_states[1, pp, 0] = particle_states[0, pp, 0]
-                particle_states[1, pp, 1] = particle_states[0, pp, 1]
+        if sum_weights > 0:
+            sum_squared = 0
+            for p in range(particle_count):
+                particle_weights[p] = particle_weights[p] / sum_weights
+                sum_squared += particle_weights[p] * particle_weights[p]
 
-            # sample N new particle
-            cumsum(&particle_weights[0],
-                   &particle_weights[0],
-                   particle_count)
-            for pp in range(particle_count):
-                rdm_sample = random() * particle_weights[particle_count - 1]
-                p_source = where_to_insert(&particle_weights[0],
-                                           rdm_sample,
-                                           particle_count)
-                for ss in range(pft_nbr_steps):
-                    copypoint(&particle_paths[1, p_source, ss, 0],
-                              &particle_paths[0, pp, ss, 0])
-                    copypoint(&particle_dirs[1, p_source, ss, 0],
-                              &particle_dirs[0, pp, ss, 0])
-                particle_states[0, pp, 0] = particle_states[1, p_source, 0]
-                particle_states[0, pp, 1] = particle_states[1, p_source, 1]
-            for pp in range(particle_count):
-                particle_weights[pp] = 1. / particle_count
+            # Resample the particles if the weights are too uneven.
+            # Particles with negligible weights are replaced by duplicates of
+            # those with high weigths through resampling
+            N_effective = 1. / sum_squared
+            if N_effective < particle_count / 10.:
+                # copy data in the temp arrays
+                for pp in range(particle_count):
+                    for ss in range(pft_nbr_steps):
+                        copypoint(&particle_paths[0, pp, ss, 0],
+                                  &particle_paths[1, pp, ss, 0])
+                        copypoint(&particle_dirs[0, pp, ss, 0],
+                                  &particle_dirs[1, pp, ss, 0])
+                    particle_states[1, pp, 0] = particle_states[0, pp, 0]
+                    particle_states[1, pp, 1] = particle_states[0, pp, 1]
+
+                # sample N new particle
+                cumsum(&particle_weights[0],
+                       &particle_weights[0],
+                       particle_count)
+                for pp in range(particle_count):
+                    rdm_sample = random() * particle_weights[particle_count - 1]
+                    p_source = where_to_insert(&particle_weights[0],
+                                               rdm_sample,
+                                               particle_count)
+                    for ss in range(pft_nbr_steps):
+                        copypoint(&particle_paths[1, p_source, ss, 0],
+                                  &particle_paths[0, pp, ss, 0])
+                        copypoint(&particle_dirs[1, p_source, ss, 0],
+                                  &particle_dirs[0, pp, ss, 0])
+                    particle_states[0, pp, 0] = particle_states[1, p_source, 0]
+                    particle_states[0, pp, 1] = particle_states[1, p_source, 1]
+                for pp in range(particle_count):
+                    particle_weights[pp] = 1. / particle_count
 
     # update the streamline with the trajectory of one particle
     cumsum(&particle_weights[0],
            &particle_weights[0],
            particle_count)
-    rdm_sample = random() * particle_weights[particle_count - 1]
-    p = where_to_insert(&particle_weights[0], rdm_sample, particle_count)
+    if particle_weights[particle_count - 1] > 0:
+        rdm_sample = random() * particle_weights[particle_count - 1]
+        p = where_to_insert(&particle_weights[0], rdm_sample, particle_count)
+    else:
+        p = 0
 
     for s in range(1, particle_states[0, p, 1]):
         copypoint(&particle_paths[0, p, s, 0], &streamline[streamline_i + s, 0])

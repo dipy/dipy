@@ -203,24 +203,27 @@ class ParticleFilteringTracking(LocalTracking):
                                                   / step_size))
         self.pft_max_nbr_front_steps = int(np.ceil(pft_front_tracking_dist
                                                    / step_size))
-        self.pft_max_steps = (self.pft_max_nbr_back_steps
-                              + self.pft_max_nbr_front_steps)
+        pft_max_steps = (self.pft_max_nbr_back_steps +
+                         self.pft_max_nbr_front_steps)
 
         if (self.pft_max_nbr_front_steps < 0
                 or self.pft_max_nbr_back_steps < 0
-                or self.pft_max_steps < 1):
+                or pft_max_steps < 1):
             raise ValueError("The number of PFT steps must be greater than 0.")
+
+        if particle_count <= 0:
+            raise ValueError("The particle count must be greater than 0.")
 
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
 
         self.pft_max_trial = pft_max_trial
         self.particle_count = particle_count
         self.particle_paths = np.empty((2, self.particle_count,
-                                        self.pft_max_steps + 1, 3),
+                                        pft_max_steps + 1, 3),
                                        dtype=float)
         self.particle_weights = np.empty(self.particle_count, dtype=float)
         self.particle_dirs = np.empty((2, self.particle_count,
-                                       self.pft_max_steps + 1, 3), dtype=float)
+                                       pft_max_steps + 1, 3), dtype=float)
         self.particle_states = np.empty((2, self.particle_count, 2), dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
