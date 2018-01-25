@@ -399,6 +399,15 @@ def test_particle_filtering_tractography():
         lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
                                           maxlen=-1))
 
+    # Test with invalid particle count
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          particle_count=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          particle_count=-1))
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
