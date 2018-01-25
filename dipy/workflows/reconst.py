@@ -30,15 +30,15 @@ class ReconstMAPMRIFlow(Workflow):
         return 'mapmri'
 
     def run(self, data_file, data_bvecs, data_bvals, b0_threshold=0.0,
-            laplacian=True, positivity=True, out_rtop='rtop.nii.gz',
-            out_lapnorm='lapnorm.nii.gz',
+            laplacian=True, positivity=True, bval_threshold=2000,
+            out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
             out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
             out_rtap='rtap.nii.gz',
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
             out_parng='parng.nii.gz', small_delta=0.0129,
             big_delta=0.0218, save_metrics=[],
-            out_dir='', laplacian_weighting=0.05):
+            out_dir='', laplacian_weighting=0.05, radial_order=6):
         """ Workflow for fitting the MAPMRI model
         (with optional Laplacian regularization).
         Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
@@ -61,6 +61,12 @@ class ReconstMAPMRIFlow(Workflow):
             Path to the bval files.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
+        bval_threshold : float
+            Sets the b-value threshold to be used in the scale factor
+            estimation. In order for the estimated non-Gaussianity to have
+            meaning this value should set to a lower value (b<2000 s/mm^2)
+            such that the scale factors are estimated on signal points that
+            reasonably represent the spins at Gaussian diffusion. (default: 2000)
         small_delta : float
             Small delta value used in generation of gradient table of provided
             bval and bvec. (default: 0.0129)
@@ -102,6 +108,9 @@ class ReconstMAPMRIFlow(Workflow):
         laplacian_weighting :
             Weighting value used in fitting the MAPMRI model in the laplacian
             and both model types. (default: 0.05)
+        radial_order : unsigned int
+            Even value used to set the order of the basis
+            (default: 6)
         """
         io_it = self.get_io_iterator()
         for dwi, bval, bvec, out_rtop, out_lapnorm, \
@@ -124,32 +133,38 @@ class ReconstMAPMRIFlow(Workflow):
                                 'qiv', 'rtap', 'rtpp',
                                 'ng', 'perng', 'parng']
 
-            radial_order = 6
+            radial_order = radial_order
 
             if laplacian and positivity:
                 map_model_aniso = mapmri.MapmriModel(gtab,
                                                      radial_order=radial_order,
                                                      laplacian_regularization=True,
                                                      laplacian_weighting=laplacian_weighting,
-                                                     positivity_constraint=True)
+                                                     positivity_constraint=True,
+                                                     bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif positivity:
 
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=False,
-                                                     positivity_constraint=True)
+                                                     positivity_constraint=True,
+                                                     bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif laplacian:
                 map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                                      laplacian_regularization=True,
-                                                     laplacian_weighting=laplacian_weighting)
+                                                     laplacian_weighting=laplacian_weighting,
+                                                     bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             else:
-                raise ValueError('Need to have either laplacian, positivity, or both parameters'
-                                 'to be set to true for Workflow to function correctly!')
+                map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
+                                                     laplacian_regularization=False,
+                                                     positivity_constraint=False,
+                                                     bval_threshold=bval_threshold)
+                mapfit_aniso = map_model_aniso.fit(data)
 
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()
@@ -197,7 +212,7 @@ class ReconstMAPMRIFlow(Workflow):
                 nib.save(ng, out_parng)
 
             logging.info('MAPMRI saved in {0}'.
-                         format(os.path.dirname(out_rtpp)))
+                         format(os.path.dirname(out_dir)))
 
 
 class ReconstDtiFlow(Workflow):
