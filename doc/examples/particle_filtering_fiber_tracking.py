@@ -105,23 +105,37 @@ renderer.clear()
 renderer.add(actor.line(streamlines, line_colors(streamlines)))
 window.record(renderer, out_path='pft_streamlines.png', size=(600, 600))
 
+"""
+.. figure:: pft_streamlines.png
+ :align: center
+
+ **Particle Filtering Tractography**
+"""
+
 # Local Probabilistic Tractography
-local_prob_streamlines = LocalTracking(dg,
-                                       cmc_classifier,
-                                       seeds,
-                                       affine,
-                                       max_cross=1,
-                                       step_size=step_size,
-                                       maxlen=1000,
-                                       return_all=False)
-streamlines = [s for s in local_prob_streamlines]
-save_trk("local_prob_streamlines.trk", streamlines, affine, shape)
+probabilistic_streamlines = LocalTracking(dg,
+                                          cmc_classifier,
+                                          seeds,
+                                          affine,
+                                          max_cross=1,
+                                          step_size=step_size,
+                                          maxlen=1000,
+                                          return_all=False)
+probabilistic_streamlines = [s for s in probabilistic_streamlines]
+save_trk("probabilistic_streamlines.trk", probabilistic_streamlines, affine,
+         shape)
 
 renderer.clear()
 renderer.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(renderer, out_path='probabilistic_local_streamlines.png',
+window.record(renderer, out_path='probabilistic_streamlines.png',
               size=(600, 600))
 
+"""
+.. figure:: probabilistic_streamlines.png
+ :align: center
+
+ **Probabilistic Tractography**
+"""
 
 """
 References
