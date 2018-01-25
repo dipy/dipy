@@ -133,8 +133,6 @@ class ReconstMAPMRIFlow(Workflow):
                                 'qiv', 'rtap', 'rtpp',
                                 'ng', 'perng', 'parng']
 
-            radial_order = radial_order
-
             if laplacian and positivity:
                 map_model_aniso = mapmri.MapmriModel(gtab,
                                                      radial_order=radial_order,
