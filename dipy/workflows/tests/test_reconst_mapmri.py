@@ -16,6 +16,10 @@ def test_reconst_mmri_laplacian():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 
 
+def test_reconst_mmri_none():
+    reconst_mmri_core(ReconstMAPMRIFlow, lap=False, pos=False)
+
+
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
@@ -76,5 +80,6 @@ def reconst_mmri_core(flow, lap, pos):
 
 if __name__ == '__main__':
     test_reconst_mmri_laplacian()
+    test_reconst_mmri_none()
     test_reconst_mmri_positivity()
     test_reconst_mmri_both()
