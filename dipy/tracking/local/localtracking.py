@@ -224,7 +224,9 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_weights = np.empty(self.particle_count, dtype=float)
         self.particle_dirs = np.empty((2, self.particle_count,
                                        pft_max_steps + 1, 3), dtype=float)
-        self.particle_states = np.empty((2, self.particle_count, 2), dtype=int)
+        self.particle_steps = np.empty((2, self.particle_count), dtype=int)
+        self.particle_tissue_classes = np.empty((2, self.particle_count),
+                                                dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
                                                         seeds,
@@ -251,4 +253,5 @@ class ParticleFilteringTracking(LocalTracking):
                            self.particle_paths,
                            self.particle_dirs,
                            self.particle_weights,
-                           self.particle_states)
+                           self.particle_steps,
+                           self.particle_tissue_classes)
