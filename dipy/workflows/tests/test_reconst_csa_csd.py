@@ -1,5 +1,5 @@
 import numpy as np
-from nose.tools import assert_true
+from nose.tools import assert_equal
 from os.path import join
 import numpy.testing as npt
 
@@ -36,29 +36,29 @@ def reconst_flow_core(flow):
 
         gfa_path = reconst_flow.last_generated_outputs['out_gfa']
         gfa_data = nib.load(gfa_path).get_data()
-        assert_true(gfa_data.shape == volume.shape[:-1])
+        assert_equal(gfa_data.shape, volume.shape[:-1])
 
         peaks_dir_path = reconst_flow.last_generated_outputs['out_peaks_dir']
         peaks_dir_data = nib.load(peaks_dir_path).get_data()
-        assert_true(peaks_dir_data.shape[-1] == 15)
-        assert_true(peaks_dir_data.shape[:-1] == volume.shape[:-1])
+        assert_equal(peaks_dir_data.shape[-1], 15)
+        assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
 
         peaks_idx_path = \
             reconst_flow.last_generated_outputs['out_peaks_indices']
         peaks_idx_data = nib.load(peaks_idx_path).get_data()
-        assert_true(peaks_idx_data.shape[-1] == 5)
-        assert_true(peaks_idx_data.shape[:-1] == volume.shape[:-1])
+        assert_equal(peaks_idx_data.shape[-1], 5)
+        assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
 
         peaks_vals_path = \
             reconst_flow.last_generated_outputs['out_peaks_values']
         peaks_vals_data = nib.load(peaks_vals_path).get_data()
-        assert_true(peaks_vals_data.shape[-1] == 5)
-        assert_true(peaks_vals_data.shape[:-1] == volume.shape[:-1])
+        assert_equal(peaks_vals_data.shape[-1], 5)
+        assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
 
         shm_path = reconst_flow.last_generated_outputs['out_shm']
         shm_data = nib.load(shm_path).get_data()
-        assert_true(shm_data.shape[-1] == 45)
-        assert_true(shm_data.shape[:-1] == volume.shape[:-1])
+        assert_equal(shm_data.shape[-1], 45)
+        assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
         pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])
         npt.assert_allclose(pam.peak_dirs.reshape(peaks_dir_data.shape),

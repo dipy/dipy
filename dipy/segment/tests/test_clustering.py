@@ -540,7 +540,7 @@ def test_cluster_map_comparison_with_object():
 
     # Comparison with another ClusterMap object
     other_cluster_map = copy.deepcopy(cluster_map)
-    assert_true(cluster_map == other_cluster_map)
+    assert_equal(cluster_map, other_cluster_map)
 
     other_cluster_map = copy.deepcopy(cluster_map)
     assert_false(cluster_map != other_cluster_map)
