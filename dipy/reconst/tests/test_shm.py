@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from nose.tools import assert_equal, assert_raises, assert_less
+from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 from scipy.special import sph_harm as sph_harm_sp
@@ -45,7 +45,7 @@ def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
     assert_equal(m_list.shape, n_list.shape)
     assert_equal(m_list.shape, (45,))
-    assert_less(np.all(np.abs(m_list), n_list))
+    assert_true(np.all(np.abs(m_list) <= n_list))
     assert_array_equal(n_list % 2, 0)
     assert_raises(ValueError, sph_harm_ind_list, 1)
 
