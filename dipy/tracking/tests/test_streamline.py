@@ -8,7 +8,7 @@ import numpy.testing as npt
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 
-from nose.tools import assert_true, assert_equal, assert_almost_equal
+from nose.tools import assert_less_equal, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
@@ -275,9 +275,9 @@ def test_set_number_of_points():
 
     # Test streamline with integer dtype
     new_streamline = set_number_of_points(streamline.astype(np.int32))
-    assert_true(new_streamline.dtype == np.float32)
+    assert_equal(new_streamline.dtype, np.float32)
     new_streamline = set_number_of_points(streamline.astype(np.int64))
-    assert_true(new_streamline.dtype == np.float64)
+    assert_equal(new_streamline.dtype, np.float64)
 
     # Test empty list
     assert_equal(set_number_of_points([]), [])
@@ -435,7 +435,7 @@ def test_length():
 
     # Test streamline having integer dtype
     length_streamline = length(streamline.astype('int'))
-    assert_true(length_streamline.dtype == np.float64)
+    assert_equal(length_streamline.dtype, np.float64)
 
     # Test empty list
     assert_equal(length([]), 0.0)
@@ -624,7 +624,7 @@ def test_compress_streamlines():
                                      max_segment_length=max_segment_length)
         segments_length = np.sqrt((np.diff(c_streamline,
                                            axis=0)**2).sum(axis=1))
-        assert_true(np.all(segments_length <= max_segment_length))
+        assert_less_equal(np.all(segments_length, max_segment_length))
         assert_equal(len(c_streamline), 12)
         assert_array_equal(c_streamline, linear_streamline[::9])
 
