@@ -390,7 +390,7 @@ Display the ODFs.
 interactive = False
 
 r = window.Renderer()
-sfu = actor.odf_slicer(odf, sphere=sphere, colormap='jet', scale=0.5)
+sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
 sfu.display(y=0)
 r.add(sfu)
 window.record(r, out_path='odfs.png', size=(600, 600))

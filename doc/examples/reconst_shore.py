@@ -86,7 +86,7 @@ Display the ODFs
 interactive = False
 
 ren = window.Renderer()
-sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap='jet', scale=0.5)
+sfu = actor.odf_slicer(odf[:, None, :], sphere=sphere, colormap='plasma', scale=0.5)
 sfu.RotateX(-90)
 sfu.display(y=0)
 ren.add(sfu)
