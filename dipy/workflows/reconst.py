@@ -33,16 +33,16 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, b0_threshold=0.0,
-            laplacian=True, positivity=True, bval_threshold=2000,
+    def run(self, data_file, data_bvecs, data_bvals, small_delta, big_delta,
+            b0_threshold=0.0, laplacian=True, positivity=True,
+            bval_threshold=2000, save_metrics=[],
+            laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
             out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
             out_rtap='rtap.nii.gz',
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
-            out_parng='parng.nii.gz', small_delta=0.0129,
-            big_delta=0.0218, save_metrics=[],
-            out_dir='', laplacian_weighting=0.05, radial_order=6):
+            out_parng='parng.nii.gz'):
         """ Workflow for fitting the MAPMRI model
         (with optional Laplacian regularization).
         Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
@@ -63,6 +63,12 @@ class ReconstMAPMRIFlow(Workflow):
             Path to the bvec files.
         data_bvals : string
             Path to the bval files.
+        small_delta : float
+            Small delta value used in generation of gradient table of provided
+            bval and bvec.
+        big_delta : float
+            Big delta value used in generation of gradient table of provided
+            bval and bvec.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bval_threshold : float
@@ -70,13 +76,21 @@ class ReconstMAPMRIFlow(Workflow):
             estimation. In order for the estimated non-Gaussianity to have
             meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
-            reasonably represent the spins at Gaussian diffusion. (default: 2000)
-        small_delta : float
-            Small delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0129)
-        big_delta : float
-            Big delta value used in generation of gradient table of provided
-            bval and bvec. (default: 0.0218)
+            reasonably represent the spins at Gaussian diffusion.
+            (default: 2000)
+        save_metrics : list of strings
+            List of metrics to save.
+            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
+            ng, perng, parng
+            (default: [] (all))
+        laplacian_weighting : float
+            Weighting value used in fitting the MAPMRI model in the laplacian
+            and both model types. (default: 0.05)
+        radial_order : unsigned int
+            Even value used to set the order of the basis
+            (default: 6)
+        out_dir : string, optional
+            Output directory (default: input file directory)
         laplacian : boolean
             Boolean value to indicate Laplacian model type
             (default: True)
@@ -84,13 +98,6 @@ class ReconstMAPMRIFlow(Workflow):
             Boolean value to indicate Positivity model type
             If both positivity and laplacian are True, then both are applied.
             (default: True)
-        save_metrics : list of strings
-            List of metrics to save.
-            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
-            ng, perng, parng
-            (default: [] (all))
-        out_dir : string, optional
-            Output directory (default: input file directory)
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
@@ -109,12 +116,6 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the Non-Gaussianity perpendicular to be saved
         out_parng : string, optional
             Name of the Non-Gaussianity parallel to be saved
-        laplacian_weighting :
-            Weighting value used in fitting the MAPMRI model in the laplacian
-            and both model types. (default: 0.05)
-        radial_order : unsigned int
-            Even value used to set the order of the basis
-            (default: 6)
         """
         io_it = self.get_io_iterator()
         for dwi, bval, bvec, out_rtop, out_lapnorm, \
