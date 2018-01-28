@@ -91,7 +91,7 @@ from dipy.sims.voxel import single_tensor_odf
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap='jet')
+response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap='plasma')
 ren.add(response_actor)
 print('Saving illustration as csd_response.png')
 window.record(ren, out_path='csd_response.png', size=(200, 200))
@@ -151,7 +151,7 @@ like  a pancake:
 """
 
 response_signal = response.on_sphere(sphere)
-response_actor = actor.odf_slicer(response_signal, sphere=sphere, colormap='jet')
+response_actor = actor.odf_slicer(response_signal, sphere=sphere, colormap='plasma')
 
 ren = window.Renderer()
 
@@ -196,7 +196,7 @@ csd_odf = csd_fit.odf(sphere)
 Here we visualize only a 30x30 region.
 """
 
-fodf_spheres = actor.odf_slicer(csd_odf, sphere=sphere, scale=1.3, norm=False, colormap='jet')
+fodf_spheres = actor.odf_slicer(csd_odf, sphere=sphere, scale=1.3, norm=False, colormap='plasma')
 
 ren.add(fodf_spheres)
 
