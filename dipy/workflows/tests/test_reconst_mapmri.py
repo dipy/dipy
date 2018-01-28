@@ -38,7 +38,8 @@ def reconst_mmri_core(flow, lap, pos):
 
         mmri_flow = flow()
         mmri_flow.run(data_file=data_path, data_bvals=bval_path,
-                      data_bvecs=bvec_path, laplacian=lap,
+                      data_bvecs=bvec_path, small_delta=0.0129,
+                      big_delta=0.0218, laplacian=lap,
                       positivity=pos, out_dir=out_dir)
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
