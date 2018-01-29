@@ -359,9 +359,9 @@ def test_particle_filtering_tractography():
                                                 step_size, max_cross=1,
                                                 return_all=True)
     pft_streamlines = list(pft_streamlines)
-    npt.assert_(len(pft_streamlines[0]) == 3)  # INVALIDPOINT
-    npt.assert_(len(pft_streamlines[1]) == 3)  # ENDPOINT
-    npt.assert_(len(pft_streamlines[2]) == 1)  # OUTSIDEIMAGE
+    npt.assert_equal(len(pft_streamlines[0]), 3)  # INVALIDPOINT
+    npt.assert_equal(len(pft_streamlines[1]), 3)  # ENDPOINT
+    npt.assert_equal(len(pft_streamlines[2]), 1)  # OUTSIDEIMAGE
 
     # Test with wrong tissueclassifier type
     tc_bin = BinaryTissueClassifier(simple_wm)
