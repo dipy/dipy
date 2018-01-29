@@ -71,6 +71,10 @@ class ReconstMAPMRIFlow(Workflow):
             bval and bvec.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
+        laplacian : bool
+            Regularize using the Laplacian of the MAP-MRI basis (default True)
+        positivity : bool
+            Constrain the propagator to be positive. (default True)
         bval_threshold : float
             Sets the b-value threshold to be used in the scale factor
             estimation. In order for the estimated non-Gaussianity to have
@@ -91,13 +95,6 @@ class ReconstMAPMRIFlow(Workflow):
             (default: 6)
         out_dir : string, optional
             Output directory (default: input file directory)
-        laplacian : boolean
-            Boolean value to indicate Laplacian model type
-            (default: True)
-        positivity : boolean
-            Boolean value to indicate Positivity model type
-            If both positivity and laplacian are True, then both are applied.
-            (default: True)
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
