@@ -2,7 +2,8 @@ import numpy as np
 import dipy.segment.metric as dipymetric
 import itertools
 
-from nose.tools import (assert_true, assert_false, assert_equal)
+from nose.tools import (assert_true, assert_false, assert_equal,
+                        assert_greater_equal, assert_less_equal)
 from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
                            assert_almost_equal)
 
@@ -109,7 +110,7 @@ def test_metric_minimum_average_direct_flip():
 
                 assert_almost_equal(distance, dipymetric.dist(metric, s1, s2))
                 assert_almost_equal(distance, dipymetric.mdf(s1, s2))
-                assert_true(distance >= 0.)
+                assert_greater_equal(distance, 0.)
 
         # This metric type is order invariant
         assert_true(metric.is_order_invariant)
@@ -189,8 +190,8 @@ def test_metric_cosine():
                     assert_almost_equal(distance, 0.)
 
                 assert_almost_equal(distance, dipymetric.dist(metric, s1, s2))
-                assert_true(distance >= 0.)
-                assert_true(distance <= 1.)
+                assert_greater_equal(distance, 0.)
+                assert_less_equal(distance, 1.)
 
         # This metric type is not order invariant
         assert_false(metric.is_order_invariant)
