@@ -275,9 +275,9 @@ def test_set_number_of_points():
 
     # Test streamline with integer dtype
     new_streamline = set_number_of_points(streamline.astype(np.int32))
-    assert_true(new_streamline.dtype == np.float32)
+    assert_equal(new_streamline.dtype, np.float32)
     new_streamline = set_number_of_points(streamline.astype(np.int64))
-    assert_true(new_streamline.dtype == np.float64)
+    assert_equal(new_streamline.dtype, np.float64)
 
     # Test empty list
     assert_equal(set_number_of_points([]), [])
@@ -435,7 +435,7 @@ def test_length():
 
     # Test streamline having integer dtype
     length_streamline = length(streamline.astype('int'))
-    assert_true(length_streamline.dtype == np.float64)
+    assert_equal(length_streamline.dtype, np.float64)
 
     # Test empty list
     assert_equal(length([]), 0.0)
