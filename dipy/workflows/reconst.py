@@ -121,9 +121,7 @@ class ReconstDtiFlow(Workflow):
             data = img.get_data()
             affine = img.affine
 
-            if mask is None:
-                mask = None
-            else:
+            if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
@@ -613,9 +611,7 @@ class ReconstDkiFlow(Workflow):
             data = img.get_data()
             affine = img.affine
 
-            if mask is None:
-                mask = None
-            else:
+            if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
