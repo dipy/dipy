@@ -92,7 +92,7 @@ interactive = False
 
 ren = window.Renderer()
 
-odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap='jet')
+odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap='plasma')
 odf_actor.RotateX(90)
 
 ren.add(odf_actor)

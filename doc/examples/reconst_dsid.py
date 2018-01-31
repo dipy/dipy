@@ -75,7 +75,7 @@ ren = window.Renderer()
 
 # concatenate data as 4D array
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
-odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap='jet')
+odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap='plasma')
 
 odf_actor.display(y=0)
 odf_actor.RotateX(90)
