@@ -17,7 +17,7 @@ from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
 
 """
 Download and read the data for this tutorial.
-Our implementation of FORECAST requires multi-shell data. 
+Our implementation of FORECAST requires multi-shell data.
 fetch_cenir_multib() provides data acquired using the shells at b-values 1000,
 2000, and 3000 (see MAPMRI example for more information on this dataset).
 """
@@ -29,7 +29,7 @@ img, gtab = read_cenir_multib(bvals)
 data = img.get_data()
 
 """
-Let us consider only a single slice for the FORECAST fitting  
+Let us consider only a single slice for the FORECAST fitting
 """
 
 data_small = data[18:87, 51:52, 10:70]
@@ -105,7 +105,7 @@ Load an odf reconstruction sphere
 sphere = get_sphere('symmetric724')
 
 """
-Compute the fODFs. 
+Compute the fODFs.
 """
 
 odf = f_fit.odf(sphere)
@@ -116,7 +116,7 @@ Display a part of the fODFs
 """
 
 odf_actor = actor.odf_slicer(odf[16:36, :, 30:45], sphere=sphere,
-                             colormap='jet', scale=0.6)
+                             colormap='plasma', scale=0.6)
 odf_actor.display(y=0)
 odf_actor.RotateX(-90)
 ren = window.Renderer()
@@ -128,13 +128,13 @@ window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
    :align: center
 
    **Fiber Orientation Distribution Functions, in a small ROI of the brain**.
-   
+
 .. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation Distributions
        Using High Angular Resolution Diffusion Imaging", Magnetic
        Resonance in Medicine, 2005.
 
-.. [Kaden2016] Kaden E. et. al, "Quantitative Mapping of the Per-Axon Diffusion 
-       Coefficients in Brain White Matter", Magnetic Resonance in 
+.. [Kaden2016] Kaden E. et. al, "Quantitative Mapping of the Per-Axon Diffusion
+       Coefficients in Brain White Matter", Magnetic Resonance in
        Medicine, 2016.
 
 .. [Zucchelli2017] Zucchelli E. et. al, "A generalized SMT-based framework for
