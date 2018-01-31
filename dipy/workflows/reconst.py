@@ -566,8 +566,12 @@ class ReconstDkiFlow(Workflow):
             (default [] (all))
         out_dir : string, optional
             Output directory (default input file directory)
-        out_tensor : string, optional
-            Name of the tensors volume to be saved (default 'tensors.nii.gz')
+        out_dt_tensor : string, optional
+            Name of the tensors volume to be saved
+            (default: 'dti_tensors.nii.gz')
+        out_dk_tensor : string, optional
+            Name of the tensors volume to be saved
+            (default 'dki_tensors.nii.gz')
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved
             (default 'fa.nii.gz')
@@ -592,6 +596,12 @@ class ReconstDkiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
+        out_mk : string, optional
+            Name of the mean kurtosis to be saved (default: 'mk.nii.gz')
+        out_ak : string, optional
+            Name of the axial kurtosis to be saved (default: 'ak.nii.gz')
+        out_rk : string, optional
+            Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
         """
         io_it = self.get_io_iterator()
 
