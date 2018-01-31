@@ -89,6 +89,5 @@ def test_reconst_dki():
         assert_true(evals_data.shape[:-1] == volume.shape[:-1])
 
 
-
 if __name__ == '__main__':
     test_reconst_dki()
