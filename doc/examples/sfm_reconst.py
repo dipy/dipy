@@ -117,7 +117,7 @@ model on the sphere, and plot it.
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=1.3, colormap='jet')
+fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=1.3, colormap='plasma')
 
 ren = window.Renderer()
 ren.add(fodf_spheres)
