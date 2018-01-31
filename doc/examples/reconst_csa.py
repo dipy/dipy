@@ -106,7 +106,7 @@ It is common with CSA ODFs to produce negative values, we can remove those using
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
-csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=sphere, colormap='jet', scale=0.4)
+csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=sphere, colormap='plasma', scale=0.4)
 csa_odfs_actor.display(z=0)
 
 r.add(csa_odfs_actor)
