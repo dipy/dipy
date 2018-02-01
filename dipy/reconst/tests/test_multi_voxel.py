@@ -178,3 +178,37 @@ def test_multi_voxel_fit():
     # Test indexing into a fit
     npt.assert_equal(type(fit[0, 0, 0]), SillyFit)
     npt.assert_equal(fit[:2, :2, :2].shape, (2, 2, 2))
+
+
+def test_parallel_voxel_fit():
+    import time
+    import dipy.reconst.fwdti as fwdti
+    from dipy.data import fetch_cenir_multib
+    from dipy.data import read_cenir_multib
+    from dipy.segment.mask import median_otsu
+
+    fetch_cenir_multib(with_raw=False)
+    bvals = [200, 400, 1000, 2000]
+    img, gtab = read_cenir_multib(bvals)
+    data = img.get_data()
+    maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+    axial_slice = slice(40,70)  # 40
+    mask_roi = np.zeros(data.shape[:-1], dtype=bool)
+    mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
+
+    print(data.nbytes / 1000000)
+    print(data.shape, data.dtype)
+    print(data.flags)
+    start = time.time()
+    fwdtimodel = fwdti.FreeWaterTensorModel(gtab)
+    fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
+    print(time.time() - start)
+    FA = fwdtifit.fa
+    MD = fwdtifit.md
+    print(time.time() -start)
+
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+    test_parallel_voxel_fit()

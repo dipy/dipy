@@ -5,6 +5,111 @@ from numpy.lib.stride_tricks import as_strided
 from dipy.core.ndindex import ndindex
 from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.reconst.base import ReconstFit
+from multiprocessing import Queue, cpu_count, Process, sharedctypes, Pool, Manager
+import warnings
+
+
+def parallel_fit_worker(model, input_queue, output_queue, *args, **kwargs):
+    for data in iter(input_queue.get, 'STOP'):
+        idx, value = data
+        result = (idx, model.fit(value, kwargs))
+        output_queue.put(result)
+        del value
+
+
+def parallel_voxel_fit(single_voxel_fit):
+    """
+    Wraps single_voxel_fit method to turn a model into a parallel multi voxel model.
+    Use this decorator on the fit method of your model to take advantage of the
+    MultiVoxelFit.
+
+    Parameters
+    -----------
+    single_voxel_fit : callable
+        Should have a signature like: model [self when a model method is being
+        wrapped], data [single voxel data].
+
+    Returns
+    --------
+    multi_voxel_fit_function : callable
+
+    Examples:
+    ---------
+    >>> import numpy as np
+    >>> from dipy.reconst.base import ReconstModel, ReconstFit
+    >>> class Model(ReconstModel):
+    ...     @parallel_voxel_fit
+    ...     def fit(self, single_voxel_data):
+    ...         return ReconstFit(self, single_voxel_data.sum())
+    >>> model = Model(None)
+    >>> data = np.random.random((2, 3, 4, 5))
+    >>> fit = model.fit(data)
+    >>> np.allclose(fit.data, data.sum(-1))
+    True
+    """
+
+    def new_fit(model, data, mask=None, *args, **kwargs):
+        """Fit method in parallel for every voxel in data """
+        if data.ndim == 1:
+            return single_voxel_fit(model, data)
+        if mask is None:
+            mask = np.ones(data.shape[:-1], bool)
+        elif mask.shape != data.shape[:-1]:
+            raise ValueError("mask and data shape do not match")
+
+        print("parallel_voxel_fit")
+        # Get number of processes
+        nb_processes = int(kwargs['nb_processes']) if 'nb_processes' in kwargs else cpu_count()
+        nb_processes = cpu_count() if nb_processes < 1 else nb_processes
+
+        # Create queues
+        task_queues = [Queue() for _ in range(nb_processes)]
+        done_queue = Queue()
+
+        # Get non null index from mask
+        indexes = np.argwhere(mask)
+        # convert indexes to tuple
+        indexes = [(tuple(v), data[tuple(v)]) for v in indexes]
+        # create chunks
+        chunks_spacing = np.linspace(0, len(indexes), num=nb_processes + 1)
+        chunks = [(indexes[int(chunks_spacing[i - 1]): int(chunks_spacing[i])]) for i in range(1, len(chunks_spacing))]
+        # Create queue = Fill task queue with indexes
+        for i, c in enumerate(chunks):
+            [task_queues[i].put(val) for val in c]
+
+        # Add to queue stop processes
+        # for _ in range(nb_processes):
+        #     task_queue.put('STOP')
+
+        # Create queues
+        # task_queue = Queue()
+        # done_queue = Queue()
+
+        print("adding stop")
+        # Add to queue stop processes
+        for q in task_queues:
+            q.put('STOP')
+
+        # Start worker processes
+        print("Start worker processes")
+        for q in task_queues:
+            Process(target=parallel_fit_worker,
+                    args=(model, q, done_queue, args),
+                    kwargs=kwargs).start()
+
+
+
+        print("create output array")
+        # create output array
+        fit_array = np.empty(data.shape[:-1], dtype=object)
+        # fill output array with results
+        for _ in range(len(indexes)):
+            idx, val = done_queue.get()
+            fit_array[idx] = val
+
+        print("END")
+        return MultiVoxelFit(model, fit_array, mask)
+    return new_fit
 
 
 def multi_voxel_fit(single_voxel_fit):
