@@ -1,4 +1,5 @@
 import inspect
+import sys
 import numpy as np
 import os
 import os.path as path
@@ -170,12 +171,16 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')
     del values['self']
-
-    specs = inspect.getargspec(fnc)
-    spargs = specs.args
-    spargs.remove('self')
-    defaults = specs.defaults
-
+    if sys.version_info[0] >= 3:
+        sig_object = inspect.signature(fnc)
+        params = sig_object.parameters.values()
+        spargs = [param.name for param in params if param.name is not 'self']
+        defaults = [param.default for param in params
+                    if param.default is not inspect._empty]
+    else:
+        specs = inspect.getargspec(fnc)
+        spargs = specs.args[1:]
+        defaults = specs.defaults
     len_args = len(spargs)
     len_defaults = len(defaults)
     split_at = len_args - len_defaults
