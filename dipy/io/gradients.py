@@ -37,7 +37,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         else:
             if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
-                if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '']:
+                if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
                     vals.append(np.squeeze(np.loadtxt(this_fname)))
                 elif ext == '.npy':
                     vals.append(np.squeeze(np.load(this_fname)))
