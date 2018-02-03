@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from nose.tools import assert_equal, assert_raises, assert_true
+from dipy.utils.testing import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 from scipy.special import sph_harm as sph_harm_sp

@@ -4,7 +4,7 @@
 from dipy.utils.tripwire import TripWire, is_tripwire, TripWireError
 
 from nose import SkipTest
-from nose.tools import (assert_true, assert_false, assert_raises,
+from dipy.utils.testing import (assert_true, assert_false, assert_raises,
                         assert_equal, assert_not_equal)
 
 

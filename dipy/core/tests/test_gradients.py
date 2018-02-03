@@ -1,6 +1,6 @@
 import warnings
 
-from nose.tools import assert_true, assert_raises
+from dipy.utils.testing import assert_true, assert_raises
 import numpy as np
 import numpy.testing as npt
 

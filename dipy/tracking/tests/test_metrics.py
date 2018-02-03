@@ -4,8 +4,8 @@ from __future__ import division, print_function, absolute_import
 from dipy.utils.six.moves import xrange
 
 import numpy as np
-from nose.tools import (assert_true, assert_false, assert_equal,
-                        assert_almost_equal)
+from dipy.utils.testing import (assert_true, assert_false, assert_equal,
+                                assert_almost_equal)
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf

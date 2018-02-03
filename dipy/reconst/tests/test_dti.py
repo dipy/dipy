@@ -4,7 +4,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-from nose.tools import (assert_true, assert_equal,
+from dipy.utils.testing import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
 import numpy.testing as npt
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,

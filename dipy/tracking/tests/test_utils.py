@@ -22,7 +22,7 @@ import dipy.tracking.metrics as metrix
 from dipy.tracking.vox2track import streamline_mapping
 import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_array_equal
-from nose.tools import assert_equal, assert_raises, assert_true
+from dipy.utils.testing import assert_equal, assert_raises, assert_true
 
 
 def make_streamlines():
