@@ -7,6 +7,11 @@ def assert_equal(value1, value2):
 	except AssertionError:
 		raise AssertionError(str(value1) + ' != ' + str(value2))
 
+def assert_not_equal(value1, value2):
+	try:
+		assert value1 != value2
+	except AssertionError:
+		raise AssertionError(str(value1) + ' != ' + str(value2))
 
 def assert_less(value1, value2):
 	try:
