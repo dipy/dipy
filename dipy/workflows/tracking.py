@@ -67,27 +67,26 @@ class DetTrackPAMFlow(GenericTrackFlow):
         ----------
         pam_files : string
            Path to the peaks and metrics files. This path may contain
-           wildcards to use multiple masks at once.
+            wildcards to use multiple masks at once.
         stopping_files : string
             Path of FA or other images used for stopping criteria for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-            tracking has to stop. (default 0.25)
+             tracking has to stop (default 0.25).
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
-            For example, seed_density of 2 means 8 regularly distributed points
-            in the voxel. And seed density of 1 means 1 point at the center
-            of the voxel.
+             For example, seed_density of 2 means 8 regularly distributed points
+             in the voxel. And seed density of 1 means 1 point at the center
+             of the voxel.
         use_sh : bool, optional
-            Use spherical harmonics saved in peask to find the
-            maximum peak cone. (default False)
+            Use spherical harmonics saved in peaks to find the
+             maximum peak cone. (default False)
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
-           Name of the tractogram file to be saved
-           (default 'tractogram.trk')
+           Name of the tractogram file to be saved (default 'tractogram.trk')
 
         References
         ----------
