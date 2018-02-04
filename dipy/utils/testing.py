@@ -37,7 +37,7 @@ def assert_raises(error_type, *args, **kwargs):
 	try:
 		args(kwargs)
 		print("{} not raised by {}".format(error_type, args))
-	else error_type:
+	except error_type:
 		pass
 
 def assert_almost_equal(actual, desired, decimal=7):
