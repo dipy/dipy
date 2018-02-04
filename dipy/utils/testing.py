@@ -33,7 +33,7 @@ def assert_true(statement):
 
 def assert_false(statement):
 	try:
-		assert statement
+		assert not statement
 	except AssertionError:
 		raise AssertionError('True is not false')
 
