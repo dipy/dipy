@@ -23,7 +23,7 @@ class IoInfoFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
-            Nifti1, bvals and bvecs files.
+            Any number of Nifti1, bvals or bvecs files.
         b0_threshold : float, optional
             (default 50)
         bvecs_tol : float, optional
