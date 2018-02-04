@@ -33,5 +33,13 @@ def assert_false(statement):
 	except AssertionError:
 		raise AssertionError('True is not false')
 
-#TO_DO
-assert_raises
+def assert_raises(error_type, *args, **kwargs):
+	try:
+		args(kwargs)
+		print("{} not raised by {}".format(error_type, args))
+	else error_type:
+		pass
+
+def assert_almost_equal(actual, desired, decimal=7):
+	if not abs(desired - actual) < 1.5 * 10**(-decimal):
+		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
