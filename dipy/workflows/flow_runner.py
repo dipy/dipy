@@ -39,9 +39,11 @@ def run_flow(flow):
                         help='Prepend mixed input names to output names.')
 
     # Add logging parameters common to all workflows
+    msg = 'Log messsages display level. Accepted options include CRITICAL,'
+    msg += ' ERROR, WARNING, INFO, DEBUG and NOTSET (default INFO).'
     parser.add_argument('--log_level', action='store', dest='log_level',
                         metavar='string', required=False, default='INFO',
-                        help='Log messsages display level')
+                        help=msg)
 
     parser.add_argument('--log_file', action='store', dest='log_file',
                         metavar='string', required=False, default='',
