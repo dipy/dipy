@@ -68,8 +68,8 @@ region. ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can
 be used in conjunction with PFT. In this example, we used CMC.
 """
 
-import matplotlib.pyplot as plt
 from dipy.tracking.local import CmcTissueClassifier
+from dipy.tracking.streamline import Streamlines
 
 voxel_size = np.average(img_pve_wm.get_header()['pixdim'][1:4])
 step_size = 0.2
@@ -86,18 +86,18 @@ seed_mask[img_pve_wm.get_data() < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 # Particle Filtering Tractography
-pft_streamlines = ParticleFilteringTracking(dg,
-                                            cmc_classifier,
-                                            seeds,
-                                            affine,
-                                            max_cross=1,
-                                            step_size=step_size,
-                                            maxlen=1000,
-                                            pft_back_tracking_dist=2,
-                                            pft_front_tracking_dist=1,
-                                            particle_count=15,
-                                            return_all=False)
-streamlines = [s for s in pft_streamlines]
+pft_streamline_generator = ParticleFilteringTracking(dg,
+                                                     cmc_classifier,
+                                                     seeds,
+                                                     affine,
+                                                     max_cross=1,
+                                                     step_size=step_size,
+                                                     maxlen=1000,
+                                                     pft_back_tracking_dist=2,
+                                                     pft_front_tracking_dist=1,
+                                                     particle_count=15,
+                                                     return_all=False)
+streamlines = Streamlines(pft_streamline_generator)
 save_trk("pft_streamline.trk", streamlines, affine, shape)
 
 
@@ -113,7 +113,7 @@ window.record(renderer, out_path='pft_streamlines.png', size=(600, 600))
 """
 
 # Local Probabilistic Tractography
-probabilistic_streamlines = LocalTracking(dg,
+prob_streamline_generator = LocalTracking(dg,
                                           cmc_classifier,
                                           seeds,
                                           affine,
@@ -121,9 +121,8 @@ probabilistic_streamlines = LocalTracking(dg,
                                           step_size=step_size,
                                           maxlen=1000,
                                           return_all=False)
-probabilistic_streamlines = [s for s in probabilistic_streamlines]
-save_trk("probabilistic_streamlines.trk", probabilistic_streamlines, affine,
-         shape)
+streamlines = Streamlines(prob_streamline_generator)
+save_trk("probabilistic_streamlines.trk", streamlines, affine, shape)
 
 renderer.clear()
 renderer.add(actor.line(streamlines, line_colors(streamlines)))
