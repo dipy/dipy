@@ -15,7 +15,6 @@ TissueTypes = Bunch(OUTSIDEIMAGE=-1, INVALIDPOINT=0, TRACKPOINT=1, ENDPOINT=2)
 
 
 class LocalTracking(object):
-    """A streamline generator for local tracking methods"""
 
     @staticmethod
     def _get_voxel_size(affine):
@@ -143,14 +142,13 @@ class LocalTracking(object):
 
 
 class ParticleFilteringTracking(LocalTracking):
-    """A streamline generator using the particle filtering tractography method
-    """
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True):
-        """Creates streamlines by using local fiber-tracking.
+        r"""A streamline generator using the particle filtering tractography
+        method [1]_.
 
         Parameters
         ----------
@@ -194,6 +192,12 @@ class ParticleFilteringTracking(LocalTracking):
         return_all : bool
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
+
+        References
+        ----------
+        .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
+               Towards quantitative connectivity analysis: reducing
+               tractography biases. NeuroImage, 98, 266-278, 2014.
         """
 
         if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
