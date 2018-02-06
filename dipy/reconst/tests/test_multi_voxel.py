@@ -5,7 +5,8 @@ from functools import reduce
 import numpy as np
 import numpy.testing as npt
 
-from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, CallableArray
+from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, \
+    CallableArray, parallel_voxel_fit
 from dipy.core.sphere import unit_icosahedron
 
 
@@ -104,41 +105,71 @@ def test_CallableArray():
     npt.assert_array_equal(callarray(4), expected)
 
 
+class SillyParallelModel(object):
+    @parallel_voxel_fit
+    def fit(self, data, mask=None):
+        return SillyFit(self, data)
+
+    def predict(self, S0):
+        return np.ones(10) * S0
+
+
+class SillyMultiModel(object):
+
+    @multi_voxel_fit
+    def fit(self, data, mask=None):
+        return SillyFit(self, data)
+
+    def predict(self, S0):
+        return np.ones(10) * S0
+
+
+class SillyFit(object):
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
+
+    model_attr = 2.
+
+    def odf(self, sphere):
+        return np.ones(len(sphere.phi))
+
+    @property
+    def directions(self):
+        n = np.random.randint(0, 10)
+        return np.zeros((n, 3))
+
+    def predict(self, S0):
+        return np.ones(self.data.shape) * S0
+
+
+def test_parallel_voxel_fit():
+    voxel_fit(SillyParallelModel, SillyFit)
+    model = SillyParallelModel()
+    # Test with a mask and few processors
+    mask = np.zeros((3, 3, 3)).astype('bool')
+    mask[0, 0] = 1
+    mask[1, 1] = 1
+    mask[2, 2] = 1
+    data = np.zeros((3, 3, 3, 64))
+    fit = model.fit(data, mask, nb_processes=2)
+    expected = np.zeros((3, 3, 3))
+    expected[0, 0] = 2
+    expected[1, 1] = 2
+    expected[2, 2] = 2
+    npt.assert_array_equal(fit.model_attr, expected)
+
+
 def test_multi_voxel_fit():
+    voxel_fit(SillyMultiModel, SillyFit)
 
-    class SillyModel(object):
 
-        @multi_voxel_fit
-        def fit(self, data, mask=None):
-            return SillyFit(model, data)
-
-        def predict(self, S0):
-            return np.ones(10) * S0
-
-    class SillyFit(object):
-
-        def __init__(self, model, data):
-            self.model = model
-            self.data = data
-
-        model_attr = 2.
-
-        def odf(self, sphere):
-            return np.ones(len(sphere.phi))
-
-        @property
-        def directions(self):
-            n = np.random.randint(0, 10)
-            return np.zeros((n, 3))
-
-        def predict(self, S0):
-            return np.ones(self.data.shape) * S0
-
+def voxel_fit(reconst_model, fit_class):
     # Test the single voxel case
-    model = SillyModel()
+    model = reconst_model()
     single_voxel = np.zeros(64)
     fit = model.fit(single_voxel)
-    npt.assert_equal(type(fit), SillyFit)
+    npt.assert_equal(type(fit), fit_class)
 
     # Test without a mask
     many_voxels = np.zeros((2, 3, 4, 64))
@@ -176,39 +207,14 @@ def test_multi_voxel_fit():
     npt.assert_equal(fit.shape, (3, 3, 3))
 
     # Test indexing into a fit
-    npt.assert_equal(type(fit[0, 0, 0]), SillyFit)
+    npt.assert_equal(type(fit[0, 0, 0]), fit_class)
     npt.assert_equal(fit[:2, :2, :2].shape, (2, 2, 2))
 
 
-def test_parallel_voxel_fit():
-    import time
-    import dipy.reconst.fwdti as fwdti
-    from dipy.data import fetch_cenir_multib
-    from dipy.data import read_cenir_multib
-    from dipy.segment.mask import median_otsu
-
-    fetch_cenir_multib(with_raw=False)
-    bvals = [200, 400, 1000, 2000]
-    img, gtab = read_cenir_multib(bvals)
-    data = img.get_data()
-    maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
-    axial_slice = slice(40,70)  # 40
-    mask_roi = np.zeros(data.shape[:-1], dtype=bool)
-    mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
-
-    print(data.nbytes / 1000000)
-    print(data.shape, data.dtype)
-    print(data.flags)
-    start = time.time()
-    fwdtimodel = fwdti.FreeWaterTensorModel(gtab)
-    fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
-    print(time.time() - start)
-    FA = fwdtifit.fa
-    MD = fwdtifit.md
-    print(time.time() -start)
-
-
 if __name__ == '__main__':
-    import multiprocessing
-    multiprocessing.freeze_support()
+    import platform
+    if 'windows' in platform.system().lower():
+        import multiprocessing
+        multiprocessing.freeze_support()
+    test_multi_voxel_fit()
     test_parallel_voxel_fit()
