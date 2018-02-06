@@ -37,12 +37,15 @@ def assert_false(statement):
 	except AssertionError:
 		raise AssertionError('True is not false')
 
-def assert_raises(error_type, *args, **kwargs):
+def assert_raises(excClass, callableObj, *args, **kwargs):
 	try:
-		args(kwargs)
-		print("{} not raised by {}".format(error_type, args))
-	except error_type:
-		pass
+		callableObj(*args, **kwargs)
+	except excClass:
+		return
+	else:
+		if hasattr(excClass, '__name__'): excName = excClass.__name__
+		else: excName = str(excClass)
+		raise AssertionError, "{} not raised by {}".format(excName, callableObj)
 
 def assert_almost_equal(actual, desired, decimal=7):
 	if not abs(desired - actual) < 1.5 * 10**(-decimal):
