@@ -104,8 +104,8 @@ Practical
 
 2. **Which Python console do you recommend?**
 
-  `IPython 
-<http://www.ipython.org/>`_
+  `IPython`
+.. _IPython: http://www.ipython.org/
 
 3. **What do you use for visualization?**
 
