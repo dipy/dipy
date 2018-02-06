@@ -45,7 +45,7 @@ def assert_raises(excClass, callableObj, *args, **kwargs):
 	else:
 		if hasattr(excClass, '__name__'): excName = excClass.__name__
 		else: excName = str(excClass)
-		raise AssertionError, "{} not raised by {}".format(excName, callableObj)
+		raise AssertionError("{} not raised by {}".format(excName, callableObj))
 
 def assert_almost_equal(actual, desired, decimal=7):
 	if not abs(desired - actual) < 1.5 * 10**(-decimal):
