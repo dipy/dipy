@@ -3,7 +3,7 @@ from __future__ import division
 from warnings import warn
 import numpy as np
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import parallel_voxel_fit
 from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.shm import real_sph_harm
 from scipy.special import gamma, hyp1f1
@@ -184,7 +184,7 @@ class ForecastModel(OdfModel, Cache):
         self.lambda_csd = lambda_csd
         self.fod = rho_matrix(sh_order, self.vertices)
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data):
 
         data_b0 = data[self.b0s_mask].mean()

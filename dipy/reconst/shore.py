@@ -8,7 +8,7 @@ import numpy as np
 from scipy.special import genlaguerre, gamma, hyp2f1
 
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import parallel_voxel_fit
 from dipy.reconst.shm import real_sph_harm
 from dipy.core.geometry import cart2sphere
 
@@ -208,7 +208,7 @@ class ShoreModel(Cache):
         self.pos_grid = pos_grid
         self.pos_radius = pos_radius
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data):
 
         Lshore = l_shore(self.radial_order)

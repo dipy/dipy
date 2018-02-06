@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import parallel_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
@@ -313,7 +313,7 @@ class MapmriModel(ReconstModel, Cache):
                            self.laplacian_matrix)
                     self.MMt_inv_Mt = np.dot(np.linalg.pinv(MMt), self.M.T)
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data):
         errorcode = 0
         tenfit = self.tenmodel.fit(data[self.cutoff])

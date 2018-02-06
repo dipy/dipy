@@ -7,7 +7,7 @@ import numpy as np
 import scipy
 import warnings
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import parallel_voxel_fit
 
 SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
                    LooseVersion('0.17'))
@@ -233,7 +233,7 @@ class IvimModel(ReconstModel):
         else:
             self.bounds = bounds
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data, mask=None):
         """ Fit method of the Ivim model class.
 

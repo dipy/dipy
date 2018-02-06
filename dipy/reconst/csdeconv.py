@@ -14,7 +14,7 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import parallel_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
@@ -178,7 +178,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self._X = X = self.R.diagonal() * self.B_dwi
         self._P = np.dot(X.T, X)
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
         shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
@@ -312,7 +312,7 @@ class ConstrainedSDTModel(SphHarmModel):
         self.tau = tau
         self.sh_order = sh_order
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
                                rcond=-1)[0]

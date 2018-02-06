@@ -17,7 +17,7 @@ from dipy.reconst.dki import _positive_evals
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
-from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.multi_voxel import multi_voxel_fit, parallel_voxel_fit
 
 
 def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
@@ -136,7 +136,7 @@ class FreeWaterTensorModel(ReconstModel):
             mes = "fwdti fit requires data for at least 2 non zero b-values"
             raise ValueError(mes)
 
-    @multi_voxel_fit
+    @parallel_voxel_fit
     def fit(self, data, mask=None):
         """ Fit method of the free water elimination DTI model class
 
