@@ -4,18 +4,16 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.data import get_data
+from dipy.data import get_data, get_sphere
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
-from dipy.tracking.local import (ActTissueClassifier,
-                                 BinaryTissueClassifier,
-                                 DirectionGetter,
-                                 LocalTracking,
-                                 ThresholdTissueClassifier,
-                                 TissueClassifier)
+from dipy.tracking.local import (ActTissueClassifier, BinaryTissueClassifier,
+                                 LocalTracking, ParticleFilteringTracking,
+                                 ThresholdTissueClassifier)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 from dipy.tracking.local.localtracking import TissueTypes
+from dipy.tracking.utils import seeds_from_mask
 
 
 def test_stop_conditions():
@@ -214,7 +212,8 @@ def test_probabilistic_odf_weighted_tracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere, pmf_threshold=0.1)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
+                                               pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 0.],
@@ -259,6 +258,156 @@ def test_probabilistic_odf_weighted_tracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
+    # Test non WM seed position
+    seeds = [[0, 0, 0], [5, 5, 5]]
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
+                                return_all=True)
+    streamlines = list(streamlines)
+    npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
+    npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
+
+    # Test that all points are within the image volume
+    seeds = seeds_from_mask(np.ones(mask.shape), density=2)
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.5, return_all=True)
+    streamlines = list(streamlines)
+    for s in streamlines:
+        npt.assert_(np.all((s + 0.5).astype(int) >= 0))
+        npt.assert_(np.all((s + 0.5).astype(int) < mask.shape))
+    # Test that the number of streamline return with return_all=True equal the
+    # number of seeds places
+    npt.assert_(np.array([len(streamlines) == len(seeds)]))
+
+
+def test_particle_filtering_tractography():
+    """This tests that the ParticleFilteringTracking produces
+    more streamlines connecting the gray matter than LocalTracking.
+    """
+    sphere = get_sphere('repulsion100')
+    step_size = 0.2
+
+    # Simple tissue masks
+    simple_wm = np.array([[0, 0, 0, 0, 0, 0],
+                          [0, 0, 1, 0, 0, 0],
+                          [0, 1, 1, 1, 0, 0],
+                          [0, 1, 1, 1, 0, 0],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_wm = np.dstack([np.zeros(simple_wm.shape),
+                           simple_wm,
+                           simple_wm,
+                           simple_wm,
+                           np.zeros(simple_wm.shape)])
+    simple_gm = np.array([[1, 1, 0, 0, 0, 0],
+                          [1, 1, 0, 0, 0, 0],
+                          [0, 1, 0, 0, 1, 0],
+                          [0, 0, 0, 0, 1, 0],
+                          [0, 0, 0, 0, 0, 0]])
+    simple_gm = np.dstack([np.zeros(simple_gm.shape),
+                           simple_gm,
+                           simple_gm,
+                           simple_gm,
+                           np.zeros(simple_gm.shape)])
+    simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
+    tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
+    seeds = seeds_from_mask(simple_wm, density=2)
+
+    # Random pmf in every voxel
+    shape_img = list(simple_wm.shape)
+    shape_img.extend([sphere.vertices.shape[0]])
+    np.random.seed(0)  # Random number generator initialization
+    pmf = np.random.random(shape_img)
+
+    # Test that PFT recover equal or more streamlines than localTracking
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+    local_streamlines = LocalTracking(dg, tc, seeds, np.eye(4), step_size,
+                                      max_cross=1, return_all=False)
+    local_streamlines = list(local_streamlines)
+    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                step_size, max_cross=1,
+                                                return_all=False,
+                                                pft_back_tracking_dist=1,
+                                                pft_front_tracking_dist=0.5)
+    pft_streamlines = list(pft_streamlines)
+    npt.assert_(np.array([len(pft_streamlines) > 0]))
+    npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
+
+    # Test that all points are equally spaced
+    for l in [1, 2, 5, 10, 100]:
+        pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                    step_size, max_cross=1,
+                                                    return_all=True, maxlen=l)
+        for s in pft_streamlines:
+            for i in range(len(s) - 1):
+                    npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
+                                            step_size)
+    # Test that all points are within the image volume
+    seeds = seeds_from_mask(np.ones(simple_wm.shape), density=1)
+    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                step_size, max_cross=1,
+                                                return_all=True)
+    pft_streamlines = list(pft_streamlines)
+    for s in pft_streamlines:
+        npt.assert_(np.all((s + 0.5).astype(int) >= 0))
+        npt.assert_(np.all((s + 0.5).astype(int) < simple_wm.shape))
+
+    # Test that the number of streamline return with return_all=True equal the
+    # number of seeds places
+    npt.assert_(np.array([len(pft_streamlines) == len(seeds)]))
+
+    # Test non WM seed position
+    seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
+    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                step_size, max_cross=1,
+                                                return_all=True)
+    pft_streamlines = list(pft_streamlines)
+    npt.assert_equal(len(pft_streamlines[0]), 3)  # INVALIDPOINT
+    npt.assert_equal(len(pft_streamlines[1]), 3)  # ENDPOINT
+    npt.assert_equal(len(pft_streamlines[2]), 1)  # OUTSIDEIMAGE
+
+    # Test with wrong tissueclassifier type
+    tc_bin = BinaryTissueClassifier(simple_wm)
+    npt.assert_raises(ValueError,
+                      lambda: ParticleFilteringTracking(dg, tc_bin, seeds,
+                                                        np.eye(4), step_size))
+    # Test with invalid back/front tracking distances
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          pft_back_tracking_dist=0,
+                                          pft_front_tracking_dist=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          pft_back_tracking_dist=-1))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          pft_back_tracking_dist=0,
+                                          pft_front_tracking_dist=-2))
+
+    # Test with invalid affine shape
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(3), step_size))
+
+    # Test with invalid maxlen
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          maxlen=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          maxlen=-1))
+
+    # Test with invalid particle count
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          particle_count=0))
+    npt.assert_raises(
+        ValueError,
+        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+                                          particle_count=-1))
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice

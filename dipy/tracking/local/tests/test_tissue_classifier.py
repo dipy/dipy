@@ -6,7 +6,8 @@ import scipy.ndimage
 from dipy.core.ndindex import ndindex
 from dipy.tracking.local import (BinaryTissueClassifier,
                                  ThresholdTissueClassifier,
-                                 ActTissueClassifier)
+                                 ActTissueClassifier,
+                                 CmcTissueClassifier)
 from dipy.tracking.local.localtracking import TissueTypes
 
 
@@ -21,7 +22,7 @@ def test_binary_tissue_classifier():
     btc_boolean = BinaryTissueClassifier(mask > 0)
     btc_float64 = BinaryTissueClassifier(mask)
 
-    # test voxel center
+    # Test voxel center
     for ind in ndindex(mask.shape):
         pts = np.array(ind, dtype='float64')
         state_boolean = btc_boolean.check_point(pts)
@@ -33,7 +34,7 @@ def test_binary_tissue_classifier():
             npt.assert_equal(state_boolean, TissueTypes.ENDPOINT)
             npt.assert_equal(state_float64, TissueTypes.ENDPOINT)
 
-    # test random points in voxel
+    # Test random points in voxel
     for ind in ndindex(mask.shape):
         for _ in range(50):
             pts = np.array(ind, dtype='float64') + np.random.random(3) - 0.5
@@ -46,7 +47,7 @@ def test_binary_tissue_classifier():
                 npt.assert_equal(state_boolean, TissueTypes.ENDPOINT)
                 npt.assert_equal(state_float64, TissueTypes.ENDPOINT)
 
-    # test outside points
+    # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
                    [0, 0.5, -0.51], [0, -0.51, 0.1], [4, 0, 0]]
     for pts in outside_pts:
@@ -66,7 +67,7 @@ def test_threshold_tissue_classifier():
 
     ttc = ThresholdTissueClassifier(tissue_map.astype('float32'), 0.5)
 
-    # test voxel center
+    # Test voxel center
     for ind in ndindex(tissue_map.shape):
         pts = np.array(ind, dtype='float64')
         state = ttc.check_point(pts)
@@ -75,7 +76,7 @@ def test_threshold_tissue_classifier():
         else:
             npt.assert_equal(state, TissueTypes.ENDPOINT)
 
-    # test random points in voxel
+    # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
             [0, 2.8, 1.1], [0, 1.1, 3.3], [0, 2.1, 1.9], [0, 3.1, 3.1],
             [0, 0.1, 0.1], [0, 0.9, 0.5], [0, 0.9, 0.5], [0, 2.9, 0.1]]
@@ -89,7 +90,7 @@ def test_threshold_tissue_classifier():
         else:
             npt.assert_equal(state, TissueTypes.ENDPOINT)
 
-    # test outside points
+    # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
                    [0, 0.5, -0.51], [0, -0.51, 0.1]]
     for pts in outside_pts:
@@ -113,7 +114,7 @@ def test_act_tissue_classifier():
 
     act_tc = ActTissueClassifier(include_map=gm, exclude_map=csf)
 
-    # test voxel center
+    # Test voxel center
     for ind in ndindex(wm.shape):
         pts = np.array(ind, dtype='float64')
         state = act_tc.check_point(pts)
@@ -124,7 +125,7 @@ def test_act_tissue_classifier():
         else:
             npt.assert_equal(state, TissueTypes.TRACKPOINT)
 
-    # test random points in voxel
+    # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
             [0, 2.8, 1.1], [0, 1.1, 3.3], [0, 2.1, 1.9], [0, 3.1, 3.1],
             [0, 0.1, 0.1], [0, 0.9, 0.5], [0, 0.9, 0.5], [0, 2.9, 0.1]]
@@ -142,7 +143,7 @@ def test_act_tissue_classifier():
         else:
             npt.assert_equal(state, TissueTypes.TRACKPOINT)
 
-    # test outside points
+    # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
                    [0, 0.5, -0.51], [0, -0.51, 0.1]]
     for pts in outside_pts:
@@ -150,5 +151,56 @@ def test_act_tissue_classifier():
         state = act_tc.check_point(pts)
         npt.assert_equal(state, TissueTypes.OUTSIDEIMAGE)
 
+
+def test_cmc_tissue_classifier():
+    """This tests that the cmc tissue classifier returns expected
+     tissue types.
+    """
+
+    gm = np.array([[[1, 1], [0, 0], [0, 0]]])
+    wm = np.array([[[0, 0], [1, 1], [0, 0]]])
+    csf = np.array([[[0, 0], [0, 0], [1, 1]]])
+    include_map = gm
+    exclude_map = csf
+
+    cmc_tc = CmcTissueClassifier(include_map=include_map,
+                                 exclude_map=exclude_map,
+                                 step_size=1,
+                                 average_voxel_size=1)
+    cmc_tc_from_pve = CmcTissueClassifier.from_pve(wm_map=wm,
+                                                   gm_map=gm,
+                                                   csf_map=csf,
+                                                   step_size=1,
+                                                   average_voxel_size=1)
+
+    # Test contructors
+    for idx in np.ndindex(wm.shape):
+        idx = np.asarray(idx, dtype="float64")
+        npt.assert_almost_equal(cmc_tc.get_include(idx),
+                                cmc_tc_from_pve.get_include(idx))
+        npt.assert_almost_equal(cmc_tc.get_exclude(idx),
+                                cmc_tc_from_pve.get_exclude(idx))
+
+    # Test voxel center
+    for ind in ndindex(wm.shape):
+        pts = np.array(ind, dtype='float64')
+        state = cmc_tc.check_point(pts)
+        if csf[ind] == 1:
+            npt.assert_equal(state, TissueTypes.INVALIDPOINT)
+        elif gm[ind] == 1:
+            npt.assert_equal(state, TissueTypes.ENDPOINT)
+        else:
+            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+
+    # Test outside points
+    outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
+                   [0, 0.5, -0.51], [0, -0.51, 0.1]]
+    for pts in outside_pts:
+        pts = np.array(pts, dtype='float64')
+        npt.assert_equal(cmc_tc.check_point(pts), TissueTypes.OUTSIDEIMAGE)
+        npt.assert_equal(cmc_tc.get_exclude(pts), 0)
+        npt.assert_equal(cmc_tc.get_include(pts), 0)
+
+
 if __name__ == '__main__':
-    run_module_suite()
+    npt.run_module_suite()
