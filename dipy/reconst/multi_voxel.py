@@ -5,16 +5,136 @@ from numpy.lib.stride_tricks import as_strided
 from dipy.core.ndindex import ndindex
 from dipy.reconst.quick_squash import quick_squash as _squash
 from dipy.reconst.base import ReconstFit
-from multiprocessing import Queue, cpu_count, Process, sharedctypes, Pool, Manager
+from multiprocessing import cpu_count, Pool, Array
+import ctypes
 import warnings
+import itertools
 
 
-def parallel_fit_worker(model, input_queue, output_queue, *args, **kwargs):
-    for data in iter(input_queue.get, 'STOP'):
-        idx, value = data
-        result = (idx, model.fit(value, kwargs))
-        output_queue.put(result)
-        del value
+_ctypes_to_numpy = {
+    ctypes.c_char: np.dtype(np.uint8),
+    ctypes.c_wchar: np.dtype(np.int16),
+    ctypes.c_byte: np.dtype(np.int8),
+    ctypes.c_ubyte: np.dtype(np.uint8),
+    ctypes.c_short: np.dtype(np.int16),
+    ctypes.c_ushort: np.dtype(np.uint16),
+    ctypes.c_int: np.dtype(np.int32),
+    ctypes.c_uint: np.dtype(np.uint32),
+    ctypes.c_long: np.dtype(np.int64),
+    ctypes.c_ulong: np.dtype(np.uint64),
+    ctypes.c_float: np.dtype(np.float32),
+    ctypes.c_double: np.dtype(np.float64),
+    ctypes.c_void_p: np.dtype(object)}
+
+
+_numpy_to_ctypes = dict(zip(_ctypes_to_numpy.values(),
+                            _ctypes_to_numpy.keys()))
+
+
+def shm_as_ndarray(mp_array, shape=None):
+    """
+    Given a multiprocessing.Array, returns an ndarray pointing to
+    the same data.
+
+    Parameters
+    ----------
+    mp_array : array
+        multiprocessing.Array that you want to convert.
+    shape : tuple
+        tuple of array dimensions (default: None)
+
+    Returns
+    --------
+    numpy_array : ndarray
+        ndarray pointing to the same data
+    """
+
+    # support SynchronizedArray:
+    if not hasattr(mp_array, '_type_'):
+        mp_array = mp_array.get_obj()
+
+    dtype = _ctypes_to_numpy[mp_array._type_]
+    result = np.frombuffer(mp_array, dtype)
+
+    if shape is not None:
+        result = result.reshape(shape)
+
+    return np.asarray(result)
+
+
+def ndarray_to_shm(arr, lock=False):
+    """
+    Generate an 1D multiprocessing.Array containing the data from
+    the passed ndarray.  The data will be *copied* into shared
+    memory.
+
+    Parameters
+    ----------
+    arr : ndarray
+        numpy ndarray that you want to convert.
+    lock : boolean
+        controls the access to the shared array. When you shared
+        array is a read only access, you do not need lock. Otherwise,
+        any writing access need to activate the lock to be
+        process-safe(default: False)
+
+    Returns
+    --------
+    shm : multiprocessing.Array
+        copied shared array
+    """
+
+    array1d = arr.ravel(order='A')
+
+    try:
+        c_type = _numpy_to_ctypes[array1d.dtype]
+    except KeyError:
+        c_type = _numpy_to_ctypes[np.dtype(array1d.dtype)]
+
+    result = Array(c_type, array1d.size, lock=lock)
+    shm_as_ndarray(result)[:] = array1d
+
+    return result
+
+
+def parallel_fit_worker(arguments):
+    """
+    Each pool process calls this worker.
+    Fit model on chunks
+
+    Parameters
+    -----------
+    arguments: tuple
+        tuple should contains a model and
+        list of indexes
+
+    Returns
+    --------
+    result: list of tuple
+        return a list of tuple(voxel index, model fitted instance)
+    """
+    model, input_queue, args, kwargs = arguments
+    return [(idx, model.fit(shared_arr[idx], args, kwargs)) for idx in input_queue]
+
+
+def _init_parallel_fit_worker(arr_to_populate, shape):
+    """
+    Each pool process calls this initializer.
+    Load the array to be populated into
+    that process's global namespace
+
+    Parameters
+    -----------
+    arr_to_populate: multiprocessing.Array
+        shared array
+    shape: tuple
+        tuple of array dimensions
+    """
+    global shared_arr
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)
+        shared_arr = np.ctypeslib.as_array(arr_to_populate)
+        shared_arr = shared_arr.reshape(shape)
 
 
 def parallel_voxel_fit(single_voxel_fit):
@@ -51,63 +171,47 @@ def parallel_voxel_fit(single_voxel_fit):
     def new_fit(model, data, mask=None, *args, **kwargs):
         """Fit method in parallel for every voxel in data """
         if data.ndim == 1:
-            return single_voxel_fit(model, data)
+            return single_voxel_fit(model, data, *args, **kwargs)
         if mask is None:
             mask = np.ones(data.shape[:-1], bool)
         elif mask.shape != data.shape[:-1]:
             raise ValueError("mask and data shape do not match")
 
-        print("parallel_voxel_fit")
         # Get number of processes
         nb_processes = int(kwargs['nb_processes']) if 'nb_processes' in kwargs else cpu_count()
         nb_processes = cpu_count() if nb_processes < 1 else nb_processes
 
-        # Create queues
-        task_queues = [Queue() for _ in range(nb_processes)]
-        done_queue = Queue()
+        if nb_processes == 1:
+            return single_voxel_fit(model, data, *args, **kwargs)
 
         # Get non null index from mask
         indexes = np.argwhere(mask)
         # convert indexes to tuple
-        indexes = [(tuple(v), data[tuple(v)]) for v in indexes]
+        indexes = [tuple(v) for v in indexes]
         # create chunks
         chunks_spacing = np.linspace(0, len(indexes), num=nb_processes + 1)
-        chunks = [(indexes[int(chunks_spacing[i - 1]): int(chunks_spacing[i])]) for i in range(1, len(chunks_spacing))]
-        # Create queue = Fill task queue with indexes
-        for i, c in enumerate(chunks):
-            [task_queues[i].put(val) for val in c]
+        chunks = [(indexes[int(chunks_spacing[i - 1]): int(chunks_spacing[i])])
+                  for i in range(1, len(chunks_spacing))]
 
-        # Add to queue stop processes
-        # for _ in range(nb_processes):
-        #     task_queue.put('STOP')
-
-        # Create queues
-        # task_queue = Queue()
-        # done_queue = Queue()
-
-        print("adding stop")
-        # Add to queue stop processes
-        for q in task_queues:
-            q.put('STOP')
+        # Create shared array
+        shared_arr_in = ndarray_to_shm(data)
 
         # Start worker processes
-        print("Start worker processes")
-        for q in task_queues:
-            Process(target=parallel_fit_worker,
-                    args=(model, q, done_queue, args),
-                    kwargs=kwargs).start()
+        pool = Pool(processes=nb_processes,
+                    initializer=_init_parallel_fit_worker,
+                    initargs=(shared_arr_in,  data.shape))
+        result = pool.map_async(parallel_fit_worker,
+                                [(model, c, args, kwargs)
+                                 for c in chunks])
+        result.wait()
 
-
-
-        print("create output array")
         # create output array
         fit_array = np.empty(data.shape[:-1], dtype=object)
         # fill output array with results
-        for _ in range(len(indexes)):
-            idx, val = done_queue.get()
+        res_flatten = itertools.chain.from_iterable(result.get())
+        for idx, val in res_flatten:
             fit_array[idx] = val
 
-        print("END")
         return MultiVoxelFit(model, fit_array, mask)
     return new_fit
 
