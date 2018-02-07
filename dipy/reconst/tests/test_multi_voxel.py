@@ -152,7 +152,7 @@ def test_parallel_voxel_fit():
     mask[1, 1] = 1
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
-    fit = model.fit(data, mask, nb_processes=2)
+    fit = model.fit(data, mask=mask, nb_processes=2)
     expected = np.zeros((3, 3, 3))
     expected[0, 0] = 2
     expected[1, 1] = 2
@@ -189,7 +189,7 @@ def voxel_fit(reconst_model, fit_class):
     mask[1, 1] = 1
     mask[2, 2] = 1
     data = np.zeros((3, 3, 3, 64))
-    fit = model.fit(data, mask)
+    fit = model.fit(data, mask=mask)
     expected = np.zeros((3, 3, 3))
     expected[0, 0] = 2
     expected[1, 1] = 2

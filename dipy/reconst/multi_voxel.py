@@ -114,7 +114,7 @@ def parallel_fit_worker(arguments):
         return a list of tuple(voxel index, model fitted instance)
     """
     model, input_queue, args, kwargs = arguments
-    return [(idx, model.fit(shared_arr[idx], args, kwargs)) for idx in input_queue]
+    return [(idx, model.fit(shared_arr[idx], *args, **kwargs)) for idx in input_queue]
 
 
 def _init_parallel_fit_worker(arr_to_populate, shape):
@@ -167,8 +167,11 @@ def parallel_voxel_fit(single_voxel_fit):
     True
     """
 
-    def new_fit(model, data, mask=None, *args, **kwargs):
+    def new_fit(model, data, *args, **kwargs):
         """Fit method in parallel for every voxel in data """
+        # Pop the mask, if there is one
+        mask = kwargs.pop('mask', None)
+        # print(mask, mask.shape)
         if data.ndim == 1:
             return single_voxel_fit(model, data, *args, **kwargs)
         if mask is None:
@@ -177,7 +180,7 @@ def parallel_voxel_fit(single_voxel_fit):
             raise ValueError("mask and data shape do not match")
 
         # Get number of processes
-        nb_processes = int(kwargs.get('nb_processes', '0'))
+        nb_processes = int(kwargs.pop('nb_processes', '0'))
         nb_processes = nb_processes if nb_processes >= 1 else cpu_count()
 
         if nb_processes == 1:
