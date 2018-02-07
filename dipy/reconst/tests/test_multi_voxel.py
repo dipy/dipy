@@ -111,7 +111,7 @@ class SillyParallelModel(object):
         return SillyFit(self, data)
 
     def predict(self, S0):
-        return np.ones(10) * S0
+        return np.full(10, S0)
 
 
 class SillyMultiModel(object):
@@ -121,7 +121,7 @@ class SillyMultiModel(object):
         return SillyFit(self, data)
 
     def predict(self, S0):
-        return np.ones(10) * S0
+        return np.full(10, S0)
 
 
 class SillyFit(object):
@@ -140,13 +140,13 @@ class SillyFit(object):
         return np.zeros((n, 3))
 
     def predict(self, S0):
-        return np.ones(self.data.shape) * S0
+        return np.full(self.data.shape, S0)
 
 
 def test_parallel_voxel_fit():
     voxel_fit(SillyParallelModel, SillyFit)
     model = SillyParallelModel()
-    # Test with a mask and few processors
+    # Test with a mask and few processes
     mask = np.zeros((3, 3, 3)).astype('bool')
     mask[0, 0] = 1
     mask[1, 1] = 1

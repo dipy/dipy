@@ -73,8 +73,8 @@ def ndarray_to_shm(arr, lock=False):
     arr : ndarray
         numpy ndarray that you want to convert.
     lock : boolean
-        controls the access to the shared array. When you shared
-        array is a read only access, you do not need lock. Otherwise,
+        controls the access to the shared array. When your shared
+        array has a read only access, you do not need lock. Otherwise,
         any writing access need to activate the lock to be
         process-safe(default: False)
 
@@ -120,8 +120,7 @@ def parallel_fit_worker(arguments):
 def _init_parallel_fit_worker(arr_to_populate, shape):
     """
     Each pool process calls this initializer.
-    Load the array to be populated into
-    that process's global namespace
+    Load the array to be populated into that process's global namespace
 
     Parameters
     -----------
@@ -178,17 +177,17 @@ def parallel_voxel_fit(single_voxel_fit):
             raise ValueError("mask and data shape do not match")
 
         # Get number of processes
-        nb_processes = int(kwargs['nb_processes']) if 'nb_processes' in kwargs else cpu_count()
-        nb_processes = cpu_count() if nb_processes < 1 else nb_processes
+        nb_processes = int(kwargs.get('nb_processes', '0'))
+        nb_processes = nb_processes if nb_processes >= 1 else cpu_count()
 
         if nb_processes == 1:
             return single_voxel_fit(model, data, *args, **kwargs)
 
-        # Get non null index from mask
+        # Get non null indexes from mask
         indexes = np.argwhere(mask)
-        # convert indexes to tuple
+        # Convert indexes to tuple
         indexes = [tuple(v) for v in indexes]
-        # create chunks
+        # Create chunks
         chunks_spacing = np.linspace(0, len(indexes), num=nb_processes + 1)
         chunks = [(indexes[int(chunks_spacing[i - 1]): int(chunks_spacing[i])])
                   for i in range(1, len(chunks_spacing))]
@@ -205,9 +204,9 @@ def parallel_voxel_fit(single_voxel_fit):
                                  for c in chunks])
         result.wait()
 
-        # create output array
+        # Create output array
         fit_array = np.empty(data.shape[:-1], dtype=object)
-        # fill output array with results
+        # Fill output array with results
         res_flatten = itertools.chain.from_iterable(result.get())
         for idx, val in res_flatten:
             fit_array[idx] = val
