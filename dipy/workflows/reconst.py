@@ -28,12 +28,14 @@ class ReconstDtiFlow(Workflow):
         return 'dti'
 
     def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
+            bvecs_tol=0.01,
             save_metrics=[],
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
+        using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified by
         ``out_dir``.
@@ -54,6 +56,9 @@ class ReconstDtiFlow(Workflow):
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+            b-vectors are unit vectors (default 0.01)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -86,11 +91,29 @@ class ReconstDtiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
+
+        References
+        ----------
+        Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+           the effective self-diffusion tensor from the NMR spin echo. J Magn
+           Reson B 103, 247-254.
+
+        Basser, P., Pierpaoli, C., 1996. Microstructural and
+           physiological features of tissues elucidated by quantitative
+           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+
+        Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
+
+       Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+           approaches for estimation of uncertainties of DTI parameters.
+           NeuroImage 33, 531-541.
+
         """
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
-            omode, oevecs, oevals in io_it:
+                omode, oevecs, oevals in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -103,7 +126,7 @@ class ReconstDtiFlow(Workflow):
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                               b0_threshold)
+                                               b0_threshold, bvecs_tol)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -163,103 +186,28 @@ class ReconstDtiFlow(Workflow):
                 evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
                 nib.save(evals_img, oevals)
 
-            logging.info('DTI metrics saved in {0}'.
-                         format(os.path.dirname(oevals)))
+            dname_ = os.path.dirname(oevals)
+            if dname_ == '':
+                logging.info('DTI metrics saved in current directory')
+            else:
+                logging.info(
+                        'DTI metrics saved in {0}'.format(dname_))
 
     def get_tensor_model(self, gtab):
         return TensorModel(gtab, fit_method="WLS")
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
+    def get_fitted_tensor(self, data, mask, bval, bvec,
+                          b0_threshold=0, bvecs_tol=0.01):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
-        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                              atol=bvecs_tol)
 
         tenmodel = self.get_tensor_model(gtab)
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
-
-
-class ReconstDtiRestoreFlow(ReconstDtiFlow):
-    @classmethod
-    def get_short_name(cls):
-        return 'dti_restore'
-
-    def run(self, input_files, bvalues, bvectors, mask_files, sigma,
-            b0_threshold=0.0, save_metrics=[], jacobian=True,
-            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
-            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
-            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
-
-        """ Workflow for tensor reconstruction and for computing DTI metrics.
-            Performs a tensor reconstruction on the files by 'globing'
-            ``input_files`` and saves the DTI metrics in a directory specified by
-            ``out_dir``.
-
-            Parameters
-            ----------
-            input_files : string
-                Path to the input volumes. This path may contain wildcards to
-                process multiple inputs at once.
-            bvalues : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
-            bvectors : string
-                Path to the bvalues files. This path may contain wildcards to use
-                multiple bvalues files at once.
-            mask_files : string
-                Path to the input masks. This path may contain wildcards to use
-                multiple masks at once. (default: No mask used)
-            sigma : float
-                An estimate of the variance.
-            b0_threshold : float, optional
-                Threshold used to find b=0 directions (default 0.0)
-            save_metrics : variable string, optional
-                List of metrics to save.
-                Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
-                (default [] (all))
-            jacobian : bool, optional
-                Whether to use the Jacobian of the tensor to speed the
-                non-linear optimization procedure used to fit the tensor
-                parameters (default True)
-            out_dir : string, optional
-                Output directory (default input file directory)
-            out_tensor : string, optional
-                Name of the tensors volume to be saved (default 'tensors.nii.gz')
-            out_fa : string, optional
-                Name of the fractional anisotropy volume to be saved
-                (default 'fa.nii.gz')
-            out_ga : string, optional
-                Name of the geodesic anisotropy volume to be saved
-                (default 'ga.nii.gz')
-            out_rgb : string, optional
-                Name of the color fa volume to be saved (default 'rgb.nii.gz')
-            out_md : string, optional
-                Name of the mean diffusivity volume to be saved
-                (default 'md.nii.gz')
-            out_ad : string, optional
-                Name of the axial diffusivity volume to be saved
-                (default 'ad.nii.gz')
-            out_rd : string, optional
-                Name of the radial diffusivity volume to be saved
-                (default 'rd.nii.gz')
-            out_mode : string, optional
-                Name of the mode volume to be saved (default 'mode.nii.gz')
-            out_evec : string, optional
-                Name of the eigenvectors volume to be saved
-                (default 'evecs.nii.gz')
-            out_eval : string, optional
-                Name of the eigenvalues to be saved (default 'evals.nii.gz')
-            """
-        self.sigma = sigma
-        self.jacobian = jacobian
-
-        super(ReconstDtiRestoreFlow, self).\
-            run(input_files, bvalues, bvectors, mask_files, b0_threshold,
-                save_metrics, out_dir, out_tensor, out_fa, out_ga, out_rgb,
-                out_md, out_ad, out_rd, out_mode, out_evec, out_eval)
 
 
 class ReconstCSDFlow(Workflow):
@@ -270,14 +218,19 @@ class ReconstCSDFlow(Workflow):
 
     def run(self, input_files, bvalues, bvectors, mask_files,
             b0_threshold=0.0,
-            frf=[15.0, 4.0, 4.0], extract_pam_values=False, out_dir='',
+            bvecs_tol=0.01,
+            roi_center=None,
+            roi_radius=10,
+            fa_thr=0.7,
+            frf=None, extract_pam_values=False,
+            sh_order=8,
+            odf_to_sh_order=8,
+            out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Workflow for peaks computation. Peaks computation is done by 'globing'
-            ``input_files`` and saves the peaks in a directory specified by
-            ``out_dir``.
+        """ Constrained spherical deconvolution
 
         Parameters
         ----------
@@ -295,10 +248,28 @@ class ReconstCSDFlow(Workflow):
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
-        frf : tuple, optional
-            Fiber response function to me mutiplied by 10**-4 (default: 15,4,4)
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors. (default:0.01)
+        roi_center : variable int, optional
+            Center of ROI in data. If center is None, it is assumed that it is
+            the center of the volume with shape `data.shape[:3]` (default None)
+        roi_radius : int, optional
+            radius of cubic ROI in voxels (default 10)
+        fa_thr : float, optional
+            FA threshold for calculating the response function (default 0.7)
+        frf : variable float, optional
+            Fiber response function can be for example inputed as 15 4 4
+            (from the command line) or [15, 4, 4] from a Python script to be
+            converted to float and mutiplied by 10**-4 . If None
+            the fiber response function will be computed automatically
+            (default: None).
         extract_pam_values : bool, optional
-            Wheter or not to save pam volumes as single nifti files.
+            Save or not to save pam volumes as single nifti files.
+        sh_order : int, optional
+            Spherical harmonics order (default 6) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order used for peak_from_model to compress
+            the ODF to spherical harmonics coefficients (default 8)
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
@@ -317,19 +288,27 @@ class ReconstCSDFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+
+
+        References
+        ----------
+        Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+        the fibre orientation distribution in diffusion MRI:
+        Non-negativity constrained super-resolved spherical deconvolution.
         """
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values, \
-            opeaks_indices, ogfa in io_it:
+                opeaks_indices, ogfa in io_it:
 
-            logging.info('Computing fiber odfs for {0}'.format(dwi))
-            vol = nib.load(dwi)
-            data = vol.get_data()
-            affine = vol.get_affine()
+            logging.info('Loading {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            affine = img.affine
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                                  atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
             sh_order = 8
@@ -341,27 +320,40 @@ class ReconstCSDFlow(Workflow):
             elif data.shape[-1] < 30:
                 sh_order = 6
 
-            response, ratio = auto_response(gtab, data)
-            response = list(response)
+            if frf is None:
+                logging.info('Computing response function')
+                if roi_center is not None:
+                    logging.info('Response ROI center:\n{0}'
+                                 .format(roi_center))
+                    logging.info('Response ROI radius:\n{0}'
+                                 .format(roi_radius))
+                response, ratio, nvox = auto_response(
+                        gtab, data,
+                        roi_center=roi_center,
+                        roi_radius=roi_radius,
+                        fa_thr=fa_thr,
+                        return_number_of_voxels=True)
+                response = list(response)
 
-            if frf is not None:
+            else:
+                logging.info('Using response function')
                 if isinstance(frf, str):
                     l01 = np.array(literal_eval(frf), dtype=np.float64)
                 else:
-                    l01 = np.array(frf)
+                    l01 = np.array(frf, dtype=np.float64)
 
                 l01 *= 10 ** -4
-                response[0] = np.array([l01[0], l01[1], l01[1]])
+                response = np.array([l01[0], l01[1], l01[1]])
                 ratio = l01[1] / l01[0]
+                response = (response, ratio)
 
             logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
+                'Eigenvalues for the response of the input data are:\n{0}'
                 .format(response[0]))
-            logging.info('Ratio for smallest to largest eigen value is {0}'
-                         .format(ratio))
 
-            peaks_sphere = get_sphere('symmetric362')
+            peaks_sphere = get_sphere('repulsion724')
 
+            logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                         sh_order=sh_order)
 
@@ -379,11 +371,18 @@ class ReconstCSDFlow(Workflow):
 
             save_peaks(opam, peaks_csd)
 
+            logging.info('CSD computation completed.')
+
             if extract_pam_values:
                 peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            logging.info('Peaks saved in {0}'.format(os.path.dirname(opam)))
+            dname_ = os.path.dirname(opam)
+            if dname_ == '':
+                logging.info('Pam5 file saved in current directory')
+            else:
+                logging.info(
+                        'Pam5 file saved in {0}'.format(dname_))
 
             return io_it
 
@@ -394,16 +393,16 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
-    def run(self, input_files, bvalues, bvectors, mask_files,
-            b0_threshold=0.0, extract_pam_values=False, out_dir='',
+    def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
+            odf_to_sh_order=8, b0_threshold=0.0, bvecs_tol=0.01,
+            extract_pam_values=False,
+            out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Workflow for peaks computation. Peaks computation is done by 'globing'
-            ``input_files`` and saves the peaks in a directory specified by
-            ``out_dir``.
+        """ Constant Solid Angle.
 
         Parameters
         ----------
@@ -419,8 +418,15 @@ class ReconstCSAFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
+        sh_order : int, optional
+            Spherical harmonics order (default 6) used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order used for peak_from_model to compress
+            the ODF to spherical harmonics coefficients (default 8)
         b0_threshold : float, optional
             Threshold used to find b=0 directions
+        bvecs_tol : float, optional
+            Threshold used so that norm(bvec)=1 (default 0.01)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         out_dir : string, optional
@@ -441,42 +447,31 @@ class ReconstCSAFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+
+
+        References
+        ----------
+        Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
+           Solid Angle Consideration.
         """
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, \
-            opeaks_values, opeaks_indices, ogfa in io_it:
+                opeaks_values, opeaks_indices, ogfa in io_it:
 
-            logging.info('Computing fiber odfs for {0}'.format(dwi))
+            logging.info('Loading {0}'.format(dwi))
             vol = nib.load(dwi)
             data = vol.get_data()
-            affine = vol.get_affine()
+            affine = vol.affine
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             gtab = gradient_table(bvals, bvecs,
-                                  b0_threshold=b0_threshold)
+                                  b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            sh_order = 8
-            if data.shape[-1] < 15:
-                raise ValueError(
-                    'You need at least 15 unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {0}'
-                    ' DWI volumes.'.format(data.shape[-1]))
-            elif data.shape[-1] < 30:
-                sh_order = 6
+            peaks_sphere = get_sphere('repulsion724')
 
-            response, ratio = auto_response(gtab, data)
-            response = list(response)
-
-            logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
-                    .format(response[0]))
-            logging.info(
-                'Ratio for smallest to largest eigen value is {0}'
-                    .format(ratio))
-
-            peaks_sphere = get_sphere('symmetric362')
+            logging.info('Starting CSA computations {0}'.format(dwi))
 
             csa_model = CsaOdfModel(gtab, sh_order)
 
@@ -487,23 +482,25 @@ class ReconstCSAFlow(Workflow):
                                          min_separation_angle=25,
                                          mask=mask_vol,
                                          return_sh=True,
-                                         sh_order=sh_order,
+                                         sh_order=odf_to_sh_order,
                                          normalize_peaks=True,
                                          parallel=False)
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
 
+            logging.info('Finished CSA {0}'.format(dwi))
+
             if extract_pam_values:
                 peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
                                 opeaks_values,
                                 opeaks_indices, ogfa, reshape_dirs=True)
 
-            logging.info(
-                'Peaks saved in {0}'.format(os.path.dirname(opam)))
+            dname_ = os.path.dirname(opam)
+            if dname_ == '':
+                logging.info('Pam5 file saved in current directory')
+            else:
+                logging.info(
+                        'Pam5 file saved in {0}'.format(dname_))
 
             return io_it
-
-    def get_tensor_model(self, gtab):
-        return TensorModel(gtab, fit_method="RT", sigma=self.sigma,
-                           jac=self.jacobian)
