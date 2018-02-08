@@ -470,25 +470,6 @@ class ReconstCSAFlow(Workflow):
 
             peaks_sphere = get_sphere('repulsion724')
 
-            sh_order = 8
-            if data.shape[-1] < 15:
-                raise ValueError(
-                    'You need at least 15 unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {0}'
-                    ' DWI volumes.'.format(data.shape[-1]))
-            elif data.shape[-1] < 30:
-                sh_order = 6
-
-            response, ratio = auto_response(gtab, data)
-            response = list(response)
-
-            logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
-                .format(response[0]))
-            logging.info(
-                'Ratio for smallest to largest eigen value is {0}'
-                .format(ratio))
-
             logging.info('Starting CSA computations {0}'.format(dwi))
 
             csa_model = CsaOdfModel(gtab, sh_order)
