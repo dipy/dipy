@@ -151,20 +151,6 @@ def parallel_voxel_fit(single_voxel_fit):
     Returns
     --------
     multi_voxel_fit_function : callable
-
-    Examples:
-    ---------
-    >>> import numpy as np
-    >>> from dipy.reconst.base import ReconstModel, ReconstFit
-    >>> class Model(ReconstModel):
-    ...     @parallel_voxel_fit
-    ...     def fit(self, single_voxel_data):
-    ...         return ReconstFit(self, single_voxel_data.sum())
-    >>> model = Model(None)
-    >>> data = np.random.random((2, 3, 4, 5))
-    >>> fit = model.fit(data)
-    >>> np.allclose(fit.data, data.sum(-1))
-    True
     """
 
     def new_fit(model, data, *args, **kwargs):
