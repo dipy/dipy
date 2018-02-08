@@ -126,10 +126,6 @@ def cart2sphere(x, y, z):
        azimuth angle
     '''
     r = np.sqrt(x * x + y * y + z * z)
-    # r is strictly positive by construction and will be 0 iff all three are
-    # zero, so it's safe to convert it to a 1 in this case, and prevents
-    # warnings from being raised in the following statement (z / r):
-    r = np.where(r > 0, r, 1)
     theta = np.arccos(z / r, where=r > 0)
     theta = np.where(r > 0, theta, 0.)
     phi = np.arctan2(y, x)
