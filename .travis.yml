@@ -86,6 +86,7 @@ before_install:
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
     - $PIPI --upgrade pip setuptools
+    - $PIPI nose
     - $PIPI pytest
     - $PIPI numpy;
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
@@ -127,5 +128,6 @@ script:
       cp ../.coveragerc .;
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
+    - nosetests --with-doctest --verbose $COVER_ARGS dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
