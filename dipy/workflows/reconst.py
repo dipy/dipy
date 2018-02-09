@@ -95,18 +95,18 @@ class ReconstDtiFlow(Workflow):
 
         References
         ----------
-        Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
            the effective self-diffusion tensor from the NMR spin echo. J Magn
            Reson B 103, 247-254.
 
-        Basser, P., Pierpaoli, C., 1996. Microstructural and
+        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
 
-        Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
-       Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+        .. [4] hung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
            approaches for estimation of uncertainties of DTI parameters.
            NeuroImage 33, 531-541.
 
@@ -291,9 +291,9 @@ class ReconstCSDFlow(Workflow):
 
         References
         ----------
-        Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-        the fibre orientation distribution in diffusion MRI:
-        Non-negativity constrained super-resolved spherical deconvolution.
+        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+           the fibre orientation distribution in diffusion MRI: Non-negativity
+           constrained super-resolved spherical deconvolution.
         """
         io_it = self.get_io_iterator()
 
@@ -450,8 +450,8 @@ class ReconstCSAFlow(Workflow):
 
         References
         ----------
-        Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
-           Solid Angle Consideration.
+        .. [1] Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging
+           with Solid Angle Consideration.
         """
         io_it = self.get_io_iterator()
 
@@ -581,6 +581,18 @@ class ReconstDkiFlow(Workflow):
             Name of the axial kurtosis to be saved (default: 'ak.nii.gz')
         out_rk : string, optional
             Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
+
+        Notes
+        -----
+
+        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+
+        .. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,
+           and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
+           Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
+           Resonance Imaging. MRM 53 (6):1432–40.
         """
         io_it = self.get_io_iterator()
 
