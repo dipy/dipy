@@ -582,8 +582,8 @@ class ReconstDkiFlow(Workflow):
         out_rk : string, optional
             Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
 
-        Notes
-        -----
+        References
+        ----------
 
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
