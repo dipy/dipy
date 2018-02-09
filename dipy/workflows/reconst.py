@@ -29,7 +29,7 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvecs, data_bvals, small_delta, big_delta,
+    def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
             b0_threshold=0.0, laplacian=True, positivity=True,
             bval_threshold=2000, save_metrics=[],
             laplacian_weighting=0.05, radial_order=6, out_dir='',
@@ -55,10 +55,10 @@ class ReconstMAPMRIFlow(Workflow):
         ----------
         data_file : string
             Path to the input volume.
-        data_bvecs : string
-            Path to the bvec files.
         data_bvals : string
             Path to the bval files.
+        data_bvecs : string
+            Path to the bvec files.
         small_delta : float
             Small delta value used in generation of gradient table of provided
             bval and bvec.
