@@ -40,11 +40,12 @@ class MedianOtsuFlow(Workflow):
             images are of 1x1x1 (mm^3) or higher resolution auto-cropping could
             reduce their size in memory and speed up some of the analysis.
             (default False)
-        vol_idx : string, optional
+        vol_idx : variable int, optional
             1D array representing indices of ``axis=3`` of a 4D `input_volume`
             'None' (the default) corresponds to ``(0,)`` (assumes first volume
-            in 4D array)
-        dilate : string, optional
+            in 4D array). From cmd line use 3 4 5 6. From script use
+            [3, 4, 5, 6].
+        dilate : int, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional
             Output directory (default input file directory)
@@ -54,7 +55,8 @@ class MedianOtsuFlow(Workflow):
             Name of the masked volume to be saved (default 'dwi_masked.nii.gz')
         """
         io_it = self.get_io_iterator()
-
+        if vol_idx is not None:
+            vol_idx = map(int, vol_idx)
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
                          format(fpath))

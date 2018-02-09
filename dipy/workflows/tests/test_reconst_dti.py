@@ -8,14 +8,10 @@ import numpy as np
 from dipy.utils.testing import assert_equal
 
 from dipy.data import get_data
-from dipy.workflows.reconst import ReconstDtiFlow, ReconstDtiRestoreFlow
+from dipy.workflows.reconst import ReconstDtiFlow
 
 
-def test_reconst_dti_restore():
-    reconst_flow_core(ReconstDtiRestoreFlow, [67])
-
-
-def test_reconst_dti_nlls():
+def test_reconst_dti_wls():
     reconst_flow_core(ReconstDtiFlow)
 
 
@@ -80,6 +76,6 @@ def reconst_flow_core(flow, extra_args=[]):
         assert_equal(evals_data.shape[-1], 3)
         assert_equal(evals_data.shape[:-1], volume.shape[:-1])
 
+
 if __name__ == '__main__':
-    test_reconst_dti_restore()
-    test_reconst_dti_nlls()
+    test_reconst_dti_wls()

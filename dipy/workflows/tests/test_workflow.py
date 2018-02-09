@@ -48,6 +48,5 @@ def test_run():
 
 if __name__ == '__main__':
     test_force_overwrite()
-    test_set_sub_flows_optionals()
     test_get_sub_runs()
     test_run()
