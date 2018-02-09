@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as nt
-from nose.tools import assert_equal, assert_false
+from dipy.utils.testing import assert_equal, assert_false
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory

@@ -13,7 +13,7 @@ import shutil
 
 from os.path import (dirname, join as pjoin, abspath)
 
-from nose.tools import assert_true, assert_false, assert_equal
+from dipy.utils.tesing import assert_true, assert_false, assert_equal
 import numpy.testing as nt
 
 import nibabel as nib

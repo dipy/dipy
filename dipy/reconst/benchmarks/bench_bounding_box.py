@@ -7,13 +7,13 @@ Run all benchmarks with::
     import dipy.reconst as dire
     dire.bench()
 
-If you have doctests enabled by default in nose (with a noserc file or
+If you have doctests enabled by default in ashu (with a ashurc file or
 environment variable), and you have a numpy version <= 1.6.1, this will also
 run the doctests, let's hope they pass.
 
 Run this benchmark with:
 
-    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_bounding_box.py
+    ashutests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_bounding_box.py
 """
 import numpy as np
 from numpy.testing import measure

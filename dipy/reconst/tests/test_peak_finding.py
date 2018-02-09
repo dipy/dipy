@@ -139,5 +139,5 @@ def test_search_descending():
 
 
 if __name__ == '__main__':
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main()

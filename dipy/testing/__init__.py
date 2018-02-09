@@ -10,14 +10,8 @@ from distutils.version import LooseVersion
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
-# Allow failed import of nose if not now running tests
-try:
-    import nose.tools as nt
-except ImportError:
-    pass
-else:
-    from dipy.utils.testing import (assert_equal, assert_not_equal,
-                                    assert_true, assert_false, assert_raises)
+from dipy.utils.testing import (assert_equal, assert_not_equal,
+                                assert_true, assert_false, assert_raises)
 
 
 def assert_arrays_equal(arrays1, arrays2):
@@ -27,7 +21,7 @@ def assert_arrays_equal(arrays1, arrays2):
 def setup_test():
     """ Set numpy print options to "legacy" for new versions of numpy
 
-    If imported into a file, nosetest will run this before any doctests.
+    If imported into a file, ashutest will run this before any doctests.
 
     References
     -----------

@@ -467,5 +467,5 @@ def test_calculate_max_order():
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main()

@@ -5,13 +5,13 @@ Run all benchmarks with::
     import dipy.segment as dipysegment
     dipysegment.bench()
 
-If you have doctests enabled by default in nose (with a noserc file or
+If you have doctests enabled by default in ashu (with a ashurc file or
 environment variable), and you have a numpy version <= 1.6.1, this will
 also run the doctests, let's hope they pass.
 
 Run this benchmark with:
 
-    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_quickbundles.py
+    ashutests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_quickbundles.py
 """
 import numpy as np
 import nibabel as nib
@@ -22,7 +22,7 @@ import dipy.tracking.streamline as streamline_utils
 from dipy.segment.metric import Metric
 from dipy.segment.quickbundles import QuickBundles as QB_Old
 from dipy.segment.clustering import QuickBundles as QB_New
-from nose.tools import assert_equal
+from dipy.utils.testing import assert_equal
 
 from dipy.testing import assert_arrays_equal
 from numpy.testing import assert_array_equal, measure

@@ -1,4 +1,4 @@
-from nose.tools import assert_raises
+from dipy.utils.testing import assert_raises
 
 import os
 import time
