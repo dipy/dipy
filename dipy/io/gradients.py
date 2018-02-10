@@ -37,10 +37,14 @@ def read_bvals_bvecs(fbvals, fbvecs):
         else:
             if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
+                with open(this_fname) as f:
+                    content = f.readline()
+                sniffer = csv.Sniffer()
+                detect_delimiter = sniffer.sniff(content)
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
-                    vals.append(np.squeeze(np.loadtxt(this_fname)))
+                    vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
                 elif ext == '.npy':
-                    vals.append(np.squeeze(np.load(this_fname)))
+                    vals.append(np.squeeze(np.load(this_fname, delimiter=detect_delimiter.delimiter)))
                 else:
                     e_s = "File type %s is not recognized" % ext
                     raise ValueError(e_s)
