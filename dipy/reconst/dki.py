@@ -1281,9 +1281,9 @@ class DiffusionKurtosisModel(ReconstModel):
 
         References
         ----------
-           [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+        Estimation of tensors and tensor-derived measures in diffusional
+        kurtosis imaging. Magn Reson Med. 65(3), 823-836
         """
         ReconstModel.__init__(self, gtab)
 
