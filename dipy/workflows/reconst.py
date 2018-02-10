@@ -20,6 +20,7 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
 from dipy.reconst.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
+from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 
 
 class ReconstDtiFlow(Workflow):
@@ -94,18 +95,18 @@ class ReconstDtiFlow(Workflow):
 
         References
         ----------
-        Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
            the effective self-diffusion tensor from the NMR spin echo. J Magn
            Reson B 103, 247-254.
 
-        Basser, P., Pierpaoli, C., 1996. Microstructural and
+        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
 
-        Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
            estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
-       Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+        .. [4] hung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
            approaches for estimation of uncertainties of DTI parameters.
            NeuroImage 33, 531-541.
 
@@ -120,9 +121,7 @@ class ReconstDtiFlow(Workflow):
             data = img.get_data()
             affine = img.affine
 
-            if mask is None:
-                mask = None
-            else:
+            if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
@@ -292,14 +291,14 @@ class ReconstCSDFlow(Workflow):
 
         References
         ----------
-        Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-        the fibre orientation distribution in diffusion MRI:
-        Non-negativity constrained super-resolved spherical deconvolution.
+        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+           the fibre orientation distribution in diffusion MRI: Non-negativity
+           constrained super-resolved spherical deconvolution.
         """
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values, \
-                opeaks_indices, ogfa in io_it:
+        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values,
+             opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
             img = nib.load(dwi)
@@ -451,13 +450,13 @@ class ReconstCSAFlow(Workflow):
 
         References
         ----------
-        Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
-           Solid Angle Consideration.
+        .. [1] Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging
+           with Solid Angle Consideration.
         """
         io_it = self.get_io_iterator()
 
-        for dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, \
-                opeaks_values, opeaks_indices, ogfa in io_it:
+        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir,
+             opeaks_values, opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
             vol = nib.load(dwi)
@@ -504,3 +503,206 @@ class ReconstCSAFlow(Workflow):
                         'Pam5 file saved in {0}'.format(dname_))
 
             return io_it
+
+
+class ReconstDkiFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'dki'
+
+    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=0.0,
+            save_metrics=[],
+            out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
+            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
+            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
+            out_dk_tensor="dki_tensors.nii.gz",
+            out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz"):
+        """ Workflow for Diffusion Kurtosis reconstruction and for computing
+        DKI metrics. Performs a DKI reconstruction on the files by 'globing'
+        ``input_files`` and saves the DTI metrics in a directory specified by
+        ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        save_metrics : variable string, optional
+            List of metrics to save.
+            Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
+            (default [] (all))
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_dt_tensor : string, optional
+            Name of the tensors volume to be saved
+            (default: 'dti_tensors.nii.gz')
+        out_dk_tensor : string, optional
+            Name of the tensors volume to be saved
+            (default 'dki_tensors.nii.gz')
+        out_fa : string, optional
+            Name of the fractional anisotropy volume to be saved
+            (default 'fa.nii.gz')
+        out_ga : string, optional
+            Name of the geodesic anisotropy volume to be saved
+            (default 'ga.nii.gz')
+        out_rgb : string, optional
+            Name of the color fa volume to be saved (default 'rgb.nii.gz')
+        out_md : string, optional
+            Name of the mean diffusivity volume to be saved
+            (default 'md.nii.gz')
+        out_ad : string, optional
+            Name of the axial diffusivity volume to be saved
+            (default 'ad.nii.gz')
+        out_rd : string, optional
+            Name of the radial diffusivity volume to be saved
+            (default 'rd.nii.gz')
+        out_mode : string, optional
+            Name of the mode volume to be saved (default 'mode.nii.gz')
+        out_evec : string, optional
+            Name of the eigenvectors volume to be saved
+            (default 'evecs.nii.gz')
+        out_eval : string, optional
+            Name of the eigenvalues to be saved (default 'evals.nii.gz')
+        out_mk : string, optional
+            Name of the mean kurtosis to be saved (default: 'mk.nii.gz')
+        out_ak : string, optional
+            Name of the axial kurtosis to be saved (default: 'ak.nii.gz')
+        out_rk : string, optional
+            Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
+
+        References
+        ----------
+
+        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+
+        .. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,
+           and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
+           Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
+           Resonance Imaging. MRM 53 (6):1432–40.
+        """
+        io_it = self.get_io_iterator()
+
+        for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
+             omode, oevecs, oevals, odk_tensor, omk, oak, ork) in io_it:
+
+            logging.info('Computing DKI metrics for {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            affine = img.affine
+
+            if mask is not None:
+                mask = nib.load(mask).get_data().astype(np.bool)
+
+            dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
+                                              b0_threshold)
+
+            if not save_metrics:
+                save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
+                                'rgb', 'mode', 'evec', 'eval', 'dt_tensor',
+                                'dk_tensor']
+
+            evals, evecs, kt = split_dki_param(dkfit.model_params)
+            FA = fractional_anisotropy(evals)
+            FA[np.isnan(FA)] = 0
+            FA = np.clip(FA, 0, 1)
+
+            if 'dt_tensor' in save_metrics:
+                tensor_vals = lower_triangular(dkfit.quadratic_form)
+                correct_order = [0, 1, 3, 2, 4, 5]
+                tensor_vals_reordered = tensor_vals[..., correct_order]
+                fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
+                    np.float32), affine)
+                nib.save(fiber_tensors, otensor)
+
+            if 'dk_tensor' in save_metrics:
+                kt_img = nib.Nifti1Image(dkfit.kt.astype(np.float32), affine)
+                nib.save(kt_img, odk_tensor)
+
+            if 'fa' in save_metrics:
+                fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
+                nib.save(fa_img, ofa)
+
+            if 'ga' in save_metrics:
+                GA = geodesic_anisotropy(dkfit.evals)
+                ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
+                nib.save(ga_img, oga)
+
+            if 'rgb' in save_metrics:
+                RGB = color_fa(FA, dkfit.evecs)
+                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
+                nib.save(rgb_img, orgb)
+
+            if 'md' in save_metrics:
+                MD = mean_diffusivity(dkfit.evals)
+                md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
+                nib.save(md_img, omd)
+
+            if 'ad' in save_metrics:
+                AD = axial_diffusivity(dkfit.evals)
+                ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
+                nib.save(ad_img, oad)
+
+            if 'rd' in save_metrics:
+                RD = radial_diffusivity(dkfit.evals)
+                rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
+                nib.save(rd_img, orad)
+
+            if 'mode' in save_metrics:
+                MODE = get_mode(dkfit.quadratic_form)
+                mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
+                nib.save(mode_img, omode)
+
+            if 'evec' in save_metrics:
+                evecs_img = nib.Nifti1Image(dkfit.evecs.astype(np.float32),
+                                            affine)
+                nib.save(evecs_img, oevecs)
+
+            if 'eval' in save_metrics:
+                evals_img = nib.Nifti1Image(dkfit.evals.astype(np.float32),
+                                            affine)
+                nib.save(evals_img, oevals)
+
+            if 'mk' in save_metrics:
+                mk_img = nib.Nifti1Image(dkfit.mk().astype(np.float32),
+                                         affine)
+                nib.save(mk_img, omk)
+
+            if 'ak' in save_metrics:
+                ak_img = nib.Nifti1Image(dkfit.ak().astype(np.float32),
+                                         affine)
+                nib.save(ak_img, oak)
+
+            if 'rk' in save_metrics:
+                rk_img = nib.Nifti1Image(dkfit.rk().astype(np.float32),
+                                         affine)
+                nib.save(rk_img, ork)
+
+            logging.info('DKI metrics saved in {0}'.
+                         format(os.path.dirname(oevals)))
+
+    def get_dki_model(self, gtab):
+        return DiffusionKurtosisModel(gtab)
+
+    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
+        logging.info('Diffusion kurtosis estimation...')
+        bvals, bvecs = read_bvals_bvecs(bval, bvec)
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+
+        dkmodel = self.get_dki_model(gtab)
+        dkfit = dkmodel.fit(data, mask)
+
+        return dkfit, gtab
