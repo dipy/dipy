@@ -1,12 +1,16 @@
 import numpy as np
+cimport numpy as np
+
 from dipy.direction.peaks import peak_directions, default_sphere
+from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
-from dipy.tracking.local.direction_getter import DirectionGetter
+from dipy.tracking.local.direction_getter cimport DirectionGetter
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 
-def closest_peak(peak_dirs, prev_step, cos_similarity):
-    """Return the closest direction to prev_step from peak_dirs.
+cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
+                      double* direction, double cos_similarity):
+    """Update direction with the closest direction from peak_dirs.
 
     All directions should be unit vectors. Antipodal symmetry is assumed, ie
     direction x is the same as -x.
@@ -15,8 +19,8 @@ def closest_peak(peak_dirs, prev_step, cos_similarity):
     ----------
     peak_dirs : array (N, 3)
         N unit vectors.
-    prev_step : array (3,) or None
-        Previous direction.
+    direction : array (3,) or None
+        Previous direction. The new direction is save here.
     cos_similarity : float
         `cos(max_angle)` where `max_angle` is the maximum allowed angle between
         prev_step and the returned direction.
@@ -28,51 +32,36 @@ def closest_peak(peak_dirs, prev_step, cos_similarity):
         closest direction to prev_step. If no directions are close enough to
         prev_step, returns None
     """
-    peak_dots = np.dot(peak_dirs, prev_step)
-    closest_peak = abs(peak_dots).argmax()
-    dot_closest_peak = peak_dots[closest_peak]
-    if dot_closest_peak >= cos_similarity:
-        return peak_dirs[closest_peak]
-    elif dot_closest_peak <= -cos_similarity:
-        return -peak_dirs[closest_peak]
-    else:
-        return None
+    cdef:
+        size_t _len, closest_peak_i, i
+        double _dot, closest_peak_dot
 
+    _len = len(peak_dirs)
+    closest_peak_i=-1
+    closest_peak_dot=0
 
-class PmfGen(object):
-    pass
+    for i in range(_len):
+        _dot = (peak_dirs[i,0] * direction[0]
+                + peak_dirs[i,1] * direction[1]
+                + peak_dirs[i,2] * direction[2])
 
+        if np.abs(_dot) > np.abs(closest_peak_dot):
+            closest_peak_dot = _dot
+            closest_peak_i = i
 
-class SimplePmfGen(PmfGen):
+    if closest_peak_dot >= cos_similarity and closest_peak_i >= 0:
+        direction[0] = peak_dirs[closest_peak_i, 0]
+        direction[1] = peak_dirs[closest_peak_i, 1]
+        direction[2] = peak_dirs[closest_peak_i, 2]
+        return 0
+    elif closest_peak_dot <= -cos_similarity and closest_peak_i >= 0:
+        direction[0] = -peak_dirs[closest_peak_i, 0]
+        direction[1] = -peak_dirs[closest_peak_i, 1]
+        direction[2] = -peak_dirs[closest_peak_i, 2]
+        return 0
+    return 1
 
-    def __init__(self, pmf_array):
-        if pmf_array.min() < 0:
-            raise ValueError("pmf should not have negative values")
-        self.pmf_array = pmf_array
-
-    def get_pmf(self, point):
-        return trilinear_interpolate4d(self.pmf_array, point)
-
-
-class SHCoeffPmfGen(PmfGen):
-
-    def __init__(self, shcoeff, sphere, basis_type):
-        self.shcoeff = shcoeff
-        self.sphere = sphere
-        sh_order = order_from_ncoef(shcoeff.shape[-1])
-        try:
-            basis = sph_harm_lookup[basis_type]
-        except KeyError:
-            raise ValueError("%s is not a known basis type." % basis_type)
-        self._B, m, n = basis(sh_order, sphere.theta, sphere.phi)
-
-    def get_pmf(self, point):
-        coeff = trilinear_interpolate4d(self.shcoeff, point)
-        pmf = np.dot(self._B, coeff)
-        return pmf
-
-
-class BaseDirectionGetter(DirectionGetter):
+cdef class BaseDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
@@ -109,19 +98,15 @@ class BaseDirectionGetter(DirectionGetter):
 
         """
         cdef double[:] pmf = self.pmf_gen.get_pmf(point)
-        return self._peak_directions(pmf)
+        return self._get_peak_directions(pmf)
 
 
-class PmfGenDirectionGetter(BaseDirectionGetter):
+cdef class PmfGenDirectionGetter(BaseDirectionGetter):
     """A base class for direction getter using a pmf"""
-    cdef:
-        PmfGen pmf_gen
-        double pmf_threshold
-        double[:, :] vertices
-        dict _adj_matrix
 
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere, pmf_threshold=0.1, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
+                 pmf_threshold=0.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -147,7 +132,6 @@ class PmfGenDirectionGetter(BaseDirectionGetter):
         --------
         dipy.direction.peaks.peak_directions
 
-
         """
         pmf = np.asarray(pmf, dtype=float)
         if pmf.ndim != 4:
@@ -160,10 +144,10 @@ class PmfGenDirectionGetter(BaseDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
-    def from_shcoeff(klass, shcoeff, max_angle, sphere, pmf_threshold=0.1,
-                     basis_type=None, **kwargs):
+    def from_shcoeff(klass, shcoeff, max_angle, sphere=default_sphere,
+                     pmf_threshold=0.1, basis_type=None, **kwargs):
         """Probabilistic direction getter from a distribution of directions
-        on the sphere.
+        on the sphere
 
         Parameters
         ----------
@@ -200,20 +184,24 @@ class PmfGenDirectionGetter(BaseDirectionGetter):
         pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
-class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
+
+cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
     """A direction getter that returns the closest odf peak to previous tracking
     direction.
     """
 
-    def get_direction(self, point, direction):
-        pmf = self.pmf_gen.get_pmf(point)
-        pmf.clip(min=self.pmf_threshold, out=pmf)
+    cdef int get_direction_c(self, double* point, double* direction):
+        cdef:
+            size_t _len
+            int newdir
+            double[:] pmf
+
+        pmf = self.pmf_gen.get_pmf_c(point)
+        _len = pmf.shape[0]
+        for i in range(_len):
+            if pmf[i] < self.pmf_threshold:
+                pmf[i] = 0.0
         peaks = self._get_peak_directions(pmf)
         if len(peaks) == 0:
             return 1
-        new_dir = closest_peak(peaks, direction, self.cos_similarity)
-        if new_dir is None:
-            return 1
-        else:
-            direction[:] = new_dir
-            return 0
+        return closest_peak(peaks, direction, self.cos_similarity)
