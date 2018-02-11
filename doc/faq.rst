@@ -103,7 +103,7 @@ Practical
   The best ever designed numerical library - NumPy_.
 
 2. **Which Python console do you recommend?**
- `IPython`_
+  IPython_
 
   
 3. **What do you use for visualization?**
