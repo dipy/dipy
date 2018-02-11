@@ -12,37 +12,13 @@ from random import random
 import numpy as np
 cimport numpy as np
 
+from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
-from dipy.tracking.local.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 
-cdef class PeakDirectionGetter(DirectionGetter):
-    """An abstract class for DirectionGetters that use the peak_directions
-    machinery."""
-
-    cdef:
-        object sphere
-        dict _pf_kwargs
-
-    def __init__(self, sphere=None, **kwargs):
-        if sphere is None:
-            self.sphere = default_sphere
-        else:
-            self.sphere = sphere
-        self._pf_kwargs = kwargs
-
-    def _peak_directions(self, blob):
-        """Gets directions using parameters provided at init.
-
-        Blob can be any function defined on ``self.sphere``, ie an ODF, PMF,
-        FOD.
-        """
-        return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
-
-#PmfGenDirectionGetter
-cdef class ProbabilisticDirectionGetter(PeakDirectionGetter):
+cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
     function (pmf).
 
@@ -52,6 +28,9 @@ cdef class ProbabilisticDirectionGetter(PeakDirectionGetter):
     directions more than ``max_angle`` degrees from the incoming direction are
     set to 0 and the result is normalized.
     """
+    cdef:
+        double[:, :] vertices
+        dict _adj_matrix
 
     def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
                  **kwargs):
@@ -125,6 +104,9 @@ cdef class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf_c(point)
+        if pmf is None:
+            return 1
+
         _len = pmf.shape[0]
         for i in range(_len):
             if pmf[i] < self.pmf_threshold:
@@ -165,6 +147,12 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     """Return direction of a sphere with the highest probability mass
     function (pmf).
     """
+
+    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
+                 **kwargs):
+        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                              pmf_threshold, **kwargs)
+
     cdef int get_direction_c(self, double* point, double* direction):
         """Find direction with the highest pmf to updates ``direction`` array
         with a new direction.
@@ -187,13 +175,15 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
 
         # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf_c(point)
+        if pmf is None:
+            return 1
+
         _len = pmf.shape[0]
         for i in range(_len):
             if pmf[i] < self.pmf_threshold:
                 pmf[i] = 0.0
 
-        cdf = self._adj_matrix[
-            (direction[0], direction[1], direction[2])] * pmf
+        cdf = self._adj_matrix[(direction[0], direction[1], direction[2])] * pmf
         max_idx = 0
         max_value = 0.0
         for i in range(_len):
