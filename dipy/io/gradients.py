@@ -3,6 +3,7 @@ from __future__ import division, print_function, absolute_import
 from os.path import splitext
 from dipy.utils.six import string_types
 import numpy as np
+import csv
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
@@ -37,7 +38,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         else:
             if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
-                with open(this_fname) as f:
+                with open(this_fname, 'rb') as f:
                     content = f.readline()
                 sniffer = csv.Sniffer()
                 detect_delimiter = sniffer.sniff(content)
