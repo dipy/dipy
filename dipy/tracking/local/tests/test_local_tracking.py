@@ -7,13 +7,12 @@ from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_data
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
-                            ProbabilisticDirectionGetter)
+                            ProbabilisticDirectionGetter,
+                            ClosestPeakDirectionGetter)
 from dipy.tracking.local import (ActTissueClassifier,
                                  BinaryTissueClassifier,
-                                 DirectionGetter,
                                  LocalTracking,
-                                 ThresholdTissueClassifier,
-                                 TissueClassifier)
+                                 ThresholdTissueClassifier)
 from dipy.tracking.local.interpolation import trilinear_interpolate4d
 from dipy.tracking.local.localtracking import TissueTypes
 
@@ -214,7 +213,8 @@ def test_probabilistic_odf_weighted_tracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere, pmf_threshold=0.1)
+    dg = ProbabilisticDirectionGetter.from_pmf(
+        pmf, 90, sphere, pmf_threshold=0.1)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 0.],
@@ -332,6 +332,60 @@ def test_maximum_deterministic_tracker():
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[2]))
+
+
+def test_closest_peak_deterministic_tracker():
+    """This tests that the Maximum Deterministic Direction Getter plays nice
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    pmf_lookup = np.array([[0., 0., 1.],
+                           [1., 0., 0.],
+                           [0., 1., 0.],
+                           [.5, .5, 0.]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    pmf = pmf_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
+
+    mask = (simple_image > 0).astype(float)
+    tc = BinaryTissueClassifier(mask)
+
+    dg = ClosestPeakDirectionGetter.from_pmf(pmf, 90, sphere,
+                                             pmf_threshold=0.1)
+    streamlines = list(LocalTracking(dg, tc, seeds, np.eye(4), 1.))
+
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.],
+                          [2., 5., 0.]])]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
+    if not allclose(streamlines[0], expected[0]):
+        print streamlines[0]
+        raise AssertionError()
+    if not allclose(streamlines[1], expected[1]):
+        print streamlines[1]
+        raise AssertionError()
 
 
 def test_peak_direction_tracker():
