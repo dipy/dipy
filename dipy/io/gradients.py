@@ -45,7 +45,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
                     vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
                 elif ext == '.npy':
-                    vals.append(np.squeeze(np.load(this_fname, delimiter=detect_delimiter.delimiter)))
+                    vals.append(np.squeeze(np.load(this_fname)))
                 else:
                     e_s = "File type %s is not recognized" % ext
                     raise ValueError(e_s)
