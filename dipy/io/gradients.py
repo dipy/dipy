@@ -41,7 +41,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
                 with open(this_fname, 'rb') as f:
                     content = f.readline()
                 sniffer = csv.Sniffer()
-                detect_delimiter = sniffer.sniff(unicode(content, errors='ignore'))
+                detect_delimiter = sniffer.sniff(str(content, errors='ignore'))
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
                     vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
                 elif ext == '.npy':
