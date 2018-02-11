@@ -4,7 +4,9 @@ Bootstrap and Closest Peak Direction Getters Example
 ====================
 
 This example shows how choices in direction-getter impact fiber
-tracking results by demonstrating the bootstrap direction getter (a type of probabilistic tracking) and the closest peak direction getter (a type of deterministic tracking).
+tracking results by demonstrating the bootstrap direction getter (a type of
+probabilistic tracking) and the closest peak direction getter (a type of
+deterministic tracking).
 
 Let's load the necessary modules for executing this tutorial.
 """
@@ -24,7 +26,8 @@ Now we import the CSD model
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 """
-First we load our images and establish seeds. See the Introduction to Basic Tracking tutorial for more background on these steps.
+First we load our images and establish seeds. See the Introduction to Basic
+Tracking tutorial for more background on these steps.
 """
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -89,7 +92,10 @@ if fvtk.have_vtk:
 
    **Corpus Callosum Bootstrap Probabilistic Direction Getter**
 
-We have created a bootstrapped probabilistic set of streamlines. If you repeat the fiber tracking (keeping all inputs the same) you will NOT get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
+We have created a bootstrapped probabilistic set of streamlines. If you repeat
+the fiber tracking (keeping all inputs the same) you will NOT get exactly the
+same set of streamlines. We can save the streamlines as a Trackvis file so it
+can be loaded into other software for visualization or further analysis.
 """
 
 save_trk("bootstrap_dg_CSD.trk", streamlines_boot_csd, affine, labels.shape)
@@ -103,12 +109,15 @@ from dipy.direction import closest_peak_direction_getter
 
 fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
-cp_dg_csd = closest_peak_direction_getter.ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30., sphere=small_sphere)
-streamlines_cp_csd = list(LocalTracking(cp_dg_csd, classifier, seeds, affine, step_size=.5))
+cp_dg_csd = closest_peak_direction_getter.ClosestPeakDirectionGetter.from_pmf(
+        pmf, max_angle=30., sphere=small_sphere)
+streamlines_cp_csd = list(LocalTracking(cp_dg_csd, classifier, seeds, affine,
+                                        step_size=.5))
 
 
 if fvtk.have_vtk:
-    streamlines_actor = fvtk.line(streamlines_cp_csd, line_colors(streamlines_cp_csd))
+    streamlines_actor = fvtk.line(streamlines_cp_csd,
+                                  line_colors(streamlines_cp_csd))
 
     # Create the 3d display.
     r = fvtk.ren()
@@ -125,7 +134,11 @@ if fvtk.have_vtk:
 
    **Corpus Callosum Closest Peak Deterministic Direction Getter**
 
-We have created a set of streamlines using the closest peak direction getter, which is a type of deterministic tracking. If you repeat the fiber tracking (keeping all inputs the same) you will get exactly the same set of streamlines. We can save the streamlines as a Trackvis file so it can be loaded into other software for visualization or further analysis.
+We have created a set of streamlines using the closest peak direction getter,
+which is a type of deterministic tracking. If you repeat the fiber tracking
+(keeping all inputs the same) you will get exactly the same set of streamlines.
+We can save the streamlines as a Trackvis file so it can be loaded into other
+software for visualization or further analysis.
 """
 
 save_trk("closest_peak_dg_CSD.trk", streamlines_cp_csd, affine, labels.shape)
