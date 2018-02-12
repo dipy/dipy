@@ -23,9 +23,6 @@ from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 
 from dipy.reconst import mapmri
-import matplotlib
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 class ReconstMAPMRIFlow(Workflow):
@@ -43,13 +40,11 @@ class ReconstMAPMRIFlow(Workflow):
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
             out_parng='parng.nii.gz'):
-        """ Workflow for fitting the MAPMRI model
-        (with optional Laplacian regularization).
-        Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
-        non-gaussian (ng), parallel ng, perpendicular ng
-        saved in a nifti format in input files provided by
-        `data_file` and saves the nifti files to an output
-        directory specified by `out_dir`.
+        """ Workflow for fitting the MAPMRI model (with optional Laplacian
+        regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
+        non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
+        format in input files provided by `data_file` and saves the nifti files
+        to an output directory specified by `out_dir`.
 
         In order for the MAPMRI workflow to work in the way
         intended either the laplacian or positivity or both must
@@ -115,9 +110,8 @@ class ReconstMAPMRIFlow(Workflow):
             Name of the Non-Gaussianity parallel to be saved
         """
         io_it = self.get_io_iterator()
-        for dwi, bval, bvec, out_rtop, out_lapnorm, \
-            out_msd, out_qiv, out_rtap, out_rtpp, out_ng, \
-            out_perng, out_parng in io_it:
+        for (dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv,
+             out_rtap, out_rtpp, out_ng, out_perng, out_parng) in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
             img = nib.load(dwi)
@@ -136,34 +130,41 @@ class ReconstMAPMRIFlow(Workflow):
                                 'ng', 'perng', 'parng']
 
             if laplacian and positivity:
-                map_model_aniso = mapmri.MapmriModel(gtab,
-                                                     radial_order=radial_order,
-                                                     laplacian_regularization=True,
-                                                     laplacian_weighting=laplacian_weighting,
-                                                     positivity_constraint=True,
-                                                     bval_threshold=bval_threshold)
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=True,
+                            laplacian_weighting=laplacian_weighting,
+                            positivity_constraint=True,
+                            bval_threshold=bval_threshold)
+
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif positivity:
-
-                map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                     laplacian_regularization=False,
-                                                     positivity_constraint=True,
-                                                     bval_threshold=bval_threshold)
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=False,
+                            positivity_constraint=True,
+                            bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             elif laplacian:
-                map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                     laplacian_regularization=True,
-                                                     laplacian_weighting=laplacian_weighting,
-                                                     bval_threshold=bval_threshold)
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=True,
+                            laplacian_weighting=laplacian_weighting,
+                            bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             else:
-                map_model_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
-                                                     laplacian_regularization=False,
-                                                     positivity_constraint=False,
-                                                     bval_threshold=bval_threshold)
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=False,
+                            positivity_constraint=False,
+                            bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
 
             if 'rtop' in save_metrics:
@@ -172,8 +173,8 @@ class ReconstMAPMRIFlow(Workflow):
                 nib.save(rtop, out_rtop)
 
             if 'laplacian_signal' in save_metrics:
-                l = mapfit_aniso.norm_of_laplacian_signal()
-                lap = nib.nifti1.Nifti1Image(l.astype(np.float32), affine)
+                ll = mapfit_aniso.norm_of_laplacian_signal()
+                lap = nib.nifti1.Nifti1Image(ll.astype(np.float32), affine)
                 nib.save(lap, out_lapnorm)
 
             if 'msd' in save_metrics:
@@ -408,89 +409,6 @@ class ReconstDtiFlow(Workflow):
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
-
-
-class ReconstDtiRestoreFlow(ReconstDtiFlow):
-    @classmethod
-    def get_short_name(cls):
-        return 'dti_restore'
-
-    def run(self, input_files, bvalues, bvectors, mask_files, sigma,
-            b0_threshold=0.0, save_metrics=[], jacobian=True,
-            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
-            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
-            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
-        """ Workflow for tensor reconstruction and for computing DTI metrics.
-            Performs a tensor reconstruction on the files by 'globing'
-            ``input_files`` and saves the DTI metrics in a
-            directory specified by``out_dir``.
-
-            Parameters
-            ----------
-            input_files : string
-                Path to the input volumes. This path may contain wildcards to
-                process multiple inputs at once.
-            bvalues : string
-                Path to the bvalues files. This path may contain
-                wildcards to use multiple bvalues files at once.
-            bvectors : string
-                Path to the bvectors files. This path may
-                contain wildcards to use multiple bvectors files
-                at once.
-            mask_files : string
-                Path to the input masks. This path may contain wildcards to use
-                multiple masks at once. (default: No mask used)
-            sigma : float
-                An estimate of the variance.
-            b0_threshold : float, optional
-                Threshold used to find b=0 directions (default 0.0)
-            save_metrics : variable string, optional
-                List of metrics to save.
-                Possible values: fa, ga, rgb, md, ad, rd, mode,
-                                tensor, evec, eval
-                (default [] (all))
-            jacobian : bool, optional
-                Whether to use the Jacobian of the tensor to speed the
-                non-linear optimization procedure used to fit the tensor
-                parameters (default True)
-            out_dir : string, optional
-                Output directory (default input file directory)
-            out_tensor : string, optional
-                Name of the tensors volume to be saved
-                (default 'tensors.nii.gz')
-            out_fa : string, optional
-                Name of the fractional anisotropy volume to be saved
-                (default 'fa.nii.gz')
-            out_ga : string, optional
-                Name of the geodesic anisotropy volume to be saved
-                (default 'ga.nii.gz')
-            out_rgb : string, optional
-                Name of the color fa volume to be saved (default 'rgb.nii.gz')
-            out_md : string, optional
-                Name of the mean diffusivity volume to be saved
-                (default 'md.nii.gz')
-            out_ad : string, optional
-                Name of the axial diffusivity volume to be saved
-                (default 'ad.nii.gz')
-            out_rd : string, optional
-                Name of the radial diffusivity volume to be saved
-                (default 'rd.nii.gz')
-            out_mode : string, optional
-                Name of the mode volume to be saved (default 'mode.nii.gz')
-            out_evec : string, optional
-                Name of the eigenvectors volume to be saved
-                (default 'evecs.nii.gz')
-            out_eval : string, optional
-                Name of the eigenvalues to be saved (default 'evals.nii.gz')
-            """
-        self.sigma = sigma
-        self.jacobian = jacobian
-
-        super(ReconstDtiRestoreFlow, self). \
-            run(input_files, bvalues, bvectors, mask_files, b0_threshold,
-                save_metrics, out_dir, out_tensor, out_fa, out_ga, out_rgb,
-                out_md, out_ad, out_rd, out_mode, out_evec, out_eval)
 
 
 class ReconstCSDFlow(Workflow):
