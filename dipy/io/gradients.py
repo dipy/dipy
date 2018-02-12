@@ -42,7 +42,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
                     with open(this_fname, 'rb') as f:
                         content = f.readline()
                     sniffer = csv.Sniffer()
-                    detect_delimiter = sniffer.sniff(str(content, errors='ignore'))
+                    detect_delimiter = sniffer.sniff(str(content.encode("utf-8", 'ignore')))
                     vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
                 elif ext == '.npy':
                     vals.append(np.squeeze(np.load(this_fname)))
