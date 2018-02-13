@@ -79,7 +79,7 @@
 .. Other python projects
 .. _numpy: http://numpy.scipy.org
 .. _scipy: http://www.scipy.org
-.. _ipython: http://ipython.scipy.org
+.. _IPython: http://www.ipython.org/
 .. _`ipython manual`: http://ipython.scipy.org/doc/manual/html
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _pythonxy: http://www.pythonxy.com
