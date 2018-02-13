@@ -58,6 +58,11 @@ def test_read_bvals_bvecs():
     # You entered the bvecs on both sides:
     npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
 
+    # All possible delimiters should work
+    result = np.array([[32, 45, 54, 54, 54, 55, 55, 34], [32, 45, 54, 54, 54, 55, 55, 34]])
+    bvals = read_bvals_bvecs('dummy.txt', None)
+    assert_array_equal(result, bvals[0])
+
 
 if __name__ == '__main__':
     from numpy.testing import run_module_suite
