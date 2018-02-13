@@ -75,7 +75,7 @@ Announcements
 - :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
 - :ref:`DIPY 0.9.2 <release0.9>` released, March 18, 2015.
 - :ref:`DIPY 0.8.0 <release0.8>` released, January 6, 2015.
-- dipy_ was an official exhibitor in `HBM 2015 <http://ohbm.loni.usc.edu>`_.
+- dipy_ was an official exhibitor in `OHBM 2015 <http://ohbm.loni.usc.edu>`_.
 - DIPY was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
 - `DIPY paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
