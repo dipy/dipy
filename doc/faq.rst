@@ -103,9 +103,9 @@ Practical
   The best ever designed numerical library - NumPy_.
 
 2. **Which Python console do you recommend?**
+  IPython_
 
-  ``ipython``
-
+  
 3. **What do you use for visualization?**
 
   For 3D visualization we use ``dipy.viz`` which depends in turn on ``python-vtk``::
