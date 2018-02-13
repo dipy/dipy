@@ -22,7 +22,7 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
         Metadata associated to the tractogram file(*.trk). (default: None)
 
     """
-    if vox_size and shape:
+    if vox_size is not None and shape is not None:
         if not isinstance(header, dict):
             header = {}
         header[Field.VOXEL_TO_RASMM] = affine.copy()
