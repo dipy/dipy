@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # vim: ft=python
-""" Run nosetests for dipy while patching nose
+""" Run pytest for dipy
 
-Use as ``nosetests`` except we always run the doctests, and we patch the doctest
-plugin to deal with a bug in nose at least <= 1.2.1
+Use as ``pytest`` except we always run the doctests
 
 To reproduce a standard test run::
 
@@ -12,13 +11,8 @@ To reproduce a standard test run::
 """
 
 import sys
-import nose
-from nose.plugins import doctests
+import pytest
 
-# We were getting errors for the extension modules.  See:
-# https://github.com/nose-devs/nose/pull/661
-# and
-# https://github.com/nose-devs/nose/issues/447
 def id(self):
     name = self._dt_test.name
     filename = self._dt_test.filename
@@ -41,9 +35,7 @@ def prepare_imports():
 
 if __name__ == '__main__':
     # Monkeypatch.  Yes, it's nasty
-    doctests.DocTestCase.id = id
     # Set mpl backend
     prepare_imports()
-    # Enable doctests
-    argv = sys.argv + ['--with-doctest']
-    nose.core.TestProgram(argv=argv, addplugins=[doctests.Doctest()])
+    # Uses doctest by default
+    pytest.main()
