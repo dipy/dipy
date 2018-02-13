@@ -142,8 +142,9 @@ from dipy.tracking.local import LocalTracking
 
 streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
-# Compute streamlines and store as a list.
-streamlines = list(streamlines)
+# Compute streamlines.
+from dipy.tracking.streamline import Streamlines
+streamlines = Streamlines(streamlines)
 
 """
 In order to select only the fibers that enter into the LGN, another ROI is
@@ -163,7 +164,7 @@ sfil = []
 for i in range(len(streamlines)):
     if filtered_fibers2[i]:
         sfil.append(streamlines[i])
-streamlines = list(sfil)
+streamlines = Streamlines(sfil)
 
 """
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
