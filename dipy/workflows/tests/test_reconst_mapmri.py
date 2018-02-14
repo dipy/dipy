@@ -32,7 +32,7 @@ def test_reconst_mmri_positivity():
 
 def reconst_mmri_core(flow, lap, pos):
     with TemporaryDirectory() as out_dir:
-        data_path, bvec_path, bval_path = get_data('small_25')
+        data_path, bval_path, bvec_path = get_data('small_25')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
 
