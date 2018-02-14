@@ -1,7 +1,7 @@
 """
-====================
+=================================================
 Bootstrap and Closest Peak Direction Getters Example
-====================
+=================================================
 
 This example shows how choices in direction-getter impact fiber
 tracking results by demonstrating the bootstrap direction getter (a type of
@@ -15,8 +15,7 @@ from dipy.data import read_stanford_labels
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.io.trackvis import save_trk
-
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
 """
@@ -65,26 +64,19 @@ Next, we need to set up our two direction getters
 Example #1: Bootstrap direction getter with CSD Model
 """
 
-from dipy.direction import bootstrap_direction_getter
+from dipy.direction import BootDirectionGetter
+from dipy.tracking.streamline import Streamlines
 from dipy.data import small_sphere
 
-boot_dg_csd = bootstrap_direction_getter.BootDirectionGetter.from_data(
-            data, csd_model, max_angle=30., sphere=small_sphere)
-streamlines_boot_csd = list(LocalTracking(boot_dg_csd, classifier, seeds, affine, step_size=.5))
+boot_dg_csd = BootDirectionGetter.from_data(data, csd_model, max_angle=30.,
+                                            sphere=small_sphere)
+boot_streamline_generator = LocalTracking(boot_dg_csd, classifier, seeds,
+                                          affine, step_size=.5)
+streamlines = Streamlines(boot_streamline_generator)
 
-# Prepare the display objects.
-
-if fvtk.have_vtk:
-    streamlines_actor = fvtk.line(streamlines_boot_csd, line_colors(streamlines_boot_csd))
-
-    # Create the 3d display.
-    r = fvtk.ren()
-    fvtk.add(r, streamlines_actor)
-
-    # Save still images for this static example. Or for interactivity use
-    # fvtk.show
-    fvtk.record(r, n_frames=1, out_path='bootstrap_dg_CSD.png',
-                size=(800, 800))
+renderer.clear()
+renderer.add(actor.line(streamlines, line_colors(streamlines)))
+window.record(renderer, out_path='bootstrap_dg_CSD.png', size=(600, 600))
 
 """
 .. figure:: bootstrap_dg_CSD.png
@@ -98,35 +90,24 @@ same set of streamlines. We can save the streamlines as a Trackvis file so it
 can be loaded into other software for visualization or further analysis.
 """
 
-save_trk("bootstrap_dg_CSD.trk", streamlines_boot_csd, affine, labels.shape)
-
+save_trk("bootstrap_dg_CSD.trk", streamlines, affine, labels.shape)
 
 """
 Example #2: Closest peak direction getter with CSD Model
 """
 
-from dipy.direction import closest_peak_direction_getter
+from dipy.direction import ClosestPeakDirectionGetter
 
-fod = csd_fit.odf(small_sphere)
-pmf = fod.clip(min=0)
-cp_dg_csd = closest_peak_direction_getter.ClosestPeakDirectionGetter.from_pmf(
-        pmf, max_angle=30., sphere=small_sphere)
-streamlines_cp_csd = list(LocalTracking(cp_dg_csd, classifier, seeds, affine,
-                                        step_size=.5))
+pmf = csd_fit.odf(small_sphere).clip(min=0)
+peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.,
+                                              sphere=small_sphere)
+peak_streamline_generator = LocalTracking(peak_dg, classifier, seeds, affine,
+                                          step_size=.5)
+streamlines = Streamlines(boot_streamline_generator)
 
-
-if fvtk.have_vtk:
-    streamlines_actor = fvtk.line(streamlines_cp_csd,
-                                  line_colors(streamlines_cp_csd))
-
-    # Create the 3d display.
-    r = fvtk.ren()
-    fvtk.add(r, streamlines_actor)
-
-    # Save still images for this static example. Or for interactivity use
-    # fvtk.show
-    fvtk.record(r, n_frames=1, out_path='closest_peak_dg_CSD.png',
-                size=(800, 800))
+renderer.clear()
+renderer.add(actor.line(streamlines, line_colors(streamlines)))
+window.record(renderer, out_path='closest_peak_dg_CSD.png', size=(600, 600))
 
 """
 .. figure:: closest_peak_dg_CSD.png
@@ -141,7 +122,7 @@ We can save the streamlines as a Trackvis file so it can be loaded into other
 software for visualization or further analysis.
 """
 
-save_trk("closest_peak_dg_CSD.trk", streamlines_cp_csd, affine, labels.shape)
+save_trk("closest_peak_dg_CSD.trk", streamlines, affine, labels.shape)
 
 """
 .. [Berman_boot] Berman, J. et al. Probabilistic streamline q-ball
