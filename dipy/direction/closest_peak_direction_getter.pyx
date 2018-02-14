@@ -2,10 +2,9 @@ import numpy as np
 cimport numpy as np
 
 from dipy.direction.peaks import peak_directions, default_sphere
-from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
+from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.local.direction_getter cimport DirectionGetter
-from dipy.tracking.local.interpolation import trilinear_interpolate4d
 
 
 cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,

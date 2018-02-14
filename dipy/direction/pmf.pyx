@@ -74,8 +74,8 @@ cdef class SHCoeffPmfGen(PmfGen):
                 for j in range(len_B):
                     _sum += self.B[i, j] * self.coeff[j]
                 self.pmf[i] = _sum
-                if self.pmf[i] < 0.0:
-                    self.pmf[i] = 0.0
+                #if self.pmf[i] < 0.0:
+                #    self.pmf[i] = 0.0
             return self.pmf
         return None
 
@@ -100,36 +100,30 @@ cdef class BootPmfGen(SHCoeffPmfGen):
                 self.sh_order = model.sh_order
             else:
                 self.sh_order = 4 #  DEFAULT Value
-
-        x, y, z = model.gtab.gradients[model.gtab.b0s_mask == 0].T
+        #self.dwi_mask = np.ones(model.gtab.b0s_mask.shape, dtype=bool)
+        #self.dwi_mask[model.gtab.b0s_mask == 1] = False
+        self.dwi_mask = model.gtab.b0s_mask == 0
+        x, y, z = model.gtab.gradients[self.dwi_mask].T
         r, theta, phi = shm.cart2sphere(x, y, z)
         b_range = (r.max() - r.min()) / r.min()
         if b_range > tol:
             raise ValueError("BootPmfGen only supports single shell data")
         B, m, n = shm.real_sym_sh_basis(self.sh_order, theta, phi)
 
-        self.nbr_b0s = np.sum(model.gtab.b0s_mask == 1)
-        self.nbr_dwi = np.sum(model.gtab.b0s_mask == 0)
-        self.nbr_data = data.shape[3]
-        self.vox_b0s = np.empty(self.nbr_b0s)
-        self.vox_dwi = np.empty(self.nbr_dwi)
-        self.vox_data = np.empty(self.nbr_data)
+        self.vox_data = np.empty(data.shape[3])
         self.model = model
         self.sphere = sphere
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
         self.pmf = np.empty(self.B.shape[0])
-        self.b0s = np.asarray(data[:,:,:,model.gtab.b0s_mask == 1], "float64")
-        self.dwi = np.asarray(data[:,:,:,model.gtab.b0s_mask == 0], "float64")
+        self.data = np.asarray(data, "float64")
 
 
     cdef double[:] get_pmf_c(self, double* point):
         """Produces an ODF from a SH bootstrap sample"""
-        if (trilinear_interpolate4d_c(self.dwi, point, self.vox_dwi) == 0 and
-                trilinear_interpolate4d_c(self.b0s, point, self.vox_b0s) == 0):
-            self.vox_dwi = shm.bootstrap_data_voxel(self.vox_dwi, self.H,
-                                                    self.R)
-            self._set_vox_data()
+        if trilinear_interpolate4d_c(self.data, point, self.vox_data) == 0:
+            self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
+                    self.vox_data[self.dwi_mask], self.H, self.R)
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
             return self.pmf
         return None
@@ -140,22 +134,7 @@ cdef class BootPmfGen(SHCoeffPmfGen):
 
 
     cdef double[:] get_pmf_no_boot_c(self, double* point):
-        if (trilinear_interpolate4d_c(self.dwi, point, self.vox_dwi) == 0 and
-                trilinear_interpolate4d_c(self.b0s, point, self.vox_b0s) == 0):
-            self._set_vox_data()
+        if trilinear_interpolate4d_c(self.data, point, self.vox_data) == 0:
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
             return self.pmf
         return None
-
-
-    cdef int _set_vox_data(self):
-        cdef:
-            size_t i, j
-        j = 0
-        for i in range(self.nbr_data):
-            if self.model.gtab.b0s_mask[i] == 1:
-                self.vox_data[i] = self.vox_b0s[j]
-                j = j + 1
-            else:
-                self.vox_data[i] = self.vox_dwi[i-j]
-        return 0
