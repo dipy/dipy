@@ -531,10 +531,8 @@ def test_closest_peak_deterministic_tracker():
         return x.shape == y.shape and np.allclose(x, y)
 
     if not allclose(streamlines[0], expected[0]):
-        print streamlines[0]
         raise AssertionError()
     if not allclose(streamlines[1], expected[1]):
-        print streamlines[1]
         raise AssertionError()
 
 
