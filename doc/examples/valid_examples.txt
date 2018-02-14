@@ -50,6 +50,7 @@
  tissue_classification.py
  bundle_registration.py
  tracking_tissue_classifier.py
+ tracking_comparison_direction_getters.py
 # piesno.py
  viz_advanced.py
  viz_slice.py

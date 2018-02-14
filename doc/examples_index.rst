@@ -145,7 +145,7 @@ Fiber tracking
 - :ref:`example_tracking_tissue_classifier`
 - :ref:`example_particle_filtering_fiber_tracking`
 - :ref:`example_sfm_tracking`
-
+- :ref:`example_tracking_comparison_direction_getters`
 -------------------------------------
 Fiber tracking evaluation
 -------------------------------------
