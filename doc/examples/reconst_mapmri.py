@@ -420,7 +420,7 @@ References
 .. [Hosseinbor2013] Hosseinbor et al. "Bessel fourier orientation
    reconstruction (bfor): an analytical diffusion propagator reconstruction
    for hybrid diffusion imaging and computation of q-space indices. NeuroImage
-   64, 650–670.
+   64, 650-670.
 
 .. [Fick2016b] Fick et al. "A sensitivity analysis of Q-space indices with
    respect to changes in axonal diameter, dispersion and tissue composition.
