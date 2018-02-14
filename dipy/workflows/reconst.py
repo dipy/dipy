@@ -592,7 +592,7 @@ class ReconstDkiFlow(Workflow):
         .. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,
            and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
            Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
-           Resonance Imaging. MRM 53 (6):1432–40.
+           Resonance Imaging. MRM 53 (6):1432-40.
         """
         io_it = self.get_io_iterator()
 
