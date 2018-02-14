@@ -61,7 +61,7 @@ class MapmriModel(ReconstModel, Cache):
     .. [6] Hosseinbor et al. "Bessel fourier orientation reconstruction
            (bfor): An analytical diffusion propagator reconstruction for hybrid
            diffusion imaging and computation of q-space indices". NeuroImage
-           64, 2013, 650–670.
+           64, 2013, 650-670.
 
     .. [7] Craven et al. "Smoothing Noisy Data with Spline Functions."
            NUMER MATH 31.4 (1978): 377-403.
@@ -734,7 +734,7 @@ class MapmriFit(ReconstFit):
         .. [1] Hosseinbor et al. "Bessel fourier orientation reconstruction
         (bfor): An analytical diffusion propagator reconstruction for hybrid
         diffusion imaging and computation of q-space indices. NeuroImage 64,
-        2013, 650–670.
+        2013, 650-670.
 
         .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."

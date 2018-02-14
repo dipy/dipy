@@ -183,7 +183,7 @@ cdef class ActTissueClassifier(ConstrainedTissueClassifier):
     .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
     "Anatomically-constrained tractography: Improved diffusion MRI
     streamlines tractography through effective use of anatomical
-    information." NeuroImage, 63(3), 1924–1938, 2012.
+    information." NeuroImage, 63(3), 1924-1938, 2012.
     """
 
     def __cinit__(self, include_map, exclude_map):
@@ -245,7 +245,7 @@ cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
     ----------
     .. [1] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
     "Towards quantitative connectivity analysis: reducing tractography biases."
-    NeuroImage, 98, 266–278, 2014.
+    NeuroImage, 98, 266-278, 2014.
     """
 
     def __cinit__(self, include_map, exclude_map, step_size, average_voxel_size):
