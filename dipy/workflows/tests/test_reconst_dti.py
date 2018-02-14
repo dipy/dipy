@@ -8,7 +8,7 @@ import numpy as np
 from nose.tools import assert_equal
 
 from dipy.data import get_data
-from dipy.workflows.reconst import ReconstDtiFlow, ReconstDtiRestoreFlow
+from dipy.workflows.reconst import ReconstDtiFlow
 
 
 def test_reconst_dti_wls():
@@ -98,5 +98,4 @@ def reconst_flow_core(flow, extra_args=[]):
 
 
 if __name__ == '__main__':
-    test_reconst_dti_restore()
     test_reconst_dti_nlls()
