@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import os.path as osp
+import os
 import tempfile
 
 import numpy as np
@@ -59,10 +60,13 @@ def test_read_bvals_bvecs():
     npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
 
     # All possible delimiters should work
-    result = np.array([[32, 45, 54, 54, 54, 55, 55, 34], [32, 45, 54, 54, 54, 55, 55, 34]])
-    bvals = read_bvals_bvecs('dummy.txt', None)
-    assert_array_equal(result, bvals[0])
-
+    bv_file4 = tempfile.NamedTemporaryFile(delete=False)
+    bv_file4.write("66 55 33")
+    bv_file4.close()  # Does not close
+    bvals = read_bvals_bvecs(f.name, None)
+    ans = np.array([66, 55, 33])
+    os.unlink(f.name)
+    assert_array_equal(ans, bvals)
 
 if __name__ == '__main__':
     from numpy.testing import run_module_suite
