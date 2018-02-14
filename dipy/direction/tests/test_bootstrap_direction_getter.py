@@ -13,70 +13,7 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.sims.voxel import single_tensor, multi_tensor
 
 
-from warnings import warn
-import numpy as np
-
-from dipy.reconst import shm
-from dipy.core.geometry import cart2sphere
-from dipy.tracking.local.interpolation import trilinear_interpolate4d
-
-from dipy.data import default_sphere
-
-
 DEFAULT_SH = 4
-
-
-class BootOdfGen2(object):
-
-    def __init__(self, data, model, sphere, sh_order=None, tol=1e-2):
-        if sh_order is None:
-            if hasattr(model, "sh_order"):
-                sh_order = model.sh_order
-            else:
-                sh_order = DEFAULT_SH
-
-        self.where_dwi = shm.lazy_index(~model.gtab.b0s_mask)
-        if not isinstance(self.where_dwi, slice):
-            msg = ("For optimal bootstrap tracking consider reordering the "
-                   "diffusion volumes so that all the b0 volumes are at the "
-                   "beginning")
-            warn(msg)
-        x, y, z = model.gtab.gradients[self.where_dwi].T
-        r, theta, phi = cart2sphere(x, y, z)
-        b_range = (r.max() - r.min()) / r.min()
-        if b_range > tol:
-            raise ValueError("BootOdfGen only supports single shell data")
-
-        B, m, n = shm.real_sym_sh_basis(sh_order, theta, phi)
-        H = shm.hat(B)
-        R = shm.lcr_matrix(H)
-
-        self.data = np.asarray(data, "float64")
-        self.model = model
-        self.sphere = sphere
-        self.H = H
-        self.R = R
-
-    def get_pmf_boot(self, point):
-        """Produces an ODF from a SH bootstrap sample"""
-        single_vox_data = trilinear_interpolate4d(self.data, point)
-
-        non_b0_data = self.where_dwi
-        dwidata = single_vox_data[non_b0_data]
-        bootdata = shm.bootstrap_data_voxel(dwidata, self.H, self.R)
-        print "---", self.H, "---"
-        single_vox_data[non_b0_data] = bootdata
-        fit = self.model.fit(single_vox_data)
-        pmf = fit.odf(self.sphere)
-        return pmf
-
-    def get_pmf(self, point):
-        data = trilinear_interpolate4d(self.data, point)
-        fit = self.model.fit(data)
-        return fit.odf(self.sphere)
-
-
-
 
 
 def test_bdg_initial_direction():
@@ -98,30 +35,21 @@ def test_bdg_initial_direction():
     initial_direction = boot_dg.initial_direction(np.zeros(3))
     npt.assert_equal(len(initial_direction), 1)
     npt.assert_allclose(initial_direction[0], [1, 0, 0], atol=0.1)
-    bog2 = BootOdfGen2(voxel, dti_model, hsph_updated)
-    bog2.get_pmf_boot(np.zeros(3))
+
     # test that we get multiple directions when we have a multi-tensor
     mevals = np.array([[1.5, 0.4, 0.4], [1.5, 0.4, 0.4]]) * 1e-3
     fracs = [60, 40]
     voxel, primary_evecs = multi_tensor(gtab, mevals, fractions=fracs,
                                         snr=None)
     voxel = voxel.reshape([1, 1, 1, -1])
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response=(np.array([0.0015, 0.0004, 0.0004]), 1),
+    response = (np.array([0.0015, 0.0004, 0.0004]), 1)
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response=response,
                                                 sh_order=4)
     boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30)
     initial_direction = boot_dg.initial_direction(np.zeros(3))
-    print primary_evecs
-    print initial_direction
-
-
-    bog2 = BootOdfGen2(voxel, csd_model, hsph_updated)
-    bog2.get_pmf_boot(np.zeros(3))
-
 
     npt.assert_equal(len(initial_direction), 2)
     npt.assert_allclose(initial_direction, primary_evecs, atol=0.1)
-
-
 
 
 def test_bdg_get_direction():
@@ -179,8 +107,7 @@ def test_bdg_model():
     data = np.tile(voxel, (3, 3, 3, 1))
     tensor_model = dti.TensorModel(gtab)
 
-    boot_pmf_gen = BootPmfGen(data, model=tensor_model,
-                              sphere=hsph_updated)
+    boot_pmf_gen = BootPmfGen(data, model=tensor_model, sphere=hsph_updated)
     boot_dg_pmf = boot_pmf_gen.get_pmf_no_boot(np.array([1., 1., 1.]))
 
     model_pmf = tensor_model.fit(voxel).odf(hsph_updated)
