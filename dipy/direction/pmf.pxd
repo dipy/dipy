@@ -25,20 +25,14 @@ cdef class SHCoeffPmfGen(PmfGen):
 cdef class BootPmfGen(SHCoeffPmfGen):
     cdef:
         int sh_order
-        int nbr_b0s
-        int nbr_dwi
-        int nbr_data
         object model
         object H
-        np.ndarray vox_data
-        np.ndarray vox_b0s
-        np.ndarray vox_dwi
+        np.ndarray vox_data        
+        np.ndarray dwi_mask
         double[:, :] R
-        double[:, :, :, :] b0s
-        double[:, :, :, :] dwi
+        double[:, :, :, :] data
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point)
     cdef double[:] get_pmf_no_boot_c(self, double* point)
-    cdef int _set_vox_data(self)
 
     pass
