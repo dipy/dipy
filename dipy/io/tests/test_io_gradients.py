@@ -66,7 +66,7 @@ def test_read_bvals_bvecs():
     bvals = read_bvals_bvecs(bv_file4.name, None)
     ans = np.array([66, 55, 33])
     os.unlink(bv_file4.name)
-    assert_array_equal(ans, bvals)
+    npt.assert_array_equal(ans, bvals)
 
 if __name__ == '__main__':
     from numpy.testing import run_module_suite
