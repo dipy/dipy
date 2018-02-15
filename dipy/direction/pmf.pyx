@@ -15,8 +15,14 @@ from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
 
 cdef class PmfGen:
 
+    def __init__(self,
+                 double[:, :, :, :] data):
+        self.data = np.asarray(data, "float64")
+
+
     cpdef double[:] get_pmf(self, double[::1] point):
         return self.get_pmf_c(&point[0])
+
 
     cdef double[:] get_pmf_c(self, double* point):
         pass
@@ -24,47 +30,46 @@ cdef class PmfGen:
 
 cdef class SimplePmfGen(PmfGen):
 
-    def __init__(self, double[:, :, :, :] pmf_array):
-        PmfGen.__init__(self)
-
+    def __init__(self,
+                 double[:, :, :, :] pmf_array):
+        PmfGen.__init__(self, pmf_array)
+        self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
-            raise ValueError("pmf should not have negative values")
-        self.pmf_array = pmf_array
+            raise ValueError("pmf should not have negative values.")
 
-        self.out = np.empty(pmf_array.shape[3])
 
     cdef double[:] get_pmf_c(self, double* point):
         cdef:
-            size_t len_pmf = self.out.shape[0]
+            size_t len_pmf = self.pmf.shape[0]
 
-        if trilinear_interpolate4d_c(self.pmf_array, point, self.out) != 0:
+        if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
             for i in range(len_pmf):
-                self.out[i] = 0.0
+                self.pmf[i] = 0.0
 
-        return self.out
+        return self.pmf
 
 
 cdef class SHCoeffPmfGen(PmfGen):
 
     def __init__(self,
-                 double[:, :, :, :] shcoeff,
+                 double[:, :, :, :] shcoeff_array,
                  object sphere,
                  object basis_type):
         cdef:
             int sh_order
 
-        PmfGen.__init__(self)
+        PmfGen.__init__(self, shcoeff_array)
 
-        self.shcoeff = shcoeff
         self.sphere = sphere
-        sh_order = shm.order_from_ncoef(shcoeff.shape[3])
+        sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
         try:
             basis = shm.sph_harm_lookup[basis_type]
         except KeyError:
             raise ValueError("%s is not a known basis type." % basis_type)
-        self.B, m, n = basis(sh_order, sphere.theta, sphere.phi)
-        self.coeff = np.empty(self.shcoeff.shape[3])
+        self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi)
+        self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
+
 
     cdef double[:] get_pmf_c(self, double* point):
         cdef:
@@ -73,7 +78,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             size_t len_B = self.B.shape[1]
             double _sum
 
-        if trilinear_interpolate4d_c(self.shcoeff, point, self.coeff) != 0:
+        if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
             for i in range(len_pmf):
                 self.pmf[i] = 0.0
         else:
@@ -86,10 +91,10 @@ cdef class SHCoeffPmfGen(PmfGen):
         return self.pmf
 
 
-cdef class BootPmfGen(SHCoeffPmfGen):
+cdef class BootPmfGen(PmfGen):
 
     def __init__(self,
-                 np.ndarray data,
+                 double[:, :, :, :] dwi_array,
                  object model,
                  object sphere,
                  int sh_order=0,
@@ -100,6 +105,7 @@ cdef class BootPmfGen(SHCoeffPmfGen):
             double[:] theta, phi
             double[:, :] B
 
+        PmfGen.__init__(self, dwi_array)
         self.sh_order = sh_order
         if self.sh_order == 0:
             if hasattr(model, "sh_order"):
@@ -113,15 +119,14 @@ cdef class BootPmfGen(SHCoeffPmfGen):
         b_range = (r.max() - r.min()) / r.min()
         if b_range > tol:
             raise ValueError("BootPmfGen only supports single shell data")
-        B, m, n = shm.real_sym_sh_basis(self.sh_order, theta, phi)
-
-        self.vox_data = np.empty(data.shape[3])
-        self.model = model
-        self.sphere = sphere
+        B, _, _ = shm.real_sym_sh_basis(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
-        self.pmf = np.empty(self.B.shape[0])
-        self.data = np.asarray(data, "float64")
+        self.vox_data = np.empty(dwi_array.shape[3])
+
+        self.model = model
+        self.sphere = sphere
+        self.pmf = np.empty(len(sphere.theta))
 
 
     cdef double[:] get_pmf_c(self, double* point):
@@ -149,7 +154,7 @@ cdef class BootPmfGen(SHCoeffPmfGen):
         cdef:
             size_t len_pmf = self.pmf.shape[0]
             size_t i
-            
+
         if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
             for i in range(len_pmf):
                 self.pmf[i] = 0.0
