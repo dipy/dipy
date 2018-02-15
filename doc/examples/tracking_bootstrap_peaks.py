@@ -18,6 +18,8 @@ from dipy.io.trackvis import save_trk
 from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
+renderer = window.Renderer()
+
 """
 Now we import the CSD model
 """
