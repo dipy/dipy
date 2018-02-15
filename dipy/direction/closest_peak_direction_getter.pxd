@@ -17,7 +17,12 @@ cdef class BaseDirectionGetter(DirectionGetter):
         double cos_similarity
 
     cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
-        self, double[::1] point)
+        self,
+        double[::1] point)
+
+    cdef _get_pmf(
+        self,
+        double* point)
 
     cpdef int get_direction(
         self,
@@ -25,32 +30,16 @@ cdef class BaseDirectionGetter(DirectionGetter):
         double[::1] direction) except -1
 
     cdef int get_direction_c(
-        self, double* point, double* direction)
+        self,
+        double* point,
+        double* direction)
 
 
 cdef class PmfGenDirectionGetter(BaseDirectionGetter):
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
-        self, double[::1] point)
-
-    cpdef int get_direction(
-        self,
-        double[::1] point,
-        double[::1] direction) except -1
-
-    cdef int get_direction_c(
-        self, double* point, double* direction)
+    pass
 
 
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
-        self, double[::1] point)
-
-    cpdef int get_direction(
-        self,
-        double[::1] point,
-        double[::1] direction) except -1
-
-    cdef int get_direction_c(
-        self, double* point, double* direction)
+    pass

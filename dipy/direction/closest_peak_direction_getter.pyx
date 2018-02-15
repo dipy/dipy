@@ -26,18 +26,15 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
 
     Returns
     -------
-    direction : array or None
-        If prev_step is None, returns peak_dirs. Otherwise returns the
-        closest direction to prev_step. If no directions are close enough to
-        prev_step, returns None
+    0 : if ``direction`` is updated
+    1 : if no new direction is founded
     """
     cdef:
-        size_t _len, closest_peak_i, i
-        double _dot, closest_peak_dot
-
-    _len = len(peak_dirs)
-    closest_peak_i=-1
-    closest_peak_dot=0
+        size_t _len=len(peak_dirs)
+        size_t i
+        int closest_peak_i=-1
+        double _dot
+        double closest_peak_dot=0
 
     for i in range(_len):
         _dot = (peak_dirs[i,0] * direction[0]
@@ -75,13 +72,12 @@ cdef class BaseDirectionGetter(DirectionGetter):
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
 
-        Blob can be any function defined on ``self.sphere``, ie an ODF, PMF,
-        FOD.
+        Blob can be any function defined on ``self.sphere``, i.e. an ODF.
         """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
-            self, double[::1] point):
+    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+                                                           double[::1] point):
         """Returns best directions at seed location to start tracking.
 
         Parameters
@@ -96,8 +92,20 @@ cdef class BaseDirectionGetter(DirectionGetter):
             directions should be unique.
 
         """
-        cdef double[:] pmf = self.pmf_gen.get_pmf(point)
+        cdef double[:] pmf = self._get_pmf(&point[0])
         return self._get_peak_directions(pmf)
+
+    cdef _get_pmf(self, double* point):
+        cdef:
+            size_t _len, i
+            double[:] pmf
+
+        pmf = self.pmf_gen.get_pmf_c(point)
+        _len = pmf.shape[0]
+        for i in range(_len):
+            if pmf[i] < self.pmf_threshold:
+                pmf[i] = 0.0
+        return pmf
 
 
 cdef class PmfGenDirectionGetter(BaseDirectionGetter):
@@ -132,14 +140,14 @@ cdef class PmfGenDirectionGetter(BaseDirectionGetter):
         dipy.direction.peaks.peak_directions
 
         """
-        pmf = np.asarray(pmf, dtype=float)
         if pmf.ndim != 4:
             raise ValueError("pmf should be a 4d array.")
         if pmf.shape[3] != len(sphere.theta):
             msg = ("The last dimension of pmf should match the number of "
                    "points in sphere.")
             raise ValueError(msg)
-        pmf_gen = SimplePmfGen(pmf)
+
+        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float))
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
@@ -180,26 +188,29 @@ cdef class PmfGenDirectionGetter(BaseDirectionGetter):
         dipy.direction.peaks.peak_directions
 
         """
-        pmf_gen = SHCoeffPmfGen(shcoeff, sphere, basis_type)
+        pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
+                                basis_type)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
 
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
     """A direction getter that returns the closest odf peak to previous tracking
     direction.
-    """
+        """
 
     cdef int get_direction_c(self, double* point, double* direction):
+        """
+        Returns
+        -------
+        0 : if ``direction`` is updated
+        1 : if no new direction is founded
+        """
         cdef:
-            size_t _len
-            int newdir
             double[:] pmf
+            np.ndarray[np.float_t, ndim=2] peaks
 
-        pmf = self.pmf_gen.get_pmf_c(point)
-        _len = pmf.shape[0]
-        for i in range(_len):
-            if pmf[i] < self.pmf_threshold:
-                pmf[i] = 0.0
+        pmf = self._get_pmf(point)
+
         peaks = self._get_peak_directions(pmf)
         if len(peaks) == 0:
             return 1

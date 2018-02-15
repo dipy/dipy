@@ -1,4 +1,4 @@
-
+cimport numpy as np
 import numpy as np
 
 from dipy.data import default_sphere
@@ -49,25 +49,30 @@ cdef class BootDirectionGetter(BaseDirectionGetter):
             Angular threshold for excluding ODF peaks.
 
         """
-        boot_gen = BootPmfGen(data, model, sphere, sh_order=sh_order)
+        boot_gen = BootPmfGen(np.asarray(data, dtype=float), model, sphere,
+                              sh_order=sh_order)
         return klass(boot_gen, max_angle, sphere, max_attempts, **kwargs)
 
     cdef int get_direction_c(self, double* point, double* direction):
         """Attempt direction getting on a few bootstrap samples.
+
+        Returns
+        -------
+        status : int
+            Returns 0 `direction` was updated with a new tracking direction, or
+            1 otherwise.
         """
         cdef:
-            size_t _len
+            size_t _len, i
             int count
-            double[:] pmf
+            double[:] pmf,
+            np.ndarray[np.float_t, ndim=2] peaks
 
         count = 0
         while count < self.max_attempts:
             count += 1
-            pmf = self.pmf_gen.get_pmf_c(point)
+            pmf = self._get_pmf(point)
             _len = pmf.shape[0]
-            for i in range(_len):
-                if pmf[i] < self.pmf_threshold:
-                    pmf[i] = 0.0
 
             peaks = self._get_peak_directions(pmf)
             if len(peaks) > 0:
