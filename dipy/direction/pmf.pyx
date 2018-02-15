@@ -17,7 +17,7 @@ cdef class PmfGen:
 
     def __init__(self,
                  double[:, :, :, :] data):
-        self.data = np.asarray(data, "float64")
+        self.data = np.asarray(data,  dtype=float)
 
 
     cpdef double[:] get_pmf(self, double[::1] point):

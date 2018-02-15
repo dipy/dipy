@@ -98,35 +98,27 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             size_t i, idx, _len
-            double[:] newdir, pmf, cdf
+            double[:] newdir, pmf
             double last_cdf, random_sample
             np.uint8_t[:] bool_array
 
-        # point and direction are passed in as cython memory views
-        pmf = self.pmf_gen.get_pmf_c(point)
-        if pmf is None:
-            return 1
-
+        pmf = self._get_pmf(point)
         _len = pmf.shape[0]
-        for i in range(_len):
-            if pmf[i] < self.pmf_threshold:
-                pmf[i] = 0.0
 
         bool_array = self._adj_matrix[
             (direction[0], direction[1], direction[2])]
 
-        cdf = pmf
         for i in range(_len):
             if bool_array[i] == 0:
-                cdf[i] = 0.0
-        cumsum(&cdf[0], &cdf[0], _len)
+                pmf[i] = 0.0
+        cumsum(&pmf[0], &pmf[0], _len)
+        last_cdf = pmf[_len - 1]
 
-        last_cdf = cdf[_len - 1]
         if last_cdf == 0:
             return 1
 
         random_sample = random() * last_cdf
-        idx = where_to_insert(&cdf[0], random_sample, _len)
+        idx = where_to_insert(&pmf[0], random_sample, _len)
 
         newdir = self.vertices[idx, :]
         # Update direction and return 0 for error
@@ -170,26 +162,22 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef:
             size_t _len, max_idx
-            double[:] newdir, pmf, cdf
+            double[:] newdir, pmf
             double max_value
+            np.uint8_t[:] bool_array
 
-        # point and direction are passed in as cython memory views
-        pmf = self.pmf_gen.get_pmf_c(point)
-        if pmf is None:
-            return 1
-
+        pmf = self._get_pmf(point)
         _len = pmf.shape[0]
-        for i in range(_len):
-            if pmf[i] < self.pmf_threshold:
-                pmf[i] = 0.0
 
-        cdf = self._adj_matrix[(direction[0], direction[1], direction[2])] * pmf
+        bool_array = self._adj_matrix[
+            (direction[0], direction[1], direction[2])]
+
         max_idx = 0
         max_value = 0.0
         for i in range(_len):
-            if cdf[i] > max_value:
+            if bool_array[i] > 0 and pmf[i] > max_value:
                 max_idx = i
-                max_value = cdf[i]
+                max_value = pmf[i]
 
         if pmf[max_idx] == 0:
             return 1
