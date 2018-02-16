@@ -3,18 +3,22 @@ import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 
+from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.data import get_data, get_sphere
-from dipy.direction import (ClosestPeakDirectionGetter,
+from dipy.direction import (BootDirectionGetter,
+                            ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking.local import (ActTissueClassifier, BinaryTissueClassifier,
                                  LocalTracking, ParticleFilteringTracking,
                                  ThresholdTissueClassifier)
-from dipy.tracking.local.interpolation import trilinear_interpolate4d
 from dipy.tracking.local.localtracking import TissueTypes
 from dipy.tracking.utils import seeds_from_mask
+from dipy.tracking.streamline import Streamlines
+from dipy.sims.voxel import single_tensor, multi_tensor
 
 
 def test_stop_conditions():
@@ -50,21 +54,23 @@ def test_stop_conditions():
     tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
-    streamlines_not_all = LocalTracking(direction_getter=dg,
-                                        tissue_classifier=tc,
-                                        seeds=seeds,
-                                        affine=np.eye(4),
-                                        step_size=1.,
-                                        return_all=False)
-    streamlines_all = LocalTracking(direction_getter=dg,
-                                    tissue_classifier=tc,
-                                    seeds=seeds,
-                                    affine=np.eye(4),
-                                    step_size=1.,
-                                    return_all=True)
+    # valid streamlines only
+    streamlines_generator = LocalTracking(direction_getter=dg,
+                                          tissue_classifier=tc,
+                                          seeds=seeds,
+                                          affine=np.eye(4),
+                                          step_size=1.,
+                                          return_all=False)
+    streamlines_not_all = iter(streamlines_generator)
 
-    streamlines_not_all = iter(streamlines_not_all)  # valid streamlines only
-    streamlines_all = iter(streamlines_all)  # all streamlines
+    # all streamlines
+    streamlines_all_generator = LocalTracking(direction_getter=dg,
+                                              tissue_classifier=tc,
+                                              seeds=seeds,
+                                              affine=np.eye(4),
+                                              step_size=1.,
+                                              return_all=True)
+    streamlines_all = iter(streamlines_all_generator)
 
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
     y = 0
@@ -140,50 +146,6 @@ def test_stop_conditions():
     npt.assert_equal(sl[0], seeds[y])
     npt.assert_equal(sl[-1], seeds[y])
     npt.assert_equal(len(sl), 1)
-
-
-def test_trilinear_interpolate():
-
-    a, b, c = np.random.random(3)
-
-    def linear_function(x, y, z):
-        return a * x + b * y + c * z
-
-    N = 6
-    x, y, z = np.mgrid[:N, :N, :N]
-    data = np.empty((N, N, N, 2))
-    data[..., 0] = linear_function(x, y, z)
-    data[..., 1] = 99.
-
-    # Use a point not near the edges
-    point = np.array([2.1, 4.8, 3.3])
-    out = trilinear_interpolate4d(data, point)
-    expected = [linear_function(*point), 99.]
-    npt.assert_array_almost_equal(out, expected)
-
-    # Pass in out ourselves
-    out[:] = -1
-    trilinear_interpolate4d(data, point, out)
-    npt.assert_array_almost_equal(out, expected)
-
-    # use a point close to an edge
-    point = np.array([-.1, -.1, -.1])
-    expected = [0., 99.]
-    out = trilinear_interpolate4d(data, point)
-    npt.assert_array_almost_equal(out, expected)
-
-    # different edge
-    point = np.array([2.4, 5.4, 3.3])
-    # On the edge 5.4 get treated as the max y value, 5.
-    expected = [linear_function(point[0], 5., point[2]), 99.]
-    out = trilinear_interpolate4d(data, point)
-    npt.assert_array_almost_equal(out, expected)
-
-    # Test index errors
-    point = np.array([2.4, 5.5, 3.3])
-    npt.assert_raises(IndexError, trilinear_interpolate4d, data, point)
-    point = np.array([2.4, -1., 3.3])
-    npt.assert_raises(IndexError, trilinear_interpolate4d, data, point)
 
 
 def test_probabilistic_odf_weighted_tracker():
@@ -263,14 +225,15 @@ def test_probabilistic_odf_weighted_tracker():
     seeds = [[0, 0, 0], [5, 5, 5]]
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
                                 return_all=True)
-    streamlines = list(streamlines)
+    streamlines = Streamlines(streamlines)
     npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
     npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
 
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(mask.shape), density=2)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.5, return_all=True)
-    streamlines = list(streamlines)
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 0.5,
+                                         return_all=True)
+    streamlines = Streamlines(streamline_generator)
     for s in streamlines:
         npt.assert_(np.all((s + 0.5).astype(int) >= 0))
         npt.assert_(np.all((s + 0.5).astype(int) < mask.shape))
@@ -319,15 +282,16 @@ def test_particle_filtering_tractography():
 
     # Test that PFT recover equal or more streamlines than localTracking
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
-    local_streamlines = LocalTracking(dg, tc, seeds, np.eye(4), step_size,
-                                      max_cross=1, return_all=False)
-    local_streamlines = list(local_streamlines)
-    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+    local_streamlines_generator = LocalTracking(dg, tc, seeds, np.eye(4),
                                                 step_size, max_cross=1,
-                                                return_all=False,
-                                                pft_back_tracking_dist=1,
-                                                pft_front_tracking_dist=0.5)
-    pft_streamlines = list(pft_streamlines)
+                                                return_all=False)
+    local_streamlines = Streamlines(local_streamlines_generator)
+
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=False,
+        pft_back_tracking_dist=1, pft_front_tracking_dist=0.5)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+
     npt.assert_(np.array([len(pft_streamlines) > 0]))
     npt.assert_(np.array([len(pft_streamlines) >= len(local_streamlines)]))
 
@@ -338,14 +302,14 @@ def test_particle_filtering_tractography():
                                                     return_all=True, maxlen=l)
         for s in pft_streamlines:
             for i in range(len(s) - 1):
-                    npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
-                                            step_size)
+                npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
+                                        step_size)
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), density=1)
-    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                step_size, max_cross=1,
-                                                return_all=True)
-    pft_streamlines = list(pft_streamlines)
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+
     for s in pft_streamlines:
         npt.assert_(np.all((s + 0.5).astype(int) >= 0))
         npt.assert_(np.all((s + 0.5).astype(int) < simple_wm.shape))
@@ -356,10 +320,10 @@ def test_particle_filtering_tractography():
 
     # Test non WM seed position
     seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
-    pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                step_size, max_cross=1,
-                                                return_all=True)
-    pft_streamlines = list(pft_streamlines)
+    pft_streamlines_generator = ParticleFilteringTracking(
+        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
+    pft_streamlines = Streamlines(pft_streamlines_generator)
+
     npt.assert_equal(len(pft_streamlines[0]), 3)  # INVALIDPOINT
     npt.assert_equal(len(pft_streamlines[1]), 3)  # ENDPOINT
     npt.assert_equal(len(pft_streamlines[2]), 1)  # OUTSIDEIMAGE
@@ -409,6 +373,7 @@ def test_particle_filtering_tractography():
         ValueError,
         lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
                                           particle_count=-1))
+
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
@@ -484,8 +449,74 @@ def test_maximum_deterministic_tracker():
         npt.assert_(np.allclose(sl, expected[2]))
 
 
-def test_closest_peak_deterministic_tracker():
-    """This tests that the Maximum Deterministic Direction Getter plays nice
+def test_bootstap_peak_tracker():
+    """This tests that the Bootstrat Peak Direction Getter plays nice
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+    sphere = get_sphere('repulsion100')
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+    simple_image = simple_image[..., None]
+
+    bvecs = sphere.vertices
+    bvals = np.ones(len(bvecs)) * 1000
+    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
+    bvals = np.insert(bvals, 0, 0)
+    gtab = gradient_table(bvals, bvecs)
+    angles = [(90, 90), (90, 0)]
+    fracs = [50, 50]
+    mevals = np.array([[1.5, 0.4, 0.4], [1.5, 0.4, 0.4]]) * 1e-3
+    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+              np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])]
+    voxel1 = single_tensor(gtab, 1, mevals[0], mevecs[0], snr=None)
+    voxel2 = single_tensor(gtab, 1, mevals[0], mevecs[1], snr=None)
+    voxel3, _ = multi_tensor(gtab, mevals, fractions=fracs, angles=angles,
+                             snr=None)
+    data = np.tile(voxel3, [5, 6, 1, 1])
+    data[simple_image == 1] = voxel1
+    data[simple_image == 2] = voxel2
+
+    response = (np.array(mevals[1]), 1)
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+
+    seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
+
+    tc = BinaryTissueClassifier((simple_image > 0).astype(float))
+    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60)
+
+    streamlines_generator = LocalTracking(boot_dg, tc, seeds, np.eye(4), 1.)
+    streamlines = Streamlines(streamlines_generator)
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 5., 0.],
+                          [2., 4., 0.],
+                          [2., 3., 0.],
+                          [2., 2., 0.],
+                          [2., 1., 0.],
+                          [2., 0., 0.],
+                          ])]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
+
+    if not allclose(streamlines[0], expected[0]):
+        raise AssertionError()
+    if not allclose(streamlines[1], expected[1]):
+        raise AssertionError()
+
+
+def test_closest_peak_tracker():
+    """This tests that the Closest Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -513,7 +544,7 @@ def test_closest_peak_deterministic_tracker():
 
     dg = ClosestPeakDirectionGetter.from_pmf(pmf, 90, sphere,
                                              pmf_threshold=0.1)
-    streamlines = list(LocalTracking(dg, tc, seeds, np.eye(4), 1.))
+    streamlines = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4), 1.))
 
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
