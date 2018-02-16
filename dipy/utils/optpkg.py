@@ -15,7 +15,7 @@ else:
 from dipy.utils.tripwire import TripWire
 
 if have_pytest:
-    class OptionalImportError(ImportError, pytest.skip):
+    class OptionalImportError(ImportError):
         pass
 else:
     class OptionalImportError(ImportError):
