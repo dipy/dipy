@@ -10,7 +10,7 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
     ----------
     fname : str
         output trk filename
-    streamlines : list of 2D arrays or generator
+    streamlines : list of 2D arrays, generator or ArraySequence
         Each 2D array represents a sequence of 3D points (points, 3).
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.

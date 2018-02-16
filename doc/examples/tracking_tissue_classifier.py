@@ -125,10 +125,10 @@ save_trk("deterministic_threshold_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines_generator = Streamlines(all_streamlines_threshold_classifier)
+streamlines = Streamlines(all_streamlines_threshold_classifier)
 
 window.clear(ren)
-ren.add(actor.line(streamlines_generator, line_colors(streamlines_generator)))
+ren.add(actor.line(streamlines, line_colors(streamlines)))
 window.record(ren, out_path='all_streamlines_threshold_classifier.png',
               size=(600, 600))
 if interactive:
@@ -194,9 +194,9 @@ save_trk("deterministic_binary_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines_generator = Streamlines(all_streamlines_binary_classifier)
+streamlines = Streamlines(all_streamlines_binary_classifier)
 window.clear(ren)
-ren.add(actor.line(streamlines_generator, line_colors(streamlines_generator)))
+ren.add(actor.line(streamlines, line_colors(streamlines)))
 window.record(ren, out_path='all_streamlines_binary_classifier.png',
               size=(600, 600))
 if interactive:
@@ -283,10 +283,10 @@ save_trk("deterministic_act_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines_generator = Streamlines(all_streamlines_act_classifier)
+streamlines = Streamlines(all_streamlines_act_classifier)
 
 window.clear(ren)
-ren.add(actor.line(streamlines_generator, line_colors(streamlines_generator)))
+ren.add(actor.line(streamlines, line_colors(streamlines)))
 window.record(ren, out_path='all_streamlines_act_classifier.png',
               size=(600, 600))
 if interactive:
@@ -311,10 +311,10 @@ save_trk("deterministic_act_classifier_valid.trk",
          affine,
          labels.shape)
 
-streamlines_generator = Streamlines(valid_streamlines_act_classifier)
+streamlines = Streamlines(valid_streamlines_act_classifier)
 
 window.clear(ren)
-ren.add(actor.line(streamlines_generator, line_colors(streamlines_generator)))
+ren.add(actor.line(streamlines, line_colors(streamlines)))
 window.record(ren, out_path='valid_streamlines_act_classifier.png',
               size=(600, 600))
 if interactive:
