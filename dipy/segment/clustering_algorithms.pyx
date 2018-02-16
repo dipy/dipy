@@ -58,7 +58,8 @@ def peek(iterable):
     return first, iterator
 
 
-def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clusters=BIGGEST_INT, ordering=None):
+def quickbundles(streamlines, Metric metric, double threshold,
+                 long max_nb_clusters=BIGGEST_INT, ordering=None):
     """ Clusters streamlines using QuickBundles.
 
     Parameters
@@ -119,7 +120,7 @@ def quickbundles(streamlines, Metric metric, double threshold, long max_nb_clust
 
 
 def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
-    """ Clusters streamlines using QuickBundles.
+    """ Clusters streamlines using QuickBundlesX.
 
     Parameters
     ----------
@@ -138,7 +139,20 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     -------
     `QuickBundlesX` object
         Result of the clustering.
+ 
 
+    References
+    ----------
+       
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential 
+                    clustering of millions of streamlines in multiple
+                    levels of detail at record execution time. Proceedings
+                    of the, International Society of Magnetic Resonance 
+                    in Medicine (ISMRM). Singapore, 4187, 2016.
+
+     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
     """
     if ordering is None:
         ordering = xrange(len(streamlines))
