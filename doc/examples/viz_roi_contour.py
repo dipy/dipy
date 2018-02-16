@@ -82,8 +82,9 @@ ren.add(seedroi_actor)
 If you uncomment the following line, the rendering will pop up in an
 interactive window.
 """
-
-window.show(ren)
+interactive = False
+if interactive:
+    window.show(ren)
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
