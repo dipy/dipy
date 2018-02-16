@@ -127,7 +127,6 @@ def test_3D_points():
     thresholds = [4, 2, 1]
     qbx_class = QuickBundlesX(thresholds)
     qbx = qbx_class.cluster(points)
-    print qbx
 
 
 def test_with_simulated_bundles():
@@ -145,7 +144,6 @@ def test_with_simulated_bundles():
     thresholds = [10, 3, 1]
     qbx_class = QuickBundlesX(thresholds)
     qbx = qbx_class.cluster(streamlines)
-    print qbx
 
     renderer.clear()
 
@@ -176,7 +174,6 @@ def test_with_simulated_bundles2():
 
     thresholds = [10, 2, 1]
     qbx_class = QuickBundlesX(thresholds)
-    print "Adding streamlines..."
     qbx = qbx_class.cluster(streamlines)
 
     renderer.clear()
@@ -240,7 +237,6 @@ def color_tree(tree, bg=(1, 1, 1)):
 def test_show_qbx_tree():
     filename = "/home/marc/research/dat/streamlines/MPI_Camille/myBrain.trk"
     import nibabel as nib
-    print "Loading streamlines..."
 
     import os
     tmp_filename = "/tmp/streamlines.npz"
@@ -253,7 +249,7 @@ def test_show_qbx_tree():
     streamlines = streamlines[::10].copy()
     streamlines._data -= np.mean(streamlines._data, axis=0)
 
-    print "Displaying {} streamlines...".format(len(streamlines))
+    print("Displaying {} streamlines...".format(len(streamlines)))
     #from dipy.viz import actor, window
     #renderer = window.Renderer()
     #bundle_actor = actor.line(streamlines)
@@ -262,10 +258,10 @@ def test_show_qbx_tree():
 
     thresholds = [40, 30, 25]#, 20, 15]
     qbx_class = QuickBundlesX(thresholds)
-    print "Clustering {} streamlines ({})...".format(len(streamlines), thresholds)
+    print("Clustering {} streamlines ({})...".format(len(streamlines), thresholds))
     qbx = qbx_class.cluster(streamlines)
 
-    print "Displaying clusters graph..."
+    print("Displaying clusters graph...")
     tree = qbx.get_tree_cluster_map()
     tree.refdata = streamlines
     color_tree(tree)
@@ -276,7 +272,6 @@ def test_show_qbx_tree():
 def test_show_qbx():
     filename = "/home/marc/research/dat/streamlines/MPI_Camille/myBrain.trk"
     import nibabel as nib
-    print "Loading streamlines..."
 
     import os
     tmp_filename = "/tmp/streamlines.npz"
@@ -308,21 +303,21 @@ def test_show_qbx():
 
     thresholds = [40, 30, 25]#, 20, 15]
     qbx_class = QuickBundlesX(thresholds)
-    print "Clustering {} streamlines ({})...".format(len(streamlines), thresholds)
+    print("Clustering {} streamlines ({})...".format(len(streamlines), thresholds))
     qbx = qbx_class.cluster(streamlines)
 
     clusters = qbx.get_clusters(len(thresholds))
     clusters.refdata = streamlines
 
     from dipy.viz.clustering import show_clusters
-    print "Displaying {} clusters...".format(len(clusters))
+    print("Displaying {} clusters...".format(len(clusters)))
 
     tree = qbx.get_tree_cluster_map()
     tree.refdata = streamlines
     color_tree(tree)
 
     for level in range(1, len(thresholds) + 1):
-        print level, thresholds[level-1]
+        print(level, thresholds[level-1])
         clusters = tree.get_clusters(level)
         clusters.refdata = streamlines
         show_clusters(clusters)
@@ -332,4 +327,5 @@ if __name__ == '__main__':
     #test_with_simulated_bundles2()
     #test_show_qbx_tree()
     #test_show_qbx()
-    test_3D_segments()
+    #test_3D_segments()
+    
