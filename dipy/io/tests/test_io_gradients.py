@@ -60,12 +60,10 @@ def test_read_bvals_bvecs():
     npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
 
     # All possible delimiters should work
-    bv_file4 = tempfile.NamedTemporaryFile(mode='wt', delete=False)
-    bv_file4.write("66 55 33")
-    bv_file4.close()  # Does not close
-    bvals = read_bvals_bvecs(bv_file4.name, None)
-    ans = np.array([66, 55, 33])
-    os.unlink(bv_file4.name)
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file4:
+        bv_file4.write("66 55 33")
+        bvals, _ = read_bvals_bvecs(bv_file4.name, None)
+    ans = np.array([66., 55., 33.])
     npt.assert_array_equal(ans, bvals)
 
 if __name__ == '__main__':
