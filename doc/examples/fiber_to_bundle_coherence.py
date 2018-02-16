@@ -140,11 +140,11 @@ direction getter along with the classifier and seeds as input.
 # Perform tracking using Local Tracking
 from dipy.tracking.local import LocalTracking
 
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines.
 from dipy.tracking.streamline import Streamlines
-streamlines = Streamlines(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 """
 In order to select only the fibers that enter into the LGN, another ROI is
@@ -160,11 +160,8 @@ mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8,
                                   affine=affine)
-sfil = []
-for i in range(len(streamlines)):
-    if filtered_fibers2[i]:
-        sfil.append(streamlines[i])
-streamlines = Streamlines(sfil)
+
+streamlines = Streamlines(filtered_fibers2)
 
 """
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
