@@ -492,11 +492,11 @@ cdef class ClustersCentroid(Clusters):
         id_cluster : int
             Index of the new cluster.
         """
-        self.centroids = <Centroid*> realloc(self.centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        self.centroids = <Centroid*> realloc(self.centroids, (self._nb_clusters+1) * sizeof(Centroid))
         # Zero-initialize the Centroid structure
         memset(&self.centroids[self._nb_clusters], 0, sizeof(Centroid))
 
-        self._updated_centroids = <Centroid*> realloc(self._updated_centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        self._updated_centroids = <Centroid*> realloc(self._updated_centroids, (self._nb_clusters+1) * sizeof(Centroid))
         # Zero-initialize the new Centroid structure
         memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
