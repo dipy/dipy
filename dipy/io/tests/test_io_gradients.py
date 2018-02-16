@@ -62,9 +62,38 @@ def test_read_bvals_bvecs():
     # All possible delimiters should work
     with open(tempfile.NamedTemporaryFile, 'wt') as bv_file4:
         bv_file4.write("66 55 33")
-        bvals, _ = read_bvals_bvecs(bv_file4.name, None)
+        bvals_1, _ = read_bvals_bvecs(bv_file4.name, None)
+
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file5:
+        bv_file4.write("66, 55, 33")
+        bvals_2, _ = read_bvals_bvecs(bv_file5.name, None)
+
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file6:
+        bv_file4.write("66 \t 55 \t 33")
+        bvals_3, _ = read_bvals_bvecs(bv_file6.name, None)
+
     ans = np.array([66., 55., 33.])
-    npt.assert_array_equal(ans, bvals)
+    npt.assert_array_equal(ans, bvals_1)
+    npt.assert_array_equal(ans, bvals_2)
+    npt.assert_array_equal(ans, bvals_3)
+
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file7:
+        bv_file5.write("66 55 33 \n 45 34 21 \n 55 32 65")
+        _, bvecs_1 = read_bvals_bvecs(None, bv_file7.name)
+
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file8:
+        bv_file5.write("66, 55, 33 \n 45, 34, 21 \n 55, 32, 65")
+        _, bvecs_2 = read_bvals_bvecs(None, bv_file8.name)
+
+    with open(tempfile.NamedTemporaryFile, 'wt') as bv_file9:
+        bv_file5.write("66 \t 55 \t 33 \n 45 \t 34 \t 21 \n 55 \t 32 \t 65")
+        _, bvecs_3 = read_bvals_bvecs(None, bv_file9.name)
+
+    ans = np.array([[66., 55., 33.], [45., 34., 21.], [55., 32., 65.]])
+    npt.assert_array_equal(ans, bvecs_1)
+    npt.assert_array_equal(ans, bvecs_2)
+    npt.assert_array_equal(ans, bvecs_3)
+
 
 if __name__ == '__main__':
     from numpy.testing import run_module_suite
