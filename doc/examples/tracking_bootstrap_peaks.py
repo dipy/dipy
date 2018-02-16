@@ -105,7 +105,7 @@ peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.,
                                               sphere=small_sphere)
 peak_streamline_generator = LocalTracking(peak_dg, classifier, seeds, affine,
                                           step_size=.5)
-streamlines = Streamlines(boot_streamline_generator)
+streamlines = Streamlines(peak_streamline_generator)
 
 renderer.clear()
 renderer.add(actor.line(streamlines, line_colors(streamlines)))
