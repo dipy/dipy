@@ -146,6 +146,6 @@ plt.show()
 
 .. [Avants2011] Avants, B. B., Tustison, N. J., Wu, J., Cook, P. A. and Gee,
    J. C. An open source multivariate framework for n-tissue segmentation with
-   evaluation on public data. Neuroinformatics, 9(4): 381–400, 2011.
+   evaluation on public data. Neuroinformatics, 9(4): 381-400, 2011.
 
 """
