@@ -92,30 +92,6 @@ def test_bdg_get_direction():
                                     max_attempts=0))
 
 
-def test_bdg_model():
-    """This tests the local model used for the bootstrapping.
-    """
-
-    hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
-    vertices = hsph_updated.vertices
-    bvecs = vertices
-    bvals = np.ones(len(vertices)) * 1000
-    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
-    bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
-    voxel = single_tensor(gtab)
-    data = np.tile(voxel, (3, 3, 3, 1))
-    tensor_model = dti.TensorModel(gtab)
-
-    boot_pmf_gen = BootPmfGen(data, model=tensor_model, sphere=hsph_updated)
-    boot_dg_pmf = boot_pmf_gen.get_pmf_no_boot(np.array([1., 1., 1.]))
-
-    model_pmf = tensor_model.fit(voxel).odf(hsph_updated)
-
-    npt.assert_equal(len(hsph_updated.vertices), boot_dg_pmf.shape[0])
-    npt.assert_array_almost_equal(boot_dg_pmf, model_pmf)
-
-
 def test_bdg_residual():
     """This tests the bootstrapping residual.
     """
@@ -159,5 +135,7 @@ def test_bdg_residual():
     bvals[-1] = 2000
     gtab = gradient_table(bvals, bvecs)
     csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
-    npt.assert_raises(ValueError, BootPmfGen, data, csd_model,
-                      hsph_updated, 6)
+    npt.assert_raises(ValueError, BootPmfGen, data, csd_model, hsph_updated, 6)
+
+if __name__ == '__main__':
+    npt.run_module_suite()
