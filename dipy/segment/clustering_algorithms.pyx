@@ -117,8 +117,6 @@ def quickbundles(streamlines, Metric metric, double threshold,
     return clusters_centroid2clustermap_centroid(qb.clusters)
 
 
-
-
 def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     """ Clusters streamlines using QuickBundlesX.
 
@@ -138,9 +136,9 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     Returns
     -------
     `QuickBundlesX` object
-        Result of the clustering.
+        Result of the clustering. Use get_clusters() to get the cluster at
+        a specific level of the hierarchy.
  
-
     References
     ----------
        
