@@ -157,9 +157,16 @@ def test_with_simulated_bundles():
     qbx = qbx_class.cluster(streamlines)
     for level in range(len(thresholds) + 1):
         clusters = qbx.get_clusters(level)
+    tree = qbx.get_tree_cluster_map()
+    assert_equal(tree.leaves[0].indices[0], 0)
+    assert_equal(tree.leaves[2][0], 2)
+    clusters.refdata = streamlines
     
+    assert_array_equal(clusters[0][0],
+                              np.array([[0., -10.,  -5.],
+                                        [0.,  10.,  -5.]]))
 
-
+    
 def test_with_simulated_bundles2():
 
     # Generate synthetic streamlines
@@ -175,6 +182,13 @@ def test_with_simulated_bundles2():
     tree.refdata = streamlines
 
 
+def show_streamlines(streamlines):
+    from dipy.viz import actor, window
+    ren = window.Renderer()
+    ren.add(actor.line(streamlines))
+    window.show(ren)
+
+
 if __name__ == '__main__':
     run_module_suite()
-
+    
