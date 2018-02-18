@@ -1,7 +1,7 @@
 import itertools
 import numpy as np
 from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal, run_module_suite)
 
 from dipy.segment.clustering import QuickBundlesX
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
@@ -101,7 +101,27 @@ def fornix_streamlines(no_pts=12):
     return streamlines
 
 
+def test_3D_points():
+
+    points = np.array([[[1, 0, 0]],
+                       [[3, 0, 0]],
+                       [[2, 0, 0]],
+                       [[5, 0, 0]],
+                       [[5.5, 0, 0]]], dtype="f4")
+
+    thresholds = [4, 2, 1]
+    metric = AveragePointwiseEuclideanMetric()
+    qbx_model = QuickBundlesX(thresholds,
+                              metric=metric)
+    qbx = qbx_model.cluster(points)
+    clusters_2 = qbx.get_clusters(2)
+    assert_array_equal(clusters_2.clusters_sizes(), [3, 2])
+    clusters_0 = qbx.get_clusters(0)
+    assert_array_equal(clusters_0.clusters_sizes(), [5])
+    
+
 def test_3D_segments():
+
     points = np.array([[[1, 0, 0],
                         [1, 1, 0]],
                        [[3, 1, 0],
@@ -114,60 +134,29 @@ def test_3D_segments():
                         [5.5, 1, 0]]], dtype="f4")
 
     thresholds = [4, 2, 1]
-    qbx_class = QuickBundlesX(thresholds)
-    qbx = qbx_class.cluster(points)
-    test = 5
-
-
-def test_3D_points():
-
-    points = np.array([[[1, 0, 0]],
-                       [[3, 0, 0]],
-                       [[2, 0, 0]],
-                       [[5, 0, 0]],
-                       [[5.5, 0, 0]]], dtype="f4")
-
-    thresholds = [4, 2, 1]
-    metric = AveragePointwiseEuclideanMetric()
-    qbx_setup = QuickBundlesX(thresholds,
-                              metric=metric)
-    qbx = qbx_setup.cluster(points)
-    clusters_2 = qbx.get_clusters(2)
-    assert_array_equal(clusters_2.clusters_sizes(), [3, 2])
+    qbx_model = QuickBundlesX(thresholds,
+                              metric=AveragePointwiseEuclideanMetric())
+    qbx = qbx_model.cluster(points)
     clusters_0 = qbx.get_clusters(0)
-    assert_array_equal(clusters_0.clusters_sizes(), [5])
+    clusters_1 = qbx.get_clusters(1)
+    clusters_2 = qbx.get_clusters(2)
     
+    clusters_0.centroids
+    clusters_1.centroids
+    clusters_2.centroids
 
 def test_with_simulated_bundles():
 
     streamlines = simulated_bundle(3, False, 2)
-
-    from dipy.viz import actor, window
-
-    renderer = window.Renderer()
-    bundle_actor = actor.line(streamlines)
-    renderer.add(bundle_actor)
-
-    window.show(renderer)
-
     thresholds = [10, 3, 1]
     qbx_class = QuickBundlesX(thresholds)
     qbx = qbx_class.cluster(streamlines)
-
-    renderer.clear()
-
     for level in range(len(thresholds) + 1):
         clusters = qbx.get_clusters(level)
-        clusters_actor = actor.line(clusters.centroids)
-        renderer.add(clusters_actor)
-        window.show(renderer)
-        renderer.clear()
-
-    from ipdb import set_trace
-    set_trace()
-
+       
 
 def test_with_simulated_bundles2():
+
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1))
@@ -186,6 +175,8 @@ if __name__ == '__main__':
     #test_show_qbx_tree()
     #test_show_qbx()
     #test_3D_segments()
-    test_3D_points()
+    #test_3D_points()
+    #test_with_simulated_bundles()
+    run_module_suite()
 
-
+    

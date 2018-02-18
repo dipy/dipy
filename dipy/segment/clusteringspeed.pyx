@@ -672,7 +672,7 @@ cdef class QuickBundles(object):
         return self._build_clustermap()
 
 
-def evaluate_aabbb_checks():
+def evaluate_aabb_checks():
     cdef:
         Data2D feature1 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype='f4')
         Data2D feature2 = np.array([[1, 0, 0], [1, 1, 0], [1 + np.sqrt(2)/2., 1 + np.sqrt(2)/2., 0]], dtype='f4') + np.array([0.5, 0, 0], dtype='f4')
