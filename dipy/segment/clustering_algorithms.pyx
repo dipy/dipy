@@ -136,7 +136,7 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
     Returns
     -------
     `QuickBundlesX` object
-        Result of the clustering. Use get_clusters() to get the cluster at
+        Result of the clustering. Use get_clusters() to get the clusters at
         a specific level of the hierarchy.
  
     References
