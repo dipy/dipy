@@ -374,7 +374,7 @@ def test_text_block_2d_justification():
     arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
     if vtk.vtkVersion.GetVTKVersion() == "6.0.0":
         expected = np.load(pjoin(DATA_DIR, "test_ui_text_block.npz"))
-        npt.assert_array_equal(arr, expected["arr_0"])
+        npt.assert_array_almost_equal(arr, expected["arr_0"])
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
