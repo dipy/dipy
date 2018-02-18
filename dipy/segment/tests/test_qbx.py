@@ -118,17 +118,24 @@ def test_3D_segments():
     qbx = qbx_class.cluster(points)
     test = 5
 
+
 def test_3D_points():
+
     points = np.array([[[1, 0, 0]],
                        [[3, 0, 0]],
                        [[2, 0, 0]],
                        [[5, 0, 0]],
                        [[5.5, 0, 0]]], dtype="f4")
 
-    thresholds = [4, 2, 0.5]
-    qbx = QuickBundlesX(thresholds)
-    all_levels = qbx.cluster(points)
-    all_levels.get_clusters(0)
+    thresholds = [4, 2, 1]
+    metric = AveragePointwiseEuclideanMetric()
+    qbx_setup = QuickBundlesX(thresholds,
+                              metric=metric)
+    qbx = qbx_setup.cluster(points)
+    clusters_2 = qbx.get_clusters(2)
+    assert_array_equal(clusters_2.clusters_sizes(), [3, 2])
+    clusters_0 = qbx.get_clusters(0)
+    assert_array_equal(clusters_0.clusters_sizes(), [5])
     
 
 def test_with_simulated_bundles():
@@ -179,29 +186,6 @@ if __name__ == '__main__':
     #test_show_qbx_tree()
     #test_show_qbx()
     #test_3D_segments()
-    #test_3D_points()
+    test_3D_points()
 
-#    points = [np.array([[1, 0, 0]]),
-#              np.array([[2, 0, 0]]),
-#              np.array([[3, 0, 0]])]
 
-    points = np.array([[[1, 0, 0]],
-                       [[3, 0, 0]],
-                       [[2, 0, 0]],
-                       [[5, 0, 0]],
-                       [[5.5, 0, 0]]], dtype="f4")
-
-    thresholds = [4, 2, 1]
-    metric = AveragePointwiseEuclideanMetric()
-    qbx_class = QuickBundlesX(thresholds,
-                              metric=metric)
-    qbx = qbx_class.cluster(points)
-    level = 2
-    tmp = qbx.get_clusters(level)
-    print(tmp)
-    assert_array_equal(tmp.clusters_sizes(), [3, 2])
-    #assert_array_equal(tmp.clusters_sizes(), [3])
-    tmp = qbx.get_clusters(0)
-    print(tmp)
-    assert_array_equal(tmp.clusters_sizes(), [5])
-    
