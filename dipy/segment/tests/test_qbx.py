@@ -182,13 +182,6 @@ def test_with_simulated_bundles2():
     tree.refdata = streamlines
 
 
-def show_streamlines(streamlines):
-    from dipy.viz import actor, window
-    ren = window.Renderer()
-    ren.add(actor.line(streamlines))
-    window.show(ren)
-
-
 if __name__ == '__main__':
     run_module_suite()
     
