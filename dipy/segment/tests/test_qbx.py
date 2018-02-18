@@ -1,9 +1,10 @@
 import itertools
 import numpy as np
-from numpy.testing import (assert_array_equal,
+from numpy.testing import (assert_array_equal, assert_equal,
                            assert_array_almost_equal, run_module_suite)
 
 from dipy.segment.clustering import QuickBundlesX
+from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_data
@@ -121,7 +122,6 @@ def test_3D_points():
     
 
 def test_3D_segments():
-
     points = np.array([[[1, 0, 0],
                         [1, 1, 0]],
                        [[3, 1, 0],
@@ -134,16 +134,20 @@ def test_3D_segments():
                         [5.5, 1, 0]]], dtype="f4")
 
     thresholds = [4, 2, 1]
-    qbx_model = QuickBundlesX(thresholds,
-                              metric=AveragePointwiseEuclideanMetric())
+    
+    feature = ResampleFeature(nb_points=20)
+    metric = AveragePointwiseEuclideanMetric(feature)
+    qbx_model = QuickBundlesX(thresholds, metric=metric)
     qbx = qbx_model.cluster(points)
     clusters_0 = qbx.get_clusters(0)
     clusters_1 = qbx.get_clusters(1)
     clusters_2 = qbx.get_clusters(2)
     
-    clusters_0.centroids
-    clusters_1.centroids
-    clusters_2.centroids
+    assert_equal(len(clusters_0.centroids), len(clusters_1.centroids))
+    assert_equal(len(clusters_2.centroids) > len(clusters_1.centroids), True)
+    
+    assert_array_equal(clusters_2[1].indices, np.array([3, 4], dtype=np.int32))
+
 
 def test_with_simulated_bundles():
 
@@ -153,7 +157,8 @@ def test_with_simulated_bundles():
     qbx = qbx_class.cluster(streamlines)
     for level in range(len(thresholds) + 1):
         clusters = qbx.get_clusters(level)
-       
+    
+
 
 def test_with_simulated_bundles2():
 
@@ -171,12 +176,5 @@ def test_with_simulated_bundles2():
 
 
 if __name__ == '__main__':
-    #test_with_simulated_bundles2()
-    #test_show_qbx_tree()
-    #test_show_qbx()
-    #test_3D_segments()
-    #test_3D_points()
-    #test_with_simulated_bundles()
     run_module_suite()
 
-    
