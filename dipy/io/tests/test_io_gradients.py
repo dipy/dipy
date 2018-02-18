@@ -82,17 +82,17 @@ def test_read_bvals_bvecs():
 
     bv_file7 = tempfile.NamedTemporaryFile()
     with open(bv_file7.name, 'w') as f:
-        f.write("66 55 33 \n 45 34 21 \n 55 32 65")
+        f.write("66 55 33\n45 34 21\n55 32 65\n")
     _, bvecs_1 = read_bvals_bvecs(None, bv_file7.name)
 
     bv_file8 = tempfile.NamedTemporaryFile()
     with open(bv_file8.name, 'w') as f:
-        f.write("66, 55, 33 \n 45, 34, 21 \n 55, 32, 65")
+        f.write("66, 55, 33\n45, 34, 21 \n 55, 32, 65\n")
     _, bvecs_2 = read_bvals_bvecs(None, bv_file8.name)
 
     bv_file9 = tempfile.NamedTemporaryFile()
     with open(bv_file9.name, 'w') as f:
-        f.write("66 \t 55 \t 33 \n 45 \t 34 \t 21 \n 55 \t 32 \t 65")
+        f.write("66 \t 55 \t 33\n45 \t 34 \t 21\n55 \t 32 \t 65\n")
     _, bvecs_3 = read_bvals_bvecs(None, bv_file9.name)
 
     ans = np.array([[66., 55., 33.], [45., 34., 21.], [55., 32., 65.]])
