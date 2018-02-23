@@ -35,7 +35,7 @@ def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
     """
     clusters = ClusterMapCentroid()
     for i in range(clusters_list._nb_clusters):
-        centroid = np.asarray(clusters_list.centroids[i].features)
+        centroid = np.asarray(<float[:clusters_list.centroids[i].features[0].shape[0], :clusters_list.centroids[i].features[0].shape[1]]> <float*> clusters_list.centroids[i].features[0]._data)
         indices = np.asarray(<int[:clusters_list.clusters_size[i]]> clusters_list.clusters_indices[i]).tolist()
         clusters.add_cluster(ClusterCentroid(id=i, centroid=centroid, indices=indices))
 
