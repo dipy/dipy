@@ -114,7 +114,7 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
 
 
 cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
-    """ Create memoryview 
+    """ Create a light version of cython memory view 
 
 
     Parameters
@@ -122,12 +122,12 @@ cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) n
     buffer_size : int
         data size 
     dims : array
-        desired memoryview shape 
+        desired memory view shape 
 
     Returns
     -------
-    Data2D* : memoryview 
-        pointer to memoryview
+    Data2D* : memview pointer 
+        floating pointer to memview
     """
     cdef Data2D* memview
 
@@ -143,12 +143,12 @@ cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) n
     return memview
 
 cdef void free_memview(Data2D* memview) nogil:
-    """ free memoryview by deleting all buffer.
+    """ free a light version of cython memory view
 
     Parameters
     ----------
     memview : Data2D*
-        memoryview pointer
+        floating pointer to memory view pointer
         
     """
     free(&(memview[0][0, 0]))
