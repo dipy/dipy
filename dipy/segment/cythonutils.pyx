@@ -120,13 +120,14 @@ cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) n
     Parameters
     ----------
     buffer_size : int
-        
+        data size 
     dims : array
-        
+        desired memoryview shape 
 
     Returns
     -------
-    Data2D : memview
+    Data2D* : memoryview 
+        pointer to memoryview
     """
     cdef Data2D* memview
 
@@ -142,14 +143,12 @@ cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) n
     return memview
 
 cdef void free_memview(Data2D* memview) nogil:
-    """ Create memoryview 
-
+    """ free memoryview by deleting all buffer.
 
     Parameters
     ----------
-    buffer_size : int
-        
-    dims : array
+    memview : Data2D*
+        memoryview pointer
         
     """
     free(&(memview[0][0, 0]))
