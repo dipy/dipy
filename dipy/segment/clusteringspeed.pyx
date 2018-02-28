@@ -10,7 +10,8 @@ from dipy.segment.clustering import TreeCluster, TreeClusterMap
 
 
 from libc.math cimport fabs
-from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape, same_shape
+from cythonutils cimport Data2D, Shape, shape2tuple,\
+    tuple2shape, same_shape, create_memview, free_memview
 
 cdef extern from "math.h" nogil:
     double fabs(double x)
@@ -34,8 +35,9 @@ THRESHOLD_MULTIPLIER = 2.
 cdef print_node(CentroidNode* node, prepend=""):
     if node == NULL:
         return ""
-
-    txt = "{}".format(np.asarray(node.centroid).tolist())
+    cdef Data2D centroid
+    centroid = <float[:node.centroid_shape.dims[0],:node.centroid_shape.dims[1]]> &node.centroid[0][0,0]
+    txt = "{}".format(np.asarray(centroid).tolist())
     txt += " {" + ",".join(map(str, np.asarray(<int[:node.size]> node.indices))) + "}"
     txt += " children({})".format(node.nb_children)
     txt += " count({})".format(node.size)
@@ -100,8 +102,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     # we need to zero-initialize the allocated memory (calloc or via memset),
     # otherwise during assignment CPython will try to call _PYX_XDEC_MEMVIEW on it and segfault.
     cdef CentroidNode* node = <CentroidNode*> calloc(1, sizeof(CentroidNode))
-    with gil:
-        node.centroid = <float[:centroid_shape.dims[0], :centroid_shape.dims[1]]> calloc(centroid_shape.size, sizeof(float))
+    node.centroid = create_memview(centroid_shape.size, centroid_shape.dims)
         #node.updated_centroid = <float[:centroid_shape.dims[0], :centroid_shape.dims[1]]> calloc(centroid_shape.size, sizeof(float))
 
     node.father = NULL
@@ -130,22 +131,22 @@ cdef class QuickBundlesX(object):
 
         self.nb_levels = len(levels_thresholds)
         self.thresholds = <double*> malloc(self.nb_levels*sizeof(double))
+
         cdef int i
         for i in range(self.nb_levels):
             self.thresholds[i] = levels_thresholds[i]
 
         self.root = create_empty_node(self.features_shape, self.thresholds[0])
+
         self.level = None
         self.clusters = None
-
         self.stats.stats_per_layer = <QuickBundlesXStatsLayer*> calloc(self.nb_levels, sizeof(QuickBundlesXStatsLayer))
-
         # Important: because the CentroidNode structure contains an uninitialized memview,
         # we need to zero-initialize the allocated memory (calloc or via memset),
         # otherwise during assignment CPython will try to call _PYX_XDEC_MEMVIEW on it and segfault.
         self.current_streamline = <StreamlineInfos*> calloc(1, sizeof(StreamlineInfos))
-        self.current_streamline.features = np.empty(features_shape, dtype=DTYPE)
-        self.current_streamline.features_flip = np.empty(features_shape, dtype=DTYPE)
+        self.current_streamline.features = create_memview(self.features_shape.size, self.features_shape.dims)
+        self.current_streamline.features_flip = create_memview(self.features_shape.size, self.features_shape.dims)
 
     def __dealloc__(self):
         self.traverse_postorder(self.root, self._dealloc_node)
@@ -180,18 +181,19 @@ cdef class QuickBundlesX(object):
         return node.nb_children-1
 
     cdef void _update_node(self, CentroidNode* node, StreamlineInfos* streamline_infos) nogil:
-        cdef Data2D element = streamline_infos.features
+        cdef Data2D element = streamline_infos.features[0]
         cdef int C = node.size
         cdef cnp.npy_intp n, d
 
         if streamline_infos.use_flip:
-            element = streamline_infos.features_flip
+            element = streamline_infos.features_flip[0]
 
         # Update centroid
-        cdef cnp.npy_intp N = node.centroid.shape[0], D = node.centroid.shape[1]
+        cdef Data2D centroid = node.centroid[0]
+        cdef cnp.npy_intp N = centroid.shape[0], D = centroid.shape[1]
         for n in range(N):
             for d in range(D):
-                node.centroid[n, d] = ((node.centroid[n, d] * C) + element[n, d]) / (C+1)
+                centroid[n, d] = ((centroid[n, d] * C) + element[n, d]) / (C+1)
 
         # Update list of indices
         node.indices = <int*> realloc(node.indices, (C+1)*sizeof(int))
@@ -199,7 +201,7 @@ cdef class QuickBundlesX(object):
         node.size += 1
 
         # Update AABB
-        aabb_creation(node.centroid, node.aabb)
+        aabb_creation(centroid, node.aabb)
 
     cdef void _insert_in(self, CentroidNode* node, StreamlineInfos* streamline_infos, int[:] path) nogil:
         cdef:
@@ -221,7 +223,7 @@ cdef class QuickBundlesX(object):
             self.stats.stats_per_layer[node.level].nb_aabb_calls += 1
             if aabb_overlap(node.children[k].aabb, streamline_infos.aabb, node.threshold):
                 self.stats.stats_per_layer[node.level].nb_mdf_calls += 1
-                dist = self.metric.c_dist(node.children[k].centroid, streamline_infos.features)
+                dist = self.metric.c_dist(node.children[k].centroid[0], streamline_infos.features[0])
 
                 # Keep track of the nearest cluster
                 if dist < nearest_cluster.dist:
@@ -230,7 +232,7 @@ cdef class QuickBundlesX(object):
                     nearest_cluster.flip = 0
 
                 self.stats.stats_per_layer[node.level].nb_mdf_calls += 1
-                dist_flip = self.metric.c_dist(node.children[k].centroid, streamline_infos.features_flip)
+                dist_flip = self.metric.c_dist(node.children[k].centroid[0], streamline_infos.features_flip[0])
                 if dist_flip < nearest_cluster.dist:
                     nearest_cluster.dist = dist_flip
                     nearest_cluster.id = k
@@ -245,11 +247,11 @@ cdef class QuickBundlesX(object):
         self._insert_in(node.children[nearest_cluster.id], streamline_infos, path)
 
     cpdef object insert(self, Data2D datum, int datum_idx):
-        self.metric.feature.c_extract(datum, self.current_streamline.features)
-        self.metric.feature.c_extract(datum[::-1], self.current_streamline.features_flip)
+        self.metric.feature.c_extract(datum, self.current_streamline.features[0])
+        self.metric.feature.c_extract(datum[::-1], self.current_streamline.features_flip[0])
         self.current_streamline.idx = datum_idx
 
-        aabb_creation(self.current_streamline.features, self.current_streamline.aabb)
+        aabb_creation(self.current_streamline.features[0], self.current_streamline.aabb)
         path = -1 * np.ones(self.nb_levels, dtype=np.int32)
         self._insert_in(self.root, self.current_streamline, path)
         return path
@@ -261,12 +263,10 @@ cdef class QuickBundlesX(object):
         cdef int i
         for i in range(node.nb_children):
             self.traverse_postorder(node.children[i], visit)
-
         visit(self, node)
 
     cdef void _dealloc_node(self, CentroidNode* node):
-        free(&(node.centroid[0, 0]))
-        node.centroid = None  # Necessary to decrease refcount
+        free_memview(node.centroid)
 
         if node.children != NULL:
             free(node.children)
@@ -279,8 +279,10 @@ cdef class QuickBundlesX(object):
         free(node)
 
     cdef void _fetch_level(self, CentroidNode* node):
+        cdef Data2D centroid
         if node.level == self.level:
-            cluster = ClusterCentroid(np.asarray(node.centroid).copy())
+            centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
+            cluster = ClusterCentroid(np.asarray(centroid).copy())
             cluster.indices = np.asarray(<int[:node.size]> node.indices).copy()
             self.clusters.add_cluster(cluster)
 
@@ -293,8 +295,10 @@ cdef class QuickBundlesX(object):
         return self.clusters
 
     cdef object _build_tree_clustermap(self, CentroidNode* node):
+        cdef Data2D centroid
+        centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
         tree_cluster = TreeCluster(threshold=node.threshold,
-                                   centroid=np.asarray(node.centroid),
+                                   centroid=np.asarray(centroid),
                                    indices=np.asarray(<int[:node.size]> node.indices))
 
         cdef int i
@@ -417,10 +421,9 @@ cdef class ClustersCentroid(Clusters):
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
-            free(&(self.centroids[i].features[0, 0]))
-            free(&(self._updated_centroids[i].features[0, 0]))
-            self.centroids[i].features = None  # Necessary to decrease refcount
-            self._updated_centroids[i].features = None  # Necessary to decrease refcount
+            free_memview(self.centroids[i].features)
+            free_memview(self._updated_centroids[i].features)
+
 
         free(self.centroids)
         self.centroids = NULL
@@ -443,7 +446,7 @@ cdef class ClustersCentroid(Clusters):
         element : 2d array (float)
             Data of the element to assign.
         """
-        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features[0]
         cdef cnp.npy_intp C = self.clusters_size[id_cluster]
         cdef cnp.npy_intp n, d
 
@@ -467,8 +470,8 @@ cdef class ClustersCentroid(Clusters):
         int
             Tells whether the centroid has changed or not, i.e. converged.
         """
-        cdef Data2D centroid = self.centroids[id_cluster].features
-        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef Data2D centroid = self.centroids[id_cluster].features[0]
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features[0]
         cdef cnp.npy_intp N = updated_centroid.shape[0], D = centroid.shape[1]
         cdef cnp.npy_intp n, d
         cdef int converged = 1
@@ -500,11 +503,10 @@ cdef class ClustersCentroid(Clusters):
         # Zero-initialize the new Centroid structure
         memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
-        with gil:
-            self.centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
-            self._updated_centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
+        self.centroids[self._nb_clusters].features = create_memview(self._centroid_shape.size, self._centroid_shape.dims)
+        self._updated_centroids[self._nb_clusters].features = create_memview(self._centroid_shape.size, self._centroid_shape.dims)
 
-        aabb_creation(self.centroids[self._nb_clusters].features, self.centroids[self._nb_clusters].aabb)
+        aabb_creation(self.centroids[self._nb_clusters].features[0], self.centroids[self._nb_clusters].aabb)
 
         return Clusters.c_create_cluster(self)
 
@@ -556,7 +558,7 @@ cdef class QuickBundles(object):
                 if aabb_overlap(self.clusters.centroids[k].aabb, &aabb[0], self.threshold) == 1:
 
                     self.stats.nb_mdf_calls += 1
-                    dist = self.metric.c_dist(self.clusters.centroids[k].features, features)
+                    dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
 
                     # Keep track of the nearest cluster
                     if dist < nearest_cluster.dist:
@@ -568,7 +570,7 @@ cdef class QuickBundles(object):
             for k in range(self.clusters.c_size()):
 
                 self.stats.nb_mdf_calls += 1
-                dist = self.metric.c_dist(self.clusters.centroids[k].features, features)
+                dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
 
                 # Keep track of the nearest cluster
                 if dist < nearest_cluster.dist:
@@ -662,7 +664,7 @@ cdef class QuickBundles(object):
         clusters = ClusterMapCentroid()
         cdef int k
         for k in range(self.clusters.c_size()):
-            cluster = ClusterCentroid(np.asarray(self.clusters.centroids[k].features).copy())
+            cluster = ClusterCentroid(np.asarray(self.clusters.centroids[k].features[0]).copy())
             cluster.indices = np.asarray(<int[:self.clusters.clusters_size[k]]> self.clusters.clusters_indices[k]).copy()
             clusters.add_cluster(cluster)
 
