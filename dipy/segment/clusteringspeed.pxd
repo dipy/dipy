@@ -17,15 +17,15 @@ cdef struct QuickBundlesXStats:
 
 
 cdef struct StreamlineInfos:
-    Data2D features
-    Data2D features_flip
+    Data2D* features
+    Data2D* features_flip
     float[6] aabb
     int idx
     int use_flip
 
 
 cdef struct Centroid:
-    Data2D features
+    Data2D* features
     int size
     float[6] aabb
 
@@ -37,14 +37,14 @@ cdef struct NearestCluster:
 
 
 cdef struct Test:
-    Data2D centroid
+    Data2D* centroid
 
 
 cdef struct CentroidNode:
     CentroidNode* father
     CentroidNode** children
     int nb_children
-    Data2D centroid
+    Data2D* centroid
     float[6] aabb
     float threshold
     int* indices
