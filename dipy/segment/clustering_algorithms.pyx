@@ -1,6 +1,7 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
+from builtins import range
 import itertools
 import numpy as np
 
@@ -44,6 +45,7 @@ def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
     clusters = ClusterMapCentroid()
     cdef Data2D features
     shape = clusters_list._centroid_shape
+
     for i in range(clusters_list._nb_clusters):
         features = <float[:shape.dims[0], :shape.dims[1]]> \
             &clusters_list.centroids[i].features[0][0,0]
@@ -95,9 +97,8 @@ def quickbundles(streamlines, Metric metric, double threshold,
     threshold = min(threshold, BIGGEST_DOUBLE)
     # Threshold of -np.inf is not supported, set it to 0
     threshold = max(threshold, 0)
-
     if ordering is None:
-        ordering = xrange(len(streamlines))
+        ordering = range(len(streamlines))
 
     # Check if `ordering` or `streamlines` are empty
     first_idx, ordering = peek(ordering)
@@ -107,12 +108,10 @@ def quickbundles(streamlines, Metric metric, double threshold,
     features_shape = shape2tuple(metric.feature.c_infer_shape(streamlines[first_idx].astype(DTYPE)))
     cdef QuickBundles qb = QuickBundles(features_shape, metric, threshold, max_nb_clusters)
     cdef int idx
-
     for idx in ordering:
         streamline = streamlines[idx]
         if not streamline.flags.writeable or streamline.dtype != DTYPE:
             streamline = streamline.astype(DTYPE)
-
         cluster_id = qb.assignment_step(streamline, idx)
         # The update step is performed right after the assignement step instead
         # of after all streamlines have been assigned like k-means algorithm.
@@ -157,7 +156,7 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
                         vol 6, no 175, 2012.
     """
     if ordering is None:
-        ordering = xrange(len(streamlines))
+        ordering = range(len(streamlines))
 
     # Check if `ordering` or `streamlines` are empty
     first_idx, ordering = peek(ordering)
