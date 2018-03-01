@@ -11,7 +11,7 @@ from dipy.segment.clustering import TreeCluster, TreeClusterMap
 
 from libc.math cimport fabs
 from cythonutils cimport Data2D, Shape, shape2tuple,\
-    tuple2shape, same_shape, create_memview, free_memview
+    tuple2shape, same_shape, create_memview_2d, free_memview_2d
 
 cdef extern from "math.h" nogil:
     double fabs(double x)
@@ -102,7 +102,7 @@ cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogi
     # we need to zero-initialize the allocated memory (calloc or via memset),
     # otherwise during assignment CPython will try to call _PYX_XDEC_MEMVIEW on it and segfault.
     cdef CentroidNode* node = <CentroidNode*> calloc(1, sizeof(CentroidNode))
-    node.centroid = create_memview(centroid_shape.size, centroid_shape.dims)
+    node.centroid = create_memview_2d(centroid_shape.size, centroid_shape.dims)
         #node.updated_centroid = <float[:centroid_shape.dims[0], :centroid_shape.dims[1]]> calloc(centroid_shape.size, sizeof(float))
 
     node.father = NULL
@@ -145,8 +145,8 @@ cdef class QuickBundlesX(object):
         # we need to zero-initialize the allocated memory (calloc or via memset),
         # otherwise during assignment CPython will try to call _PYX_XDEC_MEMVIEW on it and segfault.
         self.current_streamline = <StreamlineInfos*> calloc(1, sizeof(StreamlineInfos))
-        self.current_streamline.features = create_memview(self.features_shape.size, self.features_shape.dims)
-        self.current_streamline.features_flip = create_memview(self.features_shape.size, self.features_shape.dims)
+        self.current_streamline.features = create_memview_2d(self.features_shape.size, self.features_shape.dims)
+        self.current_streamline.features_flip = create_memview_2d(self.features_shape.size, self.features_shape.dims)
 
     def __dealloc__(self):
         self.traverse_postorder(self.root, self._dealloc_node)
@@ -266,7 +266,7 @@ cdef class QuickBundlesX(object):
         visit(self, node)
 
     cdef void _dealloc_node(self, CentroidNode* node):
-        free_memview(node.centroid)
+        free_memview_2d(node.centroid)
 
         if node.children != NULL:
             free(node.children)
@@ -421,8 +421,8 @@ cdef class ClustersCentroid(Clusters):
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
-            free_memview(self.centroids[i].features)
-            free_memview(self._updated_centroids[i].features)
+            free_memview_2d(self.centroids[i].features)
+            free_memview_2d(self._updated_centroids[i].features)
 
 
         free(self.centroids)
@@ -503,8 +503,8 @@ cdef class ClustersCentroid(Clusters):
         # Zero-initialize the new Centroid structure
         memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
-        self.centroids[self._nb_clusters].features = create_memview(self._centroid_shape.size, self._centroid_shape.dims)
-        self._updated_centroids[self._nb_clusters].features = create_memview(self._centroid_shape.size, self._centroid_shape.dims)
+        self.centroids[self._nb_clusters].features = create_memview_2d(self._centroid_shape.size, self._centroid_shape.dims)
+        self._updated_centroids[self._nb_clusters].features = create_memview_2d(self._centroid_shape.size, self._centroid_shape.dims)
 
         aabb_creation(self.centroids[self._nb_clusters].features[0], self.centroids[self._nb_clusters].aabb)
 
