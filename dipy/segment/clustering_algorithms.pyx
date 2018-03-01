@@ -33,9 +33,11 @@ def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
     `ClusterMapCentroid` object
         Result of the clustering contained in a Python's object.
     """
+    cdef Data2D features
     clusters = ClusterMapCentroid()
     for i in range(clusters_list._nb_clusters):
-        centroid = np.asarray(clusters_list.centroids[i].features)
+        features = clusters_list.centroids[i].features[0]
+        centroid = np.asarray(<float[:features.shape[0], :features.shape[1]]> <float*> features._data)
         indices = np.asarray(<int[:clusters_list.clusters_size[i]]> clusters_list.clusters_indices[i]).tolist()
         clusters.add_cluster(ClusterCentroid(id=i, centroid=centroid, indices=indices))
 

@@ -3,7 +3,7 @@ from metricspeed cimport Metric
 
 
 cdef struct Centroid:
-    Data2D features
+    Data2D* features
     int size
 
 

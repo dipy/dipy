@@ -14,6 +14,19 @@ DTYPE = np.float32
 DEF BIGGEST_DOUBLE = 1.7976931348623157e+308  # np.finfo('f8').max
 DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
 
+cdef Py_ssize_t sizeof_memviewslice = 2 * sizeof(cnp.npy_intp) + 3 * sizeof(cnp.npy_intp) * 8
+
+
+cdef void initialize_centroid(Centroid* centroid, Shape shape) nogil:
+    centroid.features = <Data2D*> calloc(1, sizeof_memviewslice)
+    centroid.features.shape[0] = shape.dims[0]
+    centroid.features[0].shape[1] = shape.dims[1]
+    centroid.features[0].strides[0] = shape.dims[1] * sizeof(float)
+    centroid.features[0].strides[1] = sizeof(float)
+    centroid.features[0].suboffsets[0] = -1
+    centroid.features[0].suboffsets[1] = -1
+    centroid.features[0]._data = <char*> calloc(shape.size, sizeof(float))
+
 
 cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
@@ -114,10 +127,12 @@ cdef class ClustersCentroid(Clusters):
         """
         cdef cnp.npy_intp i
         for i in range(self._nb_clusters):
-            free(&(self.centroids[i].features[0, 0]))
-            free(&(self._updated_centroids[i].features[0, 0]))
-            self.centroids[i].features = None  # Necessary to decrease refcount
-            self._updated_centroids[i].features = None  # Necessary to decrease refcount
+            free(&(self.centroids[i].features[0][0, 0]))
+            free(&(self._updated_centroids[i].features[0][0, 0]))
+            self.centroids[i].features[0] = None  # Necessary to decrease refcount
+            self._updated_centroids[i].features[0] = None  # Necessary to decrease refcount
+            free(self.centroids[i].features)
+            free(self._updated_centroids[i].features)
 
         free(self.centroids)
         self.centroids = NULL
@@ -140,7 +155,7 @@ cdef class ClustersCentroid(Clusters):
         element : 2d array (float)
             Data of the element to assign.
         """
-        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features[0]
         cdef cnp.npy_intp C = self.clusters_size[id_cluster]
         cdef cnp.npy_intp n, d
 
@@ -164,8 +179,8 @@ cdef class ClustersCentroid(Clusters):
         int
             Tells whether the centroid has changed or not, i.e. converged.
         """
-        cdef Data2D centroid = self.centroids[id_cluster].features
-        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features
+        cdef Data2D centroid = self.centroids[id_cluster].features[0]
+        cdef Data2D updated_centroid = self._updated_centroids[id_cluster].features[0]
         cdef cnp.npy_intp N = updated_centroid.shape[0], D = centroid.shape[1]
         cdef cnp.npy_intp n, d
         cdef int converged = 1
@@ -193,9 +208,8 @@ cdef class ClustersCentroid(Clusters):
         # Zero-initialize the new Centroid structure
         memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
-        with gil:
-            self.centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
-            self._updated_centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
+        initialize_centroid(&self.centroids[self._nb_clusters], self._centroid_shape)
+        initialize_centroid(&self._updated_centroids[self._nb_clusters], self._centroid_shape)
 
         return Clusters.c_create_cluster(self)
 
@@ -232,7 +246,7 @@ cdef class QuickBundles(object):
         nearest_cluster.dist = BIGGEST_DOUBLE
 
         for k in range(self.clusters.c_size()):
-            dist = self.metric.c_dist(self.clusters.centroids[k].features, features)
+            dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
 
             # Keep track of the nearest cluster
             if dist < nearest_cluster.dist:
