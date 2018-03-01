@@ -30,7 +30,6 @@ DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
 DEF BIGGEST_FLOAT = 3.4028235e+38  # np.finfo('f4').max
 DEF SMALLEST_FLOAT = -3.4028235e+38  # np.finfo('f4').max
 
-THRESHOLD_MULTIPLIER = 2.
 
 cdef print_node(CentroidNode* node, prepend=""):
     if node == NULL:
@@ -406,7 +405,6 @@ cdef class ClustersCentroid(Clusters):
             raise ValueError("'centroid_shape' must be a tuple or a int.")
 
         self._centroid_shape = tuple2shape(centroid_shape)
-        # self.aabb
         self.centroids = NULL
         self._updated_centroids = NULL
         self.eps = eps
@@ -513,7 +511,7 @@ cdef class ClustersCentroid(Clusters):
 
 cdef class QuickBundles(object):
     def __init__(QuickBundles self, features_shape, Metric metric, double threshold,
-                 int max_nb_clusters=BIGGEST_INT, int bvh=0):
+                 int max_nb_clusters=BIGGEST_INT):
         self.metric = metric
         self.features_shape = tuple2shape(features_shape)
         self.threshold = threshold
@@ -521,7 +519,6 @@ cdef class QuickBundles(object):
         self.clusters = ClustersCentroid(features_shape)
         self.features = np.empty(features_shape, dtype=DTYPE)
         self.features_flip = np.empty(features_shape, dtype=DTYPE)
-        self.bvh = bvh
 
         self.stats.nb_mdf_calls = 0
         self.stats.nb_aabb_calls = 0
@@ -548,34 +545,16 @@ cdef class QuickBundles(object):
         nearest_cluster.id = -1
         nearest_cluster.dist = BIGGEST_DOUBLE
 
-        if self.bvh == 1:
+       
+        for k in range(self.clusters.c_size()):
 
-            aabb_creation(features, &aabb[0])
+            self.stats.nb_mdf_calls += 1
+            dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
 
-            for k in range(self.clusters.c_size()):
-
-                self.stats.nb_aabb_calls += 1
-                if aabb_overlap(self.clusters.centroids[k].aabb, &aabb[0], self.threshold) == 1:
-
-                    self.stats.nb_mdf_calls += 1
-                    dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
-
-                    # Keep track of the nearest cluster
-                    if dist < nearest_cluster.dist:
-                        nearest_cluster.dist = dist
-                        nearest_cluster.id = k
-
-        if self.bvh == 0:
-
-            for k in range(self.clusters.c_size()):
-
-                self.stats.nb_mdf_calls += 1
-                dist = self.metric.c_dist(self.clusters.centroids[k].features[0], features)
-
-                # Keep track of the nearest cluster
-                if dist < nearest_cluster.dist:
-                    nearest_cluster.dist = dist
-                    nearest_cluster.id = k
+            # Keep track of the nearest cluster
+            if dist < nearest_cluster.dist:
+                nearest_cluster.dist = dist
+                nearest_cluster.id = k
 
 
         return nearest_cluster
