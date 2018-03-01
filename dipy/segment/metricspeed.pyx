@@ -54,7 +54,9 @@ cdef class Metric(object):
     cdef double c_dist(Metric self, Data2D features1, Data2D features2) nogil except -1:
         """ Cython version of `Metric.dist`. """
         with gil:
-            return self.dist(np.asarray(features1), np.asarray(features2))
+            _features1 = np.asarray(<float[:features1.shape[0], :features1.shape[1]]> <float*> features1._data)
+            _features2 = np.asarray(<float[:features2.shape[0], :features2.shape[1]]> <float*> features2._data)
+            return self.dist(_features1, _features2)
 
     cpdef are_compatible(Metric self, shape1, shape2):
         """ Checks if features can be used by `metric.dist` based on their shape.
