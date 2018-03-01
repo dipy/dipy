@@ -17,6 +17,17 @@ DEF BIGGEST_INT = 2147483647  # np.iinfo('i4').max
 cdef Py_ssize_t sizeof_memviewslice = 2 * sizeof(cnp.npy_intp) + 3 * sizeof(cnp.npy_intp) * 8
 
 
+cdef void initialize_centroid(Centroid* centroid, Shape shape) nogil:
+    centroid.features = <Data2D*> calloc(1, sizeof_memviewslice)
+    centroid.features.shape[0] = shape.dims[0]
+    centroid.features[0].shape[1] = shape.dims[1]
+    centroid.features[0].strides[0] = shape.dims[1] * sizeof(float)
+    centroid.features[0].strides[1] = sizeof(float)
+    centroid.features[0].suboffsets[0] = -1
+    centroid.features[0].suboffsets[1] = -1
+    centroid.features[0]._data = <char*> calloc(shape.size, sizeof(float))
+
+
 cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
 
@@ -197,42 +208,8 @@ cdef class ClustersCentroid(Clusters):
         # Zero-initialize the new Centroid structure
         memset(&self._updated_centroids[self._nb_clusters], 0, sizeof(Centroid))
 
-        self.centroids[self._nb_clusters].features = <Data2D*> calloc(1, sizeof_memviewslice)
-        self._updated_centroids[self._nb_clusters].features = <Data2D*> calloc(1, sizeof_memviewslice)
-
-        self.centroids[self._nb_clusters].features[0].shape[0] = self._centroid_shape.dims[0]
-        self.centroids[self._nb_clusters].features[0].shape[1] = self._centroid_shape.dims[1]
-        self.centroids[self._nb_clusters].features[0].strides[0] = self._centroid_shape.dims[1] * sizeof(float)
-        self.centroids[self._nb_clusters].features[0].strides[1] = sizeof(float)
-        self.centroids[self._nb_clusters].features[0].suboffsets[0] = -1
-        self.centroids[self._nb_clusters].features[0].suboffsets[1] = -1
-        self.centroids[self._nb_clusters].features[0]._data = <char*> calloc(self._centroid_shape.size, sizeof(float))
-
-        self._updated_centroids[self._nb_clusters].features[0].shape[0] = self._centroid_shape.dims[0]
-        self._updated_centroids[self._nb_clusters].features[0].shape[1] = self._centroid_shape.dims[1]
-        self._updated_centroids[self._nb_clusters].features[0].strides[0] = self._centroid_shape.dims[1] * sizeof(float)
-        self._updated_centroids[self._nb_clusters].features[0].strides[1] = sizeof(float)
-        self._updated_centroids[self._nb_clusters].features[0].suboffsets[0] = -1
-        self._updated_centroids[self._nb_clusters].features[0].suboffsets[1] = -1
-        self._updated_centroids[self._nb_clusters].features[0]._data = <char*> calloc(self._centroid_shape.size, sizeof(float))
-
-        # cdef Data2D tmp
-        # with gil:
-        #     print("centroid created")
-            # print(self.centroids[self._nb_clusters].features[0].shape)
-            # print(self.centroids[self._nb_clusters].features[0]._data)
-            # print(type(self.centroids[self._nb_clusters].features[0]))
-            # print(type(self.centroids[self._nb_clusters].features[0].data))
-            # self.centroids[self._nb_clusters].features[0].data = <float*> calloc(self._centroid_shape.size, sizeof(float))
-            # self._updated_centroids[self._nb_clusters].features[0].data = <float*> calloc(self._centroid_shape.size, sizeof(float))
-            # self.centroids[self._nb_clusters].features[0] = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
-            # self._updated_centroids[self._nb_clusters].features[0] = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]> calloc(self._centroid_shape.size, sizeof(float))
-
-            # tmp = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]*> calloc(self._centroid_shape.size, sizeof(float))
-        #     print(tmp.strides)
-        #     print(tmp.suboffsets)
-        # #     self.centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]*> calloc(self._centroid_shape.size, sizeof(float))
-        # #     self._updated_centroids[self._nb_clusters].features = <float[:self._centroid_shape.dims[0], :self._centroid_shape.dims[1]]*> calloc(self._centroid_shape.size, sizeof(float))
+        initialize_centroid(&self.centroids[self._nb_clusters], self._centroid_shape)
+        initialize_centroid(&self._updated_centroids[self._nb_clusters], self._centroid_shape)
 
         return Clusters.c_create_cluster(self)
 
