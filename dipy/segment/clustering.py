@@ -568,8 +568,6 @@ class QuickBundlesX(Clustering):
         qbx = quickbundlesx(streamlines, self.metric,
                             thresholds=self.thresholds,
                             ordering=ordering)
-
-        #cluster_map.refdata = streamlines
         return qbx
 
 
