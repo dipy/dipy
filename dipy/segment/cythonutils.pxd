@@ -38,6 +38,6 @@ cdef shape2tuple(Shape shape)
 
 cdef int same_shape(Shape shape1, Shape shape2) nogil
 
-cdef Data2D* create_memview(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil
+cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil
 
-cdef void free_memview(Data2D* memview) nogil
+cdef void free_memview_2d(Data2D* memview) nogil
