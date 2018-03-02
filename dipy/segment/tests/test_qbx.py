@@ -95,13 +95,6 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
     return bundle
 
 
-def fornix_streamlines(no_pts=12):
-    fname = get_data('fornix')
-    streams, hdr = tv.read(fname)
-    streamlines = [set_number_of_points(i[0], no_pts) for i in streams]
-    return streamlines
-
-
 def test_3D_points():
 
     points = np.array([[[1, 0, 0]],
@@ -177,7 +170,43 @@ def test_with_simulated_bundles2():
     qbx_class = QuickBundlesX(thresholds)
     tree = qbx_class.cluster(streamlines)
     # By default `refdata` refers to data being clustered.
-    assert tree.refdata == streamlines
+    assert_equal(tree.refdata, streamlines)
+    
+
+def test_circle_parallel_fornix():
+    
+    circle = streamlines_in_circle(100, step_size=2)
+       
+    
+    parallel = streamlines_parallel(100)
+
+    thresholds = [1, 0.1]
+
+    qbx_class = QuickBundlesX(thresholds)
+    tree = qbx_class.cluster(circle)
+    
+    clusters = tree.get_clusters(0)    
+    assert_equal(len(clusters), 1)
+    
+    clusters = tree.get_clusters(1)
+    assert_equal(len(clusters), 3)
+    
+    clusters = tree.get_clusters(2)
+    assert_equal(len(clusters), 34)
+    
+        
+    thresholds = [.5]
+    
+    qbx_class = QuickBundlesX(thresholds)
+    tree = qbx_class.cluster(parallel)
+    
+    clusters = tree.get_clusters(0)    
+    assert_equal(len(clusters), 1)
+    
+    clusters = tree.get_clusters(1)
+    assert_equal(len(clusters), 100)
+    
+    
 
 
 if __name__ == '__main__':
