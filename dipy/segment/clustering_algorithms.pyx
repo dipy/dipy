@@ -138,17 +138,17 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
 
     Returns
     -------
-    `QuickBundlesX` object
+    `TreeClusterMap` object
         Result of the clustering. Use get_clusters() to get the clusters at
         a specific level of the hierarchy.
- 
+
     References
     ----------
-       
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential 
+
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
                     clustering of millions of streamlines in multiple
                     levels of detail at record execution time. Proceedings
-                    of the, International Society of Magnetic Resonance 
+                    of the, International Society of Magnetic Resonance
                     in Medicine (ISMRM). Singapore, 4187, 2016.
 
      .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
@@ -174,7 +174,4 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
 
         qbx.insert(streamline, idx)
 
-    return qbx
-
-
-
+    return qbx.get_tree_cluster_map()

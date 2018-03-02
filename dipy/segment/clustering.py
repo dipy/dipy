@@ -529,11 +529,11 @@ class QuickBundlesX(Clustering):
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
-                        
-    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential 
+
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
                         clustering of millions of streamlines in multiple
                         levels of detail at record execution time. Proceedings
-                        of the, International Society of Magnetic Resonance 
+                        of the, International Society of Magnetic Resonance
                         in Medicine (ISMRM). Singapore, 4187, 2016.
     """
     def __init__(self, thresholds, metric="MDF_12points"):
@@ -561,14 +561,15 @@ class QuickBundlesX(Clustering):
 
         Returns
         -------
-        `QuickBundlesX` object
+        `TreeClusterMap` object
             Result of the clustering.
         """
         from dipy.segment.clustering_algorithms import quickbundlesx
-        qbx = quickbundlesx(streamlines, self.metric,
-                            thresholds=self.thresholds,
-                            ordering=ordering)
-        return qbx
+        tree = quickbundlesx(streamlines, self.metric,
+                             thresholds=self.thresholds,
+                             ordering=ordering)
+        tree.refdata = streamlines
+        return tree
 
 
 class TreeCluster(ClusterCentroid):
@@ -645,7 +646,7 @@ class TreeClusterMap(ClusterMap):
                 return
 
             for child in node.children:
-                _traverse(child, level+1)
+                _traverse(child, level + 1)
 
         _traverse(self.root)
         return clusters
