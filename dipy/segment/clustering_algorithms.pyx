@@ -1,7 +1,7 @@
 # distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
-from builtins import range
+from dipy.utils.six.moves import xrange
 import itertools
 import numpy as np
 
@@ -46,7 +46,7 @@ def clusters_centroid2clustermap_centroid(ClustersCentroid clusters_list):
     cdef Data2D features
     shape = clusters_list._centroid_shape
 
-    for i in range(clusters_list._nb_clusters):
+    for i in xrange(clusters_list._nb_clusters):
         features = <float[:shape.dims[0], :shape.dims[1]]> \
             &clusters_list.centroids[i].features[0][0,0]
         centroid = np.asarray(features)
@@ -98,7 +98,7 @@ def quickbundles(streamlines, Metric metric, double threshold,
     # Threshold of -np.inf is not supported, set it to 0
     threshold = max(threshold, 0)
     if ordering is None:
-        ordering = range(len(streamlines))
+        ordering = xrange(len(streamlines))
 
     # Check if `ordering` or `streamlines` are empty
     first_idx, ordering = peek(ordering)
@@ -156,7 +156,7 @@ def quickbundlesx(streamlines, Metric metric, thresholds, ordering=None):
                         vol 6, no 175, 2012.
     """
     if ordering is None:
-        ordering = range(len(streamlines))
+        ordering = xrange(len(streamlines))
 
     # Check if `ordering` or `streamlines` are empty
     first_idx, ordering = peek(ordering)
