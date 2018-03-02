@@ -277,29 +277,28 @@ cdef class QuickBundlesX(object):
         # No need to free node.father, only the current node.
         free(node)
 
-    cdef void _fetch_level(self, CentroidNode* node):
-        cdef Data2D centroid
-        if node.level == self.level:
-            centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
-            cluster = ClusterCentroid(np.asarray(centroid).copy())
-            cluster.indices = np.asarray(<int[:node.size]> node.indices).copy()
-            self.clusters.add_cluster(cluster)
+    # cdef void _fetch_level(self, CentroidNode* node):
+    #     cdef Data2D centroid
+    #     if node.level == self.level:
+    #         centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
+    #         cluster = ClusterCentroid(np.asarray(centroid).copy())
+    #         cluster.indices = np.asarray(<int[:node.size]> node.indices).copy()
+    #         self.clusters.add_cluster(cluster)
 
-    @cython.wraparound(True)
-    def get_clusters(self, int level):
-        self.clusters = ClusterMapCentroid()
-        levels = range(self.nb_levels+1)  # Level 0 is the root
-        self.level = levels[level]
-        self.traverse_postorder(self.root, self._fetch_level)
-        return self.clusters
+    # @cython.wraparound(True)
+    # def get_clusters(self, int level):
+    #     self.clusters = ClusterMapCentroid()
+    #     levels = range(self.nb_levels+1)  # Level 0 is the root
+    #     self.level = levels[level]
+    #     self.traverse_postorder(self.root, self._fetch_level)
+    #     return self.clusters
 
     cdef object _build_tree_clustermap(self, CentroidNode* node):
         cdef Data2D centroid
         centroid = <float[:self.features_shape.dims[0],:self.features_shape.dims[1]]> &node.centroid[0][0,0]
         tree_cluster = TreeCluster(threshold=node.threshold,
                                    centroid=np.asarray(centroid),
-                                   indices=np.asarray(<int[:node.size]> node.indices))
-
+                                   indices=np.asarray(<int[:node.size]> node.indices).copy())
         cdef int i
         for i in range(node.nb_children):
             tree_cluster.add(self._build_tree_clustermap(node.children[i]))
@@ -545,7 +544,7 @@ cdef class QuickBundles(object):
         nearest_cluster.id = -1
         nearest_cluster.dist = BIGGEST_DOUBLE
 
-       
+
         for k in range(self.clusters.c_size()):
 
             self.stats.nb_mdf_calls += 1
