@@ -112,14 +112,13 @@ def test_3D_points():
 
     thresholds = [4, 2, 1]
     metric = AveragePointwiseEuclideanMetric()
-    qbx_model = QuickBundlesX(thresholds,
-                              metric=metric)
-    qbx = qbx_model.cluster(points)
-    clusters_2 = qbx.get_clusters(2)
+    qbx = QuickBundlesX(thresholds, metric=metric)
+    tree = qbx.cluster(points)
+    clusters_2 = tree.get_clusters(2)
     assert_array_equal(clusters_2.clusters_sizes(), [3, 2])
-    clusters_0 = qbx.get_clusters(0)
+    clusters_0 = tree.get_clusters(0)
     assert_array_equal(clusters_0.clusters_sizes(), [5])
-    
+
 
 def test_3D_segments():
     points = np.array([[[1, 0, 0],
@@ -134,18 +133,18 @@ def test_3D_segments():
                         [5.5, 1, 0]]], dtype="f4")
 
     thresholds = [4, 2, 1]
-    
+
     feature = ResampleFeature(nb_points=20)
     metric = AveragePointwiseEuclideanMetric(feature)
-    qbx_model = QuickBundlesX(thresholds, metric=metric)
-    qbx = qbx_model.cluster(points)
-    clusters_0 = qbx.get_clusters(0)
-    clusters_1 = qbx.get_clusters(1)
-    clusters_2 = qbx.get_clusters(2)
-    
+    qbx = QuickBundlesX(thresholds, metric=metric)
+    tree = qbx.cluster(points)
+    clusters_0 = tree.get_clusters(0)
+    clusters_1 = tree.get_clusters(1)
+    clusters_2 = tree.get_clusters(2)
+
     assert_equal(len(clusters_0.centroids), len(clusters_1.centroids))
     assert_equal(len(clusters_2.centroids) > len(clusters_1.centroids), True)
-    
+
     assert_array_equal(clusters_2[1].indices, np.array([3, 4], dtype=np.int32))
 
 
@@ -154,19 +153,19 @@ def test_with_simulated_bundles():
     streamlines = simulated_bundle(3, False, 2)
     thresholds = [10, 3, 1]
     qbx_class = QuickBundlesX(thresholds)
-    qbx = qbx_class.cluster(streamlines)
+    tree = qbx_class.cluster(streamlines)
     for level in range(len(thresholds) + 1):
-        clusters = qbx.get_clusters(level)
-    tree = qbx.get_tree_cluster_map()
+        clusters = tree.get_clusters(level)
+
     assert_equal(tree.leaves[0].indices[0], 0)
     assert_equal(tree.leaves[2][0], 2)
     clusters.refdata = streamlines
-    
-    assert_array_equal(clusters[0][0],
-                              np.array([[0., -10.,  -5.],
-                                        [0.,  10.,  -5.]]))
 
-    
+    assert_array_equal(clusters[0][0],
+                       np.array([[0., -10., -5.],
+                                 [0., 10., -5.]]))
+
+
 def test_with_simulated_bundles2():
 
     # Generate synthetic streamlines
@@ -176,12 +175,10 @@ def test_with_simulated_bundles2():
 
     thresholds = [10, 2, 1]
     qbx_class = QuickBundlesX(thresholds)
-    qbx = qbx_class.cluster(streamlines)
-    
-    tree = qbx.get_tree_cluster_map()
-    tree.refdata = streamlines
+    tree = qbx_class.cluster(streamlines)
+    # By default `refdata` refers to data being clustered.
+    assert tree.refdata == streamlines
 
 
 if __name__ == '__main__':
     run_module_suite()
-    
