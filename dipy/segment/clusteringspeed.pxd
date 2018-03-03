@@ -110,5 +110,4 @@ cdef class QuickBundlesX(object):
     cpdef object insert(self, Data2D datum, int datum_idx)
     cdef void traverse_postorder(self, CentroidNode* node, void (*visit)(QuickBundlesX, CentroidNode*))
     cdef void _dealloc_node(self, CentroidNode* node)
-    # cdef void _fetch_level(self, CentroidNode* node)
     cdef object _build_tree_clustermap(self, CentroidNode* node)

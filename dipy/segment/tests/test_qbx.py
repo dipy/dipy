@@ -176,7 +176,6 @@ def test_with_simulated_bundles2():
 def test_circle_parallel_fornix():
     
     circle = streamlines_in_circle(100, step_size=2)
-       
     
     parallel = streamlines_parallel(100)
 
@@ -193,7 +192,6 @@ def test_circle_parallel_fornix():
     
     clusters = tree.get_clusters(2)
     assert_equal(len(clusters), 34)
-    
         
     thresholds = [.5]
     
@@ -205,8 +203,6 @@ def test_circle_parallel_fornix():
     
     clusters = tree.get_clusters(1)
     assert_equal(len(clusters), 100)
-    
-    
 
 
 if __name__ == '__main__':
