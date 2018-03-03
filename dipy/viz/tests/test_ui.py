@@ -152,9 +152,7 @@ def test_ui_button_panel(recording=False):
     # /Button
 
     # TextBlock
-    text_block_test = ui.TextBlock2D()
-    text_block_test.message = 'TextBlock'
-    text_block_test.color = (0, 0, 0)
+    text_block_test = ui.TextBlock2D(text='TextBlock', color=(0, 0, 0))
 
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150),

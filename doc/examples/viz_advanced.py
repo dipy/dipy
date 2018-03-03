@@ -211,37 +211,19 @@ opacity_slider.add_callback(opacity_slider.slider_disk,
 We'll also create text labels to identify the sliders.
 """
 
-
-def build_label(text):
-    label = ui.TextBlock2D()
-    label.message = text
-    label.font_size = 18
-    label.font_family = 'Arial'
-    label.justification = 'left'
-    label.bold = False
-    label.italic = False
-    label.shadow = False
-    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
-    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-    label.color = (1, 1, 1)
-
-    return label
-
-
-line_slider_label_z = build_label(text="Z Slice")
-line_slider_label_x = build_label(text="X Slice")
-line_slider_label_y = build_label(text="Y Slice")
-opacity_slider_label = build_label(text="Opacity")
+line_slider_label_z = ui.TextBlock2D(text="Z Slice")
+line_slider_label_x = ui.TextBlock2D(text="X Slice")
+line_slider_label_y = ui.TextBlock2D(text="Y Slice")
+opacity_slider_label = ui.TextBlock2D(text="Opacity")
 
 """
 Now we will create a ``panel`` to contain the sliders and labels.
 """
 
-
 panel = ui.Panel2D(center=(1030, 120),
                    size=(300, 200),
-                   color=(1, 1, 1),
-                   opacity=0.1,
+                   color=(0.5, 0.5, 0.5),
+                   opacity=0.5,
                    align="right")
 
 panel.add_element(line_slider_label_x, 'relative', (0.1, 0.75))
