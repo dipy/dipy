@@ -3,6 +3,7 @@ from __future__ import division, print_function, absolute_import
 from os.path import splitext
 from dipy.utils.six import string_types
 import numpy as np
+import csv
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
@@ -38,7 +39,11 @@ def read_bvals_bvecs(fbvals, fbvecs):
             if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
-                    vals.append(np.squeeze(np.loadtxt(this_fname)))
+                    with open(this_fname, 'r') as f:
+                        content = f.readline()
+                    sniffer = csv.Sniffer()
+                    detect_delimiter = sniffer.sniff(str(content))
+                    vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
                 elif ext == '.npy':
                     vals.append(np.squeeze(np.load(this_fname)))
                 else:
