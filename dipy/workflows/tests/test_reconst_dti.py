@@ -14,6 +14,25 @@ from dipy.workflows.reconst import ReconstDtiFlow
 def test_reconst_dti_wls():
     reconst_flow_core(ReconstDtiFlow)
 
+def reconst_mmri_core(flow, extra_args=[]):
+    with TemporaryDirectory() as out_dir:
+        data_path, bval_path, bvec_path = get_data('small_25')
+        vol_img = nib.load(data_path)
+        volume = vol_img.get_data()
+        # mask = np.ones_like(volume[:, :, :, 0])
+        # mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        # mask_path = join(out_dir, 'tmp_mask.nii.gz')
+        # nib.save(mask_img, mask_path)
+
+        mmri_flow = flow()
+
+        args = [data_path, bval_path, bvec_path]
+
+        mmri_flow.run(*args, out_dir=out_dir)
+
+def test_reconst_dti_nlls():
+    reconst_flow_core(ReconstDtiFlow)
+
 
 def reconst_flow_core(flow, extra_args=[]):
     with TemporaryDirectory() as out_dir:
@@ -77,5 +96,6 @@ def reconst_flow_core(flow, extra_args=[]):
         assert_equal(evals_data.shape[:-1], volume.shape[:-1])
 
 
+
 if __name__ == '__main__':
-    test_reconst_dti_wls()
+    test_reconst_dti_nlls()
