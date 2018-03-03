@@ -14,11 +14,8 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    version = vtk.vtkVersion.GetVTKVersion()
     major_version = vtk.vtkVersion.GetVTKMajorVersion()
-    vtkTextActor = vtk.vtkTextActor
-else:
-    vtkTextActor = object
 
 TWO_PI = 2 * np.pi
 
@@ -458,8 +455,10 @@ class Rectangle2D(UI):
         """
         super(Rectangle2D, self).__init__()
         self.size = size
-        self.actor = self.build_actor(size=size, center=center,
-                                      color=color, opacity=opacity)
+        self.actor = self.build_actor(size=size)
+        self.color = color
+        self.set_center(center)
+        self.opacity = opacity
         self.handle_events(self.actor)
 
     def get_actors(self):
@@ -468,19 +467,13 @@ class Rectangle2D(UI):
         """
         return [self.actor]
 
-    def build_actor(self, size, center, color, opacity):
+    def build_actor(self, size):
         """ Builds the text actor.
 
         Parameters
         ----------
         size : (float, float)
             The size of the rectangle (height, width) in pixels.
-        center : (float, float)
-            The center of the rectangle (x, y).
-        color : (float, float, float)
-            Must take values in [0, 1].
-        opacity : float
-            Must take values in [0, 1].
 
         Returns
         -------
@@ -520,11 +513,11 @@ class Rectangle2D(UI):
 
         actor = vtk.vtkActor2D()
         actor.SetMapper(mapper)
-        actor.GetProperty().SetColor(color)
-        actor.GetProperty().SetOpacity(opacity)
-        actor.SetPosition(center[0] - self.size[0] / 2, center[1] - self.size[1] / 2)
 
         return actor
+
+    def set_position(self, position):
+        self.actor.SetPosition(*position)
 
     def set_center(self, position):
         """ Sets the center to position.
@@ -535,7 +528,71 @@ class Rectangle2D(UI):
             The new center of the rectangle (x, y).
 
         """
-        self.actor.SetPosition(position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
+        self.actor.SetPosition(position[0] - self.size[0] / 2,
+                               position[1] - self.size[1] / 2)
+
+    @property
+    def color(self):
+        """ Gets the rectangle's color.
+
+        """
+        color = self.actor.GetProperty().GetColor()
+        return np.asarray(color)
+
+    @color.setter
+    def color(self, color):
+        """ Sets the rectangle's color.
+
+        Parameters
+        ----------
+        color : (float, float, float)
+            RGB. Must take values in [0, 1].
+
+        """
+        self.actor.GetProperty().SetColor(*color)
+
+    @property
+    def opacity(self):
+        """ Gets the rectangle's opacity.
+
+        """
+        return self.actor.GetProperty().GetOpacity()
+
+    @opacity.setter
+    def opacity(self, opacity):
+        """ Sets the rectangle's opacity.
+
+        Parameters
+        ----------
+        opacity : float
+            Degree of transparency. Must be between [0, 1].
+
+        """
+        self.actor.GetProperty().SetOpacity(opacity)
+
+    @property
+    def position(self):
+        """ Gets text actor position.
+
+        Returns
+        -------
+        (float, float)
+            The current actor position. (x, y) in pixels.
+
+        """
+        return self.actor.GetPosition()
+
+    @position.setter
+    def position(self, position):
+        """ Set text actor position.
+
+        Parameters
+        ----------
+        position : (float, float)
+            The new position. (x, y) in pixels.
+
+        """
+        self.actor.SetPosition(*position)
 
 
 class Panel2D(UI):
@@ -709,12 +766,16 @@ class TextBlock2D(UI):
         (x, y) in pixels.
     color : (float, float, float)
         RGB: Values must be between 0-1.
+    bg_color : (float, float, float)
+        RGB: Values must be between 0-1.
     font_size : int
         Size of the text font.
     font_family : str
         Currently only supports Arial.
     justification : str
         left, right or center.
+    vertical_justification : str
+        bottom, middle or top.
     bold : bool
         Makes text bold.
     italic : bool
@@ -724,8 +785,9 @@ class TextBlock2D(UI):
     """
 
     def __init__(self, text="Text Block", font_size=18, font_family='Arial',
-                 justification='left', bold=False, italic=False, shadow=False,
-                 color=(1, 1, 1), position=(0, 0)):
+                 justification='left', vertical_justification="bottom",
+                 bold=False, italic=False, shadow=False,
+                 color=(1, 1, 1), bg_color=None, position=(0, 0)):
         """
         Parameters
         ----------
@@ -735,12 +797,16 @@ class TextBlock2D(UI):
             (x, y) in pixels.
         color : (float, float, float)
             RGB: Values must be between 0-1.
+        bg_color : (float, float, float)
+            RGB: Values must be between 0-1.
         font_size : int
             Size of the text font.
         font_family : str
             Currently only supports Arial.
         justification : str
             left, right or center.
+        vertical_justification : str
+            bottom, middle or top.
         bold : bool
             Makes text bold.
         italic : bool
@@ -749,16 +815,20 @@ class TextBlock2D(UI):
             Adds text shadow.
         """
         super(TextBlock2D, self).__init__()
-        self.actor = vtkTextActor()
-        self.message = text
+        self.actor = vtk.vtkTextActor()
+
+        self._background = None  # For VTK < 7
+        self.position = position
+        self.color = color
+        self.background_color = bg_color
         self.font_size = font_size
         self.font_family = font_family
         self.justification = justification
         self.bold = bold
         self.italic = italic
         self.shadow = shadow
-        self.color = color
-        self.position = position
+        self.vertical_justification = vertical_justification
+        self.message = text
 
     def get_actor(self):
         """ Returns the actor composing this element.
@@ -774,6 +844,9 @@ class TextBlock2D(UI):
         """ Returns the actors that compose this UI component.
 
         """
+        if self._background is not None:
+            return [self._background, self.actor]
+
         return [self.actor]
 
     @property
@@ -840,8 +913,7 @@ class TextBlock2D(UI):
     def font_family(self, family='Arial'):
         """ Sets font family.
 
-        Currently defaults to Arial.
-        # ToDo: Add other font families.
+        Currently Arial and Courier are supported.
 
         Parameters
         ----------
@@ -851,6 +923,8 @@ class TextBlock2D(UI):
         """
         if family == 'Arial':
             self.actor.GetTextProperty().SetFontFamilyToArial()
+        elif family == 'Courier':
+            self.actor.GetTextProperty().SetFontFamilyToCourier()
         else:
             raise ValueError("Font not supported yet: {}.".format(family))
 
@@ -864,7 +938,13 @@ class TextBlock2D(UI):
             Text justification.
 
         """
-        return self.actor.GetTextProperty().GetJustificationAsString()
+        justification = self.actor.GetTextProperty().GetJustificationAsString()
+        if justification == 'Left':
+            return "left"
+        elif justification == 'Centered':
+            return "center"
+        elif justification == 'Right':
+            return "right"
 
     @justification.setter
     def justification(self, justification):
@@ -885,6 +965,46 @@ class TextBlock2D(UI):
             text_property.SetJustificationToRight()
         else:
             raise ValueError("Text can only be justified left, right and center.")
+
+    @property
+    def vertical_justification(self):
+        """ Gets text vertical justification.
+
+        Returns
+        -------
+        str
+            Text vertical justification.
+
+        """
+        text_property = self.actor.GetTextProperty()
+        vjustification = text_property.GetVerticalJustificationAsString()
+        if vjustification == 'Bottom':
+            return "bottom"
+        elif vjustification == 'Centered':
+            return "middle"
+        elif vjustification == 'Top':
+            return "top"
+
+    @vertical_justification.setter
+    def vertical_justification(self, vertical_justification):
+        """ Justifies text vertically.
+
+        Parameters
+        ----------
+        vertical_justification : str
+            Possible values are bottom, middle, top.
+
+        """
+        text_property = self.actor.GetTextProperty()
+        if vertical_justification == 'bottom':
+            text_property.SetVerticalJustificationToBottom()
+        elif vertical_justification == 'middle':
+            text_property.SetVerticalJustificationToCentered()
+        elif vertical_justification == 'top':
+            text_property.SetVerticalJustificationToTop()
+        else:
+            msg = "Vertical justification must be: bottom, middle or top."
+            raise ValueError(msg)
 
     @property
     def bold(self):
@@ -983,6 +1103,59 @@ class TextBlock2D(UI):
         self.actor.GetTextProperty().SetColor(*color)
 
     @property
+    def background_color(self):
+        """ Gets background color.
+
+        Returns
+        -------
+        (float, float, float) or None
+            If None, there no background color.
+            Otherwise, background color in RGB.
+
+        """
+        if major_version < 7:
+            if self._background is None:
+                return None
+
+            return self._background.GetProperty().GetColor()
+
+        if self.actor.GetTextProperty().GetBackgroundOpacity() == 0:
+            return None
+
+        return self.actor.GetTextProperty().GetBackgroundColor()
+
+    @background_color.setter
+    def background_color(self, color):
+        """ Set text color.
+
+        Parameters
+        ----------
+        color : (float, float, float) or None
+            If None, remove background.
+            Otherwise, RGB values (must be between 0-1).
+
+        """
+
+        if color is None:
+            # Remove background.
+            if major_version < 7:
+                self._background = None
+            else:
+                self.actor.GetTextProperty().SetBackgroundOpacity(0.)
+
+        else:
+            if major_version < 7:
+                self._background = vtk.vtkActor2D()
+                self._background.GetProperty().SetColor(*color)
+                self._background.GetProperty().SetOpacity(1)
+                self._background.SetMapper(self.actor.GetMapper())
+                self._background.SetPosition(*self.actor.GetPosition())
+
+            else:
+                self.actor.GetTextProperty().SetBackgroundColor(*color)
+                self.actor.GetTextProperty().SetBackgroundOpacity(1.)
+
+    @property
     def position(self):
         """ Gets text actor position.
 
@@ -1005,6 +1178,8 @@ class TextBlock2D(UI):
 
         """
         self.actor.SetPosition(*position)
+        if self._background is not None:
+            self._background.SetPosition(*self.actor.GetPosition())
 
     def set_center(self, position):
         """ Sets the text center to position.
@@ -1133,9 +1308,8 @@ class TextBox2D(UI):
         text_block.bold = bold
         text_block.italic = italic
         text_block.shadow = shadow
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
-            pass
-        else:
+
+        if major_version >= 7:
             text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
             text_block.actor.GetTextProperty().SetBackgroundOpacity(1.0)
             text_block.color = color
@@ -2346,7 +2520,7 @@ class FileSelectMenuText2D(UI):
         text_actor.shadow = shadow
         text_actor.color = color
 
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             pass
         else:
             text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
@@ -2382,7 +2556,7 @@ class FileSelectMenuText2D(UI):
         self.file_type = file_type
         self.text_actor.message = file_name
 
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
             if file_type != "file":
                 self.text_actor.get_actor().GetTextProperty().SetBold(True)
@@ -2399,7 +2573,7 @@ class FileSelectMenuText2D(UI):
         """ Changes the background color of the actor.
 
         """
-        if vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1] <= "6.2.0":
+        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
             self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
         else:
             self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
