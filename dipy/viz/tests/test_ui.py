@@ -15,6 +15,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.viz.ui import UI
 
 from dipy.testing.decorators import xvfb_it
+from dipy.testing import assert_arrays_equal
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -494,6 +495,75 @@ def test_ui_ring_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_listbox_2d(recording=False):
+    filename = "test_ui_listbox_2d"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    # Values that will be displayed by the listbox.
+    values = list(range(1, 42 + 1))
+    listbox = ui.ListBox2D(values=values,
+                           size=(500, 500),
+                           multiselection=True,
+                           reverse_scrolling=False)
+    listbox.center = (300, 300)
+
+    # We will collect the sequence of values that have been selected.
+    selected_values = []
+    def _on_change():
+        selected_values.append(list(listbox.selected))
+
+    # Set up a callback when selection changes.
+    listbox.on_change = _on_change
+
+    # Assign the counter callback to every possible event.
+    event_counter = EventCounter()
+    event_counter.monitor(listbox)
+
+    # Create a show manager and record/play events.
+    show_manager = window.ShowManager(size=(600, 600),
+                                      title="DIPY ListBox")
+    show_manager.ren.add(listbox)
+
+    if recording:
+        # Record the following events:
+        #  1. Click on 1
+        #  2. Ctrl + click on 2,
+        #  3. Ctrl + click on 2.
+        #  4. Click on down arrow (4 times).
+        #  5. Click on 21.
+        #  6. Click on up arrow (5 times).
+        #  7. Click on 1
+        #  8. Use mouse wheel to scroll down.
+        #  9. Shift + click on 42.
+        # 10. Use mouse wheel to scroll back up.
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
+
+    # Check if the right values were selected.
+    expected = [[1], [1, 2], [1], [21], [1], values]
+    assert len(selected_values) == len(expected)
+    assert_arrays_equal(selected_values, expected)
+
+    # Test without multiselection enabled.
+    listbox.multiselection = False
+    del selected_values[:]  # Clear the list.
+    show_manager.play_events_from_file(recording_filename)
+
+    # Check if the right values were selected.
+    expected = [[1], [2], [2], [21], [1], [42]]
+    assert len(selected_values) == len(expected)
+    assert_arrays_equal(selected_values, expected)
+
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
@@ -506,3 +576,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_ring_slider_2d":
         test_ui_ring_slider_2d(recording=True)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
+        test_ui_listbox_2d(recording=True)
