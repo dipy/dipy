@@ -178,18 +178,6 @@ disk_slider.add_callback(disk_slider.base_disk,
                          "LeftButtonPressEvent",
                          rotate_red_cube)
 """
-2D File Select Menu
-==============
-"""
-
-file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
-                                       position=(300, 300),
-                                       font_size=16,
-                                       extensions=["py", "png"],
-                                       directory_path=os.getcwd(),
-                                       parent=None)
-
-"""
 Adding Elements to the ShowManager
 ==================================
 
@@ -206,7 +194,6 @@ show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
-show_manager.ren.add(file_select_menu)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
