@@ -119,41 +119,7 @@ print("Cluster sizes:", map(len, clusters))
 
 .. _clustering-examples-MinimumAverageDirectFlipMetric:
 
-Minimum Average Direct Flip Metric (MDF)
-========================================
-**What:** It is the metric used in the QuickBundles algorithm [Garyfallidis12]_.
-Instances of `MinimumAverageDirectFlipMetric` first compute the
-direct distance *d1* by taking the average of the pointwise
-Euclidean distances between two sequences *of same length*. Reverse
-one of the two sequences and compute the flip distance *d2* using the same
-approach as for *d1*. Then, return the minimum between *d1* and *d2*.
-
-**When:** This metric mainly exists because it is used internally by
-`AveragePointwiseEuclideanMetric`.
-
-**Note:** Inputs must be sequences of same length.
-"""
-
-from dipy.segment.metric import MinimumAverageDirectFlipMetric
-
-# Get some streamlines.
-streamlines = get_streamlines()  # Previously defined.
-
-# Make sure our streamlines have the same number of points.
-from dipy.tracking.streamline import set_number_of_points
-streamlines = set_number_of_points(streamlines, nb_points=20)
-
-# Create the instance of `MinimumAverageDirectFlipMetric` to use.
-metric = MinimumAverageDirectFlipMetric()
-d = metric.dist(streamlines[0], streamlines[1])
-
-print("MDF distance between the first two streamlines: ", d)
-
-"""
-
 ::
-
-    MDF distance between the first two streamlines: 11.681308709622542
 
 .. _clustering-examples-MinimumAverageDirectFlipMetric:
 
