@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from dipy.segment.metric import Metric
 from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.metric import MinimumAverageDirectFlipMetric
 
 
 class Identity:
@@ -475,6 +476,9 @@ class QuickBundles(Clustering):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
+        if isinstance(metric, MinimumAverageDirectFlipMetric):
+            raise ValueError("Use AveragePointwiseEuclideanMetric instead")
+
         if isinstance(metric, Metric):
             self.metric = metric
         elif metric == "MDF_12points":
@@ -538,6 +542,9 @@ class QuickBundlesX(Clustering):
     """
     def __init__(self, thresholds, metric="MDF_12points"):
         self.thresholds = thresholds
+        
+        if isinstance(metric, MinimumAverageDirectFlipMetric):
+            raise ValueError("Use AveragePointwiseEuclideanMetric instead")
 
         if isinstance(metric, Metric):
             self.metric = metric
