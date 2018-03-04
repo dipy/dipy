@@ -124,8 +124,8 @@ Simply create a panel and add elements to it.
 
 panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
                    align="right")
-panel.add_element(button_example, 'relative', (0.2, 0.2))
-panel.add_element(second_button_example, 'absolute', (480, 100))
+panel.add_element(button_example, (0.2, 0.2))
+panel.add_element(second_button_example, (480, 100))
 
 """
 TextBox
