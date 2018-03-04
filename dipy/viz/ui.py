@@ -28,16 +28,6 @@ class UI(object):
 
     Attributes
     ----------
-    ui_param : object
-        This is an attribute that can be passed to the UI object by the
-        interactor.
-    ui_list : list of :class:`UI`
-        This is used when there are more than one UI elements inside
-        a UI element. They're all automatically added to the renderer at the
-        same time as this one.
-    parent_ui: UI
-        Reference to the parent UI element. This is useful of there is a parent
-        UI element and its reference needs to be passed down to the child.
     on_left_mouse_button_pressed: function
         Callback function for when the left mouse button is pressed.
     on_left_mouse_button_released: function
@@ -60,10 +50,6 @@ class UI(object):
     """
 
     def __init__(self):
-        self.ui_param = None
-        self.ui_list = list()
-
-        self.parent_ui = None
         self._callbacks = []
 
         self.left_button_state = "released"
@@ -628,20 +614,20 @@ class Panel2D(UI):
 
         """
         super(Panel2D, self).__init__()
-        self.center = center
-        self.size = size
-        self.lower_limits = (self.center[0] - self.size[0] / 2,
-                             self.center[1] - self.size[1] / 2)
-
-        self.panel = Rectangle2D(size=size, center=center, color=color,
-                                 opacity=opacity)
-
-        self.element_positions = []
-        self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
+        self.size = np.array(size)
+        self.center = np.array(center)
+        self.lower_left_corner = self.center - self.size / 2
         self.alignment = align
+        self._drag_offset = None
 
-        self.handle_events(self.panel.actor)
+        self._elements = []
+        self.element_positions = []
 
+        # Create the background of the panel.
+        self.background = Rectangle2D(size=size, color=color, opacity=opacity)
+        self.add_element(self.background, (0.5, 0.5))
+
+        self.handle_events(self.background.actor)
         self.on_left_mouse_button_pressed = self.left_button_pressed
         self.on_left_mouse_button_dragged = self.left_button_dragged
 
@@ -656,40 +642,46 @@ class Panel2D(UI):
 
         """
         super(Panel2D, self).add_to_renderer(ren)
-        for ui_item in self.ui_list:
-            ui_item.add_to_renderer(ren)
+        for element in self._elements:
+            element.add_to_renderer(ren)
 
     def get_actors(self):
         """ Returns the panel actor.
 
         """
-        return [self.panel.actor]
+        return []
 
-    def add_element(self, element, position_type, position):
-        """ Adds an element to the panel.
+    def add_element(self, element, coords):
+        """ Adds a UI component to the panel.
 
-        The center of the rectangular panel is its bottom lower position.
+        The coordinates represent an offset from the lower left corner of the
+        panel.
 
         Parameters
         ----------
         element : UI
             The UI item to be added.
-        position_type: string
-            'absolute' or 'relative'
-        position : (float, float)
-            Absolute for absolute and relative for relative
+        coords : (float, float) or (int, int)
+            If float, normalized coordinates are assumed and they must be
+            between [0,1].
+            If int, pixels coordinates are assumed and it must fit within the
+            panel's size.
 
         """
-        self.ui_list.append(element)
-        if position_type == 'relative':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((self.lower_limits[0] + position[0] * self.size[0],
-                                self.lower_limits[1] + position[1] * self.size[1]))
-        elif position_type == 'absolute':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((position[0], position[1]))
-        else:
-            raise ValueError("Position can only be absolute or relative")
+        coords = np.array(coords)
+
+        if np.issubdtype(coords.dtype, np.floating):
+            if np.any(coords < 0) or np.any(coords > 1):
+                raise ValueError("Normalized coordinates must be in [0,1].")
+
+            coords = coords * self.size
+
+        #TODO: Check if coords is outside the panel.
+
+        self._elements.append(element)
+        self.element_positions.append((element, coords))
+        lower_corner = self.center - self.size / 2.
+        element.set_center(lower_corner + coords)
 
     def set_center(self, position):
         """ Sets the panel center to position.
@@ -702,35 +694,24 @@ class Panel2D(UI):
             The new center of the panel (x, y).
 
         """
-        shift = [position[0] - self.center[0], position[1] - self.center[1]]
-        self.center = position
-        self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
-        for ui_element in self.element_positions:
-            if ui_element[1] == 'relative':
-                ui_element[0].set_center((self.lower_limits[0] + ui_element[2] * self.size[0],
-                                          self.lower_limits[1] + ui_element[3] * self.size[1]))
-            elif ui_element[1] == 'absolute':
-                ui_element[2] += shift[0]
-                ui_element[3] += shift[1]
-                ui_element[0].set_center((ui_element[2], ui_element[3]))
+        self.center = np.array(position)
+        self.lower_left_corner = self.center - self.size / 2
+        for element, coords in self.element_positions:
+            center = self.center - self.size / 2. + coords
+            element.set_center(center)
 
     @staticmethod
     def left_button_pressed(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] -
-                                   panel2d_object.panel.actor.GetPosition()[0] -
-                                   panel2d_object.panel.size[0] / 2,
-                                   click_position[1] -
-                                   panel2d_object.panel.actor.GetPosition()[1] -
-                                   panel2d_object.panel.size[1] / 2)
+        click_pos = np.array(i_ren.event.position)
+        panel2d_object._drag_offset = click_pos - panel2d_object.center
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
     def left_button_dragged(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        if panel2d_object.ui_param is not None:
-            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0],
-                                       click_position[1] - panel2d_object.ui_param[1]))
+        if panel2d_object._drag_offset is not None:
+            click_position = np.array(i_ren.event.position)
+            new_center = click_position - panel2d_object._drag_offset
+            panel2d_object.set_center(new_center)
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -2246,20 +2227,19 @@ class FileSelectMenu2D(UI):
             text = FileSelectMenuText2D(position=(0, 0), font_size=self.font_size,
                                         file_select=self)
             text.parent_UI = self.parent_ui
-            self.ui_list.append(text)
             self.text_item_list.append(text)
 
-            panel.add_element(text, 'relative',
+            panel.add_element(text,
                               (0.1,
                                float(self.n_text_actors-i - 1) /
                                float(self.n_text_actors)))
 
         up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
-        panel.add_element(up_button, 'relative', (0.95, 0.95))
+        panel.add_element(up_button, (0.95, 0.95))
         self.buttons["up"] = up_button
 
         down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
-        panel.add_element(down_button, 'relative', (0.95, 0.05))
+        panel.add_element(down_button, (0.95, 0.05))
         self.buttons["down"] = down_button
 
         return panel
@@ -2425,9 +2405,9 @@ class FileSelectMenu2D(UI):
         if self.reverse_scrolling:
             up_event, down_event = down_event, up_event  # Swap events
 
-        self.add_callback(self.menu.get_actors()[0], up_event,
+        self.add_callback(self.menu.background.actor, up_event,
                           self.up_button_callback)
-        self.add_callback(self.menu.get_actors()[0], down_event,
+        self.add_callback(self.menu.background.actor, down_event,
                           self.down_button_callback)
 
         for text_ui in self.text_item_list:
