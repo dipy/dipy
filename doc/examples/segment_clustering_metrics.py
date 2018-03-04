@@ -117,11 +117,6 @@ print("Cluster sizes:", map(len, clusters))
 
     Cluster sizes: [64, 191, 44, 1]
 
-.. _clustering-examples-MinimumAverageDirectFlipMetric:
-
-::
-
-.. _clustering-examples-MinimumAverageDirectFlipMetric:
 
 Cosine Metric
 =============
