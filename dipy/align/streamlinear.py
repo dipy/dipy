@@ -3,14 +3,20 @@ import numpy as np
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
+                                  _bundle_minimum_distance_static,
                                   distance_matrix_mdf)
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
-                                      center_streamlines)
+                                      center_streamlines,
+                                      set_number_of_points,
+                                      select_random_set_of_streamlines,
+                                      length)
+from dipy.segment.clustering import QuickBundles
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
 from dipy.utils.six import string_types
+from time import time
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -154,6 +160,16 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
             List of affine parameters as an 1D vector
         """
         return bundle_min_distance(xopt, self.static, self.moving)
+
+
+class BundleMinDistanceStaticMetric(BundleMinDistanceMetric):
+
+    def distance(self, xopt):
+
+        return bundle_min_distance_static_fast(xopt,
+                                               self.static_centered_pts,
+                                               self.moving_centered_pts,
+                                               self.block_size)
 
 
 class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
@@ -602,6 +618,245 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
                                     cols,
                                     block_size,
                                     num_threads)
+
+
+def bundle_min_distance_static_fast(t, static, moving, block_size):
+    """ MDF-based pairwise distance optimization function (MIN)
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : array
+        1D array. t is a vector of of affine transformation parameters with
+        size at least 6.
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling.
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
+
+    static : array
+        N*M x 3 array. All the points of the static streamlines. With order of
+        streamlines intact. Where N is the number of streamlines and M
+        is the number of points per streamline.
+
+    moving : array
+        K*M x 3 array. All the points of the moving streamlines. With order of
+        streamlines intact. Where K is the number of streamlines and M
+        is the number of points per streamline.
+
+    block_size : int
+        Number of points per streamline. All streamlines in static and moving
+        should have the same number of points M.
+
+    Returns
+    -------
+    cost: float
+
+    """
+
+    aff = compose_matrix44(t)
+    moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
+    moving = np.ascontiguousarray(moving, dtype=np.float64)
+
+    rows = static.shape[0] / block_size
+    cols = moving.shape[0] / block_size
+
+    return _bundle_minimum_distance_static(static, moving,
+                                           rows,
+                                           cols,
+                                           block_size)
+
+
+def remove_clusters_by_size(clusters, min_size=0):
+    by_size = lambda c: len(c) >= min_size
+    return filter(by_size, clusters)
+
+
+def progressive_slr(static, moving, metric, x0, bounds,
+                    method='L-BFGS-B', verbose=True):
+
+    if verbose:
+        print('Progressive Registration is Enabled')
+
+    if x0 == 'translation' or x0 == 'rigid' or \
+       x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+
+        if verbose:
+            print(' Translation  (3 parameters)...')
+        slr_t = StreamlineLinearRegistration(metric=metric,
+                                             x0='translation',
+                                             bounds=bounds[:3],
+                                             method=method)
+
+        slm_t = slr_t.optimize(static, moving)
+
+    if x0 == 'rigid' or x0 == 'similarity' or \
+       x0 == 'scaling' or x0 == 'affine':
+
+        x_translation = slm_t.xopt
+        x = np.zeros(6)
+        x[:3] = x_translation
+
+        if verbose:
+            print(' Rigid  (6 parameters) ...')
+        slr_r = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:6],
+                                             method=method)
+        slm_r = slr_r.optimize(static, moving)
+
+    if x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+
+        x_rigid = slm_r.xopt
+        x = np.zeros(7)
+        x[:6] = x_rigid
+        x[6] = 1.
+
+        if verbose:
+            print(' Similarity (7 parameters) ...')
+        slr_s = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:7],
+                                             method=method)
+        slm_s = slr_s.optimize(static, moving)
+
+    if x0 == 'scaling' or x0 == 'affine':
+
+        x_similarity = slm_s.xopt
+        x = np.zeros(9)
+        x[:6] = x_similarity[:6]
+        x[6:] = np.array((x_similarity[6],) * 3)
+
+        if verbose:
+            print(' Scaling (9 parameters) ...')
+
+        slr_c = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:9],
+                                             method=method)
+        slm_c = slr_c.optimize(static, moving)
+
+    if x0 == 'affine':
+
+        x_scaling = slm_c.xopt
+        x = np.zeros(12)
+        x[:9] = x_scaling[:9]
+        x[9:] = np.zeros(3)
+
+        if verbose:
+            print(' Affine (12 parameters) ...')
+
+        slr_a = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:12],
+                                             method=method)
+        slm_a = slr_a.optimize(static, moving)
+
+    if x0 == 'translation':
+        slm = slm_t
+    elif x0 == 'rigid':
+        slm = slm_r
+    elif x0 == 'similarity':
+        slm = slm_s
+    elif x0 == 'scaling':
+        slm = slm_c
+    elif x0 == 'affine':
+        slm = slm_a
+    else:
+        raise ValueError('Incorrect SLR transform')
+
+    return slm
+
+
+def whole_brain_slr(static, moving,
+                    x0='affine',
+                    rm_small_clusters=50,
+                    maxiter=100,
+                    select_random=None,
+                    verbose=False,
+                    greater_than=50,
+                    less_than=250,
+                    qb_thr=15,
+                    nb_pts=20,
+                    progressive=True):
+
+    if verbose:
+        print('Static streamlines size {}'.format(len(static)))
+        print('Moving streamlines size {}'.format(len(moving)))
+
+    def check_range(streamline, gt=greater_than, lt=less_than):
+
+        if (length(streamline) > gt) & (length(streamline) < lt):
+            return True
+        else:
+            return False
+
+    streamlines1 = [s for s in static if check_range(s)]
+    streamlines2 = [s for s in moving if check_range(s)]
+
+    if verbose:
+
+        print('Static streamlines after length reduction {}'
+              .format(len(streamlines1)))
+        print('Moving streamlines after length reduction {}'
+              .format(len(streamlines2)))
+
+    if select_random is not None:
+        rstreamlines1 = select_random_set_of_streamlines(streamlines1,
+                                                         select_random)
+    else:
+        rstreamlines1 = streamlines1
+
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    qb1 = QuickBundles(threshold=qb_thr)
+    rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
+    cluster_map1 = qb1.cluster(rstreamlines1)
+    clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
+    qb_centroids1 = [cluster.centroid for cluster in clusters1]
+
+    if select_random is not None:
+        rstreamlines2 = select_random_set_of_streamlines(streamlines2,
+                                                         select_random)
+    else:
+        rstreamlines2 = streamlines2
+
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    qb2 = QuickBundles(threshold=qb_thr)
+    rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
+    cluster_map2 = qb2.cluster(rstreamlines2)
+    clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
+    qb_centroids2 = [cluster.centroid for cluster in clusters2]
+
+    t = time()
+
+    if not progressive:
+        slr = StreamlineLinearRegistration(x0=x0,
+                                           options={'maxiter': maxiter})
+        slm = slr.optimize(qb_centroids1, qb_centroids2)
+    else:
+        bounds = [(-45, 45), (-45, 45), (-45, 45),
+                  (-30, 30), (-30, 30), (-30, 30),
+                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
+                  (-10, 10), (-10, 10), (-10, 10)]
+        slm = progressive_slr(qb_centroids1, qb_centroids2,
+                              x0=x0, metric=None,
+                              bounds=bounds)
+
+    if verbose:
+        print('QB static centroids size %d' % len(qb_centroids1,))
+        print('QB moving centroids size %d' % len(qb_centroids2,))
+
+    duration = time() - t
+    if verbose:
+        print('SLR finished in  %0.3f seconds.' % (duration,))
+        print('SLR iterations: %d ' % (slm.iterations,))
+
+    moved = slm.transform(moving)
+
+    return moved, slm.matrix, qb_centroids1, qb_centroids2
 
 
 def _threshold(x, th):
