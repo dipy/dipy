@@ -1,11 +1,12 @@
 import itertools
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_equal,
+from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
                            assert_array_almost_equal, run_module_suite)
 
-from dipy.segment.clustering import QuickBundlesX
+from dipy.segment.clustering import QuickBundlesX, QuickBundles
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_data
 import nibabel.trackvis as tv
@@ -203,6 +204,16 @@ def test_circle_parallel_fornix():
     
     clusters = tree.get_clusters(1)
     assert_equal(len(clusters), 100)
+
+
+def test_raise_mdf():
+    
+    thresholds = [1, 0.1]
+    
+    metric = MinimumAverageDirectFlipMetric()
+
+    assert_raises(ValueError, QuickBundlesX, thresholds, metric=metric)
+    assert_raises(ValueError, QuickBundles, thresholds[1], metric=metric)
 
 
 if __name__ == '__main__':
