@@ -20,8 +20,6 @@ def tmp_show_two(f1, f2):
     ren.add(actor.line(f2, colors=(0, 1, 0)))
     window.show(ren)
 
-
-
  
 streams, hdr = nib.trackvis.read(get_data('fornix'))
 fornix = [s[0] for s in streams]
