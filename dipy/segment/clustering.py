@@ -1,12 +1,13 @@
 import operator
 import numpy as np
-
+from time import time
 from abc import ABCMeta, abstractmethod
 
 from dipy.segment.metric import Metric
 from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
+from dipy.tracking.streamline import set_number_of_points, nbytes
 
 
 class Identity:
@@ -657,3 +658,63 @@ class TreeClusterMap(ClusterMap):
 
         _traverse(self.root)
         return clusters
+
+
+def qbx_with_merge(streamlines, thresholds,
+                   nb_pts=20, select_randomly=None, verbose=True):
+    if verbose:
+        t = time()
+    len_s = len(streamlines)
+    if select_randomly is None:
+        select_randomly = len_s
+    indices = np.random.choice(len_s, min(select_randomly, len_s),
+                               replace=False)
+    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+
+    if verbose:
+        print(' Resampled to {} points'.format(nb_pts))
+        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+        print(' Duration of resampling is %0.3f sec.' % (time() - t,))
+        print(' QBX phase starting...')
+
+    qbx = QuickBundlesX(thresholds,
+                        metric=AveragePointwiseEuclideanMetric())
+
+    if verbose:
+        t1 = time()
+    qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
+
+    if verbose:
+        print(' Merging phase starting ...')
+
+    qbx_merge = QuickBundlesX([thresholds[-1]],
+                              metric=AveragePointwiseEuclideanMetric())
+
+    final_level = len(thresholds)
+
+    qbx_ordering_final = np.random.choice(
+        len(qbx_clusters.get_clusters(final_level)),
+        len(qbx_clusters.get_clusters(final_level)), replace=False)
+
+    qbx_merged_cluster_map = qbx_merge.cluster(
+        qbx_clusters.get_clusters(final_level).centroids,
+        ordering=qbx_ordering_final).get_clusters(1)
+
+    qbx_cluster_map = qbx_clusters.get_clusters(final_level)
+
+    merged_cluster_map = ClusterMapCentroid()
+    for cluster in qbx_merged_cluster_map:
+        merged_cluster = ClusterCentroid(centroid=cluster.centroid)
+        for i in cluster.indices:
+            merged_cluster.indices.extend(qbx_cluster_map[i].indices)
+        merged_cluster_map.add_cluster(merged_cluster)
+
+    merged_cluster_map.refdata = streamlines
+
+    if verbose:
+        print(' QuickBundlesX time for %d random streamlines'
+              % (select_randomly,))
+
+        print(' Duration %0.3f sec. \n' % (time() - t1, ))
+
+    return merged_cluster_map

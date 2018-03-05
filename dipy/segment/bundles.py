@@ -1,10 +1,11 @@
 import numpy as np
-from dipy.tracking.streamline import (transform_streamlines,
-                                      set_number_of_points, length,
+from dipy.tracking.streamline import (transform_streamlines, check_range,
+                                      set_number_of_points, length, nbytes,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import (QuickBundlesX,
                                      ClusterMapCentroid, ClusterCentroid,
-                                     AveragePointwiseEuclideanMetric)
+                                     AveragePointwiseEuclideanMetric,
+                                     qbx_with_merge)
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
@@ -17,79 +18,6 @@ from itertools import chain
 
 from nibabel.streamlines.array_sequence import ArraySequence
 from nibabel.affines import apply_affine
-
-
-def check_range(streamline, gt, lt):
-    length_s = length(streamline)
-    if (length_s > gt) & (length_s < lt):
-        return True
-    else:
-        return False
-
-
-def nbytes(streamlines):
-    return streamlines._data.nbytes / 1024. ** 2
-
-
-def qbx_with_merge(streamlines, thresholds,
-                   nb_pts=20, select_randomly=None, verbose=True):
-
-    t = time()
-    len_s = len(streamlines)
-    if select_randomly is None:
-        select_randomly = len_s
-    indices = np.random.choice(len_s, min(select_randomly, len_s),
-                               replace=False)
-    sample_streamlines = set_number_of_points(streamlines, nb_pts)
-
-    if verbose:
-        print(' Resampled to {} points'.format(nb_pts))
-        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-        print(' Duration of resampling is %0.3f sec.' % (time() - t,))
-
-    if verbose:
-        print(' QBX phase starting...')
-
-    qbx = QuickBundlesX(thresholds,
-                        metric=AveragePointwiseEuclideanMetric())
-
-    t1 = time()
-    qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
-
-    if verbose:
-        print(' Merging phase starting ...')
-
-    qbx_merge = QuickBundlesX([thresholds[-1]],
-                              metric=AveragePointwiseEuclideanMetric())
-
-    final_level = len(thresholds)
-
-    qbx_ordering_final = np.random.choice(
-        len(qbx_clusters.get_clusters(final_level)),
-        len(qbx_clusters.get_clusters(final_level)), replace=False)
-
-    qbx_merged_cluster_map = qbx_merge.cluster(
-        qbx_clusters.get_clusters(final_level).centroids,
-        ordering=qbx_ordering_final).get_clusters(1)
-
-    qbx_cluster_map = qbx_clusters.get_clusters(final_level)
-
-    merged_cluster_map = ClusterMapCentroid()
-    for cluster in qbx_merged_cluster_map:
-        merged_cluster = ClusterCentroid(centroid=cluster.centroid)
-        for i in cluster.indices:
-            merged_cluster.indices.extend(qbx_cluster_map[i].indices)
-        merged_cluster_map.add_cluster(merged_cluster)
-
-    merged_cluster_map.refdata = streamlines
-
-    if verbose:
-        print(' QuickBundlesX time for %d random streamlines'
-              % (select_randomly,))
-
-        print(' Duration %0.3f sec. \n' % (time() - t1, ))
-
-    return merged_cluster_map
 
 
 class RecoBundles(object):
@@ -193,6 +121,8 @@ class RecoBundles(object):
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
                   % (time()-t,))
+        # return recognized bundle in original streamlines, labels of
+        # recognized bundle and transformed recognized bundle
         return self.streamlines[self.labels], self.labels, self.pruned_streamlines
 
     def cluster_model_bundle(self, model_clust_thr, nb_pts=20):
