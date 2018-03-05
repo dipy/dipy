@@ -97,6 +97,8 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
                                                      pft_front_tracking_dist=1,
                                                      particle_count=15,
                                                      return_all=False)
+
+#streamlines = list(pft_streamline_generator)                                                     
 streamlines = Streamlines(pft_streamline_generator)
 save_trk("pft_streamline.trk", streamlines, affine, shape)
 
@@ -121,6 +123,7 @@ prob_streamline_generator = LocalTracking(dg,
                                           step_size=step_size,
                                           maxlen=1000,
                                           return_all=False)
+#streamlines = list(pro)
 streamlines = Streamlines(prob_streamline_generator)
 save_trk("probabilistic_streamlines.trk", streamlines, affine, shape)
 

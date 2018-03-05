@@ -22,6 +22,199 @@ from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 
+from dipy.reconst import mapmri
+
+
+class ReconstMAPMRIFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'mapmri'
+
+    def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
+            b0_threshold=0.0, laplacian=True, positivity=True,
+            bval_threshold=2000, save_metrics=[],
+            laplacian_weighting=0.05, radial_order=6, out_dir='',
+            out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
+            out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
+            out_rtap='rtap.nii.gz',
+            out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
+            out_perng='perng.nii.gz',
+            out_parng='parng.nii.gz'):
+        """ Workflow for fitting the MAPMRI model (with optional Laplacian
+        regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
+        non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
+        format in input files provided by `data_file` and saves the nifti files
+        to an output directory specified by `out_dir`.
+
+        In order for the MAPMRI workflow to work in the way
+        intended either the laplacian or positivity or both must
+        be set to True.
+
+        Parameters
+        ----------
+        data_file : string
+            Path to the input volume.
+        data_bvals : string
+            Path to the bval files.
+        data_bvecs : string
+            Path to the bvec files.
+        small_delta : float
+            Small delta value used in generation of gradient table of provided
+            bval and bvec.
+        big_delta : float
+            Big delta value used in generation of gradient table of provided
+            bval and bvec.
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        laplacian : bool
+            Regularize using the Laplacian of the MAP-MRI basis (default True)
+        positivity : bool
+            Constrain the propagator to be positive. (default True)
+        bval_threshold : float
+            Sets the b-value threshold to be used in the scale factor
+            estimation. In order for the estimated non-Gaussianity to have
+            meaning this value should set to a lower value (b<2000 s/mm^2)
+            such that the scale factors are estimated on signal points that
+            reasonably represent the spins at Gaussian diffusion.
+            (default: 2000)
+        save_metrics : list of strings
+            List of metrics to save.
+            Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
+            ng, perng, parng
+            (default: [] (all))
+        laplacian_weighting : float
+            Weighting value used in fitting the MAPMRI model in the laplacian
+            and both model types. (default: 0.05)
+        radial_order : unsigned int
+            Even value used to set the order of the basis
+            (default: 6)
+        out_dir : string, optional
+            Output directory (default: input file directory)
+        out_rtop : string, optional
+            Name of the rtop to be saved
+        out_lapnorm : string, optional
+            Name of the norm of laplacian signal to be saved
+        out_msd : string, optional
+            Name of the msd to be saved
+        out_qiv : string, optional
+            Name of the qiv to be saved
+        out_rtap : string, optional
+            Name of the rtap to be saved
+        out_rtpp : string, optional
+            Name of the rtpp to be saved
+        out_ng : string, optional
+            Name of the Non-Gaussianity to be saved
+        out_perng :  string, optional
+            Name of the Non-Gaussianity perpendicular to be saved
+        out_parng : string, optional
+            Name of the Non-Gaussianity parallel to be saved
+        """
+        io_it = self.get_io_iterator()
+        for (dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv,
+             out_rtap, out_rtpp, out_ng, out_perng, out_parng) in io_it:
+
+            logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
+            img = nib.load(dwi)
+            data = img.get_data()
+            affine = img.affine
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            gtab = gradient_table(bvals=bvals, bvecs=bvecs,
+                                  small_delta=small_delta,
+                                  big_delta=big_delta,
+                                  b0_threshold=b0_threshold)
+
+            if not save_metrics:
+                save_metrics = ['rtop', 'laplacian_signal', 'msd',
+                                'qiv', 'rtap', 'rtpp',
+                                'ng', 'perng', 'parng']
+
+            if laplacian and positivity:
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=True,
+                            laplacian_weighting=laplacian_weighting,
+                            positivity_constraint=True,
+                            bval_threshold=bval_threshold)
+
+                mapfit_aniso = map_model_aniso.fit(data)
+
+            elif positivity:
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=False,
+                            positivity_constraint=True,
+                            bval_threshold=bval_threshold)
+                mapfit_aniso = map_model_aniso.fit(data)
+
+            elif laplacian:
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=True,
+                            laplacian_weighting=laplacian_weighting,
+                            bval_threshold=bval_threshold)
+                mapfit_aniso = map_model_aniso.fit(data)
+
+            else:
+                map_model_aniso = mapmri.MapmriModel(
+                            gtab,
+                            radial_order=radial_order,
+                            laplacian_regularization=False,
+                            positivity_constraint=False,
+                            bval_threshold=bval_threshold)
+                mapfit_aniso = map_model_aniso.fit(data)
+
+            if 'rtop' in save_metrics:
+                r = mapfit_aniso.rtop()
+                rtop = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
+                nib.save(rtop, out_rtop)
+
+            if 'laplacian_signal' in save_metrics:
+                ll = mapfit_aniso.norm_of_laplacian_signal()
+                lap = nib.nifti1.Nifti1Image(ll.astype(np.float32), affine)
+                nib.save(lap, out_lapnorm)
+
+            if 'msd' in save_metrics:
+                m = mapfit_aniso.msd()
+                msd = nib.nifti1.Nifti1Image(m.astype(np.float32), affine)
+                nib.save(msd, out_msd)
+
+            if 'qiv' in save_metrics:
+                q = mapfit_aniso.qiv()
+                qiv = nib.nifti1.Nifti1Image(q.astype(np.float32), affine)
+                nib.save(qiv, out_qiv)
+
+            if 'rtap' in save_metrics:
+                r = mapfit_aniso.rtap()
+                rtap = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
+                nib.save(rtap, out_rtap)
+
+            if 'rtpp' in save_metrics:
+                r = mapfit_aniso.rtpp()
+                rtpp = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
+                nib.save(rtpp, out_rtpp)
+
+            if 'ng' in save_metrics:
+                n = mapfit_aniso.ng()
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_ng)
+
+            if 'perng' in save_metrics:
+                n = mapfit_aniso.ng_perpendicular()
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_perng)
+
+            if 'parng' in save_metrics:
+                n = mapfit_aniso.ng_parallel()
+                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
+                nib.save(ng, out_parng)
+
+            logging.info('MAPMRI saved in {0}'.
+                         format(os.path.dirname(out_dir)))
+
 
 class ReconstDtiFlow(Workflow):
     @classmethod
@@ -50,8 +243,8 @@ class ReconstDtiFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
@@ -144,45 +337,54 @@ class ReconstDtiFlow(Workflow):
                 nib.save(fiber_tensors, otensor)
 
             if 'fa' in save_metrics:
-                fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
+                fa_img = nib.Nifti1Image(FA.astype(np.float32),
+                                         affine)
                 nib.save(fa_img, ofa)
 
             if 'ga' in save_metrics:
                 GA = geodesic_anisotropy(tenfit.evals)
-                ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
+                ga_img = nib.Nifti1Image(GA.astype(np.float32),
+                                         affine)
                 nib.save(ga_img, oga)
 
             if 'rgb' in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
+                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'),
+                                          affine)
                 nib.save(rgb_img, orgb)
 
             if 'md' in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
-                md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
+                md_img = nib.Nifti1Image(MD.astype(np.float32),
+                                         affine)
                 nib.save(md_img, omd)
 
             if 'ad' in save_metrics:
                 AD = axial_diffusivity(tenfit.evals)
-                ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
+                ad_img = nib.Nifti1Image(AD.astype(np.float32),
+                                         affine)
                 nib.save(ad_img, oad)
 
             if 'rd' in save_metrics:
                 RD = radial_diffusivity(tenfit.evals)
-                rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
+                rd_img = nib.Nifti1Image(RD.astype(np.float32),
+                                         affine)
                 nib.save(rd_img, orad)
 
             if 'mode' in save_metrics:
                 MODE = get_mode(tenfit.quadratic_form)
-                mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
+                mode_img = nib.Nifti1Image(MODE.astype(np.float32),
+                                           affine)
                 nib.save(mode_img, omode)
 
             if 'evec' in save_metrics:
-                evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), affine)
+                evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32),
+                                            affine)
                 nib.save(evecs_img, oevecs)
 
             if 'eval' in save_metrics:
-                evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32), affine)
+                evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32),
+                                            affine)
                 nib.save(evals_img, oevals)
 
             dname_ = os.path.dirname(oevals)
@@ -210,7 +412,6 @@ class ReconstDtiFlow(Workflow):
 
 
 class ReconstCSDFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
         return 'csd'
@@ -240,8 +441,8 @@ class ReconstCSDFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
@@ -347,8 +548,10 @@ class ReconstCSDFlow(Workflow):
                 response = (response, ratio)
 
             logging.info(
-                'Eigenvalues for the response of the input data are:\n{0}'
-                .format(response[0]))
+                'Eigenvalues for the frf of the input data are :{0}'
+                    .format(response[0]))
+            logging.info('Ratio for smallest to largest eigen value is {0}'
+                         .format(ratio))
 
             peaks_sphere = get_sphere('repulsion724')
 
@@ -387,7 +590,6 @@ class ReconstCSDFlow(Workflow):
 
 
 class ReconstCSAFlow(Workflow):
-
     @classmethod
     def get_short_name(cls):
         return 'csa'
@@ -412,8 +614,8 @@ class ReconstCSAFlow(Workflow):
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         bvectors : string
-            Path to the bvalues files. This path may contain wildcards to use
-            multiple bvalues files at once.
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)

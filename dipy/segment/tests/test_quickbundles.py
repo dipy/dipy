@@ -151,6 +151,42 @@ def test_quickbundles_streamlines():
         assert_equal(clusters.centroids[0].dtype, np.float32)
 
 
+def test_quickbundles_with_python_metric():
+
+    class MDFpy(dipymetric.Metric):
+        def are_compatible(self, shape1, shape2):
+            return shape1 == shape2
+
+        def dist(self, features1, features2):
+            dist = np.sqrt(np.sum((features1 - features2)**2, axis=1))
+            dist = np.sum(dist / len(features1))
+            return dist
+
+    rdata = streamline_utils.set_number_of_points(data, 10)
+    qb = QuickBundles(threshold=2 * threshold, metric=MDFpy())
+
+    clusters = qb.cluster(rdata)
+
+    # By default `refdata` refers to data being clustered.
+    assert_equal(clusters.refdata, rdata)
+    # Set `refdata` to return indices instead of actual data points.
+    clusters.refdata = None
+    assert_array_equal(list(itertools.chain(*clusters)),
+                       list(itertools.chain(*clusters_truth)))
+
+    # Cluster read-only data
+    for datum in rdata:
+        datum.setflags(write=False)
+
+    clusters = qb.cluster(rdata)
+
+    # Cluster data with different dtype (should be converted into float32)
+    for datatype in [np.float64, np.int32, np.int64]:
+        newdata = [datum.astype(datatype) for datum in rdata]
+        clusters = qb.cluster(newdata)
+        assert_equal(clusters.centroids[0].dtype, np.float32)
+
+
 def test_quickbundles_with_not_order_invariant_metric():
     metric = dipymetric.AveragePointwiseEuclideanMetric()
     qb = QuickBundles(threshold=np.inf, metric=metric)
