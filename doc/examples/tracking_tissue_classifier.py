@@ -127,12 +127,13 @@ save_trk("deterministic_threshold_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_threshold_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_threshold_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_threshold_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_threshold_classifier.png
@@ -195,12 +196,14 @@ save_trk("deterministic_binary_classifier_all.trk",
          labels.shape)
 
 streamlines = Streamlines(all_streamlines_binary_classifier)
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_binary_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_binary_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_binary_classifier.png
@@ -285,12 +288,13 @@ save_trk("deterministic_act_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_act_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_act_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_act_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_act_classifier.png
@@ -313,12 +317,13 @@ save_trk("deterministic_act_classifier_valid.trk",
 
 streamlines = Streamlines(valid_streamlines_act_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='valid_streamlines_act_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='valid_streamlines_act_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: valid_streamlines_act_classifier.png
