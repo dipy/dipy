@@ -1,9 +1,0 @@
-{
-  "dipy/workflows/tests/test_docstring_parser.py": true, 
-  "dipy/workflows/tests/test_iap.py": true, 
-  "dipy/workflows/tests/test_masking.py": true, 
-  "dipy/workflows/tests/test_reconst_csa_csd.py": true, 
-  "dipy/workflows/tests/test_reconst_dti.py": true, 
-  "dipy/workflows/tests/test_segment.py": true, 
-  "dipy/workflows/tests/test_workflow.py": true
-}

@@ -5,7 +5,7 @@ Run benchmarks with::
     import dipy.reconst as dire
     dire.bench()
 
-If you have doctests enabled by default in ashu (with a ashurc file or
+If you have doctests enabled by default in nose (with a noserc file or
 environment variable), and you have a numpy version <= 1.6.1, this will also
 run the doctests, let's hope they pass.
 """
@@ -26,7 +26,7 @@ else:
 
 @with_einsum
 def bench_vec_val_vect():
-    # ashutests -s --match '(?:^|[\\b_\\.//-])[Bb]ench'
+    # nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench'
     repeat = 100
     shape = (100, 100)
     evecs, evals = randn(*(shape + (3, 3))), randn(*(shape + (3,)))

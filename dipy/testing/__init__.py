@@ -21,7 +21,7 @@ def assert_arrays_equal(arrays1, arrays2):
 def setup_test():
     """ Set numpy print options to "legacy" for new versions of numpy
 
-    If imported into a file, ashutest will run this before any doctests.
+    If imported into a file, nosetest will run this before any doctests.
 
     References
     -----------
