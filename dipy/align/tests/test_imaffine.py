@@ -13,7 +13,7 @@ from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
 from dipy.align import imaffine
-from dipy.align.imaffine import AffineInversionError
+from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError
 from dipy.align.transforms import (Transform,
                                    regtransforms)
 from dipy.align.tests.test_parzenhist import (setup_random_transform,
@@ -495,11 +495,11 @@ def test_affine_map():
         invalid_nan[1, 1] = np.nan
         invalid_zeros = np.zeros((dim + 1, dim + 1), dtype=np.float64)
         assert_raises(
-            imaffine.AffineInversionError,
+            imaffine.AffineInvalidValuesError,
             imaffine.AffineMap,
             invalid_nan)
         assert_raises(
-            imaffine.AffineInversionError,
+            AffineInversionError,
             imaffine.AffineMap,
             invalid_zeros)
 
@@ -542,8 +542,8 @@ def test_affine_map():
                 AffineInversionError,
                 affine_map.set_affine,
                 aff_sing)
-            assert_raises(AffineInversionError, affine_map.set_affine, aff_nan)
-            assert_raises(AffineInversionError, affine_map.set_affine, aff_inf)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_nan)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_inf)
 
 
 def test_MIMetric_invalid_params():
