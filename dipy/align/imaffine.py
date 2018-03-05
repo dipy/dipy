@@ -67,6 +67,9 @@ _transform_method[(3, 'linear')] = vf.transform_3d_affine
 class AffineInversionError(Exception):
     pass
 
+class AffineInvalidValuesError(Exception):
+    pass
+
 
 class AffineMap(object):
 
@@ -130,6 +133,19 @@ class AffineMap(object):
         self.codomain_shape = codomain_grid_shape
         self.codomain_grid2world = codomain_grid2world
 
+    def get_affine(self):
+        """
+        Returns the value of the transformation, not a reference!
+
+        Returns
+        -------
+        affine : ndarray
+            Copy of the transform, not a reference.
+        """
+
+        # returning a copy to insulate it from changes outside object
+        return self.affine.copy()
+
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
 
@@ -144,16 +160,60 @@ class AffineMap(object):
             remains unchanged. If None, then `self` represents the identity
             transformation.
         """
-        self.affine = affine
-        self.affine_inv = None
-        if self.affine is None:
+
+        if affine is None:
+            self.affine = None
+            self.affine_inv = None
             return
+
+        if not isinstance(affine, np.ndarray):
+            raise TypeError('Input is not of type ndarray.')
+
         if not np.all(np.isfinite(affine)):
-            raise AffineInversionError('Affine contains invalid elements')
+            raise AffineInvalidValuesError('Affine contains invalid elements')
+
+        # making a copy to insulate it from changes outside object
+        self.affine = affine.copy()
+
         try:
             self.affine_inv = npl.inv(affine)
         except npl.LinAlgError:
             raise AffineInversionError('Affine cannot be inverted')
+
+    def __str__(self):
+        """Printable format - relies on ndarray's implementation."""
+
+        return str(self.affine)
+
+    def __repr__(self):
+        """Reloable represenation - also relies on ndarray's implementation."""
+
+        return self.affine.__repr__()
+
+    def __format__(self, format_spec):
+        """Implementation various formatting options"""
+
+        if format_spec is None:
+            return str(self.affine)
+        elif isinstance(format_spec, str):
+            format_spec = format_spec.lower()
+            if format_spec in ['', ' ', 'f', 'full']:
+                return str(self.affine)
+            # rotation part only (initial 3x3)
+            elif format_spec in ['r', 'rotation']:
+                return str(self.affine[:-1,:-1])
+            # translation part only (4th col)
+            elif format_spec in ['t', 'translation']:
+                # notice unusual indexing to make it a column vector
+                #   i.e. rows from 0 to n-1, cols from n to n
+                return str(self.affine[:-1,-1:])
+            else:
+                allowed_formats_print_map = ['full', 'f',
+                                             'rotation', 'r',
+                                             'translation', 't']
+                raise NotImplementedError('Format {} not recognized or implemented.\n'
+                                          'Try one of {}'.format(format_spec, allowed_formats_print_map))
+
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -628,7 +688,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, False)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return np.inf
         return -1 * self.metric_val
 
@@ -649,7 +709,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, True)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return 0 * self.metric_grad
         return -1 * self.metric_grad
 
@@ -674,7 +734,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, True)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
 
