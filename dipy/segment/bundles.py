@@ -106,7 +106,9 @@ class RecoBundles(object):
         if cluster_map is None:
             self.cluster_streamlines(clust_thr=clust_thr)
         else:
-            t = time()
+            if self.verbose:
+                t = time()
+            
             self.cluster_map = cluster_map
             self.cluster_map.refdata = self.streamlines
             self.centroids = self.cluster_map.centroids
@@ -123,14 +125,15 @@ class RecoBundles(object):
 
         np.random.seed(42)
 
-        t = time()
         if self.verbose:
+            t = time()
             print('# Cluster streamlines using QBx')
             print(' Tractogram has %d streamlines'
                   % (len(self.streamlines), ))
             print(' Size is %0.3f MB' % (nbytes(self.streamlines),))
             print(' Distance threshold %0.3f' % (clust_thr,))
 
+        # TODO this needs to become a default parameter
         thresholds = [40, 25, 20, clust_thr]
 
         merged_cluster_map = qbx_with_merge(self.streamlines, thresholds,
@@ -155,14 +158,12 @@ class RecoBundles(object):
                   slr_bounds=None,
                   slr_select=(400, 600),
                   slr_method='L-BFGS-B',
-                  slr_use_centroids=False,
-                  slr_progressive=False,
                   pruning_thr=10,
                   pruning_distance='mdf'):
 
         self.reduction_thr = reduction_thr
-        t = time()
         if self.verbose:
+            t = time()
             print('## Recognize given bundle ## \n')
 
         self.model_bundle = model_bundle
@@ -182,9 +183,7 @@ class RecoBundles(object):
                                           bounds=slr_bounds,
                                           select_model=slr_select[0],
                                           select_target=slr_select[1],
-                                          method=slr_method,
-                                          use_centroids=slr_use_centroids,
-                                          progressive=slr_progressive)
+                                          method=slr_method)
         else:
             self.transf_streamlines = self.neighb_streamlines
             self.transf_matrix = np.eye(4)
@@ -194,12 +193,13 @@ class RecoBundles(object):
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
                   % (time()-t,))
-        return self.pruned_streamlines
+        return self.streamlines[self.labels], self.labels, self.pruned_streamlines
 
     def cluster_model_bundle(self, model_clust_thr, nb_pts=20):
         self.model_clust_thr = model_clust_thr
-        t = time()
+        
         if self.verbose:
+            t = time()
             print('# Cluster model bundle using QBx')
             print(' Model bundle has %d streamlines'
                   % (len(self.model_bundle), ))
@@ -217,8 +217,8 @@ class RecoBundles(object):
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
     def reduce_search_space(self, reduction_thr=20, reduction_distance='mdf'):
-        t = time()
         if self.verbose:
+            t = time()
             print('# Reduce search space')
             print(' Reduction threshold %0.3f' % (reduction_thr,))
             print(' Reduction distance {}'.format(reduction_distance))
@@ -271,14 +271,11 @@ class RecoBundles(object):
     def register_neighb_to_model(self, metric=None, x0=None, bounds=None,
                                  select_model=400, select_target=600,
                                  method='L-BFGS-B',
-                                 use_centroids=False,
-                                 progressive=False,
                                  nb_pts=20):
 
         if self.verbose:
             print('# Local SLR of neighb_streamlines to model')
-
-        t = time()
+            t = time()
 
         if metric is None or metric == 'symmetric':
             metric = BundleMinDistanceMetric()
@@ -294,96 +291,21 @@ class RecoBundles(object):
             bounds = [(-30, 30), (-30, 30), (-30, 30),
                       (-45, 45), (-45, 45), (-45, 45), (0.8, 1.2)]
 
-        if not use_centroids:
-            static = select_random_set_of_streamlines(self.model_bundle,
-                                                      select_model)
-            moving = select_random_set_of_streamlines(self.neighb_streamlines,
-                                                      select_target)
+        # TODO this can be speeded up by using directly the centroids
+        static = select_random_set_of_streamlines(self.model_bundle,
+                                                  select_model)
+        moving = select_random_set_of_streamlines(self.neighb_streamlines,
+                                                  select_target)
 
-            static = set_number_of_points(static, nb_pts)
-            moving = set_number_of_points(moving, nb_pts)
+        static = set_number_of_points(static, nb_pts)
+        moving = set_number_of_points(moving, nb_pts)
 
-        else:
-            static = self.model_centroids
+        
+        slr = StreamlineLinearRegistration(metric=metric, x0=x0,
+                                           bounds=bounds,
+                                           method=method)
+        slm = slr.optimize(static, moving)
 
-            thresholds = [40, 30, 20, 10, 5]
-            cluster_map = qbx_with_merge(moving_all, thresholds, nb_pts=nb_pts,
-                                         select_randomly=500000, verbose=self.verbose)
-
-            moving = cluster_map.centroids
-
-        if progressive == False:
-
-            slr = StreamlineLinearRegistration(metric=metric, x0=x0,
-                                               bounds=bounds,
-                                               method=method)
-            slm = slr.optimize(static, moving)
-
-        if progressive == True:
-
-            if self.verbose:
-                print('Progressive Registration is Enabled')
-
-            if x0 == 'translation' or x0 == 'rigid' or \
-               x0 == 'similarity' or x0 == 'scaling':
-
-                slr_t = StreamlineLinearRegistration(metric=metric,
-                                                     x0='translation',
-                                                     bounds=bounds[:3],
-                                                     method=method)
-
-                slm_t = slr_t.optimize(static, moving)
-
-            if x0 == 'rigid' or x0 == 'similarity' or x0 == 'scaling':
-
-                x_translation = slm_t.xopt
-                x = np.zeros(6)
-                x[:3] = x_translation
-
-                slr_r = StreamlineLinearRegistration(metric=metric,
-                                                     x0=x,
-                                                     bounds=bounds[:6],
-                                                     method=method)
-                slm_r = slr_r.optimize(static, moving)
-
-            if x0 == 'similarity' or x0 == 'scaling':
-
-                x_rigid = slm_r.xopt
-                x = np.zeros(7)
-                x[:6] = x_rigid
-                x[6] = 1.
-
-                slr_s = StreamlineLinearRegistration(metric=metric,
-                                                     x0=x,
-                                                     bounds=bounds[:7],
-                                                     method=method)
-                slm_s = slr_s.optimize(static, moving)
-
-            if x0 == 'scaling':
-
-                x_similarity = slm_s.xopt
-                x = np.zeros(9)
-                x[:6] = x_similarity[:6]
-                # from ipdb import set_trace
-                # set_trace()
-                x[6:] = np.array((x_similarity[6],) * 3)
-
-                slr_c = StreamlineLinearRegistration(metric=metric,
-                                                     x0=x,
-                                                     bounds=bounds[:9],
-                                                     method=method)
-                slm_c = slr_c.optimize(static, moving)
-
-            if x0 == 'translation':
-                slm = slm_t
-            elif x0 == 'rigid':
-                slm = slm_r
-            elif x0 == 'similarity':
-                slm = slm_s
-            elif x0 == 'scaling':
-                slm = slm_c
-            else:
-                raise ValueError('Incorrect SLR transform')
         self.transf_streamlines = self.neighb_streamlines.copy()
         self.transf_streamlines._data = apply_affine(slm.matrix, self.transf_streamlines._data)
         #self.transf_streamlines = transform_streamlines(
@@ -421,8 +343,7 @@ class RecoBundles(object):
             print('# Prune streamlines using the MDF distance')
             print(' Pruning threshold %0.3f' % (pruning_thr,))
             print(' Pruning distance {}'.format(pruning_distance))
-
-        t = time()
+            t = time()
 
         thresholds = [40, 30, 20, 10, mdf_thr]
         self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines, thresholds, nb_pts=20,
