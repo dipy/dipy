@@ -155,9 +155,9 @@ def test_io_streamline():
         # Test Load
         local_streamlines, hdr = load_trk(fname)
         npt.assert_equal(len(local_streamlines), len(streamlines))
-        # npt.assert_allclose(streamlines, local_streamlines)
+        for arr1, arr2 in zip(local_streamlines, streamlines):
+            npt.assert_allclose(arr1, arr2)
 
 
 if __name__ == '__main__':
-    #npt.run_module_suite()
-    test_io_streamline()
+    npt.run_module_suite()
