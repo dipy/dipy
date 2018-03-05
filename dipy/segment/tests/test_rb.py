@@ -1,6 +1,6 @@
 import numpy as np
 import nibabel as nib
-from numpy.testing import assert_equal, assert_array_almost_equal
+from numpy.testing import assert_equal
 from dipy.data import get_data
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
