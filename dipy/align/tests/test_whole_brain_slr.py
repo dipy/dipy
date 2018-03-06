@@ -32,3 +32,4 @@ f2._data += np.array([50, 0, 0])
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
         f1, f2, verbose=True, rm_small_clusters=2, greater_than=2, 
         less_than=1, qb_thr=5, progressive=True)
+
