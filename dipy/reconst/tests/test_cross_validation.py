@@ -16,8 +16,10 @@ import dipy.reconst.csdeconv as csd
 import dipy.reconst.base as base
 
 
-# We'll set these globally:
-fdata, fbval, fbvec = dpd.get_data('small_64D')
+def setup_module():
+    # We'll set these globally:
+    global fdata, fbval, fbvec
+    fdata, fbval, fbvec = dpd.get_data('small_64D')
 
 
 def test_coeff_of_determination():
