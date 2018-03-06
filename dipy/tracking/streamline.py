@@ -23,9 +23,12 @@ else:
     # For more information, look at https://github.com/nipy/nibabel/pull/597
     # This patch can be removed when nibabel minimal version is updated to 2.3
     # Currently, nibabel 2.3 does not exist.
-    from nibabel.streamlines import ArraySequence, MEGABYTE
+    from nibabel.streamlines import ArraySequence
     from functools import reduce
     from operator import mul
+
+    MEGABYTE = 1024 * 1024
+
 
     class _BuildCache(object):
         def __init__(self, arr_seq, common_shape, dtype):
