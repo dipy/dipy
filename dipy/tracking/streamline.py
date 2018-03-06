@@ -2,10 +2,11 @@ from copy import deepcopy
 from warnings import warn
 import types
 
+from distutils.version import LooseVersion
 from scipy.spatial.distance import cdist
 import numpy as np
+import nibabel as nib
 from nibabel.affines import apply_affine
-from nibabel.streamlines import ArraySequence as Streamlines
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.streamlinespeed import compress_streamlines
@@ -14,6 +15,57 @@ from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 import dipy.align.vector_fields as vfu
 from dipy.testing import setup_test
+
+if LooseVersion(nib.__version__) >= '2.3':
+    from nibabel.streamlines import ArraySequence as Streamlines
+else:
+    # This patch fix a streamline bug on windows machine.
+    # For more information, look at https://github.com/nipy/nibabel/pull/597
+    # This patch can be removed when nibabel minimal version is updated to 2.3
+    # Currently, nibabel 2.3 does not exist.
+    from nibabel.streamlines import ArraySequence, MEGABYTE
+    from functools import reduce
+    from operator import mul
+
+    class _BuildCache(object):
+        def __init__(self, arr_seq, common_shape, dtype):
+            self.offsets = list(arr_seq._offsets)
+            self.lengths = list(arr_seq._lengths)
+            self.next_offset = arr_seq._get_next_offset()
+            self.bytes_per_buf = arr_seq._buffer_size * MEGABYTE
+            # Use the passed dtype only if null data array
+            self.dtype = dtype if arr_seq._data.size == 0 else arr_seq._data.dtype
+            if arr_seq.common_shape != () and common_shape != arr_seq.common_shape:
+                raise ValueError(
+                    "All dimensions, except the first one, must match exactly")
+            self.common_shape = common_shape
+            n_in_row = reduce(mul, common_shape, 1)
+            bytes_per_row = n_in_row * dtype.itemsize
+            self.rows_per_buf = max(1, self.bytes_per_buf // bytes_per_row)
+
+        def update_seq(self, arr_seq):
+            arr_seq._offsets = np.array(self.offsets)
+            arr_seq._lengths = np.array(self.lengths)
+
+
+    class Streamlines(ArraySequence):
+
+        def __init__(self, *args, **kwargs):
+            super(Streamlines, self).__init__(args, kwargs)
+
+        def finalize_append(self):
+            """ Finalize process of appending several elements to `self`
+            :meth:`append` can be a lot faster if it knows that it is appending
+            several elements instead of a single element.  To tell the append
+            method this is the case, use ``cache_build=True``.  This method
+            finalizes the series of append operations after a call to
+            :meth:`append` with ``cache_build=True``.
+            """
+            if self._build_cache is None:
+                return
+            self._build_cache.update_seq(self)
+            self._build_cache = None
+            self.shrink_data()
 
 
 def unlist_streamlines(streamlines):
