@@ -62,15 +62,13 @@ _transform_method[(2, 'nearest')] = vf.transform_2d_affine_nn
 _transform_method[(3, 'nearest')] = vf.transform_3d_affine_nn
 _transform_method[(2, 'linear')] = vf.transform_2d_affine
 _transform_method[(3, 'linear')] = vf.transform_3d_affine
-
+_number_dim_affine_matrix = 2
 
 class AffineInversionError(Exception):
     pass
 
-
 class AffineInvalidValuesError(Exception):
     pass
-
 
 class AffineMap(object):
 
@@ -134,7 +132,6 @@ class AffineMap(object):
         self.codomain_shape = codomain_grid_shape
         self.codomain_grid2world = codomain_grid2world
 
-
     def get_affine(self):
         """
         Returns the value of the transformation, not a reference!
@@ -147,7 +144,6 @@ class AffineMap(object):
 
         # returning a copy to insulate it from changes outside object
         return self.affine.copy()
-
 
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
@@ -174,23 +170,23 @@ class AffineMap(object):
         except:
             raise TypeError('Input must be type ndarray, or be convertible to one.')
 
-        if len(affine.shape) != 2:
-            raise AffineInversionError('Affine xfm must be 2D')
+        if len(affine.shape) != _number_dim_affine_matrix:
+            raise AffineInversionError('Affine transform must be 2D')
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError('Affine xfm must be a square matrix')
+            raise AffineInversionError('Affine transform must be a square matrix')
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError('Affine xfm contains invalid elements')
+            raise AffineInvalidValuesError('Affine transform contains invalid elements')
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros
-        if not np.all(affine[-1,:-1]==0.0):
+        if not np.all(affine[-1, :-1] == 0.0):
             raise AffineInvalidValuesError('First {n_1} columns in last row in matrix '
-                                           'contain non-zeros!'.format(n_1=affine.shape[0]-1))
+                                           'contain non-zeros!'.format(n_1=affine.shape[0] - 1))
 
         # Last row, last column in matrix must be 1.0!
-        if affine[-1,-1]!=1.0:
+        if affine[-1, -1] != 1.0:
             raise AffineInvalidValuesError('Last row, last column in matrix is not 1.0!')
 
         # making a copy to insulate it from changes outside object
@@ -201,18 +197,15 @@ class AffineMap(object):
         except npl.LinAlgError:
             raise AffineInversionError('Affine cannot be inverted')
 
-
     def __str__(self):
         """Printable format - relies on ndarray's implementation."""
 
         return str(self.affine)
 
-
     def __repr__(self):
         """Relodable representation - also relies on ndarray's implementation."""
 
         return self.affine.__repr__()
-
 
     def __format__(self, format_spec):
         """Implementation various formatting options"""
@@ -237,7 +230,6 @@ class AffineMap(object):
                                              'translation', 't']
                 raise NotImplementedError('Format {} not recognized or implemented.\n'
                                           'Try one of {}'.format(format_spec, allowed_formats_print_map))
-
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -351,7 +343,6 @@ class AffineMap(object):
         transformed = _transform_method[(dim, interp)](image, shape, comp)
         return transformed
 
-
     def transform(self, image, interp='linear', image_grid2world=None,
                   sampling_grid_shape=None, sampling_grid2world=None,
                   resample_only=False):
@@ -398,7 +389,6 @@ class AffineMap(object):
                                             resample_only,
                                             apply_inverse=False)
         return np.array(transformed)
-
 
     def transform_inverse(self, image, interp='linear', image_grid2world=None,
                           sampling_grid_shape=None, sampling_grid2world=None,
@@ -485,7 +475,6 @@ class MutualInformationMetric(object):
         self.sampling_proportion = sampling_proportion
         self.metric_val = None
         self.metric_grad = None
-
 
     def setup(self, transform, static, moving, static_grid2world=None,
               moving_grid2world=None, starting_affine=None):
@@ -575,7 +564,6 @@ class MutualInformationMetric(object):
             self.static_vals = np.array(self.static_vals, dtype=np.float64)
         self.histogram.setup(self.static, self.moving)
 
-
     def _update_histogram(self):
         r""" Updates the histogram according to the current affine transform
 
@@ -619,7 +607,6 @@ class MutualInformationMetric(object):
             moving_values = self.moving_vals
             self.histogram.update_pdfs_sparse(static_values, moving_values)
         return static_values, moving_values
-
 
     def _update_mutual_information(self, params, update_gradient=True):
         r""" Updates marginal and joint distributions and the joint gradient
@@ -671,12 +658,12 @@ class MutualInformationMetric(object):
                                             grid_to_world)
                 # The Jacobian must be evaluated at the pre-aligned points
                 H.update_gradient_dense(
-                        params,
-                        self.transform,
-                        static_values,
-                        moving_values,
-                        static2prealigned,
-                        mgrad)
+                    params,
+                    self.transform,
+                    static_values,
+                    moving_values,
+                    static2prealigned,
+                    mgrad)
             else:  # Sparse case
                 # Compute the gradient of moving at the sampling points
                 # which are already given in physical space coordinates
@@ -694,7 +681,6 @@ class MutualInformationMetric(object):
         self.metric_val = compute_parzen_mi(H.joint, H.joint_grad,
                                             H.smarginal, H.mmarginal,
                                             grad)
-
 
     def distance(self, params):
         r""" Numeric value of the negative Mutual Information
@@ -722,7 +708,6 @@ class MutualInformationMetric(object):
             return np.inf
         return -1 * self.metric_val
 
-
     def gradient(self, params):
         r""" Numeric value of the metric's gradient at the given parameters
 
@@ -743,7 +728,6 @@ class MutualInformationMetric(object):
         except (AffineInversionError, AffineInvalidValuesError):
             return 0 * self.metric_grad
         return -1 * self.metric_grad
-
 
     def distance_and_gradient(self, params):
         r""" Numeric value of the metric and its gradient at given parameters
@@ -851,7 +835,6 @@ class AffineRegistration(object):
 
         self.verbosity = verbosity
 
-
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
     docstring_addendum = \
@@ -868,7 +851,6 @@ class AffineRegistration(object):
     """ % VerbosityLevels.STATUS
 
     __init__.__doc__ = __init__.__doc__ + docstring_addendum
-
 
     def _init_optimizer(self, static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
@@ -971,7 +953,6 @@ class AffineRegistration(object):
             self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                         static_spacing, self.ss_sigma_factor,
                                         False)
-
 
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
