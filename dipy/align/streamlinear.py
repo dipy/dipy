@@ -400,6 +400,9 @@ class StreamlineLinearRegistration(object):
             return x0
 
         if isinstance(x0, string_types):
+            if x0.lower() == 'translation':
+                return np.zeros(3)
+            
             if x0.lower() == 'rigid':
                 return np.zeros(6)
 
@@ -410,10 +413,12 @@ class StreamlineLinearRegistration(object):
                 return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
         if isinstance(x0, int):
-            if x0 not in [6, 7, 12]:
-                msg = 'Only 6, 7 and 12 are accepted as integers'
+            if x0 not in [3, 6, 7, 12]:
+                msg = 'Only 3, 6, 7 and 12 are accepted as integers'
                 raise ValueError(msg)
             else:
+                if x0 == 3:
+                    return np.zeros(3)
                 if x0 == 6:
                     return np.zeros(6)
                 if x0 == 7:
