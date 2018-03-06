@@ -13,7 +13,7 @@ from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
 from dipy.align import imaffine
-from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError
+from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError, AffineMap
 from dipy.align.transforms import (Transform,
                                    regtransforms)
 from dipy.align.tests.test_parzenhist import (setup_random_transform,
@@ -433,6 +433,14 @@ def test_affine_map():
         # Include the None case
         gt_affines.append(None)
 
+        # testing str/format/repr
+        for affine_mat in gt_affines:
+            aff_map = AffineMap(affine_mat)
+            assert_equal(str(aff_map), aff_map.__str__())
+            assert_equal(repr(aff_map), aff_map.__repr__())
+            for spec in ['f', 'r', 't', '']:
+                assert_equal(format(aff_map, spec), aff_map.__format__(spec))
+
         for affine in gt_affines:
 
             # make both domain point to the same physical region
@@ -499,7 +507,7 @@ def test_affine_map():
             imaffine.AffineMap,
             invalid_nan)
         assert_raises(
-            AffineInversionError,
+            AffineInvalidValuesError,
             imaffine.AffineMap,
             invalid_zeros)
 
@@ -539,7 +547,7 @@ def test_affine_map():
             aff_inf[...] = np.inf
 
             assert_raises(
-                AffineInversionError,
+                AffineInvalidValuesError,
                 affine_map.set_affine,
                 aff_sing)
             assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_nan)
