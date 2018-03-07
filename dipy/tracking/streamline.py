@@ -56,6 +56,56 @@ else:
         def __init__(self, *args, **kwargs):
             super(Streamlines, self).__init__(args, kwargs)
 
+        def append(self, element, cache_build=False):
+            """ Appends `element` to this array sequence.
+            Append can be a lot faster if it knows that it is appending several
+            elements instead of a single element.  In that case it can cache the
+            parameters it uses between append operations, in a "build cache".  To
+            tell append to do this, use ``cache_build=True``.  If you use
+            ``cache_build=True``, you need to finalize the append operations with
+            :meth:`finalize_append`.
+            Parameters
+            ----------
+            element : ndarray
+                Element to append. The shape must match already inserted elements
+                shape except for the first dimension.
+            cache_build : {False, True}
+                Whether to save the build cache from this append routine.  If True,
+                append can assume it is the only player updating `self`, and the
+                caller must finalize `self` after all append operations, with
+                ``self.finalize_append()``.
+            Returns
+            -------
+            None
+            Notes
+            -----
+            If you need to add multiple elements you should consider
+            `ArraySequence.extend`.
+            """
+            element = np.asarray(element)
+            if element.size == 0:
+                return
+            el_shape = element.shape
+            n_items, common_shape = el_shape[0], el_shape[1:]
+            build_cache = self._build_cache
+            in_cached_build = build_cache is not None
+            if not in_cached_build:  # One shot append, not part of sequence
+                build_cache = _BuildCache(self, common_shape, element.dtype)
+            next_offset = build_cache.next_offset
+            req_rows = next_offset + n_items
+            if self._data.shape[0] < req_rows:
+                self._resize_data_to(req_rows, build_cache)
+            self._data[next_offset:req_rows] = element
+            build_cache.offsets.append(next_offset)
+            build_cache.lengths.append(n_items)
+            build_cache.next_offset = req_rows
+            if in_cached_build:
+                return
+            if cache_build:
+                self._build_cache = build_cache
+            else:
+                build_cache.update_seq(self)
+
         def finalize_append(self):
             """ Finalize process of appending several elements to `self`
             :meth:`append` can be a lot faster if it knows that it is appending
@@ -69,6 +119,43 @@ else:
             self._build_cache.update_seq(self)
             self._build_cache = None
             self.shrink_data()
+
+        def extend(self, elements):
+            """ Appends all `elements` to this array sequence.
+            Parameters
+            ----------
+            elements : iterable of ndarrays or :class:`ArraySequence` object
+                If iterable of ndarrays, each ndarray will be concatenated along
+                the first dimension then appended to the data of this
+                ArraySequence.
+                If :class:`ArraySequence` object, its data are simply appended to
+                the data of this ArraySequence.
+            Returns
+            -------
+            None
+            Notes
+            -----
+            The shape of the elements to be added must match the one of the data of
+            this :class:`ArraySequence` except for the first dimension.
+            """
+            # If possible try pre-allocating memory.
+            try:
+                iter_len = len(elements)
+            except TypeError:
+                pass
+            else:  # We do know the iterable length
+                if iter_len == 0:
+                    return
+                e0 = np.asarray(elements[0])
+                n_elements = np.sum([len(e) for e in elements])
+                self._build_cache = _BuildCache(self, e0.shape[1:], e0.dtype)
+                self._resize_data_to(self._get_next_offset() + n_elements,
+                                     self._build_cache)
+
+            for e in elements:
+                self.append(e, cache_build=True)
+
+            self.finalize_append()
 
 
 def unlist_streamlines(streamlines):
