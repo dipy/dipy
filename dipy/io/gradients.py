@@ -1,9 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
 from os.path import splitext
+import re
 from dipy.utils.six import string_types
 import numpy as np
-import csv
+from nibabel.tmpdirs import InTemporaryDirectory
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
@@ -32,18 +33,22 @@ def read_bvals_bvecs(fbvals, fbvecs):
     # to this list:
     vals = []
     for this_fname in [fbvals, fbvecs]:
-        # If the input was None, we don't read anything and move on:
-        if this_fname is None:
+        # If the input was None or empty string, we don't read anything and
+        # move on:
+        if this_fname is None or not this_fname:
             vals.append(None)
         else:
             if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
                     with open(this_fname, 'r') as f:
-                        content = f.readline()
-                    sniffer = csv.Sniffer()
-                    detect_delimiter = sniffer.sniff(str(content))
-                    vals.append(np.squeeze(np.loadtxt(this_fname, delimiter=detect_delimiter.delimiter)))
+                        content = f.read()
+                    # We replace coma and tab delimiter by space
+                    with InTemporaryDirectory():
+                        tmp_fname = "tmp_bvals_bvecs.txt"
+                        with open(tmp_fname, 'w') as f:
+                            f.write(re.sub(r'(\t|,)', ' ', content))
+                        vals.append(np.squeeze(np.loadtxt(tmp_fname)))
                 elif ext == '.npy':
                     vals.append(np.squeeze(np.load(this_fname)))
                 else:
@@ -59,12 +64,12 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if bvecs is None:
         return bvals, bvecs
 
-    if bvecs.shape[1] > bvecs.shape[0]:
-        bvecs = bvecs.T
     if min(bvecs.shape) != 3:
         raise IOError('bvec file should have three rows')
     if bvecs.ndim != 2:
         raise IOError('bvec file should be saved as a two dimensional array')
+    if bvecs.shape[1] > bvecs.shape[0]:
+        bvecs = bvecs.T
 
     # If bvals is None, you don't need to check that they have the same shape:
     if bvals is None:
