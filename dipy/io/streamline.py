@@ -20,7 +20,6 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
         The shape of the reference image (default: None)
     header : dict, optional
         Metadata associated to the tractogram file(*.trk). (default: None)
-
     """
     if vox_size is not None and shape is not None:
         if not isinstance(header, dict):
@@ -50,7 +49,6 @@ def load_trk(filename):
         Each 2D array represents a sequence of 3D points (points, 3).
     hdr : dict
         header from a trk file
-
     """
     trk_file = nib.streamlines.load(filename)
     return trk_file.streamlines, trk_file.header

@@ -131,6 +131,7 @@ streamlines = [streamline[[0, 10]], streamline,
                streamline[::2], streamline[::3],
                streamline[::5], streamline[::6]]
 
+
 def test_io_streamline():
     with InTemporaryDirectory():
         fname = 'test.trk'
