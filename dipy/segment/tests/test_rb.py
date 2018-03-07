@@ -1,26 +1,12 @@
 import numpy as np
 import nibabel as nib
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, run_module_suite
 from dipy.data import get_data
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
 
 
-def tmp_show(f):
-    from dipy.viz import actor, window
-    ren = window.Renderer()
-    ren.add(actor.line(f))
-    window.show(ren)
-
-def tmp_show_two(f1, f2):
-    from dipy.viz import actor, window
-    ren = window.Renderer()
-    ren.add(actor.line(f1, colors=(1, 0, 0)))
-    ren.add(actor.line(f2, colors=(0, 1, 0)))
-    window.show(ren)
-
- 
 streams, hdr = nib.trackvis.read(get_data('fornix'))
 fornix = [s[0] for s in streams]
 
@@ -87,6 +73,4 @@ def test_rb_no_verbose_and_mam():
 
 if __name__ == '__main__':
     
-    test_rb_check_defaults()
-    test_rb_disable_slr()
-    test_rb_no_verbose_and_mam()
+    run_module_suite()
