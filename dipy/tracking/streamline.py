@@ -54,7 +54,7 @@ else:
     class Streamlines(ArraySequence):
 
         def __init__(self, *args, **kwargs):
-            super(Streamlines, self).__init__(args, kwargs)
+            super(Streamlines, self).__init__(*args, **kwargs)
 
         def append(self, element, cache_build=False):
             """ Appends `element` to this array sequence.
