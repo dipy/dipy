@@ -392,29 +392,33 @@ class StreamlineLinearRegistration(object):
 
         if hasattr(x0, 'ndim'):
 
-            if len(x0) not in [6, 7, 12]:
-                msg = 'Only 1D arrays of 6, 7 and 12 elements are allowed'
+            if len(x0) not in [3, 6, 7, 9, 12]:
+                msg = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
                 raise ValueError(msg)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
             return x0
 
         if isinstance(x0, string_types):
+            
             if x0.lower() == 'translation':
                 return np.zeros(3)
-            
+
             if x0.lower() == 'rigid':
                 return np.zeros(6)
 
             if x0.lower() == 'similarity':
                 return np.array([0, 0, 0, 0, 0, 0, 1.])
 
+            if x0.lower() == 'scaling':
+                return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
+
             if x0.lower() == 'affine':
                 return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
         if isinstance(x0, int):
-            if x0 not in [3, 6, 7, 12]:
-                msg = 'Only 3, 6, 7 and 12 are accepted as integers'
+            if x0 not in [3, 6, 7, 9, 12]:
+                msg = 'Only 3, 6, 7, 9 and 12 are accepted as integers'
                 raise ValueError(msg)
             else:
                 if x0 == 3:
@@ -423,6 +427,8 @@ class StreamlineLinearRegistration(object):
                     return np.zeros(6)
                 if x0 == 7:
                     return np.array([0, 0, 0, 0, 0, 0, 1.])
+                if x0 == 9:
+                    return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
                 if x0 == 12:
                     return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
@@ -835,7 +841,8 @@ def whole_brain_slr(static, moving,
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
     qb_centroids2 = [cluster.centroid for cluster in clusters2]
 
-    t = time()
+    if verbose:
+        t = time()
 
     if not progressive:
         slr = StreamlineLinearRegistration(x0=x0,
@@ -853,9 +860,7 @@ def whole_brain_slr(static, moving,
     if verbose:
         print('QB static centroids size %d' % len(qb_centroids1,))
         print('QB moving centroids size %d' % len(qb_centroids2,))
-
-    duration = time() - t
-    if verbose:
+        duration = time() - t
         print('SLR finished in  %0.3f seconds.' % (duration,))
         print('SLR iterations: %d ' % (slm.iterations,))
 
@@ -875,10 +880,13 @@ def compose_matrix44(t, dtype=np.double):
     -----------
     t : ndarray
         This is a 1D vector of of affine transformation parameters with
-        size at least 6.
+        size at least 3.
+        If size is 3, ti is interpreted as translation.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
+        If size is 9, t is interpreted as translation + rotation +
+        anisotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -892,17 +900,18 @@ def compose_matrix44(t, dtype=np.double):
         t = np.array(t)
     size = t.size
 
-    if size not in [6, 7, 12]:
-        raise ValueError('Accepted number of parameters is 6, 7 and 12')
+    if size not in [3, 6, 7, 9, 12]:
+        raise ValueError('Accepted number of parameters is 3, 6, 7, 9 and 12')
 
     scale, shear, angles, translate = (None, ) * 4
-    if size in [6, 7, 12]:
-        translate = _threshold(t[0:3], MAX_DIST)
+    translate = _threshold(t[0:3], MAX_DIST)
+    if size in [6, 7, 9, 12]:
         angles = np.deg2rad(t[3:6])
     if size == 7:
         scale = np.array((t[6],) * 3)
-    if size == 12:
+    if size in [9, 12]:
         scale = t[6: 9]
+    if size == 12:
         shear = t[9: 12]
     return compose_matrix(scale=scale, shear=shear,
                           angles=angles,
@@ -917,28 +926,33 @@ def decompose_matrix44(mat, size=12):
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int
-        Size of output vector. 6 for rigid, 7 for similarity and 12
-        for affine. Default is 12.
+        Size of output vector. 3, for translation, 6 for rigid, 
+        7 for similarity, 9 for scalin and 12 for affine. Default is 12.
 
     Returns
     -------
     t : ndarray
-        One dimensional ndarray of 6, 7 or 12 affine parameters.
+        One dimensional ndarray of 3, 6, 7, 9 or 12 affine parameters.
 
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
 
-    t = np.zeros(12)
+    t = np.zeros(12.)
     t[:3] = translate
+    if size == 3:
+        return t[:3]
     t[3: 6] = np.rad2deg(angles)
     if size == 6:
         return t[:6]
     if size == 7:
         t[6] = np.mean(scale)
         return t[:7]
+    if size == 9:
+        t[6:9] = scale
+        return t[:9]
     if size == 12:
         t[6: 9] = scale
         t[9: 12] = shear
         return t
 
-    raise ValueError('Size can be 6, 7 or 12')
+    raise ValueError('Size can be 3, 6, 7, 9 or 12')

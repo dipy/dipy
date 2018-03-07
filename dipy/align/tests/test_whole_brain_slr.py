@@ -23,6 +23,7 @@ def tmp_show_two(f1, f2):
 streams, hdr = nib.trackvis.read(get_data('fornix'))
 fornix = [s[0] for s in streams]
 
+
 f = Streamlines(fornix)
 f1 = f.copy()
 f2 = f.copy()
@@ -30,6 +31,6 @@ f2 = f.copy()
 f2._data += np.array([50, 0, 0])
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
-        f1, f2, verbose=True, rm_small_clusters=2, greater_than=2, 
-        less_than=1, qb_thr=5, progressive=True)
+        f1, f2, verbose=True, rm_small_clusters=2, greater_than=0, 
+        less_than=np.inf, qb_thr=5, progressive=True)
 
