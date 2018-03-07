@@ -28,6 +28,10 @@ class UI(object):
 
     Attributes
     ----------
+    position : (float, float)
+        Absolute coordinates (x, y) in pixels the lower-left corner.
+    size : (float, float)
+        Size (width, height) in pixels of this UI component.
     on_left_mouse_button_pressed: function
         Callback function for when the left mouse button is pressed.
     on_left_mouse_button_released: function
@@ -50,6 +54,15 @@ class UI(object):
     """
 
     def __init__(self):
+        """
+        Parameters
+        ----------
+        size : (int, int)
+            Size (width, height) in pixels of this UI component.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of this
+            UI component.
+        """
         self._callbacks = []
 
         self.left_button_state = "released"
@@ -112,18 +125,44 @@ class UI(object):
         # only when this UI component is added to the renderer.
         self._callbacks.append((prop, event_type, callback, priority))
 
-    def set_center(self, position):
-        """ Sets the center of the UI component
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, coords):
+        self._set_position(coords)
+        self._position = coords
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            These are the x and y coordinates respectively, with the
-            origin at the bottom left.
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        msg = "Subclasses of UI must implement `set_center(self, position)`."
+        msg = "Subclasses of UI must implement `_set_position(self, coords)`."
         raise NotImplementedError(msg)
+
+    def set_center(self, coords):
+        """ Position the center of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+
+        """
+        if not hasattr(self, "size"):
+            msg = "Subclasses of UI must implement the `size` property."
+            raise NotImplementedError(msg)
+
+        new_center = np.array(coords)
+        size = np.array(self.size)
+        new_lower_left_corner = new_center - size / 2.
+        self.position = new_lower_left_corner
 
     def set_visibility(self, visibility):
         """ Sets visibility of this UI component and all its sub-components.
@@ -199,8 +238,8 @@ class Button2D(UI):
         """
         Parameters
         ----------
-        size : 2-tuple of int, optional
-            Button size.
+        size : (int, int)
+            Size (width, height) in pixels of the button.
         icon_fnames : dict
             {iconname : filename, iconname : filename, ...}
 
@@ -400,17 +439,16 @@ class Button2D(UI):
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
 
-    def set_center(self, position):
-        """ Sets the icon center to position.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the button (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        new_position = np.asarray(position) - self.size / 2.
-        self.actor.SetPosition(*new_position)
+        self.actor.SetPosition(*coords)
 
 
 class Rectangle2D(UI):
@@ -424,15 +462,15 @@ class Rectangle2D(UI):
 
     """
 
-    def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
+    def __init__(self, size, position=(0, 0), color=(1, 1, 1), opacity=1.0):
         """ Initializes a rectangle.
 
         Parameters
         ----------
-        size : (float, float)
+        size : (int, int)
             The size of the rectangle (height, width) in pixels.
-        center : (float, float)
-            The center of the rectangle (x, y).
+        position : (float, float)
+            Coordinates (x, y) of the lower-left corner of the rectangle.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
@@ -441,11 +479,11 @@ class Rectangle2D(UI):
         """
         super(Rectangle2D, self).__init__()
         self.size = size
-        self.actor = self.build_actor(size=size)
+        self.actor = self.build_actor()
         self.color = color
-        self.set_center(center)
         self.opacity = opacity
         self.handle_events(self.actor)
+        self.position = position
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
@@ -453,13 +491,8 @@ class Rectangle2D(UI):
         """
         return [self.actor]
 
-    def build_actor(self, size):
+    def build_actor(self):
         """ Builds the text actor.
-
-        Parameters
-        ----------
-        size : (float, float)
-            The size of the rectangle (height, width) in pixels.
 
         Returns
         -------
@@ -469,9 +502,9 @@ class Rectangle2D(UI):
         # Setup four points
         points = vtk.vtkPoints()
         points.InsertNextPoint(0, 0, 0)
-        points.InsertNextPoint(size[0], 0, 0)
-        points.InsertNextPoint(size[0], size[1], 0)
-        points.InsertNextPoint(0, size[1], 0)
+        points.InsertNextPoint(self.size[0], 0, 0)
+        points.InsertNextPoint(self.size[0], self.size[1], 0)
+        points.InsertNextPoint(0, self.size[1], 0)
 
         # Create the polygon
         polygon = vtk.vtkPolygon()
@@ -502,20 +535,16 @@ class Rectangle2D(UI):
 
         return actor
 
-    def set_position(self, position):
-        self.actor.SetPosition(*position)
-
-    def set_center(self, position):
-        """ Sets the center to position.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the rectangle (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        self.actor.SetPosition(position[0] - self.size[0] / 2,
-                               position[1] - self.size[1] / 2)
+        self.actor.SetPosition(*coords)
 
     @property
     def color(self):
@@ -556,30 +585,6 @@ class Rectangle2D(UI):
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
-    @property
-    def position(self):
-        """ Gets text actor position.
-
-        Returns
-        -------
-        (float, float)
-            The current actor position. (x, y) in pixels.
-
-        """
-        return self.actor.GetPosition()
-
-    @position.setter
-    def position(self, position):
-        """ Set text actor position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new position. (x, y) in pixels.
-
-        """
-        self.actor.SetPosition(*position)
-
 
 class Panel2D(UI):
     """ A 2D UI Panel.
@@ -588,23 +593,20 @@ class Panel2D(UI):
 
     Attributes
     ----------
-    center : (float, float)
-        The center of the panel (x, y).
-    size : (float, float)
-        The size of the panel (width, height) in pixels.
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
 
     """
 
-    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
+    def __init__(self, size, position=(0, 0), color=(0.1, 0.1, 0.1),
+                 opacity=0.7, align="left"):
         """
         Parameters
         ----------
-        center : (float, float)
-            The center of the panel (x, y).
-        size : (float, float)
-            The size of the panel (width, height) in pixels.
+        size : (int, int)
+            Size (width, height) in pixels of the panel.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of the panel.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
@@ -614,18 +616,17 @@ class Panel2D(UI):
 
         """
         super(Panel2D, self).__init__()
-        self.size = np.array(size)
-        self.center = np.array(center)
-        self.lower_left_corner = self.center - self.size / 2
-        self.alignment = align
-        self._drag_offset = None
-
         self._elements = []
         self.element_positions = []
 
+        self.size = np.array(size)
+        self.position = np.array(position)
+        self.alignment = align
+        self._drag_offset = None
+
         # Create the background of the panel.
         self.background = Rectangle2D(size=size, color=color, opacity=opacity)
-        self.add_element(self.background, (0.5, 0.5))
+        self.add_element(self.background, (0, 0))
 
         self.handle_events(self.background.actor)
         self.on_left_mouse_button_pressed = self.left_button_pressed
@@ -676,42 +677,35 @@ class Panel2D(UI):
 
             coords = coords * self.size
 
-        #TODO: Check if coords is outside the panel.
-
         self._elements.append(element)
         self.element_positions.append((element, coords))
-        lower_corner = self.center - self.size / 2.
-        element.set_center(lower_corner + coords)
+        element.position = self.position + coords
 
-    def set_center(self, position):
-        """ Sets the panel center to position.
-
-        The center of the rectangular panel is its bottom lower position.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the panel (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        self.center = np.array(position)
-        self.lower_left_corner = self.center - self.size / 2
-        for element, coords in self.element_positions:
-            center = self.center - self.size / 2. + coords
-            element.set_center(center)
+        coords = np.array(coords)
+        for element, offset in self.element_positions:
+            element.position = coords + offset
 
     @staticmethod
     def left_button_pressed(i_ren, obj, panel2d_object):
         click_pos = np.array(i_ren.event.position)
-        panel2d_object._drag_offset = click_pos - panel2d_object.center
+        panel2d_object._drag_offset = click_pos - panel2d_object.position
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
     def left_button_dragged(i_ren, obj, panel2d_object):
         if panel2d_object._drag_offset is not None:
             click_position = np.array(i_ren.event.position)
-            new_center = click_position - panel2d_object._drag_offset
-            panel2d_object.set_center(new_center)
+            new_position = click_position - panel2d_object._drag_offset
+            panel2d_object.position = new_position
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -726,10 +720,10 @@ class Panel2D(UI):
         if self.alignment == "left":
             pass
         elif self.alignment == "right":
-            self.set_center((self.center[0] + window_size_change[0],
-                             self.center[1] + window_size_change[1]))
+            self.position += np.array(window_size_change)
         else:
-            raise ValueError("You can only left-align or right-align objects in a panel.")
+            msg = "You can only left-align or right-align objects in a panel."
+            raise ValueError(msg)
 
 
 class TextBlock2D(UI):
@@ -1656,8 +1650,9 @@ class LineSlider2D(UI):
 
         """
         # Slider Line
-        self.slider_line = Rectangle2D(size=(self.length, self.line_width),
-                                       center=self.center).actor
+        rect = Rectangle2D(size=(self.length, self.line_width))
+        rect.set_center(self.center)
+        self.slider_line = rect.actor
         self.slider_line.GetProperty().SetColor(1, 0, 0)
         # /Slider Line
 

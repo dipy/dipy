@@ -121,8 +121,8 @@ Panels
 Simply create a panel and add elements to it.
 """
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
-                   align="right")
+panel = ui.Panel2D(size=(300, 150), color=(1, 1, 1), align="right")
+panel.set_center((440, 90))
 panel.add_element(button_example, (0.2, 0.2))
 panel.add_element(second_button_example, (190, 85))
 
