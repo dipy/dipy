@@ -21,6 +21,11 @@ from time import time
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
 
+DEFAULT_BOUNDS = [(-45, 45), (-45, 45), (-45, 45),
+                  (-30, 30), (-30, 30), (-30, 30),
+                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
+                  (-10, 10), (-10, 10), (-10, 10)]
+
 
 class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
@@ -849,10 +854,8 @@ def whole_brain_slr(static, moving,
                                            options={'maxiter': maxiter})
         slm = slr.optimize(qb_centroids1, qb_centroids2)
     else:
-        bounds = [(-45, 45), (-45, 45), (-45, 45),
-                  (-30, 30), (-30, 30), (-30, 30),
-                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
-                  (-10, 10), (-10, 10), (-10, 10)]
+        bounds = DEFAULT_BOUNDS
+        
         slm = progressive_slr(qb_centroids1, qb_centroids2,
                               x0=x0, metric=None,
                               bounds=bounds)
@@ -867,6 +870,9 @@ def whole_brain_slr(static, moving,
     moved = slm.transform(moving)
 
     return moved, slm.matrix, qb_centroids1, qb_centroids2
+
+
+slr_with_qb = whole_brain_slr
 
 
 def _threshold(x, th):
