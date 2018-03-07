@@ -31,7 +31,7 @@ streams, hdr = load_trk(fname)
 streamlines = Streamlines(streams)
 
 # Save Streamlines
-save_trk("my_streamlines.trk",streamlines=streamlines, affine=np.eye(4))
+save_trk("my_streamlines.trk", streamlines=streamlines, affine=np.eye(4))
 
 
 """
