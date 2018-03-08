@@ -123,8 +123,8 @@ Simply create a panel and add elements to it.
 
 panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
                    align="right")
-panel.add_element(button_example, 'relative', (0.2, 0.2))
-panel.add_element(second_button_example, 'absolute', (480, 100))
+panel.add_element(button_example, (0.2, 0.2))
+panel.add_element(second_button_example, (190, 85))
 
 """
 TextBox
@@ -169,18 +169,6 @@ disk_slider.add_callback(disk_slider.handle,
                          rotate_red_cube)
 
 """
-2D File Select Menu
-==============
-"""
-
-file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
-                                       position=(300, 300),
-                                       font_size=16,
-                                       extensions=["py", "png"],
-                                       directory_path=os.getcwd(),
-                                       parent=None)
-
-"""
 Adding Elements to the ShowManager
 ==================================
 
@@ -197,7 +185,6 @@ show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(disk_slider)
-show_manager.ren.add(file_select_menu)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)

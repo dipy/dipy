@@ -151,7 +151,6 @@ def test_ui_button_panel(recording=False):
     rectangle_test = ui.Rectangle2D(size=(10, 10))
     rectangle_test.get_actors()
     another_rectangle_test = ui.Rectangle2D(size=(1, 1))
-    # /Rectangle
 
     # Button
     fetch_viz_icons()
@@ -184,7 +183,6 @@ def test_ui_button_panel(recording=False):
     button_test.scale((2, 2))
     button_color = button_test.color
     button_test.color = button_color
-    # /Button
 
     # TextBlock
     text_block_test = ui.TextBlock2D()
@@ -194,17 +192,18 @@ def test_ui_button_panel(recording=False):
     # Panel
     panel = ui.Panel2D(center=(440, 90), size=(300, 150),
                        color=(1, 1, 1), align="right")
-    panel.add_element(rectangle_test, 'absolute', (580, 150))
-    panel.add_element(button_test, 'relative', (0.2, 0.2))
-    panel.add_element(text_block_test, 'relative', (0.7, 0.7))
+    panel.add_element(rectangle_test, (290, 135))
+    panel.add_element(button_test, (0.2, 0.2))
+    panel.add_element(text_block_test, (0.7, 0.7))
     npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
-                      'error_string', (1, 2))
-    # /Panel
+                      (10., 0.5))
+    npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
+                      (-0.5, 0.5))
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(button_test)
-    event_counter.monitor(panel)
+    event_counter.monitor(panel.background)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size, title="DIPY Button")
@@ -448,54 +447,6 @@ def test_ui_disk_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
-@xvfb_it
-def test_ui_file_select_menu_2d(recording=False):
-    filename = "test_ui_file_select_menu_2d"
-    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
-    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
-    with InTemporaryDirectory() as tmpdir:
-        for i in range(10):
-            _ = open("test" + str(i) + ".txt", 'wt').write('some text')
-
-        file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
-                                               position=(300, 300),
-                                               font_size=16,
-                                               extensions=["txt"],
-                                               directory_path=os.getcwd(),
-                                               parent=None)
-        file_select_menu.set_center((300, 300))
-
-        npt.assert_equal(file_select_menu.text_item_list[1].file_name[:4], "test")
-        npt.assert_equal(file_select_menu.text_item_list[5].file_name[:4], "test")
-
-        event_counter = EventCounter()
-        for event in event_counter.events_counts:
-            file_select_menu.add_callback(file_select_menu.buttons["up"].actor,
-                                          event, event_counter.count)
-            file_select_menu.add_callback(file_select_menu.buttons["down"].actor,
-                                          event, event_counter.count)
-            file_select_menu.menu.add_callback(file_select_menu.menu.panel.actor,
-                                               event, event_counter.count)
-            for text_ui in file_select_menu.text_item_list:
-                file_select_menu.add_callback(text_ui.text_actor.get_actors()[0],
-                                              event, event_counter.count)
-
-        current_size = (600, 600)
-        show_manager = window.ShowManager(size=current_size,
-                                          title="DIPY File Select Menu")
-        show_manager.ren.add(file_select_menu)
-
-        if recording:
-            show_manager.record_events_to_file(recording_filename)
-            print(list(event_counter.events_counts.items()))
-            event_counter.save(expected_events_counts_filename)
-
-        else:
-            show_manager.play_events_from_file(recording_filename)
-            expected = EventCounter.load(expected_events_counts_filename)
-            event_counter.check_counts(expected)
-
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
@@ -508,6 +459,3 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_disk_slider_2d":
         test_ui_disk_slider_2d(recording=True)
-
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_select_menu_2d":
-        test_ui_file_select_menu_2d(recording=True)
