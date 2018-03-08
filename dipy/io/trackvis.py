@@ -21,7 +21,6 @@ def save_trk(filename, points, vox_to_ras, shape):
                   "version. Please use `dipy.io.streamline.save_trk` function instead",
                   DeprecationWarning)
 
-
     voxel_order = nib.orientations.aff2axcodes(vox_to_ras)
     voxel_order = "".join(voxel_order)
 
