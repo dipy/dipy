@@ -455,7 +455,6 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-
     >>> np.random.seed(1)
     >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True)
     array([[-0.082978  ,  0.22032449, -0.49988563]])
