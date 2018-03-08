@@ -25,6 +25,7 @@ class RecoBundles(object):
     def __init__(self, streamlines, cluster_map=None, clust_thr=15,
                  verbose=True):
 
+
         self.clust_thr = clust_thr
         self.streamlines = streamlines
 
@@ -36,7 +37,7 @@ class RecoBundles(object):
         else:
             if self.verbose:
                 t = time()
-            
+
             self.cluster_map = cluster_map
             self.cluster_map.refdata = self.streamlines
             self.centroids = self.cluster_map.centroids
@@ -127,7 +128,7 @@ class RecoBundles(object):
 
     def cluster_model_bundle(self, model_clust_thr, nb_pts=20):
         self.model_clust_thr = model_clust_thr
-        
+
         if self.verbose:
             t = time()
             print('# Cluster model bundle using QBx')
@@ -230,7 +231,7 @@ class RecoBundles(object):
         static = set_number_of_points(static, nb_pts)
         moving = set_number_of_points(moving, nb_pts)
 
-        
+
         slr = StreamlineLinearRegistration(metric=metric, x0=x0,
                                            bounds=bounds,
                                            method=method)
@@ -256,10 +257,11 @@ class RecoBundles(object):
             print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
             print(' Number of iterations %d' % (self.slr_iterations,))
             print(' Matrix size {}'.format(self.slr_final_matrix.shape))
+            original = np.get_printoptions()
             np.set_printoptions(3, suppress=True)
             print(self.transf_matrix)
             print(slm.xopt)
-            np.set_printoptions()
+            np.set_printoptions(**original)
 
             print(' Duration %0.3f sec. \n' % (time() - t,))
 

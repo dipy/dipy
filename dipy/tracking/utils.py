@@ -361,7 +361,6 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
     array([[ 0.5,  0.5,  0.5]])
-
     >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
     array([[ 0.5       ,  0.25      ,  0.16666667],
            [ 0.5       ,  0.75      ,  0.16666667],
@@ -375,7 +374,6 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
            [ 0.55 ,  0.55 ,  1.875],
            [ 0.55 ,  1.65 ,  5.625],
            [ 0.55 ,  1.65 ,  6.875]])
-
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
@@ -458,7 +456,6 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     >>> np.random.seed(1)
     >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True)
     array([[-0.082978  ,  0.22032449, -0.49988563]])
-
     >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True)
     array([[-0.19766743, -0.35324411, -0.40766141],
            [-0.31373979, -0.15443927, -0.10323253],
@@ -472,7 +469,6 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
            [ 0.37638915,  0.39460666, -0.41495579],
            [-0.46094522,  0.66983042,  2.3781425 ],
            [-0.40165317,  0.92110763,  2.45788953]])
-
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:

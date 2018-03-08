@@ -798,11 +798,6 @@ def whole_brain_slr(static, moving,
                     qb_thr=15,
                     nb_pts=20,
                     progressive=True):
-    """
-    
-    
-    """
-    
     
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
@@ -892,7 +887,7 @@ def compose_matrix44(t, dtype=np.double):
     t : ndarray
         This is a 1D vector of of affine transformation parameters with
         size at least 3.
-        If size is 3, ti is interpreted as translation.
+        If size is 3, t is interpreted as translation.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
