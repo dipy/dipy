@@ -798,7 +798,12 @@ def whole_brain_slr(static, moving,
                     qb_thr=15,
                     nb_pts=20,
                     progressive=True):
-
+    """
+    
+    
+    """
+    
+    
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
         print('Moving streamlines size {}'.format(len(moving)))
