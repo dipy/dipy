@@ -6,6 +6,7 @@ import numpy.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import save_trk, load_trk
+from dipy.io.trackvis import save_trk as trackvis_save_trk
 
 streamline = np.array([[82.20181274,  91.36505891,  43.15737152],
                        [82.38442231,  91.79336548,  43.87036514],
@@ -158,6 +159,24 @@ def test_io_streamline():
         npt.assert_equal(len(local_streamlines), len(streamlines))
         for arr1, arr2 in zip(local_streamlines, streamlines):
             npt.assert_allclose(arr1, arr2)
+
+
+def test_trackvis():
+    with InTemporaryDirectory():
+        fname = 'trackvis_test.trk'
+        affine = np.eye(4)
+
+        # Test save
+        trackvis_save_trk(fname, streamlines, affine, np.array([50, 50, 50]))
+        tfile = nib.streamlines.load(fname)
+        npt.assert_array_equal(affine, tfile.affine)
+        npt.assert_array_equal(np.array([1., 1., 1.]), tfile.header.get('voxel_sizes'))
+        npt.assert_array_equal(np.array([50, 50, 50]), tfile.header.get('dimensions'))
+        npt.assert_equal(len(tfile.streamlines), len(streamlines))
+        npt.assert_array_almost_equal(tfile.streamlines[1], streamline, decimal=4)
+
+        # Test Deprecations
+        npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname, streamlines, affine, np.array([50, 50, 50]))
 
 
 if __name__ == '__main__':
