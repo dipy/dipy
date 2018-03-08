@@ -405,7 +405,7 @@ class StreamlineLinearRegistration(object):
             return x0
 
         if isinstance(x0, string_types):
-            
+
             if x0.lower() == 'translation':
                 return np.zeros(3)
 
@@ -798,7 +798,7 @@ def whole_brain_slr(static, moving,
                     qb_thr=15,
                     nb_pts=20,
                     progressive=True):
-    
+
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
         print('Moving streamlines size {}'.format(len(moving)))
@@ -855,7 +855,7 @@ def whole_brain_slr(static, moving,
         slm = slr.optimize(qb_centroids1, qb_centroids2)
     else:
         bounds = DEFAULT_BOUNDS
-        
+
         slm = progressive_slr(qb_centroids1, qb_centroids2,
                               x0=x0, metric=None,
                               bounds=bounds)
@@ -932,8 +932,8 @@ def decompose_matrix44(mat, size=12):
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int
-        Size of output vector. 3, for translation, 6 for rigid, 
-        7 for similarity, 9 for scalin and 12 for affine. Default is 12.
+        Size of output vector. 3, for translation, 6 for rigid,
+        7 for similarity, 9 for scaling and 12 for affine. Default is 12.
 
     Returns
     -------
