@@ -40,7 +40,7 @@ class RecoBundles(object):
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
             bundles using local and global streamline-based registration and
-            clustering.
+            clustering, Neuroimage, 2017.
         """
         self.clust_thr = clust_thr
         self.streamlines = streamlines
@@ -129,6 +129,7 @@ class RecoBundles(object):
             Optimization method (default 'L-BFGS-B')
         pruning_thr : float
         pruning_distance : string
+            MDF ('mdf') and MAM ('mam')
 
         Returns
         -------
@@ -179,7 +180,8 @@ class RecoBundles(object):
                   % (time()-t,))
         # return recognized bundle in original streamlines, labels of
         # recognized bundle and transformed recognized bundle
-        return self.streamlines[self.labels], self.labels, self.pruned_streamlines
+        return self.streamlines[self.labels], self.labels, \
+            self.pruned_streamlines
 
     def cluster_model_bundle(self, model_clust_thr, nb_pts=20):
         self.model_clust_thr = model_clust_thr
