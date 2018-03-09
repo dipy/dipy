@@ -231,16 +231,14 @@ class RecoBundles(object):
         static = set_number_of_points(static, nb_pts)
         moving = set_number_of_points(moving, nb_pts)
 
-
         slr = StreamlineLinearRegistration(metric=metric, x0=x0,
                                            bounds=bounds,
                                            method=method)
         slm = slr.optimize(static, moving)
 
         self.transf_streamlines = self.neighb_streamlines.copy()
-        self.transf_streamlines._data = apply_affine(slm.matrix, self.transf_streamlines._data)
-        #self.transf_streamlines = transform_streamlines(
-        #    self.neighb_streamlines, slm.matrix)
+        self.transf_streamlines._data = apply_affine(
+                slm.matrix, self.transf_streamlines._data)
 
         self.transf_matrix = slm.matrix
         self.slr_bmd = slm.fopt
@@ -255,7 +253,8 @@ class RecoBundles(object):
 
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(self.slr_bmd),))
-            print(' Number of iterations %d' % (self.slr_iterations,))
+            if self.slr_iterations is not None:
+                print(' Number of iterations %d' % (self.slr_iterations,))
             print(' Matrix size {}'.format(self.slr_final_matrix.shape))
             original = np.get_printoptions()
             np.set_printoptions(3, suppress=True)

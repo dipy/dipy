@@ -398,8 +398,8 @@ class StreamlineLinearRegistration(object):
         if hasattr(x0, 'ndim'):
 
             if len(x0) not in [3, 6, 7, 9, 12]:
-                msg = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
-                raise ValueError(msg)
+                m_ = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
+                raise ValueError(m_)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
             return x0
