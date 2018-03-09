@@ -1047,9 +1047,8 @@ def test_streamlines_generator():
     streamlines_generator.append(np.array([]))
     npt.assert_equal(len(streamlines_generator), len(streamlines))
 
-    # Build a new cache and resize data
-    streamlines_generator.append(streamlines)
-    npt.assert_equal(len(streamlines_generator), len(streamlines)*2)
+    # Test append error
+    npt.assert_raises(ValueError, streamlines_generator.append, streamlines)
 
     # Test empty streamlines
     streamlines_generator = Streamlines(np.array([]))
