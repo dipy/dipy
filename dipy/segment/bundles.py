@@ -24,11 +24,23 @@ class RecoBundles(object):
 
     def __init__(self, streamlines, cluster_map=None, clust_thr=15,
                  verbose=True):
-        """
+        """ Recognition of bundles
 
+        Extract bundles from a participants' tractograms using model bundles
+        segmented from a different subject or an atlas of bundles.
+        See [Garyfallidis17]_ for the details.
 
+        Parameters
+        ----------
+        streamlines : Streamlines
+            The tractogram in which you want to recognize bundles.
+        cluster
 
-
+        References
+        ----------
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering.
         """
         self.clust_thr = clust_thr
         self.streamlines = streamlines
@@ -93,6 +105,45 @@ class RecoBundles(object):
                   slr_method='L-BFGS-B',
                   pruning_thr=10,
                   pruning_distance='mdf'):
+        """ Recognize the model_bundle in streamlines
+
+        Parameters
+        ----------
+        model_bundle : Streamlines
+        model_clust_thr : float
+        reduction_thr : float
+        reduction_distance : string
+            mdf or mam (default mam)
+        slr : bool
+            Use Streamline-based Linear Registration (SLR) locally
+            (default True)
+        slr_metric : BundleMinDistanceMetric
+        slr_x0 : array
+            (default None)
+        slr_bounds : array
+            (default None)
+        slr_select : tuple
+            Select the number of streamlines from model to neirborhood of
+            model to perform the local SLR.
+        slr_method : string
+            Optimization method (default 'L-BFGS-B')
+        pruning_thr : float
+        pruning_distance : string
+
+        Returns
+        -------
+        recognized_bundle : Streamlines
+            Recognized bundle in the space of the original tractogram
+        recognized_labes : array
+            Indices of recognized bundle in the original tractogram
+        recognized_transf : Streamlines
+
+        References
+        ----------
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering.
+        """
 
         self.reduction_thr = reduction_thr
         if self.verbose:
