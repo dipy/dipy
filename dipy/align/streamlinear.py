@@ -865,7 +865,8 @@ def whole_brain_slr(static, moving,
         print('QB moving centroids size %d' % len(qb_centroids2,))
         duration = time() - t
         print('SLR finished in  %0.3f seconds.' % (duration,))
-        print('SLR iterations: %d ' % (slm.iterations,))
+        if slm.iterations is not None:
+            print('SLR iterations: %d ' % (slm.iterations,))
 
     moved = slm.transform(moving)
 
