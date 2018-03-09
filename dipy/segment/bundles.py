@@ -24,8 +24,12 @@ class RecoBundles(object):
 
     def __init__(self, streamlines, cluster_map=None, clust_thr=15,
                  verbose=True):
+        """
 
 
+
+
+        """
         self.clust_thr = clust_thr
         self.streamlines = streamlines
 
@@ -48,7 +52,7 @@ class RecoBundles(object):
                 print(' Streamlines have %d centroids'
                       % (self.nb_centroids,))
                 print(' Total loading duration %0.3f sec. \n'
-                      % (time() - t, ))
+                      % (time() - t,))
 
     def cluster_streamlines(self, clust_thr=15, nb_pts=20):
 
@@ -137,8 +141,10 @@ class RecoBundles(object):
             print(' Distance threshold %0.3f' % (model_clust_thr,))
         thresholds = [40, 25, 20, model_clust_thr]
 
-        self.model_cluster_map = qbx_with_merge(self.model_bundle, thresholds, nb_pts=nb_pts,
-                                                select_randomly=500000, verbose=self.verbose)
+        self.model_cluster_map = qbx_with_merge(self.model_bundle, thresholds,
+                                                nb_pts=nb_pts,
+                                                select_randomly=500000,
+                                                verbose=self.verbose)
         self.model_centroids = self.model_cluster_map.centroids
         self.nb_model_centroids = len(self.model_centroids)
 
@@ -277,8 +283,10 @@ class RecoBundles(object):
             t = time()
 
         thresholds = [40, 30, 20, 10, mdf_thr]
-        self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines, thresholds, nb_pts=20,
-                                                  select_randomly=500000, verbose=self.verbose)
+        self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines,
+                                                  thresholds, nb_pts=20,
+                                                  select_randomly=500000,
+                                                  verbose=self.verbose)
 
         if self.verbose:
             print(' QB Duration %0.3f sec. \n' % (time() - t, ))
