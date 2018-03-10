@@ -103,12 +103,15 @@ def test_slicer():
                                       value_range=(0., 1.))
     renderer.clear()
     slicer_lut = actor.slicer(data, lookup_colormap=lut)
-
     slicer_lut.display(10, None, None)
     slicer_lut.display(None, 10, None)
     slicer_lut.display(None, None, 10)
+    slicer_lut.opacity(0.5)
 
     slicer_lut2 = slicer_lut.copy()
+    npt.assert_equal(slicer_lut2.GetOpacity(),0.5);
+    slicer_lut.opacity(1)
+    slicer_lut2.opacity(1)
     slicer_lut2.display(None, None, 10)
     renderer.add(slicer_lut2)
 
