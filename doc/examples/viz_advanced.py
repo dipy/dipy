@@ -298,7 +298,7 @@ if interactive:
 
 else:
 
-    window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
+    window.record(ren, out_path='bundles_and_3_slices.png', size=(5000, 5000),
                   reset_camera=False)
 
 """
