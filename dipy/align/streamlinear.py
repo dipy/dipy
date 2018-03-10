@@ -210,7 +210,7 @@ class StreamlineLinearRegistration(object):
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None,
                  evolution=False, num_threads=None):
-        r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
+        r""" Linear registration of 2 sets of streamlines [Garyfallidis15]_.
 
         Parameters
         ----------
@@ -279,10 +279,15 @@ class StreamlineLinearRegistration(object):
 
         References
         ----------
+        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+            registration of white-matter fascicles in the space of
+            streamlines", NeuroImage, 117, 124--140, 2015
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
                             bundle alignment for group comparisons", ISMRM,
                             2014.
-
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering, Neuroimage, 2017.
         """
 
         self.x0 = self._set_x0(x0)
@@ -798,6 +803,55 @@ def whole_brain_slr(static, moving,
                     qb_thr=15,
                     nb_pts=20,
                     progressive=True):
+    """ Utility function for registering large tractograms.
+
+    For efficiency we apply the registration on cluster centroids and remove
+    small clusters.
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+    x0 : str
+        rigid, similarity or affine transformation model (default affine)
+
+    rm_small_clusters : int
+        Remove clusters that have less than `rm_small_clusters` (default 50)
+
+    verbose : bool,
+        If True then information about the optimization is shown.
+
+    select_random : int
+        If not None select a random number of streamlines to apply clustering
+        Default None.
+
+    options : None or dict,
+        Extra options to be used with the selected method.
+
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used. Only metrics using OpenMP will use this variable.
+
+    Notes
+    -----
+    The order of operations is the following. First short or long streamlines
+    are removed. Second the tractogram or a random selection of the tractogram
+    is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+            registration of white-matter fascicles in the space of streamlines",
+            NeuroImage, 117, 124--140, 2015
+    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+            bundle alignment for group comparisons", ISMRM, 2014.
+    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering, Neuroimage, 2017.
+
+
+    """
+
 
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
@@ -810,6 +864,7 @@ def whole_brain_slr(static, moving,
         else:
             return False
 
+    # TODO change this to the new Streamlines API
     streamlines1 = [s for s in static if check_range(s)]
     streamlines2 = [s for s in moving if check_range(s)]
 
