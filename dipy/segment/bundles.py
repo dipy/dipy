@@ -22,7 +22,7 @@ from nibabel.affines import apply_affine
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, cluster_map=None, clust_thr=15,
+    def __init__(self, streamlines, cluster_map=None, clust_thr=15, nb_pts=20,
                  verbose=True):
         """ Recognition of bundles
 
@@ -34,7 +34,19 @@ class RecoBundles(object):
         ----------
         streamlines : Streamlines
             The tractogram in which you want to recognize bundles.
-        cluster
+        cluster_map : QB map
+            Provide existing clustering to start RB faster (default None).
+        clust_thr : float
+            Distance threshold in mm for clustering `streamlines`
+        nb_pts : int
+            Number of points per streamline (default 20)
+
+        Notes
+        -----
+        Make sure that before creating this class that the streamlines and
+        the model bundles are roughly in the same space.
+        Also also default thresholds are assumed RAS 1mm^3 space. You may
+        want to adjust those if your streamlines are not in world coordinates.
 
         References
         ----------
@@ -49,7 +61,7 @@ class RecoBundles(object):
         self.verbose = verbose
 
         if cluster_map is None:
-            self.cluster_streamlines(clust_thr=clust_thr)
+            self.cluster_streamlines(clust_thr=clust_thr, nb_pts=nb_pts)
         else:
             if self.verbose:
                 t = time()
@@ -105,7 +117,7 @@ class RecoBundles(object):
                   slr_method='L-BFGS-B',
                   pruning_thr=10,
                   pruning_distance='mdf'):
-        """ Recognize the model_bundle in streamlines
+        """ Recognize the model_bundle in self.streamlines
 
         Parameters
         ----------
@@ -233,10 +245,12 @@ class RecoBundles(object):
 
         close_clusters = self.cluster_map[close_clusters_indices]
 
+        # TODO this should change to use the new Streamlines API
         close_centroids = [self.centroids[i]
                            for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
+        # ArraySequence should switch to Streamlines
         close_streamlines = ArraySequence(chain(*close_clusters))
         self.centroid_matrix = centroid_matrix.copy()
 
