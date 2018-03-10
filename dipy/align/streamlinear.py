@@ -675,7 +675,6 @@ def bundle_min_distance_static_fast(t, static, moving, block_size):
     Returns
     -------
     cost: float
-
     """
 
     aff = compose_matrix44(t)
@@ -697,7 +696,43 @@ def remove_clusters_by_size(clusters, min_size=0):
 
 
 def progressive_slr(static, moving, metric, x0, bounds,
-                    method='L-BFGS-B', verbose=True):
+                    method='L-BFGS-B', verbose=True, num_threads=None):
+    """ Progressive SLR
+
+    This is an utility function that allows for example to do affine
+    registration using Streamline-based Linear Registration (SLR)
+    [Garyfallidis15]_ by starting with translation first, then rigid,
+    then similarity, scaling and finally affine.
+
+    Similarly, if for example you want to perform rigid then you start with
+    translation first. This progressive strategy can helps with finding the
+    optimal parameters of the final transformation.
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+    metric : StreamlineDistanceMetric
+    x0 : string
+        Could be any of 'translation', 'rigid', 'similarity', 'scaling',
+        'affine'
+    bounds : array
+        Boundaries of registration parameters. See variable `DEFAULT_BOUNDS`
+        for example.
+    method : string
+        L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
+    verbose : bool
+        If True show messages in stdout (default True).
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used. Only metrics using OpenMP will use this variable.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+        registration of white-matter fascicles in the space of streamlines",
+        NeuroImage, 117, 124--140, 2015
+    """
 
     if verbose:
         print('Progressive Registration is Enabled')
@@ -792,17 +827,17 @@ def progressive_slr(static, moving, metric, x0, bounds,
     return slm
 
 
-def whole_brain_slr(static, moving,
-                    x0='affine',
-                    rm_small_clusters=50,
-                    maxiter=100,
-                    select_random=None,
-                    verbose=False,
-                    greater_than=50,
-                    less_than=250,
-                    qb_thr=15,
-                    nb_pts=20,
-                    progressive=True):
+def slr_with_qb(static, moving,
+                x0='affine',
+                rm_small_clusters=50,
+                maxiter=100,
+                select_random=None,
+                verbose=False,
+                greater_than=50,
+                less_than=250,
+                qb_thr=15,
+                nb_pts=20,
+                progressive=True, num_threads=None):
     """ Utility function for registering large tractograms.
 
     For efficiency we apply the registration on cluster centroids and remove
@@ -841,18 +876,14 @@ def whole_brain_slr(static, moving,
     References
     ----------
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-            registration of white-matter fascicles in the space of streamlines",
-            NeuroImage, 117, 124--140, 2015
+            registration of white-matter fascicles in the space of streamlines"
+            , NeuroImage, 117, 124--140, 2015
     .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
             bundle alignment for group comparisons", ISMRM, 2014.
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
-
-
     """
-
-
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
         print('Moving streamlines size {}'.format(len(moving)))
@@ -906,14 +937,15 @@ def whole_brain_slr(static, moving,
 
     if not progressive:
         slr = StreamlineLinearRegistration(x0=x0,
-                                           options={'maxiter': maxiter})
+                                           options={'maxiter': maxiter},
+                                           num_threads=num_threads)
         slm = slr.optimize(qb_centroids1, qb_centroids2)
     else:
         bounds = DEFAULT_BOUNDS
 
         slm = progressive_slr(qb_centroids1, qb_centroids2,
                               x0=x0, metric=None,
-                              bounds=bounds)
+                              bounds=bounds, num_threads=num_threads)
 
     if verbose:
         print('QB static centroids size %d' % len(qb_centroids1,))
@@ -928,7 +960,9 @@ def whole_brain_slr(static, moving,
     return moved, slm.matrix, qb_centroids1, qb_centroids2
 
 
-slr_with_qb = whole_brain_slr
+# In essence whole_brain_slr can be thought as a combination of
+# SLF and QuickBundles
+whole_brain_slr = slr_with_qb
 
 
 def _threshold(x, th):
