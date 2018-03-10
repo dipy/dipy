@@ -188,7 +188,7 @@ Once all elements have been initialised, they have
 to be added to the show manager in the following manner.
 """
 
-current_size = (600, 600)
+current_size = (5000, 5000)
 show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
 show_manager.ren.add(cube_actor_1)
