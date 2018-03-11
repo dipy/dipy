@@ -109,6 +109,25 @@ def test_rb_no_neighb():
     assert_equal(len(rec_trans), 0)
 
 
+def test_rb_reduction_mam():
+
+    rb = RecoBundles(f, clust_thr=10, verbose=True)
+
+    recognized, rec_labels, rec_trans = rb.recognize(model_bundle=f2,
+                                                     model_clust_thr=5.,
+                                                     reduction_thr=10,
+                                                     reduction_distance='mam',
+                                                     slr=True,
+                                                     slr_metric='asymmetric',
+                                                     pruning_distance='mam')
+
+    D = bundles_distances_mam(f2, recognized)
+
+    # check if the bundle is recognized correctly
+    for row in D:
+        assert_equal(row.min(), 0)
+
+
 if __name__ == '__main__':
 
     run_module_suite()

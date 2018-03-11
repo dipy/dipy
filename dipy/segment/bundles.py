@@ -1,11 +1,8 @@
 import numpy as np
-from dipy.tracking.streamline import (transform_streamlines, check_range,
-                                      set_number_of_points, length, nbytes,
+from dipy.tracking.streamline import (transform_streamlines,
+                                      set_number_of_points, nbytes,
                                       select_random_set_of_streamlines)
-from dipy.segment.clustering import (QuickBundlesX,
-                                     ClusterMapCentroid, ClusterCentroid,
-                                     AveragePointwiseEuclideanMetric,
-                                     qbx_with_merge)
+from dipy.segment.clustering import qbx_with_merge
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
