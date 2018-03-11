@@ -8,7 +8,7 @@ from dipy.tracking.distances import (bundles_distances_mdf,
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      BundleMinDistanceMetric,
                                      BundleSumDistanceMatrixMetric,
-                                     BundleMinDistanceStaticMetric)
+                                     BundleMinDistanceAsymmetricMetric)
 from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
@@ -282,7 +282,7 @@ class RecoBundles(object):
         if metric is None or metric == 'symmetric':
             metric = BundleMinDistanceMetric()
         if metric == 'asymmetric':
-            metric = BundleMinDistanceStaticMetric()
+            metric = BundleMinDistanceAsymmetricMetric()
         if metric == 'diagonal':
             metric = BundleSumDistanceMatrixMetric()
 
