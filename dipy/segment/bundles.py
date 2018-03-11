@@ -173,7 +173,8 @@ class RecoBundles(object):
             self.transf_streamlines = None
             self.transf_matrix = None
             self.labels = []
-            return []
+            # TODO replace with Streamlines
+            return ArraySequence([]), ArraySequence([]), ArraySequence([])
         if slr:
             self.register_neighb_to_model(metric=slr_metric,
                                           x0=slr_x0,
