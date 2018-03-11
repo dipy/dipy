@@ -132,8 +132,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     return np.asarray(D)
 
 
-def _bundle_minimum_distance(double [:, ::1] stat,
-                             double [:, ::1] mov,
+def _bundle_minimum_distance(double [:, ::1] static,
+                             double [:, ::1] moving,
                              cnp.npy_intp static_size,
                              cnp.npy_intp moving_size,
                              cnp.npy_intp rows,
@@ -207,8 +207,8 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
             for j in range(moving_size):
 
-                tmp = min_direct_flip_dist(&stat[i * rows, 0],
-                                       &mov[j * rows, 0], rows)
+                tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                       &moving[j * rows, 0], rows)
 
                 if have_openmp:
                     openmp.omp_set_lock(&lock)
@@ -243,8 +243,8 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
 
 
-def _bundle_minimum_distance_static(double [:, ::1] stat,
-                                    double [:, ::1] mov,
+def _bundle_minimum_distance_static(double [:, ::1] static,
+                                    double [:, ::1] moving,
                                     cnp.npy_intp static_size,
                                     cnp.npy_intp moving_size,
                                     cnp.npy_intp rows):
@@ -273,7 +273,7 @@ def _bundle_minimum_distance_static(double [:, ::1] stat,
     Notes
     -----
     The difference with ``_bundle_minimum_distance`` is that we sum the
-    minimum values only for the static. Therefore, this is assymetric.
+    minimum values only for the static. Therefore, this is asymetric.
     """
 
     cdef:
@@ -303,8 +303,8 @@ def _bundle_minimum_distance_static(double [:, ::1] stat,
 
             for j in range(moving_size):
 
-                tmp = min_direct_flip_dist(&stat[i * rows, 0],
-                                       &mov[j * rows, 0], rows)
+                tmp = min_direct_flip_dist(&static[i * rows, 0],
+                                       &moving[j * rows, 0], rows)
 
                 if have_openmp:
                     openmp.omp_set_lock(&lock)
