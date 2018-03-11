@@ -85,7 +85,30 @@ def test_rb_clustermap():
         assert_equal(row.min(), 0)
 
 
+def test_rb_no_neighb():
+    # what if neighbors are found? No recognition
+
+    b = Streamlines(fornix)
+    b1 = b.copy()
+
+    b2 = b1[:20].copy()
+    b2._data += np.array([100, 0, 0])
+
+    b3 = b1[:20].copy()
+    b3._data += np.array([300, 0, 0])
+
+    b.extend(b3)
+
+    rb = RecoBundles(b, clust_thr=10)
+    recognized, rec_labels, rec_trans = rb.recognize(model_bundle=b2,
+                                                     model_clust_thr=5.,
+                                                     reduction_thr=10)
+
+    assert_equal(len(recognized), 0)
+    assert_equal(len(rec_labels), 0)
+    assert_equal(len(rec_trans), 0)
+
+
 if __name__ == '__main__':
 
-    # run_module_suite()
-    test_rb_clustermap()
+    run_module_suite()
