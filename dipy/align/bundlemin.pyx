@@ -243,11 +243,11 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
 
 
-def _bundle_minimum_distance_static(double [:, ::1] static,
-                                    double [:, ::1] moving,
-                                    cnp.npy_intp static_size,
-                                    cnp.npy_intp moving_size,
-                                    cnp.npy_intp rows):
+def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
+                                        double [:, ::1] moving,
+                                        cnp.npy_intp static_size,
+                                        cnp.npy_intp moving_size,
+                                        cnp.npy_intp rows):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of

@@ -3,7 +3,7 @@ import numpy as np
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
-                                  _bundle_minimum_distance_static,
+                                  _bundle_minimum_distance_asymmetric,
                                   distance_matrix_mdf)
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
@@ -167,14 +167,16 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
         return bundle_min_distance(xopt, self.static, self.moving)
 
 
-class BundleMinDistanceStaticMetric(BundleMinDistanceMetric):
+class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
+    """ Asymmetric Bundle-based Minimum distance
+    """
 
     def distance(self, xopt):
 
-        return bundle_min_distance_static_fast(xopt,
-                                               self.static_centered_pts,
-                                               self.moving_centered_pts,
-                                               self.block_size)
+        return bundle_min_distance_asymmetric_fast(xopt,
+                                                   self.static_centered_pts,
+                                                   self.moving_centered_pts,
+                                                   self.block_size)
 
 
 class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
@@ -641,7 +643,7 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
                                     num_threads)
 
 
-def bundle_min_distance_static_fast(t, static, moving, block_size):
+def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     """ MDF-based pairwise distance optimization function (MIN)
 
     We minimize the distance between moving streamlines as they align
@@ -684,10 +686,10 @@ def bundle_min_distance_static_fast(t, static, moving, block_size):
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
 
-    return _bundle_minimum_distance_static(static, moving,
-                                           rows,
-                                           cols,
-                                           block_size)
+    return _bundle_minimum_distance_asymmetric(static, moving,
+                                               rows,
+                                               cols,
+                                               block_size)
 
 
 def remove_clusters_by_size(clusters, min_size=0):
