@@ -655,13 +655,5 @@ def values_from_volume(data, streamlines, affine=None):
         raise ValueError("Data needs to have 3 or 4 dimensions")
 
 
-def check_range(streamline, gt, lt):
-    length_s = length(streamline)
-    if (length_s > gt) & (length_s < lt):
-        return True
-    else:
-        return False
-
-
 def nbytes(streamlines):
     return streamlines._data.nbytes / 1024. ** 2

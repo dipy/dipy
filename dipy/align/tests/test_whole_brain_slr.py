@@ -44,8 +44,16 @@ def test_whole_brain_slr():
     f3 = transform_streamlines(f3, mat)
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
-            f1, f3, verbose=False, rm_small_clusters=1, greater_than=0,
+            f1, f3, verbose=False, rm_small_clusters=1, greater_than=20,
             less_than=np.inf, qb_thr=2, progressive=False)
+
+    # we can also check the quality by looking at the decomposed transform
+    assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
+
+    moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
+            f1, f3, verbose=False, rm_small_clusters=1, select_random=400,
+            greater_than=20,
+            less_than=np.inf, qb_thr=2, progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
