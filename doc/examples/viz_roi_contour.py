@@ -16,6 +16,7 @@ from dipy.direction import peaks_from_model
 from dipy.tracking.local import ThresholdTissueClassifier
 from dipy.tracking import utils
 from dipy.tracking.local import LocalTracking
+from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window
 from dipy.viz.colormap import line_colors
 
@@ -28,7 +29,7 @@ Tutorial.
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -48,7 +49,7 @@ streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
                             step_size=2)
 
 # Compute streamlines and store as a list.
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines)
 
 """
 We will create a streamline actor from the streamlines.
@@ -81,8 +82,9 @@ ren.add(seedroi_actor)
 If you uncomment the following line, the rendering will pop up in an
 interactive window.
 """
-
-# window.show(ren)
+interactive = False
+if interactive:
+    window.show(ren)
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
