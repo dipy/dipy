@@ -13,7 +13,7 @@ from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
 
-from nibabel.streamlines.array_sequence import ArraySequence
+from dipy.tracking.streamline import Streamlines
 from nibabel.affines import apply_affine
 
 
@@ -171,7 +171,7 @@ class RecoBundles(object):
             self.transf_matrix = None
             self.labels = []
             # TODO replace with Streamlines
-            return ArraySequence([]), ArraySequence([]), ArraySequence([])
+            return Streamlines([]), Streamlines([]), Streamlines([])
         if slr:
             self.register_neighb_to_model(metric=slr_metric,
                                           x0=slr_x0,
@@ -248,8 +248,7 @@ class RecoBundles(object):
                            for i in close_clusters_indices]
         close_indices = [cluster.indices for cluster in close_clusters]
 
-        # ArraySequence should switch to Streamlines
-        close_streamlines = ArraySequence(chain(*close_clusters))
+        close_streamlines = Streamlines(chain(*close_clusters))
         self.centroid_matrix = centroid_matrix.copy()
 
         self.neighb_streamlines = close_streamlines
