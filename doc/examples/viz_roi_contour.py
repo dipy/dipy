@@ -89,7 +89,7 @@ if interactive:
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='contour_from_roi_tutorial.png', size=(1200, 900),
+window.record(ren, out_path='contour_from_roi_tutorial.png', size=(5000, 5000),
               reset_camera=False)
 
 """
