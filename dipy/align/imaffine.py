@@ -62,11 +62,13 @@ _transform_method[(2, 'nearest')] = vf.transform_2d_affine_nn
 _transform_method[(3, 'nearest')] = vf.transform_3d_affine_nn
 _transform_method[(2, 'linear')] = vf.transform_2d_affine
 _transform_method[(3, 'linear')] = vf.transform_3d_affine
-
+_number_dim_affine_matrix = 2
 
 class AffineInversionError(Exception):
     pass
 
+class AffineInvalidValuesError(Exception):
+    pass
 
 class AffineMap(object):
 
@@ -130,6 +132,19 @@ class AffineMap(object):
         self.codomain_shape = codomain_grid_shape
         self.codomain_grid2world = codomain_grid2world
 
+    def get_affine(self):
+        """
+        Returns the value of the transformation, not a reference!
+
+        Returns
+        -------
+        affine : ndarray
+            Copy of the transform, not a reference.
+        """
+
+        # returning a copy to insulate it from changes outside object
+        return self.affine.copy()
+
     def set_affine(self, affine):
         """ Sets the affine transform (operating in physical space)
 
@@ -144,16 +159,77 @@ class AffineMap(object):
             remains unchanged. If None, then `self` represents the identity
             transformation.
         """
-        self.affine = affine
-        self.affine_inv = None
-        if self.affine is None:
+
+        if affine is None:
+            self.affine = None
+            self.affine_inv = None
             return
+
+        try:
+            affine = np.array(affine)
+        except:
+            raise TypeError('Input must be type ndarray, or be convertible to one.')
+
+        if len(affine.shape) != _number_dim_affine_matrix:
+            raise AffineInversionError('Affine transform must be 2D')
+
+        if not affine.shape[0] == affine.shape[1]:
+            raise AffineInversionError('Affine transform must be a square matrix')
+
         if not np.all(np.isfinite(affine)):
-            raise AffineInversionError('Affine contains invalid elements')
+            raise AffineInvalidValuesError('Affine transform contains invalid elements')
+
+        # checking on proper augmentation
+        # First n-1 columns in last row in matrix contain non-zeros
+        if not np.all(affine[-1, :-1] == 0.0):
+            raise AffineInvalidValuesError('First {n_1} columns in last row in matrix '
+                                           'contain non-zeros!'.format(n_1=affine.shape[0] - 1))
+
+        # Last row, last column in matrix must be 1.0!
+        if affine[-1, -1] != 1.0:
+            raise AffineInvalidValuesError('Last row, last column in matrix is not 1.0!')
+
+        # making a copy to insulate it from changes outside object
+        self.affine = affine.copy()
+
         try:
             self.affine_inv = npl.inv(affine)
         except npl.LinAlgError:
             raise AffineInversionError('Affine cannot be inverted')
+
+    def __str__(self):
+        """Printable format - relies on ndarray's implementation."""
+
+        return str(self.affine)
+
+    def __repr__(self):
+        """Relodable representation - also relies on ndarray's implementation."""
+
+        return self.affine.__repr__()
+
+    def __format__(self, format_spec):
+        """Implementation various formatting options"""
+
+        if format_spec is None or self.affine is None:
+            return str(self.affine)
+        elif isinstance(format_spec, str):
+            format_spec = format_spec.lower()
+            if format_spec in ['', ' ', 'f', 'full']:
+                return str(self.affine)
+            # rotation part only (initial 3x3)
+            elif format_spec in ['r', 'rotation']:
+                return str(self.affine[:-1, :-1])
+            # translation part only (4th col)
+            elif format_spec in ['t', 'translation']:
+                # notice unusual indexing to make it a column vector
+                #   i.e. rows from 0 to n-1, cols from n to n
+                return str(self.affine[:-1, -1:])
+            else:
+                allowed_formats_print_map = ['full', 'f',
+                                             'rotation', 'r',
+                                             'translation', 't']
+                raise NotImplementedError('Format {} not recognized or implemented.\n'
+                                          'Try one of {}'.format(format_spec, allowed_formats_print_map))
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -479,7 +555,7 @@ class MutualInformationMetric(object):
             if self.starting_affine is None:
                 self.samples_prealigned = self.samples
             else:
-                self.samples_prealigned =\
+                self.samples_prealigned = \
                     self.starting_affine.dot(self.samples.T).T
             # Sample the static image
             static_p = self.static_world2grid.dot(self.samples.T).T
@@ -628,7 +704,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, False)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return np.inf
         return -1 * self.metric_val
 
@@ -649,7 +725,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, True)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return 0 * self.metric_grad
         return -1 * self.metric_grad
 
@@ -674,7 +750,7 @@ class MutualInformationMetric(object):
         """
         try:
             self._update_mutual_information(params, True)
-        except AffineInversionError:
+        except (AffineInversionError, AffineInvalidValuesError):
             return np.inf, 0 * self.metric_grad
         return -1 * self.metric_val, -1 * self.metric_grad
 
@@ -761,7 +837,7 @@ class AffineRegistration(object):
 
     # Separately add a string that tells about the verbosity kwarg. This needs
     # to be separate, because it is set as a module-wide option in __init__:
-    docstring_addendum =\
+    docstring_addendum = \
         """verbosity: int (one of {0, 1, 2, 3}), optional
             Set the verbosity level of the algorithm:
             0 : do not print anything
