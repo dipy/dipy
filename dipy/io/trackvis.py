@@ -1,7 +1,14 @@
 import nibabel as nib
 import numpy as np
+import warnings
 
 from dipy.tracking import utils
+
+warnings.simplefilter('always', DeprecationWarning)
+warnings.warn("The `dipy.io.trackvis` module is deprecated as of version" +
+              " 0.14 of Dipy and will be removed in a future " +
+              "version. Please use `dipy.io.streamline` module instead",
+              DeprecationWarning)
 
 
 def save_trk(filename, points, vox_to_ras, shape):
@@ -9,6 +16,11 @@ def save_trk(filename, points, vox_to_ras, shape):
 
     This function will soon be replaced by better trk file support in nibabel.
     """
+    warnings.warn("The `dipy.io.trackvis.save_trk` function is deprecated as of version" +
+                  " 0.14 of Dipy and will be removed in a future " +
+                  "version. Please use `dipy.io.streamline.save_trk` function instead",
+                  DeprecationWarning)
+
     voxel_order = nib.orientations.aff2axcodes(vox_to_ras)
     voxel_order = "".join(voxel_order)
 
