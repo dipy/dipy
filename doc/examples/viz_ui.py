@@ -161,7 +161,7 @@ line_slider.add_callback(line_slider.slider_line,
 
 def rotate_red_cube(i_ren, obj, slider):
     angle = slider.value
-    previous_angle = slider.pvalue;
+    previous_angle = slider.pvalue
     rotation_angle = angle - previous_angle
     cube_actor_1.RotateY(rotation_angle)
 

@@ -1994,7 +1994,7 @@ class DiskSlider2D(UI):
 
     @pvalue.setter
     def pvalue(self, pvalue):
-        self._pvalue=pvalue;
+        self._pvalue = pvalue
 
     @property
     def ratio(self):
@@ -2031,9 +2031,9 @@ class DiskSlider2D(UI):
         # Compute the selected value considering min_value and max_value.
         value_range = self.max_value - self.min_value
         try:
-            self._pvalue = self.value;
+            self._pvalue = self.value
         except:
-            self._pvalue = self.initial_value;
+            self._pvalue = self.initial_value
         self._value = self.min_value + self.ratio*value_range
         # Update text disk actor.
         x = self.slider_radius * np.cos(self.angle) + self.center[0]
