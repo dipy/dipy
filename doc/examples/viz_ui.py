@@ -143,7 +143,6 @@ def translate_green_cube(i_ren, obj, slider):
     value = slider.value
     cube_actor_2.SetPosition(value, 0, 0)
 
-
 line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
 
@@ -151,15 +150,20 @@ line_slider.add_callback(line_slider.slider_disk,
                          "MouseMoveEvent",
                          translate_green_cube)
 
+line_slider.add_callback(line_slider.slider_line,
+                         "LeftButtonPressEvent",
+                         translate_green_cube)
+
 """
 2D Disk Slider
 ==============
 """
 
-
 def rotate_red_cube(i_ren, obj, slider):
     angle = slider.value
-    cube_actor_1.RotateY(0.005 * angle)
+    previous_angle = slider.pvalue
+    rotation_angle = angle - previous_angle
+    cube_actor_1.RotateY(rotation_angle)
 
 
 disk_slider = ui.DiskSlider2D()
