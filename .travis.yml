@@ -127,6 +127,6 @@ script:
       cp ../.coveragerc .;
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
-    - pytest --doctest-modules --durations=10 -svv dipy
+    - pytest --doctest-modules --durations=10 -svv
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
