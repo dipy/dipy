@@ -77,7 +77,7 @@ def test_renderer():
     npt.assert_equal(report.actors, 0)
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_active_camera():
     renderer = window.Renderer()
@@ -145,7 +145,7 @@ def test_active_camera():
     npt.assert_almost_equal(position[2], 0.5 * new_position[2])
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_parallel_projection():
 
@@ -177,7 +177,7 @@ def test_parallel_projection():
     npt.assert_equal(np.sum(arr2 > 0) > np.sum(arr > 0), True)
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_order_transparent():
 
