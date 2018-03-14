@@ -11,6 +11,8 @@ from dipy.reconst import mapmri
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstMAPMRIFlow
 
+import pytest
+
 
 def test_reconst_mmri_laplacian():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
@@ -20,12 +22,12 @@ def test_reconst_mmri_none():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=False, pos=False)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 

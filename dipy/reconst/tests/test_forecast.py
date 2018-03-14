@@ -13,9 +13,9 @@ from numpy.testing import (assert_almost_equal,
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
+import pytest
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = dec.skipif(not have_cvxpy)
 
 
 # Object to hold module global data
@@ -39,7 +39,7 @@ def setup():
     data.sphere = sphere.vertices[0:int(sphere.vertices.shape[0]/2), :]
 
 
-@needs_cvxpy
+@pytest.mark.skipif(not have_cvxpy)
 def test_forecast_positive_constrain():
     fm = ForecastModel(data.gtab,
                        sh_order=data.sh_order,

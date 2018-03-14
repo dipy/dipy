@@ -22,6 +22,7 @@ from dipy.sims.voxel import multi_tensor
 
 from distutils.version import LooseVersion
 import scipy
+import pytest
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
@@ -302,7 +303,7 @@ def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
 
 
-@dec.skipif(SCIPY_VERSION < LooseVersion('0.17'),
+@pytest.mark.skipif(SCIPY_VERSION < LooseVersion('0.17'),
             "Gives wrong value for f")
 def test_noisy_fit():
     """

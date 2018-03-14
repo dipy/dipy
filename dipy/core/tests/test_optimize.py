@@ -4,6 +4,7 @@ import scipy.sparse as sps
 import numpy.testing as npt
 from dipy.core.optimize import Optimizer, SCIPY_LESS_0_12, sparse_nnls, spdot
 import dipy.core.optimize as opt
+import pytest
 
 
 def func(x):
@@ -14,7 +15,7 @@ def func2(x):
     return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
 
 
-@npt.dec.skipif(SCIPY_LESS_0_12)
+@pytest.mark.skipif(SCIPY_LESS_0_12)
 def test_optimize_new_scipy():
     opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
 

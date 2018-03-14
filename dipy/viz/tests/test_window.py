@@ -3,6 +3,7 @@ import numpy as np
 from dipy.viz import actor, window
 import numpy.testing as npt
 from dipy.testing.decorators import xvfb_it
+import pytest
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -11,7 +12,7 @@ else:
     skip_it = False
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
 @xvfb_it
 def test_renderer():
 
