@@ -12,7 +12,6 @@ the main functions using the following modules.
 """
 
 import numpy as np
-import pyautogui
 from dipy.viz import actor, window, ui
 
 """
@@ -291,12 +290,6 @@ interactive = False
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-resolution = pyautogui.size()
-monitorWidth = resolution[0]
-monitorHeight = resolution[1]
-imageWidth = resolution[0] - 5
-imageHeight = resolution[1] - 5
-
 if interactive:
 
     show_m.add_window_callback(win_callback)
@@ -305,7 +298,7 @@ if interactive:
 
 else:
 
-    window.record(ren, out_path='bundles_and_3_slices.png', size=(imageWidth, imageHeight),
+    window.record(ren, out_path='bundles_and_3_slices.png', size=(5000, 5000),
                   reset_camera=False)
 
 """
