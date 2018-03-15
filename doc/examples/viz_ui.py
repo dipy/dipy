@@ -11,8 +11,6 @@ First, a bunch of imports.
 """
 import os
 
-import pyautogui
-
 from dipy.data import read_viz_icons, fetch_viz_icons
 
 from dipy.viz import ui, window
@@ -188,18 +186,9 @@ Adding Elements to the ShowManager
 
 Once all elements have been initialised, they have
 to be added to the show manager in the following manner.
-
-use pyautogui to get the user's monitor resolution
-Set that height and width to show manager
 """
-resolution = pyautogui.size()
-monitorWidth = resolution[0]
-monitorHeight = resolution[1]
-imageWidth = resolution[0] - 5
-imageHeight = resolution[1] - 5
 
-current_size = (imageHeight, imageWidth)
-
+current_size = (5000, 5000)
 show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
 
 show_manager.ren.add(cube_actor_1)
