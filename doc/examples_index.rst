@@ -142,6 +142,7 @@ Fiber tracking
 - :ref:`example_introduction_to_basic_tracking`
 - :ref:`example_probabilistic_fiber_tracking`
 - :ref:`example_deterministic_fiber_tracking`
+- :ref:`example_tracking_bootstrap_peaks`
 - :ref:`example_tracking_tissue_classifier`
 - :ref:`example_particle_filtering_fiber_tracking`
 - :ref:`example_sfm_tracking`
