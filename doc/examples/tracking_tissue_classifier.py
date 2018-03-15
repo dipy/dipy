@@ -33,6 +33,7 @@ from dipy.io.trackvis import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking
+from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
 from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
@@ -124,14 +125,15 @@ save_trk("deterministic_threshold_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines = [sl for sl in all_streamlines_threshold_classifier]
+streamlines = Streamlines(all_streamlines_threshold_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_threshold_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_threshold_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_threshold_classifier.png
@@ -193,13 +195,15 @@ save_trk("deterministic_binary_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines = [sl for sl in all_streamlines_binary_classifier]
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_binary_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+streamlines = Streamlines(all_streamlines_binary_classifier)
+
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_binary_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_binary_classifier.png
@@ -282,14 +286,15 @@ save_trk("deterministic_act_classifier_all.trk",
          affine,
          labels.shape)
 
-streamlines = [sl for sl in all_streamlines_act_classifier]
+streamlines = Streamlines(all_streamlines_act_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='all_streamlines_act_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='all_streamlines_act_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: all_streamlines_act_classifier.png
@@ -310,14 +315,15 @@ save_trk("deterministic_act_classifier_valid.trk",
          affine,
          labels.shape)
 
-streamlines = [sl for sl in valid_streamlines_act_classifier]
+streamlines = Streamlines(valid_streamlines_act_classifier)
 
-window.clear(ren)
-ren.add(actor.line(streamlines, line_colors(streamlines)))
-window.record(ren, out_path='valid_streamlines_act_classifier.png',
-              size=(600, 600))
-if interactive:
-    window.show(ren)
+if window.have_vtk:
+    window.clear(ren)
+    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    window.record(ren, out_path='valid_streamlines_act_classifier.png',
+                  size=(600, 600))
+    if interactive:
+        window.show(ren)
 
 """
 .. figure:: valid_streamlines_act_classifier.png

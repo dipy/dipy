@@ -21,6 +21,7 @@ modules and download the data we'll be using.
 from dipy.tracking.eudx import EuDX
 from dipy.reconst import peaks, shm
 from dipy.tracking import utils
+from dipy.tracking.streamline import Streamlines
 
 from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
 
@@ -63,7 +64,8 @@ streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
                             odf_vertices=peaks.default_sphere.vertices,
                             a_low=.05, step_sz=.5, seeds=seeds)
 affine = streamline_generator.affine
-streamlines = list(streamline_generator)
+
+streamlines = Streamlines(streamline_generator, buffer_size=512)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
@@ -81,11 +83,11 @@ with the ROI and those that don't.
 
 cc_slice = labels == 2
 cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
-cc_streamlines = list(cc_streamlines)
+cc_streamlines = Streamlines(cc_streamlines)
 
 other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
                                  include=False)
-other_streamlines = list(other_streamlines)
+other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
@@ -220,27 +222,22 @@ To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
 import nibabel as nib
+from dipy.io.streamline import save_trk
 
 # Save density map
 dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
 dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 
-# Make a trackvis header so we can save streamlines
-voxel_size = labels_img.header.get_zooms()
-trackvis_header = nib.trackvis.empty_header()
-trackvis_header['voxel_size'] = voxel_size
-trackvis_header['dim'] = shape
-trackvis_header['voxel_order'] = "RAS"
-
 # Move streamlines to "trackvis space"
+voxel_size = labels_img.header.get_zooms()
 trackvis_point_space = utils.affine_for_trackvis(voxel_size)
 lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
                                    trackvis_point_space, input_space=affine)
-lr_sf_trk = list(lr_sf_trk)
+
+lr_sf_trk = Streamlines(lr_sf_trk)
 
 # Save streamlines
-for_save = [(sl, None, None) for sl in lr_sf_trk]
-nib.trackvis.write("lr-superiorfrontal.trk", for_save, trackvis_header)
+save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size)
 
 """
 Let's take a moment here to consider the representation of streamlines used in

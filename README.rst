@@ -1,3 +1,7 @@
+.. image:: doc/_static/dipy-banner.png
+  :target: http://dipy.org
+     :alt: DIPY - Diffusion Imaging in Python
+
 ======
  DIPY
 ======
@@ -7,6 +11,18 @@
 
 .. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/nipy/dipy
+
+.. image:: https://img.shields.io/pypi/v/dipy.svg
+  :target: https://pypi.python.org/pypi/dipy
+
+.. image:: https://anaconda.org/conda-forge/dipy/badges/platforms.svg
+  :target: https://anaconda.org/conda-forge/dipy
+
+.. image:: https://anaconda.org/conda-forge/dipy/badges/downloads.svg
+  :target: https://anaconda.org/conda-forge/dipy
+
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+  :target: https://github.com/nipy/dipy/blob/master/LICENSE
 
 DIPY is a python toolbox for analysis of MR diffusion imaging.
 
@@ -67,4 +83,4 @@ Please see `LICENSE file <https://github.com/nipy/dipy/blob/master/LICENSE>`_.
 Contributing
 ============
 
-We welcome contributions from the community. Please read our `contributor guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`.
+We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`_.
