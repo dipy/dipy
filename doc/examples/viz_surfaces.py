@@ -107,7 +107,7 @@ renderer.zoom(3)
 
 # display
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='cube.png', size=(5000, 5000))
+window.record(renderer, out_path='cube.png', size=(600, 600))
 
 """
 .. figure:: cube.png

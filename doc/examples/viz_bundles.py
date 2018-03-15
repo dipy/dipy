@@ -61,7 +61,7 @@ renderer.add(stream_actor)
 
 # Uncomment the line below to show to display the window
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle1.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle1.png', size=(600, 600))
 
 """
 .. figure:: bundle1.png
@@ -97,7 +97,7 @@ renderer.add(stream_actor2)
 renderer.add(bar)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle2.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle2.png', size=(600, 600))
 
 """
 .. figure:: bundle2.png
@@ -127,7 +127,7 @@ renderer.add(stream_actor3)
 renderer.add(bar2)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle3.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle3.png', size=(600, 600))
 
 """
 .. figure:: bundle3.png
@@ -149,7 +149,7 @@ stream_actor4 = actor.line(bundle_native, (1., 0.5, 0), linewidth=0.1)
 renderer.add(stream_actor4)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle4.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle4.png', size=(600, 600))
 
 """
 .. figure:: bundle4.png
@@ -187,7 +187,7 @@ bar3 = actor.scalar_bar(lut_cmap)
 renderer.add(bar3)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle5.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle5.png', size=(600, 600))
 
 """
 .. figure:: bundle5.png
@@ -212,7 +212,7 @@ stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2)
 renderer.add(stream_actor6)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle6.png', size=(5000, 5000))
+window.record(renderer, out_path='bundle6.png', size=(600, 600))
 
 """
 .. figure:: bundle6.png
