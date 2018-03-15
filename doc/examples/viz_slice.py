@@ -11,6 +11,7 @@ Here we present an example for visualizing slices from 3D images.
 from __future__ import division
 
 import os
+import pyautogui
 import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
 from dipy.viz import window, actor, ui
@@ -88,11 +89,19 @@ In order to interact with the data you will need to uncomment the line below.
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
 
+#grab the screen resolution
+
+resolution = pyautogui.size()
+monitorWidth = resolution[0]
+monitorHeight = resolution[1]
+imageWidth = resolution[0] - 5
+imageHeight = resolution[1] - 5
+
 """
 Otherwise, you can save a screenshot using the following command.
 """
 
-window.record(renderer, out_path='slices.png', size=(600, 600),
+window.record(renderer, out_path='slices.png', size=(imageWidth, imageHeight),
               reset_camera=False)
 
 """
@@ -140,7 +149,7 @@ renderer.zoom(1.4)
 
 # window.show(renderer, size=(600, 600), reset_camera=False)
 
-window.record(renderer, out_path='slices_lut.png', size=(600, 600),
+window.record(renderer, out_path='slices_lut.png', size=(imageWidth, imageHeight),
               reset_camera=False)
 
 """
@@ -287,7 +296,7 @@ the mosaic up/down and left/right using the middle mouse button drag,
 zoom in/out using the scroll wheel, and pick voxels with left click.
 """
 
-window.record(renderer, out_path='mosaic.png', size=(900, 600),
+window.record(renderer, out_path='mosaic.png', size=(imageWidth, imageHeight),
               reset_camera=False)
 
 """

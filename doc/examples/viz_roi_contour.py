@@ -8,7 +8,7 @@ which we generate a dataset of streamlines from a corpus callosum ROI, and
 then display them with the seed ROI rendered in 3D with 50% transparency.
 
 """
-
+import pyautogui
 from dipy.data import read_stanford_labels
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
@@ -86,10 +86,18 @@ interactive = False
 if interactive:
     window.show(ren)
 
+#grab the screen resolution
+
+resolution = pyautogui.size()
+monitorWidth = resolution[0]
+monitorHeight = resolution[1]
+imageWidth = resolution[0] - 5
+imageHeight = resolution[1] - 5
+
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='contour_from_roi_tutorial.png', size=(1200, 900),
+window.record(ren, out_path='contour_from_roi_tutorial.png', size=(imageWidth, imageHeight),
               reset_camera=False)
 
 """

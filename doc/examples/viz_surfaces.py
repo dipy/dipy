@@ -13,6 +13,7 @@ should apply for any surface.
 """
 
 import numpy as np
+import pyautogui
 
 """
 Import useful functions from ``dipy.viz.utils``
@@ -107,7 +108,15 @@ renderer.zoom(3)
 
 # display
 # window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='cube.png', size=(600, 600))
+# get the monitor resolution 
+
+resolution = pyautogui.size()
+monitorWidth = resolution[0]
+monitorHeight = resolution[1]
+imageWidth = resolution[0] - 5
+imageHeight = resolution[1] - 5
+
+window.record(renderer, out_path='cube.png', size=(imageWidth, imageHeight))
 
 """
 .. figure:: cube.png
