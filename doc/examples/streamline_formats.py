@@ -16,28 +16,23 @@ Read :ref:`faq`
 
 import numpy as np
 from dipy.data import get_data
-from nibabel import trackvis
+from dipy.io.streamline import load_trk, save_trk
+from dipy.tracking.streamline import Streamlines
 
 """
-1. Read/write trackvis streamline files with nibabel.
+1. Read/write streamline files with Dipy.
 """
 
 fname = get_data('fornix')
 print(fname)
 
-streams, hdr = trackvis.read(fname)
-streamlines = [s[0] for s in streams]
+# Read Streamlines
+streams, hdr = load_trk(fname)
+streamlines = Streamlines(streams)
 
-"""
-Similarly you can use ``trackvis.write`` to save the streamlines.
+# Save Streamlines
+save_trk("my_streamlines.trk", streamlines=streamlines, affine=np.eye(4))
 
-2. Read/write streamlines with numpy.
-"""
-
-streamlines_np = np.array(streamlines, dtype=np.object)
-np.save('fornix.npy', streamlines_np)
-
-streamlines2 = list(np.load('fornix.npy'))
 
 """
 3. We also work on our HDF5 based file format which can read/write massive datasets
@@ -57,13 +52,13 @@ dpw = Dpy('fornix.dpy', 'w')
 Write many streamlines at once.
 """
 
-dpw.write_tracks(streamlines2)
+dpw.write_tracks(streamlines)
 
 """
 Write one track
 """
 
-dpw.write_track(streamlines2[0])
+dpw.write_track(streamlines[0])
 
 """
 or one track each time.
