@@ -1,4 +1,4 @@
-
+from pytest import approx
 
 
 def assert_equal(value1, value2):
@@ -62,3 +62,9 @@ def assert_raises(excClass, callableObj, *args, **kwargs):
 def assert_almost_equal(actual, desired, decimal=7):
 	if not abs(desired - actual) < 1.5 * 10**(-decimal):
 		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
+
+def assert_array_equal(actual, desired):
+	assert actual == approx(desired)
+
+def assert_array_almost_equal(actual, desired, decimal=7):
+	assert actual == approx(desired, rel=10**(-1*decimal))
