@@ -6,7 +6,7 @@ import numpy as np
 import random
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
+from dipy.utils.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_almost_equal)
 from dipy.utils.testing import assert_raises
 from dipy.sims.voxel import multi_tensor_dki

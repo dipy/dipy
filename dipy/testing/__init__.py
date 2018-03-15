@@ -2,7 +2,7 @@
 from os.path import dirname, abspath, join as pjoin
 from dipy.testing.spherepoints import sphere_points
 from dipy.testing.decorators import doctest_skip_parser
-from numpy.testing import assert_array_equal
+from dipy.utils.testing import assert_array_equal
 import numpy as np
 from distutils.version import LooseVersion
 

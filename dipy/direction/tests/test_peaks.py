@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from io import BytesIO
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_almost_equal, run_module_suite,
                            assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)

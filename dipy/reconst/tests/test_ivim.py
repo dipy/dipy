@@ -12,7 +12,7 @@ References
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
                            assert_warns, dec)
 

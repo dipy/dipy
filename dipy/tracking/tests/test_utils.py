@@ -19,8 +19,8 @@ from dipy.tracking._utils import _to_voxel_coordinates
 import dipy.tracking.metrics as metrix
 
 from dipy.tracking.vox2track import streamline_mapping
-import numpy.testing as npt
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+import dipy.utils.testing as npt
+from dipy.utils.testing import assert_array_almost_equal, assert_array_equal
 from dipy.utils.testing import assert_equal, assert_raises, assert_true
 
 

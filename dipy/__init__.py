@@ -39,7 +39,7 @@ from .info import __version__
 from .testing import setup_test
 
 # Test callable
-from numpy.testing import Tester
+from dipy.utils.testing import Tester
 test = Tester().test
 bench = Tester().bench
 del Tester

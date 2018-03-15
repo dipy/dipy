@@ -1,6 +1,6 @@
 import numpy as np
 from dipy.viz import regtools
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.align.metrics import SSDMetric
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 import pytest

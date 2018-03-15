@@ -2,7 +2,7 @@ import warnings
 
 from dipy.utils.testing import assert_true, assert_raises
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.data import get_data
 from dipy.core.gradients import (gradient_table, GradientTable,
@@ -299,5 +299,5 @@ def test_check_multi_b():
 
 
 if __name__ == "__main__":
-    from numpy.testing import run_module_suite
+    from dipy.utils.testing import run_module_suite
     run_module_suite()

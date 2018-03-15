@@ -2,7 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import save_trk, load_trk

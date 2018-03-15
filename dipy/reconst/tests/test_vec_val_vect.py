@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import randn
-from numpy.testing import assert_almost_equal, dec
+from dipy.utils.testing import assert_almost_equal, dec
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 

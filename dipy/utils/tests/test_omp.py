@@ -7,7 +7,7 @@ from dipy.utils.omp import (cpu_count, thread_count, default_threads,
                             have_openmp)
 
 from dipy.utils.testing import assert_equal
-from numpy.testing import run_module_suite
+from dipy.utils.testing import run_module_suite
 
 
 def test_set_omp_threads():

@@ -8,7 +8,7 @@ from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
 from dipy.segment.clustering import Clustering
 
 from dipy.utils.testing import assert_equal, assert_true, assert_false
-from numpy.testing import assert_array_equal, assert_raises, run_module_suite
+from dipy.utils.testing import assert_array_equal, assert_raises, run_module_suite
 from dipy.testing import assert_arrays_equal
 
 

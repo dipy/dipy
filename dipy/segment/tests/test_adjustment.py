@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import zeros
 from dipy.segment.threshold import upper_bound_by_percent, upper_bound_by_rate
-from numpy.testing import assert_equal, run_module_suite
+from dipy.utils.testing import assert_equal, run_module_suite
 
 
 def test_adjustment():

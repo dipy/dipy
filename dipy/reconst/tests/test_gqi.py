@@ -5,7 +5,7 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.data import get_sphere
-from numpy.testing import (assert_equal,
+from dipy.utils.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite)
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies

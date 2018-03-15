@@ -5,7 +5,7 @@ Testing cross-validation analysis
 """
 from __future__ import division, print_function, absolute_import
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import nibabel as nib
 import dipy.reconst.cross_validation as xval
 import dipy.data as dpd

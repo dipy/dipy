@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.data import get_data
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,

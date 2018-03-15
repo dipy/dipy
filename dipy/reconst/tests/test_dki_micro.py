@@ -5,7 +5,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
+from dipy.utils.testing import (assert_array_almost_equal, assert_almost_equal,
                            assert_, assert_raises)
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs

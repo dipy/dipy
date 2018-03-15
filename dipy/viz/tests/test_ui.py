@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 
 from os.path import join as pjoin
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 from dipy.viz import ui

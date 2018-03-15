@@ -5,7 +5,7 @@ from dipy.core.sphere import Sphere
 from dipy.data import get_sphere
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 def test_enhancement_kernel():
     """ Test if the kernel values are correct by comparison against the values

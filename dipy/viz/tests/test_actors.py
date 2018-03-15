@@ -3,7 +3,7 @@ import numpy as np
 
 from dipy.viz import actor, window
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines

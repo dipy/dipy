@@ -2,7 +2,7 @@
 import numpy as np
 from dipy.utils.testing import (assert_true, assert_false,
                                 assert_equal, assert_raises)
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.utils.testing import assert_array_equal, assert_array_almost_equal
 import dipy.tracking.vox2track as tvo
 
 

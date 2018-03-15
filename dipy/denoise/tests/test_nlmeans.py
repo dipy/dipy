@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite,
+from dipy.utils.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_array_almost_equal,

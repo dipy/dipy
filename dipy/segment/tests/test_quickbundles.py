@@ -3,7 +3,7 @@ import itertools
 
 
 from dipy.utils.testing import assert_equal, assert_raises
-from numpy.testing import assert_array_equal, run_module_suite
+from dipy.utils.testing import assert_array_equal, run_module_suite
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 

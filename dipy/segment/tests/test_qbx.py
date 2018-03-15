@@ -1,6 +1,6 @@
 import itertools
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
+from dipy.utils.testing import (assert_array_equal, assert_equal, assert_raises,
                            assert_array_almost_equal, run_module_suite)
 
 from dipy.segment.clustering import QuickBundlesX, QuickBundles

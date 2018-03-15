@@ -4,7 +4,7 @@ import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
 
 from dipy.utils.testing import assert_true, assert_false, assert_equal
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
 

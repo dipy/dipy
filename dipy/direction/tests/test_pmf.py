@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen

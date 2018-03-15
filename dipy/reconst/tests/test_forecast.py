@@ -6,7 +6,7 @@ from dipy.data import get_sphere, get_3shell_gtab
 from dipy.reconst.forecast import ForecastModel
 from dipy.sims.voxel import MultiTensor
 
-from numpy.testing import (assert_almost_equal,
+from dipy.utils.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite,
                            dec)

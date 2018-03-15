@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from dipy.viz import actor, window
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
 import pytest
 

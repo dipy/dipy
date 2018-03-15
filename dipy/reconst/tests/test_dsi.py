@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import (assert_equal,
+from dipy.utils.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite,
                            assert_array_equal,
@@ -12,7 +12,7 @@ from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.data import get_sphere
-from numpy.testing import assert_equal
+from dipy.utils.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 

@@ -5,7 +5,7 @@ from os.path import join as pjoin
 from dipy.viz import actor, window, widget
 from dipy.data import DATA_DIR
 from dipy.data import fetch_viz_icons, read_viz_icons
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
 import pytest
 

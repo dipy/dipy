@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_equal
+from dipy.utils.testing import assert_array_equal
 from dipy.utils.testing import assert_raises
 from dipy.io.bvectxt import orientation_from_string, reorient_vectors, \
     orientation_to_string, reorient_vectors

@@ -14,7 +14,7 @@ from numpy.random import randn
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 
-from numpy.testing import measure, dec
+from dipy.utils.testing import measure, dec
 
 try:
     np.einsum

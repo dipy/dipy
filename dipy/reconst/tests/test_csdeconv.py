@@ -1,8 +1,8 @@
 import warnings
 import nibabel as nib
 import numpy as np
-import numpy.testing as npt
-from numpy.testing import (assert_, assert_equal, assert_almost_equal,
+import dipy.utils.testing as npt
+from dipy.utils.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
                            assert_array_equal, assert_warns)
 from dipy.data import get_sphere, get_data, default_sphere, small_sphere

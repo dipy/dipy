@@ -7,7 +7,7 @@ from distutils.version import LooseVersion
 from dipy.viz import fvtk
 from dipy import data
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
 from dipy.utils.optpkg import optional_package
 import pytest

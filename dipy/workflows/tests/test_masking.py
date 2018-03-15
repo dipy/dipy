@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as nt
+import dipy.utils.testing as nt
 from dipy.utils.testing import assert_equal, assert_false
 
 import nibabel as nib

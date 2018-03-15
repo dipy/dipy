@@ -6,7 +6,7 @@ from collections import defaultdict
 from dipy.viz import actor, window, interactor
 from dipy.viz import utils as vtk_utils
 from dipy.data import DATA_DIR
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
 import pytest
 

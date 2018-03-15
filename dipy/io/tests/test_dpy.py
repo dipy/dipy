@@ -5,7 +5,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.io.dpy import Dpy
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.tracking.streamline import Streamlines
 
 

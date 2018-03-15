@@ -1,7 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import numpy.testing as nt
+import dipy.utils.testing as nt
 import warnings
 
 from dipy.utils.six.moves import xrange

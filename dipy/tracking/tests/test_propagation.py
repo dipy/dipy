@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import numpy.testing
+import dipy.utils.testing
 
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
@@ -18,7 +18,7 @@ from dipy.utils.testing import (assert_true, assert_false,
                                 assert_equal, assert_raises,
                                 assert_almost_equal)
 
-from numpy.testing import (assert_array_equal,
+from dipy.utils.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            run_module_suite)
 

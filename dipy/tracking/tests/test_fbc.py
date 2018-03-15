@@ -5,7 +5,7 @@ from dipy.tracking.fbcmeasures import FBCMeasures
 from dipy.core.sphere import Sphere
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 
 def test_fbc():

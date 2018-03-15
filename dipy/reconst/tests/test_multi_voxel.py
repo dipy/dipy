@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 from functools import reduce
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, CallableArray
 from dipy.core.sphere import unit_icosahedron

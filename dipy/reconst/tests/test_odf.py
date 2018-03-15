@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite, assert_equal, assert_almost_equal,
+from dipy.utils.testing import (run_module_suite, assert_equal, assert_almost_equal,
                            assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize, gfa)
 

@@ -1,6 +1,6 @@
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import scipy.ndimage
 
 from dipy.core.ndindex import ndindex

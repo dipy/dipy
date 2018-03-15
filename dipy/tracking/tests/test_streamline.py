@@ -4,12 +4,12 @@ import types
 
 import numpy as np
 from numpy.linalg import norm
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 
 from dipy.utils.testing import assert_true, assert_equal, assert_almost_equal
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
 from dipy.tracking.streamline import Streamlines

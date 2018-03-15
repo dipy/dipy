@@ -3,7 +3,7 @@
 
 import numpy as np
 
-from numpy.testing import (assert_almost_equal,
+from dipy.utils.testing import (assert_almost_equal,
                            assert_array_equal)
 
 from dipy.utils.testing import (assert_true, assert_false, assert_raises,

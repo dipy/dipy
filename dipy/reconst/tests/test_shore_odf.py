@@ -4,7 +4,7 @@ from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import sh_to_sf
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
-from numpy.testing import (assert_equal,
+from dipy.utils.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite)
 from dipy.sims.voxel import SticksAndBall

@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from dipy.utils.testing import assert_equal
 from os.path import join
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 import nibabel as nib
 from dipy.io.peaks import load_peaks

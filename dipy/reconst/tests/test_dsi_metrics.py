@@ -2,7 +2,7 @@ import numpy as np
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.data import get_data
 from dipy.core.gradients import gradient_table
-from numpy.testing import (assert_almost_equal,
+from dipy.utils.testing import (assert_almost_equal,
                            run_module_suite)
 from dipy.sims.voxel import (SticksAndBall,
                              MultiTensor)
