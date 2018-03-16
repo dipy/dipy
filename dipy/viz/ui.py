@@ -1880,6 +1880,8 @@ class DiskSlider2D(UI):
         Outer radius of the slider's handle.
     handle_inner_radius: int
         Inner radius of the slider's handle.
+    previous_value: float
+        Value of Rotation of the actor before the current value.
 
     """
     def __init__(self, position=(0, 0),
@@ -1939,7 +1941,7 @@ class DiskSlider2D(UI):
 
         # By setting the value, it also updates everything.
         self.value = initial_value
-        self.pvalue = initial_value
+        self.previous_value = initial_value
         self.handle_events(None)
 
     def build_actors(self):
@@ -1989,12 +1991,12 @@ class DiskSlider2D(UI):
         self.ratio = (value - self.min_value) / value_range
 
     @property
-    def pvalue(self):
-        return self._pvalue
+    def previous_value(self):
+        return self._previous_value
 
-    @pvalue.setter
-    def pvalue(self, pvalue):
-        self._pvalue = pvalue
+    @previous_value.setter
+    def previous_value(self, previous_value):
+        self._previous_value = previous_value
 
     @property
     def ratio(self):
@@ -2031,9 +2033,9 @@ class DiskSlider2D(UI):
         # Compute the selected value considering min_value and max_value.
         value_range = self.max_value - self.min_value
         try:
-            self._pvalue = self.value
+            self._previous_value = self.value
         except:
-            self._pvalue = self.initial_value
+            self._previous_value = self.initial_value
         self._value = self.min_value + self.ratio*value_range
 
         # Update text disk actor.
