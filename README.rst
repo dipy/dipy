@@ -1,4 +1,4 @@
-.. image:: doc/_static/dipy-banner.png
+.. image:: doc/_static/dipy-logo.png
   :target: http://dipy.org
      :alt: DIPY - Diffusion Imaging in Python
 
