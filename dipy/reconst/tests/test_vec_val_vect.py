@@ -3,6 +3,7 @@ from numpy.random import randn
 from dipy.utils.testing import assert_almost_equal
 
 from dipy.reconst.vec_val_sum import vec_val_vect
+import pytest
 
 
 def make_vecs_vals(shape):

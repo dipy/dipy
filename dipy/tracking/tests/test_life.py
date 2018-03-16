@@ -3,7 +3,6 @@ import os.path as op
 
 import numpy as np
 import dipy.utils.testing as npt
-import dipy.utils.testing.decorators as dec
 import scipy.sparse as sps
 import scipy.linalg as la
 
