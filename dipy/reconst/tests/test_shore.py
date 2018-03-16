@@ -10,7 +10,7 @@ from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import MultiTensor
 
 from dipy.utils.testing import (assert_almost_equal,
-                           assert_equal, dec)
+                           assert_equal)
 
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")

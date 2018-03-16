@@ -7,7 +7,7 @@ from dipy.reconst.forecast import ForecastModel
 from dipy.sims.voxel import MultiTensor
 
 from dipy.utils.testing import (assert_almost_equal,
-                           assert_equal, dec)
+                           assert_equal)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package

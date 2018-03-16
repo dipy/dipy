@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import randn
-from dipy.utils.testing import assert_almost_equal, dec
+from dipy.utils.testing import assert_almost_equal
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 
@@ -11,13 +11,12 @@ def make_vecs_vals(shape):
 
 try:
     np.einsum
+    found = False
 except AttributeError:
-    with_einsum = dec.skipif(True, "Need einsum for benchmark")
-else:
-    def with_einsum(f): return f
+    found = True
 
 
-@with_einsum
+@pytest.mark.skipif(found, reason="Need einsum for benchmark")
 def test_vec_val_vect():
     for shape0 in ((10,), (100,), (10, 12), (12, 10, 5)):
         for shape1 in ((3, 3), (4, 3), (3, 4)):
