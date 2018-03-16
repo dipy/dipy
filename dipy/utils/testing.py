@@ -1,6 +1,7 @@
 from pytest import approx
 import sys
 import os
+import numpy as np
 
 
 def assert_equal(value1, value2):
@@ -73,6 +74,9 @@ def assert_array_almost_equal(actual, desired, decimal=7):
 
 def assert_(statement):
 	assert statement
+
+def assert_array_less(first, second):
+	assert np.all(first < second)
 
 
 '''Credits to the below functions goes to numpy.testing package'''
