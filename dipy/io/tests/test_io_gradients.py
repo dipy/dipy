@@ -106,5 +106,5 @@ def test_read_bvals_bvecs():
 
 
 if __name__ == '__main__':
-    from dipy.utils.testing import run_module_suite
-    run_module_suite()
+    import pytest
+    pytest.main()

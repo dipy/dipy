@@ -69,4 +69,4 @@ def test_PeaksAndMetricsDirectionGetter():
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    pytest.main()

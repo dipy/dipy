@@ -146,4 +146,4 @@ def test_colormaps_matplotlib():
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    pytest.main()

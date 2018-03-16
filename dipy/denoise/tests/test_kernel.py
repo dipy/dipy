@@ -119,4 +119,4 @@ def test_kernel_input():
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

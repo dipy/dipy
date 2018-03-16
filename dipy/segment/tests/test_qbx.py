@@ -1,7 +1,7 @@
 import itertools
 import numpy as np
 from dipy.utils.testing import (assert_array_equal, assert_equal, assert_raises,
-                           assert_array_almost_equal, run_module_suite)
+                           assert_array_almost_equal)
 
 from dipy.segment.clustering import QuickBundlesX, QuickBundles
 from dipy.segment.featurespeed import ResampleFeature
@@ -10,6 +10,7 @@ from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_data
 import nibabel.trackvis as tv
+import pytest
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
@@ -217,4 +218,4 @@ def test_raise_mdf():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

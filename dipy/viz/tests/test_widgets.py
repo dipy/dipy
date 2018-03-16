@@ -212,4 +212,4 @@ def test_text_widget():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

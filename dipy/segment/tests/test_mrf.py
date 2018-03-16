@@ -418,4 +418,4 @@ def test_classify():
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    pytest.main()

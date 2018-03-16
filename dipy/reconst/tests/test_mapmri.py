@@ -3,7 +3,6 @@ from dipy.data import get_gtab_taiwan_dsi
 from dipy.utils.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
-                           run_module_suite,
                            assert_raises)
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
@@ -826,4 +825,4 @@ def test_mapmri_odf(radial_order=6):
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

@@ -40,4 +40,4 @@ def test_pmf_from_array():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

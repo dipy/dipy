@@ -1,8 +1,8 @@
 import numpy as np
 import scipy as sp
 import scipy.special as sps
-from dipy.utils.testing import (run_module_suite,
-                           assert_,
+import pytest
+from dipy.utils.testing import (assert_,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
@@ -261,4 +261,4 @@ def test_lpca_sigma_wrong_shape():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

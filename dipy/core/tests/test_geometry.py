@@ -24,8 +24,8 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
 from dipy.utils.testing import (assert_false, assert_equal, assert_raises,
                                 assert_almost_equal)
 
-from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
-                           run_module_suite)
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal)
+import pytest
 
 from dipy.testing import sphere_points
 from itertools import permutations
@@ -319,4 +319,4 @@ def test_dist_to_corner():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

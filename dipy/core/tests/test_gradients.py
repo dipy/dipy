@@ -299,5 +299,5 @@ def test_check_multi_b():
 
 
 if __name__ == "__main__":
-    from dipy.utils.testing import run_module_suite
-    run_module_suite()
+    import pytest
+    pytest.main()

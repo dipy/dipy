@@ -19,8 +19,8 @@ from dipy.utils.testing import (assert_true, assert_false,
                                 assert_almost_equal)
 
 from dipy.utils.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           run_module_suite)
+                           assert_array_almost_equal)
+import pytest
 
 
 def stepped_1d(arr_1d):
@@ -204,4 +204,4 @@ def test_eudx_both_directions_errors():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

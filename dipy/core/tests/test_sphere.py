@@ -386,4 +386,4 @@ def test_interp_rbf():
         nt.assert_("deprecated" in str(w[-1].message))
 
 if __name__ == "__main__":
-    nt.run_module_suite()
+    nt.pytest.main()

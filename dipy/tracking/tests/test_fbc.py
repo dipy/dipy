@@ -45,4 +45,4 @@ def test_fbc():
     npt.assert_almost_equal(np.mean(rfbc_orig), 1.0500466494329224)
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

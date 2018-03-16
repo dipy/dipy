@@ -7,9 +7,7 @@ from dipy.reconst.forecast import ForecastModel
 from dipy.sims.voxel import MultiTensor
 
 from dipy.utils.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite,
-                           dec)
+                           assert_equal, dec)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
@@ -214,4 +212,4 @@ def test_multivox_forecast():
     assert_almost_equal(mse3, 0.0, 3)
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

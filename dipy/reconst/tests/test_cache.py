@@ -1,7 +1,8 @@
 from dipy.reconst.cache import Cache
 from dipy.core.sphere import Sphere
 
-from dipy.utils.testing import assert_, assert_equal, run_module_suite
+from dipy.utils.testing import assert_, assert_equal
+import pytest
 
 
 class TestModel(Cache):
@@ -25,4 +26,4 @@ def test_basic_cache():
 
 
 if __name__ == "__main__":
-    run_module_suite()
+    pytest.main()

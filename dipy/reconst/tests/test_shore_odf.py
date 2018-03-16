@@ -5,12 +5,12 @@ from dipy.reconst.shm import sh_to_sf
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
 from dipy.utils.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
+                           assert_almost_equal)
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+import pytest
 
 
 def test_shore_odf():
@@ -72,4 +72,4 @@ def test_multivox_shore():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

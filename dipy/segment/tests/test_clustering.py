@@ -8,8 +8,9 @@ from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
 from dipy.segment.clustering import Clustering
 
 from dipy.utils.testing import assert_equal, assert_true, assert_false
-from dipy.utils.testing import assert_array_equal, assert_raises, run_module_suite
+from dipy.utils.testing import assert_array_equal, assert_raises
 from dipy.testing import assert_arrays_equal
+import pytest
 
 
 features_shape = (1, 10)
@@ -757,4 +758,4 @@ def test_subclassing_clustering():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

@@ -1,12 +1,12 @@
 import numpy as np
 import nibabel as nib
-from dipy.utils.testing import (run_module_suite,
-                           assert_,
+from dipy.utils.testing import (assert_,
                            assert_equal,
                            assert_almost_equal)
 from dipy.data import get_data
 from dipy.align.reslice import reslice
 from dipy.denoise.noise_estimate import estimate_sigma
+import pytest
 
 
 def test_resample():
@@ -65,5 +65,4 @@ def test_resample():
 
 
 if __name__ == '__main__':
-
-    run_module_suite()
+	pytest.main()

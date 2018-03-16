@@ -10,9 +10,7 @@ from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import MultiTensor
 
 from dipy.utils.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite,
-                           dec)
+                           assert_equal, dec)
 
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
@@ -87,4 +85,4 @@ def compute_e0(shorefit):
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

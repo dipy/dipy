@@ -1,12 +1,12 @@
 import numpy as np
-from dipy.utils.testing import (run_module_suite, assert_equal, assert_almost_equal,
-                           assert_)
+from dipy.utils.testing import (assert_equal, assert_almost_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize, gfa)
 
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
+import pytest
 
 
 _sphere = create_unit_hemisphere(4)
@@ -88,4 +88,4 @@ def test_gfa():
 
 if __name__ == '__main__':
 
-    run_module_suite()
+    pytest.main()
