@@ -68,3 +68,6 @@ def assert_array_equal(actual, desired):
 
 def assert_array_almost_equal(actual, desired, decimal=7):
 	assert actual == approx(desired, rel=10**(-1*decimal))
+
+def assert_(statement):
+	assert statement
