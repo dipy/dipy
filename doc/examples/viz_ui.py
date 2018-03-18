@@ -171,6 +171,9 @@ disk_slider.add_callback(disk_slider.handle,
                          "MouseMoveEvent",
                          rotate_red_cube)
 
+disk_slider.add_callback(disk_slider.base_disk,
+                         "LeftButtonPressEvent",
+                         rotate_red_cube)
 """
 2D File Select Menu
 ==============
