@@ -1882,6 +1882,8 @@ class DiskSlider2D(UI):
         Inner radius of the slider's handle.
     previous_value: float
         Value of Rotation of the actor before the current value.
+    initial_value: float
+        Initial Value of Rotation of the actor assigned on creation of object.
 
     """
     def __init__(self, position=(0, 0),
