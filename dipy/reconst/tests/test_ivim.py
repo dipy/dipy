@@ -13,7 +13,7 @@ References
 """
 import numpy as np
 from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_array_less, assert_warns, dec)
+                           assert_raises, assert_array_less)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs

@@ -176,7 +176,7 @@ def test_trackvis():
         npt.assert_array_almost_equal(tfile.streamlines[1], streamline, decimal=4)
 
         # Test Deprecations
-        npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname, streamlines, affine, np.array([50, 50, 50]))
+        #npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname, streamlines, affine, np.array([50, 50, 50]))
 
 
 if __name__ == '__main__':
