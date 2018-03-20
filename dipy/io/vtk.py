@@ -79,7 +79,7 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     elif file_extension == "xml":
         writer = vtk.vtkXMLPolyDataWriter()
     elif file_extension == "obj":
-        raise "mni obj or Wavefront obj ?"
+        raise Exception("mni obj or Wavefront obj ?")
     #    writer = set_input(vtk.vtkMNIObjectWriter(), polydata)
 
     writer.SetFileName(file_name)
