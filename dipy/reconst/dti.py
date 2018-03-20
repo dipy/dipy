@@ -68,7 +68,7 @@ def fractional_anisotropy(evals, axis=-1):
         Calculated FA. Range is 0 <= FA <= 1.
 
     Notes
-    --------
+    -----
     FA is calculated using the following equation:
 
     .. math::
@@ -107,7 +107,7 @@ def geodesic_anisotropy(evals, axis=-1):
         Calculated GA. In the range 0 to +infinity
 
     Notes
-    --------
+    -----
     GA is calculated using the following equation given in [1]_:
 
     .. math::
@@ -188,7 +188,7 @@ def mean_diffusivity(evals, axis=-1):
         Calculated MD.
 
     Notes
-    --------
+    -----
     MD is calculated with the following equation:
 
     .. math::
@@ -219,7 +219,7 @@ def axial_diffusivity(evals, axis=-1):
         Calculated AD.
 
     Notes
-    --------
+    -----
     AD is calculated with the following equation:
 
     .. math::
@@ -245,13 +245,13 @@ def radial_diffusivity(evals, axis=-1):
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
-        Returns
+    Returns
     -------
     rd : array
         Calculated RD.
 
     Notes
-    --------
+    -----
     RD is calculated with the following equation:
 
     .. math::
@@ -280,7 +280,7 @@ def trace(evals, axis=-1):
         Calculated trace of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Trace is calculated with the following equation:
 
     .. math::
@@ -309,7 +309,7 @@ def color_fa(fa, evecs):
         Colormap of the FA with red for the x value, y for the green
         value and z for the blue value.
 
-    Note
+    Notes
     -----
 
     It is computed from the clipped FA between 0 and 1 using the following
@@ -376,6 +376,8 @@ def isotropic(q_form):
     .. math ::
         \bar{A} = \frac{1}{2} tr(A) I
 
+    References
+    ----------
     .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
         Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
@@ -412,6 +414,8 @@ def deviatoric(q_form):
     Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
     part of the tensor.
 
+    References
+    ----------
     .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
         Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
@@ -512,15 +516,15 @@ def linearity(evals, axis=-1):
         Calculated linearity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Linearity is calculated with the following equation:
 
     .. math::
 
         Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -547,7 +551,7 @@ def planarity(evals, axis=-1):
         Calculated linearity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Planarity is calculated with the following equation:
 
     .. math::
@@ -555,8 +559,8 @@ def planarity(evals, axis=-1):
         Planarity =
         \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -583,15 +587,15 @@ def sphericity(evals, axis=-1):
         Calculated sphericity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Sphericity is calculated with the following equation:
 
     .. math::
 
         Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -707,7 +711,7 @@ class TensorModel(ReconstModel):
             The minimum signal value. Needs to be a strictly positive
             number. Default: minimal signal in the data provided to `fit`.
 
-        Note
+        Notes
         -----
         In order to increase speed of processing, tensor fitting is done
         simultaneously over many voxels. Many fit_methods use the 'step'
@@ -913,12 +917,12 @@ class TensorFit(object):
         Mean diffusivity (MD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         md : array (V, 1)
             Calculated MD.
 
         Notes
-        --------
+        -----
         MD is calculated with the following equation:
 
         .. math::
@@ -934,12 +938,12 @@ class TensorFit(object):
         Radial diffusivity (RD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         rd : array (V, 1)
             Calculated RD.
 
         Notes
-        --------
+        -----
         RD is calculated with the following equation:
 
         .. math::
@@ -956,12 +960,12 @@ class TensorFit(object):
         Axial diffusivity (AD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         ad : array (V, 1)
             Calculated AD.
 
         Notes
-        --------
+        -----
         RD is calculated with the following equation:
 
         .. math::
@@ -978,12 +982,12 @@ class TensorFit(object):
         Trace of the tensor calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         trace : array (V, 1)
             Calculated trace.
 
         Notes
-        --------
+        -----
         The trace is calculated with the following equation:
 
         .. math::
@@ -1001,7 +1005,7 @@ class TensorFit(object):
             Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Sphericity is calculated with the following equation:
 
         .. math::
@@ -1009,8 +1013,8 @@ class TensorFit(object):
             Sphericity =
             \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1027,7 +1031,7 @@ class TensorFit(object):
             Calculated linearity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Linearity is calculated with the following equation:
 
         .. math::
@@ -1035,6 +1039,8 @@ class TensorFit(object):
             Linearity =
             \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1051,15 +1057,15 @@ class TensorFit(object):
             Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Sphericity is calculated with the following equation:
 
         .. math::
 
             Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1089,6 +1095,8 @@ class TensorFit(object):
         scratch, follow steps in [Descoteaux2008]_, Section 7.9 Equation
         7.24 but with an $r^2$ term in the integral.
 
+        References
+        ----------
         .. [Aganj2010] Aganj, I., Lenglet, C., Sapiro, G., Yacoub, E., Ugurbil,
             K., & Harel, N. (2010). Reconstruction of the orientation
             distribution function in single- and multiple-shell q-ball imaging
@@ -1743,8 +1751,8 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     -------
     restore_params : an estimate of the tensor parameters in each voxel.
 
-    Note
-    ----
+    References
+    ----------
     Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
     of tensors by outlier rejection. MRM, 53: 1088-95.
 
@@ -1866,7 +1874,7 @@ def from_lower_triangular(D):
         Unique elements of the tensors
 
     Returns
-    --------
+    -------
     tensor : ndarray (..., 3, 3)
         3 by 3 tensors
 
