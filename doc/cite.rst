@@ -34,7 +34,7 @@ Neuroscience, 6 (175).
 A note on citing our work
 --------------------------
 
-* The main reference citation for Dipy is [1].
+* The main reference citation for DIPY is [1].
 
 * If you are using QuickBundles method please also cite [8].
 

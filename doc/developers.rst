@@ -55,7 +55,7 @@ And here is the rest of the wonderful contributors:
 - **Shahnawaz Ahmed**, Birla Institute of Technology and Science, Pilani, Goa, IN
 
 
-Boundless collaboration is in the heart of Dipy_. We encourage everyone from anywhere in the world to join the team. You can start sharing your code `here`__. If you want to contribute but you don't know in area to focus, please send us an e-mail. We will be more than happy to help.
+Boundless collaboration is in the heart of DIPY_. We encourage everyone from anywhere in the world to join the team. You can start sharing your code `here`__. If you want to contribute but you don't know in area to focus, please send us an e-mail. We will be more than happy to help.
 
 __ `dipy github`_
 
