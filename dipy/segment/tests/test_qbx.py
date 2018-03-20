@@ -53,7 +53,6 @@ def streamlines_in_circle(nb_streamlines=1, nb_pts=30, step_size=1,
     bundle_length = step_size * nb_pts
 
     Z = np.linspace(0, bundle_length, nb_pts)
-    theta = 0
     for theta in np.linspace(0, 2*np.pi, nb_streamlines, endpoint=False):
         Xk = np.ones(nb_pts) * (radius * np.cos(theta))
         Yk = np.ones(nb_pts) * (radius * np.sin(theta))

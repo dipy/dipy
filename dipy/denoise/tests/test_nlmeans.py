@@ -53,8 +53,8 @@ def test_nlmeans_boundary():
 
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
-                  rician=False)
+    nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
+            rician=False)
 
     print(S0[9, 9, 9])
     print(S0[10, 10, 10])

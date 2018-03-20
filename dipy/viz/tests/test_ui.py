@@ -297,7 +297,6 @@ def test_text_block_2d_justification():
     show_manager = window.ShowManager(size=window_size)
 
     # To help visualize the text positions.
-    lines = []
     grid_size = (500, 500)
     bottom, middle, top = 50, 300, 550
     left, center, right = 50, 300, 550
@@ -454,7 +453,7 @@ def test_ui_file_select_menu_2d(recording=False):
     filename = "test_ui_file_select_menu_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
-    with InTemporaryDirectory() as tmpdir:
+    with InTemporaryDirectory():
         for i in range(10):
             _ = open("test" + str(i) + ".txt", 'wt').write('some text')
 

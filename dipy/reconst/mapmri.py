@@ -341,7 +341,6 @@ class MapmriModel(ReconstModel, Cache):
                 except AttributeError:
                     u0 = isotropic_scale_factor(evals * 2 * self.tau)
                     mu = np.array([u0, u0, u0])
-                    q = self.gtab.bvecs * qvals[:, None]
                     M_mu_dependent = mapmri_isotropic_M_mu_dependent(
                         self.radial_order, mu[0], qvals)
                     M = M_mu_dependent * self.M_mu_independent
@@ -917,7 +916,7 @@ class MapmriFit(ReconstFit):
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
-            qvals = np.linalg.norm(q, axis=1)
+            # qvals = np.linalg.norm(q, axis=1)
         else:
             gtab = qvals_or_gtab
             qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)

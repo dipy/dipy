@@ -587,7 +587,6 @@ def test_affine_transformations():
 
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 60, sphere,
                                                       pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     # TST- bad affine wrong shape
     bad_affine = np.eye(3)

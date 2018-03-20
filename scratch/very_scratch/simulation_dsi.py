@@ -28,6 +28,7 @@ def on_resize(width, height):
     #window.flip()
     return pyglet.event.EVENT_HANDLED
 
+
 def update(dt):
     global rx, ry, rz
 

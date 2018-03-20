@@ -68,11 +68,11 @@ def test_quickbundles_2D():
     # Test quickbundles clustering using 2D points and the Eulidean metric.
     rng = np.random.RandomState(42)
     data = []
-    data += [rng.randn(1, 2) + np.array([0, 0]) for i in range(1)]
-    data += [rng.randn(1, 2) + np.array([10, 10]) for i in range(2)]
-    data += [rng.randn(1, 2) + np.array([-10, 10]) for i in range(3)]
-    data += [rng.randn(1, 2) + np.array([10, -10]) for i in range(4)]
-    data += [rng.randn(1, 2) + np.array([-10, -10]) for i in range(5)]
+    data += [rng.randn(1, 2) + np.array([0, 0]) for _ in range(1)]
+    data += [rng.randn(1, 2) + np.array([10, 10]) for _ in range(2)]
+    data += [rng.randn(1, 2) + np.array([-10, 10]) for _ in range(3)]
+    data += [rng.randn(1, 2) + np.array([10, -10]) for _ in range(4)]
+    data += [rng.randn(1, 2) + np.array([-10, -10]) for _ in range(5)]
     data = np.array(data, dtype=dtype)
 
     clusters_truth = [[0], [1, 2], [3, 4, 5],
@@ -142,8 +142,6 @@ def test_quickbundles_streamlines():
     for datum in rdata:
         datum.setflags(write=False)
 
-    clusters = qb.cluster(rdata)
-
     # Cluster data with different dtype (should be converted into float32)
     for datatype in [np.float64, np.int32, np.int64]:
         newdata = [datum.astype(datatype) for datum in rdata]
@@ -177,8 +175,6 @@ def test_quickbundles_with_python_metric():
     # Cluster read-only data
     for datum in rdata:
         datum.setflags(write=False)
-
-    clusters = qb.cluster(rdata)
 
     # Cluster data with different dtype (should be converted into float32)
     for datatype in [np.float64, np.int32, np.int64]:

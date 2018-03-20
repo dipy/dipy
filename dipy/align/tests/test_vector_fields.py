@@ -525,7 +525,6 @@ def test_warping_2d():
     # Create a displacement field for warping
     d, dinv = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
-    dinv = np.asarray(dinv).astype(floating)
 
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -630,7 +629,6 @@ def test_warping_3d():
     # Create a displacement field for warping
     d, dinv = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
-    dinv = np.asarray(dinv).astype(floating)
 
     # Create grid coordinates
     x_0 = np.asarray(range(sh[0]))
@@ -986,8 +984,6 @@ def test_compose_vector_fields_2d():
 
     # compose the displacement fields
     target_world2grid = np.linalg.inv(target_grid2world)
-
-    target_world2grid = np.linalg.inv(target_grid2world)
     premult_index = target_world2grid.dot(input_grid2world)
     premult_disp = target_world2grid
 
@@ -1122,8 +1118,6 @@ def test_compose_vector_fields_3d():
 
     # compose the displacement fields
     target_world2grid = np.linalg.inv(target_grid2world)
-
-    target_world2grid = np.linalg.inv(target_grid2world)
     premult_index = target_world2grid.dot(input_grid2world)
     premult_disp = target_world2grid
 
@@ -1209,9 +1203,8 @@ def test_invert_vector_field_2d():
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
-    d, dinv = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
+    d, _ = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
-    dinv = np.asarray(dinv).astype(floating)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
         for s in [0.5, 1.0, 2.0]:  # scale
@@ -1273,9 +1266,8 @@ def test_invert_vector_field_3d():
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
 
-    d, dinv = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
+    d, _ = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
-    dinv = np.asarray(dinv).astype(floating)
 
     for theta in [-1 * np.pi / 5.0, 0.0, np.pi / 5.0]:  # rotation angle
         for s in [0.5, 1.0, 2.0]:  # scale

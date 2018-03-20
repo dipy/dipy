@@ -53,8 +53,8 @@ def test_minmax_normalize():
 
     evals = np.array(([0.0017, 0.0003, 0.0003], [0.0017, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)],
-                             fractions=[50, 50], snr=SNR)
+    multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)],
+                 fractions=[50, 50], snr=SNR)
     odf = multi_tensor_odf(sphere.vertices, evals, angles=[(0, 0), (90, 0)],
                            fractions=[50, 50])
 

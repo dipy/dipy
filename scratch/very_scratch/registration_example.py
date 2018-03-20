@@ -127,7 +127,7 @@ def register_FA_same_subj_diff_sessions(dname_grid,dname_shell):
                               interp,subsampling,search,optimizer)
 
     print('apply the inverse of the transformation matrix')
-    sourceT=dp.volume_transform(source, T.inv(), reference=target)    
+    dp.volume_transform(source, T.inv(), reference=target)
     #ni.save(sourceT,'/tmp/result.nii.gz')
 
     print('calculate FA for grid and shell data')
@@ -157,8 +157,8 @@ def flirt_apply_transform(in_nii, target_nii, out_nii, transf_mat):
 def test_registration():
 
 
-    S012='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0.nii.gz'
-    S032='/tmp/compare_12_with_32_Verio_directly/18620_0006.nii_S0.nii.gz'
+    # S012='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0.nii.gz'
+    # S032='/tmp/compare_12_with_32_Verio_directly/18620_0006.nii_S0.nii.gz'
     S012T='/tmp/compare_12_with_32_Verio_directly/S0_reg.nii.gz'
     MP='/tmp/compare_12_with_32_Verio_directly/MPRAGE.nii'
     D114=resources.get_paths('DTI STEAM 114 Trio')[2]

@@ -243,9 +243,7 @@ def test_affreg_defaults():
         else:
             nslices = 45
         factor = factors[ttype][0]
-        sampling_pc = factors[ttype][1]
         transform = regtransforms[ttype]
-        id_param = transform.get_identity_parameters()
         static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
             setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
@@ -401,9 +399,6 @@ def test_affine_map():
     np.random.seed(2112927)
     dom_shape = np.array([64, 64, 64], dtype=np.int32)
     cod_shape = np.array([80, 80, 80], dtype=np.int32)
-    nx = dom_shape[0]
-    ny = dom_shape[1]
-    nz = dom_shape[2]
     # Radius of the circle/sphere (testing image)
     radius = 16
     # Rotation axis (used for 3D transforms only)

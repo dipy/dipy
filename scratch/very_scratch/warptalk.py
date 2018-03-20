@@ -413,8 +413,8 @@ def test_flirt2aff():
     ref_img = nib.load(ref_fname)
     assert_true(np.all(res == flirt2aff(mat, in_img, ref_img)))
     # mm to mm transform
-    mm_in2mm_ref =  np.dot(ref_img.affine,
-                           np.dot(res, npl.inv(in_img.affine)))
+    # mm_in2mm_ref =  np.dot(ref_img.affine,
+    #                        np.dot(res, npl.inv(in_img.affine)))
     # make new in image thus transformed
     in_data = in_img.get_data()
     ires = npl.inv(res)

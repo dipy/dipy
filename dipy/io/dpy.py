@@ -46,9 +46,9 @@ class Dpy(object):
         ...     dpw.write_track(C)
         ...     dpw.close()
         ...     dpr = Dpy(fname,'r')
-        ...     A=dpr.read_track()
-        ...     B=dpr.read_track()
-        ...     T=dpr.read_tracksi([0,1,2,0,0,2])
+        ...     dpr.read_track()
+        ...     dpr.read_track()
+        ...     dpr.read_tracksi([0, 1, 2, 0, 0, 2])
         ...     dpr.close()
         ...     os.remove(fname) #delete file from disk
         >>> dpy_example()

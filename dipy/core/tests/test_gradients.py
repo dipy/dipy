@@ -261,7 +261,7 @@ def test_nan_bvecs():
     """
     fdata, fbvals, fbvecs = get_data()
     with warnings.catch_warnings(record=True) as w:
-        gtab = gradient_table(fbvals, fbvecs)
+        gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)
 
 

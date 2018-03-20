@@ -39,7 +39,6 @@ def test_recursive_response_calibration():
     """
     SNR = 100
     S0 = 1
-    sh_order = 8
 
     _, fbvals, fbvecs = get_data('small_64D')
 
@@ -244,7 +243,7 @@ def test_csdeconv():
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])
 
-    aresponse2, aratio2 = auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
+    auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
 
     _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
@@ -435,7 +434,7 @@ def test_csd_predict():
     S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=[50, 50], snr=SNR)
     sphere = small_sphere
-    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
     csd = ConstrainedSphericalDeconvModel(gtab, response)
@@ -476,7 +475,6 @@ def test_csd_predict_multi():
     Check that we can predict reasonably from multi-voxel fits:
 
     """
-    SNR = 100
     S0 = 123.
     _, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)
