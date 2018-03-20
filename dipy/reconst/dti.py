@@ -52,7 +52,7 @@ def _roll_evals(evals, axis=-1):
 
 
 def fractional_anisotropy(evals, axis=-1):
-    r"""
+    """
     Fractional anisotropy (FA) of a diffusion tensor.
 
     Parameters
@@ -91,7 +91,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 
 def geodesic_anisotropy(evals, axis=-1):
-    r"""
+    """
     Geodesic anisotropy (GA) of a diffusion tensor.
 
     Parameters
@@ -172,7 +172,7 @@ def geodesic_anisotropy(evals, axis=-1):
 
 
 def mean_diffusivity(evals, axis=-1):
-    r"""
+    """
     Mean Diffusivity (MD) of a diffusion tensor.
 
     Parameters
@@ -201,7 +201,7 @@ def mean_diffusivity(evals, axis=-1):
 
 
 def axial_diffusivity(evals, axis=-1):
-    r"""
+    """
     Axial Diffusivity (AD) of a diffusion tensor.
     Also called parallel diffusivity.
 
@@ -233,7 +233,7 @@ def axial_diffusivity(evals, axis=-1):
 
 
 def radial_diffusivity(evals, axis=-1):
-    r"""
+    """
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
 
@@ -264,7 +264,7 @@ def radial_diffusivity(evals, axis=-1):
 
 
 def trace(evals, axis=-1):
-    r"""
+    """
     Trace of a diffusion tensor.
 
     Parameters
@@ -293,7 +293,7 @@ def trace(evals, axis=-1):
 
 
 def color_fa(fa, evecs):
-    r""" Color fractional anisotropy of diffusion tensor
+    """ Color fractional anisotropy of diffusion tensor
 
     Parameters
     ----------
@@ -355,7 +355,7 @@ def determinant(q_form):
 
 
 def isotropic(q_form):
-    r"""
+    """
     Calculate the isotropic part of the tensor [1]_.
 
     Parameters
@@ -390,7 +390,7 @@ def isotropic(q_form):
 
 
 def deviatoric(q_form):
-    r"""
+    """
     Calculate the deviatoric (anisotropic) part of the tensor [1]_.
 
     Parameters
@@ -426,7 +426,7 @@ def deviatoric(q_form):
 
 
 def norm(q_form):
-    r"""
+    """
     Calculate the Frobenius norm of a tensor quadratic form
 
     Parameters
@@ -456,7 +456,7 @@ def norm(q_form):
 
 
 def mode(q_form):
-    r"""
+    """
     Mode (MO) of a diffusion tensor [1]_.
 
     Parameters
@@ -500,7 +500,7 @@ def mode(q_form):
 
 
 def linearity(evals, axis=-1):
-    r"""
+    """
     The linearity of the tensor [1]_
 
     Parameters
@@ -535,7 +535,7 @@ def linearity(evals, axis=-1):
 
 
 def planarity(evals, axis=-1):
-    r"""
+    """
     The planarity of the tensor [1]_
 
     Parameters
@@ -571,7 +571,7 @@ def planarity(evals, axis=-1):
 
 
 def sphericity(evals, axis=-1):
-    r"""
+    """
     The sphericity of the tensor [1]_
 
     Parameters
@@ -606,7 +606,7 @@ def sphericity(evals, axis=-1):
 
 
 def apparent_diffusion_coef(q_form, sphere):
-    r"""
+    """
     Calculate the apparent diffusion coefficient (ADC) in each direction of a
     sphere.
 
@@ -913,7 +913,7 @@ class TensorFit(object):
 
     @auto_attr
     def md(self):
-        r"""
+        """
         Mean diffusivity (MD) calculated from cached eigenvalues.
 
         Returns
@@ -934,7 +934,7 @@ class TensorFit(object):
 
     @auto_attr
     def rd(self):
-        r"""
+        """
         Radial diffusivity (RD) calculated from cached eigenvalues.
 
         Returns
@@ -956,7 +956,7 @@ class TensorFit(object):
 
     @auto_attr
     def ad(self):
-        r"""
+        """
         Axial diffusivity (AD) calculated from cached eigenvalues.
 
         Returns
@@ -978,7 +978,7 @@ class TensorFit(object):
 
     @auto_attr
     def trace(self):
-        r"""
+        """
         Trace of the tensor calculated from cached eigenvalues.
 
         Returns
@@ -998,7 +998,7 @@ class TensorFit(object):
 
     @auto_attr
     def planarity(self):
-        r"""
+        """
         Returns
         -------
         sphericity : array
@@ -1024,7 +1024,7 @@ class TensorFit(object):
 
     @auto_attr
     def linearity(self):
-        r"""
+        """
         Returns
         -------
         linearity : array
@@ -1050,7 +1050,7 @@ class TensorFit(object):
 
     @auto_attr
     def sphericity(self):
-        r"""
+        """
         Returns
         -------
         sphericity : array
@@ -1128,7 +1128,7 @@ class TensorFit(object):
         return odf
 
     def adc(self, sphere):
-        r"""
+        """
         Calculate the apparent diffusion coefficient (ADC) in each direction on
         the sphere for each voxel in the data
 
@@ -1155,7 +1155,7 @@ class TensorFit(object):
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
     def predict(self, gtab, S0=None, step=None):
-        r"""
+        """
         Given a model fit, predict the signal on the vertices of a sphere
 
         Parameters
@@ -1313,7 +1313,7 @@ def iter_fit_tensor(step=1e4):
 
 @iter_fit_tensor()
 def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
-    r"""
+    """
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
@@ -1391,7 +1391,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
 
 @iter_fit_tensor()
 def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
-    r"""
+    """
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
