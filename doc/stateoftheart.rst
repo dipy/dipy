@@ -4,7 +4,7 @@
 A quick overview of features
 ============================
 
-Here are just a few of the state-of-the-art :ref:`technologies <examples>` and algorithms which are provided in Dipy_:
+Here are just a few of the state-of-the-art :ref:`technologies <examples>` and algorithms which are provided in DIPY_:
 
 - Reconstruction algorithms: CSD, DSI, GQI, DTI, DKI, QBI, SHORE and MAPMRI.
 - Fiber tracking algorithms: deterministic and probabilistic.
@@ -21,7 +21,7 @@ With the help of some external tools you can also:
 - Read many different file formats e.g. Trackvis or Nifti (with nibabel).
 - Examine your datasets interactively (with ipython).
 
-For more information on specific algorithms we recommend starting by looking at Dipy's :ref:`gallery <examples>` of examples.
+For more information on specific algorithms we recommend starting by looking at DIPY's :ref:`gallery <examples>` of examples.
 
 For a full list of the features implemented in the most recent release cycle, check out the release notes.
 
@@ -41,9 +41,9 @@ For a full list of the features implemented in the most recent release cycle, ch
 Systems supported
 =================
 
-Dipy_ is multiplatform and will run under any standard operating systems such
+DIPY_ is multiplatform and will run under any standard operating systems such
 as *Windows*, *Linux* and  *Mac OS X*. Every single new code addition is being tested on
-a number of different builbots and can be monitored online `here <http://nipy.bic.berkeley.edu/builders>`_.
+a number of different buildbots and can be monitored online `here <http://nipy.bic.berkeley.edu/builders>`_.
 
 
 .. include:: links_names.inc

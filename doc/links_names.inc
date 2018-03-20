@@ -137,7 +137,7 @@
 .. _VTK: http://www.vtk.org/
 .. _ITK: http://www.itk.org/
 .. _swig: http://www.swig.org
-.. _openmp: www.openmp.org/
+.. _openmp: http://www.openmp.org/
 
 .. Windows development
 .. _mingw: http://www.mingw.org/wiki/Getting_Started
@@ -152,7 +152,7 @@
 .. _FMRIB: http://www.fmrib.ox.ac.uk
 
 .. Other organizations
-.. _enthought: <http://www.enthought.com>
+.. _enthought: http://www.enthought.com
 .. _kitware: http://www.kitware.com
 .. _nitrc: http://www.nitrc.org
 
