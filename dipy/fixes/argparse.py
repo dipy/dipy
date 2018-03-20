@@ -1727,7 +1727,7 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
             # all args after -- are non-options
             if arg_string == '--':
                 arg_string_pattern_parts.append('-')
-                for arg_string in arg_strings_iter:
+                for _ in arg_strings_iter:
                     arg_string_pattern_parts.append('A')
 
             # otherwise, add the arg to the arg strings

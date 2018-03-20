@@ -193,9 +193,7 @@ def run_comparisons(sample_data=35):
     for simfile in [simdata[sample_data]]:
     
         dataname = simfile
-        print dataname
-    
-        sim_data=np.loadtxt(simdir+dataname)
+        print (dataname)
     
         gqfile = simdir+'gq/'+dataname+'.pkl'
         gq =  pkl.load_pickle(gqfile)
@@ -215,49 +213,20 @@ def run_comparisons(sample_data=35):
         #print gq_first_directions_in.shape
     
         gq_results = analyze_maxima(gq_indices, gq_first_directions_in.reshape((100,1000,3)),range(10,90))
-    
-        #for gqi see example dicoms_2_tracks gq.IN[:,0]
-    
+
         np.set_printoptions(precision=3, suppress=True, linewidth=200, threshold=5000)
     
         out = open('/home/ian/Data/SimVoxels/Out/'+'***_'+dataname,'w')
-    
-        #print np.vstack(dt_results).shape, np.vstack(gq_results).shape
-        
+
         results = np.hstack((np.vstack(dt_results), np.vstack(gq_results)))
-        #print results.shape
-        #results = np.vstack(dt_results)
     
         print >> out, results[:,:]
     
         out.close()
-    
-    
-        #up = dt_batch[:,2]>= 0
-    
-        #splots.plot_sphere(dt_batch[up], 'batch '+str(direction))
-    
-        #splots.plot_lambert(dt_batch[up],'batch '+str(direction), centre)
-        
-        #spread = gq.q2odf_params e,v = np.linalg.eigh(np.dot(spread,spread.transpose())) effective_dimension = len(find(np.cumsum(e) > 0.05*np.sum(e))) #95%
-    
-        #rotated = np.dot(dt_batch,evecs)
-    
-        #rot_evals, rot_evecs =  np.linalg.eig(np.dot(rotated.T,rotated)/rotated.shape[0])
-    
-        #eval_order = np.argsort(rot_evals)
-    
-        #rotated = rotated[:,eval_order]
-    
-        #up = rotated[:,2]>= 0
-    
-        #splot.plot_sphere(rotated[up],'first1000')
-    
-        #splot.plot_lambert(rotated[up],'batch '+str(direction))
 
 def run_gq_sims(sample_data=[35,23,46,39,40,10,37,27,21,20]):
 
-    results = []
+    # results = []
 
     out = open('/home/ian/Data/SimVoxels/Out/'+'npa+fa','w')
 
@@ -297,61 +266,15 @@ def run_gq_sims(sample_data=[35,23,46,39,40,10,37,27,21,20]):
             for (i,o) in enumerate(gqs.odf_vertices):
                 print i,o
             '''
-            #o = gqs.odf(s)
-            #v = gqs.odf_vertices
-            #pole = v[t0[0]]
-            #eqv = dgqs.equatorial_zone_vertices(v, pole, 5)
-            #print 'Number of equatorial vertices: ', len(eqv)
-            #print np.max(o[eqv]),np.min(o[eqv])
-            #cos_e_pole = [np.dot(pole.T, v[i]) for i in eqv]
-            #print np.min(cos1), np.max(cos1)
-            #print 'equatorial max in equatorial vertices:', t1[0] in eqv
-            #x =  np.cross(v[t0[0]],v[t1[0]])
-            #x = x/np.sqrt(np.sum(x**2))
-            #print x
-            #ptchv = dgqs.patch_vertices(v, x, 5)
-            #print len(ptchv)
-            #eqp = eqv[np.argmin([np.abs(np.dot(v[t1[0]].T,v[p])) for p in eqv])]
-            #print (eqp, o[eqp])
-            #print t2[0] in ptchv, t2[0] in eqv
-            #print np.dot(pole.T, v[t1[0]]), np.dot(pole.T, v[t2[0]])
-            #print ptchv[np.argmin([o[v] for v in ptchv])]
-                                       
-            #gq_indices = np.array(gq.IN[:,0],dtype='int').reshape((100,1000))
-        
-            #gq_first_directions_in=odf_vertices[np.array(gq.IN[:,0],dtype='int')]
-        
-            #print gq_first_directions_in.shape
-        
-            #gq_results = analyze_maxima(gq_indices, gq_first_directions_in.reshape((100,1000,3)),range(100))
-        
-            #for gqi see example dicoms_2_tracks gq.IN[:,0]
-        
-            #np.set_printoptions(precision=6, suppress=True, linewidth=200, threshold=5000)
-
-            #out = open('/home/ian/Data/SimVoxels/Out/'+'+++_'+dataname,'w')
-        
-            #results = np.hstack((np.vstack(dt_results), np.vstack(gq_results)))
-            #results = np.vstack(dt_results)
-        
-            #print >> out, results[:,:]
         
     out.close()
-    
-def run_small_data():
-    
-    #smalldir = '/home/ian/Devel/dipy/dipy/data/'
-    smalldir = '/home/eg309/Devel/dipy/dipy/data/'
-#    from os.path import join as opj
 
-#    bvals=np.load(opj(os.path.dirname(__file__), \
-#                          'data','small_64D.bvals.npy'))
+
+def run_small_data():
+
+    smalldir = '/home/eg309/Devel/dipy/dipy/data/'
     bvals=np.load(smalldir+'small_64D.bvals.npy')
-#    gradients=np.load(opj(os.path.dirname(__file__), \
-#                              'data','small_64D.gradients.npy'))    
     gradients=np.load(smalldir+'small_64D.gradients.npy')
-#    img =ni.load(os.path.join(os.path.dirname(__file__),\
-#                                  'data','small_64D.nii'))
     img=nibabel.load(smalldir+'small_64D.nii')
     small_data=img.get_data()    
 
@@ -363,18 +286,8 @@ def run_small_data():
     evecs=tnsmall.evecs
     xyz=x*y*z
     evecs = evecs.reshape(xyz,3,3)
-    #vs = np.sign(evecs[:,2,:])
-    #print vs.shape
-    #print np.hstack((vs,vs,vs)).reshape(1000,3,3).shape
-    #evecs = np.hstack((vs,vs,vs)).reshape(1000,3,3)
-    #print evecs.shape
     evals=tnsmall.evals
     evals = evals.reshape(xyz,3)
-    #print evals.shape
-
-    
-
-    #print('GQS in %d' %(t2-t1))
         
     '''
     eds=np.load(opj(os.path.dirname(__file__),\
@@ -384,13 +297,6 @@ def run_small_data():
     from dipy.data import get_sphere
 
     odf_vertices,odf_faces=get_sphere('symmetric362')
-
-    
-    #odf_vertices=eds['vertices']
-    #odf_faces=eds['faces']
-
-    #Yeh et.al, IEEE TMI, 2010
-    #calculate the odf using GQI
 
     scaling=np.sqrt(bvals*0.01506) # 0.01506 = 6*D where D is the free
     #water diffusion coefficient 
@@ -408,7 +314,7 @@ def run_small_data():
 
     x,y,z,g=S.shape
     S=S.reshape(x*y*z,g)
-    QA = np.zeros((x*y*z,5))
+    # QA = np.zeros((x*y*z,5))
     IN = np.zeros((x*y*z,5))
     FA = tnsmall.fa().reshape(x*y*z)
 
@@ -420,13 +326,11 @@ def run_small_data():
     summary = {}
 
     summary['vertices'] = odf_vertices
-    v = odf_vertices.shape[0]
+    # v = odf_vertices.shape[0]
     summary['faces'] = odf_faces
-    f = odf_faces.shape[0]
+    # f = odf_faces.shape[0]
 
     for (i,s) in enumerate(S):
-
-        #print 'Volume %d' % i
 
         istr = str(i)
 
@@ -439,10 +343,8 @@ def run_small_data():
         odf = Q2odf(s,q2odf_params)
         peaks,inds=rp.peak_finding(odf,odf_faces)
         fwd=max(np.max(odf),fwd)
-        #peaks = peaks - np.min(odf)
         n_peaks=min(len(peaks),5)
         peak_heights = [odf[i] for i in inds[:n_peaks]]
-        #QA[i][:l] = peaks[:n_peaks]
         IN[i][:n_peaks] = inds[:n_peaks]
 
         summary[istr]['odf'] = odf
@@ -452,7 +354,6 @@ def run_small_data():
         summary[istr]['evals'] = evals[i,:]
         summary[istr]['n_peaks'] = n_peaks
         summary[istr]['peak_heights'] = peak_heights
-#        summary[istr]['fa'] = tnsmall.fa()[0]
         summary[istr]['fa'] = FA[i]
     '''
     QA/=fwd
@@ -463,8 +364,6 @@ def run_small_data():
     peaks_1 = [i for i in range(1000) if summary[str(i)]['n_peaks']==1]
     peaks_2 = [i for i in range(1000) if summary[str(i)]['n_peaks']==2]
     peaks_3 = [i for i in range(1000) if summary[str(i)]['n_peaks']==3]
-    #peaks_2 = [i for i in range(1000) if len(summary[str(i)]['inds'])==2]
-    #peaks_3 = [i for i in range(1000) if len(summary[str(i)]['inds'])==3]
 
     print '#voxels with 1, 2, 3 peaks', len(peaks_1),len(peaks_2),len(peaks_3)
 

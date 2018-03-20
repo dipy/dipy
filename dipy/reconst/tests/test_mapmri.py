@@ -71,11 +71,6 @@ def test_orthogonality_basis_functions():
     # do the same for the isotropic mapmri basis functions
     # we already know the spherical harmonics are orthonormal
     # only check j>0, l=0 basis functions
-    C1 = mapmri.mapmri_isotropic_radial_pdf_basis(1, 0, diffusivity, 0)
-    C2 = mapmri.mapmri_isotropic_radial_pdf_basis(2, 0, diffusivity, 0)
-    C3 = mapmri.mapmri_isotropic_radial_pdf_basis(3, 0, diffusivity, 0)
-    C4 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
-    C5 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
 
     int1 = integrate.quad(lambda q:
                           mapmri.mapmri_isotropic_radial_signal_basis(

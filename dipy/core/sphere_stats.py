@@ -127,8 +127,6 @@ def eigenstats(points, alpha=0.05):
     e[1, 0] = e[0, 1]
     # e is a 2x2 helper matrix
 
-    b1 = np.array([np.NaN, np.NaN])
-
     d = -2*np.log(alpha)/n
     s, w = np.linalg.eig(e)
     g = np.sqrt(d*s)
@@ -201,7 +199,6 @@ def compare_orientation_sets(S, T):
         a = m
         S = T
         T = A
-        m = n
         n = a
 
     v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
@@ -279,7 +276,6 @@ def angular_similarity(S, T):
         a = m
         S = T
         T = A
-        m = n
         n = a
 
     """

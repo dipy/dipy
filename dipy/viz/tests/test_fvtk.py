@@ -122,7 +122,7 @@ def test_colormaps_matplotlib():
     with warnings.catch_warnings(record=True) as w:
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
-        accent_cm = data.get_cmap("Accent")
+        data.get_cmap("Accent")
         # Test that the deprecation warning was raised:
         npt.assert_(len(w) > 0)
 

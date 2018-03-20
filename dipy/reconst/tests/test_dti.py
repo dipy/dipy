@@ -280,7 +280,6 @@ def test_color_fa():
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(data)
     fa = fractional_anisotropy(dmfit.evals)
-    cfa = color_fa(fa, dmfit.evecs)
 
     fa = np.ones((3, 3, 3))
     # evecs should be of shape (fa, 3, 3)
@@ -470,7 +469,7 @@ def test_all_constant():
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
-    for fit_method in fit_methods:
+    for _ in fit_methods:
         dm = dti.TensorModel(gtab)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
         # Doesn't matter if the signal is smaller than 1:
@@ -481,7 +480,7 @@ def test_all_zeros():
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
-    for fit_method in fit_methods:
+    for _ in fit_methods:
         dm = dti.TensorModel(gtab)
         assert_array_almost_equal(dm.fit(np.zeros(bvals.shape[0])).evals, 0)
 
@@ -646,7 +645,7 @@ def test_restore():
             # RESTORE estimates should be robust to dropping
             this_y = Y.copy()
             this_y[:, drop_this] = 1.0
-            for sigma in [67.0, np.ones(this_y.shape[-1]) * 67.0]:
+            for _ in [67.0, np.ones(this_y.shape[-1]) * 67.0]:
                 tensor_model = dti.TensorModel(gtab, fit_method='restore',
                                                jac=jac,
                                                sigma=67.0)

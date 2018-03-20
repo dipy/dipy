@@ -51,7 +51,7 @@ def affine_transform2d(I,M):
     perc3=com[:,0]*com[:,1]
 
     #create final image
-    Iout=np.zeros(I.shape)
+    # Iout=np.zeros(I.shape)
 
     #zeroing indices outside boundaries
 
@@ -289,9 +289,9 @@ def evaluate(A,B,guess,metric='sd',binA=None,binB=None,xtol=0.1,ftol=0.01,order=
 
     tc1=np.linspace(-50,50,20)
     tc2=np.linspace(-50,50,20)
-    sc1=np.linspace(-1.2,1.2,10)
-    sc2=np.linspace(-1.2,1.2,10)
-    rc=np.linspace(0,np.pi,8)
+    # sc1=np.linspace(-1.2,1.2,10)
+    # sc2=np.linspace(-1.2,1.2,10)
+    # rc=np.linspace(0,np.pi,8)
 
     f_min=np.inf
 
@@ -337,7 +337,7 @@ def test(map_type='affine2d',xtol=0.0001,ftol=0.0001):
     
     #A=A.sum(axis=-1)/3.
     
-    imgB=imgA.copy()
+    # imgB=imgA.copy()
     pic2='/tmp/landmarks2.png'
     #pic2='/tmp/lenag2.png'
     
@@ -358,14 +358,14 @@ def test(map_type='affine2d',xtol=0.0001,ftol=0.0001):
     Z2[25:25+B.shape[0],25:25+B.shape[1]]=B    
     B=Z2
     
-    binA=np.r_[-np.inf,np.linspace(A.min(),A.max(),30),np.inf]
-    binB=np.r_[-np.inf,np.linspace(B.min(),B.max(),30),np.inf]    
+    # binA=np.r_[-np.inf,np.linspace(A.min(),A.max(),30),np.inf]
+    # binB=np.r_[-np.inf,np.linspace(B.min(),B.max(),30),np.inf]
     
-    if A.ndim==2:
-        #guess=np.array([0.,0.,0])
-        guess=np.array([0.,0.,1.,1.,0])
-        #translation[2], scale[2], rotation[1], shear[2]
-        #guess=np.array([0,0,1,1,0,0,0])
+    # if A.ndim==2:
+    #     #guess=np.array([0.,0.,0])
+    #     guess=np.array([0.,0.,1.,1.,0])
+    #     #translation[2], scale[2], rotation[1], shear[2]
+    #     #guess=np.array([0,0,1,1,0,0,0])
 
     print A.shape
     print B.shape    
