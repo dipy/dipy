@@ -1208,13 +1208,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         fw_step = np.array(self.metric.compute_forward())
 
         # set zero displacements at the boundary
-        fw_step[0, ...] = 0
-        fw_step[:, 0, ...] = 0
-        fw_step[-1, ...] = 0
-        fw_step[:, -1, ...] = 0
-        if(self.dim == 3):
-            fw_step[:, :, 0, ...] = 0
-            fw_step[:, :, -1, ...] = 0
+        fw_step = self.__set_no_boundary_displacement(fw_step)
 
         # Normalize the forward step
         nrm = np.sqrt(np.sum((fw_step/current_disp_spacing)**2, -1)).max()
@@ -1234,10 +1228,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         bw_step = np.array(self.metric.compute_backward())
 
         # set zero displacements at the boundary
-        bw_step[0, ...] = 0
-        bw_step[:, 0, ...] = 0
-        if(self.dim == 3):
-            bw_step[:, :, 0, ...] = 0
+        bw_step = self.__set_no_boundary_displacement(bw_step)
 
         # Normalize the backward step
         nrm = np.sqrt(np.sum((bw_step/current_disp_spacing) ** 2, -1)).max()
@@ -1263,6 +1254,38 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                   (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch))
 
         self.energy_list.append(fw_energy + bw_energy)
+
+        self.__invert_models(current_disp_world2grid, current_disp_spacing)
+
+        # Free resources no longer needed to compute the forward and backward
+        # steps
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.ITER_END)
+        self.metric.free_iteration()
+
+        return der
+
+    def __set_no_boundary_displacement(self, step):
+        """ set zero displacements at the boundary
+
+        :param ndarray step:
+        :return ndarray:
+        """
+        step[0, ...] = 0
+        step[:, 0, ...] = 0
+        step[-1, ...] = 0
+        step[:, -1, ...] = 0
+        if self.dim == 3:
+            step[:, :, 0, ...] = 0
+            step[:, :, -1, ...] = 0
+        return step
+
+    def __invert_models(self, current_disp_world2grid, current_disp_spacing):
+        """ converting static - moving models in both direction
+
+        :param current_disp_world2grid:
+        :param current_disp_spacing:
+        """
 
         # Invert the forward model's forward field
         self.static_to_ref.backward = np.array(
@@ -1295,14 +1318,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_disp_world2grid,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, self.moving_to_ref.forward))
-
-        # Free resources no longer needed to compute the forward and backward
-        # steps
-        if self.callback is not None:
-            self.callback(self, RegistrationStages.ITER_END)
-        self.metric.free_iteration()
-
-        return der
 
     def _approximate_derivative_direct(self, x, y):
         r"""Derivative of the degree-2 polynomial fit of the given x, y pairs
