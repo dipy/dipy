@@ -202,7 +202,7 @@ class MapmriModel(ReconstModel, Cache):
 
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> from dipy.core.gradients import gradient_table
-        >>> data, gtab_ = dsi_voxels()
+        >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
         >>> from dipy.sims.voxel import SticksAndBall
@@ -329,7 +329,7 @@ class MapmriModel(ReconstModel, Cache):
             M = mapmri_phi_matrix(self.radial_order, mu, q)
         else:
             try:
-                self.MMt_inv_Mt
+                # self.MMt_inv_Mt
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
@@ -356,7 +356,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
-                    1/0.
+                    # 1/0.
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
@@ -407,7 +407,7 @@ class MapmriModel(ReconstModel, Cache):
             try:
                 prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
-            except:
+            except Exception:
                 errorcode = 2
                 warn('Optimization did not find a solution')
                 try:

@@ -136,25 +136,25 @@ def eigenstats(points, alpha=0.05):
 
     return centre, b1
 
-    '''
-    # b2 is equivalent to b1 above
 
-    # try to invert e and calculate vector b the standard errors of
-    # centre - these are forced to a mixture of NaN and/or 0 in singular cases
-    b2 = np.array([np.NaN,np.NaN])
-    if np.abs(np.linalg.det(e)) < 10**-20:
-        b2 = np.array([0,np.NaN])
-    else:
-        try:
-            f = np.linalg.inv(e)
-        except np.linalg.LigAlgError:
-            b2 = np.array([np.NaN, np.NaN])
-        else:
-            t, y = np.linalg.eig(f)
-            d = -2*np.log(alpha)/n
-            g = np.sqrt(d/t)
-            b2= np.arcsin(g)*rad2deg
-    '''
+    # # b2 is equivalent to b1 above
+    #
+    # # try to invert e and calculate vector b the standard errors of
+    # # centre - these are forced to a mixture of NaN and/or 0 in singular cases
+    # b2 = np.array([np.NaN,np.NaN])
+    # if np.abs(np.linalg.det(e)) < 10**-20:
+    #     b2 = np.array([0,np.NaN])
+    # else:
+    #     try:
+    #         f = np.linalg.inv(e)
+    #     except np.linalg.LigAlgError:
+    #         b2 = np.array([np.NaN, np.NaN])
+    #     else:
+    #         t, y = np.linalg.eig(f)
+    #         d = -2*np.log(alpha)/n
+    #         g = np.sqrt(d/t)
+    #         b2= np.arcsin(g)*rad2deg
+
 
 
 def compare_orientation_sets(S, T):

@@ -77,7 +77,7 @@ if have_vtk:
         else:
             from vtk import vtkSmartVolumeMapper as VolumeMapper
         have_vtk_texture_mapper2D = True
-    except:
+    except Exception:
         have_vtk_texture_mapper2D = False
 
 else:

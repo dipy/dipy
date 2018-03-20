@@ -26,7 +26,7 @@ def test_btable_prepare():
                       [0, sq2, sq2]])
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
-    bt.info
+    # bt.info
     fimg, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
