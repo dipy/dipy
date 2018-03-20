@@ -274,7 +274,7 @@ class ShoreModel(Cache):
             try:
                 prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
-            except:
+            except Exception:
                 warn('Optimization did not find a solution')
                 coef = np.zeros(M.shape[1])
         return ShoreFit(self, coef)

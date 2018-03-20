@@ -44,7 +44,7 @@ def load_polydata(file_name):
     elif file_extension == "obj":
         try:  # try to read as a normal obj
             reader = vtk.vtkOBJReader()
-        except:  # than try load a MNI obj format
+        except Exception:  # than try load a MNI obj format
             reader = vtk.vtkMNIObjectReader()
     else:
         raise "polydata " + file_extension + " is not suported"
