@@ -23,6 +23,8 @@
 .. _buildbots: http://nipy.bic.berkeley.edu/builders
 .. _`dipy gitter`: https://gitter.im/nipy/dipy
 .. _neurostars: https://neurostars.org/
+.. _h5py: https://www.h5py.org/
+.. _cvxpy: http://www.cvxpy.org/en/latest/
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net

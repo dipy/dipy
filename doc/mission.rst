@@ -6,7 +6,7 @@
 
 Mission of Statement
 
-The purpose of dipy_ is to make it **easier to do better diffusion MR imaging research**. Following up with the nipy mission statement we aim to build software that is
+The purpose of DIPY_ is to make it **easier to do better diffusion MR imaging research**. Following up with the nipy mission statement we aim to build software that is
 
     * **clearly written**
     * **clearly explained**
