@@ -19,7 +19,7 @@
 .. _journal paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: http://nipy.org/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
-.. _nipy development guidelines: http://nipy.org/devel
+.. _nipy development guidelines: http://nipy.org/nipy/devel/guidelines/index.html
 .. _buildbots: http://nipy.bic.berkeley.edu/builders
 .. _`dipy gitter`: https://gitter.im/nipy/dipy
 .. _neurostars: https://neurostars.org/
@@ -53,7 +53,7 @@
 .. _`nipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
-.. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines
+.. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _python module path: http://docs.python.org/tutorial/modules.html#the-module-search-path
 
 .. Code support stuff
@@ -96,6 +96,7 @@
 .. _datapkg: http://okfn.org/projects/datapkg
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
+.. _pypi: https://pypi.python.org/pypi
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
