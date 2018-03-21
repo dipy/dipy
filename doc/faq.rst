@@ -24,7 +24,7 @@ Theoretical
 2. **What is q-space?**
 
   Q-space is the space of one or more 3D spin displacement wave vectors
-  $\mathbf{q}$ as shown in equation $\ref{eq:fourier}$. The vector $\mathbf{q}$
+  $\mathbf{q}$. The vector $\mathbf{q}$
   parametrises the space of diffusion gradients. It is related to the
   applied magnetic gradient $\mathbf{g}$ by the formula
   $\mathbf{q}=(2\pi)^{-1}\gamma\delta\mathbf{g}$.
@@ -144,7 +144,7 @@ Practical
   http://www.cabiatl.com/mricro/mricron/dcm2nii.html
   Or you can make your own reader using pydicom.
   http://code.google.com/p/pydicom/
-  and then use nibabel to store the data as niftis.
+  and then use nibabel to store the data as nifti.
 
 8. **Where can I find diffusion data?**
 
