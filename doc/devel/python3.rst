@@ -4,7 +4,7 @@
 Keeping code compatible with Pythons 2 and 3
 ############################################
 
-Dipy supports Python versions from 2.6 to 3.5. In order to maintain code that supports both
+DIPY supports Python versions from 2.6 to 3.5. In order to maintain code that supports both
 Python 2 and Python 3 versions, please follow these instructions.
 
 There is useful advice here:
