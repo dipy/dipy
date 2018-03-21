@@ -2,13 +2,13 @@
  Introduction
 ==============
 
-Dipy_ is always seeking courageous scientists who want to take dMRI
+DIPY_ is always seeking courageous scientists who want to take dMRI
 analysis to the next level. If you share the same vision and you are willing to share your code please let us know we will be happy to help.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
-Nimmo-Smith, Matthew Brett, Bago Amirbekian, Ariel Rokem, Stefan van der Walt and (your name here). See the main documentation for the full list of dipy developers and contributors.
+Nimmo-Smith, Matthew Brett, Bago Amirbekian, Ariel Rokem, Stefan van der Walt and (your name here). See the main documentation for the full list of DIPY developers and contributors.
 
-The primary development repository is `dipy github`_ 
+The primary development repository is `dipy github`_
 
 Please do contribute.  Have a look at :ref:`using-git` for some ideas on
 how to get going.

@@ -3,7 +3,7 @@
 ================
 
 You've discovered a bug or something else you want to change
-in `dipy`_ .. |emdash| excellent!
+in `DIPY`_ |emdash| excellent!
 
 You've worked out a way to fix it |emdash| even better!
 
@@ -44,7 +44,7 @@ Overview
    # make the patch files
    git format-patch -M -C master
 
-Then, send the generated patch files to the `dipy
+Then, send the generated patch files to the `DIPY
 mailing list`_ |emdash| where we will thank you warmly.
 
 In detail
@@ -100,7 +100,7 @@ In detail
       0001-BF-added-tests-for-Funny-bug.patch
       0002-BF-added-fix-for-Funny-bug.patch
 
-   Send these files to the `dipy mailing list`_.
+   Send these files to the `DIPY mailing list`_.
 
 When you are done, to switch back to the main copy of the
 code, just return to the ``master`` branch::
