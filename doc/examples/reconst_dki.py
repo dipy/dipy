@@ -107,7 +107,7 @@ suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
 fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
 [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
 are comparable to these studies, it is important to note that more advanced
-noise and artifact suppression algorithms are available in dipy_ (e.g. the
+noise and artifact suppression algorithms are available in DIPY_ (e.g. the
 non-local means filter :ref:`example-denoise-nlmeans`).
 """
 
@@ -273,7 +273,7 @@ fraction and diffusion extra-cellular tortuosity. According to recent studies,
 these latter measures can be used to distinguish processes of axonal loss from
 processes of myelin degeneration [Fieremans2012]_.
 
-The model proposed by Fieremans and colleagues can be defined in dipy by
+The model proposed by Fieremans and colleagues can be defined in DIPY by
 instantiating the 'KurtosisMicrostructureModel' object in the following way:
 """
 

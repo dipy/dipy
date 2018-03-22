@@ -39,7 +39,7 @@ Details of the computation of FBC can be found in [Portegies2015]_.
 """
 The FBC measures are evaluated on the Stanford HARDI dataset
 (150 orientations, b=2000 $s/mm^2$) which is one of the standard example
-datasets in dipy_.
+datasets in DIPY_.
 """
 
 import numpy as np
