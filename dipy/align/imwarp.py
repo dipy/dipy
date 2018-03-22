@@ -1268,8 +1268,15 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __set_no_boundary_displacement(self, step):
         """ set zero displacements at the boundary
 
-        :param ndarray step:
-        :return ndarray:
+        Parameters
+        ----------
+        step : array, ndim 2 or 3
+            displacements field
+
+        Returns
+        -------
+        step : array, ndim 2 or 3
+            displacements field
         """
         step[0, ...] = 0
         step[:, 0, ...] = 0
@@ -1281,43 +1288,49 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return step
 
     def __invert_models(self, current_disp_world2grid, current_disp_spacing):
-        """ converting static - moving models in both direction
+        """Converting static - moving models in both direction.
 
-        :param current_disp_world2grid:
-        :param current_disp_spacing:
+        Parameters
+        ----------
+        current_disp_world2grid : array, shape (3, 3) or  (4, 4)
+            the space-to-grid transformation associated to the displacement field
+            d (transforming physical space coordinates to voxel coordinates of the
+            displacement field grid)
+        current_disp_spacing :array, shape (2,) or  (3,)
+            the spacing between voxels (voxel size along each axis)
         """
 
         # Invert the forward model's forward field
         self.static_to_ref.backward = np.array(
-            self.invert_vector_field(
-                self.static_to_ref.forward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.static_to_ref.backward))
+            self.invert_vector_field(self.static_to_ref.forward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.static_to_ref.backward))
 
         # Invert the backward model's forward field
         self.moving_to_ref.backward = np.array(
-            self.invert_vector_field(
-                self.moving_to_ref.forward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.moving_to_ref.backward))
+            self.invert_vector_field(self.moving_to_ref.forward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.moving_to_ref.backward))
 
         # Invert the forward model's backward field
         self.static_to_ref.forward = np.array(
-            self.invert_vector_field(
-                self.static_to_ref.backward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.static_to_ref.forward))
+            self.invert_vector_field(self.static_to_ref.backward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.static_to_ref.forward))
 
         # Invert the backward model's backward field
         self.moving_to_ref.forward = np.array(
-            self.invert_vector_field(
-                self.moving_to_ref.backward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.moving_to_ref.forward))
+            self.invert_vector_field(self.moving_to_ref.backward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.moving_to_ref.forward))
 
     def _approximate_derivative_direct(self, x, y):
         r"""Derivative of the degree-2 polynomial fit of the given x, y pairs
