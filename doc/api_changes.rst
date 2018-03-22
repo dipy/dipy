@@ -5,7 +5,7 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-Dipy 0.13 Changes
+DIPY 0.13 Changes
 -----------------
 
 No major API changes.
@@ -15,14 +15,14 @@ No major API changes.
 ``dipy.viz.fvtk`` module will be deprecated on release 0.14. Use ``dipy.viz.ui`` instead.
 ``dipy.io.trackvis`` module will be deprecated on release 0.14. Use ``dipy.io.streamline`` instead.
 
-Dipy 0.12 Changes
+DIPY 0.12 Changes
 -----------------
 **Dropped support for Python 2.6***
 
 It has been 6 years since the release of Python 2.7, and multiple other
-versions have been released since. As far as we know, Dipy still works well
+versions have been released since. As far as we know, DIPY still works well
 on Python 2.6, but we no longer test on this version, and we recommend that
-users upgrade to Python 2.7 or newer to use Dipy.
+users upgrade to Python 2.7 or newer to use DIPY.
 
 
 **Tracking**
@@ -49,7 +49,7 @@ Prefer using the UI elements in ``dipy.viz.ui`` rather than
 Use the module ``nibabel.streamlines`` for saving trk files and not
 ``nibabel.trackvis``. Requires upgrading to nibabel 2+.
 
-Dipy 0.10 Changes
+DIPY 0.10 Changes
 -----------------
 
 ** New visualization module**
@@ -75,7 +75,7 @@ The following utilty functions from ``vector_fields`` module were renamed:
 ``warp_3d_affine_nn`` is now ``transform_3d_affine_nn``
 
 
-Dipy 0.9 Changes
+DIPY 0.9 Changes
 ----------------
 
 **GQI integration length**
@@ -85,7 +85,7 @@ Calculation of integration length in GQI2 now matches the calculation in the
 docs and references therein).
 
 
-Dipy 0.8 Changes
+DIPY 0.8 Changes
 ----------------
 
 **Peaks**
@@ -107,11 +107,11 @@ Changes between 0.7.1 and 0.6
 **Peaks_from_model**
 
 The function ``peaks_from_model`` is now available from ``dipy.reconst.peaks``
-. Please replace all imports like ::
+. Please replace all imports like::
 
     from dipy.reconst.odf import peaks_from_model
 
-with ::
+with::
 
     from dipy.reconst.peaks import peaks_from_model
 
@@ -119,13 +119,13 @@ with ::
 
 The function ``target`` from ``dipy.tracking.utils`` now takes an affine
 transform instead of a voxel sizes array. Please update all code using
-``target`` in a way similar to this ::
+``target`` in a way similar to this::
 
     img = nib.load(anat)
     voxel_dim = img.header['pixdim'][1:4]
     streamlines = utils.target(streamlines, img.get_data(), voxel_dim)
 
-to something similar to ::
+to something similar to::
 
     img = nib.load(anat)
     streamlines = utils.target(streamlines, img.get_data(), img.affine)
