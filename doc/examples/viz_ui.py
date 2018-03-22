@@ -159,7 +159,9 @@ line_slider.add_callback(line_slider.slider_disk,
 
 def rotate_red_cube(i_ren, obj, slider):
     angle = slider.value
-    cube_actor_1.RotateY(0.005 * angle)
+    previous_angle = slider.previous_value
+    rotation_angle = angle - previous_angle
+    cube_actor_1.RotateY(rotation_angle)
 
 
 disk_slider = ui.DiskSlider2D()
