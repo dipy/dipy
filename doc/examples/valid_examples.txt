@@ -1,11 +1,11 @@
- quick_start.py
+# quick_start.py
 # tracking_quick_start.py
 # brain_extraction_dwi.py
 # reconst_csa_parallel.py
 # reconst_csa.py
 # reconst_csd_parallel.py
 # reconst_csd.py
-# reconst_forecast.py
+ reconst_forecast.py
 # reconst_dki.py
 # reconst_dsi_metrics.py
 # reconst_dsi.py
@@ -14,7 +14,7 @@
 # reconst_gqi.py
 # reconst_dsid.py
 # reconst_ivim.py
-# reconst_mapmri.py
+ reconst_mapmri.py
 # kfold_xval.py
 # reslice_datasets.py
 # segment_quickbundles.py

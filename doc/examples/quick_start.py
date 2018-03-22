@@ -7,7 +7,7 @@ In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with t
 diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
-In dipy_ we provide tools to load and process these files and we also provide
+In DIPY_ we provide tools to load and process these files and we also provide
 access to publically available datasets for those who haven't acquired yet
 their own datasets.
 
@@ -138,7 +138,7 @@ B-vectors shape (193, 3)
          min -0.964050
          max 0.999992
 
-You, can also see the b-values using:
+You can also see the b-values using:
 """
 
 print(gtab.bvals)
