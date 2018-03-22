@@ -2,7 +2,7 @@
 Publications
 ==============
 
-[1] Garyfallidis E, Brett M, Amirbekian B, Rokem A, van der Walt S, Descoteaux M, Nimmo-Smith I and Dipy Contributors (2014). `Dipy, a library for the analysis of diffusion MRI data. <http://journal.frontiersin.org/Journal/10.3389/fninf.2014.00008/abstract>`_ Frontiers in Neuroinformatics, vol.8, no.8.
+[1] Garyfallidis E, Brett M, Amirbekian B, Rokem A, van der Walt S, Descoteaux M, Nimmo-Smith I and Dipy Contributors (2014). `DIPY, a library for the analysis of diffusion MRI data. <http://journal.frontiersin.org/Journal/10.3389/fninf.2014.00008/abstract>`_ Frontiers in Neuroinformatics, vol.8, no.8.
 
 [2] Garyfallidis E, Brett M, Nimmo-Smith I (2010), “Fast Dimensionality Reduction for Brain Tractography Clustering”, 16th Annual Meeting of the Organization for Human Brain Mapping.
 
