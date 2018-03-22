@@ -14,7 +14,7 @@ new ``Metric`` classes that can be used by QuickBundles.
 
 Clustering framework
 ====================
-dipy_ provides a simple, flexible and fast framework to do clustering of
+DIPY_ provides a simple, flexible and fast framework to do clustering of
 sequential data (e.g. streamlines).
 
 A *sequential datum* in DIPY is represented as a numpy array of size

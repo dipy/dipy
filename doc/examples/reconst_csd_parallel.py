@@ -105,12 +105,11 @@ print("Speedup factor : " + str(time_single / time_parallel))
 Speedup factor : 2.12166099088
 
 In Windows if you get a runtime error about frozen executable please start
-your script by adding your code above in a ``main`` function and use:
+your script by adding your code above in a ``main`` function and use::
 
-``
-if __name__ == '__main__':
-    import multiprocessing
-    multiprocessing.freeze_support()
-    main()
-``
+    if __name__ == '__main__':
+        import multiprocessing
+        multiprocessing.freeze_support()
+        main()
+
 """
