@@ -10,9 +10,8 @@ First import the necessary modules:
 """
 
 import numpy as np
-import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.reconst.shm import CsaOdfModel, normalize_data
+from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
 
 """
@@ -93,8 +92,12 @@ data_small = maskdata[13:43, 44:74, 28:29]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
-from dipy.viz import fvtk
-r = fvtk.ren()
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
+
+r = window.Renderer()
 
 csaodfs = csamodel.fit(data_small).odf(sphere)
 
@@ -103,10 +106,14 @@ It is common with CSA ODFs to produce negative values, we can remove those using
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
+csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=sphere, colormap='plasma', scale=0.4)
+csa_odfs_actor.display(z=0)
 
-fvtk.add(r, fvtk.sphere_funcs(csaodfs, sphere, colormap='jet'))
+r.add(csa_odfs_actor)
 print('Saving illustration as csa_odfs.png')
-fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+window.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+if interactive:
+    window.show(r)
 
 """
 .. figure:: csa_odfs.png

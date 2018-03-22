@@ -159,7 +159,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             self.S_r = estimate_response(gtab, self.response[0],
                                          self.response[1])
-            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi],
+                                   rcond=-1)[0]
             n_response = n
             m_response = m
             self.response_scaling = response[1]
@@ -313,7 +314,8 @@ class ConstrainedSDTModel(SphHarmModel):
 
     @multi_voxel_fit
     def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
+                               rcond=-1)[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_reg, odf_sh)
@@ -641,7 +643,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         return np.zeros_like(odf_sh), 0
 
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
+    fodf_sh = np.linalg.lstsq(R, odf_sh, rcond=-1)[0]
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
@@ -676,7 +678,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         try:
-            fodf_sh = np.linalg.lstsq(M, ODF)[0]
+            fodf_sh = np.linalg.lstsq(M, ODF, rcond=-1)[0]
         except np.linalg.LinAlgError as lae:
             # SVD did not converge in Linear Least Squares in current
             # voxel. Proceeding with initial SH estimate for this voxel.
@@ -1043,7 +1045,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
             r, theta, phi = cart2sphere(x, y, z)
             # for the gradient sphere
             B_dwi = real_sph_harm(0, n, theta[:, None], phi[:, None])
-            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi])[0]
+            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi],
+                                        rcond=-1)[0]
 
         response = r_sh_all / data.shape[0]
         res_obj = AxSymShResponse(data[:, gtab.b0s_mask].mean(), response)

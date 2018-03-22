@@ -5,7 +5,7 @@ import os.path as path
 from glob import glob
 
 from dipy.utils.six import string_types
-
+from dipy.workflows.base import get_args_default
 
 def common_start(sa, sb):
     """ Returns the longest common substring from the beginning of sa and sb """
@@ -171,10 +171,7 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     args.remove('self')
     del values['self']
 
-    specs = inspect.getargspec(fnc)
-    spargs = specs.args
-    spargs.remove('self')
-    defaults = specs.defaults
+    spargs, defaults = get_args_default(fnc)
 
     len_args = len(spargs)
     len_defaults = len(defaults)

@@ -3,9 +3,9 @@
 Enhancing QuickBundles with different metrics and features
 ==========================================================
 
-QuickBundles is a flexible algorithm that requires only a distance metric and
-an adjacency threshold to perform clustering. There is a wide variety of metrics
-that could be used to cluster streamlines.
+QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
+distance metric and an adjacency threshold to perform clustering. There is a
+wide variety of metrics that could be used to cluster streamlines.
 
 The purpose of this tutorial is to show how to easily create new ``Feature`` and
 new ``Metric`` classes that can be used by QuickBundles.
@@ -104,7 +104,7 @@ We start by loading the fornix streamlines.
 import numpy as np
 from nibabel import trackvis as tv
 from dipy.data import get_data
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 fname = get_data('fornix')
 streams, hdr = tv.read(fname)
@@ -127,15 +127,20 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.ravel(clusters.centroids))
+colormap = actor.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = fvtk.ren()
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clusters_arclength.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='fornix_clusters_arclength.png', size=(600, 600))
+
+# Enables/disables interactive visualization
+interactive = False
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_clusters_arclength.png
@@ -206,7 +211,7 @@ We start by loading the fornix streamlines.
 import numpy as np
 from nibabel import trackvis as tv
 from dipy.data import get_data
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 fname = get_data('fornix')
 streams, hdr = tv.read(fname)
@@ -227,16 +232,17 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = fvtk.ren()
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clusters_cosine.png', size=(600, 600))
-
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='fornix_clusters_cosine.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_clusters_cosine.png
@@ -245,5 +251,12 @@ fvtk.record(ren, n_frames=1, out_path='fornix_clusters_cosine.png', size=(600, 6
    Showing the different clusters obtained by using the cosine metric.
 
 .. include:: ../links_names.inc
+
+References
+----------
+
+.. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
+   2012.
 
 """

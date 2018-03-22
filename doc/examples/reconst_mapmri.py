@@ -27,7 +27,7 @@ First import the necessary modules:
 """
 
 from dipy.reconst import mapmri
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
 from dipy.core.gradients import gradient_table
 import matplotlib.pyplot as plt
@@ -141,9 +141,11 @@ and also faster in practice [Fick2016a]_.
 
 We can then fit the MAPMRI model to the data.
 """
+
 mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
 mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
+
 """
 From the fitted models we will first illustrate the estimation of q-space
 indices. For completeness, we will compare the estimation using only Laplacian
@@ -175,6 +177,7 @@ cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
 
 plt.savefig('MAPMRI_maps_regularization.png')
+
 """
 .. figure:: MAPMRI_maps_regularization.png
    :align: center
@@ -383,11 +386,17 @@ print('odf.shape (%d, %d, %d, %d)' % odf.shape)
 Display the ODFs.
 """
 
-r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf, sphere, colormap='jet')
-sfu.RotateX(-90)
-fvtk.add(r, sfu)
-fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
+# Enables/disables interactive visualization
+interactive = False
+
+r = window.Renderer()
+sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
+sfu.display(y=0)
+r.add(sfu)
+window.record(r, out_path='odfs.png', size=(600, 600))
+if interactive:
+    window.show(r)
+
 """
 .. figure:: odfs.png
    :align: center
@@ -411,7 +420,7 @@ References
 .. [Hosseinbor2013] Hosseinbor et al. "Bessel fourier orientation
    reconstruction (bfor): an analytical diffusion propagator reconstruction
    for hybrid diffusion imaging and computation of q-space indices. NeuroImage
-   64, 650–670.
+   64, 650-670.
 
 .. [Fick2016b] Fick et al. "A sensitivity analysis of Q-space indices with
    respect to changes in axonal diameter, dispersion and tissue composition.

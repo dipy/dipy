@@ -65,16 +65,24 @@ with deconvolution ODFs and observe that with the deconvolved method it is
 easier to resolve the correct fiber directions because the ODF is sharper.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
-ren = fvtk.ren()
+# Enables/disables interactive visualization
+interactive = False
 
+
+ren = window.Renderer()
+
+# concatenate data as 4D array
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
+odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap='plasma')
 
-odf_actor = fvtk.sphere_funcs(odfs, sphere)
+odf_actor.display(y=0)
 odf_actor.RotateX(90)
-fvtk.add(ren, odf_actor)
-fvtk.record(ren, out_path='dsid.png', size=(300, 300))
+ren.add(odf_actor)
+window.record(ren, out_path='dsid.png', size=(300, 300))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: dsid.png

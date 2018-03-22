@@ -56,7 +56,7 @@ temp_3 = np.where(temp_3 < 20, 3, 1)
 square_1[99:157, 99:157, :] = temp_3
 
 
-def test_greyscale_image():
+def test_grayscale_image():
 
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
@@ -124,7 +124,7 @@ def test_greyscale_image():
     npt.assert_(icm_segmentation.min() == 0)
 
 
-def test_greyscale_iter():
+def test_grayscale_iter():
 
     max_iter = 15
     beta = np.float64(0.1)
@@ -195,11 +195,11 @@ def test_greyscale_iter():
         npt.assert_(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 1])
         npt.assert_(PLY[100, 100, 1, 3] > PLY[100, 100, 1, 2])
 
-        mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)        
+        mu_upd, sigmasq_upd = com.update_param(image_gauss, PLY, mu, nclasses)
         npt.assert_(mu_upd[0] >= 0.0)
         npt.assert_(mu_upd[1] >= 0.0)
         npt.assert_(mu_upd[2] >= 0.0)
-        npt.assert_(mu_upd[3] >= 0.0)    
+        npt.assert_(mu_upd[3] >= 0.0)
         npt.assert_(sigmasq_upd[0] >= 0.0)
         npt.assert_(sigmasq_upd[1] >= 0.0)
         npt.assert_(sigmasq_upd[2] >= 0.0)
@@ -294,7 +294,7 @@ def test_square_iter():
         npt.assert_(mu_upd[0] >= 0.0)
         npt.assert_(mu_upd[1] >= 0.0)
         npt.assert_(mu_upd[2] >= 0.0)
-        npt.assert_(mu_upd[3] >= 0.0)    
+        npt.assert_(mu_upd[3] >= 0.0)
         npt.assert_(sigmasq_upd[0] >= 0.0)
         npt.assert_(sigmasq_upd[1] >= 0.0)
         npt.assert_(sigmasq_upd[2] >= 0.0)

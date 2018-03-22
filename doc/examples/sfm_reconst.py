@@ -14,7 +14,7 @@ First, we import the modules we will use in this example:
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.direction.peaks as dpp
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 """
 For the purpose of this example, we will use the Stanford HARDI dataset (150
@@ -29,6 +29,9 @@ other examples.
 from dipy.data import read_stanford_hardi
 img, gtab = read_stanford_hardi()
 data = img.get_data()
+
+# Enables/disables interactive visualization
+interactive = False
 
 """
 Reconstruction of the fiber ODF in each voxel guides subsequent tracking
@@ -114,13 +117,15 @@ model on the sphere, and plot it.
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = fvtk.sphere_funcs(sf_odf, sphere, scale=1.3, norm=True)
+fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=1.3, colormap='plasma')
 
-ren = fvtk.ren()
-fvtk.add(ren, fodf_spheres)
+ren = window.Renderer()
+ren.add(fodf_spheres)
 
 print('Saving illustration as sf_odfs.png')
-fvtk.record(ren, out_path='sf_odfs.png', size=(1000, 1000))
+window.record(ren, out_path='sf_odfs.png', size=(1000, 1000))
+if interactive:
+    window.show(ren)
 
 """
 We can extract the peaks from the ODF, and plot these as well
@@ -134,22 +139,26 @@ sf_peaks = dpp.peaks_from_model(sf_model,
                                 return_sh=False)
 
 
-fvtk.clear(ren)
-fodf_peaks = fvtk.peaks(sf_peaks.peak_dirs, sf_peaks.peak_values, scale=1.3)
-fvtk.add(ren, fodf_peaks)
+window.clear(ren)
+fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values, scale=1.3)
+ren.add(fodf_peaks)
 
 print('Saving illustration as sf_peaks.png')
-fvtk.record(ren, out_path='sf_peaks.png', size=(1000, 1000))
+window.record(ren, out_path='sf_peaks.png', size=(1000, 1000))
+if interactive:
+    window.show(ren)
 
 """
 Finally, we plot both the peaks and the ODFs, overlayed:
 """
 
 fodf_spheres.GetProperty().SetOpacity(0.4)
-fvtk.add(ren, fodf_spheres)
+ren.add(fodf_spheres)
 
 print('Saving illustration as sf_both.png')
-fvtk.record(ren, out_path='sf_both.png', size=(1000, 1000))
+window.record(ren, out_path='sf_both.png', size=(1000, 1000))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: sf_both.png

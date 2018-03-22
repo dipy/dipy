@@ -20,6 +20,7 @@ model that is a child of OdfModel.
 """
 
 from reconst_csa import csapeaks, sphere
+import numpy as np
 
 """
 This time we will not use FA as input to EuDX but we will use GFA (generalized FA),
@@ -28,6 +29,7 @@ than 0.2.
 """
 
 from dipy.tracking.eudx import EuDX
+from dipy.tracking.streamline import Streamlines
 
 eu = EuDX(csapeaks.gfa,
           csapeaks.peak_indices[..., 0],
@@ -35,45 +37,46 @@ eu = EuDX(csapeaks.gfa,
           odf_vertices=sphere.vertices,
           a_low=0.2)
 
-csa_streamlines = [streamline for streamline in eu]
+csa_streamlines = Streamlines(eu)
 
 """
 Now that we have our streamlines in memory we can save the results on the disk.
 For this purpose we can use the TrackVis format (``*.trk``). First, we need to
-create a header.
+import the ``save_trk`` function.
 """
 
-import nibabel as nib
-
-hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = (2., 2., 2.)
-hdr['voxel_order'] = 'LAS'
-hdr['dim'] = csapeaks.gfa.shape[:3]
+from dipy.io.streamline import save_trk
 
 """
 Save the streamlines.
 """
 
-csa_streamlines_trk = ((sl, None, None) for sl in csa_streamlines)
-
 csa_sl_fname = 'csa_streamline.trk'
 
-nib.trackvis.write(csa_sl_fname, csa_streamlines_trk, hdr, points_space='voxel')
+save_trk(csa_sl_fname, csa_streamlines,
+         affine=np.eye(4),
+         vox_size=np.array([2., 2., 2.]),
+         shape=csapeaks.gfa.shape[:3])
 
 """
-Visualize the streamlines with fvtk (python vtk is required).
+Visualize the streamlines with `dipy.viz` module (python vtk is required).
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 
-r = fvtk.ren()
+# Enables/disables interactive visualization
+interactive = False
 
-fvtk.add(r, fvtk.line(csa_streamlines, line_colors(csa_streamlines)))
+ren = window.Renderer()
+
+ren.add(actor.line(csa_streamlines, line_colors(csa_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
 
-fvtk.record(r, n_frames=1, out_path='csa_tracking.png', size=(600, 600))
+window.record(ren, out_path='csa_tracking.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csa_tracking.png
@@ -92,15 +95,17 @@ eu = EuDX(csapeaks.peak_values,
           ang_thr=20.,
           a_low=0.6)
 
-csa_streamlines_mult_peaks = [streamline for streamline in eu]
+csa_streamlines_mult_peaks = Streamlines(eu)
 
-fvtk.clear(r)
+window.clear(ren)
 
-fvtk.add(r, fvtk.line(csa_streamlines_mult_peaks, line_colors(csa_streamlines_mult_peaks)))
+ren.add(actor.line(csa_streamlines_mult_peaks, line_colors(csa_streamlines_mult_peaks)))
 
 print('Saving illustration as csa_tracking_mpeaks.png')
 
-fvtk.record(r, n_frames=1, out_path='csa_tracking_mpeaks.png', size=(600, 600))
+window.record(ren, out_path='csa_tracking_mpeaks.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csa_tracking_mpeaks.png

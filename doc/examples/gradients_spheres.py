@@ -46,14 +46,21 @@ In ``hsph_updated`` we have the updated ``HemiSphere`` with the points nicely
 distributed on the hemisphere. Let's visualize them.
 """
 
-from dipy.viz import fvtk
-ren = fvtk.ren()
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
+
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.point(hsph_initial.vertices, fvtk.colors.red, point_radius=0.05))
-fvtk.add(ren, fvtk.point(hsph_updated.vertices, fvtk.colors.green, point_radius=0.05))
+
+ren.add(actor.point(hsph_initial.vertices, window.colors.red, point_radius=0.05))
+ren.add(actor.point(hsph_updated.vertices, window.colors.green, point_radius=0.05))
 
 print('Saving illustration as initial_vs_updated.png')
-fvtk.record(ren, out_path='initial_vs_updated.png', size=(300, 300))
+window.record(ren, out_path='initial_vs_updated.png', size=(300, 300))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: initial_vs_updated.png
@@ -64,13 +71,15 @@ fvtk.record(ren, out_path='initial_vs_updated.png', size=(300, 300))
 We can also create a sphere from the hemisphere and show it in the following way.
 """
 
-sph = Sphere(xyz = np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
+sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 
-fvtk.rm_all(ren)
-fvtk.add(ren, fvtk.point(sph.vertices, fvtk.colors.green, point_radius=0.05))
+window.rm_all(ren)
+ren.add(actor.point(sph.vertices, actor.colors.green, point_radius=0.05))
 
 print('Saving illustration as full_sphere.png')
-fvtk.record(ren, out_path='full_sphere.png', size=(300, 300))
+window.record(ren, out_path='full_sphere.png', size=(300, 300))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: full_sphere.png
@@ -156,23 +165,25 @@ Both b-values and b-vectors look correct. Let's now create the
 
 gtab = gradient_table(bvals, bvecs)
 
-fvtk.rm_all(ren)
+window.rm_all(ren)
 
 """
 We can also visualize the gradients. Let's color the first shell blue and
 the second shell cyan.
 """
 
-colors_b1000 = fvtk.colors.blue * np.ones(vertices.shape)
-colors_b2500 = fvtk.colors.cyan * np.ones(vertices.shape)
+colors_b1000 = window.colors.blue * np.ones(vertices.shape)
+colors_b2500 = window.colors.cyan * np.ones(vertices.shape)
 colors = np.vstack((colors_b1000, colors_b2500))
 colors = np.insert(colors, (0, colors.shape[0]), np.array([0, 0, 0]), axis=0)
 colors = np.ascontiguousarray(colors)
 
-fvtk.add(ren, fvtk.point(gtab.gradients, colors, point_radius=100))
+ren.add(actor.point(gtab.gradients, colors, point_radius=100))
 
 print('Saving illustration as gradients.png')
-fvtk.record(ren, out_path='gradients.png', size=(300, 300))
+window.record(ren, out_path='gradients.png', size=(300, 300))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: gradients.png

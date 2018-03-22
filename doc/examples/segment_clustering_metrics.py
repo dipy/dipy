@@ -50,7 +50,6 @@ saving some computational time.
 **Note:** Inputs must be sequences of same length.
 """
 
-from dipy.viz import fvtk
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
@@ -118,45 +117,6 @@ print("Cluster sizes:", map(len, clusters))
 
     Cluster sizes: [64, 191, 44, 1]
 
-.. _clustering-examples-MinimumAverageDirectFlipMetric:
-
-Minimum Average Direct Flip Metric (MDF)
-========================================
-**What:** It is the metric used in the QuickBundles algorithm [Garyfallidis12]_.
-Instances of `MinimumAverageDirectFlipMetric` first compute the
-direct distance *d1* by taking the average of the pointwise
-Euclidean distances between two sequences *of same length*. Reverse
-one of the two sequences and compute the flip distance *d2* using the same
-approach as for *d1*. Then, return the minimum between *d1* and *d2*.
-
-**When:** This metric mainly exists because it is used internally by
-`AveragePointwiseEuclideanMetric`.
-
-**Note:** Inputs must be sequences of same length.
-"""
-
-from dipy.segment.metric import MinimumAverageDirectFlipMetric
-
-# Get some streamlines.
-streamlines = get_streamlines()  # Previously defined.
-
-# Make sure our streamlines have the same number of points.
-from dipy.tracking.streamline import set_number_of_points
-streamlines = set_number_of_points(streamlines, nb_points=20)
-
-# Create the instance of `MinimumAverageDirectFlipMetric` to use.
-metric = MinimumAverageDirectFlipMetric()
-d = metric.dist(streamlines[0], streamlines[1])
-
-print("MDF distance between the first two streamlines: ", d)
-
-"""
-
-::
-
-    MDF distance between the first two streamlines: 11.681308709622542
-
-.. _clustering-examples-MinimumAverageDirectFlipMetric:
 
 Cosine Metric
 =============
@@ -171,10 +131,13 @@ orientation of a streamline.
 """
 
 import numpy as np
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
@@ -185,17 +148,19 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
 # Visualization
-ren = fvtk.ren()
-fvtk.clear(ren)
+ren = window.Renderer()
+window.clear(ren)
 ren.SetBackground(0, 0, 0)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='cosine_metric.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='cosine_metric.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: cosine_metric.png

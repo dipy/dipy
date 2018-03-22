@@ -147,7 +147,7 @@ where more than one population of white matter fibers crosses.
 """
 
 print('Computing anisotropy measures (FA, MD, RGB)')
-from dipy.reconst.dti import fractional_anisotropy, color_fa, lower_triangular
+from dipy.reconst.dti import fractional_anisotropy, color_fa
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -217,8 +217,12 @@ print('Computing tensor ellipsoids in a part of the splenium of the CC')
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
-from dipy.viz import fvtk
-ren = fvtk.ren()
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
+
+ren = window.Renderer()
 
 evals = tenfit.evals[13:43, 44:74, 28:29]
 evecs = tenfit.evecs[13:43, 44:74, 28:29]
@@ -232,10 +236,12 @@ contrast.
 cfa = RGB[13:43, 44:74, 28:29]
 cfa /= cfa.max()
 
-fvtk.add(ren, fvtk.tensor(evals, evecs, cfa, sphere))
+ren.add(actor.tensor_slicer(evals, evecs, scalar_colors=cfa, sphere=sphere, scale=0.3))
 
 print('Saving illustration as tensor_ellipsoids.png')
-fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
+window.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: tensor_ellipsoids.png
@@ -244,7 +250,7 @@ fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
    Tensor Ellipsoids.
 """
 
-fvtk.clear(ren)
+window.clear(ren)
 
 """
 Finally, we can visualize the tensor Orientation Distribution Functions
@@ -253,10 +259,12 @@ for the same area as we did with the ellipsoids.
 
 tensor_odfs = tenmodel.fit(data[20:50, 55:85, 38:39]).odf(sphere)
 
-fvtk.add(ren, fvtk.sphere_funcs(tensor_odfs, sphere, colormap=None))
-#fvtk.show(r)
+odf_actor = actor.odf_slicer(tensor_odfs, sphere=sphere, scale=0.5, colormap=None)
+ren.add(odf_actor)
 print('Saving illustration as tensor_odfs.png')
-fvtk.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
+window.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: tensor_odfs.png

@@ -63,7 +63,7 @@ plt.plot(signal, label='noiseless')
 
 plt.plot(signal_noisy, label='with noise')
 plt.legend()
-plt.show()
+#plt.show()
 plt.savefig('simulated_signal.png')
 
 """
@@ -85,17 +85,23 @@ sphere = sphere.subdivide(2)
 
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
-ren = fvtk.ren()
+# Enables/disables interactive visualization
+interactive = False
 
-odf_actor = fvtk.sphere_funcs(odf, sphere)
+ren = window.Renderer()
+
+odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap='plasma')
 odf_actor.RotateX(90)
 
-fvtk.add(ren, odf_actor)
+ren.add(odf_actor)
 
 print('Saving illustration as multi_tensor_simulation')
-fvtk.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
+window.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
+if interactive:
+    window.show(ren)
+
 
 """
 .. figure:: multi_tensor_simulation.png

@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as nt
-from nose.tools import assert_true, assert_false
+from nose.tools import assert_equal, assert_false
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
@@ -24,9 +24,9 @@ def test_mask():
         mask_path = mask_flow.last_generated_outputs['out_mask']
         mask_img = nib.load(mask_path)
         mask_data = mask_img.get_data()
-        assert_true(mask_data.shape == volume.shape)
+        assert_equal(mask_data.shape, volume.shape)
         nt.assert_array_almost_equal(mask_img.affine, vol_img.affine)
-        assert_true(mask_data.dtype == np.uint8)
+        assert_equal(mask_data.dtype, np.uint8)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ from dipy.sims.voxel import (MultiTensor,
                              single_tensor,
                              cylinders_and_ball_soderman)
 from scipy.special import gamma
-from scipy.misc import factorial
+from math import factorial
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
 import scipy.integrate as integrate
@@ -29,7 +29,6 @@ def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
     return f
-
 
 def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
