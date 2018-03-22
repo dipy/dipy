@@ -1,10 +1,9 @@
 .. image:: doc/_static/dipy-logo.png
+  :height: 180px
   :target: http://dipy.org
-     :alt: DIPY - Diffusion Imaging in Python
+  :alt: DIPY - Diffusion Imaging in Python
 
-======
- DIPY
-======
+|
 
 .. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
   :target: https://travis-ci.org/nipy/dipy
