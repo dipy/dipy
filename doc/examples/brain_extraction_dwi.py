@@ -3,7 +3,7 @@
 Brain segmentation with median_otsu
 ===================================
 
-We show how to extract brain information and mask from a b0 image using dipy_'s
+We show how to extract brain information and mask from a b0 image using DIPY_'s
 ``segment.mask`` module.
 
 First import the necessary modules:
