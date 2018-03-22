@@ -520,16 +520,14 @@ def test_unlist_relist_streamlines():
 def test_deform_streamlines():
     # streamlines needs to be a list of streamlines
     A = np.array([[1, 2, 3], [1, 2, 3.]])
-    streamlines = [A for i in range(10)]
 
     # Create Random deformation field
-    deformation_field = np.empty((8, 8, 8, 3))
-    shape = deformation_field.shape
-    for i in range(shape[0]):
-        for j in range(shape[1]):
-            for k in range(shape[2]):
-                deformation_field[i][j][k] = np.random.randn(3)
-
+    deformation_field = np.random.randn(200, 200, 200, 3)
+    # shape = deformation_field.shape
+    # for i in range(shape[0]):
+    #     for j in range(shape[1]):
+    #         for k in range(shape[2]):
+    #             deformation_field[i][j][k] = np.random.randn(3)
     # Specify stream2grid and grid2world
     stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
                             [0, np.random.randn(1)[0], 0, 0],
@@ -541,9 +539,11 @@ def test_deform_streamlines():
                            [0, 0, 0, 1]])
     stream2world = np.dot(stream2grid, grid2world)
 
-    # Deform streamlines
+    # Deform streamlines (let two grid spaces be the same for simplicity)
     new_streamlines = deform_streamlines(streamlines,
                                          deformation_field,
+                                         stream2grid,
+                                         grid2world,
                                          stream2grid,
                                          grid2world)
 
@@ -556,22 +556,15 @@ def test_deform_streamlines():
                                                   stream2world)
 
     # Subtract displacements from new_streamlines in world space
-    orig_streamlines_world = []
-    for i, s in enumerate(new_streamlines_world):
-        new_s = []
-        for j, pt in enumerate(s):
-            new_pt = np.array([pt[0]-displacements[i][j][0],
-                               pt[1]-displacements[i][j][1],
-                               pt[2]-displacements[i][j][2]])
-            new_s.append(new_pt)
-        orig_streamlines_world.append(np.array(new_s))
+    orig_streamlines_world = list(np.subtract(new_streamlines_world,
+                                              displacements))
 
     # Put orig_streamlines_world into voxmm
     orig_streamlines = transform_streamlines(orig_streamlines_world,
                                              np.linalg.inv(stream2world))
-
     # All close because of floating pt inprecision
-    assert_allclose(streamlines, orig_streamlines, rtol=1e-10, atol=0)
+    for o, s in zip(orig_streamlines, streamlines):
+        assert_allclose(s, o, rtol=1e-10, atol=0)
 
 
 def test_center_and_transform():
