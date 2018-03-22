@@ -175,8 +175,8 @@ def slicer(data, affine=None, value_range=None, opacity=1.,
             im_actor = ImageActor()
             im_actor.input_connection(self.output)
             im_actor.SetDisplayExtent(*self.GetDisplayExtent())
-            im_actor.opacity(opacity)
-            im_actor.tolerance(picking_tol)
+            im_actor.opacity(self.GetOpacity())
+            im_actor.tolerance(self.picker.GetTolerance())
             if interpolation == 'nearest':
                 im_actor.SetInterpolate(False)
             else:
