@@ -213,7 +213,7 @@ if interactive:
 
    CSD ODFs.
 
-In Dipy we also provide tools for finding the peak directions (maxima) of the
+In DIPY we also provide tools for finding the peak directions (maxima) of the
 ODFs. For this purpose we recommend using ``peaks_from_model``.
 """
 

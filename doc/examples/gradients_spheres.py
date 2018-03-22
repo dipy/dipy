@@ -4,7 +4,7 @@ Gradients and Spheres
 =====================
 
 This example shows how you can create gradient tables and sphere objects using
-dipy_.
+DIPY_.
 
 Usually, as we saw in :ref:`example_quick_start`, you load your b-values and
 b-vectors from disk and then you can create your own gradient table. But
