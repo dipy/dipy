@@ -53,63 +53,6 @@ cdef void c_arclengths_from_arraysequence(Streamline points,
 
             arclengths[i] += sqrt(sum_dn_sqr)
 
-cdef void c_add_displacements(Streamline streamline,
-                              Streamline dField,
-                              Streamline new_streamline) nogil:
-
-    cdef:
-        np.npy_intp i
-
-    for i in range(streamline.shape[0]):
-        new_streamline[i, 0] = streamline[i, 0] + dField[i, 0]
-        new_streamline[i, 1] = streamline[i, 1] + dField[i, 1]
-        new_streamline[i, 2] = streamline[i, 2] + dField[i, 2]
-
-
-def add_displacements(streamlines, displacements):
-    ''' Adds warpfield displacements to streamlines
-
-    Parameters
-    ----------
-    streamlines : list of 2D ndarrays of shape[-1]==3
-    displacements : list of 2D ndarrays of shape[-1]==3
-
-    Returns
-    -------
-    new_streamlines : list of 2D ndarrays of shape[-1]==3
-
-    '''
-    new_streamlines = []
-    cdef np.npy_intp i
-    for i in range(len(streamlines)):
-        dtype = streamlines[i].dtype
-        # HACK: To avoid memleaks we have to recast with astype(dtype).
-        streamline = streamlines[i].astype(dtype)
-        shape = streamline.shape
-        displacement = np.array(displacements[i]).astype(dtype)
-
-        if dtype != np.float32 and dtype != np.float64:
-            if dtype == np.int64 or dtype == np.uint64:
-                dtype = np.float64
-            else:
-                dtype = np.float32
-            streamline = streamline.astype(dtype)
-
-        new_streamline = np.empty(shape, dtype)
-
-        if dtype == np.float32:
-            c_add_displacements[float2d](streamline,
-                                         displacement,
-                                         new_streamline)
-        else:
-            c_add_displacements[double2d](streamline,
-                                          displacement,
-                                          new_streamline)
-        # HACK: To avoid memleaks we have to recast with astype(dtype).
-        new_streamlines.append(new_streamline.astype(dtype))
-
-    return new_streamlines
-
 
 def length(streamlines):
     ''' Euclidean length of streamlines

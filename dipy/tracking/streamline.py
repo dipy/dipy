@@ -232,7 +232,12 @@ def center_streamlines(streamlines):
     return [s - center for s in streamlines], center
 
 
-def deform_streamlines(streamlines, deform_field, streams2grid, grid2world):
+def deform_streamlines(streamlines,
+                       deform_field,
+                       stream_to_current_grid,
+                       current_grid_to_world,
+                       stream_to_ref_grid,
+                       ref_grid_to_world):
     """ Apply deformation field to streamlines
 
     Parameters
@@ -241,10 +246,14 @@ def deform_streamlines(streamlines, deform_field, streams2grid, grid2world):
         List of 2D ndarrays of shape[-1]==3
     deform_field : 4D numpy array
         x,y,z displacements stored in volume, shape[-1]==3
-    streams2grid : array, (4,4)
-        transform matrix voxmm space to image space
-    grid2world : array (4,4)
-        transform matrix image space to world coordinates
+    stream_to_current_grid : array, (4, 4)
+        transform matrix voxmm space to original grid space
+    current_grid_to_world : array (4, 4)
+        transform matrix original grid space to world coordinates
+    stream_to_ref_grid : array (4, 4)
+        transform matrix voxmm space to new grid space
+    ref_grid_to_world : array(4, 4)
+        transform matrix new grid space to world coordinates
 
     Returns
     -------
@@ -255,14 +264,16 @@ def deform_streamlines(streamlines, deform_field, streams2grid, grid2world):
     if deform_field.shape[-1] != 3:
         raise ValueError("Last dimension of deform_field needs shape==3")
 
-    streams_in_grid = transform_streamlines(streamlines, streams2grid)
-    displacements = values_from_volume(deform_field, streams_in_grid)
-    streams_in_world = transform_streamlines(streams_in_grid, grid2world)
-    new_streams_in_world = add_displacements(streams_in_world, displacements)
+    stream_in_curr_grid = transform_streamlines(streamlines,
+                                                stream_to_current_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid)
+    stream_in_world = transform_streamlines(stream_in_curr_grid,
+                                            current_grid_to_world)
+    new_streams_in_world = list(np.add(displacements, stream_in_world))
     new_streams_grid = transform_streamlines(new_streams_in_world,
-                                             np.linalg.inv(grid2world))
+                                             np.linalg.inv(ref_grid_to_world))
     new_streamlines = transform_streamlines(new_streams_grid,
-                                            np.linalg.inv(streams2grid))
+                                            np.linalg.inv(stream_to_ref_grid))
     return new_streamlines
 
 
