@@ -97,16 +97,17 @@ execute the tracking
 """
 
 from dipy.tracking.local import LocalTracking
-streamlines = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
+from dipy.tracking.streamline import Streamlines
+streamlines_generator = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
 
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 """
 Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
@@ -115,6 +116,9 @@ t1 = read_stanford_t1()
 t1_data = t1.get_data()
 t1_aff = t1.affine
 color = line_colors(streamlines)
+
+# Enables/disables interactive visualization
+interactive = True
 
 """
 To speed up visualization, we will select a random sub-set of streamlines to
@@ -126,23 +130,24 @@ demonstration purposes, we subselect 900 streamlines.
 from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
-streamlines_actor = fvtk.streamtube(
+streamlines_actor = actor.streamtube(
     list(move_streamlines(plot_streamlines, inv(t1_aff))),
     line_colors(streamlines), linewidth=0.1)
 
-vol_actor = fvtk.slicer(t1_data)
+vol_actor = actor.slicer(t1_data)
 
 vol_actor.display(40, None, None)
 vol_actor2 = vol_actor.copy()
 vol_actor2.display(None, None, 35)
 
-ren = fvtk.ren()
-fvtk.add(ren, streamlines_actor)
-fvtk.add(ren, vol_actor)
-fvtk.add(ren, vol_actor2)
+ren = window.Renderer()
+ren.add(streamlines_actor)
+ren.add(vol_actor)
+ren.add(vol_actor2)
 
-fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
-            size=(800, 800))
+window.record(ren, out_path='sfm_streamlines.png', size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: sfm_streamlines.png

@@ -140,10 +140,11 @@ direction getter along with the classifier and seeds as input.
 # Perform tracking using Local Tracking
 from dipy.tracking.local import LocalTracking
 
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
-# Compute streamlines and store as a list.
-streamlines = list(streamlines)
+# Compute streamlines.
+from dipy.tracking.streamline import Streamlines
+streamlines = Streamlines(streamlines_generator)
 
 """
 In order to select only the fibers that enter into the LGN, another ROI is
@@ -159,11 +160,8 @@ mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 # Select all the fibers that enter the LGN and discard all others
 filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8,
                                   affine=affine)
-sfil = []
-for i in range(len(streamlines)):
-    if filtered_fibers2[i]:
-        sfil.append(streamlines[i])
-streamlines = list(sfil)
+
+streamlines = Streamlines(filtered_fibers2)
 
 """
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
@@ -218,34 +216,40 @@ after the cleaning procedure via RFBC thresholding (see
 """
 
 # Visualize the results
-from dipy.viz import fvtk, actor
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Create renderer
-ren = fvtk.ren()
+ren = window.Renderer()
 
 # Original lines colored by LFBC
 lineactor = actor.line(fbc_sl_orig, clrs_orig, linewidth=0.2)
-fvtk.add(ren, lineactor)
+ren.add(lineactor)
 
 # Horizontal (axial) slice of T1 data
-vol_actor1 = fvtk.slicer(t1_data, affine=affine)
-vol_actor1.display(None, None, 20)
-fvtk.add(ren, vol_actor1)
+vol_actor1 = actor.slicer(t1_data, affine=affine)
+vol_actor1.display(z=20)
+ren.add(vol_actor1)
 
 # Vertical (sagittal) slice of T1 data
-vol_actor2 = fvtk.slicer(t1_data, affine=affine)
-vol_actor2.display(35, None, None)
-fvtk.add(ren, vol_actor2)
+vol_actor2 = actor.slicer(t1_data, affine=affine)
+vol_actor2.display(x=35)
+ren.add(vol_actor2)
 
 # Show original fibers
-fvtk.camera(ren, pos=(-264, 285, 155), focal=(0, -14, 9), viewup=(0, 0, 1),
-            verbose=False)
-fvtk.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
+ren.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+window.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 # Show thresholded fibers
-fvtk.rm(ren, lineactor)
-fvtk.add(ren, actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
-fvtk.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
+ren.rm(lineactor)
+ren.add(actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
+window.record(ren, n_frames=1, out_path='OR_after.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 .. _optic_radiation_before_cleaning:

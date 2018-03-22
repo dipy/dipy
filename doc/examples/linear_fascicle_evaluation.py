@@ -58,26 +58,32 @@ anatomical structure of this brain:
 """
 
 from dipy.viz.colormap import line_colors
-from dipy.viz import fvtk
-candidate_streamlines_actor = fvtk.streamtube(candidate_sl,
-                                       line_colors(candidate_sl))
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
-                            opacities=[1.])
+from dipy.viz import window, actor
 
-vol_actor = fvtk.slicer(t1_data)
+# Enables/disables interactive visualization
+interactive = False
 
-vol_actor.display(40, None, None)
+candidate_streamlines_actor = actor.streamtube(candidate_sl, line_colors(candidate_sl))
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
+                                      opacity=0.5)
+
+vol_actor = actor.slicer(t1_data)
+
+vol_actor.display(x=40)
 vol_actor2 = vol_actor.copy()
-vol_actor2.display(None, None, 35)
+vol_actor2.display(z=35)
 
 # Add display objects to canvas
-ren = fvtk.ren()
-fvtk.add(ren, candidate_streamlines_actor)
-fvtk.add(ren, cc_ROI_actor)
-fvtk.add(ren, vol_actor)
-fvtk.add(ren, vol_actor2)
-fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
-            size=(800, 800))
+ren = window.Renderer()
+ren.add(candidate_streamlines_actor)
+ren.add(cc_ROI_actor)
+ren.add(vol_actor)
+ren.add(vol_actor2)
+window.record(n_frames=1,
+              out_path='life_candidates.png',
+              size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 
@@ -171,13 +177,15 @@ optimized group of streamlines:
 
 """
 
-optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta>0)[0]])
-ren = fvtk.ren()
-fvtk.add(ren, fvtk.streamtube(optimized_sl, line_colors(optimized_sl)))
-fvtk.add(ren, cc_ROI_actor)
-fvtk.add(ren, vol_actor)
-fvtk.record(ren, n_frames=1, out_path='life_optimized.png',
-            size=(800, 800))
+optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
+ren = window.Renderer()
+ren.add(actor.streamtube(optimized_sl, line_colors(optimized_sl)))
+ren.add(cc_ROI_actor)
+ren.add(vol_actor)
+window.record(ren, n_frames=1, out_path='life_optimized.png',
+              size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 
@@ -231,8 +239,8 @@ voxel.
 
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
 pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
-                                     (fiber_fit.vox_coords.shape[0],
-                                      np.sum(~gtab.b0s_mask)))
+                           (fiber_fit.vox_coords.shape[0],
+                            np.sum(~gtab.b0s_mask)))
 mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
 S0 = fiber_fit.b0_signal
 
@@ -261,12 +269,14 @@ without the model fit.
 
 fig, ax = plt.subplots(1)
 ax.hist(mean_rmse - model_rmse, bins=100, histtype='step')
-ax.text(0.2, 0.9,'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
-     horizontalalignment='left',
-     verticalalignment='center', transform=ax.transAxes)
-ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
-     horizontalalignment='left',
-     verticalalignment='center', transform=ax.transAxes)
+ax.text(0.2, 0.9, 'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
+        horizontalalignment='left',
+        verticalalignment='center',
+        transform=ax.transAxes)
+ax.text(0.2, 0.8, 'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
+        horizontalalignment='left',
+        verticalalignment='center',
+        transform=ax.transAxes)
 ax.set_xlabel('RMS Error')
 ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
@@ -305,9 +315,9 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
 ax = AxesGrid(fig, 111,
-              nrows_ncols = (1, 3),
-              label_mode = "1",
-              share_all = True,
+              nrows_ncols=(1, 3),
+              label_mode="1",
+              share_all=True,
               cbar_location="top",
               cbar_mode="each",
               cbar_size="10%",

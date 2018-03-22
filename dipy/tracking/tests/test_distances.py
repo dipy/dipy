@@ -64,7 +64,7 @@ def test_LSCv2():
     from dipy.data import get_data
     from nibabel import trackvis as tv
     try:
-        from dipy.viz import fvtk
+        from dipy.viz import window, actor
     except ImportError as e:
         raise nose.plugins.skip.SkipTest(
             'Fails to import dipy.viz due to %s' % str(e))
@@ -80,15 +80,15 @@ def test_LSCv2():
 
     """
 
-    r = fvtk.ren()
+    r = window.Renderer()
     colors = np.zeros((len(C), 3))
     for c in C:
         color = np.random.rand(3)
         for i in C[c]['indices']:
-            fvtk.add(r, fvtk.line(T3[i], color))
+            r.add(actor.line(T3[i], color))
         colors[c] = color
-    fvtk.show(r)
-    fvtk.clear(r)
+    window.show(r)
+    window.clear(r)
     skeleton = []
 
     def width(w):
@@ -102,12 +102,12 @@ def test_LSCv2():
         bundle = [T3[i] for i in C[c]['indices']]
         si,s = pf.most_similar_track_mam(bundle, 'avg')
         skeleton.append(bundle[si])
-        fvtk.label(r,text = str(len(bundle)), pos=(bundle[si][-1]),
-                   scale=(2, 2, 2))
-        fvtk.add(r, fvtk.line(skeleton, colors, opacity=1,
-                              linewidth = width(len(bundle)/10.)))
+        actor.label(r,text = str(len(bundle)), pos=(bundle[si][-1]),
+                    scale=(2, 2, 2))
+        r.add(actor.line(skeleton, colors, opacity=1,
+                         linewidth = width(len(bundle)/10.)))
 
-    fvtk.show(r)
+    window.show(r)
 
     """
 

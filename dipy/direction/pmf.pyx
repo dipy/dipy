@@ -29,7 +29,11 @@ cdef class SimplePmfGen(PmfGen):
         self.out = np.empty(pmf_array.shape[3])
 
     cdef double[:] get_pmf_c(self, double* point) nogil:
-        trilinear_interpolate4d_c(self.pmf_array, point, self.out)
+        cdef:
+            size_t len_pmf = self.out.shape[0]
+        if trilinear_interpolate4d_c(self.pmf_array, point, self.out):
+            for i in range(len_pmf):
+                self.out[i] = 0.0
         return self.out
 
 
@@ -62,13 +66,16 @@ cdef class SHCoeffPmfGen(PmfGen):
             size_t len_B = self.B.shape[1]
             double _sum
 
-        trilinear_interpolate4d_c(self.shcoeff, point, self.coeff)
-        for i in range(len_pmf):
-            _sum = 0
-            for j in range(len_B):
-                _sum += self.B[i, j] * self.coeff[j]
-            self.pmf[i] = _sum
-            if self.pmf[i] < 0.0:
+        if trilinear_interpolate4d_c(self.shcoeff, point, self.coeff):
+            for i in range(len_pmf):
                 self.pmf[i] = 0.0
+        else:
+            for i in range(len_pmf):
+                _sum = 0
+                for j in range(len_B):
+                    _sum += self.B[i, j] * self.coeff[j]
+                self.pmf[i] = _sum
+                if self.pmf[i] < 0.0:
+                    self.pmf[i] = 0.0
 
         return self.pmf

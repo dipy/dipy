@@ -15,7 +15,6 @@ tracking.
 """
 
 import os
-import sys
 import numpy as np
 import nibabel as nib
 
@@ -70,51 +69,47 @@ the peaks and odf_vertices are the vertices of the input sphere.
 """
 
 from dipy.tracking.eudx import EuDX
+from dipy.tracking.streamline import Streamlines
 
 eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000, odf_vertices = sphere.vertices, a_low=0.2)
 
-tensor_streamlines = [streamline for streamline in eu]
+tensor_streamlines = Streamlines(eu)
 
 """
 We can now save the results in the disk. For this purpose we can use the
-TrackVis format (``*.trk``). First, we need to create a header.
+TrackVis format (``*.trk``). First, we need to import ``save_trk`` function.
 """
 
-hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = fa_img.header.get_zooms()[:3]
-hdr['voxel_order'] = 'LAS'
-hdr['dim'] = FA.shape
-
-"""
-Then we need to input the streamlines in the way that Trackvis format expects them.
-"""
-
-tensor_streamlines_trk = ((sl, None, None) for sl in tensor_streamlines)
-
-ten_sl_fname = 'tensor_streamlines.trk'
+from dipy.io.streamline import save_trk
 
 """
 Save the streamlines.
 """
 
-nib.trackvis.write(ten_sl_fname, tensor_streamlines_trk, hdr, points_space='voxel')
+ten_sl_fname = 'tensor_streamlines.trk'
+
+save_trk(ten_sl_fname, tensor_streamlines,
+         affine=np.eye(4),
+         vox_size=fa_img.header.get_zooms()[:3],
+         shape=FA.shape)
 
 """
 If you don't want to use Trackvis to visualize the file you can use our
-lightweight `fvtk` module.
+lightweight `dipy.viz` module.
 """
 
 try:
-    from dipy.viz import fvtk
+    from dipy.viz import window, actor
 except ImportError:
     raise ImportError('Python vtk module is not installed')
+    import sys
     sys.exit()
 
 """
 Create a scene.
 """
 
-ren = fvtk.ren()
+ren = window.Renderer()
 
 """
 Every streamline will be coloured according to its orientation
@@ -123,16 +118,20 @@ Every streamline will be coloured according to its orientation
 from dipy.viz.colormap import line_colors
 
 """
-fvtk.line adds a streamline actor for streamline visualization
-and fvtk.add adds this actor in the scene
+`actor.line` creates a streamline actor for streamline visualization
+and `ren.add` adds this actor to the scene
 """
 
-fvtk.add(ren, fvtk.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
+ren.add(actor.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
 
 ren.SetBackground(1, 1, 1)
-fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
+window.record(ren, out_path='tensor_tracks.png', size=(600, 600))
+# Enables/disables interactive visualization
+interactive = False
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: tensor_tracks.png

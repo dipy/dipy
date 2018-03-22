@@ -77,18 +77,26 @@ We can double-check that we have a good response function by visualizing the
 response function's ODF. Here is how you would do that:
 """
 
-from dipy.viz import fvtk
-ren = fvtk.ren()
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
+
+ren = window.Renderer()
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 from dipy.sims.voxel import single_tensor_odf
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
-response_actor = fvtk.sphere_funcs(response_odf, sphere)
-fvtk.add(ren, response_actor)
+# transform our data from 1D to 4D
+response_odf = response_odf[None, None, None, :]
+response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap='plasma')
+ren.add(response_actor)
 print('Saving illustration as csd_response.png')
-fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
+window.record(ren, out_path='csd_response.png', size=(200, 200))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csd_response.png
@@ -98,7 +106,7 @@ fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 
 """
 
-fvtk.rm(ren, response_actor)
+ren.rm(response_actor)
 
 """
 Depending on the dataset, FA threshold may not be the best way to find the
@@ -143,13 +151,15 @@ like  a pancake:
 """
 
 response_signal = response.on_sphere(sphere)
-response_actor = fvtk.sphere_funcs(response_signal, sphere)
+response_actor = actor.odf_slicer(response_signal, sphere=sphere, colormap='plasma')
 
-ren = fvtk.ren()
+ren = window.Renderer()
 
-fvtk.add(ren, response_actor)
+ren.add(response_actor)
 print('Saving illustration as csd_recursive_response.png')
-fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
+window.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csd_recursive_response.png
@@ -159,7 +169,7 @@ fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
 
 """
 
-fvtk.rm(ren, response_actor)
+ren.rm(response_actor)
 
 """
 Now, that we have the response function, we are ready to start the deconvolution
@@ -186,12 +196,14 @@ csd_odf = csd_fit.odf(sphere)
 Here we visualize only a 30x30 region.
 """
 
-fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
+fodf_spheres = actor.odf_slicer(csd_odf, sphere=sphere, scale=1.3, norm=False, colormap='plasma')
 
-fvtk.add(ren, fodf_spheres)
+ren.add(fodf_spheres)
 
 print('Saving illustration as csd_odfs.png')
-fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
+window.record(ren, out_path='csd_odfs.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csd_odfs.png
@@ -212,12 +224,14 @@ csd_peaks = peaks_from_model(model=csd_model,
                              min_separation_angle=25,
                              parallel=True)
 
-fvtk.clear(ren)
-fodf_peaks = fvtk.peaks(csd_peaks.peak_dirs, csd_peaks.peak_values, scale=1.3)
-fvtk.add(ren, fodf_peaks)
+window.clear(ren)
+fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values, scale=1.3)
+ren.add(fodf_peaks)
 
 print('Saving illustration as csd_peaks.png')
-fvtk.record(ren, out_path='csd_peaks.png', size=(600, 600))
+window.record(ren, out_path='csd_peaks.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csd_peaks.png
@@ -230,11 +244,12 @@ We can finally visualize both the ODFs and peaks in the same space.
 
 fodf_spheres.GetProperty().SetOpacity(0.4)
 
-fvtk.add(ren, fodf_spheres)
+ren.add(fodf_spheres)
 
 print('Saving illustration as csd_both.png')
-fvtk.record(ren, out_path='csd_both.png', size=(600, 600))
-
+window.record(ren, out_path='csd_both.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: csd_both.png

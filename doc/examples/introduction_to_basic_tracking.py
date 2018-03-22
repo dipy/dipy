@@ -90,33 +90,37 @@ seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
 
 """
 Finally, we can bring it all together using ``LocalTracking``. We will then
-display the resulting streamlines using the ``fvtk`` module.
+display the resulting streamlines using the ``dipy.viz`` package.
 """
 
 from dipy.tracking.local import LocalTracking
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
+from dipy.tracking.streamline import Streamlines
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
 
-# Compute streamlines and store as a list.
-streamlines = list(streamlines)
+# Generate streamlines object
+streamlines = Streamlines(streamlines_generator)
 
 # Prepare the display objects.
 color = line_colors(streamlines)
 
-if fvtk.have_vtk:
-    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
+if window.have_vtk:
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
 
     # Create the 3D display.
-    r = fvtk.ren()
-    fvtk.add(r, streamlines_actor)
+    r = window.Renderer()
+    r.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    # fvtk.show
-    fvtk.record(r, n_frames=1, out_path='deterministic.png',
-                size=(800, 800))
+    window.record(r, n_frames=1, out_path='deterministic.png', size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
 .. figure:: deterministic.png
@@ -131,8 +135,10 @@ file so it can be loaded into other software for visualization or further
 analysis.
 """
 
-from dipy.io.trackvis import save_trk
-save_trk("CSA_detr.trk", streamlines, affine, labels.shape)
+from dipy.io.streamline import save_trk
+save_trk("CSA_detr.trk", streamlines, affine,
+         shape=labels.shape,
+         vox_size=labels_img.header.get_zooms())
 
 """
 Next let's try some probabilistic fiber tracking. For this, we'll be using the
@@ -187,25 +193,23 @@ Next we can pass this direction getter, along with the ``classifier`` and
 callosum.
 """
 
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine,
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                             step_size=.5, max_cross=1)
 
-# Compute streamlines and store as a list.
-streamlines = list(streamlines)
+# Generate streamlines object.
+streamlines = Streamlines(streamlines_generator)
 
-# Prepare the display objects.
-color = line_colors(streamlines)
-
-if fvtk.have_vtk:
-    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
+if window.have_vtk:
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
 
     # Create the 3D display.
-    r = fvtk.ren()
-    fvtk.add(r, streamlines_actor)
+    r = window.Renderer()
+    r.add(streamlines_actor)
 
     # Save still images for this static example.
-    fvtk.record(r, n_frames=1, out_path='probabilistic.png',
-                size=(800, 800))
+    window.record(r, n_frames=1, out_path='probabilistic.png', size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
 .. figure:: probabilistic.png
@@ -214,4 +218,6 @@ if fvtk.have_vtk:
    Corpus callosum probabilistic tracking.
 """
 
-save_trk("CSD_prob.trk", streamlines, affine, labels.shape)
+save_trk("CSD_prob.trk", streamlines, affine,
+         shape=labels.shape,
+         vox_size=labels_img.header.get_zooms())
