@@ -89,6 +89,8 @@ b0_mask_crop, mask_crop = median_otsu(data, 4, 4, autocrop=True)
 
 """
 Saving cropped data using nibabel as demonstrated previously.
+
+.. include:: ../links_names.inc
 """
 
 mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.affine)
@@ -97,8 +99,3 @@ b0_img_crop = nib.Nifti1Image(
 nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
 nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')
 
-"""
-
-.. include:: ../links_names.inc
-
-"""
