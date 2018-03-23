@@ -10,7 +10,6 @@ from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.streamlinespeed import compress_streamlines
-from dipy.tracking.streamlinespeed import add_displacements
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
