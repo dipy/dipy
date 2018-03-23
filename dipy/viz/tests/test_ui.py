@@ -84,7 +84,7 @@ class EventCounter(object):
                              err_msg=msg.format(event))
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_broken_ui_component():
     class BrokenUI(UI):
@@ -97,7 +97,7 @@ def test_broken_ui_component():
     npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_wrong_interactor_style():
     panel = ui.Panel2D(center=(440, 90), size=(300, 150))
@@ -107,7 +107,7 @@ def test_wrong_interactor_style():
     npt.assert_raises(TypeError, panel.add_to_renderer, dummy_renderer)
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_rectangle_2d():
     window_size = (700, 700)
@@ -141,7 +141,7 @@ def test_rectangle_2d():
     assert report.objects == 0
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_button_panel(recording=False):
     filename = "test_ui_button_panel"
@@ -223,7 +223,7 @@ def test_ui_button_panel(recording=False):
         event_counter.check_counts(expected)
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_textbox(recording=False):
     filename = "test_ui_textbox"
@@ -258,7 +258,7 @@ def test_ui_textbox(recording=False):
         event_counter.check_counts(expected)
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_text_block_2d():
     text_block = ui.TextBlock2D()
@@ -291,7 +291,7 @@ def test_text_block_2d():
         text_block.vertical_justification = "left"
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_text_block_2d_justification():
     window_size = (700, 700)
@@ -378,7 +378,7 @@ def test_text_block_2d_justification():
         npt.assert_array_almost_equal(arr, expected["arr_0"])
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_line_slider_2d(recording=False):
     filename = "test_ui_line_slider_2d"
@@ -410,7 +410,7 @@ def test_ui_line_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_disk_slider_2d(recording=False):
     filename = "test_ui_disk_slider_2d"
@@ -449,7 +449,7 @@ def test_ui_disk_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
-@pytest.mark.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_file_select_menu_2d(recording=False):
     filename = "test_ui_file_select_menu_2d"

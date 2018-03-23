@@ -38,7 +38,7 @@ def setup():
     data.lambdaL = 1e-12
 
 
-@pytest.mark.skipif(not have_cvxpy)
+@pytest.mark.skipif(not have_cvxpy, reason="Requires cvxpy")
 def test_shore_positive_constrain():
     asm = ShoreModel(data.gtab,
                      radial_order=data.radial_order,
@@ -62,7 +62,7 @@ def test_shore_fitting_no_constrain_e0():
     assert_almost_equal(compute_e0(asmfit), 1)
 
 
-@pytest.mark.skipif(not have_cvxpy)
+@pytest.mark.skipif(not have_cvxpy, reason="Requires cvxpy")
 def test_shore_fitting_constrain_e0():
     asm = ShoreModel(data.gtab, radial_order=data.radial_order,
                      zeta=data.zeta, lambdaN=data.lambdaN,

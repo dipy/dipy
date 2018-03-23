@@ -37,7 +37,7 @@ def setup():
     data.sphere = sphere.vertices[0:int(sphere.vertices.shape[0]/2), :]
 
 
-@pytest.mark.skipif(not have_cvxpy)
+@pytest.mark.skipif(not have_cvxpy, reason="Requires cvxpy")
 def test_forecast_positive_constrain():
     fm = ForecastModel(data.gtab,
                        sh_order=data.sh_order,

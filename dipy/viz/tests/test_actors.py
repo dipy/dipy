@@ -34,8 +34,8 @@ else:
     skip_slicer = False
 
 
-@pytest.mark.skipif(skip_slicer)
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(skip_slicer, reason="Slicer Skipped")
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_slicer():
     renderer = window.renderer()
@@ -160,7 +160,7 @@ def test_slicer():
                            np.array(slicer.shape))
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_contour_from_roi():
 
@@ -261,7 +261,7 @@ def test_contour_from_roi():
     # window.show(r2)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_streamtube_and_line_actors():
     renderer = window.renderer()
@@ -306,7 +306,7 @@ def test_streamtube_and_line_actors():
     npt.assert_equal(report.colors_found, [True, True])
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_bundle_maps():
     renderer = window.renderer()
@@ -380,7 +380,7 @@ def test_bundle_maps():
     actor.line(bundle, colors=colors)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_odf_slicer(interactive=False):
 
@@ -506,7 +506,7 @@ def test_odf_slicer(interactive=False):
     os.remove(fname)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_peak_slicer(interactive=False):
 
@@ -562,7 +562,7 @@ def test_peak_slicer(interactive=False):
     npt.assert_equal(report.actors_classnames, ex)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_tensor_slicer(interactive=False):
 
@@ -657,7 +657,7 @@ def test_tensor_slicer(interactive=False):
         window.show(renderer, reset_camera=False)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_dots(interactive=False):
     points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
@@ -697,7 +697,7 @@ def test_dots(interactive=False):
     npt.assert_equal(report.objects, 1)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_points(interactive=False):
     points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
@@ -721,7 +721,7 @@ def test_points(interactive=False):
     npt.assert_equal(report.objects, 3)
 
 
-@pytest.mark.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_labels(interactive=False):
 

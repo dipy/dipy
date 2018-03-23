@@ -302,8 +302,7 @@ def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
 
 
-@pytest.mark.skipif(SCIPY_VERSION < LooseVersion('0.17'),
-            "Gives wrong value for f")
+@pytest.mark.skipif(SCIPY_VERSION < LooseVersion('0.17'), reason="Gives wrong value for f")
 def test_noisy_fit():
     """
     Test fitting for noisy signals. This tests whether the threshold condition

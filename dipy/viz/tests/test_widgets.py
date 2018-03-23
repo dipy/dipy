@@ -16,7 +16,7 @@ else:
     skip_it = False
 
 
-@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_button_and_slider_widgets():
     recording = False
@@ -142,7 +142,7 @@ def test_button_and_slider_widgets():
     npt.assert_equal(report.actors, 1)
 
 
-@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_text_widget():
 

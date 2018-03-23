@@ -23,7 +23,7 @@ else:
     skip_it = False
 
 
-@pytest.mark.skipif(not have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_custom_interactor_style_events(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
