@@ -346,7 +346,7 @@ or the CLANG compiler. This depends on your python installation:
 Under Anaconda
 ~~~~~~~~~~~~~~~~
 
-If you are using Anaconda_, you will need to use GCC. THe first option is to run the following command::
+If you are using Anaconda_, you will need to use GCC. The first option is to run the following command::
 
     conda install gcc
 
