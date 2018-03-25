@@ -3,7 +3,7 @@
 Tracking Quick Start
 ====================
 
-This example shows how to perform fast fiber tracking using dipy_
+This example shows how to perform fast fiber tracking using DIPY_
 [Garyfallidis12]_.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
@@ -169,7 +169,7 @@ seed points or, even better, specify seeds to be in specific regions of interest
 in the brain.
 
 Save the resulting streamlines in a Trackvis (.trk) format and FA as
-Nifti1 (.nii.gz).
+Nifti (.nii.gz).
 """
 
 save_trk(Tractogram(streamlines, affine_to_rasmm=img.affine),
@@ -179,14 +179,12 @@ save_nifti('fa_map.nii.gz', fa, img.affine)
 
 """
 In Windows if you get a runtime error about frozen executable please start
-your script by adding your code above in a ``main`` function and use:
+your script by adding your code above in a ``main`` function and use::
 
-``
-if __name__ == '__main__':
-    import multiprocessing
-    multiprocessing.freeze_support()
-    main()
-``
+    if __name__ == '__main__':
+        import multiprocessing
+        multiprocessing.freeze_support()
+        main()
 
 References
 ----------

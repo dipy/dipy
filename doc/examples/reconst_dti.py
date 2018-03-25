@@ -96,7 +96,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 data.shape ``(81, 106, 76, 160)``
 
 First of all, we mask and crop the data. This is a quick way to avoid
-calculating Tensors on the background of the image. This is done using dipy_'s
+calculating Tensors on the background of the image. This is done using DIPY_'s
 ``mask`` module.
 """
 

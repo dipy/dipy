@@ -4,7 +4,7 @@
 DIPY Coding Style Guideline
 ===========================
 
-The main principles behind dipy_ development are:
+The main principles behind DIPY_ development are:
 
   * **Robustness**: the results of a piece of code must be verified
     systematically, and hence stability and robustness of the code must be
@@ -71,7 +71,7 @@ contribution process, etc.
 
 Again, both sets of files use the `reStructuredText markup language
 <http://www.sphinx-doc.org/en/stable/rest.html>`_ for comments. Sphinx parses
-the files to produce the contents that are later rendered in the dipy_
+the files to produce the contents that are later rendered in the DIPY_
 website.
 
 The Python examples are compiled, output images produced, and corresponding

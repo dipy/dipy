@@ -4,7 +4,7 @@
 Installation
 ############
 
-dipy_ is in active development. You can install it from our latest release, but
+DIPY_ is in active development. You can install it from our latest release, but
 you may find that the release has gotten well behind the current development -
 at least - we hope so - if we're developing fast enough!
 
@@ -44,26 +44,26 @@ Windows
 -------
 
 #. First, install the python library dependencies. One easy way to do that is to
-use the Anaconda_ distribution (see below for :ref:`alternatives`).
+   use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
 #. Even with Anaconda_ installed, you will still need to install the nibabel_
-library, which supports reading and writing of neuroimaging data formats. Open
-a terminal and type ::
+   library, which supports reading and writing of neuroimaging data formats. Open
+   a terminal and type::
 
     pip install nibabel
 
 #. Finally, we are ready to install DIPY itself. Same as with `nibabel` above,
-we will type at the terminal shell command line ::
+   we will type at the terminal shell command line::
 
     pip install dipy
 
-When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
+   When the installation has finished we can check if it is successful in the following way. From a Python console script try::
 
     >>> import dipy
 
-This should work with no error.
+   This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_::
 
     conda install -c conda-forge vtk
 
@@ -71,25 +71,25 @@ This should work with no error.
 OSX
 ---
 
-#. To use dipy_, you need to have some :ref:`dependencies` installed. First of all, make sure that you have installed the Apple Xcode_ developer tools. You'll need those to install all the following dependencies.
+#. To use DIPY_, you need to have some :ref:`dependencies` installed. First of all, make sure that you have installed the Apple Xcode_ developer tools. You'll need those to install all the following dependencies.
 
 #. Next, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
+#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type::
 
     pip install nibabel
 
-#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
+#. Finally, we are ready to install DIPY itself. Same as with `nibabel` above, we will type at the terminal shell command line::
 
     pip install dipy
 
-When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
+   When the installation has finished we can check if it is successful in the following way. From a Python console script try::
 
     >>> import dipy
 
-This should work with no error.
+   This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_ ::
+#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_::
 
     conda install -c clinicalgraphics vtk
 
@@ -119,12 +119,12 @@ For Windows and Mac OSX you can use Anaconda_ to get numpy, scipy, cython and lo
 of other useful python module. Anaconda_ is a big package but will install many
 tools and libraries that are useful for scientific processing.
 
-When you have numpy, scipy and cython installed then try ::
+When you have numpy, scipy and cython installed then try::
 
     pip install nibabel
     pip install dipy
 
-Then from any python console or script try ::
+Then from any python console or script try::
 
     >>> import dipy
 
@@ -136,7 +136,7 @@ Support
 Contact us:
 ===========
 
-Do these installation instructions work for you? For any problems/suggestions please let us know by sending us an e-mail to the `nipy mailing list`_ with the subject line starting with ``[dipy]``.
+Do these installation instructions work for you? For any problems/suggestions please let us know by sending us an e-mail to the `nipy mailing list`_ with the subject line starting with ``[DIPY]``.
 
 Common problems:
 ================
@@ -149,7 +149,7 @@ Make sure that you have uninstalled all previous versions of DIPY before install
     import dipy
     dipy.__file__
 
-and then remove the Dipy directory that contains that file.
+and then remove the DIPY directory that contains that file.
 
 .. _alternatives:
 
@@ -235,7 +235,7 @@ When adding dipy_ to the ``PYTHONPATH``, we usually add the ``PYTHONPATH`` at
 the end of ``~/.bashrc`` or (OSX) ``~/.bash_profile`` so we don't need to
 retype it every time. This should look something like::
 
-  export PYTHONPATH=/home/user_dir/Devel/dipy:$PYTHONPATH
+  export PYTHONPATH="/home/user_dir/Devel/dipy:\$PYTHONPATH"
 
 After changing the ``~/.bashrc`` or (OSX) ``~/.bash_profile`` try::
 
@@ -245,7 +245,7 @@ or::
 
   source ~/.bash_profile
 
-so that you can have immediate access to dipy_ without needing to
+so that you can have immediate access to DIPY_ without needing to
 restart your terminal.
 
 
@@ -346,7 +346,7 @@ or the CLANG compiler. This depends on your python installation:
 Under Anaconda
 ~~~~~~~~~~~~~~~~
 
-If you are using Anaconda_, you will need to use GCC. THe first option is to run the following command::
+If you are using Anaconda_, you will need to use GCC. The first option is to run the following command::
 
     conda install gcc
 
@@ -359,7 +359,7 @@ The second option is to install gcc via homebrew. Run the following::
 This should take about 45 minutes to complete. Then add to your bash
 configuration (usually in ``~/.bash_profile``), the following::
 
-    export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH
+    export PATH="/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:\$PATH"
 
 
 Under Homebrew Python or python.org Python

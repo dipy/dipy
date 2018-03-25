@@ -39,7 +39,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
 """
-We get an IVIM dataset using dipy_'s data fetcher ``read_ivim``.
+We get an IVIM dataset using DIPY_'s data fetcher ``read_ivim``.
 This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
 other, and averaged across directions. Thus, this dataset has 4 dimensions,
