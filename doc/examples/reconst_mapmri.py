@@ -114,6 +114,11 @@ A suggested strategy is to use a low Laplacian weight together with the
 positivity constraint. In this way both desired properties are guaranteed in
 the final solution.
 
+We use package CVXPY_ to solve convex optimization problems when positivity_constraint=True, 
+so we need to first install CVXPY_, for example using Anaconda::
+
+    conda install -c cvxgrp cvxpy libgcc
+
 For now we will generate the anisotropic models for all combinations.
 """
 

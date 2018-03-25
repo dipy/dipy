@@ -30,6 +30,7 @@
 .. _pip: http://www.pip-installer.org/en/latest/
 .. _easy_install: https://pypi.python.org/pypi/setuptools
 .. _homebrew: http://brew.sh/
+.. _cvxpy: http://www.cvxpy.org/
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/
