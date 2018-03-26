@@ -161,7 +161,11 @@ mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8,
                                   affine=affine)
 
-streamlines = Streamlines(filtered_fibers2)
+sfil = []
+for i in range(len(streamlines)):
+    if filtered_fibers2[i]:
+        sfil.append(streamlines[i])
+streamlines = Streamlines(sfil)
 
 """
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
