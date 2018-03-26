@@ -33,7 +33,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010
+        .. [1] Yeh F-C et al., "Generalized Q-Sampling Imaging", IEEE TMI, 2010
 
         .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
         thesis, University of Cambridge, 2012.
@@ -167,7 +167,7 @@ def squared_radial_component(x, tol=0.01):
 def npa(self, odf, width=5):
     """ non-parametric anisotropy
 
-    Nimmo-Smith et. al  ISMRM 2011
+    Nimmo-Smith et al.  ISMRM 2011
     """
     # odf = self.odf(s)
     t0, t1, t2 = triple_odf_maxima(self.odf_vertices, odf, width)
