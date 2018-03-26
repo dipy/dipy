@@ -631,9 +631,9 @@ def test_positivity_constraint(radial_order=6):
     max_radius = 15e-3  # 20 microns maximum radius
     r_grad = mapmri.create_rspace(gridsize, max_radius)
 
-    # the posivitivity constraint does not make the pdf completely positive
+    # The positivity constraint does not make the pdf completely positive
     # but greatly decreases the amount of negativity in the constrained points.
-    # we test if the amount of negative pdf has decreased more than 90%
+    # We test if the amount of negative pdf has decreased more than 90%
 
     mapmod_no_constraint = MapmriModel(gtab, radial_order=radial_order,
                                        laplacian_regularization=False,
