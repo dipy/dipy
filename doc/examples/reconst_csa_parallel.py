@@ -4,7 +4,7 @@ Parallel reconstruction using Q-Ball
 ====================================
 
 We show an example of parallel reconstruction using a Q-Ball Constant Solid
-Angle model (see Aganj et. al (MRM 2010)) and `peaks_from_model`.
+Angle model (see Aganj et al. (MRM 2010)) and `peaks_from_model`.
 
 Import modules, fetch and read data, and compute the mask.
 """
