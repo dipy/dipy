@@ -1,8 +1,8 @@
 ###################
 #This is a basic workflow script motivated from the example given on the following link.
 #http://nipy.org/dipy/examples_built/workflow_creation.html#example-workflow-creation
-#This script simply accepts a file path (as string) from the user and probs the 'very_scratch' 
-#directory for checking if the specified files exist in it or not?
+#This script simply accepts a file path (as string) from the user and checks to see 
+#if the specified files exists or not?
 
 #Current Testing Status
 #The script has been tested with a sample file-path on my local DIPY installation and it
@@ -33,12 +33,12 @@ class CheckScratch(Workflow):
         Parameters
         ----------
         input_files : string
-            Path to the input file that need to be cheked in the
-            `scratch/very_scratch` direcotory of the dipy installation.
+            Path to the input file that need to be cheked within the
+            the dipy installation.
 
         out_dir : string
-            Path to the output dir. Though this is not necessary for this script but since it is
-            necessary so keeping it here.
+            Path to the output dir. Though this is not required for this script but since it is
+            necessary parameter so keeping it here.
         """
         io_it = self.get_io_iterator()
         for fpath in io_it:
