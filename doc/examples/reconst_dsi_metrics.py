@@ -149,7 +149,7 @@ plt.savefig('msd.png')
 
    Mean square displacement.
 
-.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion
+.. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
    propagator imaging", Medical Image Analysis, vol 15, no 4, p. 603-621,
    2011.
 
