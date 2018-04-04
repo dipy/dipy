@@ -576,10 +576,10 @@ def target(streamlines, target_mask, affine, include=True):
 @_with_initialize
 def target_line_based(streamlines, target_mask, affine=None, include=True):
     """Filters streamlines based on whether or not they pass through a ROI,
-    using a line-based algorithm. Mostly used as a remplacement of `target`
+    using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
 
-    This function never returns single-point streamlines, wathever the
+    This function never returns single-point streamlines, whatever the
     value of `include`.
 
     Parameters
