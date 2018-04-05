@@ -140,20 +140,13 @@ text = ui.TextBox2D(height=3, width=10)
 """
 
 
-def translate_green_cube(i_ren, obj, slider):
+def translate_green_cube(slider):
     value = slider.value
     cube_actor_2.SetPosition(value, 0, 0)
 
-line_slider = ui.LineSlider2D(initial_value=-2,
-                              min_value=-5, max_value=5)
 
-line_slider.add_callback(line_slider.slider_disk,
-                         "MouseMoveEvent",
-                         translate_green_cube)
-
-line_slider.add_callback(line_slider.slider_line,
-                         "LeftButtonPressEvent",
-                         translate_green_cube)
+line_slider = ui.LineSlider2D(initial_value=-2, min_value=-5, max_value=5)
+line_slider.on_change = translate_green_cube
 
 """
 2D Disk Slider
@@ -161,22 +154,17 @@ line_slider.add_callback(line_slider.slider_line,
 """
 
 
-def rotate_red_cube(i_ren, obj, slider):
+def rotate_red_cube(slider):
     angle = slider.value
     previous_angle = slider.previous_value
     rotation_angle = angle - previous_angle
     cube_actor_1.RotateY(rotation_angle)
 
 
-disk_slider = ui.DiskSlider2D()
+disk_slider = ui.DiskSlider2D(text_template="{angle:5.1f}°")
 disk_slider.set_center((200, 200))
-disk_slider.add_callback(disk_slider.handle,
-                         "MouseMoveEvent",
-                         rotate_red_cube)
+disk_slider.on_change = rotate_red_cube
 
-disk_slider.add_callback(disk_slider.base_disk,
-                         "LeftButtonPressEvent",
-                         rotate_red_cube)
 """
 Adding Elements to the ShowManager
 ==================================
