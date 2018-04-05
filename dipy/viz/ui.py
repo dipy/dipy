@@ -1851,7 +1851,7 @@ class LineSlider2D(UI):
 
         """
         self.add_callback(self.slider_line, "LeftButtonPressEvent",
-                          self.line_click_callback)
+                          self.line_click_callback, 1)
         self.add_callback(self.slider_disk, "LeftButtonPressEvent",
                           self.disk_press_callback)
         self.add_callback(self.slider_disk, "MouseMoveEvent",
@@ -2140,7 +2140,7 @@ class DiskSlider2D(UI):
 
         """
         self.add_callback(self.base_disk, "LeftButtonPressEvent",
-                          self.base_disk_click_callback)
+                          self.base_disk_click_callback, 1)
         self.add_callback(self.handle, "LeftButtonPressEvent",
                           self.handle_press_callback)
         self.add_callback(self.base_disk, "MouseMoveEvent",
