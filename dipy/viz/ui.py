@@ -28,16 +28,10 @@ class UI(object):
 
     Attributes
     ----------
-    ui_param : object
-        This is an attribute that can be passed to the UI object by the
-        interactor.
-    ui_list : list of :class:`UI`
-        This is used when there are more than one UI elements inside
-        a UI element. They're all automatically added to the renderer at the
-        same time as this one.
-    parent_ui: UI
-        Reference to the parent UI element. This is useful of there is a parent
-        UI element and its reference needs to be passed down to the child.
+    position : (float, float)
+        Absolute coordinates (x, y) in pixels the lower-left corner.
+    size : (float, float)
+        Size (width, height) in pixels of this UI component.
     on_left_mouse_button_pressed: function
         Callback function for when the left mouse button is pressed.
     on_left_mouse_button_released: function
@@ -60,10 +54,15 @@ class UI(object):
     """
 
     def __init__(self):
-        self.ui_param = None
-        self.ui_list = list()
-
-        self.parent_ui = None
+        """
+        Parameters
+        ----------
+        size : (int, int)
+            Size (width, height) in pixels of this UI component.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of this
+            UI component.
+        """
         self._callbacks = []
 
         self.left_button_state = "released"
@@ -126,18 +125,44 @@ class UI(object):
         # only when this UI component is added to the renderer.
         self._callbacks.append((prop, event_type, callback, priority))
 
-    def set_center(self, position):
-        """ Sets the center of the UI component
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, coords):
+        self._set_position(coords)
+        self._position = coords
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            These are the x and y coordinates respectively, with the
-            origin at the bottom left.
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        msg = "Subclasses of UI must implement `set_center(self, position)`."
+        msg = "Subclasses of UI must implement `_set_position(self, coords)`."
         raise NotImplementedError(msg)
+
+    def set_center(self, coords):
+        """ Position the center of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+
+        """
+        if not hasattr(self, "size"):
+            msg = "Subclasses of UI must implement the `size` property."
+            raise NotImplementedError(msg)
+
+        new_center = np.array(coords)
+        size = np.array(self.size)
+        new_lower_left_corner = new_center - size / 2.
+        self.position = new_lower_left_corner
 
     def set_visibility(self, visibility):
         """ Sets visibility of this UI component and all its sub-components.
@@ -213,8 +238,8 @@ class Button2D(UI):
         """
         Parameters
         ----------
-        size : 2-tuple of int, optional
-            Button size.
+        size : (int, int)
+            Size (width, height) in pixels of the button.
         icon_fnames : dict
             {iconname : filename, iconname : filename, ...}
 
@@ -414,17 +439,16 @@ class Button2D(UI):
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
 
-    def set_center(self, position):
-        """ Sets the icon center to position.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the button (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        new_position = np.asarray(position) - self.size / 2.
-        self.actor.SetPosition(*new_position)
+        self.actor.SetPosition(*coords)
 
 
 class Rectangle2D(UI):
@@ -438,15 +462,15 @@ class Rectangle2D(UI):
 
     """
 
-    def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
+    def __init__(self, size, position=(0, 0), color=(1, 1, 1), opacity=1.0):
         """ Initializes a rectangle.
 
         Parameters
         ----------
-        size : (float, float)
+        size : (int, int)
             The size of the rectangle (height, width) in pixels.
-        center : (float, float)
-            The center of the rectangle (x, y).
+        position : (float, float)
+            Coordinates (x, y) of the lower-left corner of the rectangle.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
@@ -455,11 +479,11 @@ class Rectangle2D(UI):
         """
         super(Rectangle2D, self).__init__()
         self.size = size
-        self.actor = self.build_actor(size=size)
+        self.actor = self.build_actor()
         self.color = color
-        self.set_center(center)
         self.opacity = opacity
         self.handle_events(self.actor)
+        self.position = position
 
     def get_actors(self):
         """ Returns the actors that compose this UI component.
@@ -467,13 +491,8 @@ class Rectangle2D(UI):
         """
         return [self.actor]
 
-    def build_actor(self, size):
+    def build_actor(self):
         """ Builds the text actor.
-
-        Parameters
-        ----------
-        size : (float, float)
-            The size of the rectangle (height, width) in pixels.
 
         Returns
         -------
@@ -483,9 +502,9 @@ class Rectangle2D(UI):
         # Setup four points
         points = vtk.vtkPoints()
         points.InsertNextPoint(0, 0, 0)
-        points.InsertNextPoint(size[0], 0, 0)
-        points.InsertNextPoint(size[0], size[1], 0)
-        points.InsertNextPoint(0, size[1], 0)
+        points.InsertNextPoint(self.size[0], 0, 0)
+        points.InsertNextPoint(self.size[0], self.size[1], 0)
+        points.InsertNextPoint(0, self.size[1], 0)
 
         # Create the polygon
         polygon = vtk.vtkPolygon()
@@ -516,20 +535,16 @@ class Rectangle2D(UI):
 
         return actor
 
-    def set_position(self, position):
-        self.actor.SetPosition(*position)
-
-    def set_center(self, position):
-        """ Sets the center to position.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the rectangle (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        self.actor.SetPosition(position[0] - self.size[0] / 2,
-                               position[1] - self.size[1] / 2)
+        self.actor.SetPosition(*coords)
 
     @property
     def color(self):
@@ -570,30 +585,6 @@ class Rectangle2D(UI):
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
-    @property
-    def position(self):
-        """ Gets text actor position.
-
-        Returns
-        -------
-        (float, float)
-            The current actor position. (x, y) in pixels.
-
-        """
-        return self.actor.GetPosition()
-
-    @position.setter
-    def position(self, position):
-        """ Set text actor position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new position. (x, y) in pixels.
-
-        """
-        self.actor.SetPosition(*position)
-
 
 class Panel2D(UI):
     """ A 2D UI Panel.
@@ -602,23 +593,20 @@ class Panel2D(UI):
 
     Attributes
     ----------
-    center : (float, float)
-        The center of the panel (x, y).
-    size : (float, float)
-        The size of the panel (width, height) in pixels.
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
 
     """
 
-    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
+    def __init__(self, size, position=(0, 0), color=(0.1, 0.1, 0.1),
+                 opacity=0.7, align="left"):
         """
         Parameters
         ----------
-        center : (float, float)
-            The center of the panel (x, y).
-        size : (float, float)
-            The size of the panel (width, height) in pixels.
+        size : (int, int)
+            Size (width, height) in pixels of the panel.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of the panel.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
@@ -628,20 +616,19 @@ class Panel2D(UI):
 
         """
         super(Panel2D, self).__init__()
-        self.center = center
-        self.size = size
-        self.lower_limits = (self.center[0] - self.size[0] / 2,
-                             self.center[1] - self.size[1] / 2)
-
-        self.panel = Rectangle2D(size=size, center=center, color=color,
-                                 opacity=opacity)
-
+        self._elements = []
         self.element_positions = []
-        self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
+
+        self.size = np.array(size)
+        self.position = np.array(position)
         self.alignment = align
+        self._drag_offset = None
 
-        self.handle_events(self.panel.actor)
+        # Create the background of the panel.
+        self.background = Rectangle2D(size=size, color=color, opacity=opacity)
+        self.add_element(self.background, (0, 0))
 
+        self.handle_events(self.background.actor)
         self.on_left_mouse_button_pressed = self.left_button_pressed
         self.on_left_mouse_button_dragged = self.left_button_dragged
 
@@ -656,81 +643,69 @@ class Panel2D(UI):
 
         """
         super(Panel2D, self).add_to_renderer(ren)
-        for ui_item in self.ui_list:
-            ui_item.add_to_renderer(ren)
+        for element in self._elements:
+            element.add_to_renderer(ren)
 
     def get_actors(self):
         """ Returns the panel actor.
 
         """
-        return [self.panel.actor]
+        return []
 
-    def add_element(self, element, position_type, position):
-        """ Adds an element to the panel.
+    def add_element(self, element, coords):
+        """ Adds a UI component to the panel.
 
-        The center of the rectangular panel is its bottom lower position.
+        The coordinates represent an offset from the lower left corner of the
+        panel.
 
         Parameters
         ----------
         element : UI
             The UI item to be added.
-        position_type: string
-            'absolute' or 'relative'
-        position : (float, float)
-            Absolute for absolute and relative for relative
+        coords : (float, float) or (int, int)
+            If float, normalized coordinates are assumed and they must be
+            between [0,1].
+            If int, pixels coordinates are assumed and it must fit within the
+            panel's size.
 
         """
-        self.ui_list.append(element)
-        if position_type == 'relative':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((self.lower_limits[0] + position[0] * self.size[0],
-                                self.lower_limits[1] + position[1] * self.size[1]))
-        elif position_type == 'absolute':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((position[0], position[1]))
-        else:
-            raise ValueError("Position can only be absolute or relative")
+        coords = np.array(coords)
 
-    def set_center(self, position):
-        """ Sets the panel center to position.
+        if np.issubdtype(coords.dtype, np.floating):
+            if np.any(coords < 0) or np.any(coords > 1):
+                raise ValueError("Normalized coordinates must be in [0,1].")
 
-        The center of the rectangular panel is its bottom lower position.
+            coords = coords * self.size
+
+        self._elements.append(element)
+        self.element_positions.append((element, coords))
+        element.position = self.position + coords
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the panel (x, y).
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
 
         """
-        shift = [position[0] - self.center[0], position[1] - self.center[1]]
-        self.center = position
-        self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
-        for ui_element in self.element_positions:
-            if ui_element[1] == 'relative':
-                ui_element[0].set_center((self.lower_limits[0] + ui_element[2] * self.size[0],
-                                          self.lower_limits[1] + ui_element[3] * self.size[1]))
-            elif ui_element[1] == 'absolute':
-                ui_element[2] += shift[0]
-                ui_element[3] += shift[1]
-                ui_element[0].set_center((ui_element[2], ui_element[3]))
+        coords = np.array(coords)
+        for element, offset in self.element_positions:
+            element.position = coords + offset
 
     @staticmethod
     def left_button_pressed(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] -
-                                   panel2d_object.panel.actor.GetPosition()[0] -
-                                   panel2d_object.panel.size[0] / 2,
-                                   click_position[1] -
-                                   panel2d_object.panel.actor.GetPosition()[1] -
-                                   panel2d_object.panel.size[1] / 2)
+        click_pos = np.array(i_ren.event.position)
+        panel2d_object._drag_offset = click_pos - panel2d_object.position
         i_ren.event.abort()  # Stop propagating the event.
 
     @staticmethod
     def left_button_dragged(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        if panel2d_object.ui_param is not None:
-            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0],
-                                       click_position[1] - panel2d_object.ui_param[1]))
+        if panel2d_object._drag_offset is not None:
+            click_position = np.array(i_ren.event.position)
+            new_position = click_position - panel2d_object._drag_offset
+            panel2d_object.position = new_position
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -745,10 +720,10 @@ class Panel2D(UI):
         if self.alignment == "left":
             pass
         elif self.alignment == "right":
-            self.set_center((self.center[0] + window_size_change[0],
-                             self.center[1] + window_size_change[1]))
+            self.position += np.array(window_size_change)
         else:
-            raise ValueError("You can only left-align or right-align objects in a panel.")
+            msg = "You can only left-align or right-align objects in a panel."
+            raise ValueError(msg)
 
 
 class TextBlock2D(UI):
@@ -1675,8 +1650,9 @@ class LineSlider2D(UI):
 
         """
         # Slider Line
-        self.slider_line = Rectangle2D(size=(self.length, self.line_width),
-                                       center=self.center).actor
+        rect = Rectangle2D(size=(self.length, self.line_width))
+        rect.set_center(self.center)
+        self.slider_line = rect.actor
         self.slider_line.GetProperty().SetColor(1, 0, 0)
         # /Slider Line
 
@@ -2147,491 +2123,3 @@ class DiskSlider2D(UI):
                           self.handle_move_callback)
         self.add_callback(self.handle, "MouseMoveEvent",
                           self.handle_move_callback)
-
-
-class FileSelectMenu2D(UI):
-    """ A menu to select files in the current folder.
-
-    Can go to new folder, previous folder and select a file
-    and keep it in a variable.
-
-    Attributes
-    ----------
-    n_text_actors: int
-        The number of text actors. Calculated dynamically.
-    selected_file: string
-        Current selected file.
-    text_item_list: list(:class:`FileSelectMenuText2D`)
-        List of FileSelectMenuText2Ds - both visible and invisible.
-    window_offset: int
-        Used for scrolling.
-        Tells you the index of the first visible FileSelectMenuText2D
-        object.
-    size: (float, float)
-        The size of the system (x, y) in pixels.
-    font_size: int
-        The font size in pixels.
-    line_spacing: float
-        Distance between menu text items in pixels.
-    parent_ui: :class:`UI`
-        The UI component this object belongs to.
-    extensions: list(string)
-            List of extensions to be shown as files.
-
-    """
-
-    def __init__(self, size, font_size, position, parent, extensions,
-                 directory_path, reverse_scrolling=False, line_spacing=1.4):
-        """
-        Parameters
-        ----------
-        size: (float, float)
-            The size of the system (x, y) in pixels.
-        font_size: int
-            The font size in pixels.
-        parent: :class:`UI`
-            The UI component this object belongs to.
-            This will be useful when this UI element is used as a
-            part of other UI elements, like a file save dialog.
-        position: (float, float)
-            The initial position (x, y) in pixels.
-        reverse_scrolling: {True, False}
-            If True, scrolling up will move the list of files down.
-        line_spacing: float
-            Distance between menu text items in pixels.
-        extensions: list(string)
-            List of extensions to be shown as files.
-        directory_path: string
-            Path of the directory where this dialog should open.
-            Example: os.getcwd()
-
-        """
-        super(FileSelectMenu2D, self).__init__()
-
-        self.size = size
-        self.font_size = font_size
-        self.parent_ui = parent
-        self.reverse_scrolling = reverse_scrolling
-        self.line_spacing = line_spacing
-        self.extensions = extensions
-
-        self.n_text_actors = 0  # Initialisation Value
-        self.text_item_list = []
-        self.selected_file = ""
-        self.window_offset = 0
-        self.current_directory = directory_path
-        self.buttons = dict()
-
-        self.menu = self.build_actors(position)
-
-        self.fill_text_actors()
-        self.handle_events(None)
-
-    def add_to_renderer(self, ren):
-        self.menu.add_to_renderer(ren)
-        super(FileSelectMenu2D, self).add_to_renderer(ren)
-        for menu_text in self.text_item_list:
-            menu_text.add_to_renderer(ren)
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.buttons["up"], self.buttons["down"]]
-
-    def build_actors(self, position):
-        """ Builds the number of text actors that will fit in the given size.
-
-        Allots them positions in the panel, which is only there to allot positions,
-        otherwise the panel itself is invisible.
-
-        Parameters
-        ----------
-        position: (float, float)
-            Position of the panel (x, y) in pixels.
-
-        """
-        # Calculating the number of text actors.
-        self.n_text_actors = int(self.size[1]/(self.font_size*self.line_spacing))
-
-        # This panel is just to facilitate the addition of actors at the right positions
-        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))
-
-        # Initialisation of empty text actors
-        for i in range(self.n_text_actors):
-
-            text = FileSelectMenuText2D(position=(0, 0), font_size=self.font_size,
-                                        file_select=self)
-            text.parent_UI = self.parent_ui
-            self.ui_list.append(text)
-            self.text_item_list.append(text)
-
-            panel.add_element(text, 'relative',
-                              (0.1,
-                               float(self.n_text_actors-i - 1) /
-                               float(self.n_text_actors)))
-
-        up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
-        panel.add_element(up_button, 'relative', (0.95, 0.95))
-        self.buttons["up"] = up_button
-
-        down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
-        panel.add_element(down_button, 'relative', (0.95, 0.05))
-        self.buttons["down"] = down_button
-
-        return panel
-
-    @staticmethod
-    def up_button_callback(i_ren, obj, file_select_menu):
-        """ Pressing up button scrolls up in the menu.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_menu: :class:`FileSelectMenu2D`
-
-        """
-        all_file_names = file_select_menu.get_all_file_names()
-
-        if (file_select_menu.n_text_actors +
-                file_select_menu.window_offset) <= len(all_file_names):
-            if file_select_menu.window_offset > 0:
-                file_select_menu.window_offset -= 1
-                file_select_menu.fill_text_actors()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    @staticmethod
-    def down_button_callback(i_ren, obj, file_select_menu):
-        """ Pressing down button scrolls down in the menu.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_menu: :class:`FileSelectMenu2D`
-
-        """
-        all_file_names = file_select_menu.get_all_file_names()
-
-        if (file_select_menu.n_text_actors +
-                file_select_menu.window_offset) < len(all_file_names):
-            file_select_menu.window_offset += 1
-            file_select_menu.fill_text_actors()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    def fill_text_actors(self):
-        """ Fills file/folder names to text actors.
-
-        The list is truncated if the number of file/folder names is greater
-        than the available number of text actors.
-
-        """
-        # Flush all the text actors
-        for text_item in self.text_item_list:
-            text_item.text_actor.message = ""
-            text_item.text_actor.actor.SetVisibility(False)
-
-        all_file_names = self.get_all_file_names()
-
-        clipped_file_names = all_file_names[self.window_offset:self.n_text_actors + self.window_offset]
-
-        # Allot file names as in the above list
-        i = 0
-        for file_name in clipped_file_names:
-            self.text_item_list[i].text_actor.actor.SetVisibility(True)
-            self.text_item_list[i].set_attributes(file_name[0], file_name[1])
-            if file_name[0] == self.selected_file:
-                self.text_item_list[i].mark_selected()
-            i += 1
-
-    def get_all_file_names(self):
-        """ Gets file and directory names.
-
-        Returns
-        -------
-        all_file_names: list(string)
-            List of all file and directory names as string.
-
-        """
-        all_file_names = []
-
-        directory_names = self.get_directory_names()
-        for directory_name in directory_names:
-            all_file_names.append((directory_name, "directory"))
-
-        file_names = self.get_file_names()
-        for file_name in file_names:
-            all_file_names.append((file_name, "file"))
-
-        return all_file_names
-
-    def get_directory_names(self):
-        """ Re-allots file names to the text actors.
-
-        Uses FileSelectMenuText2D for selecting files and folders.
-
-        Returns
-        -------
-        directory_names: list(string)
-            List of all directory names as string.
-
-        """
-        # A list of directory names in the current directory
-        directory_names = next(os.walk(self.current_directory))[1]
-        directory_names = [os.path.basename(os.path.abspath(dn)) for dn in directory_names]
-        directory_names = ["../"] + directory_names
-
-        return directory_names
-
-    def get_file_names(self):
-        """ Re-allots file names to the text actors.
-
-        Uses FileSelectMenuText2D for selecting files and folders.
-
-        Returns
-        -------
-        file_names: list(string)
-            List of all file names as string.
-
-        """
-        # A list of file names with extension in the current directory
-        file_names = []
-        for extension in self.extensions:
-            file_names += glob.glob(self.current_directory + "/*." + extension)
-        file_names = [os.path.basename(os.path.abspath(fn)) for fn in file_names]
-        return file_names
-
-    def select_file(self, file_name):
-        """ Changes the selected file name.
-
-        Parameters
-        ----------
-        file_name: string
-            Name of the file.
-
-        """
-        self.selected_file = file_name
-
-    def set_center(self, position):
-        """ Sets the elements center.
-
-        Parameters
-        ----------
-        position: (float, float)
-            New position (x, y) in pixels.
-
-        """
-        self.menu.set_center(position=position)
-
-    def handle_events(self, actor):
-        self.add_callback(self.buttons["up"].actor, "LeftButtonPressEvent",
-                          self.up_button_callback)
-        self.add_callback(self.buttons["down"].actor, "LeftButtonPressEvent",
-                          self.down_button_callback)
-
-        # Handle mouse wheel events
-        up_event = "MouseWheelForwardEvent"
-        down_event = "MouseWheelBackwardEvent"
-        if self.reverse_scrolling:
-            up_event, down_event = down_event, up_event  # Swap events
-
-        self.add_callback(self.menu.get_actors()[0], up_event,
-                          self.up_button_callback)
-        self.add_callback(self.menu.get_actors()[0], down_event,
-                          self.down_button_callback)
-
-        for text_ui in self.text_item_list:
-            self.add_callback(text_ui.text_actor.get_actors()[0], up_event,
-                              self.up_button_callback)
-            self.add_callback(text_ui.text_actor.get_actors()[0], down_event,
-                              self.down_button_callback)
-
-
-class FileSelectMenuText2D(UI):
-    """ The text to select folder in a file select menu.
-
-    Provides a callback to change the directory.
-
-    Attributes
-    ----------
-    file_name: string
-        The name of the file the text is displaying.
-    file_type: string
-        Whether the file is a file or directory.
-    file_select: :class:`FileSelect2D`
-        The FileSelectMenu2D reference this text belongs to.
-
-    """
-
-    def __init__(self, font_size, position, file_select):
-        """
-        Parameters
-        ----------
-        font_size: int
-            The font size of the text in pixels.
-        position: (float, float)
-            Absolute text position (x, y) in pixels.
-        file_select: :class:`FileSelect2D`
-            The FileSelectMenu2D reference this text belongs to.
-
-        """
-        super(FileSelectMenuText2D, self).__init__()
-
-        self.file_name = ""
-        self.file_type = ""
-        self.file_select = file_select
-
-        self.text_actor = self.build_actor(position=position, font_size=font_size)
-
-        self.handle_events(self.text_actor.get_actor())
-
-        self.on_left_mouse_button_clicked = self.left_button_clicked
-
-    def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
-                    justification='left', bold=False, italic=False,
-                    shadow=False, font_size='14'):
-        """ Builds a text actor.
-
-        Parameters
-        ----------
-        text: string
-            The initial text while building the actor.
-        position: (float, float)
-            The text position (x, y) in pixels.
-        color: (float, float, float)
-            Values must be between 0-1 (RGB).
-        font_family: string
-            Currently only supports Arial.
-        justification: string
-            Text justification - left, right or center.
-        bold: bool
-            Whether or not the text is bold.
-        italic: bool
-            Whether or not the text is italicized.
-        shadow: bool
-            Whether or not the text has shadow.
-        font_size: int
-            The font size of the text in pixels.
-
-        Returns
-        -------
-        text_actor: :class:`TextBlock2D`
-            The base text actor.
-
-        """
-        text_actor = TextBlock2D()
-        text_actor.position = position
-        text_actor.message = text
-        text_actor.font_size = font_size
-        text_actor.font_family = font_family
-        text_actor.justification = justification
-        text_actor.bold = bold
-        text_actor.italic = italic
-        text_actor.shadow = shadow
-        text_actor.color = color
-
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            pass
-        else:
-            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-
-        text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
-        text_actor.actor.GetTextProperty().SetLineSpacing(1)
-
-        return text_actor
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.text_actor.get_actor()]
-
-    def set_attributes(self, file_name, file_type):
-        """  Set attributes (file name and type) of this component.
-
-        This function is for use by a FileSelectMenu2D to set the
-        current file_name and file_type for this FileSelectMenuText2D
-        component.
-
-        Parameters
-        ----------
-        file_name: string
-            The name of the file.
-        file_type: string
-            File type = directory or file.
-
-        """
-        self.file_name = file_name
-        self.file_type = file_type
-        self.text_actor.message = file_name
-
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
-            if file_type != "file":
-                self.text_actor.get_actor().GetTextProperty().SetBold(True)
-
-        else:
-            if file_type == "file":
-                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(0, 0, 0)
-                self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
-            else:
-                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(1, 1, 1)
-                self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
-
-    def mark_selected(self):
-        """ Changes the background color of the actor.
-
-        """
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
-        else:
-            self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
-            self.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-
-    @staticmethod
-    def left_button_clicked(i_ren, obj, file_select_text):
-        """ A callback to handle left click for this UI element.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_text: :class:`FileSelectMenuText2D`
-
-        """
-
-        if file_select_text.file_type == "directory":
-            file_select_text.file_select.select_file(file_name="")
-            file_select_text.file_select.window_offset = 0
-            file_select_text.file_select.current_directory = os.path.abspath(
-                os.path.join(file_select_text.file_select.current_directory,
-                             file_select_text.text_actor.message))
-            file_select_text.file_select.window = 0
-            file_select_text.file_select.fill_text_actors()
-        else:
-            file_select_text.file_select.select_file(
-                file_name=file_select_text.file_name)
-            file_select_text.file_select.fill_text_actors()
-            file_select_text.mark_selected()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    def set_center(self, position):
-        """ Sets the text center to position.
-
-        Parameters
-        ----------
-        position: (float, float)
-            The new position (x, y) in pixels.
-        """
-        self.text_actor.position = position
