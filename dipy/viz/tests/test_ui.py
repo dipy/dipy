@@ -23,10 +23,7 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
-if use_xvfb == 'skip':
-    skip_it = True
-else:
-    skip_it = False
+skip_it = use_xvfb == 'skip'
 
 if have_vtk:
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
@@ -86,20 +83,36 @@ class EventCounter(object):
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_broken_ui_component():
-    class BrokenUI(UI):
+    class SimplestUI(UI):
         def __init__(self):
-            self.actor = vtk.vtkActor()
-            super(BrokenUI, self).__init__()
+            super(SimplestUI, self).__init__()
 
-    broken_ui = BrokenUI()
-    npt.assert_raises(NotImplementedError, broken_ui.get_actors)
-    npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
+        def _setup(self):
+            self.actor = vtk.vtkActor2D()
+
+        def _set_position(self, coords):
+            self.actor.SetPosition(*coords)
+
+    # Can be instantiated.
+    SimplestUI()
+
+    # Instantiating UI subclasses that don't override all abstract methods.
+    for attr in ["_setup", "_set_position"]:
+        bkp = getattr(SimplestUI, attr)
+        delattr(SimplestUI, attr)
+        npt.assert_raises(NotImplementedError, SimplestUI)
+        setattr(SimplestUI, attr, bkp)
+
+    simple_ui = SimplestUI()
+    npt.assert_raises(NotImplementedError, simple_ui.get_actors)
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'size')
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'center')
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_wrong_interactor_style():
-    panel = ui.Panel2D(center=(440, 90), size=(300, 150))
+    panel = ui.Panel2D(size=(300, 150))
     dummy_renderer = window.Renderer()
     dummy_show_manager = window.ShowManager(dummy_renderer,
                                             interactor_style='trackball')
@@ -108,12 +121,12 @@ def test_wrong_interactor_style():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_rectangle_2d():
+def test_ui_rectangle_2d():
     window_size = (700, 700)
     show_manager = window.ShowManager(size=window_size)
 
     rect = ui.Rectangle2D(size=(100, 50))
-    rect.set_position((50, 80))
+    rect.position = (50, 80)
     npt.assert_equal(rect.position, (50, 80))
 
     rect.color = (1, 0.5, 0)
@@ -149,7 +162,6 @@ def test_ui_button_panel(recording=False):
 
     # Rectangle
     rectangle_test = ui.Rectangle2D(size=(10, 10))
-    rectangle_test.get_actors()
     another_rectangle_test = ui.Rectangle2D(size=(1, 1))
 
     # Button
@@ -190,10 +202,11 @@ def test_ui_button_panel(recording=False):
     text_block_test.color = (0, 0, 0)
 
     # Panel
-    panel = ui.Panel2D(center=(440, 90), size=(300, 150),
+    panel = ui.Panel2D(size=(300, 150),
+                       position=(290, 15),
                        color=(1, 1, 1), align="right")
     panel.add_element(rectangle_test, (290, 135))
-    panel.add_element(button_test, (0.2, 0.2))
+    panel.add_element(button_test, (0.1, 0.1))
     panel.add_element(text_block_test, (0.7, 0.7))
     npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
                       (10., 0.5))
@@ -233,8 +246,7 @@ def test_ui_textbox(recording=False):
 
     another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
     another_textbox_test.set_message("Enter Text")
-    another_textbox_test.set_center((10, 100))
-    # /TextBox
+    npt.assert_raises(NotImplementedError, another_textbox_test.set_center, (10, 100))
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
@@ -296,7 +308,6 @@ def test_text_block_2d_justification():
     show_manager = window.ShowManager(size=window_size)
 
     # To help visualize the text positions.
-    lines = []
     grid_size = (500, 500)
     bottom, middle, top = 50, 300, 550
     left, center, right = 50, 300, 550
@@ -311,7 +322,8 @@ def test_text_block_2d_justification():
     grid_specs = [grid_top, grid_bottom, grid_left, grid_right,
                   grid_middle, grid_center]
     for spec in grid_specs:
-        line = ui.Rectangle2D(center=spec[0], size=spec[1], color=line_color)
+        line = ui.Rectangle2D(size=spec[1], color=line_color)
+        line.set_center(spec[0])
         show_manager.ren.add(line)
 
     font_size = 60
@@ -390,6 +402,7 @@ def test_ui_line_slider_2d(recording=False):
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(line_slider_2d_test)
+    event_counter.monitor(line_slider_2d_test.track)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
