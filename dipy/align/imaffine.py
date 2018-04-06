@@ -591,8 +591,6 @@ class MutualInformationMetric(object):
             transformed towards the static image by the current affine, which
             results in an image of the same shape as the static image.
         """
-        static_values = None
-        moving_values = None
         if self.sampling_proportion is None:  # Dense case
             static_values = self.static
             moving_values = self.affine_map.transform(self.moving)

@@ -421,11 +421,11 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
-                 cnp.ndarray[double, ndim=1] LEs,\
-                 cnp.ndarray[double, ndim=1] radius,\
-                 int odfn,\
-                 int radiusn,\
+def le_to_odf(cnp.ndarray[double, ndim=1] odf,
+                 cnp.ndarray[double, ndim=1] LEs,
+                 cnp.ndarray[double, ndim=1] radius,
+                 int odfn,
+                 int radiusn,
                  int anglesn):
     """odf for interpolated Laplacian normalized signal
     """
@@ -442,8 +442,8 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
-    cnp.ndarray[long, ndim=1] blocks,\
+def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
+    cnp.ndarray[long, ndim=1] blocks,
     cnp.ndarray[double, ndim=1] out,int outn):
     """Summations on blocks of 1d array
     """

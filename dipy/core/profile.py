@@ -68,7 +68,7 @@ class Profiler():
                 stats = s.strip_dirs().sort_stats('time')
                 self.stats = stats
 
-        except:
+        except Exception:
 
             print('profiling function call ...')
             self.args = args

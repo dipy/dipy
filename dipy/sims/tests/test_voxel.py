@@ -1,15 +1,14 @@
 import numpy as np
 
-from nose.tools import (assert_true, assert_false, assert_equal,
-                        assert_almost_equal)
+from nose.tools import assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_)
 
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
-                             multi_tensor_odf, all_tensor_evecs, add_noise,
-                             single_tensor, sticks_and_ball, multi_tensor_dki,
+                             all_tensor_evecs, add_noise, single_tensor,
+                             sticks_and_ball, multi_tensor_dki,
                              kurtosis_element, dki_signal)
-from dipy.core.geometry import (vec2vec_rotmat, sphere2cart)
+# from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
@@ -25,20 +24,21 @@ bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
 gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
-def diff2eigenvectors(dx, dy, dz):
-    """ numerical derivatives 2 eigenvectors
-    """
-    u = np.array([dx, dy, dz])
-    u = u / np.linalg.norm(u)
-    R = vec2vec_rotmat(basis[:, 0], u)
-    eig0 = u
-    eig1 = np.dot(R, basis[:, 1])
-    eig2 = np.dot(R, basis[:, 2])
-    eigs = np.zeros((3, 3))
-    eigs[:, 0] = eig0
-    eigs[:, 1] = eig1
-    eigs[:, 2] = eig2
-    return eigs, R
+# Unused with missing refernces to basis
+# def diff2eigenvectors(dx, dy, dz):
+#     """ numerical derivatives 2 eigenvectors
+#     """
+#     u = np.array([dx, dy, dz])
+#     u = u / np.linalg.norm(u)
+#     R = vec2vec_rotmat(basis[:, 0], u)
+#     eig0 = u
+#     eig1 = np.dot(R, basis[:, 1])
+#     eig2 = np.dot(R, basis[:, 2])
+#     eigs = np.zeros((3, 3))
+#     eigs[:, 0] = eig0
+#     eigs[:, 1] = eig1
+#     eigs[:, 2] = eig2
+#     return eigs, R
 
 
 def test_check_directions():
@@ -104,7 +104,7 @@ def test_single_tensor():
 
 def test_multi_tensor():
     sphere = get_sphere('symmetric724')
-    vertices = sphere.vertices
+    # vertices = sphere.vertices
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     e0 = np.array([np.sqrt(2) / 2., np.sqrt(2) / 2., 0])

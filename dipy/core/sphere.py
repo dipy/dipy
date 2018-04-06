@@ -242,7 +242,7 @@ class Sphere(object):
         """
         vertices = self.vertices
         faces = self.faces
-        for i in xrange(n):
+        for _ in xrange(n):
             edges, mapping = unique_edges(faces, return_mapping=True)
             new_vertices = vertices[edges].sum(1)
             new_vertices /= vector_norm(new_vertices, keepdims=True)

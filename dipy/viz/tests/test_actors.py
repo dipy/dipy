@@ -75,7 +75,7 @@ def test_slicer():
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
-        arr = window.snapshot(renderer, fname, offscreen=True)
+        window.snapshot(renderer, fname, offscreen=True)
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 

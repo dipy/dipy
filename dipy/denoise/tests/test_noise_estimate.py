@@ -176,9 +176,5 @@ def test_pca_noise_estimate():
                     assert_array_almost_equal(np.mean(sigma_est), sigma,
                                               decimal=1)
 
-    sigma = 1
-    noise1 = np.random.normal(0, sigma, size=signal.shape)
-    noise2 = np.random.normal(0, sigma, size=signal.shape)
-    signal = np.ones((20, 20, 20, gtab.bvals.shape[0]))
     assert_(np.mean(pca_noise_estimate(data, gtab, correct_bias=True)) >
             np.mean(pca_noise_estimate(data, gtab, correct_bias=False)))
