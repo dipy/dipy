@@ -34,20 +34,20 @@ def bench_csdeconv(center=(50, 40, 40), width=12):
 
     # Basic case
     sh_order = 8
-    model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
+    ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
     time = npt.measure(cmd)
     print(msg % (sh_order, num_grad(gtab), time))
 
     # Smaller data set
-    data_small = data_small[..., :75].copy()
+    # data_small = data_small[..., :75].copy()
     gtab = GradientTable(gtab.gradients[:75])
-    model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
+    ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
     time = npt.measure(cmd)
     print(msg % (sh_order, num_grad(gtab), time))
 
     # Super resolution
     sh_order = 12
-    model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
+    ConstrainedSphericalDeconvModel(gtab, None, sh_order=sh_order)
     time = npt.measure(cmd)
     print(msg % (sh_order, num_grad(gtab), time))
 

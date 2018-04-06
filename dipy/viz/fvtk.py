@@ -77,7 +77,7 @@ if have_vtk:
         else:
             from vtk import vtkSmartVolumeMapper as VolumeMapper
         have_vtk_texture_mapper2D = True
-    except:
+    except Exception:
         have_vtk_texture_mapper2D = False
 
 else:
@@ -911,7 +911,7 @@ def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
         print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
         print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
     if pos is not None:
-        cam = ren.GetActiveCamera().SetPosition(*pos)
+        ren.GetActiveCamera().SetPosition(*pos)
     if focal is not None:
         ren.GetActiveCamera().SetFocalPoint(*focal)
     if viewup is not None:

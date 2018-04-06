@@ -2,9 +2,7 @@ from __future__ import division
 
 import numpy as np
 
-from numpy.testing import (assert_, assert_equal, assert_array_equal,
-                           assert_array_almost_equal, assert_almost_equal,
-                           run_module_suite)
+from numpy.testing import (assert_, assert_array_almost_equal, run_module_suite)
 
 from dipy.data import get_data
 from dipy.reconst.dti import TensorModel

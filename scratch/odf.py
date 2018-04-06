@@ -31,8 +31,8 @@ def disp_odf(sph_map, theta_res=64, phi_res=32, colormap='RGB', colors=256):
             odf_im = odf_im.convert('P', palette=Image.ADAPTIVE, colors=colors)
             
             lut = np.empty((colors,4),'uint8')
-            lut[:,3] = 255
-            lut[:,0:3] = np.reshape(odf_im.getpalette(),(colors,3))
+            lut[:, 3] = 255
+            lut[:, 0:3] = np.reshape(odf_im.getpalette(),(colors,3))
 
             oo = mlab.mesh(x*odf_ii + x_cen.flat[ii], 
                            y*odf_ii + y_cen.flat[ii], 
@@ -40,11 +40,11 @@ def disp_odf(sph_map, theta_res=64, phi_res=32, colormap='RGB', colors=256):
                            scalars=np.int16(odf_im))
             oo.module_manager.scalar_lut_manager.lut.table=lut
         else:
-            oo = mlab.mesh(x*odf_ii + x_cen.flat[ii], 
-                           y*odf_ii + y_cen.flat[ii], 
-                           z*odf_ii + z_cen.flat[ii], 
-                           scalars=odf_ii,
-                           colormap=colormap)
+            mlab.mesh(x*odf_ii + x_cen.flat[ii],
+                      y*odf_ii + y_cen.flat[ii],
+                      z*odf_ii + z_cen.flat[ii],
+                      scalars=odf_ii,
+                      colormap=colormap)
 
 def _3grid(shape):
 

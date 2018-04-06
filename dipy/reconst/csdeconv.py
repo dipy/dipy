@@ -655,9 +655,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         Z = np.linalg.norm(fodf)
         fodf_sh /= Z
 
-    fodf = np.dot(B_reg, fodf_sh)
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
-    # print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -679,7 +677,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         try:
             fodf_sh = np.linalg.lstsq(M, ODF, rcond=-1)[0]
-        except np.linalg.LinAlgError as lae:
+        except np.linalg.LinAlgError:
             # SVD did not converge in Linear Least Squares in current
             # voxel. Proceeding with initial SH estimate for this voxel.
             pass
@@ -1017,7 +1015,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     where_dwi = lazy_index(~gtab.b0s_mask)
     response_p = np.ones(len(n))
 
-    for num_it in range(iter):
+    for _ in range(iter):
         r_sh_all = np.zeros(len(n))
         csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
                                                     sh_order=sh_order)

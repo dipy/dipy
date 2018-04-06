@@ -64,7 +64,7 @@ def test_dsi():
 def test_multivox_dsi():
     data, gtab = dsi_deconv_voxels()
     DS = DiffusionSpectrumDeconvModel(gtab)
-    sphere = get_sphere('symmetric724')
+    get_sphere('symmetric724')
 
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()

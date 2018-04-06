@@ -311,7 +311,7 @@ def subsegment(streamlines, max_segment_length):
             elif ns > 1:
                 small_d = diff[ii]/ns
                 point = sl[ii]
-                for jj in xrange(ns):
+                for _ in xrange(ns):
                     point = point + small_d
                     output_sl[count] = point
                     count += 1

@@ -55,7 +55,7 @@ def update_progressbar(progress, total_length):
         bar_length = int(columns) - 46
         if(not (bar_length > 1)):
             bar_length = 20
-    except:
+    except Exception:
         # Default value if determination of console size fails
         bar_length = 20
     block = int(round(bar_length * progress))

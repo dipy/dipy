@@ -258,7 +258,7 @@ class ForecastModel(OdfModel, Cache):
                 try:
                     prob.solve()
                     coef = np.asarray(c.value).squeeze()
-                except:
+                except Exception:
                     warn('Optimization did not find a solution')
                     coef = np.zeros(M.shape[1])
                     coef[0] = c0

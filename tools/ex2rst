@@ -49,6 +49,7 @@ def auto_image(line):
     lines.append('\n')
     return ''.join(lines)
 
+
 def exfile2rst(filename):
     """Open a Python script and convert it into an ReST string.
     """
@@ -97,7 +98,6 @@ def exfile2rst(filename):
         # if we have something that should go into the text
         if indocs \
           or (cleanline.startswith('"""') or cleanline.startswith("'''")):
-            proc_line = None
             # handle doc start
             if not indocs:
                 # guarenteed to start with """

@@ -292,7 +292,6 @@ def plot_slices(V, slice_indices=None, fname=None):
         slice_indices = np.array(V.shape) // 2
 
     # Normalize the intensities to [0, 255]
-    sh = V.shape
     V = np.asarray(V, dtype=np.float64)
     V = 255 * (V - V.min()) / (V.max() - V.min())
 

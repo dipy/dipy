@@ -188,7 +188,7 @@ def run_comparisons(sample_data=35):
         dataname = simfile
         print dataname
     
-        sim_data=np.loadtxt(simdir+dataname)
+        # sim_data=np.loadtxt(simdir+dataname)
     
     #    gqfile = simdir+'gq/'+dataname+'.pkl'
     #    gq =  pkl.load_pickle(gqfile)

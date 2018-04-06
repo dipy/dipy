@@ -202,7 +202,7 @@ class MapmriModel(ReconstModel, Cache):
 
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> from dipy.core.gradients import gradient_table
-        >>> data, gtab_ = dsi_voxels()
+        >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
         >>> from dipy.sims.voxel import SticksAndBall
@@ -329,7 +329,7 @@ class MapmriModel(ReconstModel, Cache):
             M = mapmri_phi_matrix(self.radial_order, mu, q)
         else:
             try:
-                self.MMt_inv_Mt
+                # self.MMt_inv_Mt
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
@@ -341,7 +341,6 @@ class MapmriModel(ReconstModel, Cache):
                 except AttributeError:
                     u0 = isotropic_scale_factor(evals * 2 * self.tau)
                     mu = np.array([u0, u0, u0])
-                    q = self.gtab.bvecs * qvals[:, None]
                     M_mu_dependent = mapmri_isotropic_M_mu_dependent(
                         self.radial_order, mu[0], qvals)
                     M = M_mu_dependent * self.M_mu_independent
@@ -357,7 +356,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
-                    1/0.
+                    # 1/0.
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
@@ -408,7 +407,7 @@ class MapmriModel(ReconstModel, Cache):
             try:
                 prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
-            except:
+            except Exception:
                 errorcode = 2
                 warn('Optimization did not find a solution')
                 try:
@@ -917,7 +916,7 @@ class MapmriFit(ReconstFit):
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
-            qvals = np.linalg.norm(q, axis=1)
+            # qvals = np.linalg.norm(q, axis=1)
         else:
             gtab = qvals_or_gtab
             qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
