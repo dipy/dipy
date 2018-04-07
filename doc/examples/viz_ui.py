@@ -145,7 +145,8 @@ def translate_green_cube(slider):
     cube_actor_2.SetPosition(value, 0, 0)
 
 
-line_slider = ui.LineSlider2D(initial_value=-2, min_value=-5, max_value=5)
+line_slider = ui.LineSlider2D(center=(450, 300),
+                              initial_value=-2, min_value=-5, max_value=5)
 line_slider.on_change = translate_green_cube
 
 """
@@ -187,7 +188,7 @@ show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
 
 window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 

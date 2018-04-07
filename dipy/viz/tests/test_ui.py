@@ -155,6 +155,40 @@ def test_ui_rectangle_2d():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_disk_2d():
+    window_size = (700, 700)
+    show_manager = window.ShowManager(size=window_size)
+
+    disk = ui.Disk2D(outer_radius=20, inner_radius=5)
+    disk.position = (50, 80)
+    npt.assert_equal(disk.position, (50, 80))
+
+    disk.color = (1, 0.5, 0)
+    npt.assert_equal(disk.color, (1, 0.5, 0))
+
+    disk.opacity = 0.5
+    npt.assert_equal(disk.opacity, 0.5)
+
+    # Check the rectangle is drawn at right place.
+    show_manager.ren.add(disk)
+    # Uncomment this to start the visualisation
+    # show_manager.start()
+
+    colors = [disk.color]
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr, colors=colors)
+    assert report.objects == 1
+    assert report.colors_found
+
+    # Test visibility off.
+    disk.set_visibility(False)
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr)
+    assert report.objects == 0
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_button_panel(recording=False):
     filename = "test_ui_button_panel"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -403,12 +437,14 @@ def test_ui_line_slider_2d(recording=False):
     event_counter = EventCounter()
     event_counter.monitor(line_slider_2d_test)
     event_counter.monitor(line_slider_2d_test.track)
+    event_counter.monitor(line_slider_2d_test.handle)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
                                       title="DIPY Line Slider")
 
     show_manager.ren.add(line_slider_2d_test)
+    # show_manager.start()
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -435,12 +471,15 @@ def test_ui_disk_slider_2d(recording=False):
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(disk_slider_2d_test)
+    event_counter.monitor(disk_slider_2d_test.track)
+    event_counter.monitor(disk_slider_2d_test.handle)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
                                       title="DIPY Disk Slider")
 
     show_manager.ren.add(disk_slider_2d_test)
+    # show_manager.start()
 
     if recording:
         # Record the following events
