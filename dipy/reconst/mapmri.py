@@ -39,15 +39,15 @@ class MapmriModel(ReconstModel, Cache):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
            diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
 
-    .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
+    .. [2] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
            and estimation for one-dimensional q-space magnetic resonance
            1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
-    .. [3] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+    .. [3] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
            estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
 
@@ -172,16 +172,16 @@ class MapmriModel(ReconstModel, Cache):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
                diffusion imaging method for mapping tissue microstructure",
                NeuroImage, 2013.
 
-        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based
+        .. [2] Ozarslan E. et al., "Simple harmonic oscillator based
                reconstruction and estimation for one-dimensional q-space
                magnetic resonance 1D-SHORE)", eapoc Intl Soc Mag Reson Med,
                vol. 16, p. 35., 2008.
 
-        .. [3] Ozarslan E. et. al, "Simple harmonic oscillator based
+        .. [3] Ozarslan E. et al., "Simple harmonic oscillator based
                reconstruction and estimation for three-dimensional q-space
                mri", ISMRM 2009.
 
@@ -189,7 +189,7 @@ class MapmriModel(ReconstModel, Cache):
                using Laplacian-regularized MAP-MRI and its application to HCP
                data." NeuroImage (2016).
 
-        .. [5] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+        .. [5] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
                estimation via Compressive Sensing in diffusion MRI", Medical
                Image Analysis, 2013.
 
@@ -202,7 +202,7 @@ class MapmriModel(ReconstModel, Cache):
 
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> from dipy.core.gradients import gradient_table
-        >>> data, gtab_ = dsi_voxels()
+        >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
         >>> from dipy.sims.voxel import SticksAndBall
@@ -329,7 +329,7 @@ class MapmriModel(ReconstModel, Cache):
             M = mapmri_phi_matrix(self.radial_order, mu, q)
         else:
             try:
-                self.MMt_inv_Mt
+                # self.MMt_inv_Mt
                 lopt = self.laplacian_weighting
                 coef = np.dot(self.MMt_inv_Mt, data)
                 coef = coef / sum(coef * self.Bm)
@@ -341,7 +341,6 @@ class MapmriModel(ReconstModel, Cache):
                 except AttributeError:
                     u0 = isotropic_scale_factor(evals * 2 * self.tau)
                     mu = np.array([u0, u0, u0])
-                    q = self.gtab.bvecs * qvals[:, None]
                     M_mu_dependent = mapmri_isotropic_M_mu_dependent(
                         self.radial_order, mu[0], qvals)
                     M = M_mu_dependent * self.M_mu_independent
@@ -357,7 +356,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
                 except np.linalg.linalg.LinAlgError:
-                    1/0.
+                    # 1/0.
                     lopt = 0.05
                     errorcode = 1
             elif np.isscalar(self.laplacian_weighting):
@@ -408,7 +407,7 @@ class MapmriModel(ReconstModel, Cache):
             try:
                 prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
-            except:
+            except Exception:
                 errorcode = 2
                 warn('Optimization did not find a solution')
                 try:
@@ -497,7 +496,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
@@ -527,7 +526,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -556,7 +555,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -608,7 +607,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -659,7 +658,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -775,7 +774,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -803,7 +802,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -843,7 +842,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
@@ -917,7 +916,7 @@ class MapmriFit(ReconstFit):
         """
         if isinstance(qvals_or_gtab, np.ndarray):
             q = qvals_or_gtab
-            qvals = np.linalg.norm(q, axis=1)
+            # qvals = np.linalg.norm(q, axis=1)
         else:
             gtab = qvals_or_gtab
             qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
@@ -976,7 +975,7 @@ def isotropic_scale_factor(mu_squared):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1003,7 +1002,7 @@ def mapmri_index_matrix(radial_order):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1031,7 +1030,7 @@ def b_mat(index_matrix):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1063,7 +1062,7 @@ def b_mat_isotropic(index_matrix):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1090,7 +1089,7 @@ def mapmri_phi_1d(n, q, mu):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1120,7 +1119,7 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1169,7 +1168,7 @@ def mapmri_psi_1d(n, x, mu):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1196,7 +1195,7 @@ def mapmri_psi_matrix(radial_order, mu, rgrad):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1244,7 +1243,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1280,7 +1279,7 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1321,7 +1320,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1361,7 +1360,7 @@ def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1437,7 +1436,7 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1479,7 +1478,7 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """
@@ -1570,7 +1569,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
@@ -1628,7 +1627,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
@@ -1731,7 +1730,7 @@ def mapmri_isotropic_index_matrix(radial_order):
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
     """

@@ -398,8 +398,6 @@ class ApiDocWriter(object):
             # include those here as well (the *.py filenames).
             filenames = [f[:-3] for f in filenames if
                          f.endswith('.py') and not f.startswith('__init__')]
-            for filename in filenames:
-                package_uri = '/'.join((dirpath, filename))
 
             for subpkg_name in dirnames + filenames:
                 package_uri = '.'.join((root_uri, subpkg_name))
@@ -412,7 +410,6 @@ class ApiDocWriter(object):
 
     def write_modules_api(self, modules, outdir):
         # upper-level modules
-        main_module = modules[0].split('.')[0]
         ulms = ['.'.join(m.split('.')[:2]) if m.count('.') >= 1
                 else m.split('.')[0] for m in modules]
 

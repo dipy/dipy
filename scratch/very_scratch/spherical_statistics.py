@@ -68,7 +68,7 @@ def get_vertex_set(key):
         elif entry['object'] == 'dicom':
             data,affine,bvals,gradients=dcm.read_mosaic_dir(filepath)
             #print (bvals.shape, gradients.shape)
-            grad3 = np.vstack((bvals,bvals,bvals)).transpose()
+            # grad3 = np.vstack((bvals,bvals,bvals)).transpose()
             #print grad3.shape
             #vertices = grad3*gradients
             vertices = gradients
@@ -140,13 +140,14 @@ def spherical_proportion(zone_width):
 def angle_for_zone(zone_width):
     return np.arcsin(zone_width/2.)
 
-def coarseness(faces):
-    faces = np.asarray(faces)
-    coarseness = 0.0
-    for face in faces:
-        a, b, c = face
-        coarse = np.max(coarse, geom.circumradius(a,b,c))
-    return coarse
+# unresolved reference to geom
+# def coarseness(faces):
+#     faces = np.asarray(faces)
+#     # coarseness = 0.0
+#     for face in faces:
+#         a, b, c = face
+#         coarse = np.max(coarse, geom.circumradius(a,b,c))
+#     return coarse
 
 
 

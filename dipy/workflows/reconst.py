@@ -652,7 +652,7 @@ class ReconstCSAFlow(Workflow):
 
         References
         ----------
-        .. [1] Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging
+        .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
            with Solid Angle Consideration.
         """
         io_it = self.get_io_iterator()

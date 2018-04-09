@@ -1851,7 +1851,7 @@ class LineSlider2D(UI):
 
         """
         self.add_callback(self.slider_line, "LeftButtonPressEvent",
-                          self.line_click_callback)
+                          self.line_click_callback, 1)
         self.add_callback(self.slider_disk, "LeftButtonPressEvent",
                           self.disk_press_callback)
         self.add_callback(self.slider_disk, "MouseMoveEvent",
@@ -1880,6 +1880,10 @@ class DiskSlider2D(UI):
         Outer radius of the slider's handle.
     handle_inner_radius: int
         Inner radius of the slider's handle.
+    previous_value: float
+        Value of Rotation of the actor before the current value.
+    initial_value: float
+        Initial Value of Rotation of the actor assigned on creation of object.
 
     """
     def __init__(self, position=(0, 0),
@@ -1921,7 +1925,7 @@ class DiskSlider2D(UI):
         self.center = np.array(position)
         self.min_value = min_value
         self.max_value = max_value
-
+        self.initial_value = initial_value
         self.slider_inner_radius = slider_inner_radius
         self.slider_outer_radius = slider_outer_radius
         self.handle_inner_radius = handle_inner_radius
@@ -1939,6 +1943,7 @@ class DiskSlider2D(UI):
 
         # By setting the value, it also updates everything.
         self.value = initial_value
+        self.previous_value = initial_value
         self.handle_events(None)
 
     def build_actors(self):
@@ -1988,6 +1993,14 @@ class DiskSlider2D(UI):
         self.ratio = (value - self.min_value) / value_range
 
     @property
+    def previous_value(self):
+        return self._previous_value
+
+    @previous_value.setter
+    def previous_value(self, previous_value):
+        self._previous_value = previous_value
+
+    @property
     def ratio(self):
         return self._ratio
 
@@ -2021,6 +2034,10 @@ class DiskSlider2D(UI):
 
         # Compute the selected value considering min_value and max_value.
         value_range = self.max_value - self.min_value
+        try:
+            self._previous_value = self.value
+        except:
+            self._previous_value = self.initial_value
         self._value = self.min_value + self.ratio*value_range
 
         # Update text disk actor.
@@ -2123,7 +2140,7 @@ class DiskSlider2D(UI):
 
         """
         self.add_callback(self.base_disk, "LeftButtonPressEvent",
-                          self.base_disk_click_callback)
+                          self.base_disk_click_callback, 1)
         self.add_callback(self.handle, "LeftButtonPressEvent",
                           self.handle_press_callback)
         self.add_callback(self.base_disk, "MouseMoveEvent",

@@ -133,11 +133,11 @@ window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
        Using High Angular Resolution Diffusion Imaging", Magnetic
        Resonance in Medicine, 2005.
 
-.. [Kaden2016] Kaden E. et. al, "Quantitative Mapping of the Per-Axon Diffusion
+.. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
        Coefficients in Brain White Matter", Magnetic Resonance in
        Medicine, 2016.
 
-.. [Zucchelli2017] Zucchelli E. et. al, "A generalized SMT-based framework for
+.. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework for
        Diffusion MRI microstructural model estimation", MICCAI Workshop
        on Computational DIFFUSION MRI (CDMRI), 2017.
 .. include:: ../links_names.inc

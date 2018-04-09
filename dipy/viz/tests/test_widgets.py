@@ -98,22 +98,7 @@ def test_button_and_slider_widgets():
     global size
     size = renderer.GetSize()
 
-    def win_callback(obj, event):
-        global size
-        if size != obj.GetSize():
-
-            button.place(renderer)
-            button_plus.place(renderer)
-            button_minus.place(renderer)
-            slider.place(renderer)
-            size = obj.GetSize()
-
     if recording:
-        # show_manager.add_window_callback(win_callback)
-        # you can also register any callback in a vtk way like this
-        # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
-        #                                 win_callback)
-
         show_manager.record_events_to_file(recording_filename)
         print(states)
     else:

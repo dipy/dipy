@@ -406,7 +406,7 @@ if interactive:
 References
 ----------
 
-.. [Ozarslan2013] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A
+.. [Ozarslan2013] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A
    novel diffusion imaging method for mapping tissue microstructure",
    NeuroImage, 2013.
 

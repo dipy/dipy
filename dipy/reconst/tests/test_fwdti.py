@@ -240,7 +240,7 @@ def test_cholesky_functions():
 
 def test_fwdti_jac_multi_voxel():
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'WLS')
-    fwefit = fwdm.fit(DWI[0, :, :])
+    fwdm.fit(DWI[0, :, :])
 
     # no f transform
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', f_transform=False,

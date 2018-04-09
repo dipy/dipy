@@ -91,8 +91,8 @@ def test_sfm_stick():
                                       response=[0.001, 0, 0])
     sffit1 = sfmodel.fit(data[0, 0, 0])
     sphere = dpd.get_sphere()
-    odf1 = sffit1.odf(sphere)
-    pred1 = sffit1.predict(gtab)
+    sffit1.odf(sphere)
+    sffit1.predict(gtab)
 
     SNR = 1000
     S0 = 100
@@ -142,8 +142,8 @@ def test_exponential_iso():
 
         sffit1 = sfmodel.fit(data[0, 0, 0])
         sphere = dpd.get_sphere()
-        odf1 = sffit1.odf(sphere)
-        pred1 = sffit1.predict(gtab)
+        sffit1.odf(sphere)
+        sffit1.predict(gtab)
 
         SNR = 1000
         S0 = 100

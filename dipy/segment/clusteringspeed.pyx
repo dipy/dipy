@@ -93,7 +93,7 @@ cdef inline int aabb_overlap(float* aabb1, float* aabb2, float padding=0.) nogil
         int y = fabs(aabb1[1] - aabb2[1]) <= (aabb1[4] + aabb2[4] + padding)
         int z = fabs(aabb1[2] - aabb2[2]) <= (aabb1[5] + aabb2[5] + padding)
 
-    return x & y & z;
+    return x & y & z
 
 
 cdef CentroidNode* create_empty_node(Shape centroid_shape, float threshold) nogil:
