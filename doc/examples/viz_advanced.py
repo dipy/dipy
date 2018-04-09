@@ -102,7 +102,6 @@ We can add additonal slicers by copying the original and adjusting the
 """
 
 image_actor_x = image_actor_z.copy()
-image_actor_x.opacity(slicer_opacity)
 x_midpoint = int(np.round(shape[0] / 2))
 image_actor_x.display_extent(x_midpoint,
                              x_midpoint, 0,
@@ -111,7 +110,6 @@ image_actor_x.display_extent(x_midpoint,
                              shape[2] - 1)
 
 image_actor_y = image_actor_z.copy()
-image_actor_y.opacity(slicer_opacity)
 y_midpoint = int(np.round(shape[1] / 2))
 image_actor_y.display_extent(0,
                              shape[0] - 1,
@@ -197,16 +195,30 @@ def change_opacity(i_ren, obj, slider):
 line_slider_z.add_callback(line_slider_z.slider_disk,
                            "MouseMoveEvent",
                            change_slice_z)
+line_slider_z.add_callback(line_slider_z.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_z)
+
 line_slider_x.add_callback(line_slider_x.slider_disk,
                            "MouseMoveEvent",
                            change_slice_x)
+line_slider_x.add_callback(line_slider_x.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_x)
+
 line_slider_y.add_callback(line_slider_y.slider_disk,
                            "MouseMoveEvent",
                            change_slice_y)
+line_slider_y.add_callback(line_slider_y.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_y)
+
 opacity_slider.add_callback(opacity_slider.slider_disk,
                             "MouseMoveEvent",
                             change_opacity)
-
+opacity_slider.add_callback(opacity_slider.slider_line,
+                           "LeftButtonPressEvent",
+                           change_opacity)
 """
 We'll also create text labels to identify the sliders.
 """

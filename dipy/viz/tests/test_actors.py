@@ -75,7 +75,7 @@ def test_slicer():
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
-        arr = window.snapshot(renderer, fname, offscreen=True)
+        window.snapshot(renderer, fname, offscreen=True)
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 
@@ -107,8 +107,14 @@ def test_slicer():
     slicer_lut.display(10, None, None)
     slicer_lut.display(None, 10, None)
     slicer_lut.display(None, None, 10)
-
+    
+    slicer_lut.opacity(0.5)
+    slicer_lut.tolerance(0.03)
     slicer_lut2 = slicer_lut.copy()
+    npt.assert_equal(slicer_lut2.GetOpacity(), 0.5)
+    npt.assert_equal(slicer_lut2.picker.GetTolerance(), 0.03)
+    slicer_lut2.opacity(1)
+    slicer_lut2.tolerance(0.025)
     slicer_lut2.display(None, None, 10)
     renderer.add(slicer_lut2)
 

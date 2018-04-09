@@ -341,8 +341,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
             if return_odf:
                 pam.odf[start_pos: end_pos] = pam_res[i].odf
 
-        pam_res = None
-
         # load memmaps to arrays and reshape the metric
         shape[-1] = -1
         pam.gfa = np.reshape(np.array(pam.gfa), shape[:-1])

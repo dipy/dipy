@@ -570,9 +570,9 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     True
     >>> ai, aj, ak = (4.0*math.pi) * (numpy.random.random(3) - 0.5)
     >>> for axes in _AXES2TUPLE.keys():
-    ...    R = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes)
     >>> for axes in _TUPLE2AXES.keys():
-    ...    R = euler_matrix(ai, aj, ak, axes)
+    ...    _ = euler_matrix(ai, aj, ak, axes)
 
     """
     try:

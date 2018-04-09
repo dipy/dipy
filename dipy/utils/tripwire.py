@@ -20,7 +20,7 @@ def is_tripwire(obj):
         obj.any_attribute
     except TripWireError:
         return True
-    except:
+    except Exception:
         pass
     return False
 

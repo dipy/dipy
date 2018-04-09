@@ -265,9 +265,7 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
     angles : array (K,2) or (K, 3)
         List of K polar angles (in degrees) for the sticks or array of K
         sticks as unit vectors.
-    direction : array (3)
-        direction of the axis of the cylinder
-    fractions : float
+    fractions : [float]
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
     snr : float
@@ -497,7 +495,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
 
     fractions = [f / 100. for f in fractions]
 
-    S = np.zeros(len(gtab.bvals))
+    # S = np.zeros(len(gtab.bvals))
 
     sticks = _check_directions(angles)
 
@@ -551,7 +549,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     D_comps : (K,3,3) ndarray
         Diffusion tensors for all K individual compartment of the
         multicompartmental model.
-    frac : float
+    frac : [float]
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     ind_i : int
@@ -729,7 +727,7 @@ def all_tensor_evecs(e0):
 
 
 def multi_tensor_odf(odf_verts, mevals, angles, fractions):
-    r'''Simulate a Multi-Tensor ODF.
+    """Simulate a Multi-Tensor ODF.
 
     Parameters
     ----------
@@ -761,7 +759,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     >>> angles = [(0, 0), (90, 0)]
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
-    '''
+    """
     mf = [f / 100. for f in fractions]
 
     sticks = _check_directions(angles)
@@ -779,7 +777,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
 
 def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
-    r'''Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor rtop.
 
     Parameters
     ----------
@@ -799,7 +797,7 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
     .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
            and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
-    '''
+    """
     if evals is None:
         evals = diffusion_evals
 
@@ -808,7 +806,7 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
 
 
 def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
-    r'''Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor rtop.
 
     Parameters
     ----------
@@ -830,7 +828,7 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
            and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
-    '''
+    """
     rtop = 0
 
     if mevals is None:
@@ -893,7 +891,7 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
 
 def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
                      tau=1 / (4 * np.pi ** 2)):
-    r'''Simulate a Multi-Tensor ODF.
+    """Simulate a Multi-Tensor ODF.
 
     Parameters
     ----------
@@ -920,7 +918,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
     .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
            and its Features in Diffusion MRI", PhD Thesis, 2012.
 
-    '''
+    """
     mf = [f / 100. for f in fractions]
 
     sticks = _check_directions(angles)
@@ -938,7 +936,7 @@ def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
 
 
 def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
-    r'''Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor rtop.
 
     Parameters
     ----------
@@ -958,7 +956,7 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
     .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
            and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
-    '''
+    """
     if evals is None:
         evals = diffusion_evals
 
@@ -967,7 +965,7 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
 
 
 def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
-    r'''Simulate a Multi-Tensor rtop.
+    """Simulate a Multi-Tensor rtop.
 
     Parameters
     ----------
@@ -989,7 +987,7 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
            and Its Features in Diffusion MRI", PhD Thesis, 2012.
 
-    '''
+    """
     msd = 0
 
     if mevals is None:

@@ -42,5 +42,5 @@ def ndindex(shape):
             for ix in np.ndindex(*shape):
                 yield ix
         else:
-            for e in ndi:
+            for _ in ndi:
                 yield ndi.multi_index

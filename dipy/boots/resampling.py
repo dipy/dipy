@@ -69,7 +69,6 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
         look at the jackknife. Ann. Stat. 7, 1-26.
     """
     N = len(x)
-    pdf_mask = np.ones((N,), dtype='int16')
     bs_pdf = np.empty((B,))
 
     for ii in range(0, B):
@@ -126,7 +125,6 @@ def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
         delta_hat[i] = __tt_dot(i, x, p_0, statistic, eps)
     sigma_hat = (sigma_hat / n**2)**0.5
     # estimate the bias (z_0) and the acceleration (a_hat)
-    a_hat = np.zeros(x.shape)
     a_num = np.zeros(x.shape)
     a_dem = np.zeros(x.shape)
     for i in range(0, n):
@@ -158,7 +156,6 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
     """
     n = len(x)
     b_hat = np.ones(x.shape)
-    c_q_hat = np.ones(x.shape)
     tt_dot = np.ones(x.shape)
     for i in range(0, n):
         b_hat[i] = __tt_dot_dot(i, x, p_0, statistic, eps)
