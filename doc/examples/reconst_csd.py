@@ -151,8 +151,6 @@ like  a pancake:
 """
 
 response_signal = response.on_sphere(sphere)
-# transform our data from 1D to 4D
-response_signal = response_signal[None, None, None, :]
 response_actor = actor.odf_slicer(response_signal, sphere=sphere, colormap='plasma')
 
 ren = window.Renderer()
@@ -227,7 +225,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              parallel=True)
 
 window.clear(ren)
-fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values)
+fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values, scale=1.3)
 ren.add(fodf_peaks)
 
 print('Saving illustration as csd_peaks.png')
