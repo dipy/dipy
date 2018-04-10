@@ -178,7 +178,7 @@ class MapmriModel(ReconstModel, Cache):
 
         .. [2] Ozarslan E. et al., "Simple harmonic oscillator based
                reconstruction and estimation for one-dimensional q-space
-               magnetic resonance 1D-SHORE)", eapoc Intl Soc Mag Reson Med,
+               magnetic resonance 1D-SHORE)", Proc Intl Soc Mag Reson Med,
                vol. 16, p. 35., 2008.
 
         .. [3] Ozarslan E. et al., "Simple harmonic oscillator based
