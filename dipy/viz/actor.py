@@ -445,7 +445,7 @@ def streamtube(lines, colors=None, opacity=1, linewidth=0.1, tube_sides=9,
     poly_mapper.ScalarVisibilityOn()
     poly_mapper.SetScalarModeToUsePointFieldData()
     poly_mapper.SelectColorArray("Colors")
-    #poly_mapper.GlobalImmediateModeRenderingOn()
+    poly_mapper.GlobalImmediateModeRenderingOn()
     poly_mapper.Update()
 
     # Color Scale with a lookup table
