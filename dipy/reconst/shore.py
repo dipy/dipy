@@ -31,19 +31,19 @@ class ShoreModel(Cache):
                 S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
             \end{equation}
 
-    where $\mathbf{q}$ is the wavector which corresponds to different gradient
-    directions. Numerous continuous functions $\phi_i$ can be used to model
-    $S$. Some are presented in [2,3,4]_.
+    where $\mathbf{q}$ is the wave vector which corresponds to different
+    gradient directions. Numerous continuous functions $\phi_i$ can be used to
+    model $S$. Some are presented in [2,3,4]_.
 
     From the $c_i$ coefficients, there exist analytical formulae to estimate
-    the ODF, the return to the origin porbability (RTOP), the mean square
+    the ODF, the return to the origin probability (RTOP), the mean square
     displacement (MSD), amongst others [5]_.
 
     References
     ----------
     .. [1] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
            and estimation for one-dimensional q-space magnetic resonance
-           1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+           1D-SHORE)", Proc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
     .. [2] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
            estimation via Compressive Sensing in diffusion MRI", Medical
@@ -93,7 +93,7 @@ class ShoreModel(Cache):
                     S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
                 \end{equation}
 
-        where $\mathbf{q}$ is the wavector which corresponds to different
+        where $\mathbf{q}$ is the wave vector which corresponds to different
         gradient directions.
 
         From the $c_i$ coefficients, there exists an analytical formula to
@@ -137,7 +137,7 @@ class ShoreModel(Cache):
         ODF estimation via Compressive Sensing in diffusion MRI", Medical
         Image Analysis, 2013.
 
-        .. [2] Cheng J. et al., "Theoretical Analysis and eapactical Insights
+        .. [2] Cheng J. et al., "Theoretical Analysis and Practical Insights
         on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
         Computational Diffusion MRI, 2011.
 
