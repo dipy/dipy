@@ -237,7 +237,7 @@ lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
 lr_sf_trk = Streamlines(lr_sf_trk)
 
 # Save streamlines
-save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size)
+save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
 
 """
 Let's take a moment here to consider the representation of streamlines used in
