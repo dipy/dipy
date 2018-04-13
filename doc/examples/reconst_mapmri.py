@@ -85,22 +85,23 @@ anisotropic basis is suggested. The choice can be made by setting
 
 First, we must select the method of regularization and/or constraining the
 basis fitting.
+
 - "laplacian_regularization=True" makes it use Laplacian regularization
   [Fick2016a]_. This method essentially reduces spurious oscillations in the
   reconstruction by minimizing the Laplacian of the fitted signal.
   Several options can be given to select the regularization weight:
-      -"regularization_weighting="GCV"" uses generalized cross-validation
-       [Craven1978]_ to find an optimal weight.
-      -"regularization_weighting=0.2" for example would omit the GCV and
-       just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
-      -"regularization_weighting=np.array(weights)" would make the GCV use
-       a custom range to find an optimal weight.
+      - "regularization_weighting="GCV"" uses generalized cross-validation
+        [Craven1978]_ to find an optimal weight.
+      - "regularization_weighting=0.2" for example would omit the GCV and
+        just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
+      - "regularization_weighting=np.array(weights)" would make the GCV use
+        a custom range to find an optimal weight.
 - "positivity_constraint=True" makes it use the positivity constraint on the
   diffusion propagator [Ozarslan2013]_. This method constrains the final
   solution of the diffusion propagator to be positive at a set of discrete
   points, since negative values should not exist.
-      -the "pos_grid" and "pos_radius" affect the location and number of
-       constraint points in the diffusion propagator.
+      - the "pos_grid" and "pos_radius" affect the location and number of
+        constraint points in the diffusion propagator.
 
 Both methods do a good job of producing viable solutions to the signal fitting
 in practice. The difference is that the Laplacian regularization imposes
@@ -262,6 +263,7 @@ plt.savefig('MAPMRI_maps.png')
    :align: center
 
 From left to right:
+
 - Mean Squared Displacement (MSD) is a measure for how far protons are able to
   diffuse. a decrease in MSD indicates protons are hindered/restricted more,
   as can be seen by the high MSD in the CSF, but low in the white matter.

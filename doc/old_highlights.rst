@@ -29,7 +29,7 @@ DIPY was an **official exhibitor** for OHBM 2015.
 **DIPY 0.8.0** is now available for :ref:`download <installation>`. The new
 release contains state-of-the-art algorithms for diffusion MRI registration, reconstruction, denoising, statistical evaluation, fiber tracking and validation of tracking.
 
-For more information about dipy_, read the `DIPY paper`_  in Frontiers in Neuroinformatics.
+For more information about DIPY_, read the `DIPY paper`_  in Frontiers in Neuroinformatics.
 
 .. raw :: html
 
@@ -40,7 +40,7 @@ For more information about dipy_, read the `DIPY paper`_  in Frontiers in Neuroi
 So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.
 
 
-In dipy_ we care about methods which can solve complex problems efficiently and robustly. QuickBundles is one of the many state-of-the art algorithms found in DIPY. It can be used to simplify large datasets of streamlines. See our :ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a video of QuickBundles applied on a simple dataset.
+In DIPY_ we care about methods which can solve complex problems efficiently and robustly. QuickBundles is one of the many state-of-the-art algorithms found in DIPY. It can be used to simplify large datasets of streamlines. See our :ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a video of QuickBundles applied on a simple dataset.
 
 .. raw:: html
 

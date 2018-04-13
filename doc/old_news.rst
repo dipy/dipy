@@ -2,7 +2,7 @@
 
 
 **********************
-Past announcements
+Past Announcements
 **********************
 
 
@@ -22,3 +22,4 @@ Past announcements
 - **IEEE ISBI HARDI challenge** 2013 chooses **DIPY**, February, 2013.
  
 
+.. include:: links_names.inc

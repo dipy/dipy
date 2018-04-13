@@ -27,7 +27,7 @@ img contains a nibabel Nifti1Image object (data) and gtab contains a
 ``GradientTable`` object (gradient information e.g. b-values). For example to
 read the b-values it is possible to write::
 
-   ``print(gtab.bvals)``
+   print(gtab.bvals)
 
 Load the raw diffusion data and the affine.
 """

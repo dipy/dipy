@@ -27,7 +27,7 @@ from dipy.reconst.dti import (decompose_tensor, from_lower_triangular)
 
 """
 For the simulation we will need a GradientTable with the b-values and
-b-vectors. Here we use the GradientTable of the sample dipy_ dataset
+b-vectors. Here we use the GradientTable of the sample DIPY_ dataset
 ``small_64D``.
 """
 
