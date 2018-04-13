@@ -435,7 +435,7 @@ def get_polymapper_from_polydata(polydata):
     return poly_mapper
 
 
-def get_actor_from_polymapper(poly_mapper, light=(0.1, 0.15, 0.05)):
+def get_actor_from_polymapper(poly_mapper):
     """ get vtkActor from a vtkPolyDataMapper
 
     Parameters
@@ -448,14 +448,15 @@ def get_actor_from_polymapper(poly_mapper, light=(0.1, 0.15, 0.05)):
     """
     actor = vtk.vtkActor()
     actor.SetMapper(poly_mapper)
-    # actor.GetProperty().SetRepresentationToWireframe()
     actor.GetProperty().BackfaceCullingOn()
     actor.GetProperty().SetInterpolationToPhong()
-    # actor.GetProperty().SetInterpolationToFlat()
 
-    actor.GetProperty().SetAmbient(light[0])  # .3
-    actor.GetProperty().SetDiffuse(light[1])  # .3
-    actor.GetProperty().SetSpecular(light[2])  # .3
+    # Use different defaults for OpenGL1 rendering backend
+    if vtk.VTK_MAJOR_VERSION <= 6:
+        actor.GetProperty().SetAmbient(0.1)
+        actor.GetProperty().SetDiffuse(0.15)
+        actor.GetProperty().SetSpecular(0.05)
+
     return actor
 
 
