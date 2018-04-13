@@ -7,7 +7,7 @@ This example shows how to calculate the lengths of a set of streamlines and
 also how to compress the streamlines without considerably reducing their
 lengths or overall shape.
 
-A streamline in dipy_ is represented as a numpy array of size
+A streamline in DIPY_ is represented as a numpy array of size
 :math:`(N \times 3)` where each row of the array represent a 3D point of the
 streamline. A set of streamlines is represented with a list of
 numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the

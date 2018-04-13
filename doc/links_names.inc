@@ -19,10 +19,12 @@
 .. _journal paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: http://nipy.org/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
-.. _nipy development guidelines: http://nipy.org/devel
+.. _nipy development guidelines: http://nipy.org/nipy/devel/guidelines/index.html
 .. _buildbots: http://nipy.bic.berkeley.edu/builders
 .. _`dipy gitter`: https://gitter.im/nipy/dipy
 .. _neurostars: https://neurostars.org/
+.. _h5py: https://www.h5py.org/
+.. _cvxpy: http://www.cvxpy.org/en/latest/
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net
@@ -53,7 +55,7 @@
 .. _`nipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
-.. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines
+.. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _python module path: http://docs.python.org/tutorial/modules.html#the-module-search-path
 
 .. Code support stuff
@@ -96,6 +98,7 @@
 .. _datapkg: http://okfn.org/projects/datapkg
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
+.. _pypi: https://pypi.python.org/pypi
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
@@ -137,7 +140,7 @@
 .. _VTK: http://www.vtk.org/
 .. _ITK: http://www.itk.org/
 .. _swig: http://www.swig.org
-.. _openmp: www.openmp.org/
+.. _openmp: http://www.openmp.org/
 
 .. Windows development
 .. _mingw: http://www.mingw.org/wiki/Getting_Started
@@ -152,7 +155,7 @@
 .. _FMRIB: http://www.fmrib.ox.ac.uk
 
 .. Other organizations
-.. _enthought: <http://www.enthought.com>
+.. _enthought: http://www.enthought.com
 .. _kitware: http://www.kitware.com
 .. _nitrc: http://www.nitrc.org
 

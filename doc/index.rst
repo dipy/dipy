@@ -4,7 +4,7 @@
 Diffusion Imaging In Python
 ###########################
 
-Dipy_ is a **free** and **open source** software project for computational neuroanatomy,
+DIPY_ is a **free** and **open source** software project for computational neuroanatomy,
 focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a
 broad range of algorithms for denoising, registration, reconstruction, tracking, clustering,
 visualization, and statistical analysis of MRI data.
@@ -62,7 +62,7 @@ Highlights
 - Anisotropic Power Maps from spherical harmonic coefficients.
 - A new framework for affine registration of images.
 
-See :ref:`older highlights <old_highlights>`.
+See :ref:`Older Highlights <old_highlights>`.
 
 
 *************
@@ -75,11 +75,11 @@ Announcements
 - :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
 - :ref:`DIPY 0.9.2 <release0.9>` released, March 18, 2015.
 - :ref:`DIPY 0.8.0 <release0.8>` released, January 6, 2015.
-- dipy_ was an official exhibitor in `OHBM 2015 <http://ohbm.loni.usc.edu>`_.
+- DIPY_ was an official exhibitor in `OHBM 2015 <http://ohbm.loni.usc.edu>`_.
 - DIPY was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
 - `DIPY paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
-See some of our :ref:`past announcements <old_news>`
+See some of our :ref:`Past Announcements <old_news>`
 
 
 ***************
@@ -109,7 +109,7 @@ text files. Finally, we save our result as a Nifti file ::
 
     save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
 
-As an exercise try to calculate `color FA` with your datasets. You will need
+As an exercise, you can try to calculate `color FA` with your datasets. You will need
 to replace the filepaths `fimg`, `fbval` and `fbvec`. Here is what
 a slice should look like.
 
@@ -120,7 +120,7 @@ a slice should look like.
 Next Steps
 **********
 
-You can learn more about how you to use dipy_ with  your datasets by reading the examples in our :ref:`documentation`.
+You can learn more about how you to use DIPY_ with  your datasets by reading the examples in our :ref:`documentation`.
 
 .. We need the following toctree directive to include the documentation
 .. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html
