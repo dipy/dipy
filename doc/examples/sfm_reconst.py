@@ -140,7 +140,7 @@ sf_peaks = dpp.peaks_from_model(sf_model,
 
 
 window.clear(ren)
-fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
+fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values, scale=1.3)
 ren.add(fodf_peaks)
 
 print('Saving illustration as sf_peaks.png')
