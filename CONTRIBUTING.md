@@ -64,5 +64,6 @@ Please, read the document to conform your code contributions to the DIPY standar
 ### Documentation
 
 DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to generate
-documentation. The [DIPY Coding Style Guideline](./doc/devel/coding_style_guideline.rst)
+documentation. The
+[DIPY Coding Style Guideline](http://nipy.org/dipy/devel/coding_style_guideline.html)
 contains details about documenting the contributions.

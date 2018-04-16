@@ -1,9 +1,9 @@
-""" This file contains defines parameters for dipy that we use to fill
-settings in setup.py, the dipy top-level docstring, and for building the
+""" This file contains defines parameters for DIPY that we use to fill
+settings in setup.py, the DIPY top-level docstring, and for building the
 docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 """
 
-# dipy version information.  An empty _version_extra corresponds to a
+# DIPY version information.  An empty _version_extra corresponds to a
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 0
@@ -36,15 +36,15 @@ long_description = """
  DIPY
 ======
 
-Dipy is a python toolbox for analysis of MR diffusion imaging.
+DIPY is a python toolbox for analysis of MR diffusion imaging.
 
-Dipy is for research only; please do not use results from dipy for
+DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
 
 Website
 =======
 
-Current information can always be found from the dipy website - http://dipy.org
+Current information can always be found from the DIPY website - http://dipy.org
 
 Mailing Lists
 =============
@@ -68,10 +68,10 @@ You can find our sources and single-click downloads:
 License
 =======
 
-Dipy is licensed under the terms of the BSD license.
+DIPY is licensed under the terms of the BSD license.
 Please see the LICENSE file in the dipy distribution.
 
-Dipy uses other libraries also licensed under the BSD or the
+DIPY uses other libraries also licensed under the BSD or the
 MIT licenses, with the only exception of the SHORE module which
 optionally uses the cvxopt library. Cvxopt is licensed
 under the GPL license.

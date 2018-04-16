@@ -99,7 +99,7 @@ plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 """
 
 """
-Load an odf reconstruction sphere
+Load an ODF reconstruction sphere
 """
 
 sphere = get_sphere('symmetric724')
@@ -129,6 +129,9 @@ window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
 
    **Fiber Orientation Distribution Functions, in a small ROI of the brain**.
 
+References
+----------
+
 .. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation Distributions
        Using High Angular Resolution Diffusion Imaging", Magnetic
        Resonance in Medicine, 2005.
@@ -140,6 +143,7 @@ window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
 .. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework for
        Diffusion MRI microstructural model estimation", MICCAI Workshop
        on Computational DIFFUSION MRI (CDMRI), 2017.
+
 .. include:: ../links_names.inc
 
 """

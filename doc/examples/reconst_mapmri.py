@@ -39,7 +39,7 @@ Download and read the data for this tutorial.
 MAPMRI requires multi-shell data, to properly fit the radial part of the basis.
 The total size of the downloaded data is 1760 MBytes, however you only need to
 fetch it once. Parameter ``with_raw`` of function ``fetch_cenir_multib`` is set
-to ``False`` to only download eddy-current/motion corrected data:.
+to ``False`` to only download eddy-current/motion corrected data:
 """
 
 fetch_cenir_multib(with_raw=False)
@@ -52,7 +52,7 @@ Human Connectome Project (HCP).
 object (gradient information e.g. b-values). For example, to show the b-values
 it is possible to write::
 
-   ``print(gtab.bvals)``
+   print(gtab.bvals)
 
 For the values of the q-space indices to make sense it is necessary to
 explicitly state the ``big_delta`` and ``small_delta`` parameters in the
@@ -81,26 +81,30 @@ shown in [Fick2016a]_, the isotropic basis is best used for tractography
 purposes, as the anisotropic basis has a bias towards smaller crossing angles
 in the ODF. For signal fitting and estimation of scalar quantities the
 anisotropic basis is suggested. The choice can be made by setting
-"anisotropic_scaling=True" or "anisotropic_scaling=False".
+``anisotropic_scaling=True`` or ``anisotropic_scaling=False``.
 
 First, we must select the method of regularization and/or constraining the
 basis fitting.
-- "laplacian_regularization=True" makes it use Laplacian regularization
+
+- ``laplacian_regularization=True`` makes it use Laplacian regularization
   [Fick2016a]_. This method essentially reduces spurious oscillations in the
   reconstruction by minimizing the Laplacian of the fitted signal.
   Several options can be given to select the regularization weight:
-      -"regularization_weighting="GCV"" uses generalized cross-validation
-       [Craven1978]_ to find an optimal weight.
-      -"regularization_weighting=0.2" for example would omit the GCV and
-       just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
-      -"regularization_weighting=np.array(weights)" would make the GCV use
-       a custom range to find an optimal weight.
-- "positivity_constraint=True" makes it use the positivity constraint on the
+
+    - ``regularization_weighting=GCV`` uses generalized cross-validation
+      [Craven1978]_ to find an optimal weight.
+    - ``regularization_weighting=0.2`` for example would omit the GCV and
+      just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
+    - ``regularization_weighting=np.array(weights)`` would make the GCV use
+      a custom range to find an optimal weight.
+
+- ``positivity_constraint=True`` makes it use the positivity constraint on the
   diffusion propagator [Ozarslan2013]_. This method constrains the final
   solution of the diffusion propagator to be positive at a set of discrete
   points, since negative values should not exist.
-      -the "pos_grid" and "pos_radius" affect the location and number of
-       constraint points in the diffusion propagator.
+
+    - The ``pos_grid`` and ``pos_radius`` affect the location and number of
+      constraint points in the diffusion propagator.
 
 Both methods do a good job of producing viable solutions to the signal fitting
 in practice. The difference is that the Laplacian regularization imposes
@@ -133,13 +137,13 @@ map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                           positivity_constraint=True)
 
 """
-Note that when we use only Laplacian regularization, the "GCV" option may
+Note that when we use only Laplacian regularization, the ``GCV`` option may
 select very low regularization weights in very anisotropic white matter such
 as the corpus callosum, resulting in corrupted scalar indices. In this example
 we therefore choose a preset value of 0.2, which has shown to be quite robust
 and also faster in practice [Fick2016a]_.
 
-We can then fit the MAPMRI model to the data.
+We can then fit the MAPMRI model to the data:
 """
 
 mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
@@ -262,6 +266,7 @@ plt.savefig('MAPMRI_maps.png')
    :align: center
 
 From left to right:
+
 - Mean Squared Displacement (MSD) is a measure for how far protons are able to
   diffuse. a decrease in MSD indicates protons are hindered/restricted more,
   as can be seen by the high MSD in the CSF, but low in the white matter.
@@ -367,7 +372,7 @@ map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
 mapfit_both_iso = map_model_both_iso.fit(data_small)
 
 """
-Load an odf reconstruction sphere
+Load an ODF reconstruction sphere
 """
 
 sphere = get_sphere('symmetric724')

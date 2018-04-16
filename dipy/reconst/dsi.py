@@ -30,7 +30,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                 \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions. Method
+        wave vector which corresponds to different gradient directions. Method
         used to calculate the ODFs. Here we implement the method proposed by
         Wedeen et al. [1]_.
 
@@ -511,7 +511,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
                 \end{eqnarray*}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions,
+        wave vector which corresponds to different gradient directions,
         $M(\mathbf{q})$ is a mask corresponding to your q-space sampling and
         $\otimes$ is the convolution operator [1]_.
 
