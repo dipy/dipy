@@ -330,7 +330,6 @@ def test_disperse_charges():
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 10)
     nt.assert_array_almost_equal(charges, d_sphere.vertices)
 
-    a = np.sqrt(3)/2
     charges = np.array([[3./5, 4./5, 0],
                         [4./5, 3./5, 0]])
     expected_charges = np.array([[0, 1., 0],
@@ -381,10 +380,11 @@ def test_interp_rbf():
     # https://docs.python.org/2/library/warnings.html#testing-warnings)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        interp_data_en = interp_rbf(data, s0, s1, norm="euclidean_norm")
+        interp_rbf(data, s0, s1, norm="euclidean_norm")
         nt.assert_(len(w) == 1)
         nt.assert_(issubclass(w[-1].category, DeprecationWarning))
         nt.assert_("deprecated" in str(w[-1].message))
+
 
 if __name__ == "__main__":
     nt.run_module_suite()

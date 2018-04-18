@@ -6,7 +6,7 @@ Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
 
 This example is meant to be an introduction to some of the streamline tools
-available in dipy_. Some of the functions covered in this example are
+available in DIPY_. Some of the functions covered in this example are
 ``target``, ``connectivity_matrix`` and ``density_map``. ``target`` allows one
 to filter streamlines that either pass through or do not pass through some
 region of the brain, ``connectivity_matrix`` groups and counts streamlines
@@ -91,7 +91,7 @@ other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
-We can use some of dipy_'s visualization tools to display the ROI we targeted
+We can use some of DIPY_'s visualization tools to display the ROI we targeted
 above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
@@ -237,7 +237,7 @@ lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
 lr_sf_trk = Streamlines(lr_sf_trk)
 
 # Save streamlines
-save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size)
+save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
 
 """
 Let's take a moment here to consider the representation of streamlines used in
@@ -275,14 +275,14 @@ image.
 .. rubric:: Footnotes
 
 .. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is a
-    modified version of label map `aparc+aseg.mgz` created by `FreeSurfer
-    <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus callosum region is a
-    combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
-    labels were re-mapped and reduced so that they lie between 0 and 88. To
-    see the FreeSurfer region, label and name, represented by each value see
-   `label_info.txt` in `~/.dipy/stanford_hardi`.
+       modified version of label map `aparc+aseg.mgz` created by `FreeSurfer
+       <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus callosum region is a
+       combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
+       labels were re-mapped and reduced so that they lie between 0 and 88. To
+       see the FreeSurfer region, label and name, represented by each value see
+       `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
-    that can represent scaling, rotation, sheer, translation and reflection.
-    Affine transformations are often represented using a 4x4 matrix where the
-    last row of the matrix is ``[0, 0, 0, 1]``.
+       that can represent scaling, rotation, sheer, translation and reflection.
+       Affine transformations are often represented using a 4x4 matrix where the
+       last row of the matrix is ``[0, 0, 0, 1]``.
 """

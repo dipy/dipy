@@ -117,7 +117,7 @@ model on the sphere, and plot it.
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=1.3, colormap='plasma')
+fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap='plasma')
 
 ren = window.Renderer()
 ren.add(fodf_spheres)
@@ -140,7 +140,7 @@ sf_peaks = dpp.peaks_from_model(sf_model,
 
 
 window.clear(ren)
-fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values, scale=1.3)
+fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
 ren.add(fodf_peaks)
 
 print('Saving illustration as sf_peaks.png')

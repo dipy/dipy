@@ -4,7 +4,7 @@ Calculate SHORE scalar maps
 ===========================
 
 We show how to calculate two SHORE-based scalar maps: return to origin
-probability (rtop) [Descoteaux2011]_ and mean square displacement (msd)
+probability (RTOP) [Descoteaux2011]_ and mean square displacement (MSD)
 [Wu2007]_, [Wu2008]_ on your data. SHORE can be used with any multiple b-value
 dataset like multi-shell or DSI.
 
@@ -56,7 +56,7 @@ Fit the signal with the model and calculate the SHORE coefficients.
 asmfit = asm.fit(dataslice)
 
 """
-Calculate the analytical rtop on the signal
+Calculate the analytical RTOP on the signal
 that corresponds to the integral of the signal.
 """
 
@@ -64,7 +64,7 @@ print('Calculating... rtop_signal')
 rtop_signal = asmfit.rtop_signal()
 
 """
-Now we calculate the analytical rtop on the propagator,
+Now we calculate the analytical RTOP on the propagator,
 that corresponds to its central value.
 """
 
@@ -76,10 +76,10 @@ to show that we calculate the mean square error on this two measures.
 """
 
 mse = np.sum((rtop_signal - rtop_pdf) ** 2) / rtop_signal.size
-print("mse = %f" % mse)
+print("MSE = %f" % mse)
 
 """
-mse = 0.000000
+MSE = 0.000000
 
 Let's calculate the analytical mean square displacement on the propagator.
 """
@@ -110,19 +110,19 @@ plt.savefig('SHORE_maps.png')
 .. figure:: SHORE_maps.png
    :align: center
 
-   rtop and msd calculated using the SHORE model.
+   RTOP and MSD calculated using the SHORE model.
 
 References
 ----------
 
-.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion
+.. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
    propagator imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621,
    2011.
 
-.. [Wu2007] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36, p.
+.. [Wu2007] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36, p.
    617-629, 2007.
 
-.. [Wu2008] Wu Y. et. al, "Computation of Diffusion Function Measures in
+.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures in
    q-Space Using Magnetic Resonance Hybrid Diffusion Imaging", IEEE
    TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008.
 

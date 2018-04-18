@@ -21,7 +21,7 @@ def get_vertex_set(key):
     if key[:6] == 'create':
         number = eval(key[6:])
         vertices, edges, faces = create_unit_sphere(number) 
-        omit = 0
+        # omit = 0
         return vertices
     else:
         entry = sphere_dic[key]
@@ -39,7 +39,7 @@ def get_vertex_set(key):
         elif entry['object'] == 'dicom':
             data,affine,bvals,gradients = dcm.read_mosaic_dir(filepath)
             # print (bvals.shape, gradients.shape)
-            grad3 = np.vstack((bvals, bvals, bvals)).transpose()
+            # grad3 = np.vstack((bvals, bvals, bvals)).transpose()
             # print grad3.shape
             # vertices = grad3*gradients
             vertices = gradients

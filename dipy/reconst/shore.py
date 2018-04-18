@@ -31,32 +31,32 @@ class ShoreModel(Cache):
                 S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
             \end{equation}
 
-    where $\mathbf{q}$ is the wavector which corresponds to different gradient
-    directions. Numerous continuous functions $\phi_i$ can be used to model
-    $S$. Some are presented in [2,3,4]_.
+    where $\mathbf{q}$ is the wave vector which corresponds to different
+    gradient directions. Numerous continuous functions $\phi_i$ can be used to
+    model $S$. Some are presented in [2,3,4]_.
 
     From the $c_i$ coefficients, there exist analytical formulae to estimate
-    the ODF, the return to the origin porbability (RTOP), the mean square
+    the ODF, the return to the origin probability (RTOP), the mean square
     displacement (MSD), amongst others [5]_.
 
     References
     ----------
-    .. [1] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
+    .. [1] Ozarslan E. et al., "Simple harmonic oscillator based reconstruction
            and estimation for one-dimensional q-space magnetic resonance
-           1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+           1D-SHORE)", Proc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
-    .. [2] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+    .. [2] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
            estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
 
-    .. [3] Rathi Y. et. al, "Sparse multi-shell diffusion imaging", MICCAI,
+    .. [3] Rathi Y. et al., "Sparse multi-shell diffusion imaging", MICCAI,
            2011.
 
-    .. [4] Cheng J. et. al, "Theoretical Analysis and eapactical Insights on
+    .. [4] Cheng J. et al., "Theoretical Analysis and eapactical Insights on
            EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
            Computational Diffusion MRI, 2011.
 
-    .. [5] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    .. [5] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
            diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
 
@@ -93,7 +93,7 @@ class ShoreModel(Cache):
                     S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
                 \end{equation}
 
-        where $\mathbf{q}$ is the wavector which corresponds to different
+        where $\mathbf{q}$ is the wave vector which corresponds to different
         gradient directions.
 
         From the $c_i$ coefficients, there exists an analytical formula to
@@ -137,7 +137,7 @@ class ShoreModel(Cache):
         ODF estimation via Compressive Sensing in diffusion MRI", Medical
         Image Analysis, 2013.
 
-        .. [2] Cheng J. et al., "Theoretical Analysis and eapactical Insights
+        .. [2] Cheng J. et al., "Theoretical Analysis and Practical Insights
         on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
         Computational Diffusion MRI, 2011.
 
@@ -274,7 +274,7 @@ class ShoreModel(Cache):
             try:
                 prob.solve(solver=self.cvxpy_solver)
                 coef = np.asarray(c.value).squeeze()
-            except:
+            except Exception:
                 warn('Optimization did not find a solution')
                 coef = np.zeros(M.shape[1])
         return ShoreFit(self, coef)
@@ -412,7 +412,7 @@ class ShoreFit():
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
@@ -432,7 +432,7 @@ class ShoreFit():
 
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
@@ -458,11 +458,11 @@ class ShoreFit():
                 \end{equation}
 
         where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu
-        et. al [1]_).
+        et al. [1]_).
 
         References
         ----------
-        .. [1] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36,
+        .. [1] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
         p. 617-629, 2007.
         """
         msd = 0
@@ -526,7 +526,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
+    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
     Image Analysis, 2013.
 
@@ -576,7 +576,7 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
 
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
+    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
     Image Analysis, 2013.
     """
@@ -620,7 +620,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
+    .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
     Image Analysis, 2013.
     """

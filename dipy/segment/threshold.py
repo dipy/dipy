@@ -65,7 +65,6 @@ def upper_bound_by_rate(data, rate=0.05):
 
     g, h = np.histogram(data)
     m = np.zeros((10, 3))
-    low = data.min()
     high = data.max()
     for i in np.array(range(10)):
         m[i, 0] = g[i]

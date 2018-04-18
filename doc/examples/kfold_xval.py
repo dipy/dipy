@@ -22,7 +22,7 @@ set. This method has been used for comparison of models such as DTI and CSD
 differences in the number of parameters in the model, and it can be used to
 compare models that are not nested.
 
-In dipy_, we include an implementation of k-fold cross-validation. In this
+In DIPY_, we include an implementation of k-fold cross-validation. In this
 method, the data is divided into $k$ different segments. In each iteration
 $\frac{1}{k}th$ of the data is held out and the model is fit to the other
 $\frac{k-1}{k}$ parts of the data. A prediction of the held out data is done

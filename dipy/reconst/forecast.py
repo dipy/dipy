@@ -31,11 +31,11 @@ class ForecastModel(OdfModel, Cache):
            Using High Angular Resolution Diffusion Imaging", Magnetic
            Resonance in Medicine, 2005.
 
-    .. [2] Kaden E. et. al, "Quantitative Mapping of the Per-Axon Diffusion 
+    .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion 
            Coefficients in Brain White Matter", Magnetic Resonance in 
            Medicine, 2016.
 
-    .. [3] Zucchelli E. et. al, "A generalized SMT-based framework for
+    .. [3] Zucchelli E. et al., "A generalized SMT-based framework for
            Diffusion MRI microstructural model estimation", MICCAI Workshop
            on Computational DIFFUSION MRI (CDMRI), 2017.
     Notes
@@ -96,11 +96,11 @@ class ForecastModel(OdfModel, Cache):
                Using High Angular Resolution Diffusion Imaging", Magnetic
                Resonance in Medicine, 2005.
 
-        .. [2] Kaden E. et. al, "Quantitative Mapping of the Per-Axon Diffusion 
+        .. [2] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion 
                Coefficients in Brain White Matter", Magnetic Resonance in 
                Medicine, 2016.
 
-        .. [3] Zucchelli M. et. al, "A generalized SMT-based framework for
+        .. [3] Zucchelli M. et al., "A generalized SMT-based framework for
                Diffusion MRI microstructural model estimation", MICCAI Workshop
                on Computational DIFFUSION MRI (CDMRI), 2017.
 
@@ -258,7 +258,7 @@ class ForecastModel(OdfModel, Cache):
                 try:
                     prob.solve()
                     coef = np.asarray(c.value).squeeze()
-                except:
+                except Exception:
                     warn('Optimization did not find a solution')
                     coef = np.zeros(M.shape[1])
                     coef[0] = c0

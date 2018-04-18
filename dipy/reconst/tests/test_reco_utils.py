@@ -31,7 +31,7 @@ def test_argmax_from_countarrs():
     adj_inds_raw = np.arange(10, dtype=np.uint32)[::-1]
     # when contigous - OK
     adj_inds = adj_inds_raw.copy()
-    inds = argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds)
+    argmax_from_countarrs(vals, vertinds, adj_counts, adj_inds)
     # yield assert_array_equal(inds, [5, 6, 7, 8, 9])
     # test for errors - first - not contiguous
     #

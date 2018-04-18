@@ -71,11 +71,6 @@ def test_orthogonality_basis_functions():
     # do the same for the isotropic mapmri basis functions
     # we already know the spherical harmonics are orthonormal
     # only check j>0, l=0 basis functions
-    C1 = mapmri.mapmri_isotropic_radial_pdf_basis(1, 0, diffusivity, 0)
-    C2 = mapmri.mapmri_isotropic_radial_pdf_basis(2, 0, diffusivity, 0)
-    C3 = mapmri.mapmri_isotropic_radial_pdf_basis(3, 0, diffusivity, 0)
-    C4 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
-    C5 = mapmri.mapmri_isotropic_radial_pdf_basis(4, 0, diffusivity, 0)
 
     int1 = integrate.quad(lambda q:
                           mapmri.mapmri_isotropic_radial_signal_basis(
@@ -631,9 +626,9 @@ def test_positivity_constraint(radial_order=6):
     max_radius = 15e-3  # 20 microns maximum radius
     r_grad = mapmri.create_rspace(gridsize, max_radius)
 
-    # the posivitivity constraint does not make the pdf completely positive
+    # The positivity constraint does not make the pdf completely positive
     # but greatly decreases the amount of negativity in the constrained points.
-    # we test if the amount of negative pdf has decreased more than 90%
+    # We test if the amount of negative pdf has decreased more than 90%
 
     mapmod_no_constraint = MapmriModel(gtab, radial_order=radial_order,
                                        laplacian_regularization=False,

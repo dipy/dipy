@@ -145,7 +145,7 @@ def test_sphere_distance():
     # Check points not on surface raises error when asked for
     yield assert_raises, ValueError, sphere_distance, [1, 0], [0, 2]
     # Not when check is disabled
-    sph_d = sphere_distance([1, 0], [0, 2], None, False)
+    sphere_distance([1, 0], [0, 2], None, False)
     # Error when radii don't match passed radius
     yield assert_raises, ValueError, sphere_distance, [1, 0], [0, 1], 2.0
 

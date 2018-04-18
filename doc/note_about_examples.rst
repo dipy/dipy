@@ -3,7 +3,7 @@ A note about the examples
 =========================
 
 The examples here are some uses of the analysis and visualization functionality
-of dipy_, with example data from actual neuroscience experiments, or with
+of DIPY_, with example data from actual neuroscience experiments, or with
 synthetic data, which is generated as part of the example.
 
 All the examples presented in the documentation are generated from *fully
