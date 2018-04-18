@@ -230,6 +230,52 @@ def center_streamlines(streamlines):
     return [s - center for s in streamlines], center
 
 
+def deform_streamlines(streamlines,
+                       deform_field,
+                       stream_to_current_grid,
+                       current_grid_to_world,
+                       stream_to_ref_grid,
+                       ref_grid_to_world):
+    """ Apply deformation field to streamlines
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 2D ndarrays of shape[-1]==3
+    deform_field : 4D numpy array
+        x,y,z displacements stored in volume, shape[-1]==3
+    stream_to_current_grid : array, (4, 4)
+        transform matrix voxmm space to original grid space
+    current_grid_to_world : array (4, 4)
+        transform matrix original grid space to world coordinates
+    stream_to_ref_grid : array (4, 4)
+        transform matrix voxmm space to new grid space
+    ref_grid_to_world : array(4, 4)
+        transform matrix new grid space to world coordinates
+
+    Returns
+    -------
+    new_streamlines : list
+        List of the transformed 2D ndarrays of shape[-1]==3
+    """
+
+    if deform_field.shape[-1] != 3:
+        raise ValueError("Last dimension of deform_field needs shape==3")
+
+    stream_in_curr_grid = transform_streamlines(streamlines,
+                                                stream_to_current_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid)
+    stream_in_world = transform_streamlines(stream_in_curr_grid,
+                                            current_grid_to_world)
+    new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
+                                                      stream_in_world)]
+    new_streams_grid = transform_streamlines(new_streams_in_world,
+                                             np.linalg.inv(ref_grid_to_world))
+    new_streamlines = transform_streamlines(new_streams_grid,
+                                            np.linalg.inv(stream_to_ref_grid))
+    return new_streamlines
+
+
 def transform_streamlines(streamlines, mat):
     """ Apply affine transformation to streamlines
 
