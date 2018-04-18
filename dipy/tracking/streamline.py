@@ -267,7 +267,8 @@ def deform_streamlines(streamlines,
     displacements = values_from_volume(deform_field, stream_in_curr_grid)
     stream_in_world = transform_streamlines(stream_in_curr_grid,
                                             current_grid_to_world)
-    new_streams_in_world = list(np.add(displacements, stream_in_world))
+    new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
+                                                      stream_in_world)]
     new_streams_grid = transform_streamlines(new_streams_in_world,
                                              np.linalg.inv(ref_grid_to_world))
     new_streamlines = transform_streamlines(new_streams_grid,
