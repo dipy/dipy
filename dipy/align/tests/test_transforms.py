@@ -75,7 +75,6 @@ def test_param_to_matrix_2d():
     # Verify that ValueError is raised if incorrect number of parameters
     for transform in regtransforms.values():
         n = transform.get_number_of_parameters()
-
         # Set incorrect number of parameters
         theta = np.zeros(n + 1, dtype=np.float64)
         assert_raises(ValueError, transform.param_to_matrix, theta)
@@ -171,7 +170,6 @@ def test_param_to_matrix_3d():
     # Verify that ValueError is raised if incorrect number of parameters
     for transform in regtransforms.values():
         n = transform.get_number_of_parameters()
-
         # Set incorrect number of parameters
         theta = np.zeros(n + 1, dtype=np.float64)
         assert_raises(ValueError, transform.param_to_matrix, theta)
@@ -179,7 +177,6 @@ def test_param_to_matrix_3d():
 
 def test_identity_parameters():
     for transform in regtransforms.values():
-        n = transform.get_number_of_parameters()
         dim = transform.get_dim()
         theta = transform.get_identity_parameters()
 
@@ -222,7 +219,6 @@ def test_jacobian_functions():
     # length
     for transform in regtransforms.values():
         n = transform.get_number_of_parameters()
-
         # Wrong number of parameters
         theta = np.zeros(n + 1)
         x = np.zeros(dim)

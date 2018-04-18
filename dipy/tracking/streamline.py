@@ -176,7 +176,6 @@ def unlist_streamlines(streamlines):
     offsets = np.zeros(len(streamlines), dtype='i8')
 
     curr_pos = 0
-    prev_pos = 0
     for (i, s) in enumerate(streamlines):
 
             prev_pos = curr_pos

@@ -230,7 +230,7 @@ cdef class EnhancementKernel:
         v = np.array([0., 0., 1.])
 
         # evaluate at origin
-        self.kernelmax = self.k2(x, y, r, v);
+        self.kernelmax = self.k2(x, y, r, v)
 
         with nogil:
 
@@ -241,7 +241,7 @@ cdef class EnhancementKernel:
                 x[2] = i
                 kval = self.k2(x, y, r, v) / self.kernelmax
                 if(kval < 0.1):
-                    break;
+                    break
 
         N = ceil(i) * 2
         if N % 2 == 0:
@@ -384,7 +384,7 @@ cdef class EnhancementKernel:
         output *= exp(-sqrt((c[0]*c[0] + c[1]*c[1]) / (self.D33*self.D44) + \
                    (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) * \
                    (c[2]*c[2] / self.D33 + (c[3]*c[3]+c[4]*c[4]) / self.D44) + \
-                    c[5]*c[5]/self.D44) / (4*self.t));
+                    c[5]*c[5]/self.D44) / (4*self.t))
         return output
 
 cdef double PI = 3.1415926535897932

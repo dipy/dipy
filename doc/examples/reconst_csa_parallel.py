@@ -4,7 +4,7 @@ Parallel reconstruction using Q-Ball
 ====================================
 
 We show an example of parallel reconstruction using a Q-Ball Constant Solid
-Angle model (see Aganj et. al (MRM 2010)) and `peaks_from_model`.
+Angle model (see Aganj et al. (MRM 2010)) and `peaks_from_model`.
 
 Import modules, fetch and read data, and compute the mask.
 """
@@ -100,10 +100,11 @@ print("Speedup factor : " + str(time_single / time_parallel))
 Speedup factor : 1.72191839533
 
 In Windows if you get a runtime error about frozen executable please start
-your script by adding your code above in a ``main`` function and use:
+your script by adding your code above in a ``main`` function and use::
 
-if __name__ == '__main__':
-    import multiprocessing
-    multiprocessing.freeze_support()
-    main()
+    if __name__ == '__main__':
+        import multiprocessing
+        multiprocessing.freeze_support()
+        main()
+
 """

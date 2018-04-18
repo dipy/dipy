@@ -42,7 +42,7 @@ def test_custom_interactor_style_events(recording=False):
     polygon_source.GeneratePolygonOff()  # Only the outline of the circle.
     polygon_source.SetNumberOfSides(50)
     polygon_source.SetRadius(10)
-    polygon_source.SetRadius
+    # polygon_source.SetRadius
     polygon_source.SetCenter(0, 0, 0)
 
     mapper = vtk.vtkPolyDataMapper2D()

@@ -19,12 +19,12 @@ def test_LSCv2():
     xyz6 = np.array([[0, 20, 0], [0, 40, 0], [300, 50, 0]], dtype='float32')
 
     T = [xyz1, xyz2, xyz3, xyz4, xyz5, xyz6]
-    C = pf.local_skeleton_clustering(T, 0.2)
+    pf.local_skeleton_clustering(T, 0.2)
 
     # print C
     # print len(C)
 
-    C2 = pf.local_skeleton_clustering_3pts(T, 0.2)
+    pf.local_skeleton_clustering_3pts(T, 0.2)
 
     # print C2
     # print len(C2)
@@ -121,7 +121,7 @@ def test_bundles_distances_mam():
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
     for metric in ('avg', 'min', 'max'):
-        DM2 = pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
+        pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
 
 
 def test_bundles_distances_mdf():
@@ -132,7 +132,7 @@ def test_bundles_distances_mdf():
 
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
-    DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
+    pf.bundles_distances_mdf(tracksA, tracksB)
 
     tracksA = [xyz1A, xyz1A]
     tracksB = [xyz1A, xyz1A]
@@ -266,7 +266,7 @@ def test_most_similar_mam():
     tracks = [xyz1, xyz2, xyz3]
     for metric in ('avg', 'min', 'max'):
         # pf should be much faster and the results equivalent
-        si2, s2 = pf.most_similar_track_mam(tracks, metric=metric)
+        pf.most_similar_track_mam(tracks, metric=metric)
 
 
 def test_cut_plane():

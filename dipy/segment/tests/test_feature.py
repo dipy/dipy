@@ -252,7 +252,6 @@ def test_feature_extract():
             square_norms = np.sum((streamline[1:] - streamline[:-1]) ** 2)
             return np.sum(np.sqrt(square_norms))
 
-    nb_streamlines = 100
     feature_shape = (1, 1)  # One scalar represented as a 2D array
     feature = ArcLengthFeature()
 
@@ -263,7 +262,6 @@ def test_feature_extract():
     # Try if streamlines are readonly
     for s in streamlines:
         s.setflags(write=False)
-    features = extract(feature, streamlines)
 
 
 def test_subclassing_feature():

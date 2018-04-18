@@ -188,7 +188,7 @@ def run_comparisons(sample_data=35):
         dataname = simfile
         print dataname
     
-        sim_data=np.loadtxt(simdir+dataname)
+        # sim_data=np.loadtxt(simdir+dataname)
     
         gqfile = simdir+'gq/'+dataname+'.pkl'
         gq =  pkl.load_pickle(gqfile)
@@ -250,7 +250,7 @@ def run_comparisons(sample_data=35):
 
 def run_gq_sims(sample_data=[35,23,46,39,40,10,37,27,21,20]):
 
-    results = []
+    # results = []
 
     out = open('/home/ian/Data/SimVoxels/Out/'+'npa+fa','w')
 

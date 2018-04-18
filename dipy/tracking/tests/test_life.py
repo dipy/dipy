@@ -55,7 +55,6 @@ def test_streamline_tensors():
     for t in streamline_tensors:
         eigvals, eigvecs = la.eig(t)
         eigvecs = eigvecs[np.argsort(eigvals)[::-1]]
-        eigvals = eigvals[np.argsort(eigvals)[::-1]]
         # This one has no rotations - all tensors are simply the canonical:
         npt.assert_almost_equal(np.rad2deg(np.arccos(
             np.dot(eigvecs[0], [1, 0, 0]))), 0)
@@ -72,11 +71,11 @@ def test_streamline_signal():
     streamline1 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                    [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
 
-    sig1 = [life.streamline_signal(s, gtab, evals) for s in streamline1]
+    [life.streamline_signal(s, gtab, evals) for s in streamline1]
 
     streamline2 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]]
 
-    sig2 = [life.streamline_signal(s, gtab, evals) for s in streamline2]
+    [life.streamline_signal(s, gtab, evals) for s in streamline2]
 
     npt.assert_array_equal(streamline2[0], streamline1[0])
 
@@ -105,8 +104,6 @@ def test_FiberModel_init():
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
-    data = data_ni.get_data()
-    data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
@@ -130,7 +127,6 @@ def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
-    data_aff = data_ni.affine
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
@@ -144,7 +140,6 @@ def test_FiberFit():
     w = np.array([0.5, 0.5])
     sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
     S0 = data[..., gtab.b0s_mask]
-    rel_sig = data[..., ~gtab.b0s_mask]/data[..., gtab.b0s_mask]
     this_data = np.zeros((10, 10, 10, 64))
     this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]] =\
         (sig.reshape((4, 64)) *

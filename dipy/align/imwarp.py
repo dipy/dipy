@@ -1208,13 +1208,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         fw_step = np.array(self.metric.compute_forward())
 
         # set zero displacements at the boundary
-        fw_step[0, ...] = 0
-        fw_step[:, 0, ...] = 0
-        fw_step[-1, ...] = 0
-        fw_step[:, -1, ...] = 0
-        if(self.dim == 3):
-            fw_step[:, :, 0, ...] = 0
-            fw_step[:, :, -1, ...] = 0
+        fw_step = self.__set_no_boundary_displacement(fw_step)
 
         # Normalize the forward step
         nrm = np.sqrt(np.sum((fw_step/current_disp_spacing)**2, -1)).max()
@@ -1234,10 +1228,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         bw_step = np.array(self.metric.compute_backward())
 
         # set zero displacements at the boundary
-        bw_step[0, ...] = 0
-        bw_step[:, 0, ...] = 0
-        if(self.dim == 3):
-            bw_step[:, :, 0, ...] = 0
+        bw_step = self.__set_no_boundary_displacement(bw_step)
 
         # Normalize the backward step
         nrm = np.sqrt(np.sum((bw_step/current_disp_spacing) ** 2, -1)).max()
@@ -1264,37 +1255,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         self.energy_list.append(fw_energy + bw_energy)
 
-        # Invert the forward model's forward field
-        self.static_to_ref.backward = np.array(
-            self.invert_vector_field(
-                self.static_to_ref.forward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.static_to_ref.backward))
-
-        # Invert the backward model's forward field
-        self.moving_to_ref.backward = np.array(
-            self.invert_vector_field(
-                self.moving_to_ref.forward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.moving_to_ref.backward))
-
-        # Invert the forward model's backward field
-        self.static_to_ref.forward = np.array(
-            self.invert_vector_field(
-                self.static_to_ref.backward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.static_to_ref.forward))
-
-        # Invert the backward model's backward field
-        self.moving_to_ref.forward = np.array(
-            self.invert_vector_field(
-                self.moving_to_ref.backward,
-                current_disp_world2grid,
-                current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.moving_to_ref.forward))
+        self.__invert_models(current_disp_world2grid, current_disp_spacing)
 
         # Free resources no longer needed to compute the forward and backward
         # steps
@@ -1303,6 +1264,73 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.metric.free_iteration()
 
         return der
+
+    def __set_no_boundary_displacement(self, step):
+        """ set zero displacements at the boundary
+
+        Parameters
+        ----------
+        step : array, ndim 2 or 3
+            displacements field
+
+        Returns
+        -------
+        step : array, ndim 2 or 3
+            displacements field
+        """
+        step[0, ...] = 0
+        step[:, 0, ...] = 0
+        step[-1, ...] = 0
+        step[:, -1, ...] = 0
+        if self.dim == 3:
+            step[:, :, 0, ...] = 0
+            step[:, :, -1, ...] = 0
+        return step
+
+    def __invert_models(self, current_disp_world2grid, current_disp_spacing):
+        """Converting static - moving models in both direction.
+
+        Parameters
+        ----------
+        current_disp_world2grid : array, shape (3, 3) or  (4, 4)
+            the space-to-grid transformation associated to the displacement field
+            d (transforming physical space coordinates to voxel coordinates of the
+            displacement field grid)
+        current_disp_spacing :array, shape (2,) or  (3,)
+            the spacing between voxels (voxel size along each axis)
+        """
+
+        # Invert the forward model's forward field
+        self.static_to_ref.backward = np.array(
+            self.invert_vector_field(self.static_to_ref.forward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.static_to_ref.backward))
+
+        # Invert the backward model's forward field
+        self.moving_to_ref.backward = np.array(
+            self.invert_vector_field(self.moving_to_ref.forward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.moving_to_ref.backward))
+
+        # Invert the forward model's backward field
+        self.static_to_ref.forward = np.array(
+            self.invert_vector_field(self.static_to_ref.backward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.static_to_ref.forward))
+
+        # Invert the backward model's backward field
+        self.moving_to_ref.forward = np.array(
+            self.invert_vector_field(self.moving_to_ref.backward,
+                                     current_disp_world2grid,
+                                     current_disp_spacing,
+                                     self.inv_iter, self.inv_tol,
+                                     self.moving_to_ref.forward))
 
     def _approximate_derivative_direct(self, x, y):
         r"""Derivative of the degree-2 polynomial fit of the given x, y pairs

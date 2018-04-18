@@ -275,7 +275,7 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     
     #store representative tracks
     representative=[]       
-    representative_indices=[]       
+    # representative_indices=[]       
     
     #store indices of already visited tracks i.e. which already have a representative track
     visited=[]
@@ -368,9 +368,9 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     #hit points
     cc_p=np.array([c[1] for c in cc])
     
-    p_neighb=len(cc_p)*[0]
+    # p_neighb=len(cc_p)*[0]
     
-    cnt=0
+    # cnt=0
     #imaging processing from now on
     
     im=np.zeros((ysize,zsize))
@@ -415,7 +415,7 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     
     #label objects    
     imgl=nd.label(img)
-    no_labels=imgl[1]
+    # no_labels=imgl[1]
     imgl=imgl[0]
     
     #find the biggest objects the second biggest should be the cc the biggest should be the background
@@ -610,9 +610,9 @@ def neck_finder(hitdata, ref):
     hitcount = []
     
     for (p, plane) in enumerate(hitdata):
-        xyz = plane[:,:3]
-        rcd =plane[:,3]
-        fibres = plane[:,4]
+        xyz = plane[:, :3]
+        rcd =plane[:, 3]
+        # fibres = plane[:,4]
     
         hitcount +=[len(plane)]
     
@@ -651,7 +651,7 @@ def refconc(brain, ref, divergence_threshold=0.3, fibre_weight=0.7):
     #index, centre, log_max_concentration = max_concentration(reduced_hitdata, ref)
     index=None
     centre=None
-    log_max_concentration=None
+    # log_max_concentration=None
     
     return heavy_weight_fibres, index, centre
 
@@ -659,8 +659,8 @@ def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=
     '''
     '''
     bundle = set([])
-    centres = []
-    indices = []
+    # centres = []
+    # indices = []
 
     for ref in refs:        
         
@@ -774,7 +774,6 @@ class FACT_Delta():
             rz=(z-1)*np.random.rand()            
             seed=np.array([rx,ry,rz])
 
-            #print 'init seed', seed            
             #self.seed_list.append(seed.copy())            
             track=self.propagation(seed.copy(),qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
 
@@ -891,10 +890,6 @@ class FACT_Delta():
         new_direction = np.array([0,0,0])
         w,index=self.trilinear_interpolation(point)
 
-        #print w[0],w[1],w[2],w[3],w[4],w[5],w[6],w[7]
-
-        #print index
-
         #check if you are outside of the volume
         for i in range(3):
             if index[7][i] >= qa.shape[i] or index[0][i] < 0:
@@ -905,9 +900,7 @@ class FACT_Delta():
             x,y,z = index[m]
             qa_tmp = qa[x,y,z]
             ind_tmp = ind[x,y,z]
-            #print qa_tmp[0]#,qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
             delta,direction = self.nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,qa_thr,ang_thr)
-            #print delta, direction
             if not delta:
                 continue
             total_w += w[m]
@@ -956,14 +949,10 @@ class FACT_Delta():
         #d is the delta function 
         d,idirection=self.initial_direction(seed,qa,ind,odf_vertices,qa_thr)
 
-        #print('FD',idirection[0],idirection[1],idirection[2])
-
-        #print d
         if not d:
             return None
         
         dx = idirection
-        #point = seed-0.5
         track = []
         track.append(point.copy())
         #track towards one direction 

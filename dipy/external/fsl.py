@@ -269,7 +269,6 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
     # load the invwarp displacements
     imginvw = nib.load(finv)
     invwdata = imginvw.get_data()
-    invwaff = imginvw.affine
 
     # load the forward displacements
     imgdis = nib.load(fdis)
