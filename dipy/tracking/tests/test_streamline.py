@@ -517,16 +517,8 @@ def test_unlist_relist_streamlines():
 
 
 def test_deform_streamlines():
-    # streamlines needs to be a list of streamlines
-    A = np.array([[1, 2, 3], [1, 2, 3.]])
-
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
-    # shape = deformation_field.shape
-    # for i in range(shape[0]):
-    #     for j in range(shape[1]):
-    #         for k in range(shape[2]):
-    #             deformation_field[i][j][k] = np.random.randn(3)
     # Specify stream2grid and grid2world
     stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
                             [0, np.random.randn(1)[0], 0, 0],
@@ -548,15 +540,14 @@ def test_deform_streamlines():
 
     # Interpolate displacements onto original streamlines
     streamlines_in_grid = transform_streamlines(streamlines, stream2grid)
-    displacements = values_from_volume(deformation_field, streamlines_in_grid)
+    disps = values_from_volume(deformation_field, streamlines_in_grid)
 
     # Put new_streamlines into world space
     new_streamlines_world = transform_streamlines(new_streamlines,
                                                   stream2world)
 
-    # Subtract displacements from new_streamlines in world space
-    orig_streamlines_world = list(np.subtract(new_streamlines_world,
-                                              displacements))
+    # Subtract disps from new_streamlines in world space
+    orig_streamlines_world = list(np.subtract(new_streamlines_world, disps))
 
     # Put orig_streamlines_world into voxmm
     orig_streamlines = transform_streamlines(orig_streamlines_world,
