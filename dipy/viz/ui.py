@@ -183,7 +183,8 @@ class UI(object):
     def center(self):
         return self.position + self.size / 2.
 
-    def set_center(self, coords):
+    @center.setter
+    def center(self, coords):
         """ Position the center of this UI component.
 
         Parameters
@@ -543,10 +544,11 @@ class Rectangle2D(UI):
         self.actor.SetMapper(mapper)
 
     def _get_size(self):
-        lower_left_corner = self._points.GetPoint(0)
-        upper_right_corner = self._points.GetPoint(2)
-        size = np.array(upper_right_corner) - np.array(lower_left_corner)
-        return (abs(size[0]), abs(size[1]))
+        # Get 2D coordinates of two opposed corners of the rectangle.
+        lower_left_corner = np.array(self._points.GetPoint(0)[:2])
+        upper_right_corner = np.array(self._points.GetPoint(2)[:2])
+        size = abs(upper_right_corner - lower_left_corner)
+        return size
 
     @property
     def width(self):
@@ -664,7 +666,7 @@ class Disk2D(UI):
         self.inner_radius = inner_radius
         self.color = color
         self.opacity = opacity
-        self.set_center(center)
+        self.center = center
 
         self.handle_events(self.actor)
 
@@ -689,7 +691,8 @@ class Disk2D(UI):
 
     def _get_size(self):
         diameter = 2 * self.outer_radius
-        return (diameter, diameter)
+        size = (diameter, diameter)
+        return size
 
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component's bounding box.
@@ -910,18 +913,16 @@ class Panel2D(UI):
         self.element_positions.append((element, coords))
         element.position = self.position + coords
 
-    @staticmethod
-    def left_button_pressed(i_ren, obj, panel2d_object):
+    def left_button_pressed(self, i_ren, obj, panel2d_object):
         click_pos = np.array(i_ren.event.position)
-        panel2d_object._drag_offset = click_pos - panel2d_object.position
+        self._drag_offset = click_pos - panel2d_object.position
         i_ren.event.abort()  # Stop propagating the event.
 
-    @staticmethod
-    def left_button_dragged(i_ren, obj, panel2d_object):
-        if panel2d_object._drag_offset is not None:
+    def left_button_dragged(self, i_ren, obj, panel2d_object):
+        if self._drag_offset is not None:
             click_position = np.array(i_ren.event.position)
-            new_position = click_position - panel2d_object._drag_offset
-            panel2d_object.position = new_position
+            new_position = click_position - self._drag_offset
+            self.position = new_position
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -1686,8 +1687,7 @@ class TextBox2D(UI):
             self.caret_pos = 0
         self.render_text()
 
-    @staticmethod
-    def left_button_press(i_ren, obj, textbox_object):
+    def left_button_press(self, i_ren, obj, textbox_object):
         """ Left button press handler for textbox
 
         Parameters
@@ -1698,12 +1698,11 @@ class TextBox2D(UI):
         textbox_object: :class:`TextBox2D`
 
         """
-        i_ren.add_active_prop(textbox_object.actor.get_actor())
-        textbox_object.edit_mode()
+        i_ren.add_active_prop(self.actor.get_actor())
+        self.edit_mode()
         i_ren.force_render()
 
-    @staticmethod
-    def key_press(i_ren, obj, textbox_object):
+    def key_press(self, i_ren, obj, textbox_object):
         """ Key press handler for textbox
 
         Parameters
@@ -1715,9 +1714,9 @@ class TextBox2D(UI):
 
         """
         key = i_ren.event.key
-        is_done = textbox_object.handle_character(key)
+        is_done = self.handle_character(key)
         if is_done:
-            i_ren.remove_active_prop(textbox_object.actor.get_actor())
+            i_ren.remove_active_prop(self.actor.get_actor())
 
         i_ren.force_render()
 
@@ -1781,7 +1780,7 @@ class LineSlider2D(UI):
         self.track.height = line_width
         self.handle.inner_radius = inner_radius
         self.handle.outer_radius = outer_radius
-        self.set_center(center)
+        self.center = center
 
         self.min_value = min_value
         self.max_value = max_value
@@ -1873,7 +1872,7 @@ class LineSlider2D(UI):
         x_position = min(x_position, self.right_x_position)
 
         # Move slider disk.
-        self.handle.set_center((x_position, self.track.center[1]))
+        self.handle.center = (x_position, self.track.center[1])
         self.update()  # Update information.
 
     @property
@@ -2026,7 +2025,7 @@ class DiskSlider2D(UI):
         self.track.outer_radius = slider_outer_radius
         self.handle.inner_radius = handle_inner_radius
         self.handle.outer_radius = handle_outer_radius
-        self.set_center(center)
+        self.center = center
 
         self.min_value = min_value
         self.max_value = max_value
@@ -2147,12 +2146,13 @@ class DiskSlider2D(UI):
             self._previous_value = self.value
         except:
             self._previous_value = self.initial_value
+
         self._value = self.min_value + self.ratio * value_range
 
         # Update text disk actor.
         x = self.mid_track_radius * np.cos(self.angle) + self.center[0]
         y = self.mid_track_radius * np.sin(self.angle) + self.center[1]
-        self.handle.set_center((x, y))
+        self.handle.center = (x, y)
 
         # Update text.
         text = self.format_text()

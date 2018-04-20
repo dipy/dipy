@@ -206,7 +206,7 @@ def test_ui_button_panel(recording=False):
     icon_files['play'] = read_viz_icons(fname='play3.png')
 
     button_test = ui.Button2D(icon_fnames=icon_files)
-    button_test.set_center((20, 20))
+    button_test.center = (20, 20)
 
     def make_invisible(i_ren, obj, button):
         # i_ren: CustomInteractorStyle
@@ -280,7 +280,8 @@ def test_ui_textbox(recording=False):
 
     another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
     another_textbox_test.set_message("Enter Text")
-    npt.assert_raises(NotImplementedError, another_textbox_test.set_center, (10, 100))
+    npt.assert_raises(NotImplementedError, setattr,
+                      another_textbox_test, "center", (10, 100))
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
@@ -357,7 +358,7 @@ def test_text_block_2d_justification():
                   grid_middle, grid_center]
     for spec in grid_specs:
         line = ui.Rectangle2D(size=spec[1], color=line_color)
-        line.set_center(spec[0])
+        line.center = spec[0]
         show_manager.ren.add(line)
 
     font_size = 60
@@ -431,7 +432,7 @@ def test_ui_line_slider_2d(recording=False):
 
     line_slider_2d_test = ui.LineSlider2D(initial_value=-2,
                                           min_value=-5, max_value=5)
-    line_slider_2d_test.set_center((300, 300))
+    line_slider_2d_test.center = (300, 300)
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
@@ -465,7 +466,7 @@ def test_ui_disk_slider_2d(recording=False):
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
     disk_slider_2d_test = ui.DiskSlider2D()
-    disk_slider_2d_test.set_center((300, 300))
+    disk_slider_2d_test.center = (300, 300)
     disk_slider_2d_test.value = 90
 
     # Assign the counter callback to every possible event.

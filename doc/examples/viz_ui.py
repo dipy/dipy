@@ -9,7 +9,6 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
-
 import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
@@ -122,8 +121,8 @@ Panels
 Simply create a panel and add elements to it.
 """
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
-                   align="right")
+panel = ui.Panel2D(size=(300, 150), color=(1, 1, 1), align="right")
+panel.center = (440, 90)
 panel.add_element(button_example, (0.2, 0.2))
 panel.add_element(second_button_example, (190, 85))
 
@@ -163,7 +162,7 @@ def rotate_red_cube(slider):
 
 
 disk_slider = ui.DiskSlider2D(text_template="{angle:5.1f}°")
-disk_slider.set_center((200, 200))
+disk_slider.center = (200, 200)
 disk_slider.on_change = rotate_red_cube
 
 """

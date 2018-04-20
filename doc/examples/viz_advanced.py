@@ -231,7 +231,7 @@ panel = ui.Panel2D(size=(300, 200),
                    color=(1, 1, 1),
                    opacity=0.1,
                    align="right")
-panel.set_center((1030, 120))
+panel.center = (1030, 120)
 
 panel.add_element(line_slider_label_x, (0.1, 0.75))
 panel.add_element(line_slider_x, (0.38, 0.75))
