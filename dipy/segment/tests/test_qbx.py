@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
                            run_module_suite)
 
-from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_with_merge
+from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
@@ -214,7 +214,7 @@ def test_raise_mdf():
     assert_raises(ValueError, QuickBundles, thresholds[1], metric=metric)
 
 
-def test_qbx_with_merge():
+def test_qbx_and_merge():
 
     # Generate synthetic streamlines
     bundles = bearing_bundles(4, 2)
@@ -232,7 +232,7 @@ def test_qbx_with_merge():
     thresholds = [10, 2, 1]
 
     rng = np.random.RandomState(seed=42)
-    qbxm_centroids = qbx_with_merge(streamlines, thresholds, rng=rng).centroids
+    qbxm_centroids = qbx_and_merge(streamlines, thresholds, rng=rng).centroids
 
     qbx = QuickBundlesX(thresholds)
     tree = qbx.cluster(streamlines)
