@@ -675,7 +675,7 @@ def qbx_and_merge(streamlines, thresholds,
     ----------
     streamlines : Streamlines
     thresholds : sequence
-        List of distance thresholds
+        List of distance thresholds for QuickBundlesX.
     nb_pts : int
         Number of points for discretizing each streamline
     select_randomly : int
@@ -684,6 +684,7 @@ def qbx_and_merge(streamlines, thresholds,
     rng : RandomState
         If None then RandomState is initialized internally.
     verbose : bool
+        If True print information in stdout.
 
     Returns
     -------
@@ -756,6 +757,6 @@ def qbx_and_merge(streamlines, thresholds,
         print(' QuickBundlesX time for %d random streamlines'
               % (select_randomly,))
 
-        print(' Duration %0.3f sec. \n' % (time() - t1, ))
+        print(' Duration %0.3f sec. \n' % (time() - t1,))
 
     return merged_cluster_map
