@@ -86,7 +86,7 @@ def test_rb_clustermap():
 
 
 def test_rb_no_neighb():
-    # what if neighbors are found? No recognition
+    # what if no neighbors are found? No recognition
 
     b = Streamlines(fornix)
     b1 = b.copy()
