@@ -8,6 +8,7 @@ from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points
+from dipy.tracking.streamline import Streamlines
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
@@ -220,14 +221,7 @@ def test_qbx_and_merge():
     bundles = bearing_bundles(4, 2)
     bundles.append(straight_bundle(1))
 
-    from dipy.tracking.streamline import Streamlines
     streamlines = Streamlines(list(itertools.chain(*bundles)))
-
-    from dipy.viz import actor, window
-
-    ren = window.Renderer()
-    ren.add(actor.line(streamlines))
-    window.show(ren)
 
     thresholds = [10, 2, 1]
 
