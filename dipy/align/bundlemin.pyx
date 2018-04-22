@@ -282,7 +282,6 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
         double inf = np.finfo('f8').max
         double dist=0
         double * min_j
-        # double * min_i
         openmp.omp_lock_t lock
 
     with nogil:
@@ -291,28 +290,22 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
             openmp.omp_init_lock(&lock)
 
         min_j = <double *> malloc(static_size * sizeof(double))
-        # min_i = <double *> malloc(moving_size * sizeof(double))
 
         for i in range(static_size):
             min_j[i] = inf
-
-        # for j in range(moving_size):
-        #    min_i[j] = inf
 
         for i in prange(static_size):
 
             for j in range(moving_size):
 
                 tmp = min_direct_flip_dist(&static[i * rows, 0],
-                                       &moving[j * rows, 0], rows)
+                                           &moving[j * rows, 0], rows)
 
                 if have_openmp:
                     openmp.omp_set_lock(&lock)
                 if tmp < min_j[i]:
                     min_j[i] = tmp
 
-                # if tmp < min_i[j]:
-                #    min_i[j] = tmp
                 if have_openmp:
                     openmp.omp_unset_lock(&lock)
 
@@ -322,15 +315,9 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
         for i in range(static_size):
             sum_i += min_j[i]
 
-        # for j in range(moving_size):
-        #    sum_j += min_i[j]
-
         free(min_j)
-        # free(min_i)
 
         dist = sum_i / <double>static_size
-
-        # dist = 0.25 * dist * dist
 
     return dist
 
