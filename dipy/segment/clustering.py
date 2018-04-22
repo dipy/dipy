@@ -543,7 +543,7 @@ class QuickBundlesX(Clustering):
     """
     def __init__(self, thresholds, metric="MDF_12points"):
         self.thresholds = thresholds
-        
+
         if isinstance(metric, MinimumAverageDirectFlipMetric):
             raise ValueError("Use AveragePointwiseEuclideanMetric instead")
 
@@ -661,14 +661,35 @@ class TreeClusterMap(ClusterMap):
 
 
 def qbx_with_merge(streamlines, thresholds,
-                   nb_pts=20, select_randomly=None, verbose=True):
+                   nb_pts=20, select_randomly=None, rng=None, verbose=True):
+    """ Run QuickBundlesX and then run again on the centroids of the last layer
+
+    Running again QuickBundles at a layer has the effect of merging
+    some of the clusters that maybe originally devided because of branching.
+    This function help obtain a result at a QuickBundles quality but with
+    QuickBundlesX speed. The merging phase has low cost because it is applied
+    only on the centroids rather than the entire dataset.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    References
+    ----------
+
+    """
     if verbose:
         t = time()
     len_s = len(streamlines)
     if select_randomly is None:
         select_randomly = len_s
-    indices = np.random.choice(len_s, min(select_randomly, len_s),
-                               replace=False)
+
+    if rng is None:
+        rng = np.random.RandomState()
+    indices = rng.choice(len_s, min(select_randomly, len_s),
+                         replace=False)
     sample_streamlines = set_number_of_points(streamlines, nb_pts)
 
     if verbose:
@@ -691,10 +712,8 @@ def qbx_with_merge(streamlines, thresholds,
                               metric=AveragePointwiseEuclideanMetric())
 
     final_level = len(thresholds)
-
-    qbx_ordering_final = np.random.choice(
-        len(qbx_clusters.get_clusters(final_level)),
-        len(qbx_clusters.get_clusters(final_level)), replace=False)
+    len_qbx_fl = len(qbx_clusters.get_clusters(final_level))
+    qbx_ordering_final = rng.choice(len_qbx_fl, len_qbx_fl, replace=False)
 
     qbx_merged_cluster_map = qbx_merge.cluster(
         qbx_clusters.get_clusters(final_level).centroids,

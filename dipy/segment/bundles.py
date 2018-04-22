@@ -91,7 +91,7 @@ class RecoBundles(object):
         thresholds = [40, 25, 20, clust_thr]
 
         merged_cluster_map = qbx_with_merge(self.streamlines, thresholds,
-                                            nb_pts, None, self.verbose)
+                                            nb_pts, None, None, self.verbose)
 
         self.cluster_map = merged_cluster_map
         self.centroids = merged_cluster_map.centroids
@@ -207,6 +207,7 @@ class RecoBundles(object):
         self.model_cluster_map = qbx_with_merge(self.model_bundle, thresholds,
                                                 nb_pts=nb_pts,
                                                 select_randomly=500000,
+                                                rng=None,
                                                 verbose=self.verbose)
         self.model_centroids = self.model_cluster_map.centroids
         self.nb_model_centroids = len(self.model_centroids)
@@ -350,6 +351,7 @@ class RecoBundles(object):
         self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines,
                                                   thresholds, nb_pts=20,
                                                   select_randomly=500000,
+                                                  rng=None,
                                                   verbose=self.verbose)
 
         if self.verbose:
@@ -407,4 +409,3 @@ class RecoBundles(object):
 
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
-
