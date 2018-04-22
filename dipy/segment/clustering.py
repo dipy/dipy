@@ -527,7 +527,8 @@ class QuickBundlesX(Clustering):
     metric : str or `Metric` object (optional)
         The distance metric to use when comparing two streamlines. By default,
         the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
-        used and streamlines are automatically resampled so they have 12 points.
+        used and streamlines are automatically resampled so they have 12
+        points.
 
     References
     ----------
@@ -660,8 +661,8 @@ class TreeClusterMap(ClusterMap):
         return clusters
 
 
-def qbx_with_merge(streamlines, thresholds,
-                   nb_pts=20, select_randomly=None, rng=None, verbose=True):
+def qbx_and_merge(streamlines, thresholds,
+                  nb_pts=20, select_randomly=None, rng=None, verbose=True):
     """ Run QuickBundlesX and then run again on the centroids of the last layer
 
     Running again QuickBundles at a layer has the effect of merging
@@ -672,13 +673,34 @@ def qbx_with_merge(streamlines, thresholds,
 
     Parameters
     ----------
+    streamlines : Streamlines
+    thresholds : sequence
+        List of distance thresholds
+    nb_pts : int
+        Number of points for discretizing each streamline
+    select_randomly : int
+        Randomly select a specific number of streamlines. If None all the
+        streamlines are used.
+    rng : RandomState
+        If None then RandomState is initialized internally.
+    verbose : bool
 
     Returns
     -------
+    clusters : obj
+        Contains the clusters of the last layer of QuickBundlesX after merging.
 
     References
     ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
 
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
+                        clustering of millions of streamlines in multiple
+                        levels of detail at record execution time. Proceedings
+                        of the, International Society of Magnetic Resonance
+                        in Medicine (ISMRM). Singapore, 4187, 2016.
     """
     if verbose:
         t = time()

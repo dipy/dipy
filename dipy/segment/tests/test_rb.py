@@ -5,7 +5,7 @@ from dipy.data import get_data
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
-from dipy.segment.clustering import qbx_with_merge
+from dipy.segment.clustering import qbx_and_merge
 
 
 streams, hdr = nib.trackvis.read(get_data('fornix'))
@@ -72,7 +72,7 @@ def test_rb_no_verbose_and_mam():
 
 def test_rb_clustermap():
 
-    cluster_map = qbx_with_merge(f, thresholds=[40, 25, 20, 10])
+    cluster_map = qbx_and_merge(f, thresholds=[40, 25, 20, 10])
 
     rb = RecoBundles(f, cluster_map=cluster_map, clust_thr=10)
     recognized, rec_labels, rec_trans = rb.recognize(model_bundle=f2,

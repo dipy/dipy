@@ -2,7 +2,7 @@ import numpy as np
 from dipy.tracking.streamline import (transform_streamlines,
                                       set_number_of_points, nbytes,
                                       select_random_set_of_streamlines)
-from dipy.segment.clustering import qbx_with_merge
+from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
@@ -90,8 +90,8 @@ class RecoBundles(object):
         # TODO this needs to become a default parameter
         thresholds = [40, 25, 20, clust_thr]
 
-        merged_cluster_map = qbx_with_merge(self.streamlines, thresholds,
-                                            nb_pts, None, None, self.verbose)
+        merged_cluster_map = qbx_and_merge(self.streamlines, thresholds,
+                                           nb_pts, None, None, self.verbose)
 
         self.cluster_map = merged_cluster_map
         self.centroids = merged_cluster_map.centroids
@@ -204,11 +204,11 @@ class RecoBundles(object):
             print(' Distance threshold %0.3f' % (model_clust_thr,))
         thresholds = [40, 25, 20, model_clust_thr]
 
-        self.model_cluster_map = qbx_with_merge(self.model_bundle, thresholds,
-                                                nb_pts=nb_pts,
-                                                select_randomly=500000,
-                                                rng=None,
-                                                verbose=self.verbose)
+        self.model_cluster_map = qbx_and_merge(self.model_bundle, thresholds,
+                                               nb_pts=nb_pts,
+                                               select_randomly=500000,
+                                               rng=None,
+                                               verbose=self.verbose)
         self.model_centroids = self.model_cluster_map.centroids
         self.nb_model_centroids = len(self.model_centroids)
 
@@ -348,11 +348,11 @@ class RecoBundles(object):
             t = time()
 
         thresholds = [40, 30, 20, 10, mdf_thr]
-        self.rtransf_cluster_map = qbx_with_merge(self.transf_streamlines,
-                                                  thresholds, nb_pts=20,
-                                                  select_randomly=500000,
-                                                  rng=None,
-                                                  verbose=self.verbose)
+        self.rtransf_cluster_map = qbx_and_merge(self.transf_streamlines,
+                                                 thresholds, nb_pts=20,
+                                                 select_randomly=500000,
+                                                 rng=None,
+                                                 verbose=self.verbose)
 
         if self.verbose:
             print(' QB Duration %0.3f sec. \n' % (time() - t, ))
