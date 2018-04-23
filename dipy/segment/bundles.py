@@ -165,6 +165,7 @@ class RecoBundles(object):
                 model_bundle,
                 model_clust_thr=model_clust_thr)
         neighb_streamlines, neighb_indices = self._reduce_search_space(
+            model_centroids,
             reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
         if len(neighb_streamlines) == 0:
@@ -194,8 +195,7 @@ class RecoBundles(object):
                   % (time()-t,))
         # return recognized bundle in original streamlines, labels of
         # recognized bundle and transformed recognized bundle
-        return self.pruned_streamlines, self.labels, \
-            self.streamlines[self.labels]
+        return pruned_streamlines, labels, self.streamlines[labels]
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
                               select_randomly=500000):
@@ -254,9 +254,9 @@ class RecoBundles(object):
 
         neighb_streamlines = Streamlines(chain(*close_clusters))
 
-        nb_neighb_streamlines = len(self.neighb_streamlines)
+        nb_neighb_streamlines = len(neighb_streamlines)
 
-        if self.nb_neighb_streamlines == 0:
+        if nb_neighb_streamlines == 0:
             print(' You have no neighbor streamlines... No bundle recognition')
             return Streamlines([])
 
@@ -315,7 +315,7 @@ class RecoBundles(object):
 
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(slr_bmd),))
-            if self.slr_iterations is not None:
+            if slr_iterations is not None:
                 print(' Number of iterations %d' % (slr_iterations,))
             print(' Matrix size {}'.format(slm.matrix.shape))
             original = np.get_printoptions()
