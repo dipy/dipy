@@ -23,7 +23,7 @@ def test_bdg_initial_direction():
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)
     vertices = hsph_updated.vertices
     bvecs = vertices
-    bvals = np.ones(len(vertices)) * 1000
+    bvals = np.full(len(vertices),1000)
     bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
     bvals = np.insert(bvals, 0, 0)
     gtab = gradient_table(bvals, bvecs)
