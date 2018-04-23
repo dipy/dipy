@@ -130,5 +130,4 @@ def test_rb_reduction_mam():
 
 if __name__ == '__main__':
 
-    # run_module_suite()
-    test_rb_check_defaults()
+    run_module_suite()
