@@ -144,20 +144,19 @@ class RecoBundles(object):
 
         Returns
         -------
+        recognized_transf : Streamlines
+            Recognized bundle in the space of the model tractogram
+        recognized_labels : array
+            Indices of recognized bundle in the original tractogram
         recognized_bundle : Streamlines
             Recognized bundle in the space of the original tractogram
-        recognized_labes : array
-            Indices of recognized bundle in the original tractogram
-        recognized_transf : Streamlines
 
         References
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
             bundles using local and global streamline-based registration and
-            clustering.
+            clustering, Neuroimage, 2017.
         """
-
-        self.reduction_thr = reduction_thr
         if self.verbose:
             t = time()
             print('## Recognize given bundle ## \n')
@@ -169,11 +168,6 @@ class RecoBundles(object):
             reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
         if len(neighb_streamlines) == 0:
-            #self.pruned_streamlines = None
-            #self.transf_streamlines = None
-            #self.transf_matrix = None
-            #self.labels = []
-            # TODO replace with Streamlines
             return Streamlines([]), [], Streamlines([])
         if slr:
             transf_streamlines = self._register_neighb_to_model(
@@ -187,7 +181,6 @@ class RecoBundles(object):
                 method=slr_method)
         else:
             transf_streamlines = neighb_streamlines
-            # transf_matrix = np.eye(4)
 
         pruned_streamlines, labels = self._prune_what_not_in_model(
             model_centroids,
@@ -201,12 +194,11 @@ class RecoBundles(object):
                   % (time()-t,))
         # return recognized bundle in original streamlines, labels of
         # recognized bundle and transformed recognized bundle
-        return self.streamlines[self.labels], self.labels, \
-            self.pruned_streamlines
+        return self.pruned_streamlines, self.labels, \
+            self.streamlines[self.labels]
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
-                             select_randomly=500000):
-        self.model_clust_thr = model_clust_thr
+                              select_randomly=500000):
 
         if self.verbose:
             t = time()
@@ -222,7 +214,7 @@ class RecoBundles(object):
                                           rng=None,
                                           verbose=self.verbose)
         model_centroids = model_cluster_map.centroids
-        nb_model_centroids = len(self.model_centroids)
+        nb_model_centroids = len(model_centroids)
 
         if self.verbose:
             print(' Model bundle has %d centroids'
@@ -231,7 +223,7 @@ class RecoBundles(object):
         return model_centroids
 
     def _reduce_search_space(self, model_centroids,
-                            reduction_thr=20, reduction_distance='mdf'):
+                             reduction_thr=20, reduction_distance='mdf'):
         if self.verbose:
             t = time()
             print('# Reduce search space')
@@ -258,18 +250,9 @@ class RecoBundles(object):
 
         close_clusters = self.cluster_map[close_clusters_indices]
 
-        # TODO this should change to use the new Streamlines API
-        close_centroids = [self.centroids[i]
-                           for i in close_clusters_indices]
-        close_indices = [cluster.indices for cluster in close_clusters]
+        neighb_indices = [cluster.indices for cluster in close_clusters]
 
-        close_streamlines = Streamlines(chain(*close_clusters))
-        #self.centroid_matrix = centroid_matrix.copy()
-
-        neighb_streamlines = close_streamlines
-        #self.neighb_clusters = close_clusters
-        #self.neighb_centroids = close_centroids
-        neighb_indices = close_indices
+        neighb_streamlines = Streamlines(chain(*close_clusters))
 
         nb_neighb_streamlines = len(self.neighb_streamlines)
 
@@ -285,10 +268,10 @@ class RecoBundles(object):
         return neighb_streamlines, neighb_indices
 
     def _register_neighb_to_model(self, model_bundle, neighb_streamlines,
-                                 metric=None, x0=None, bounds=None,
-                                 select_model=400, select_target=600,
-                                 method='L-BFGS-B',
-                                 nb_pts=20):
+                                  metric=None, x0=None, bounds=None,
+                                  select_model=400, select_target=600,
+                                  method='L-BFGS-B',
+                                  nb_pts=20):
 
         if self.verbose:
             print('# Local SLR of neighb_streamlines to model')
@@ -330,18 +313,11 @@ class RecoBundles(object):
         slr_bmd = slm.fopt
         slr_iterations = slm.iterations
 
-        slr_initial_matrix = distance_matrix_mdf(
-            static, moving)
-
-        slr_final_matrix = distance_matrix_mdf(
-            static, transform_streamlines(moving, slm.matrix))
-        slr_xopt = slm.xopt
-
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(slr_bmd),))
             if self.slr_iterations is not None:
                 print(' Number of iterations %d' % (slr_iterations,))
-            print(' Matrix size {}'.format(slr_final_matrix.shape))
+            print(' Matrix size {}'.format(slm.matrix.shape))
             original = np.get_printoptions()
             np.set_printoptions(3, suppress=True)
             print(transf_matrix)
@@ -379,7 +355,6 @@ class RecoBundles(object):
             print(' QB Duration %0.3f sec. \n' % (time() - t, ))
 
         rtransf_centroids = rtransf_cluster_map.centroids
-        # nb_rtransf_centroids = len(rtransf_centroids)
 
         if pruning_distance.lower() == 'mdf':
             if self.verbose:
@@ -410,21 +385,20 @@ class RecoBundles(object):
                               for i in pruned_indices]
 
         pruned_indices = pruned_indices
-        # nb_pruned_streamlines = len(pruned_streamlines)
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
         labels = final_indices
-        # labeled_streamlines = [self.streamlines[i] for i in final_indices]
 
         if self.verbose:
             msg = ' Number of centroids: %d'
-            print(msg % (self.nb_rtransf_centroids,))
+            print(msg % (len(rtransf_centroids),))
             msg = ' Number of streamlines after pruning: %d'
-            print(msg % (self.nb_pruned_streamlines,))
+            print(msg % (len(pruned_streamlines),))
 
-        if self.nb_pruned_streamlines == 0:
+        if len(pruned_streamlines) == 0:
             print(' You have removed all streamlines')
+            return Streamlines([]), []
 
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
