@@ -7,6 +7,7 @@ cdef class PmfGen:
 
     cpdef double[:] get_pmf(self, double[::1] point)
     cdef double[:] get_pmf_c(self, double* point)
+    cdef void __clear_pmf(self)
     pass
 
 
