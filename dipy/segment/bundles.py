@@ -258,7 +258,7 @@ class RecoBundles(object):
 
         if nb_neighb_streamlines == 0:
             print(' You have no neighbor streamlines... No bundle recognition')
-            return Streamlines([])
+            return Streamlines([]), []
 
         if self.verbose:
             print(' Number of neighbor streamlines %d' %
