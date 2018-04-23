@@ -44,17 +44,18 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
         if np.abs(_dot) > np.abs(closest_peak_dot):
             closest_peak_dot = _dot
             closest_peak_i = i
-
-    if closest_peak_dot >= cos_similarity and closest_peak_i >= 0:
-        direction[0] = peak_dirs[closest_peak_i, 0]
-        direction[1] = peak_dirs[closest_peak_i, 1]
-        direction[2] = peak_dirs[closest_peak_i, 2]
-        return 0
-    elif closest_peak_dot <= -cos_similarity and closest_peak_i >= 0:
-        direction[0] = -peak_dirs[closest_peak_i, 0]
-        direction[1] = -peak_dirs[closest_peak_i, 1]
-        direction[2] = -peak_dirs[closest_peak_i, 2]
-        return 0
+            
+    if closest_peak_i >= 0:
+        if closest_peak_dot >= cos_similarity:
+            direction[0] = peak_dirs[closest_peak_i, 0]
+            direction[1] = peak_dirs[closest_peak_i, 1]
+            direction[2] = peak_dirs[closest_peak_i, 2]
+            return 0
+        if closest_peak_dot <= -cos_similarity:
+            direction[0] = -peak_dirs[closest_peak_i, 0]
+            direction[1] = -peak_dirs[closest_peak_i, 1]
+            direction[2] = -peak_dirs[closest_peak_i, 2]
+            return 0
     return 1
 
 cdef class BaseDirectionGetter(DirectionGetter):
