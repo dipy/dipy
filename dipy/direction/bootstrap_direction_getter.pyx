@@ -68,9 +68,7 @@ cdef class BootDirectionGetter(BaseDirectionGetter):
             double[:] pmf,
             np.ndarray[np.float_t, ndim=2] peaks
 
-        count = 0
-        while count < self.max_attempts:
-            count += 1
+        for count in range(self.max_attempts):
             pmf = self._get_pmf(point)
             _len = pmf.shape[0]
 
