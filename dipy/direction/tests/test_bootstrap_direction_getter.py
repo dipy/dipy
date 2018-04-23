@@ -53,7 +53,7 @@ def test_bdg_initial_direction():
 
 
 def test_bdg_get_direction():
-    """This tests that the new tracking direction if founded.
+    """This tests the direction found by the bootstrap direction getter.
     """
 
     sphere = HemiSphere.from_sphere(unit_icosahedron.subdivide())
@@ -107,7 +107,7 @@ def test_bdg_residual():
     B, m, n = shm.real_sym_sh_basis(6, theta, phi)
     shm_coeff = np.random.random(B.shape[1])
 
-    # sphere_func is samples of the spherical function for each point of
+    # sphere_func is sampled of the spherical function for each point of
     # the sphere
     sphere_func = np.dot(shm_coeff, B.T)
 

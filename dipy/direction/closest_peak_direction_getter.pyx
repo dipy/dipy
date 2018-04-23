@@ -19,7 +19,7 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
     peak_dirs : array (N, 3)
         N unit vectors.
     direction : array (3,) or None
-        Previous direction. The new direction is save here.
+        Previous direction. The new direction is saved here.
     cos_similarity : float
         `cos(max_angle)` where `max_angle` is the maximum allowed angle between
         prev_step and the returned direction.
@@ -196,7 +196,7 @@ cdef class PmfGenDirectionGetter(BaseDirectionGetter):
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
     """A direction getter that returns the closest odf peak to previous tracking
     direction.
-        """
+    """
 
     cdef int get_direction_c(self, double* point, double* direction):
         """
