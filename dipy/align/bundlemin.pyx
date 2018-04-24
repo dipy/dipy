@@ -273,7 +273,19 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     Notes
     -----
     The difference with ``_bundle_minimum_distance`` is that we sum the
-    minimum values only for the static. Therefore, this is asymetric.
+    minimum values only for the static. Therefore, this is an asymetric
+    distance metric. This means that we are weighting only one direction of the
+    registration. Not both directions. This can be very useful when we want
+    to register a big set of bundles to a small set of bundles.
+    See [Wanyan17]_.
+
+    References
+    ----------
+    .. [Wanyan17] Wanyan and Garyfallidis, Important new insights for the
+    reduction of false positives in tractograms emerge from streamline-based
+    registration and pruning, International Society for Magnetic Resonance in
+    Medicine, Honolulu, Hawai, 2017.
+
     """
 
     cdef:
