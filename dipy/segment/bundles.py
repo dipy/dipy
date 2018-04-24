@@ -93,7 +93,7 @@ class RecoBundles(object):
         thresholds = self.start_thr + [clust_thr]
 
         merged_cluster_map = qbx_and_merge(self.streamlines, thresholds,
-                                           nb_pts, None, rng=rng, self.verbose)
+                                           nb_pts, None, rng, self.verbose)
 
         self.cluster_map = merged_cluster_map
         self.centroids = merged_cluster_map.centroids
