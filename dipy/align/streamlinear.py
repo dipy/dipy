@@ -963,7 +963,10 @@ def slr_with_qb(static, moving,
 
 
 # In essence whole_brain_slr can be thought as a combination of
-# SLF and QuickBundles
+# SLR on QuickBundles centroids and some thresholding see
+# Garyfallidis et al. Recognition of white matter
+# bundles using local and global streamline-based registration and
+# clustering, Neuroimage, 2017.
 whole_brain_slr = slr_with_qb
 
 

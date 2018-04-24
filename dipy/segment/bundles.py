@@ -1,6 +1,5 @@
 import numpy as np
-from dipy.tracking.streamline import (transform_streamlines,
-                                      set_number_of_points, nbytes,
+from dipy.tracking.streamline import (set_number_of_points, nbytes,
                                       select_random_set_of_streamlines)
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.distances import (bundles_distances_mdf,
@@ -9,7 +8,6 @@ from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      BundleMinDistanceMetric,
                                      BundleSumDistanceMatrixMetric,
                                      BundleMinDistanceAsymmetricMetric)
-from dipy.align.bundlemin import distance_matrix_mdf
 from time import time
 from itertools import chain
 
@@ -20,7 +18,7 @@ from nibabel.affines import apply_affine
 class RecoBundles(object):
 
     def __init__(self, streamlines, cluster_map=None, clust_thr=15, nb_pts=20,
-                 verbose=True):
+                 seed=42, verbose=True):
         """ Recognition of bundles
 
         Extract bundles from a participants' tractograms using model bundles
@@ -35,6 +33,8 @@ class RecoBundles(object):
             Provide existing clustering to start RB faster (default None).
         clust_thr : float
             Distance threshold in mm for clustering `streamlines`
+        seed : int
+            Setup for random number generator (default 42).
         nb_pts : int
             Number of points per streamline (default 20)
 
@@ -51,7 +51,6 @@ class RecoBundles(object):
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
         """
-        self.clust_thr = clust_thr
         self.streamlines = streamlines
 
         self.nb_streamlines = len(self.streamlines)
@@ -60,7 +59,8 @@ class RecoBundles(object):
         self.start_thr = [40, 25, 20]
 
         if cluster_map is None:
-            self._cluster_streamlines(clust_thr=clust_thr, nb_pts=nb_pts)
+            self._cluster_streamlines(clust_thr=clust_thr, nb_pts=nb_pts,
+                                      seed=seed)
         else:
             if self.verbose:
                 t = time()
@@ -77,9 +77,9 @@ class RecoBundles(object):
                 print(' Total loading duration %0.3f sec. \n'
                       % (time() - t,))
 
-    def _cluster_streamlines(self, clust_thr=15, nb_pts=20):
+    def _cluster_streamlines(self, clust_thr, nb_pts, seed):
 
-        np.random.seed(42)
+        rng = np.random.RandomState(seed=seed)
 
         if self.verbose:
             t = time()
@@ -93,7 +93,7 @@ class RecoBundles(object):
         thresholds = self.start_thr + [clust_thr]
 
         merged_cluster_map = qbx_and_merge(self.streamlines, thresholds,
-                                           nb_pts, None, None, self.verbose)
+                                           nb_pts, None, rng=rng, self.verbose)
 
         self.cluster_map = merged_cluster_map
         self.centroids = merged_cluster_map.centroids
@@ -383,8 +383,6 @@ class RecoBundles(object):
         pruned_indices = list(chain(*pruned_indices))
         pruned_streamlines = [transf_streamlines[i]
                               for i in pruned_indices]
-
-        pruned_indices = pruned_indices
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
