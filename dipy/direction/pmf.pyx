@@ -132,7 +132,7 @@ cdef class BootPmfGen(PmfGen):
             self.__clear_pmf()
         else:
             self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
-                    self.vox_data[self.dwi_mask], self.H, self.R)
+                self.vox_data[self.dwi_mask], self.H, self.R)
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
         return self.pmf
 
