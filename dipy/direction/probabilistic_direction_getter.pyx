@@ -15,8 +15,7 @@ cimport numpy as np
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
-from dipy.utils.fast_numpy cimport (copy_point, cumsum,
-                                    scalar_muliplication_point, where_to_insert)
+from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -186,9 +185,14 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
 
         newdir = self.vertices[max_idx]
         # Update direction
-        copy_point(&newdir[0], direction)
         if direction[0] * newdir[0] \
          + direction[1] * newdir[1] \
-         + direction[2] * newdir[2] < 0:
-            scalar_muliplication_point(direction, -1)
+         + direction[2] * newdir[2] > 0:
+            direction[0] = newdir[0]
+            direction[1] = newdir[1]
+            direction[2] = newdir[2]
+        else:
+            direction[0] = -newdir[0]
+            direction[1] = -newdir[1]
+            direction[2] = -newdir[2]
         return 0
