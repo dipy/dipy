@@ -5,6 +5,7 @@ from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 
 cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
@@ -44,17 +45,14 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
         if np.abs(_dot) > np.abs(closest_peak_dot):
             closest_peak_dot = _dot
             closest_peak_i = i
-            
+
     if closest_peak_i >= 0:
         if closest_peak_dot >= cos_similarity:
-            direction[0] = peak_dirs[closest_peak_i, 0]
-            direction[1] = peak_dirs[closest_peak_i, 1]
-            direction[2] = peak_dirs[closest_peak_i, 2]
+            copy_point(&peak_dirs[closest_peak_i, 0], direction)
             return 0
         if closest_peak_dot <= -cos_similarity:
-            direction[0] = -peak_dirs[closest_peak_i, 0]
-            direction[1] = -peak_dirs[closest_peak_i, 1]
-            direction[2] = -peak_dirs[closest_peak_i, 2]
+            copy_point(&peak_dirs[closest_peak_i, 0], direction)
+            scalar_muliplication_point(direction, -1)
             return 0
     return 1
 

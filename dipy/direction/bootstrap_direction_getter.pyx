@@ -63,15 +63,11 @@ cdef class BootDirectionGetter(BaseDirectionGetter):
             1 otherwise.
         """
         cdef:
-            size_t _len, i
-            int count
             double[:] pmf,
             np.ndarray[np.float_t, ndim=2] peaks
 
-        for count in range(self.max_attempts):
+        for _ in range(self.max_attempts):
             pmf = self._get_pmf(point)
-            _len = pmf.shape[0]
-
             peaks = self._get_peak_directions(pmf)
             if len(peaks) > 0:
                 return closest_peak(peaks, direction, self.cos_similarity)
