@@ -303,7 +303,7 @@ def test_from_to_rigid():
 def test_matrix44():
 
     assert_raises(ValueError, compose_matrix44, np.ones(5))
-    assert_raises(ValueError, compose_matrix44, np.ones(9))
+    assert_raises(ValueError, compose_matrix44, np.ones(13))
     assert_raises(ValueError, compose_matrix44, np.ones(16))
 
 

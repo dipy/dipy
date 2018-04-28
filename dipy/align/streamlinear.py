@@ -3,17 +3,28 @@ import numpy as np
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
+                                  _bundle_minimum_distance_asymmetric,
                                   distance_matrix_mdf)
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
-                                      center_streamlines)
+                                      center_streamlines,
+                                      set_number_of_points,
+                                      select_random_set_of_streamlines,
+                                      length)
+from dipy.segment.clustering import QuickBundles
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
 from dipy.utils.six import string_types
+from time import time
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
+
+DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
+                  (-45, 45), (-45, 45), (-45, 45),
+                  (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
+                  (-10, 10), (-10, 10), (-10, 10)]
 
 
 class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
@@ -156,6 +167,18 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
         return bundle_min_distance(xopt, self.static, self.moving)
 
 
+class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
+    """ Asymmetric Bundle-based Minimum distance
+    """
+
+    def distance(self, xopt):
+
+        return bundle_min_distance_asymmetric_fast(xopt,
+                                                   self.static_centered_pts,
+                                                   self.moving_centered_pts,
+                                                   self.block_size)
+
+
 class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
     """ Bundle-based Sum Distance aka BMD
 
@@ -189,7 +212,7 @@ class StreamlineLinearRegistration(object):
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None,
                  evolution=False, num_threads=None):
-        r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
+        r""" Linear registration of 2 sets of streamlines [Garyfallidis15]_.
 
         Parameters
         ----------
@@ -258,10 +281,15 @@ class StreamlineLinearRegistration(object):
 
         References
         ----------
+        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+            registration of white-matter fascicles in the space of
+            streamlines", NeuroImage, 117, 124--140, 2015
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
                             bundle alignment for group comparisons", ISMRM,
                             2014.
-
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering, Neuroimage, 2017.
         """
 
         self.x0 = self._set_x0(x0)
@@ -376,32 +404,43 @@ class StreamlineLinearRegistration(object):
 
         if hasattr(x0, 'ndim'):
 
-            if len(x0) not in [6, 7, 12]:
-                msg = 'Only 1D arrays of 6, 7 and 12 elements are allowed'
-                raise ValueError(msg)
+            if len(x0) not in [3, 6, 7, 9, 12]:
+                m_ = 'Only 1D arrays of 3, 6, 7, 9 and 12 elements are allowed'
+                raise ValueError(m_)
             if x0.ndim != 1:
                 raise ValueError("Array should have only one dimension")
             return x0
 
         if isinstance(x0, string_types):
+
+            if x0.lower() == 'translation':
+                return np.zeros(3)
+
             if x0.lower() == 'rigid':
                 return np.zeros(6)
 
             if x0.lower() == 'similarity':
                 return np.array([0, 0, 0, 0, 0, 0, 1.])
 
+            if x0.lower() == 'scaling':
+                return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
+
             if x0.lower() == 'affine':
                 return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
         if isinstance(x0, int):
-            if x0 not in [6, 7, 12]:
-                msg = 'Only 6, 7 and 12 are accepted as integers'
+            if x0 not in [3, 6, 7, 9, 12]:
+                msg = 'Only 3, 6, 7, 9 and 12 are accepted as integers'
                 raise ValueError(msg)
             else:
+                if x0 == 3:
+                    return np.zeros(3)
                 if x0 == 6:
                     return np.zeros(6)
                 if x0 == 7:
                     return np.array([0, 0, 0, 0, 0, 0, 1.])
+                if x0 == 9:
+                    return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1.])
                 if x0 == 12:
                     return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
@@ -604,6 +643,333 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
                                     num_threads)
 
 
+def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
+    """ MDF-based pairwise distance optimization function (MIN)
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : array
+        1D array. t is a vector of of affine transformation parameters with
+        size at least 6.
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling.
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
+
+    static : array
+        N*M x 3 array. All the points of the static streamlines. With order of
+        streamlines intact. Where N is the number of streamlines and M
+        is the number of points per streamline.
+
+    moving : array
+        K*M x 3 array. All the points of the moving streamlines. With order of
+        streamlines intact. Where K is the number of streamlines and M
+        is the number of points per streamline.
+
+    block_size : int
+        Number of points per streamline. All streamlines in static and moving
+        should have the same number of points M.
+
+    Returns
+    -------
+    cost: float
+    """
+
+    aff = compose_matrix44(t)
+    moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
+    moving = np.ascontiguousarray(moving, dtype=np.float64)
+
+    rows = static.shape[0] / block_size
+    cols = moving.shape[0] / block_size
+
+    return _bundle_minimum_distance_asymmetric(static, moving,
+                                               rows,
+                                               cols,
+                                               block_size)
+
+
+def remove_clusters_by_size(clusters, min_size=0):
+    by_size = lambda c: len(c) >= min_size
+    return filter(by_size, clusters)
+
+
+def progressive_slr(static, moving, metric, x0, bounds,
+                    method='L-BFGS-B', verbose=True, num_threads=None):
+    """ Progressive SLR
+
+    This is an utility function that allows for example to do affine
+    registration using Streamline-based Linear Registration (SLR)
+    [Garyfallidis15]_ by starting with translation first, then rigid,
+    then similarity, scaling and finally affine.
+
+    Similarly, if for example you want to perform rigid then you start with
+    translation first. This progressive strategy can helps with finding the
+    optimal parameters of the final transformation.
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+    metric : StreamlineDistanceMetric
+    x0 : string
+        Could be any of 'translation', 'rigid', 'similarity', 'scaling',
+        'affine'
+    bounds : array
+        Boundaries of registration parameters. See variable `DEFAULT_BOUNDS`
+        for example.
+    method : string
+        L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
+    verbose : bool
+        If True show messages in stdout (default True).
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used. Only metrics using OpenMP will use this variable.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+        registration of white-matter fascicles in the space of streamlines",
+        NeuroImage, 117, 124--140, 2015
+    """
+
+    if verbose:
+        print('Progressive Registration is Enabled')
+
+    if x0 == 'translation' or x0 == 'rigid' or \
+       x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+
+        if verbose:
+            print(' Translation  (3 parameters)...')
+        slr_t = StreamlineLinearRegistration(metric=metric,
+                                             x0='translation',
+                                             bounds=bounds[:3],
+                                             method=method)
+
+        slm_t = slr_t.optimize(static, moving)
+
+    if x0 == 'rigid' or x0 == 'similarity' or \
+       x0 == 'scaling' or x0 == 'affine':
+
+        x_translation = slm_t.xopt
+        x = np.zeros(6)
+        x[:3] = x_translation
+
+        if verbose:
+            print(' Rigid  (6 parameters) ...')
+        slr_r = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:6],
+                                             method=method)
+        slm_r = slr_r.optimize(static, moving)
+
+    if x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
+
+        x_rigid = slm_r.xopt
+        x = np.zeros(7)
+        x[:6] = x_rigid
+        x[6] = 1.
+
+        if verbose:
+            print(' Similarity (7 parameters) ...')
+        slr_s = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:7],
+                                             method=method)
+        slm_s = slr_s.optimize(static, moving)
+
+    if x0 == 'scaling' or x0 == 'affine':
+
+        x_similarity = slm_s.xopt
+        x = np.zeros(9)
+        x[:6] = x_similarity[:6]
+        x[6:] = np.array((x_similarity[6],) * 3)
+
+        if verbose:
+            print(' Scaling (9 parameters) ...')
+
+        slr_c = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:9],
+                                             method=method)
+        slm_c = slr_c.optimize(static, moving)
+
+    if x0 == 'affine':
+
+        x_scaling = slm_c.xopt
+        x = np.zeros(12)
+        x[:9] = x_scaling[:9]
+        x[9:] = np.zeros(3)
+
+        if verbose:
+            print(' Affine (12 parameters) ...')
+
+        slr_a = StreamlineLinearRegistration(metric=metric,
+                                             x0=x,
+                                             bounds=bounds[:12],
+                                             method=method)
+        slm_a = slr_a.optimize(static, moving)
+
+    if x0 == 'translation':
+        slm = slm_t
+    elif x0 == 'rigid':
+        slm = slm_r
+    elif x0 == 'similarity':
+        slm = slm_s
+    elif x0 == 'scaling':
+        slm = slm_c
+    elif x0 == 'affine':
+        slm = slm_a
+    else:
+        raise ValueError('Incorrect SLR transform')
+
+    return slm
+
+
+def slr_with_qb(static, moving,
+                x0='affine',
+                rm_small_clusters=50,
+                maxiter=100,
+                select_random=None,
+                verbose=False,
+                greater_than=50,
+                less_than=250,
+                qb_thr=15,
+                nb_pts=20,
+                progressive=True, num_threads=None):
+    """ Utility function for registering large tractograms.
+
+    For efficiency we apply the registration on cluster centroids and remove
+    small clusters.
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+    x0 : str
+        rigid, similarity or affine transformation model (default affine)
+
+    rm_small_clusters : int
+        Remove clusters that have less than `rm_small_clusters` (default 50)
+
+    verbose : bool,
+        If True then information about the optimization is shown.
+
+    select_random : int
+        If not None select a random number of streamlines to apply clustering
+        Default None.
+
+    options : None or dict,
+        Extra options to be used with the selected method.
+
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used. Only metrics using OpenMP will use this variable.
+
+    Notes
+    -----
+    The order of operations is the following. First short or long streamlines
+    are removed. Second the tractogram or a random selection of the tractogram
+    is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+            registration of white-matter fascicles in the space of streamlines"
+            , NeuroImage, 117, 124--140, 2015
+    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+            bundle alignment for group comparisons", ISMRM, 2014.
+    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering, Neuroimage, 2017.
+    """
+    if verbose:
+        print('Static streamlines size {}'.format(len(static)))
+        print('Moving streamlines size {}'.format(len(moving)))
+
+    def check_range(streamline, gt=greater_than, lt=less_than):
+
+        if (length(streamline) > gt) & (length(streamline) < lt):
+            return True
+        else:
+            return False
+
+    # TODO change this to the new Streamlines API
+    streamlines1 = [s for s in static if check_range(s)]
+    streamlines2 = [s for s in moving if check_range(s)]
+
+    if verbose:
+
+        print('Static streamlines after length reduction {}'
+              .format(len(streamlines1)))
+        print('Moving streamlines after length reduction {}'
+              .format(len(streamlines2)))
+
+    if select_random is not None:
+        rstreamlines1 = select_random_set_of_streamlines(streamlines1,
+                                                         select_random)
+    else:
+        rstreamlines1 = streamlines1
+
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    qb1 = QuickBundles(threshold=qb_thr)
+    rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
+    cluster_map1 = qb1.cluster(rstreamlines1)
+    clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
+    qb_centroids1 = [cluster.centroid for cluster in clusters1]
+
+    if select_random is not None:
+        rstreamlines2 = select_random_set_of_streamlines(streamlines2,
+                                                         select_random)
+    else:
+        rstreamlines2 = streamlines2
+
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    qb2 = QuickBundles(threshold=qb_thr)
+    rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
+    cluster_map2 = qb2.cluster(rstreamlines2)
+    clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
+    qb_centroids2 = [cluster.centroid for cluster in clusters2]
+
+    if verbose:
+        t = time()
+
+    if not progressive:
+        slr = StreamlineLinearRegistration(x0=x0,
+                                           options={'maxiter': maxiter},
+                                           num_threads=num_threads)
+        slm = slr.optimize(qb_centroids1, qb_centroids2)
+    else:
+        bounds = DEFAULT_BOUNDS
+
+        slm = progressive_slr(qb_centroids1, qb_centroids2,
+                              x0=x0, metric=None,
+                              bounds=bounds, num_threads=num_threads)
+
+    if verbose:
+        print('QB static centroids size %d' % len(qb_centroids1,))
+        print('QB moving centroids size %d' % len(qb_centroids2,))
+        duration = time() - t
+        print('SLR finished in  %0.3f seconds.' % (duration,))
+        if slm.iterations is not None:
+            print('SLR iterations: %d ' % (slm.iterations,))
+
+    moved = slm.transform(moving)
+
+    return moved, slm.matrix, qb_centroids1, qb_centroids2
+
+
+# In essence whole_brain_slr can be thought as a combination of
+# SLR on QuickBundles centroids and some thresholding see
+# Garyfallidis et al. Recognition of white matter
+# bundles using local and global streamline-based registration and
+# clustering, Neuroimage, 2017.
+whole_brain_slr = slr_with_qb
+
+
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
@@ -615,10 +981,13 @@ def compose_matrix44(t, dtype=np.double):
     -----------
     t : ndarray
         This is a 1D vector of of affine transformation parameters with
-        size at least 6.
+        size at least 3.
+        If size is 3, t is interpreted as translation.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
+        If size is 9, t is interpreted as translation + rotation +
+        anisotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -632,17 +1001,18 @@ def compose_matrix44(t, dtype=np.double):
         t = np.array(t)
     size = t.size
 
-    if size not in [6, 7, 12]:
-        raise ValueError('Accepted number of parameters is 6, 7 and 12')
+    if size not in [3, 6, 7, 9, 12]:
+        raise ValueError('Accepted number of parameters is 3, 6, 7, 9 and 12')
 
     scale, shear, angles, translate = (None, ) * 4
-    if size in [6, 7, 12]:
-        translate = _threshold(t[0:3], MAX_DIST)
+    translate = _threshold(t[0:3], MAX_DIST)
+    if size in [6, 7, 9, 12]:
         angles = np.deg2rad(t[3:6])
     if size == 7:
         scale = np.array((t[6],) * 3)
-    if size == 12:
+    if size in [9, 12]:
         scale = t[6: 9]
+    if size == 12:
         shear = t[9: 12]
     return compose_matrix(scale=scale, shear=shear,
                           angles=angles,
@@ -657,28 +1027,33 @@ def decompose_matrix44(mat, size=12):
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int
-        Size of output vector. 6 for rigid, 7 for similarity and 12
-        for affine. Default is 12.
+        Size of output vector. 3, for translation, 6 for rigid,
+        7 for similarity, 9 for scaling and 12 for affine. Default is 12.
 
     Returns
     -------
     t : ndarray
-        One dimensional ndarray of 6, 7 or 12 affine parameters.
+        One dimensional ndarray of 3, 6, 7, 9 or 12 affine parameters.
 
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)
 
     t = np.zeros(12)
     t[:3] = translate
+    if size == 3:
+        return t[:3]
     t[3: 6] = np.rad2deg(angles)
     if size == 6:
         return t[:6]
     if size == 7:
         t[6] = np.mean(scale)
         return t[:7]
+    if size == 9:
+        t[6:9] = scale
+        return t[:9]
     if size == 12:
         t[6: 9] = scale
         t[9: 12] = shear
         return t
 
-    raise ValueError('Size can be 6, 7 or 12')
+    raise ValueError('Size can be 3, 6, 7, 9 or 12')
