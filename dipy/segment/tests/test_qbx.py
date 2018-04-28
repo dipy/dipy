@@ -1,15 +1,14 @@
 import itertools
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
-                           assert_array_almost_equal, run_module_suite)
+                           run_module_suite)
 
-from dipy.segment.clustering import QuickBundlesX, QuickBundles
+from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points
-from dipy.data import get_data
-import nibabel.trackvis as tv
+from dipy.tracking.streamline import Streamlines
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
@@ -171,48 +170,68 @@ def test_with_simulated_bundles2():
     tree = qbx_class.cluster(streamlines)
     # By default `refdata` refers to data being clustered.
     assert_equal(tree.refdata, streamlines)
-    
+
 
 def test_circle_parallel_fornix():
-    
+
     circle = streamlines_in_circle(100, step_size=2)
-    
+
     parallel = streamlines_parallel(100)
 
     thresholds = [1, 0.1]
 
     qbx_class = QuickBundlesX(thresholds)
     tree = qbx_class.cluster(circle)
-    
-    clusters = tree.get_clusters(0)    
+
+    clusters = tree.get_clusters(0)
     assert_equal(len(clusters), 1)
-    
+
     clusters = tree.get_clusters(1)
     assert_equal(len(clusters), 3)
-    
+
     clusters = tree.get_clusters(2)
     assert_equal(len(clusters), 34)
-        
+
     thresholds = [.5]
-    
+
     qbx_class = QuickBundlesX(thresholds)
     tree = qbx_class.cluster(parallel)
-    
-    clusters = tree.get_clusters(0)    
+
+    clusters = tree.get_clusters(0)
     assert_equal(len(clusters), 1)
-    
+
     clusters = tree.get_clusters(1)
     assert_equal(len(clusters), 100)
 
 
 def test_raise_mdf():
-    
+
     thresholds = [1, 0.1]
-    
+
     metric = MinimumAverageDirectFlipMetric()
 
     assert_raises(ValueError, QuickBundlesX, thresholds, metric=metric)
     assert_raises(ValueError, QuickBundles, thresholds[1], metric=metric)
+
+
+def test_qbx_and_merge():
+
+    # Generate synthetic streamlines
+    bundles = bearing_bundles(4, 2)
+    bundles.append(straight_bundle(1))
+
+    streamlines = Streamlines(list(itertools.chain(*bundles)))
+
+    thresholds = [10, 2, 1]
+
+    rng = np.random.RandomState(seed=42)
+    qbxm_centroids = qbx_and_merge(streamlines, thresholds, rng=rng).centroids
+
+    qbx = QuickBundlesX(thresholds)
+    tree = qbx.cluster(streamlines)
+    qbx_centroids = tree.get_clusters(3).centroids
+
+    assert_equal(len(qbx_centroids) > len(qbxm_centroids), True)
 
 
 if __name__ == '__main__':

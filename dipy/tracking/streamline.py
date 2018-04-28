@@ -698,3 +698,7 @@ def values_from_volume(data, streamlines, affine=None):
         return _extract_vals(data, streamlines, affine=affine)
     else:
         raise ValueError("Data needs to have 3 or 4 dimensions")
+
+
+def nbytes(streamlines):
+    return streamlines._data.nbytes / 1024. ** 2
