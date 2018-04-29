@@ -27,3 +27,21 @@ cdef void cumsum(
     for i in range(N):
         sum += arr_in[i]
         arr_out[i] = sum
+
+
+cdef void copy_point(
+        double * a,
+        double * b) nogil:
+    cdef:
+        int i = 0
+    for i in range(3):
+        b[i] = a[i]
+
+
+cdef void scalar_muliplication_point(
+        double * a,
+        double scalar) nogil:
+    cdef:
+        int i = 0
+    for i in range(3):
+        a[i] *= scalar
