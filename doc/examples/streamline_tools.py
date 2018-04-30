@@ -231,10 +231,10 @@ dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 # Move streamlines to "trackvis space"
 voxel_size = labels_img.header.get_zooms()
 trackvis_point_space = utils.affine_for_trackvis(voxel_size)
-lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
-                                   trackvis_point_space, input_space=affine)
+# lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
+#                                   trackvis_point_space, input_space=affine)
 
-lr_sf_trk = Streamlines(lr_sf_trk)
+lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
 save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
@@ -262,7 +262,7 @@ moved our streamlines to "trackvis space", we can still compute the density map
 as long as we specify the right coordinate system.
 """
 
-dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=trackvis_point_space)
+dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=np.eye(4))
 assert np.all(dm == dm_trackvis)
 
 """
