@@ -23,7 +23,7 @@ def test_whole_brain_slr():
 
     moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
             f1, f2, verbose=True, rm_small_clusters=2, greater_than=0,
-            less_than=np.inf, qb_thr=5, progressive=True)
+            less_than=np.inf, qb_thr=5, progressive=False)
 
     # we can check the quality of registration by comparing the matrices
     # MAM streamline distances before and after SLR
@@ -45,7 +45,7 @@ def test_whole_brain_slr():
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
             f1, f3, verbose=False, rm_small_clusters=1, greater_than=20,
-            less_than=np.inf, qb_thr=2, progressive=False)
+            less_than=np.inf, qb_thr=2, progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
@@ -53,7 +53,7 @@ def test_whole_brain_slr():
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
             f1, f3, verbose=False, rm_small_clusters=1, select_random=400,
             greater_than=20,
-            less_than=np.inf, qb_thr=2, progressive=False)
+            less_than=np.inf, qb_thr=2, progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
