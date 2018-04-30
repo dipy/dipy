@@ -166,20 +166,20 @@ ax1.set_axis_off()
 rtop_laplacian = np.array(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
                           dtype=float)
 ind = ax1.imshow(rtop_laplacian, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=5e7)
+                 origin='lower', cmap=plt.cm.gray)
 
 ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
 ax2.set_axis_off()
 rtop_positivity = np.array(mapfit_positivity_aniso.rtop()[:, 0, :].T,
                            dtype=float)
 ind = ax2.imshow(rtop_positivity, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=5e7)
+                 origin='lower', cmap=plt.cm.gray)
 
 ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
 ax3.set_axis_off()
 rtop_both = np.array(mapfit_both_aniso.rtop()[:, 0, :].T, dtype=float)
 ind = ax3.imshow(rtop_both, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray, vmin=0, vmax=5e7)
+                 cmap=plt.cm.gray)
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
@@ -408,6 +408,7 @@ interactive = False
 r = window.Renderer()
 sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
 sfu.display(y=0)
+sfu.RotateX(-90)
 r.add(sfu)
 window.record(r, out_path='odfs.png', size=(600, 600))
 if interactive:
