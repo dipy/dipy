@@ -118,7 +118,7 @@ t1_aff = t1.affine
 color = line_colors(streamlines)
 
 # Enables/disables interactive visualization
-interactive = True
+interactive = False
 
 """
 To speed up visualization, we will select a random sub-set of streamlines to

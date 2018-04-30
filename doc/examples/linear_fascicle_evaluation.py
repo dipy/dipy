@@ -23,6 +23,7 @@ created in that example:
 import numpy as np
 import os.path as op
 import nibabel as nib
+from dipy.io.streamline import load_trk
 import dipy.core.optimize as opt
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
@@ -39,8 +40,10 @@ else:
     t1_data = t1.get_data()
     data = hardi_img.get_data()
 # Read the candidates from file in voxel space:
-candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
-                                                  points_space='voxel')[0]]
+
+candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
+# candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
+#                                                  points_space='voxel')[0]]
 
 """
 
