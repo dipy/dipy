@@ -9,6 +9,7 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
+
 import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
