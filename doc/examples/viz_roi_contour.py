@@ -63,6 +63,7 @@ provide the ROI data, the affine, the color in [R,G,B], and the opacity as
 a decimal between zero and one. Here, we set the color as blue/green with
 50% opacity.
 """
+
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 
@@ -82,6 +83,7 @@ ren.add(seedroi_actor)
 If you uncomment the following line, the rendering will pop up in an
 interactive window.
 """
+
 interactive = False
 if interactive:
     window.show(ren)
