@@ -24,6 +24,19 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 0.14 (Tuesday, 1 May 2018)
+
+- RecoBundles: anatomically relevant segmentation of bundles
+- New super fast clustering algorithm: QuickBundlesX
+- New tracking algorithm: Particle Filtering Tracking.
+- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
+- Integration of the Streamlines API for reading, saving and processing tractograms.
+- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
+- New command line interfaces.
+- Deprecated fvtk (old visualization framework).
+- A range of new visualization improvements.
+- Large documentation update.
+
 * 0.13 (Monday, 24 October 2017)
 
 - Faster local PCA implementation.
@@ -46,7 +59,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - Bayesian MRF-based tissue classification.
 - New API for integrated user interfaces.
 - New hdf5 file (.pam5) for saving reconstruction results.
-- Intreractive slicing of images, ODFS and peaks.
+- Interactive slicing of images, ODFS and peaks.
 - Updated API to support latest numpy versions.
 - New system for automatically generating command line interfaces.
 - Faster computation of Cross Correlation metric for registration.

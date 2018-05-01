@@ -5,6 +5,25 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 0.14 Changes
+-----------------
+
+**Streamlines**
+
+``dipy.io.trackvis`` module is deprecated. Use ``dipy.io.streamline`` instead. Furthermore,
+``load_trk`` and ``save_trk`` from ``dipy.io.streamline`` is highly recommended for managing streamlines.
+When you create streamlines, you should use ``from dipy.tracking.streamlines import Streamlines``. This new
+object uses much less memory and it is easier to process.
+
+**Visualization**
+
+``dipy.viz.fvtk`` module is deprecated. Use ``dipy.viz.*`` instead. This implies the following important changes:
+- Use ``from dipy.viz import window, actor`` instead of ``from dipy.viz import fvtk`.
+- Use ``window.Renderer()`` instead of ``fvtk.ren()``.
+- All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
+- UI elements are available in ``dipy.viz.ui``.
+
+
 DIPY 0.13 Changes
 -----------------
 
@@ -12,8 +31,9 @@ No major API changes.
 
 **Notes**
 
-``dipy.viz.fvtk`` module will be deprecated on release 0.14. Use ``dipy.viz.ui`` instead.
 ``dipy.io.trackvis`` module will be deprecated on release 0.14. Use ``dipy.io.streamline`` instead.
+``dipy.viz.fvtk`` module will be deprecated on release 0.14. Use ``dipy.viz.ui`` instead.
+
 
 DIPY 0.12 Changes
 -----------------
