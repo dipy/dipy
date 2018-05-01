@@ -13,6 +13,18 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
+**DIPY 0.14.0** is now available. New features include:
+
+- RecoBundles: anatomically relevant segmentation of bundles
+- New super fast clustering algorithm: QuickBundlesX
+- New tracking algorithm: Particle Filtering Tracking.
+- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
+- Integration of the Streamlines API for reading, saving and processing tractograms.
+- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
+- New command line interfaces.
+- Deprecated fvtk (old visualization framework).
+- A range of new visualization improvements.
+- Large documentation update.
 
 **DIPY 0.13.0** is now available. New features include:
 
@@ -69,6 +81,7 @@ See :ref:`Older Highlights <old_highlights>`.
 Announcements
 *************
 
+- :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
 - :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
 - :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
