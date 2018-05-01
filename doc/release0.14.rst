@@ -8,10 +8,9 @@ GitHub stats for 2017/10/24 - 2018/05/01 (tag: 0.13.0)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 26 authors contributed 645 commits.
+The following 24 authors contributed 645 commits.
 
 * Ariel Rokem
-* ArjitJ
 * Bago Amirbekian
 * Bennet Fauber
 * Conor Corbin
@@ -33,8 +32,7 @@ The following 26 authors contributed 645 commits.
 * Serge Koudoro
 * Shreyas Fadnavis
 * Aman Arya
-* maurozucchelli
-* naveenkumarmarri
+* Mauro Zucchelli
 
 
 We closed a total of 215 issues, 70 pull requests and 145 regular issues;
