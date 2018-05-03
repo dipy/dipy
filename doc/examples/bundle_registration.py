@@ -67,6 +67,7 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
 
 show_both_bundles([cb_subj1, cb_subj2],
                   colors=[window.colors.orange, window.colors.red],
+                  show=False,
                   fname='before_registration.png')
 
 """
@@ -78,6 +79,7 @@ show_both_bundles([cb_subj1, cb_subj2],
 
 show_both_bundles([cb_subj1, cb_subj2_aligned],
                   colors=[window.colors.orange, window.colors.red],
+                  show=False,
                   fname='after_registration.png')
 
 """

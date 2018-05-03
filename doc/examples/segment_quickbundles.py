@@ -30,7 +30,7 @@ Load fornix streamlines.
 
 streams, hdr = tv.read(fname)
 
-streamlines = Streamlines(streams)
+streamlines = [i[0] for i in streams]
 
 """
 Perform QuickBundles clustering using the MDF metric and a 10mm distance

@@ -10,7 +10,7 @@ from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite)
+                           assert_raises, run_module_suite, assert_allclose)
 
 from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
@@ -24,7 +24,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       compress_streamlines,
                                       select_by_rois,
                                       orient_by_rois,
-                                      values_from_volume)
+                                      values_from_volume,
+                                      deform_streamlines)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -513,6 +514,47 @@ def test_unlist_relist_streamlines():
     assert_equal(len(streamlines), len(streamlines2))
     for i in range(len(streamlines)):
         assert_array_equal(streamlines[i], streamlines2[i])
+
+
+def test_deform_streamlines():
+    # Create Random deformation field
+    deformation_field = np.random.randn(200, 200, 200, 3)
+    # Specify stream2grid and grid2world
+    stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                            [0, np.random.randn(1)[0], 0, 0],
+                            [0, 0, np.random.randn(1)[0], 0],
+                            [0, 0, 0, 1]])
+    grid2world = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                           [0, np.random.randn(1)[0], 0, 0],
+                           [0, 0, np.random.randn(1)[0], 0],
+                           [0, 0, 0, 1]])
+    stream2world = np.dot(stream2grid, grid2world)
+
+    # Deform streamlines (let two grid spaces be the same for simplicity)
+    new_streamlines = deform_streamlines(streamlines,
+                                         deformation_field,
+                                         stream2grid,
+                                         grid2world,
+                                         stream2grid,
+                                         grid2world)
+
+    # Interpolate displacements onto original streamlines
+    streamlines_in_grid = transform_streamlines(streamlines, stream2grid)
+    disps = values_from_volume(deformation_field, streamlines_in_grid)
+
+    # Put new_streamlines into world space
+    new_streamlines_world = transform_streamlines(new_streamlines,
+                                                  stream2world)
+
+    # Subtract disps from new_streamlines in world space
+    orig_streamlines_world = list(np.subtract(new_streamlines_world, disps))
+
+    # Put orig_streamlines_world into voxmm
+    orig_streamlines = transform_streamlines(orig_streamlines_world,
+                                             np.linalg.inv(stream2world))
+    # All close because of floating pt inprecision
+    for o, s in zip(orig_streamlines, streamlines):
+        assert_allclose(s, o, rtol=1e-10, atol=0)
 
 
 def test_center_and_transform():
