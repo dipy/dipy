@@ -76,7 +76,7 @@ We can very easily check the size of ``data`` in the following way:
 print(data.shape)
 
 """
-``(128, 128, 60, 194)``
+``(128, 128, 60, 193)``
 
 We can also check the dimensions of each voxel in the following way:
 """
