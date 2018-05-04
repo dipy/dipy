@@ -121,6 +121,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
     defined as:
 
     .. math::
+
         R_D = \frac{3}{2} \int_{0}^{\infty} (t+x)^{-\frac{1}{2}}
         (t+y)^{-\frac{1}{2}}(t+z)  ^{-\frac{3}{2}}
 
@@ -302,6 +303,7 @@ def _F2m(a, b, c):
     Function $F_2$ is defined as [1]_:
 
     .. math::
+
         F_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
         {3(\lambda_2-\lambda_3)^2}
@@ -574,6 +576,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     calculation of AKC is done using formula [1]_:
 
     .. math ::
+
         AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
         \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
 
@@ -662,36 +665,39 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     Notes
     --------
     The MK analytical solution is calculated using the following equation [1]_:
+
     .. math::
 
-    MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
-       F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
-       F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-       F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
-       F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
-       F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+        MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
+           F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+           F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+           F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+           F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+           F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
 
     where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
     coordinates system defined by the eigenvectors of the diffusion tensor
     $\mathbf{D}$ and
 
-    F_1(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
-    [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
-    \lambda_1\lambda_3}
-    {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+    .. math::
 
-    F_2(\lambda_1,\lambda_2,\lambda_3)=
-    \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
-    {3(\lambda_2-\lambda_3)^2}
-    [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
-    R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
-    \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
-    R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
+        F_1(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {18(\lambda_1-\lambda_2)(\lambda_1-\lambda_3)}
+        [\frac{\sqrt{\lambda_2\lambda_3}}{\lambda_1}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{3\lambda_1^2-\lambda_1\lambda_2-\lambda_2\lambda_3-
+        \lambda_1\lambda_3}
+        {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
+
+        F_2(\lambda_1,\lambda_2,\lambda_3)=
+        \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
+        {3(\lambda_2-\lambda_3)^2}
+        [\frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}
+        R_F(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)+\\
+        \frac{2\lambda_1-\lambda_2-\lambda_3}{3\sqrt{\lambda_2 \lambda_3}}
+        R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-2]
 
     where $R_f$ and $R_d$ are the Carlson's elliptic integrals.
 
@@ -764,6 +770,7 @@ def _G1m(a, b, c):
     Notes
     --------
     Function $G_1$ is defined as [1]_:
+
     .. math::
 
         G_1(\lambda_1,\lambda_2,\lambda_3)=
@@ -829,7 +836,9 @@ def _G2m(a, b, c):
     Notes
     --------
     Function $G_2$ is defined as [1]_:
+
     .. math::
+
         G_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
@@ -899,14 +908,18 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
 
     Notes
     --------
-    RK is calculated with the following equation  [1]_::
+    RK is calculated with the following equation  [1]_:
+
     .. math::
+
         K_{\bot} = G_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2222} +
                    G_1(\lambda_1,\lambda_3,\lambda_2)\hat{W}_{3333} +
                    G_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}
 
     where:
+
     .. math::
+
         G_1(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{18\lambda_2(\lambda_2-
         \lambda_3)} \left (2\lambda_2 +
@@ -916,6 +929,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     and
 
     .. math::
+
         G_2(\lambda_1,\lambda_2,\lambda_3)=
         \frac{(\lambda_1+\lambda_2+\lambda_3)^2}{(\lambda_2-\lambda_3)^2}
         \left ( \frac{\lambda_2+\lambda_3}{\sqrt{\lambda_2\lambda_3}}-2\right )
@@ -1220,6 +1234,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
     .. math::
 
         S=S_{0}e^{-bD+\frac{1}{6}b^{2}D^{2}K}
+
     """
     evals, evecs, kt = split_dki_param(dki_params)
 
@@ -1417,6 +1432,7 @@ class DiffusionKurtosisFit(TensorFit):
         calculation of AKC is done using formula:
 
         .. math ::
+
             AKC(n)=\frac{MD^{2}}{ADC(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}
             \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
 
@@ -1424,6 +1440,7 @@ class DiffusionKurtosisFit(TensorFit):
         diffusivity and ADC the apparent diffusion coefficent computed as:
 
         .. math ::
+
             ADC(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}
 
         where $D_{ij}$ are the elements of the diffusion tensor.
@@ -2014,7 +2031,7 @@ def Wcons(k_elements):
     k_elements : (15,)
         elements of the kurtosis tensor in the following order:
 
-        .. math::
+    .. math::
 
     \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
                      & ... \\
