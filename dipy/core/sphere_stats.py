@@ -127,8 +127,6 @@ def eigenstats(points, alpha=0.05):
     e[1, 0] = e[0, 1]
     # e is a 2x2 helper matrix
 
-    b1 = np.array([np.NaN, np.NaN])
-
     d = -2*np.log(alpha)/n
     s, w = np.linalg.eig(e)
     g = np.sqrt(d*s)
@@ -138,25 +136,25 @@ def eigenstats(points, alpha=0.05):
 
     return centre, b1
 
-    '''
-    # b2 is equivalent to b1 above
 
-    # try to invert e and calculate vector b the standard errors of
-    # centre - these are forced to a mixture of NaN and/or 0 in singular cases
-    b2 = np.array([np.NaN,np.NaN])
-    if np.abs(np.linalg.det(e)) < 10**-20:
-        b2 = np.array([0,np.NaN])
-    else:
-        try:
-            f = np.linalg.inv(e)
-        except np.linalg.LigAlgError:
-            b2 = np.array([np.NaN, np.NaN])
-        else:
-            t, y = np.linalg.eig(f)
-            d = -2*np.log(alpha)/n
-            g = np.sqrt(d/t)
-            b2= np.arcsin(g)*rad2deg
-    '''
+    # # b2 is equivalent to b1 above
+    #
+    # # try to invert e and calculate vector b the standard errors of
+    # # centre - these are forced to a mixture of NaN and/or 0 in singular cases
+    # b2 = np.array([np.NaN,np.NaN])
+    # if np.abs(np.linalg.det(e)) < 10**-20:
+    #     b2 = np.array([0,np.NaN])
+    # else:
+    #     try:
+    #         f = np.linalg.inv(e)
+    #     except np.linalg.LigAlgError:
+    #         b2 = np.array([np.NaN, np.NaN])
+    #     else:
+    #         t, y = np.linalg.eig(f)
+    #         d = -2*np.log(alpha)/n
+    #         g = np.sqrt(d/t)
+    #         b2= np.arcsin(g)*rad2deg
+
 
 
 def compare_orientation_sets(S, T):
@@ -201,7 +199,6 @@ def compare_orientation_sets(S, T):
         a = m
         S = T
         T = A
-        m = n
         n = a
 
     v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
@@ -279,7 +276,6 @@ def angular_similarity(S, T):
         a = m
         S = T
         T = A
-        m = n
         n = a
 
     """

@@ -126,10 +126,6 @@ def test_lpca_boundary_behaviour():
     assert_(rmses > 0.0001)
     assert_equal(np.round(S0ns_first.mean()), 100)
 
-    # Use a volume of sigma, instead of a scalar:
-    sigma_vol = np.ones(S0.shape[:-1]) * np.std(S0)
-    S0ns = localpca(S0, sigma=sigma_vol)
-
     rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
         (100.0 * 20.0 * 20.0 * 20.0)
 

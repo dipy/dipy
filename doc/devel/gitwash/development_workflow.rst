@@ -11,7 +11,7 @@ git by following :ref:`configure-git`.  Now you are ready for some real work.
 Workflow summary
 ================
 
-In what follows we'll refer to the upstream DIPY ``master`` branch, as
+In what follows we'll refer to the upstream dipy ``master`` branch, as
 "trunk".
 
 * Don't use your ``master`` branch for anything.  Consider deleting it.
@@ -24,7 +24,7 @@ In what follows we'll refer to the upstream DIPY ``master`` branch, as
 * If you can possibly avoid it, avoid merging trunk or any other branches into
   your feature branch while you are working.  
 * If you do find yourself merging from trunk, consider :ref:`rebase-on-trunk`
-* Ask on the `dipy mailing list`_ if you get stuck.
+* Ask on the `DIPY mailing list`_ if you get stuck.
 * Ask for code review!
 
 This way of working helps to keep work well organized, with readable history.
@@ -151,14 +151,12 @@ When you are ready to ask for someone to review your code and consider a merge:
 
 #. Go to the URL of your forked repo, say
    ``http://github.com/your-user-name/dipy``.
-#. Use the 'Switch Branches' dropdown menu near the top left of the page to
+#. Use the 'Branch' dropdown menu near the top left of the page to
    select the branch with your changes:
 
    .. image:: branch_dropdown.png
 
-#. Click on the 'Pull request' button:
-
-   .. image:: pull_button.png
+#. Click on the 'New pull request' button near the 'Branch' dropdown.
 
    Enter a title for the set of changes, and some explanation of what you've
    done.  Say if there is anything you'd like particular attention for - like a
@@ -182,8 +180,7 @@ Delete a branch on github
    # delete branch on github
    git push origin :my-unwanted-branch
 
-(Note the colon ``:`` before ``test-branch``.  See also:
-http://github.com/guides/remove-a-remote-branch
+(Note the colon ``:`` before ``test-branch``.  See also: `remove remote branch`_.
 
 Several people sharing a single repository
 ------------------------------------------
@@ -197,10 +194,10 @@ First fork dipy into your account, as from :ref:`forking`.
 Then, go to your forked repository github page, say
 ``http://github.com/your-user-name/dipy``
 
-Click on the 'Admin' button, and add anyone else to the repo as a
+Click on the 'Settings' on the right, then 'Collaborators' on the left, and add anyone else to the repo as a
 collaborator:
 
-   .. image:: pull_button.png
+   .. image:: collaborators.png
 
 Now all those people can do::
 

@@ -9,6 +9,7 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
+
 import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
@@ -143,12 +144,15 @@ def translate_green_cube(i_ren, obj, slider):
     value = slider.value
     cube_actor_2.SetPosition(value, 0, 0)
 
-
 line_slider = ui.LineSlider2D(initial_value=-2,
                               min_value=-5, max_value=5)
 
 line_slider.add_callback(line_slider.slider_disk,
                          "MouseMoveEvent",
+                         translate_green_cube)
+
+line_slider.add_callback(line_slider.slider_line,
+                         "LeftButtonPressEvent",
                          translate_green_cube)
 
 """
@@ -170,6 +174,9 @@ disk_slider.add_callback(disk_slider.handle,
                          "MouseMoveEvent",
                          rotate_red_cube)
 
+disk_slider.add_callback(disk_slider.base_disk,
+                         "LeftButtonPressEvent",
+                         rotate_red_cube)
 """
 2D File Select Menu
 ==============

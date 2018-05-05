@@ -12,7 +12,7 @@ def get_level(lvl):
     """
     try:
         return logging._levelNames[lvl]
-    except:
+    except Exception:
         return logging.INFO
 
 

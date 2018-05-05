@@ -26,8 +26,6 @@ def bench_local_maxima():
     repeat = 10000
     sphere = get_sphere('symmetric724')
     vertices, faces = sphere.vertices, sphere.faces
-    odf = abs(vertices.sum(-1))
-    edges = unique_edges(faces)
     print('Timing peak finding')
     timed0 = measure("local_maxima(odf, edges)", repeat)
     print('Actual sphere: %0.2f' % timed0)

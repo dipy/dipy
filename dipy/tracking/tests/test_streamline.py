@@ -24,7 +24,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       compress_streamlines,
                                       select_by_rois,
                                       orient_by_rois,
-                                      values_from_volume)
+                                      values_from_volume,
+                                      deform_streamlines)
 
 import pytest
 
@@ -351,7 +352,6 @@ def test_set_number_of_points_memory_leaks():
         streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
-
     rstreamlines = set_number_of_points(streamlines, nb_points=2)
     list_refcount_after = get_type_refcount()["list"]
 
@@ -478,7 +478,7 @@ def test_length_memory_leaks():
 
         list_refcount_before = get_type_refcount()["list"]
 
-        lengths = length(streamlines)
+        # lengths = length(streamlines)
         list_refcount_after = get_type_refcount()["list"]
 
         # Calling `length` shouldn't increase the refcount of `list`
@@ -495,7 +495,7 @@ def test_length_memory_leaks():
 
     list_refcount_before = get_type_refcount()["list"]
 
-    lengths = length(streamlines)
+    # lengths = length(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
     # Calling `length` shouldn't increase the refcount of `list`
@@ -518,9 +518,50 @@ def test_unlist_relist_streamlines():
         assert_array_equal(streamlines[i], streamlines2[i])
 
 
+def test_deform_streamlines():
+    # Create Random deformation field
+    deformation_field = np.random.randn(200, 200, 200, 3)
+    # Specify stream2grid and grid2world
+    stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                            [0, np.random.randn(1)[0], 0, 0],
+                            [0, 0, np.random.randn(1)[0], 0],
+                            [0, 0, 0, 1]])
+    grid2world = np.array([[np.random.randn(1)[0], 0, 0, 0],
+                           [0, np.random.randn(1)[0], 0, 0],
+                           [0, 0, np.random.randn(1)[0], 0],
+                           [0, 0, 0, 1]])
+    stream2world = np.dot(stream2grid, grid2world)
+
+    # Deform streamlines (let two grid spaces be the same for simplicity)
+    new_streamlines = deform_streamlines(streamlines,
+                                         deformation_field,
+                                         stream2grid,
+                                         grid2world,
+                                         stream2grid,
+                                         grid2world)
+
+    # Interpolate displacements onto original streamlines
+    streamlines_in_grid = transform_streamlines(streamlines, stream2grid)
+    disps = values_from_volume(deformation_field, streamlines_in_grid)
+
+    # Put new_streamlines into world space
+    new_streamlines_world = transform_streamlines(new_streamlines,
+                                                  stream2world)
+
+    # Subtract disps from new_streamlines in world space
+    orig_streamlines_world = list(np.subtract(new_streamlines_world, disps))
+
+    # Put orig_streamlines_world into voxmm
+    orig_streamlines = transform_streamlines(orig_streamlines_world,
+                                             np.linalg.inv(stream2world))
+    # All close because of floating pt inprecision
+    for o, s in zip(orig_streamlines, streamlines):
+        assert_allclose(s, o, rtol=1e-10, atol=0)
+
+
 def test_center_and_transform():
     A = np.array([[1, 2, 3], [1, 2, 3.]])
-    streamlines = [A for i in range(10)]
+    streamlines = [A for _ in range(10)]
     streamlines2, center = center_streamlines(streamlines)
     B = np.zeros((2, 3))
     assert_array_equal(streamlines2[0], B)
@@ -717,7 +758,6 @@ def test_compress_streamlines_memory_leaks():
         streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
-
     cstreamlines = compress_streamlines(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 

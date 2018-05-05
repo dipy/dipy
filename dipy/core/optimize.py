@@ -345,7 +345,6 @@ def sparse_nnls(y, X,
     h = np.zeros(num_regressors)
     # If nothing good happens, we'll return that:
     h_best = h
-    gradient = np.zeros(num_regressors)
     iteration = 1
     ss_residuals_min = np.inf  # This will keep track of the best solution
     sse_best = np.inf   # This will keep track of the best performance so far
@@ -354,8 +353,6 @@ def sparse_nnls(y, X,
 
     while 1:
         if iteration > 1:
-            # The sum of squared error given the current parameter setting:
-            sse = np.sum((y - spdot(X, h)) ** 2)
             # The gradient is (Kay 2008 supplemental page 27):
             gradient = spdot(X.T, spdot(X, h) - y)
             gradient += momentum * gradient

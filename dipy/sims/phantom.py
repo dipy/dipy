@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.stats as stats
+# import scipy.stats as stats
 
 from dipy.sims.voxel import SingleTensor, diffusion_evals
 import dipy.sims.voxel as vox
@@ -240,7 +240,8 @@ if __name__ == "__main__":
     vol4 = orbital_phantom(func=f4)
     vol234 = vol23 + vol4
 
-    voln = add_rician_noise(vol234)
+    # unknown function
+    # voln = add_rician_noise(vol234)
 
     # """
 

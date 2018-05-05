@@ -65,7 +65,7 @@ def test_dsi():
 def test_multivox_dsi():
     data, gtab = dsi_voxels()
     DS = DiffusionSpectrumModel(gtab)
-    sphere = get_sphere('symmetric724')
+    get_sphere('symmetric724')
 
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()
@@ -84,7 +84,7 @@ def test_multib0_dsi():
     sphere = get_sphere('repulsion724')
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()
-    odf = dsfit.odf(sphere)
+    dsfit.odf(sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
 
@@ -96,7 +96,7 @@ def test_multib0_dsi():
     ds = DiffusionSpectrumModel(new_gtab)
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()
-    odf = dsfit.odf(sphere)
+    dsfit.odf(sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
 

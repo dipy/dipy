@@ -97,7 +97,6 @@ def test_cubic_spline_derivative():
     #            free-form deformations. IEEE Transactions on Medical Imaging,
     #            22(1), 120-8, 2003.
     in_list = []
-    expected = []
     for epsilon in [-1e-9, 0.0, 1e-9]:
         for t in [-2.0, -1.0, 0.0, 1.0, 2.0]:
             x = t + epsilon

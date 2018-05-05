@@ -29,13 +29,13 @@ def test_gqiodf():
     #print(data.shape)
 
 
-    t1=time.clock()
+    # t1=time.clock()
     
-    gqs = gq.GeneralizedQSampling(data,bvals,gradients)
+    gq.GeneralizedQSampling(data,bvals,gradients)
     ten = dt.Tensor(data,bvals,gradients,thresh=50)
 
     
-    fa=ten.fa()
+    ten.fa()
 
     x,y,z,a,b=ten.evecs.shape
     evecs=ten.evecs
@@ -50,9 +50,6 @@ def test_gqiodf():
     evals = evals.reshape(xyz,3)
     #print evals.shape
 
-    
-
-    t2=time.clock()
     #print('GQS in %d' %(t2-t1))
         
     eds=np.load(opj(os.path.dirname(__file__),\
@@ -135,9 +132,9 @@ def test_gqiodf():
         summary[istr]['evecs'] = evecs[i,:,:]
         summary[istr]['evals'] = evals[i,:]
    
-    QA/=fwd
-    QA=QA.reshape(x,y,z,5)    
-    IN=IN.reshape(x,y,z,5)
+    QA /= fwd
+    # QA=QA.reshape(x,y,z,5)
+    # IN=IN.reshape(x,y,z,5)
     
     #print('Old %d secs' %(time.clock() - t2))
     # assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
@@ -173,11 +170,11 @@ def test_gqiodf():
     assert_equal(np.argmax(summary['10']['odf']), 105)
     assert_equal(np.argmax(summary['44']['odf']), 95)
 
-    pole_1 = summary['vertices'][116]
+    # pole_1 = summary['vertices'][116]
     #print 'pole_1', pole_1
-    pole_2 = summary['vertices'][105]
+    # pole_2 = summary['vertices'][105]
     #print 'pole_2', pole_2
-    pole_3 = summary['vertices'][95]
+    # pole_3 = summary['vertices'][95]
     #print 'pole_3', pole_3
 
     vertices = summary['vertices']

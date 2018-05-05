@@ -144,7 +144,6 @@ def bench_quick_squash():
         timed0 = measure("quick_squash(objs)", repeat)
         timed1 = measure("old_squash(objs)", repeat)
         print("With None: fast %4.2f; slow %4.2f" % (timed0, timed1))
-        msk = objs != np.array(None)
         timed0 = measure("quick_squash(objs, msk)", repeat)
         timed1 = measure("old_squash(objs, msk)", repeat)
         print("With mask: fast %4.2f; slow %4.2f" % (timed0, timed1))

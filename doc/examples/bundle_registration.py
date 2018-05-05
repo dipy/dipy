@@ -67,6 +67,7 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
 
 show_both_bundles([cb_subj1, cb_subj2],
                   colors=[window.colors.orange, window.colors.red],
+                  show=False,
                   fname='before_registration.png')
 
 """
@@ -78,6 +79,7 @@ show_both_bundles([cb_subj1, cb_subj2],
 
 show_both_bundles([cb_subj1, cb_subj2_aligned],
                   colors=[window.colors.orange, window.colors.red],
+                  show=False,
                   fname='after_registration.png')
 
 """
@@ -89,10 +91,10 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
 As you can see the two cingulum bundles are well aligned although they contain
 many streamlines of different length and shape.
 
-.. [Garyfallidis15] Garyfallidis et. al, "Robust and efficient linear
+.. [Garyfallidis15] Garyfallidis et al., "Robust and efficient linear
                     registration of white-matter fascicles in the space
                     of streamlines", Neuroimage, 117:124-140, 2015.
-.. [Garyfallidis14] Garyfallidis et. al, "Direct native-space fiber bundle
+.. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber bundle
                     alignment for group comparisons", ISMRM, 2014.
 
 """

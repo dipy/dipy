@@ -4,7 +4,7 @@ Calculate DSI-based scalar maps
 ===============================
 
 We show how to calculate two DSI-based scalar maps: return to origin 
-probability (rtop) [Descoteaux2011]_ and mean square displacement (msd) 
+probability (RTOP) [Descoteaux2011]_ and mean square displacement (MSD)
 [Wu2007]_, [Wu2008]_ on your dataset.
 
 First import the necessary modules:
@@ -64,8 +64,8 @@ rtop_signal = dsmodel.fit(dataslice).rtop_signal()
 Now we calculate the return to origin probability on the propagator, 
 that corresponds to its central value. 
 By default the propagator is divided by its sum in order to obtain a properly normalized pdf,
-however this normalization changes the values of rtop, therefore in order to compare it
-with the rtop previously calculated on the signal we turn the normalized parameter to false.
+however this normalization changes the values of RTOP, therefore in order to compare it
+with the RTOP previously calculated on the signal we turn the normalized parameter to false.
 """
 
 print('Calculating... rtop_pdf')
@@ -83,7 +83,7 @@ print("mse = %f" % mse)
 mse = 0.000000
 
 Leaving the normalized parameter to the default changes the values of the 
-rtop but not the contrast between the voxels.
+RTOP but not the contrast between the voxels.
 """
 
 print('Calculating... rtop_pdf_norm')
@@ -105,7 +105,7 @@ print('Calculating... msd')
 msd = dsmodel.fit(dataslice).msd_discrete(normalized=False)
 
 """
-Show the rtop images and save them in rtop.png.
+Show the RTOP images and save them in rtop.png.
 """
 
 fig = plt.figure(figsize=(6, 6))
@@ -129,7 +129,7 @@ plt.savefig('rtop.png')
 
    Return to origin probability.
 
-Show the msd images and save them in msd.png. 
+Show the MSD images and save them in msd.png. 
 """
 
 fig = plt.figure(figsize=(7, 3))
@@ -149,7 +149,7 @@ plt.savefig('msd.png')
 
    Mean square displacement.
 
-.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion
+.. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
    propagator imaging", Medical Image Analysis, vol 15, no 4, p. 603-621,
    2011.
 

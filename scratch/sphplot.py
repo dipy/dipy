@@ -12,9 +12,6 @@ def plot_lambert(v,key,centre=np.array([0,0])):
     lamb = geometry.lambert_equal_area_projection_cart(*v.T).T
     (y1,y2) = lamb
     radius = np.sum(lamb**2,axis=0) < 1
-    #print inner
-    #print y1[inner]
-    #print y1[-inner]
     fig = mplp.figure(facecolor='w')
     current = fig.add_subplot(111)
     current.patch.set_color('k')

@@ -24,10 +24,8 @@ def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
         b = target
 
     y = np.zeros(2)
-    A = np.ndarray((2, 2))
     for r in range(nrows):
         for c in range(ncols):
-            delta = delta_field[r, c]
             sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
             # This has to be done inside the neste loops because
             # some d[...] may have been previously modified
@@ -81,7 +79,7 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
         for r in range(nrows):
             for c in range(ncols):
                 g = grad[s, r, c]
-                delta = delta_field[s, r, c]
+                # delta = delta_field[s, r, c]
                 sigmasq = sigmasq_field[
                     s, r, c] if sigmasq_field is not None else 1
                 nn = 0
@@ -113,7 +111,7 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
                     G = np.outer(g, g) + tau * np.eye(3)
                     try:
                         dfield[s, r, c] = np.linalg.solve(G, y)
-                    except np.linalg.linalg.LinAlgError as err:
+                    except np.linalg.linalg.LinAlgError:
                         nrm2 = np.sum(g**2)
                         if(nrm2 < 1e-9):
                             dfield[s, r, c, :] = 0
@@ -182,7 +180,6 @@ def test_compute_residual_displacement_field_ssd_2d():
 
     # Select an initial displacement field
     d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
-    # d = np.zeros_like(grad_G, dtype=floating)
     lambda_param = 1.5
 
     # Implementation under test
@@ -208,7 +205,6 @@ def test_compute_residual_displacement_field_ssd_2d():
         dp = dp.astype(np.float64)
 
         # Compute expected residual
-        expected = None
         if target is None:
             expected = np.zeros_like(grad_G)
             expected[..., 0] = delta_field * grad_G[..., 0]
@@ -325,7 +321,6 @@ def test_compute_residual_displacement_field_ssd_3d():
 
     # Select an initial displacement field
     d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
-    # d = np.zeros_like(grad_G, dtype=floating)
     lambda_param = 1.5
 
     # Implementation under test
@@ -353,7 +348,6 @@ def test_compute_residual_displacement_field_ssd_3d():
             d[..., 2] * grad_G[..., 2]
 
         # Compute expected residual
-        expected = None
         if target is None:
             expected = np.zeros_like(grad_G)
             for i in range(3):

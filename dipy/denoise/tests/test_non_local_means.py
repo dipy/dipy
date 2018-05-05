@@ -38,7 +38,7 @@ def test_scalar_sigma():
     S0 += noise
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    S0n = assert_raises(
+    assert_raises(
         ValueError, non_local_means, S0, sigma=noise, rician=False)
 
 
@@ -48,7 +48,7 @@ def test_nlmeans_boundary():
     noise = 2 * np.random.standard_normal((20, 20, 20))
     S0 += noise
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
-    S0n = non_local_means(S0, sigma=np.std(noise), rician=False)
+    non_local_means(S0, sigma=np.std(noise), rician=False)
     assert_(S0[9, 9, 9] > 290)
     assert_(S0[10, 10, 10] < 110)
 

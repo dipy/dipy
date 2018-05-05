@@ -3,7 +3,7 @@
 Advanced interactive visualization
 ==================================
 
-In dipy_ we created a thin interface to access many of the capabilities
+In DIPY_ we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
 needs of structural and diffusion imaging. Initially the 3D visualization
 module was named ``fvtk``, meaning functions using vtk. This is still available
@@ -195,16 +195,30 @@ def change_opacity(i_ren, obj, slider):
 line_slider_z.add_callback(line_slider_z.slider_disk,
                            "MouseMoveEvent",
                            change_slice_z)
+line_slider_z.add_callback(line_slider_z.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_z)
+
 line_slider_x.add_callback(line_slider_x.slider_disk,
                            "MouseMoveEvent",
                            change_slice_x)
+line_slider_x.add_callback(line_slider_x.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_x)
+
 line_slider_y.add_callback(line_slider_y.slider_disk,
                            "MouseMoveEvent",
                            change_slice_y)
+line_slider_y.add_callback(line_slider_y.slider_line,
+                           "LeftButtonPressEvent",
+                           change_slice_y)
+
 opacity_slider.add_callback(opacity_slider.slider_disk,
                             "MouseMoveEvent",
                             change_opacity)
-
+opacity_slider.add_callback(opacity_slider.slider_line,
+                           "LeftButtonPressEvent",
+                           change_opacity)
 """
 We'll also create text labels to identify the sliders.
 """

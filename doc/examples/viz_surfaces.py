@@ -3,7 +3,7 @@
 Visualize surfaces
 ==================
 
-Here is a simple tutorial that shows how to visualize surfaces using dipy_. It
+Here is a simple tutorial that shows how to visualize surfaces using DIPY_. It
 also shows how to load/save, get/set and update ``vtkPolyData`` and show
 surfaces.
 
