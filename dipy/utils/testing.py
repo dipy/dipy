@@ -96,10 +96,10 @@ def assert_almost_equal(actual, desired, decimal=7):
 		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
 
 def assert_array_equal(actual, desired):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
+	if not 'numpy' in str(type(actual)):
+		actual = np.array(actual)
 	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
+		desired = np.array(desired)
 	assert actual == approx(desired)
 
 def assert_(statement):
