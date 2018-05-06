@@ -10,7 +10,7 @@ from dipy.testing import assert_arrays_equal
 
 from dipy.utils.testing import assert_true, assert_equal, assert_almost_equal
 from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises)
+                                assert_raises, assert_allclose)
 
 from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
