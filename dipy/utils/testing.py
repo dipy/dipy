@@ -66,7 +66,9 @@ def assert_raises(excClass, callableObj, *args, **kwargs):
 		raise AssertionError("{} not raised by {}".format(excName, callableObj))
 
 def assert_almost_equal(actual, desired, decimal=7):
-	if not abs(desired - actual) < 1.5 * 10**(-decimal):
+	actual_ = np.array(actual)
+	desired_ = np.array(desired)
+	if not np.all(abs(desired_ - actual_) < 1.5 * 10**(-decimal)):
 		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
 
 def assert_array_equal(actual, desired):
