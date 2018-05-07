@@ -8,60 +8,36 @@ import numpy as np
 
 
 def assert_equal(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 == value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' != ' + str(value2))
 
 def assert_not_equal(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 != value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' != ' + str(value2))
 
 def assert_less(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 < value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' is not less than ' + str(value2))
 
 def assert_less_equal(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 <= value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' is not less than ' + str(value2))
 
 def assert_greater(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 > value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' is not greater than ' + str(value1))
 
 def assert_greater_equal(value1, value2):
-	if not 'numpy' in str(type(value1)):
-		value1 = np.array(value1)
-	if not 'numpy' in str(type(value2)):
-		value2 = np.array(value2)
 	try:
 		assert np.all(value1 >= value2)
 	except AssertionError:
@@ -96,10 +72,6 @@ def assert_almost_equal(actual, desired, decimal=7):
 		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
 
 def assert_array_equal(actual, desired):
-	if not 'numpy' in str(type(actual)):
-		actual = np.array(actual)
-	if not 'numpy' in str(type(value2)):
-		desired = np.array(desired)
 	assert actual == approx(desired)
 
 def assert_(statement):
