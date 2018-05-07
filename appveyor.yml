@@ -3,14 +3,15 @@ build: off
 environment:
   matrix:
     - PYTHON: "C:\\Python27"
-      PYTHON_VERSION: "2.7.11"
-      PYTHON_ARCH: "64"
-      MINICONDA: C:\Miniconda
+      PYTHON_VERSION: "2.7"
+      MINICONDA: C:\Miniconda36-x64
 
     - PYTHON: "C:\\Python36"
-      PYTHON_VERSION: "3.6.0"
-      PYTHON_ARCH: "64"
-      MINICONDA: C:\Miniconda36
+      PYTHON_VERSION: "3.6"
+      MINICONDA: C:\Miniconda36-x64
+
+platform:
+    - x64
 
     - PYTHON: "C:\\Python35"
       PYTHON_VERSION: "3.5.1"
@@ -31,4 +32,11 @@ install:
   - python setup.py build_ext --inplace
 
 test_script:
-  - nosetests
+  - nosetests --verbose
+  
+cache:
+  # Use the appveyor cache to avoid re-downloading large archives such
+  # the MKL numpy and scipy wheels mirrored on a rackspace cloud
+  # container, speed up the appveyor jobs and reduce bandwidth
+  # usage on our rackspace account.
+  - '%APPDATA%\pip\Cache'
