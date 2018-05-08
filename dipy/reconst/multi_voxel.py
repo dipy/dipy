@@ -132,8 +132,9 @@ def _init_parallel_fit_worker(arr_to_populate, shape):
     global shared_arr
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', RuntimeWarning)
-        shared_arr = np.ctypeslib.as_array(arr_to_populate)
-        shared_arr = shared_arr.reshape(shape)
+        # shared_arr = np.ctypeslib.as_array(arr_to_populate)
+        # shared_arr = shared_arr.reshape(shape)
+        shared_arr = shm_as_ndarray(arr_to_populate, shape)
 
 
 def parallel_voxel_fit(single_voxel_fit):
