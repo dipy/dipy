@@ -9,7 +9,7 @@ import numpy as np
 
 def assert_equal(value1, value2):
 	try:
-		assert np.all(value1 == value2)
+		assert value1 == approx(value2)
 	except AssertionError:
 		raise AssertionError(str(value1) + ' != ' + str(value2))
 
@@ -72,13 +72,22 @@ def assert_almost_equal(actual, desired, decimal=7):
 		raise AssertionError("Values are not almost equal to {} decimals".format(decimal))
 
 def assert_array_equal(actual, desired):
-	assert actual == approx(desired)
+	try:
+		assert actual == approx(desired)
+	except AssertionError:
+		raise AssertionError('Arrays not equal')
 
 def assert_(statement):
-	assert statement
+	try:
+		assert statement
+	except AssertionError:
+		raise AssertionError('Statement not true')
 
 def assert_array_less(first, second):
-	assert np.all(first < second)
+	try:
+		assert np.all(first < second)
+	except AssertionError:
+		raise AssertionError('Array not ')
 
 
 '''Credits to the below functions goes to numpy.testing package'''
