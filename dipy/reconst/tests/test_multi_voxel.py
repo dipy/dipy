@@ -1,5 +1,3 @@
-from __future__ import division, print_function, absolute_import
-
 from functools import reduce
 
 import numpy as np
@@ -111,7 +109,7 @@ class SillyParallelModel(object):
         return SillyFit(self, data)
 
     def predict(self, S0):
-        return np.full(10, S0)
+        return np.ones(10, dtype=np.int) * S0
 
 
 class SillyMultiModel(object):
@@ -121,7 +119,7 @@ class SillyMultiModel(object):
         return SillyFit(self, data)
 
     def predict(self, S0):
-        return np.full(10, S0)
+        return np.ones(10, dtype=np.int) * S0
 
 
 class SillyFit(object):
@@ -140,7 +138,7 @@ class SillyFit(object):
         return np.zeros((n, 3))
 
     def predict(self, S0):
-        return np.full(self.data.shape, S0)
+        return np.ones(self.data.shape, dtype=np.int) * S0
 
 
 def test_parallel_voxel_fit():

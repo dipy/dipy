@@ -30,6 +30,8 @@ _ctypes_to_numpy = {
 _numpy_to_ctypes = dict(zip(_ctypes_to_numpy.values(),
                             _ctypes_to_numpy.keys()))
 
+global shared_arr
+
 
 def shm_as_ndarray(mp_array, shape=None):
     """
