@@ -2,12 +2,18 @@ from __future__ import division, print_function, absolute_import
 
 import logging
 
-import numpy as np
-
-from dipy.segment.mask import median_otsu
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
-
+import nibabel as nib
+import numpy as np
+from time import time
+from dipy.segment.mask import median_otsu
+from dipy.workflows.align import load_trk, save_trk
+import os
+from dipy.utils.six import string_types
+from dipy.segment.bundles import RecoBundles #, KDTreeBundles
+from dipy.tracking.streamline import transform_streamlines
+from dipy.io.pickles import save_pickle, load_pickle
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -79,3 +85,141 @@ class MedianOtsuFlow(Workflow):
                              format(masked_out_path))
 
         return io_it
+
+
+class RecoBundleFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'recobundles'
+    
+    def run(self, streamline_files, model_bundle_files,
+            out_dir=None, clust_thr=15.,
+            reduction_thr=10., reduction_distance='mdf',
+            model_clust_thr=5.,
+            pruning_thr=5., pruning_distance='mdf',
+            slr=True, slr_metric=None,
+            slr_transform='similarity', 
+            slr_matrix='small',  out_recognized_transf='recognized.trk',
+            out_recognized_labels='labels.npy', verbose=True, debug=False):
+        """ Recognize bundles
+    
+        Parameters
+        ----------
+        streamline_files : string
+            The path of streamline files where you want to recognize bundles
+        model_bundle_files : string
+            The path of model bundle files
+        out_dir : string, optional
+            Directory to output the different files
+        clust_thr : float, optional
+            MDF distance threshold for all streamlines
+        reduction_thr : float, optional
+            Reduce search space by (mm) (default 20)
+        reduction_distance : string, optional
+            Reduction distance type can be mdf or mam (default mdf)
+        model_clust_thr : float, optional
+            MDF distance threshold for the model bundles (default 5)
+        pruning_thr : float, optional
+            Pruning after matching (default 5).
+        pruning_distance : string, optional
+            Pruning distance type can be mdf or mam (default mdf)
+        slr : bool, optional
+            Enable local Streamline-based Linear Registration (default True).
+        slr_metric : string, optional
+            Options are None, symmetric, asymmetric or diagonal (default None).
+        slr_transform : string, optional
+            Transformation allowed. translation, rigid, similarity or scaling
+            (Default 'similarity').
+        slr_matrix : string, optional
+            Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge' (default
+            'small')
+            
+        out_recognized_transf : string, optional
+            Recognized bundle in the space of the model tractogram (default 'recognized.trk')
+        out_recognized_labels : string, optional 
+            Indices of recognized bundle in the original tractogram (default 'labels.npy')   
+        
+        verbose : bool, optional
+            Enable standard output (defaut True).
+        debug : bool, optional
+            Write out intremediate results (default False)
+        """
+
+        bounds = [(-30, 30), (-30, 30), (-30, 30),
+                  (-45, 45), (-45, 45), (-45, 45),
+                  (0.8, 1.2), (0.8, 1.2), (0.8, 1.2)]
+    
+        slr_matrix = slr_matrix.lower()
+        if slr_matrix == 'nano':
+            slr_select = (100, 100)
+        if slr_matrix == 'tiny':
+            slr_select = (250, 250)
+        if slr_matrix == 'small':
+            slr_select = (400, 400)
+        if slr_matrix == 'medium':
+            slr_select = (600, 600)
+        if slr_matrix == 'large':
+            slr_select = (800, 800)
+        if slr_matrix == 'huge':
+            slr_select = (1200, 1200)
+    
+        slr_transform = slr_transform.lower()
+        if slr_transform == 'translation':
+            bounds = bounds[:3]
+        if slr_transform == 'rigid':
+            bounds = bounds[:6]
+        if slr_transform == 'similarity':
+            bounds = bounds[:7]
+        if slr_transform == 'scaling':
+            bounds = bounds[:9]
+    
+        print('### RecoBundles ###')
+     
+        #io_it = self.get_io_iterator()
+        
+        #for sf, mb in io_it:
+        if 1:
+            sf = streamline_files 
+            mb = model_bundle_files
+            
+            
+            t = time()
+            streamlines, header = load_trk(sf)
+            #streamlines = trkfile.streamlines
+            print(' Loading time %0.3f sec' % (time() - t,))
+
+    
+            rb = RecoBundles(streamlines)
+
+
+    
+            t = time()
+            model_bundle, _ = load_trk(mb)
+            #model_bundle = model_trkfile.streamlines
+            print(' Loading time %0.3f sec' % (time() - t,))
+
+            recognized_bundle, labels, original_recognized_bundle = rb.recognize(
+                model_bundle,
+                model_clust_thr=float(model_clust_thr),
+                reduction_thr=float(reduction_thr),
+                reduction_distance=reduction_distance,
+                slr=slr,
+                slr_metric=slr_metric,
+                slr_x0=slr_transform,
+                slr_bounds=bounds,
+                slr_select=slr_select,
+                slr_method='L-BFGS-B',
+                pruning_thr=float(pruning_thr),
+                pruning_distance=pruning_distance)
+
+
+            recognized_tractogram = nib.streamlines.Tractogram(
+                recognized_bundle, affine_to_rasmm=np.eye(4))
+            recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
+            
+            print('saving output files')
+            nib.streamlines.save(recognized_trkfile, mb[:-4]+"_"+out_recognized_transf)
+
+            np.save(mb[:-4]+"_"+out_recognized_labels, np.array(labels))
+            
+
