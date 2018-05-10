@@ -2,7 +2,6 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
-import contextlib
 
 from os.path import join as pjoin
 from hashlib import md5
@@ -122,15 +121,11 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with urlopen(url) as opener:
-        if sys.version_info[0] < 3:
-            try:
-                response_size = opener.headers['content-length']
-            except KeyError:
-                response_size = None
-        else:
-            # python3.x
-            # returns none if header not found
-            response_size = opener.getheader("Content-Length")
+        try:
+            response_size = opener.headers['content-length']
+        except KeyError:
+            response_size = None
+
         with open(fname, 'wb') as data:
             if(response_size is None):
                 copyfileobj(opener, data)

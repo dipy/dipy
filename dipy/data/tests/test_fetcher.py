@@ -10,8 +10,10 @@ from threading import Thread
 if sys.version_info[0] < 3:
     from SimpleHTTPServer import SimpleHTTPRequestHandler  # Python 2
     from SocketServer import TCPServer as HTTPServer
+    from urllib import pathname2url
 else:
     from http.server import HTTPServer, SimpleHTTPRequestHandler  # Python 3
+    from urllib.request import pathname2url
 
 
 def test_check_md5():
@@ -31,13 +33,14 @@ def test_make_fetcher():
         stored_md5 = fetcher._get_file_md5(symmetric362)
 
         # create local HTTP Server
-        testfile_url = op.split(symmetric362)[0] + os.sep
+        testfile_folder = op.split(symmetric362)[0] + os.sep
+        testfile_url = 'file:' + pathname2url(testfile_folder)
         test_server_url = "http://127.0.0.1:8000/"
         print(testfile_url)
         print(symmetric362)
         current_dir = os.getcwd()
         # change pwd to directory containing testfile.
-        os.chdir(testfile_url)
+        os.chdir(testfile_folder)
         server = HTTPServer(('localhost', 8000), SimpleHTTPRequestHandler)
         server_thread = Thread(target=server.serve_forever)
         server_thread.deamon = True
@@ -55,7 +58,6 @@ def test_make_fetcher():
             sphere_fetcher()
         except Exception as e:
             print(e)
-        finally:
             # stop local HTTP Server
             server.shutdown()
 
@@ -64,7 +66,7 @@ def test_make_fetcher():
                          stored_md5)
 
         # stop local HTTP Server
-        # server.shutdown()
+        server.shutdown()
         # change to original working directory
         os.chdir(current_dir)
 
@@ -92,13 +94,23 @@ def test_fetch_data():
         server_thread.start()
 
         files = {"testfile.txt": (test_server_url, md5)}
-        fetcher.fetch_data(files, tmpdir)
+        try:
+            fetcher.fetch_data(files, tmpdir)
+        except Exception as e:
+            print(e)
+            # stop local HTTP Server
+            server.shutdown()
         npt.assert_(op.exists(newfile))
 
         # Test that the file is replaced when the md5 doesn't match
         with open(newfile, 'a') as f:
             f.write("some junk")
-        fetcher.fetch_data(files, tmpdir)
+        try:
+            fetcher.fetch_data(files, tmpdir)
+        except Exception as e:
+            print(e)
+            # stop local HTTP Server
+            server.shutdown()
         npt.assert_(op.exists(newfile))
         npt.assert_equal(fetcher._get_file_md5(newfile), md5)
 
