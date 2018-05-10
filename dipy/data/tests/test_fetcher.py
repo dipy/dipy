@@ -51,13 +51,20 @@ def test_make_fetcher():
                                                ["sphere_name"],
                                                md5_list=[stored_md5])
 
-        sphere_fetcher()
+        try:
+            sphere_fetcher()
+        except Exception as e:
+            print(e)
+        finally:
+            # stop local HTTP Server
+            server.shutdown()
+
         assert op.isfile(op.join(tmpdir, "sphere_name"))
         npt.assert_equal(fetcher._get_file_md5(op.join(tmpdir, "sphere_name")),
                          stored_md5)
 
         # stop local HTTP Server
-        server.shutdown()
+        # server.shutdown()
         # change to original working directory
         os.chdir(current_dir)
 

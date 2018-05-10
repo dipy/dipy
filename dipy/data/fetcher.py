@@ -121,7 +121,7 @@ def check_md5(filename, stored_md5=None):
 
 
 def _get_file_data(fname, url):
-    with contextlib.closing(urlopen(url)) as opener:
+    with urlopen(url) as opener:
         if sys.version_info[0] < 3:
             try:
                 response_size = opener.headers['content-length']
