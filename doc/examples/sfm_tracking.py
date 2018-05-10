@@ -97,9 +97,10 @@ execute the tracking
 """
 
 from dipy.tracking.local import LocalTracking
-streamlines = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
+from dipy.tracking.streamline import Streamlines
+streamlines_generator = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
 
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 """
 Next, we will create a visualization of these streamlines, relative to this
