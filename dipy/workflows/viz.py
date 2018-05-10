@@ -204,7 +204,12 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
 
     ren = window.Renderer()
     for streamlines in tractograms:
-        ren.add(actor.line(streamlines))
+        streamline_actor = actor.line(streamlines)
+        #streamline_actor.GetProperty().SetEdgeVisibility(1)
+        streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
+        streamline_actor.GetProperty().SetLineWidth(6)
+        streamline_actor.GetProperty().SetOpacity(1)
+        ren.add(streamline_actor)
 
     if data is not None:
         shape = data.shape
