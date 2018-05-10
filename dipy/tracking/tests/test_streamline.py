@@ -12,7 +12,7 @@ from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, run_module_suite)
 
-from dipy.tracking import Streamlines
+from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
@@ -175,7 +175,7 @@ def length_python(xyz, along=False):
 
 def set_number_of_points_python(xyz, n_pols=3):
     def _extrap(xyz, cumlen, distance):
-        ''' Helper function for extrapolate '''
+        """ Helper function for extrapolate """
         ind = np.where((cumlen-distance) > 0)[0][0]
         len0 = cumlen[ind-1]
         len1 = cumlen[ind]
@@ -1039,5 +1039,21 @@ def test_values_from_volume():
     npt.assert_equal(values_from_volume(data4D, streamlines).shape, (10, 1, 2))
 
 
+def test_streamlines_generator():
+    # Test generator
+    streamlines_generator = Streamlines(generate_sl(streamlines))
+    npt.assert_equal(len(streamlines_generator), len(streamlines))
+    # Nothing should change
+    streamlines_generator.append(np.array([]))
+    npt.assert_equal(len(streamlines_generator), len(streamlines))
+
+    # Test append error
+    npt.assert_raises(ValueError, streamlines_generator.append, streamlines)
+
+    # Test empty streamlines
+    streamlines_generator = Streamlines(np.array([]))
+    npt.assert_equal(len(streamlines_generator), 0)
+
+
 if __name__ == '__main__':
-    run_module_suite()
+    npt.run_module_suite()

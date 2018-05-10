@@ -1,3 +1,7 @@
+.. image:: doc/_static/dipy-banner.png
+  :target: http://dipy.org
+     :alt: DIPY - Diffusion Imaging in Python
+
 ======
  DIPY
 ======

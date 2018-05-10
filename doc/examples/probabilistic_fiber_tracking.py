@@ -23,6 +23,7 @@ from dipy.data import read_stanford_labels
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
+from dipy.tracking.streamline import Streamlines
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
@@ -65,8 +66,8 @@ fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
 prob_dg = ProbabilisticDirectionGetter.from_pmf(pmf, max_angle=30.,
                                                 sphere=small_sphere)
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
-save_trk("probabilistic_small_sphere.trk", streamlines, affine, labels.shape)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+save_trk("probabilistic_small_sphere.trk", streamlines_generator, affine, labels.shape)
 
 """
 One disadvantage of using a discrete PMF to represent possible tracking
@@ -86,9 +87,9 @@ from dipy.data import default_sphere
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     max_angle=30.,
                                                     sphere=default_sphere)
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
-save_trk("probabilistic_shm_coeff.trk", streamlines, affine, labels.shape)
+save_trk("probabilistic_shm_coeff.trk", streamlines_generator, affine, labels.shape)
 
 """
 Not all model fits have the ``shm_coeff`` attribute because not all models use
@@ -103,6 +104,6 @@ peaks = peaks_from_model(csd_model, data, default_sphere, .5, 25,
 fod_coeff = peaks.shm_coeff
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
                                                     sphere=default_sphere)
-streamlines = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
-save_trk("probabilistic_peaks_from_model.trk", streamlines, affine,
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+save_trk("probabilistic_peaks_from_model.trk", streamlines_generator, affine,
          labels.shape)
