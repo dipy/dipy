@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
+import contextlib
 
 from os.path import join as pjoin
 from hashlib import md5
@@ -120,7 +121,7 @@ def check_md5(filename, stored_md5=None):
 
 
 def _get_file_data(fname, url):
-    with urlopen(url) as opener:
+    with contextlib.closing(urlopen(url)) as opener:
         try:
             response_size = opener.headers['content-length']
         except KeyError:
