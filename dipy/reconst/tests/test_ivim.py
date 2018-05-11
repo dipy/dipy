@@ -25,6 +25,7 @@ import scipy
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
+
 def setup_module():
     global ivim_fit_single, ivim_fit_multi, ivim_fit_single_one_stage,\
         ivim_fit_multi_one_stage, bvecs_no_b0, gtab_no_b0, gtab_with_multiple_b0
@@ -32,7 +33,6 @@ def setup_module():
     global gtab, ivim_params, data_single, data_multi, ivim_model, noisy_single
 
     global S0, f, D_star, D, mevals, params
-
 
     # Let us generate some data for testing.
     bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
@@ -85,7 +85,8 @@ def setup_module():
                                            bvecs_with_multiple_b0.T)
 
     noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
-                             4439.36816406, 4420.06201172, 4152.30078125, 4114.34912109, 4104.59375, 4151.61914062,
+                             4439.36816406, 4420.06201172, 4152.30078125,
+                             4114.34912109, 4104.59375, 4151.61914062,
                              4003.58374023, 4013.68408203, 3906.39428711,
                              3909.06079102, 3495.27197266, 3402.57006836,
                              3163.10180664, 2896.04003906, 2663.7253418,

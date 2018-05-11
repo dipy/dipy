@@ -116,7 +116,8 @@ def parallel_fit_worker(arguments):
         return a list of tuple(voxel index, model fitted instance)
     """
     model, input_queue, args, kwargs = arguments
-    return [(idx, model.fit(shared_arr[idx], *args, **kwargs)) for idx in input_queue]
+    return [(idx, model.fit(shared_arr[idx], *args, **kwargs))
+            for idx in input_queue]
 
 
 def _init_parallel_fit_worker(arr_to_populate, shape):
@@ -141,9 +142,9 @@ def _init_parallel_fit_worker(arr_to_populate, shape):
 
 def parallel_voxel_fit(single_voxel_fit):
     """
-    Wraps single_voxel_fit method to turn a model into a parallel multi voxel model.
-    Use this decorator on the fit method of your model to take advantage of the
-    MultiVoxelFit.
+    Wraps single_voxel_fit method to turn a model into a parallel
+    multi voxel model. Use this decorator on the fit method of
+    your model to take advantage of the MultiVoxelFit.
 
     Parameters
     -----------
