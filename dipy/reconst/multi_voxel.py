@@ -218,6 +218,8 @@ def parallel_voxel_fit(single_voxel_fit):
         for idx, val in res_flatten:
             fit_array[idx] = val
 
+        global shared_arr
+        shared_arr = None
         return MultiVoxelFit(model, fit_array, mask)
     return new_fit
 
