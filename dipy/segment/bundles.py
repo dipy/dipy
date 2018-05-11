@@ -171,6 +171,7 @@ class RecoBundles(object):
         if len(neighb_streamlines) == 0:
             return Streamlines([]), [], Streamlines([])
         if slr:
+
             transf_streamlines = self._register_neighb_to_model(
                 model_bundle,
                 neighb_streamlines,

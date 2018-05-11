@@ -87,30 +87,31 @@ class MedianOtsuFlow(Workflow):
         return io_it
 
 
-class RecoBundleFlow(Workflow):
+class RecoBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'recobundles'
-    
+
     def run(self, streamline_files, model_bundle_files,
-            out_dir=None, clust_thr=15.,
+            clust_thr=15.,
             reduction_thr=10., reduction_distance='mdf',
             model_clust_thr=5.,
             pruning_thr=5., pruning_distance='mdf',
-            slr=True, slr_metric=None,
-            slr_transform='similarity', 
-            slr_matrix='small',  out_recognized_transf='recognized.trk',
-            out_recognized_labels='labels.npy', verbose=True, debug=False):
+            slr=True, slr_metric='symmetric',
+            slr_transform='similarity',
+            slr_matrix='small',
+            out_dir='',
+            out_recognized_transf='recognized.trk',
+            out_recognized_labels='labels.npy',
+            out_recognized_orig='recognized_orig.trk'):
         """ Recognize bundles
-    
+
         Parameters
         ----------
         streamline_files : string
             The path of streamline files where you want to recognize bundles
         model_bundle_files : string
             The path of model bundle files
-        out_dir : string, optional
-            Directory to output the different files
         clust_thr : float, optional
             MDF distance threshold for all streamlines
         reduction_thr : float, optional
@@ -126,29 +127,30 @@ class RecoBundleFlow(Workflow):
         slr : bool, optional
             Enable local Streamline-based Linear Registration (default True).
         slr_metric : string, optional
-            Options are None, symmetric, asymmetric or diagonal (default None).
+            Options are None, symmetric, asymmetric or diagonal (default symmetric).
         slr_transform : string, optional
             Transformation allowed. translation, rigid, similarity or scaling
             (Default 'similarity').
         slr_matrix : string, optional
-            Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge' (default
-            'small')
-            
+            Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge'
+            (default 'small')
+        out_dir : string, optional
+            Output directory (default input file directory)
         out_recognized_transf : string, optional
-            Recognized bundle in the space of the model tractogram (default 'recognized.trk')
-        out_recognized_labels : string, optional 
-            Indices of recognized bundle in the original tractogram (default 'labels.npy')   
-        
-        verbose : bool, optional
-            Enable standard output (defaut True).
-        debug : bool, optional
-            Write out intremediate results (default False)
+            Recognized bundle in the space of the model bundle
+            (default 'recognized.trk')
+        out_recognized_labels : string, optional
+            Indices of recognized bundle in the original tractogram
+            (default 'labels.npy')
+        out_recognized_orig : string, optional
+            Recognized bundle in the space of the original tractogram
+            (default 'recognized_orig.trk')
         """
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45),
                   (0.8, 1.2), (0.8, 1.2), (0.8, 1.2)]
-    
+
         slr_matrix = slr_matrix.lower()
         if slr_matrix == 'nano':
             slr_select = (100, 100)
@@ -162,7 +164,7 @@ class RecoBundleFlow(Workflow):
             slr_select = (800, 800)
         if slr_matrix == 'huge':
             slr_select = (1200, 1200)
-    
+
         slr_transform = slr_transform.lower()
         if slr_transform == 'translation':
             bounds = bounds[:3]
@@ -172,27 +174,20 @@ class RecoBundleFlow(Workflow):
             bounds = bounds[:7]
         if slr_transform == 'scaling':
             bounds = bounds[:9]
-    
+
         print('### RecoBundles ###')
-     
-        #io_it = self.get_io_iterator()
-        
-        #for sf, mb in io_it:
-        if 1:
-            sf = streamline_files 
-            mb = model_bundle_files
-            
-            
+
+        io_it = self.get_io_iterator()
+
+        for sf, mb, out_rec, out_labels, out_rec_orig in io_it:
+
             t = time()
             streamlines, header = load_trk(sf)
             #streamlines = trkfile.streamlines
             print(' Loading time %0.3f sec' % (time() - t,))
 
-    
             rb = RecoBundles(streamlines)
 
-
-    
             t = time()
             model_bundle, _ = load_trk(mb)
             #model_bundle = model_trkfile.streamlines
@@ -200,8 +195,8 @@ class RecoBundleFlow(Workflow):
 
             recognized_bundle, labels, original_recognized_bundle = rb.recognize(
                 model_bundle,
-                model_clust_thr=float(model_clust_thr),
-                reduction_thr=float(reduction_thr),
+                model_clust_thr=model_clust_thr,
+                reduction_thr=reduction_thr,
                 reduction_distance=reduction_distance,
                 slr=slr,
                 slr_metric=slr_metric,
@@ -209,17 +204,27 @@ class RecoBundleFlow(Workflow):
                 slr_bounds=bounds,
                 slr_select=slr_select,
                 slr_method='L-BFGS-B',
-                pruning_thr=float(pruning_thr),
+                pruning_thr=pruning_thr,
                 pruning_distance=pruning_distance)
 
+            save_trk(out_rec, recognized_bundle, np.eye(4))
+            #recognized_tractogram = nib.streamlines.Tractogram(
+            #    recognized_bundle, affine_to_rasmm=np.eye(4))
+            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
 
-            recognized_tractogram = nib.streamlines.Tractogram(
-                recognized_bundle, affine_to_rasmm=np.eye(4))
-            recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
-            
             print('saving output files')
-            nib.streamlines.save(recognized_trkfile, mb[:-4]+"_"+out_recognized_transf)
 
-            np.save(mb[:-4]+"_"+out_recognized_labels, np.array(labels))
-            
+            #nib.streamlines.save(recognized_trkfile, out_rec)
+            np.save(out_labels, np.array(labels))
+
+            save_trk(out_rec_orig, original_recognized_bundle,
+                     affine= header['voxel_to_rasmm'],
+                     header=header)
+
+            #recognized_tractogram = nib.streamlines.Tractogram(
+            #    recognized_bundle, affine_to_rasmm=np.eye(4))
+            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
+
+
+
 
