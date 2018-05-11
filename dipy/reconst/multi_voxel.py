@@ -210,7 +210,9 @@ def parallel_voxel_fit(single_voxel_fit):
                                 [(model, c, args, kwargs)
                                  for c in chunks])
         result.wait()
-
+        pool.close()
+        pool.join()
+        
         # Create output array
         fit_array = np.empty(data.shape[:-1], dtype=object)
         # Fill output array with results
