@@ -218,7 +218,7 @@ class RecoBundlesFlow(Workflow):
             np.save(out_labels, np.array(labels))
 
             save_trk(out_rec_orig, original_recognized_bundle,
-                     affine= header['voxel_to_rasmm'],
+                     affine= np.eye(4),#header['voxel_to_rasmm'],
                      header=header)
 
             #recognized_tractogram = nib.streamlines.Tractogram(
