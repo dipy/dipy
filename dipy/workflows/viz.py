@@ -198,13 +198,20 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
     world_coords = True
     interactive = True
 
+    prng = np.random.RandomState(27) #1838
+
 #    if not world_coords:
 #        from dipy.tracking.streamline import transform_streamlines
 #        streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
     ren = window.Renderer()
     for streamlines in tractograms:
-        streamline_actor = actor.line(streamlines)
+        if random_colors:
+            colors = prng.random_sample(3)
+        else:
+            colors = None
+
+        streamline_actor = actor.line(streamlines, colors=colors)
         #streamline_actor.GetProperty().SetEdgeVisibility(1)
         streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
         streamline_actor.GetProperty().SetLineWidth(6)
@@ -390,7 +397,6 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
         window.record(ren, out_path='bundles_and_3_slices.png',
                       size=(1200, 900),
                       reset_camera=False)
-
 
 
 class HorizonFlow(Workflow):
