@@ -96,10 +96,13 @@ line, you need to add this bit of code. Usually this is in a separate
 executable file located in ``bin``.
 """
 
-"""These lines will import the required files and classes into the 
-python file. The first line imports the run_flow method from the
-flow_runner class and the second line imports the AppendTextFlow 
-method from the newly created workflow class."""
+"""
+
+These lines will import the required files and classes into the python file. The
+first line imports the run_flow method from the flow_runner class and the second
+line imports the AppendTextFlow method from the newly created workflow class.
+"""
+
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.AppendTextFlow import AppendTextFlow
 """
