@@ -15,7 +15,7 @@ The core development team consists of the following individuals:
 - **Gabriel Girard**, Swiss Federal Institute of Technology (EPFL), Lausanne, CH
 - **Mauro Zucchelli**, INRIA, Sophia-Antipolis, France
 - **Rafael Neto Henriques**, Cambridge University, UK
-- **Matthieu Dumont**, IMEKA, Sherbrooke, QC, CA
+- **Matthieu Dumont**, Imeka, Sherbrooke, QC, CA
 - **Ranveer Aggarwal**, Microsoft, Hyderabad, Telangana, India
 
 And here is the rest of the wonderful contributors:
@@ -24,8 +24,8 @@ And here is the rest of the wonderful contributors:
 - **Maxime Descoteaux**, University of Sherbrooke, QC, CA
 - **Stefan Van der Walt**, University of California, Berkeley, CA, USA
 - **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, NL
-- **Michael Paquette**, University of Sherbrooke, QC, CA
-- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA
+- **Michael Paquette**, Max Planck Institute for Human Cognitive and Brain Sciences, Leipzig, DE
+- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA and Imeka, Sherbrooke, QC, CA
 - **Christopher Nguyen**,  Massachusetts General Hospital, MA, USA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, IT
 - **Yaroslav Halchenco**, PBS Department, Dartmouth, NH, USA
@@ -54,6 +54,7 @@ And here is the rest of the wonderful contributors:
 - **Sagun Pai**, Indian Institute of Technology, Bombay, IN
 - **Vatsala Swaroop**, Mombai, IN
 - **Shahnawaz Ahmed**, Birla Institute of Technology and Science, Pilani, Goa, IN
+- **Nil Goyette**, Imeka, Sherbrooke, QC, CA
 
 
 
