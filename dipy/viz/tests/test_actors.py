@@ -107,7 +107,7 @@ def test_slicer():
     slicer_lut.display(10, None, None)
     slicer_lut.display(None, 10, None)
     slicer_lut.display(None, None, 10)
-    
+
     slicer_lut.opacity(0.5)
     slicer_lut.tolerance(0.03)
     slicer_lut2 = slicer_lut.copy()
@@ -741,6 +741,22 @@ def test_labels(interactive=False):
         window.show(renderer, reset_camera=False)
 
     npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_spheres(interactive=False):
+
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [200, 0, 0, 100]])
+    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.99]])
+
+    renderer = window.Renderer()
+    sphere_actor = actor.sphere(centers=xyzr[:, :3], colors=colors[:],
+                                radii=xyzr[:, 3])
+    renderer.add(sphere_actor)
+
+    if interactive:
+        window.show(renderer, order_transparent=True)
 
 
 if __name__ == "__main__":

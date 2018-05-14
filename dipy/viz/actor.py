@@ -6,6 +6,7 @@ from nibabel.affines import apply_affine
 from dipy.viz.colormap import colormap_lookup_table, create_colormap
 from dipy.viz.utils import lines_to_vtk_polydata
 from dipy.viz.utils import set_input
+from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -1260,6 +1261,7 @@ def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     return aPolyVertexActor
 
 
+
 def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     """ Visualize points as sphere glyphs
 
@@ -1333,6 +1335,79 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     actor.GetProperty().SetOpacity(opacity)
+
+    return actor
+
+
+def sphere(centers, colors, radii=1., theta=16, phi=16):
+    """ Visualize one or many spheres with different colors and radii
+
+    Parameters
+    ----------
+    centers : ndarray, shape (N, 3)
+    colors : ndarray (N,3) or (N, 4) or tuple (3,) or tuple (4,)
+        RGB or RGBA (for opacity) R, G, B and A should be at the range [0, 1]
+    radii : float or ndarray, shape (N,)
+    theta : int
+    phi : int
+
+    Returns
+    -------
+    vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> centers = np.random.rand(5, 3)
+    >>> sphere_actor = actor.sphere(centers, window.colors.coral)
+    >>> ren.add(sphere_actor)
+    >>> #window.show(ren)
+    """
+
+    if np.array(colors).ndim == 1:
+        colors = np.tile(colors, (len(centers), 1))
+
+    if isinstance(radii, (float, int)):
+        radii = radii * np.ones(len(centers), dtype='f8')
+
+    pts = numpy_to_vtk_points(centers)
+    cols = numpy_to_vtk_colors(255 * colors)
+    cols.SetName('colors')
+
+    radii_fa = numpy_support.numpy_to_vtk(radii.astype('f8'), deep=0)
+    radii_fa.SetName('rad')
+
+    src = vtk.vtkSphereSource()
+    src.SetRadius(0.5)
+    src.SetThetaResolution(theta)
+    src.SetPhiResolution(phi)
+
+    polyData = vtk.vtkPolyData()
+    polyData.SetPoints(pts)
+    polyData.GetPointData().AddArray(radii_fa)
+    polyData.GetPointData().SetActiveScalars('rad')
+    polyData.GetPointData().AddArray(cols)
+
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetSourceConnection(src.GetOutputPort())
+    if major_version <= 5:
+        glyph.SetInput(polyData)
+    else:
+        glyph.SetInputData(polyData)
+    glyph.Update()
+
+    mapper = vtk.vtkPolyDataMapper()
+    if major_version <= 5:
+        mapper.SetInput(glyph.GetOutput())
+    else:
+        mapper.SetInputData(glyph.GetOutput())
+    mapper.SetScalarModeToUsePointFieldData()
+
+    mapper.SelectColorArray('colors')
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
 
     return actor
 
