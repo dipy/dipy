@@ -52,8 +52,6 @@ Older Highlights
 - Anisotropic Power Maps from spherical harmonic coefficients.
 - A new framework for affine registration of images.
 
-
-
 DIPY was an **official exhibitor** for OHBM 2015.
 
 .. raw :: html
