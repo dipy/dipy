@@ -7,6 +7,7 @@ from dipy.viz.colormap import colormap_lookup_table, create_colormap
 from dipy.viz.utils import lines_to_vtk_polydata
 from dipy.viz.utils import set_input
 from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
+import dipy.viz.utils as ut_vtk
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -1339,7 +1340,7 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     return actor
 
 
-def sphere(centers, colors, radii=1., theta=16, phi=16):
+def sphere(centers, colors, radii=1., theta=16, phi=16, vertices=None, faces=None):
     """ Visualize one or many spheres with different colors and radii
 
     Parameters
@@ -1350,6 +1351,8 @@ def sphere(centers, colors, radii=1., theta=16, phi=16):
     radii : float or ndarray, shape (N,)
     theta : int
     phi : int
+    vertices : vertices array
+    faces : faces array
 
     Returns
     -------
@@ -1378,16 +1381,22 @@ def sphere(centers, colors, radii=1., theta=16, phi=16):
     radii_fa = numpy_support.numpy_to_vtk(radii.astype('f8'), deep=0)
     radii_fa.SetName('rad')
 
-    src = vtk.vtkSphereSource()
-    src.SetRadius(0.5)
-    src.SetThetaResolution(theta)
-    src.SetPhiResolution(phi)
-
     polyData = vtk.vtkPolyData()
-    polyData.SetPoints(pts)
-    polyData.GetPointData().AddArray(radii_fa)
-    polyData.GetPointData().SetActiveScalars('rad')
-    polyData.GetPointData().AddArray(cols)
+    if faces is None:
+        src = vtk.vtkSphereSource()
+        src.SetRadius(0.5)
+        src.SetThetaResolution(theta)
+        src.SetPhiResolution(phi)
+
+        polyData.SetPoints(pts)
+        polyData.GetPointData().AddArray(radii_fa)
+        polyData.GetPointData().SetActiveScalars('rad')
+        polyData.GetPointData().AddArray(cols)
+
+    else:
+        for object_ in range(len(sphere_obj)):
+            ut_vtk.set_polydata_vertices(polyData, vertices)
+            ut_vtk.set_polydata_triangles(polyData, faces)
 
     glyph = vtk.vtkGlyph3D()
     glyph.SetSourceConnection(src.GetOutputPort())

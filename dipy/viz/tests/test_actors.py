@@ -21,7 +21,6 @@ else:
 
 run_test = (actor.have_vtk and
             actor.have_vtk_colors and
-            window.have_imread and
             not skip_it)
 
 if actor.have_vtk:

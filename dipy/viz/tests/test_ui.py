@@ -8,7 +8,7 @@ import numpy.testing as npt
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 from dipy.viz import ui
-from dipy.viz import window
+from dipy.viz import window, actor
 from dipy.data import DATA_DIR
 from nibabel.tmpdirs import InTemporaryDirectory
 
@@ -627,7 +627,49 @@ def test_ui_image_container_2d(interactive=False):
         show_manager.start()
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_timer():
+    """ Testing add a timer and exit window and app from inside timer.
+    """
+
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [200, 0, 0, 100]])
+    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.99]])
+
+    renderer = window.Renderer()
+    global sphere_actor, tb, cnt
+    sphere_actor = actor.sphere(centers=xyzr[:, :3], colors=colors[:],
+                                radii=xyzr[:, 3])
+    renderer.add(sphere_actor)
+
+    tb = ui.TextBlock2D()
+
+    cnt = 0
+    global showm
+    showm = window.ShowManager(renderer,
+                               size=(1024, 768), reset_camera=False,
+                               order_transparent=True)
+
+    showm.initialize()
+
+    def timer_callback(obj, event):
+        global cnt, sphere_actor, showm, tb
+
+        cnt += 1
+        tb.message = "Let's count up to 10 and exit :" + str(cnt)
+        showm.render()
+        if cnt > 9:
+            showm.exit()
+
+    renderer.add(tb)
+
+    # Run every 200 milliseconds
+    showm.add_timer_callback(True, 200, timer_callback)
+    showm.start()
+
+
 if __name__ == "__main__":
+
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
 
@@ -651,3 +693,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
         test_ui_image_container_2d(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_timer":
+        test_timer()
