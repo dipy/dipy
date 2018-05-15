@@ -255,19 +255,19 @@ class SlrWithQbForBundlesFlow(Workflow):
                 slr_with_qb(static, moving, "affine", rm_small_clusters=2, 
                           greater_than=0, less_than=np.Inf, qb_thr=0.5)
 
-            save_trk(static_file[:-4]+"_"+out_moved_file, moved, affine=np.eye(4),
+            save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)
 
             np.savetxt(out_affine_file, affine)
 
-            save_trk(static_file[:-4]+"_"+static_centroids_file, centroids_static, affine=np.eye(4),
+            save_trk(static_centroids_file, centroids_static, affine=np.eye(4),
                      header=static_header)
 
-            save_trk(static_file[:-4]+"_"+moving_centroids_file, centroids_moving,
+            save_trk(moving_centroids_file, centroids_moving,
                      affine=np.eye(4),
                      header=static_header)
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
-            save_trk(static_file[:-4]+"_"+moved_centroids_file, centroids_moved, affine=np.eye(4),
+            save_trk(moved_centroids_file, centroids_moved, affine=np.eye(4),
                      header=static_header)
