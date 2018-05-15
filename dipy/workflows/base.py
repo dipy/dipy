@@ -264,11 +264,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def get_flow_args(self, args=None, namespace=None):
         """ Returns the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
+
+        The function simply exits with a help message if no arguments were
+        provided by the user.
         """
 
-        #Checking if the required arguments have been provided by the user or not.
         if len(sys.argv) <= 1:
-            print("Program",sys.argv[0],"expects arguments. Type", sys.argv[0],"-h for help.")
+            print("Program", sys.argv[0], "expects arguments. Type", sys.argv[0], "-h for help.")
             exit(1)
 
         ns_args = self.parse_args(args, namespace)
