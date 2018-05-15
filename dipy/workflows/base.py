@@ -268,7 +268,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         #Checking if the required arguments have been provided by the user or not.
         if len(sys.argv) <= 1:
-            print("Program ",sys.argv[0],"expects arguments. Type", sys.argv[0],"-h for help with arguments.")
+            print("Program",sys.argv[0],"expects arguments. Type", sys.argv[0],"-h for help.")
             exit(1)
 
         ns_args = self.parse_args(args, namespace)
