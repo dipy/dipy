@@ -165,3 +165,109 @@ class SlrWithQbFlow(Workflow):
 
             save_trk(moved_centroids_file, centroids_moved, affine=np.eye(4),
                      header=static_header)
+
+
+
+class SlrWithQbForBundlesFlow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'slrwithqbForBundles'
+
+    def run(self, static_files, moving_files,
+            x0='affine',
+            rm_small_clusters=50,
+            num_threads=None,
+            out_dir='',
+            out_moved='moved.trk',
+            out_affine='affine.txt',
+            out_stat_centroids='static_centroids.trk',
+            out_moving_centroids='moving_centroids.trk',
+            out_moved_centroids='moved_centroids.trk'):
+        """ Streamline-based linear registration.
+
+        For efficiency we apply the registration on cluster centroids and
+        remove small clusters.
+
+        Parameters
+        ----------
+        static_files : string
+        moving_files : string
+        x0 : string
+            rigid, similarity or affine transformation model (default affine)
+
+        rm_small_clusters : int
+            Remove clusters that have less than `rm_small_clusters`
+            (default 50)
+
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used. Only metrics using OpenMP will use this variable.
+
+        out_dir : string, optional
+            Output directory (default input file directory)
+
+        out_moved : string, optional
+            Filename of moved tractogram (default 'moved.trk')
+
+        out_affine : string, optional
+            Filename of affine for SLR transformation (default 'affine.txt')
+
+        out_stat_centroids : string, optional
+            Filename of static centroids (default 'static_centroids.trk')
+
+        out_moving_centroids : string, optional
+            Filename of moving centroids (default 'moved_centroids.trk')
+
+        out_moved_centroids : string, optional
+            Filename of moved centroids (default 'moved_centroids.trk')
+
+        Notes
+        -----
+        The order of operations is the following. First short or long
+        streamlines are removed. Second the tractogram or a random selection
+        of the tractogram is clustered with QuickBundles. Then SLR
+        [Garyfallidis15]_ is applied.
+
+        References
+        ----------
+        .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+                registration of white-matter fascicles in the space of
+                streamlines", NeuroImage, 117, 124--140, 2015
+        .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+                bundle alignment for group comparisons", ISMRM, 2014.
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+                bundles using local and global streamline-based registration
+                and clustering, Neuroimage, 2017.
+        """
+        io_it = self.get_io_iterator()
+
+        for static_file, moving_file, out_moved_file, out_affine_file, \
+                static_centroids_file, moving_centroids_file, \
+                moved_centroids_file in io_it:
+
+            print(static_file + '-<-' + moving_file)
+
+            static, static_header = load_trk(static_file)
+            moving, moving_header = load_trk(moving_file)
+
+            moved, affine, centroids_static, centroids_moving = \
+                slr_with_qb(static, moving, "affine", rm_small_clusters=2, 
+                          greater_than=0, less_than=np.Inf, qb_thr=0.5)
+
+            save_trk(static_file[:-4]+"_"+out_moved_file, moved, affine=np.eye(4),
+                     header=static_header)
+
+            np.savetxt(out_affine_file, affine)
+
+            save_trk(static_file[:-4]+"_"+static_centroids_file, centroids_static, affine=np.eye(4),
+                     header=static_header)
+
+            save_trk(static_file[:-4]+"_"+moving_centroids_file, centroids_moving,
+                     affine=np.eye(4),
+                     header=static_header)
+
+            centroids_moved = transform_streamlines(centroids_moving, affine)
+
+            save_trk(static_file[:-4]+"_"+moved_centroids_file, centroids_moved, affine=np.eye(4),
+                     header=static_header)
