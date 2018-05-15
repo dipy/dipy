@@ -2193,6 +2193,7 @@ class ImageHolder(UI):
         """
         super(ImageHolder, self).__init__(position)
         self.img = self._build_image(imgPath)
+        self.set_img(self.img)
         self.resize(size)
 
     def _build_image(self, imgPath):
@@ -2216,7 +2217,7 @@ class ImageHolder(UI):
             png.SetFileName(imgPath)
             png.Update()
             img = png.GetOutput()
-        elif imgPath.split(".")[-1] in ["jpg","jpeg","JPG","JPEG"]:
+        elif imgPath.split(".")[-1] in ["jpg", "jpeg", "JPG", "JPEG"]:
             jpeg = vtk.vtkJPEGReader()
             jpeg.SetFileName(imgPath)
             jpeg.Update()
@@ -2240,11 +2241,9 @@ class ImageHolder(UI):
         -------
         :class:`vtkTexturedActor2D`
         """
-        img = self.img
         self.texture_polydata = vtk.vtkPolyData()
         self.texture_points = vtk.vtkPoints()
         self.texture_points.SetNumberOfPoints(4)
-        self.size = img.GetExtent()
 
         polys = vtk.vtkCellArray()
         polys.InsertNextCell(4)
@@ -2282,14 +2281,12 @@ class ImageHolder(UI):
         image_property = vtk.vtkProperty2D()
         image_property.SetOpacity(1.0)
         image.SetProperty(image_property)
-        self.set_img(img)
+        self.actor = image
 
         # Add default events listener to the VTK actor.
         self.handle_events(self.actor)
-        
-        return image
 
-    def get_actors(self):
+    def _get_actors(self):
         """ Returns the actors that compose this UI component.
         """
         return [self.actor]
