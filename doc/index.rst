@@ -26,54 +26,6 @@ Highlights
 - A range of new visualization improvements.
 - Large documentation update.
 
-**DIPY 0.13.0** is now available. New features include:
-
-- Faster local PCA implementation.
-- Fixed different issues with OpenMP and Windows / OSX.
-- Replacement of cvxopt by cvxpy.
-- Replacement of Pytables by h5py.
-- Updated API to support latest numpy version (1.14).
-- New user interfaces for visualization.
-- Large documentation update.
-
-**DIPY 0.12.0** is now available. New features include:
-
-- IVIM Simultaneous modeling of perfusion and diffusion.
-- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
-- DKI-based microstructural modelling.
-- Free water diffusion tensor imaging.
-- Denoising using Local PCA.
-- Streamline-based registration (SLR).
-- Fiber to bundle coherence (FBC) measures.
-- Bayesian MRF-based tissue classification.
-- New API for integrated user interfaces.
-- New hdf5 file (.pam5) for saving reconstruction results.
-- Interactive slicing of images, ODFs and peaks.
-- Updated API to support latest numpy versions.
-- New system for automatically generating command line interfaces.
-- Faster computation of cross correlation for image registration.
-
-**DIPY 0.11.0** is now available. New features include:
-
-- New framework for contextual enhancement of ODFs.
-- Compatibility with numpy (1.11).
-- Compatibility with VTK 7.0 which supports Python 3.x.
-- Faster PIESNO for noise estimation.
-- Reorient gradient directions according to motion correction parameters.
-- Supporting Python 3.3+ but not 3.2.
-- Reduced memory usage in DTI.
-- DSI now can use datasets with multiple b0s.
-- Fixed different issues with Windows 64bit and Python 3.5.
-
-**DIPY 0.10.1** is now available. New features in this release include:
-
-- Compatibility with new versions of scipy (0.16) and numpy (1.10).
-- New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
-- Diffusion Kurtosis Imaging (DKI): Google Summer of Code work by Rafael Henriques.
-- Mean Apparent Propagator (MAP) MRI for tissue microstructure estimation.
-- Anisotropic Power Maps from spherical harmonic coefficients.
-- A new framework for affine registration of images.
-
 See :ref:`Older Highlights <old_highlights>`.
 
 
@@ -84,13 +36,6 @@ Announcements
 - :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
 - :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
-- :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
-- :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
-- :ref:`DIPY 0.9.2 <release0.9>` released, March 18, 2015.
-- :ref:`DIPY 0.8.0 <release0.8>` released, January 6, 2015.
-- DIPY_ was an official exhibitor in `OHBM 2015 <http://ohbm.loni.usc.edu>`_.
-- DIPY was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
-- `DIPY paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
 See some of our :ref:`Past Announcements <old_news>`
 
