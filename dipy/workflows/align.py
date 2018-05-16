@@ -4,7 +4,7 @@ import numpy as np
 from dipy.align.reslice import reslice
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qb
+from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 
@@ -147,7 +147,7 @@ class SlrWithQbFlow(Workflow):
             moving, moving_header = load_trk(moving_file)
 
             moved, affine, centroids_static, centroids_moving = \
-                slr_with_qb(static, moving)
+                slr_with_qbx(static, moving)
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)

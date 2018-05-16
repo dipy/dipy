@@ -4,7 +4,7 @@ from numpy.testing import (assert_equal, run_module_suite,
                            assert_array_almost_equal)
 from dipy.data import get_data
 from dipy.tracking.streamline import Streamlines
-from dipy.align.streamlinear import whole_brain_slr, slr_with_qb
+from dipy.align.streamlinear import whole_brain_slr, slr_with_qbx
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.align.streamlinear import transform_streamlines
 from dipy.align.streamlinear import compose_matrix44, decompose_matrix44
@@ -43,14 +43,14 @@ def test_whole_brain_slr():
     f3 = f.copy()
     f3 = transform_streamlines(f3, mat)
 
-    moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
+    moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
             f1, f3, verbose=False, rm_small_clusters=1, greater_than=20,
             less_than=np.inf, qb_thr=2, progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
 
-    moved, transform, qb_centroids1, qb_centroids2 = slr_with_qb(
+    moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
             f1, f3, verbose=False, rm_small_clusters=1, select_random=400,
             greater_than=20,
             less_than=np.inf, qb_thr=2, progressive=True)
