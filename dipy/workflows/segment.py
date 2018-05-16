@@ -145,19 +145,7 @@ class RecoBundlesFlow(Workflow):
         """
         
         slr = not no_slr
-        print("slr = ", slr)
-        print("pruning_distance ", pruning_distance)
-        print("slr_metric ", slr_metric)
-        print("pruning_thr ", pruning_thr)
-        print("reduction_thr ", reduction_thr)
-        print("reduction_distance ", reduction_distance)
-        print("model_clust_thr ", model_clust_thr)
-        print("clust_thr ", clust_thr)
-        print ("slr_transform ", slr_transform)
-        print("slr_matrix= ", slr_matrix)
-        print("out_dir= ", out_dir)
-        
-        
+
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45),
                   (0.8, 1.2), (0.8, 1.2), (0.8, 1.2)]
@@ -219,20 +207,10 @@ class RecoBundlesFlow(Workflow):
                 slr_method='L-BFGS-B')
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
-            #recognized_tractogram = nib.streamlines.Tractogram(
-            #    recognized_bundle, affine_to_rasmm=np.eye(4))
-            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
-
+          
             print('saving output files')
 
-            #nib.streamlines.save(recognized_trkfile, out_rec)
             np.save(out_labels, np.array(labels))
-
-           
-
-            #recognized_tractogram = nib.streamlines.Tractogram(
-            #    recognized_bundle, affine_to_rasmm=np.eye(4))
-            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
 
 
 class ApplyLabelsFlow(Workflow):
