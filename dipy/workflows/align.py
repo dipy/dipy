@@ -4,7 +4,7 @@ import numpy as np
 from dipy.align.reslice import reslice
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qb
+from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 
@@ -63,7 +63,7 @@ class ResliceFlow(Workflow):
             logging.info('Resliced file save in {0}'.format(outpfile))
 
 
-class SlrWithQbFlow(Workflow):
+class SlrWithQbxFlow(Workflow):
 
     @classmethod
     def get_short_name(cls):
@@ -72,6 +72,7 @@ class SlrWithQbFlow(Workflow):
     def run(self, static_files, moving_files,
             x0='affine',
             rm_small_clusters=50,
+            qbx_thr=[40, 30, 20, 15],
             num_threads=None,
             slr_bundles=False,
             out_dir='',
@@ -95,6 +96,9 @@ class SlrWithQbFlow(Workflow):
         rm_small_clusters : int
             Remove clusters that have less than `rm_small_clusters`
             (default 50)
+
+        qbx_thr : variable int
+            Thresholds for QuickBundlesX (default 15)
 
         num_threads : int
             Number of threads. If None (default) then all available threads
@@ -150,6 +154,7 @@ class SlrWithQbFlow(Workflow):
             static, static_header = load_trk(static_file)
             moving, moving_header = load_trk(moving_file)
 
+<<<<<<< HEAD
             if slr_bundles:
                 moved, affine, centroids_static, centroids_moving = \
                 slr_with_qb(static, moving, "affine", rm_small_clusters=2, 
@@ -157,6 +162,10 @@ class SlrWithQbFlow(Workflow):
             else: 
                 moved, affine, centroids_static, centroids_moving = \
                     slr_with_qb(static, moving)
+=======
+            moved, affine, centroids_static, centroids_moving = \
+                slr_with_qbx(static, moving, qbx_thr=)
+>>>>>>> 5e50e506597cf60e96b36d26aa6314ed7e6f4e67
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)

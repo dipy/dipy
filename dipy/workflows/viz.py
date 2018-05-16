@@ -5,6 +5,7 @@ from dipy.tracking.streamline import transform_streamlines, length
 from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.clustering import qbx_and_merge
 from dipy.viz import actor, window, ui
+from dipy.viz.window import vtk
 
 
 def check_range(streamline, lt, gt):
@@ -131,6 +132,7 @@ def old_horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
         global centroid_actors
         global picked_actors
 
+        print('Inside pick callback')
         prop = obj.GetProp3D()
 
         ac = np.array(centroid_actors)
@@ -168,6 +170,7 @@ def old_horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
     centroid_visibility = True
 
     def key_press(obj, event):
+        print('Inside key_press')
         global centroid_visibility
         key = obj.GetKeySym()
         if key == 'h' or key == 'H':
@@ -181,6 +184,8 @@ def old_horizon(tractograms, data, affine, cluster=False, cluster_thr=15.,
                         ca.VisibilityOn()
                     centroid_visibility = True
                 show_m.render()
+
+
 
     show_m.initialize()
 
@@ -199,6 +204,8 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
     interactive = True
 
     prng = np.random.RandomState(27) #1838
+    global centroid_actors
+    centroid_actors = []
 
 #    if not world_coords:
 #        from dipy.tracking.streamline import transform_streamlines
@@ -211,12 +218,41 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
         else:
             colors = None
 
-        streamline_actor = actor.line(streamlines, colors=colors)
-        #streamline_actor.GetProperty().SetEdgeVisibility(1)
-        streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
-        streamline_actor.GetProperty().SetLineWidth(6)
-        streamline_actor.GetProperty().SetOpacity(1)
-        ren.add(streamline_actor)
+        if cluster:
+
+            print(' Clustering threshold {} \n'.format(cluster_thr))
+            clusters = qbx_and_merge(streamlines,
+                                     [40, 30, 25, 20, cluster_thr])
+            centroids = clusters.centroids
+            print(' Number of centroids is {}'.format(len(centroids)))
+            sizes = np.array([len(c) for c in clusters])
+            linewidths = np.interp(sizes,
+                                   [sizes.min(), sizes.max()], [0.1, 2.])
+            visible_cluster_id = []
+            print(' Minimum number of streamlines in cluster {}'
+                  .format(sizes.min()))
+
+            print(' Maximum number of streamlines in cluster {}'
+                  .format(sizes.max()))
+
+            for (i, c) in enumerate(centroids):
+                # set_trace()
+                if check_range(c, length_lt, length_gt):
+                    if sizes[i] > clusters_lt and sizes[i] < clusters_gt:
+                        act = actor.streamtube([c], colors,
+                                               linewidth=linewidths[i],
+                                               lod=False)
+                        centroid_actors.append(act)
+                        ren.add(act)
+                        visible_cluster_id.append(i)
+
+        else:
+            streamline_actor = actor.line(streamlines, colors=colors)
+            # streamline_actor.GetProperty().SetEdgeVisibility(1)
+            streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
+            streamline_actor.GetProperty().SetLineWidth(6)
+            streamline_actor.GetProperty().SetOpacity(1)
+            ren.add(streamline_actor)
 
     if data is not None:
         shape = data.shape
@@ -378,6 +414,58 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
 
     show_m.initialize()
 
+    global picked_actors
+    picked_actors = {}
+
+    def pick_callback(obj, event):
+        print('Inside pick_callbacks')
+        global centroid_actors
+        global picked_actors
+
+        prop = obj.GetProp3D()
+
+        ac = np.array(centroid_actors)
+        index = np.where(ac == prop)[0]
+
+        if len(index) > 0:
+            try:
+                bundle = picked_actors[prop]
+                ren.rm(bundle)
+                del picked_actors[prop]
+            except:
+                bundle = actor.line(clusters[visible_cluster_id[index]],
+                                    lod=False)
+                picked_actors[prop] = bundle
+                ren.add(bundle)
+
+        if prop in picked_actors.values():
+            ren.rm(prop)
+
+    global centroid_visibility
+    centroid_visibility = True
+
+    def key_press(obj, event):
+        print('Inside key_press')
+        global centroid_visibility
+        key = obj.GetKeySym()
+        if key == 'h' or key == 'H':
+            if cluster:
+                if centroid_visibility is True:
+                    for ca in centroid_actors:
+                        ca.VisibilityOff()
+                    centroid_visibility = False
+                else:
+                    for ca in centroid_actors:
+                        ca.VisibilityOn()
+                    centroid_visibility = True
+                show_m.render()
+        if key == 'p' or key == 'H':
+            print('p pressed')
+            pos = show_m.iren.GetEventPosition()
+            print(pos)
+            show_m.picker.Pick(pos[0], pos[1], 0, show_m.ren)
+            #pick_callback(obj, event)
+
     """
     Finally, please set the following variable to ``True`` to interact with the
     datasets in 3D.
@@ -387,9 +475,14 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
     ren.reset_clipping_range()
 
     if interactive:
+        show_m.picker = vtk.vtkCellPicker()
+        show_m.picker.SetTolerance(0.0002)
 
         show_m.add_window_callback(win_callback)
+        show_m.iren.AddObserver('KeyPressEvent', key_press)
+        show_m.iren.AddObserver("EndPickEvent", pick_callback)
         show_m.render()
+        show_m.picker.Pick(0, 0, 0, show_m.ren)
         show_m.start()
 
     else:
