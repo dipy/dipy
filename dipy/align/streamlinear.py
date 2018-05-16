@@ -693,8 +693,12 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
 
 
 def remove_clusters_by_size(clusters, min_size=0):
-    by_size = lambda c: len(c) >= min_size
-    return filter(by_size, clusters)
+    for cl in clusters:
+        if len(cl) < min_size:
+            clusters.remove_cluster(cl)
+    return clusters
+    #by_size = lambda c: len(c) >= min_size
+    #return filter(by_size, clusters)
 
 
 def progressive_slr(static, moving, metric, x0, bounds,
@@ -898,8 +902,8 @@ def slr_with_qbx(static, moving,
             return False
 
     # TODO change this to the new Streamlines API
-    streamlines1 = [s for s in static if check_range(s)]
-    streamlines2 = [s for s in moving if check_range(s)]
+    streamlines1 = static[np.array([check_range(s) for s in static])]
+    streamlines2 = moving[np.array([check_range(s) for s in moving])]
 
     if verbose:
 
@@ -914,14 +918,25 @@ def slr_with_qbx(static, moving,
     else:
         rstreamlines1 = streamlines1
 
+    print(type(rstreamlines1))
+
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    print(type(rstreamlines1))
 
     # qb1 = QuickBundles(threshold=qb_thr)
-    rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
+    rstreamlines1._data.astype('f4')
+    #rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
     # cluster_map1 = qb1.cluster(rstreamlines1)
+
+    print(type(rstreamlines1))
+
+
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-    qb_centroids1 = [cluster.centroid for cluster in clusters1]
+
+
+    qb_centroids1 = clusters1.centroids
+    #[cluster.centroid for cluster in clusters1]
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
@@ -930,12 +945,14 @@ def slr_with_qbx(static, moving,
         rstreamlines2 = streamlines2
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    rstreamlines2._data.astype('f4')
     # qb2 = QuickBundles(threshold=qb_thr)
-    rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
+    #rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
     # cluster_map2 = qb2.cluster(rstreamlines2)
-    cluster_map2 = qbx_and_merge(thresholds=qbx_thr)
+    cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr)
+    1/0
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = [cluster.centroid for cluster in clusters2]
+    qb_centroids2 = clusters2.centroids #[cluster.centroid for cluster in clusters2]
 
     if verbose:
         t = time()

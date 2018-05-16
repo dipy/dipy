@@ -103,10 +103,10 @@ class SlrWithQbxFlow(Workflow):
         num_threads : int
             Number of threads. If None (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
-            
+
         slr_bundles : boolean, optional
             Use slr for bundle registration if slr_bundles is True (Default False)
-            
+
         out_dir : string, optional
             Output directory (default input file directory)
 
@@ -154,18 +154,22 @@ class SlrWithQbxFlow(Workflow):
             static, static_header = load_trk(static_file)
             moving, moving_header = load_trk(moving_file)
 
-<<<<<<< HEAD
+
             if slr_bundles:
+                '''moved, affine, centroids_static, centroids_moving = \
+                slr_with_qb(static, moving, "affine", rm_small_clusters=2,
+                          greater_than=0, less_than=np.Inf, qb_thr=0.5)'''
+
                 moved, affine, centroids_static, centroids_moving = \
-                slr_with_qb(static, moving, "affine", rm_small_clusters=2, 
-                          greater_than=0, less_than=np.Inf, qb_thr=0.5)
-            else: 
+                    slr_with_qbx(static, moving, x0, rm_small_clusters=2,
+                          greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
+
+            else:
+                '''moved, affine, centroids_static, centroids_moving = \
+                    slr_with_qb(static, moving)'''
+
                 moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qb(static, moving)
-=======
-            moved, affine, centroids_static, centroids_moving = \
-                slr_with_qbx(static, moving, qbx_thr=)
->>>>>>> 5e50e506597cf60e96b36d26aa6314ed7e6f4e67
+                    slr_with_qbx(static, moving, qbx_thr=qbx_thr)
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)
@@ -183,5 +187,3 @@ class SlrWithQbxFlow(Workflow):
 
             save_trk(moved_centroids_file, centroids_moved, affine=np.eye(4),
                      header=static_header)
-
-
