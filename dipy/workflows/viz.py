@@ -422,8 +422,10 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
         global centroid_actors
         global picked_actors
 
-        prop = obj.GetProp3D()
+        prop = obj  # GetProp3D()
+        prop.GetProperty().SetOpacity(0.5)
 
+        return
         ac = np.array(centroid_actors)
         index = np.where(ac == prop)[0]
 
@@ -440,6 +442,10 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
 
         if prop in picked_actors.values():
             ren.rm(prop)
+
+    for act in centroid_actors:
+
+        act.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
 
     global centroid_visibility
     centroid_visibility = True
@@ -459,30 +465,25 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
                         ca.VisibilityOn()
                     centroid_visibility = True
                 show_m.render()
-        if key == 'p' or key == 'H':
-            print('p pressed')
-            pos = show_m.iren.GetEventPosition()
-            print(pos)
-            show_m.picker.Pick(pos[0], pos[1], 0, show_m.ren)
-            #pick_callback(obj, event)
 
     """
     Finally, please set the following variable to ``True`` to interact with the
     datasets in 3D.
     """
 
+
+
     ren.zoom(1.5)
     ren.reset_clipping_range()
 
+
+
     if interactive:
-        show_m.picker = vtk.vtkCellPicker()
-        show_m.picker.SetTolerance(0.0002)
 
         show_m.add_window_callback(win_callback)
-        show_m.iren.AddObserver('KeyPressEvent', key_press)
-        show_m.iren.AddObserver("EndPickEvent", pick_callback)
+        #show_m.iren.AddObserver('KeyPressEvent', key_press)
+        #show_m.iren.AddObserver("EndPickEvent", pick_callback)
         show_m.render()
-        show_m.picker.Pick(0, 0, 0, show_m.ren)
         show_m.start()
 
     else:
