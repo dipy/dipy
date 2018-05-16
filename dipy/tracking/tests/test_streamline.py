@@ -1027,6 +1027,9 @@ def test_values_from_volume():
             vv = values_from_volume(data, np.array(sl1))
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
+            vv = values_from_volume(data, Streamlines(sl1))
+            npt.assert_almost_equal(vv, ans1, decimal=decimal)
+
             affine = np.eye(4)
             affine[:, 3] = [-100, 10, 1, 1]
             x_sl1 = ut.move_streamlines(sl1, affine)

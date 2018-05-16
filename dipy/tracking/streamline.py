@@ -29,7 +29,6 @@ else:
 
     MEGABYTE = 1024 * 1024
 
-
     class _BuildCache(object):
         def __init__(self, arr_seq, common_shape, dtype):
             self.offsets = list(arr_seq._offsets)
@@ -37,8 +36,12 @@ else:
             self.next_offset = arr_seq._get_next_offset()
             self.bytes_per_buf = arr_seq._buffer_size * MEGABYTE
             # Use the passed dtype only if null data array
-            self.dtype = dtype if arr_seq._data.size == 0 else arr_seq._data.dtype
-            if arr_seq.common_shape != () and common_shape != arr_seq.common_shape:
+            if arr_seq._data.size == 0:
+                self.dtype = dtype
+            else:
+                arr_seq._data.dtype
+            if (arr_seq.common_shape != () and
+                    common_shape != arr_seq.common_shape):
                 raise ValueError(
                     "All dimensions, except the first one, must match exactly")
             self.common_shape = common_shape
@@ -50,34 +53,32 @@ else:
             arr_seq._offsets = np.array(self.offsets)
             arr_seq._lengths = np.array(self.lengths)
 
-
     class Streamlines(ArraySequence):
-
         def __init__(self, *args, **kwargs):
             super(Streamlines, self).__init__(*args, **kwargs)
 
         def append(self, element, cache_build=False):
-            """ Appends `element` to this array sequence.
+            """
+            Appends `element` to this array sequence.
+
             Append can be a lot faster if it knows that it is appending several
-            elements instead of a single element.  In that case it can cache the
-            parameters it uses between append operations, in a "build cache".  To
-            tell append to do this, use ``cache_build=True``.  If you use
-            ``cache_build=True``, you need to finalize the append operations with
-            :meth:`finalize_append`.
+            elements instead of a single element.  In that case it can cache
+            the parameters it uses between append operations, in a "build
+            cache". To tell append to do this, use ``cache_build=True``.  If
+            you use ``cache_build=True``, you need to finalize the append
+            operations with :meth:`finalize_append`.
+
             Parameters
             ----------
-            element : ndarray
-                Element to append. The shape must match already inserted elements
-                shape except for the first dimension.
-            cache_build : {False, True}
-                Whether to save the build cache from this append routine.  If True,
-                append can assume it is the only player updating `self`, and the
-                caller must finalize `self` after all append operations, with
-                ``self.finalize_append()``.
-            Returns
+            element : ndarray Element to append. The shape must match already
+                inserted elements shape except for the first dimension.
+                cache_build : {False, True} Whether to save the build cache
+                from this append routine.  If True, append can assume it is the
+                only player updating `self`, and the caller must finalize
+                `self` after all append operations, with
+                ``self.finalize_append()``. Returns
             -------
-            None
-            Notes
+            None Notes
             -----
             If you need to add multiple elements you should consider
             `ArraySequence.extend`.
@@ -124,19 +125,20 @@ else:
             """ Appends all `elements` to this array sequence.
             Parameters
             ----------
-            elements : iterable of ndarrays or :class:`ArraySequence` object
-                If iterable of ndarrays, each ndarray will be concatenated along
-                the first dimension then appended to the data of this
+            elements : iterable of ndarrays or :class:`ArraySequence` instance
+
+                If iterable of ndarrays, each ndarray will be concatenated
+                along the first dimension then appended to the data of this
                 ArraySequence.
-                If :class:`ArraySequence` object, its data are simply appended to
-                the data of this ArraySequence.
+                If :class:`ArraySequence` object, its data are simply appended
+                to the data of this ArraySequence.
+
             Returns
             -------
-            None
-            Notes
+            None Notes
             -----
-            The shape of the elements to be added must match the one of the data of
-            this :class:`ArraySequence` except for the first dimension.
+            The shape of the elements to be added must match the one of the
+            data of this :class:`ArraySequence` except for the first dimension.
             """
             # If possible try pre-allocating memory.
             try:
@@ -597,7 +599,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     """
     data = data.astype(np.float)
     if (isinstance(streamlines, list) or
-            isinstance(streamlines, types.GeneratorType)):
+       isinstance(streamlines, types.GeneratorType) or
+       isinstance(streamlines, Streamlines)):
         if affine is not None:
             streamlines = ut.move_streamlines(streamlines,
                                               np.linalg.inv(affine))
