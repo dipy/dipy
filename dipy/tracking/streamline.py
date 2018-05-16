@@ -597,8 +597,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     """
     data = data.astype(np.float)
     if (isinstance(streamlines, list) or
-        isinstance(streamlines, types.GeneratorType) or
-        isinstance(streamlines, Streamlines)):
+           isinstance(streamlines, types.GeneratorType) or
+           isinstance(streamlines, Streamlines)):
         if affine is not None:
             streamlines = ut.move_streamlines(streamlines,
                                               np.linalg.inv(affine))
