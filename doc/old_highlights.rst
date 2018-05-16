@@ -4,6 +4,54 @@
 Older Highlights
 ****************
 
+**DIPY 0.13.0** is now available. New features include:
+
+- Faster local PCA implementation.
+- Fixed different issues with OpenMP and Windows / OSX.
+- Replacement of cvxopt by cvxpy.
+- Replacement of Pytables by h5py.
+- Updated API to support latest numpy version (1.14).
+- New user interfaces for visualization.
+- Large documentation update.
+
+**DIPY 0.12.0** is now available. New features include:
+
+- IVIM Simultaneous modeling of perfusion and diffusion.
+- MAPL, tissue microstructure estimation using Laplacian-regularized MAP-MRI.
+- DKI-based microstructural modelling.
+- Free water diffusion tensor imaging.
+- Denoising using Local PCA.
+- Streamline-based registration (SLR).
+- Fiber to bundle coherence (FBC) measures.
+- Bayesian MRF-based tissue classification.
+- New API for integrated user interfaces.
+- New hdf5 file (.pam5) for saving reconstruction results.
+- Interactive slicing of images, ODFs and peaks.
+- Updated API to support latest numpy versions.
+- New system for automatically generating command line interfaces.
+- Faster computation of cross correlation for image registration.
+
+**DIPY 0.11.0** is now available. New features include:
+
+- New framework for contextual enhancement of ODFs.
+- Compatibility with numpy (1.11).
+- Compatibility with VTK 7.0 which supports Python 3.x.
+- Faster PIESNO for noise estimation.
+- Reorient gradient directions according to motion correction parameters.
+- Supporting Python 3.3+ but not 3.2.
+- Reduced memory usage in DTI.
+- DSI now can use datasets with multiple b0s.
+- Fixed different issues with Windows 64bit and Python 3.5.
+
+**DIPY 0.10.1** is now available. New features in this release include:
+
+- Compatibility with new versions of scipy (0.16) and numpy (1.10).
+- New cleaner visualization API, including compatibility with VTK 6, and functions to create your own interactive visualizations.
+- Diffusion Kurtosis Imaging (DKI): Google Summer of Code work by Rafael Henriques.
+- Mean Apparent Propagator (MAP) MRI for tissue microstructure estimation.
+- Anisotropic Power Maps from spherical harmonic coefficients.
+- A new framework for affine registration of images.
+
 DIPY was an **official exhibitor** for OHBM 2015.
 
 .. raw :: html
@@ -21,7 +69,7 @@ DIPY was an **official exhibitor** for OHBM 2015.
 * New experimental framework for clustering
 * Improvements and 10X speedup for Quickbundles
 * Improvements in Linear Fascicle Evaluation (LiFE)
-* New implementation of Geodesic Anisotropy 
+* New implementation of Geodesic Anisotropy
 * New efficient transformation functions for registration
 * Sparse Fascicle Model supports acquisitions with multiple b-values
 

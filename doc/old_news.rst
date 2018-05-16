@@ -5,6 +5,15 @@
 Past Announcements
 **********************
 
+- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
+- :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
+- :ref:`DIPY 0.11 <release0.11>` released February 21, 2016.
+- :ref:`DIPY 0.10 <release0.10>` released December 4, 2015.
+- :ref:`DIPY 0.9.2 <release0.9>` released, March 18, 2015.
+- :ref:`DIPY 0.8.0 <release0.8>` released, January 6, 2015.
+- DIPY_ was an official exhibitor in `OHBM 2015 <http://ohbm.loni.usc.edu>`_.
+- DIPY was featured in `The Scientist Magazine <http://www.the-scientist.com/?articles.view/articleNo/41266/title/White-s-the-Matter>`_, Nov, 2014.
+- `DIPY paper`_ accepted in Frontiers of Neuroinformatics, January 22nd, 2014.
 
 - **DIPY 0.7.1** is available for :ref:`download <installation>` with **3X**
     more tutorials than 0.6.0! In addition, a `journal paper`_ focusing on
@@ -20,6 +29,6 @@ Past Announcements
 - **DIPY 0.6.0** Released!, 30 March, 2013.
 - **DIPY 3rd Sprint**, Berkeley, CA, 8-18 April, 2013.
 - **IEEE ISBI HARDI challenge** 2013 chooses **DIPY**, February, 2013.
- 
+
 
 .. include:: links_names.inc
