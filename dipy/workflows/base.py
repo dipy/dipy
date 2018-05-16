@@ -266,11 +266,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         as a workflow's run method arguments.
 
         The function simply exits with a help message if no arguments were
-        provided by the user.
+        provided by the user. It checks to see if the args is None or not.
         """
 
-        if len(sys.argv) <= 1:
-            print("Program", sys.argv[0], "expects arguments. Type", sys.argv[0], "-h for help.")
+        if args is None:
+            print("Program", self.prog, "expects arguments. Type", self.prog,
+                  "-h for help.")
             exit(1)
 
         ns_args = self.parse_args(args, namespace)
