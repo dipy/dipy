@@ -63,7 +63,7 @@ class ResliceFlow(Workflow):
             logging.info('Resliced file save in {0}'.format(outpfile))
 
 
-class SlrWithQbFlow(Workflow):
+class SlrWithQbxFlow(Workflow):
 
     @classmethod
     def get_short_name(cls):
@@ -72,6 +72,7 @@ class SlrWithQbFlow(Workflow):
     def run(self, static_files, moving_files,
             x0='affine',
             rm_small_clusters=50,
+            qbx_thr=[40, 30, 20, 15],
             num_threads=None,
             out_dir='',
             out_moved='moved.trk',
@@ -94,6 +95,9 @@ class SlrWithQbFlow(Workflow):
         rm_small_clusters : int
             Remove clusters that have less than `rm_small_clusters`
             (default 50)
+
+        qbx_thr : variable int
+            Thresholds for QuickBundlesX (default 15)
 
         num_threads : int
             Number of threads. If None (default) then all available threads
@@ -147,7 +151,7 @@ class SlrWithQbFlow(Workflow):
             moving, moving_header = load_trk(moving_file)
 
             moved, affine, centroids_static, centroids_moving = \
-                slr_with_qbx(static, moving)
+                slr_with_qbx(static, moving, qbx_thr=)
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)
