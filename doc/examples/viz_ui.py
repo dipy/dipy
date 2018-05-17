@@ -161,7 +161,7 @@ def rotate_red_cube(slider):
     cube_actor_1.RotateY(rotation_angle)
 
 
-disk_slider = ui.DiskSlider2D(text_template="{angle:5.1f}°")
+disk_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
 disk_slider.center = (200, 200)
 disk_slider.on_change = rotate_red_cube
 
