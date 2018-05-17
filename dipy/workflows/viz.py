@@ -425,9 +425,11 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
         prop = obj  # GetProp3D()
         prop.GetProperty().SetOpacity(0.5)
 
-        return
+        # return
         ac = np.array(centroid_actors)
         index = np.where(ac == prop)[0]
+        print(index)
+
 
         if len(index) > 0:
             try:
@@ -435,7 +437,7 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
                 ren.rm(bundle)
                 del picked_actors[prop]
             except:
-                bundle = actor.line(clusters[visible_cluster_id[index]],
+                bundle = actor.line(clusters[visible_cluster_id[index[0]]],
                                     lod=False)
                 picked_actors[prop] = bundle
                 ren.add(bundle)
@@ -481,7 +483,7 @@ def horizon(tractograms, data, affine, cluster, cluster_thr, random_colors,
     if interactive:
 
         show_m.add_window_callback(win_callback)
-        #show_m.iren.AddObserver('KeyPressEvent', key_press)
+        show_m.iren.AddObserver('KeyPressEvent', key_press)
         #show_m.iren.AddObserver("EndPickEvent", pick_callback)
         show_m.render()
         show_m.start()
