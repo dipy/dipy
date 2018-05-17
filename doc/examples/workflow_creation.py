@@ -13,7 +13,7 @@ line::
 """
 
 """
-First create your workflow. Usually this would be in its own python file in
+First create your workflow (let's name this workflow file as my_workflow.py). Usually this is a python file in
 the ``<../dipy/workflows>`` directory.
 """
 
@@ -96,7 +96,14 @@ line, you need to add this bit of code. Usually this is in a separate
 executable file located in ``bin``.
 """
 
+"""
+
+The first line imports the run_flow method from the flow_runner class and the second
+line imports the AppendTextFlow class from the newly created my_workflow.py file.
+"""
+
 from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.my_workflow import AppendTextFlow
 """
 This is the method that will wrap everything that is needed to make a flow
 command line ready then run it.
