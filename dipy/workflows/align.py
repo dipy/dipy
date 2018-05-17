@@ -4,7 +4,7 @@ import numpy as np
 from dipy.align.reslice import reslice
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qbx
+from dipy.align.streamlinear import slr_with_qbx, slr_with_qb
 from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 
@@ -75,6 +75,7 @@ class SlrWithQbxFlow(Workflow):
             qbx_thr=[40, 30, 20, 15],
             num_threads=None,
             slr_bundles=False,
+            qbx=False,
             out_dir='',
             out_moved='moved.trk',
             out_affine='affine.txt',
@@ -105,8 +106,12 @@ class SlrWithQbxFlow(Workflow):
             will be used. Only metrics using OpenMP will use this variable.
 
         slr_bundles : boolean, optional
-            Use slr for bundle registration if slr_bundles is True (Default False)
+            Use slr for bundle registration if slr_bundles
+            is True (Default False)
 
+        qbx : boolean, optional
+            Use slr_with_qbx instead of slr_with_qb,
+            if qbx is True (Default False)
         out_dir : string, optional
             Output directory (default input file directory)
 
@@ -156,20 +161,28 @@ class SlrWithQbxFlow(Workflow):
 
 
             if slr_bundles:
-                '''moved, affine, centroids_static, centroids_moving = \
-                slr_with_qb(static, moving, "affine", rm_small_clusters=2,
-                          greater_than=0, less_than=np.Inf, qb_thr=0.5)'''
-
-                moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qbx(static, moving, x0, rm_small_clusters=2,
-                          greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
+                print("bundle registration")
+                if qbx:
+                    print("qbx registration")
+                    moved, affine, centroids_static, centroids_moving = \
+                        slr_with_qbx(static, moving, x0, rm_small_clusters=2,
+                              greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
+                else:
+                    print("qb registration")
+                    moved, affine, centroids_static, centroids_moving = \
+                    slr_with_qb(static, moving, "affine", rm_small_clusters=2,
+                              greater_than=0, less_than=np.Inf, qb_thr=0.5)
 
             else:
-                '''moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qb(static, moving)'''
-
-                moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qbx(static, moving, qbx_thr=qbx_thr)
+                print("whole brain registration")
+                if qbx:
+                    print("qbx registration")
+                    moved, affine, centroids_static, centroids_moving = \
+                        slr_with_qbx(static, moving, qbx_thr=qbx_thr)
+                else:
+                    print("qb registration")
+                    moved, affine, centroids_static, centroids_moving = \
+                    slr_with_qb(static, moving)
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)
