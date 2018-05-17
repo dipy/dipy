@@ -465,7 +465,7 @@ def test_ui_disk_slider_2d(recording=False):
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
-    disk_slider_2d_test = ui.DiskSlider2D()
+    disk_slider_2d_test = ui.RingSlider2D()
     disk_slider_2d_test.center = (300, 300)
     disk_slider_2d_test.value = 90
 

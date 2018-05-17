@@ -1963,7 +1963,7 @@ class LineSlider2D(UI):
         self.handle.on_left_mouse_button_dragged = self.handle_move_callback
 
 
-class DiskSlider2D(UI):
+class RingSlider2D(UI):
     """ A disk slider.
 
     A disk moves along the boundary of a ring.
@@ -2015,11 +2015,11 @@ class DiskSlider2D(UI):
         text_template : str, callable
             If str, text template can contain one or multiple of the
             replacement fields: `{value:}`, `{ratio:}`, `{angle:}`.
-            If callable, this instance of `:class:DiskSlider2D` will be
+            If callable, this instance of `:class:RingSlider2D` will be
             passed as argument to the text template function.
 
         """
-        super(DiskSlider2D, self).__init__()
+        super(RingSlider2D, self).__init__()
 
         self.track.inner_radius = slider_inner_radius
         self.track.outer_radius = slider_outer_radius
@@ -2132,7 +2132,7 @@ class DiskSlider2D(UI):
         self.track.add_to_renderer(ren)
         self.handle.add_to_renderer(ren)
         self.text.add_to_renderer(ren)
-        super(DiskSlider2D, self).add_to_renderer(ren)
+        super(RingSlider2D, self).add_to_renderer(ren)
 
     def update(self):
         """ Updates the slider. """
@@ -2184,7 +2184,7 @@ class DiskSlider2D(UI):
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
-        slider : :class:`DiskSlider2D`
+        slider : :class:`RingSlider2D`
 
         """
         click_position = i_ren.event.position
@@ -2200,7 +2200,7 @@ class DiskSlider2D(UI):
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
-        slider : :class:`DiskSlider2D`
+        slider : :class:`RingSlider2D`
 
         """
         click_position = i_ren.event.position
@@ -2209,7 +2209,7 @@ class DiskSlider2D(UI):
         i_ren.event.abort()  # Stop propagating the event.
 
     def _setup_events(self):
-        """ Handle all events for DiskSlider2D.
+        """ Handle all events for RingSlider2D.
 
         """
         self.track.on_left_mouse_button_pressed = self.slider_track_click_callback
