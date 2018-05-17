@@ -264,19 +264,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
     def get_flow_args(self, args=None, namespace=None):
         """ Returns the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
-
-        The function simply exits with a help message if no arguments were
-        provided by the user. It checks to see if the args is None or not.
         """
-
-        if args is None:
-            print("Program", self.prog, "expects arguments. Type", self.prog,
-                  "-h for help.")
-            exit(1)
 
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
-
         return dict((k, v) for k, v in dct.items() if v is not None)
 
     def update_argument(self, *args, **kargs):
