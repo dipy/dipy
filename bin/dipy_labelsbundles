@@ -6,4 +6,4 @@ from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.segment import LabelsBundlesFlow
 
 if __name__ == "__main__":
-    run_flow(LabelsBundlesFlow)
+    run_flow(LabelsBundlesFlow())
