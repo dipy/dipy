@@ -140,6 +140,12 @@ class RecoBundlesFlow(Workflow):
             Indices of recognized bundle in the original tractogram
             (default 'labels.npy')
 
+        References
+        ----------
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+         bundles using local and global streamline-based registration and
+         clustering, Neuroimage, 2017.
+
         """
 
         slr = not no_slr
@@ -217,34 +223,44 @@ class RecoBundlesFlow(Workflow):
 class LabelsBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'labelsbundles'
+        return 'labbundles'
 
-    def run(self, streamline_files, labels, out_transf='transformed.trk'):
-        """ Apply Labels to Tractogram
+    def run(self, streamline_files, labels_files,
+            out_dir='',
+            out_bundle='recognized_orig.trk'):
+        """ Recognize bundles
 
         Parameters
         ----------
         streamline_files : string
             The path of streamline files where you want to recognize bundles
-        labels : string
-            The path of label files to apply of tractogram
-        out_transf : string, optional
-            Recognized bundle in the native space by applying labels
-            (default 'rtransformed.trk')
+        labels_files : string
+            The path of model bundle files
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_bundle : string, optional
+            Recognized bundle in the space of the model bundle
+            (default 'recognized_orig.trk')
+
+        References
+        ----------
+        .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+         bundles using local and global streamline-based registration and
+         clustering, Neuroimage, 2017.
 
         """
+
         io_it = self.get_io_iterator()
+
+        print('Yo')
+
+        # for sf, mb, out_rec, out_labels in io_it:
+
+        """
         for sf, lb, out_rfile in io_it:
 
-            t = time()
-            logging.info(sf)
             streamlines, header = load_trk(sf)
-            #streamlines = trkfile.streamlines
-
-            logging.info(' Loading time %0.3f sec' % (time() - t,))
-            streamlines, header = load_trk(sf)
-            logging.info(sf)
             location = np.load(lb)
-            logging.info('Saving output files ...')
             save_trk(out_transf, streamlines[location], np.eye(4))
-            logging.info(save_trk)
+        """
+        return io_it
