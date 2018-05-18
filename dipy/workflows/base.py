@@ -154,6 +154,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             else:
                 self.add_argument(*_args, **_kwargs)
 
+        print('test')
+
         return self.add_sub_flow_args(workflow.get_sub_runs())
 
     def add_sub_flow_args(self, sub_flows):
