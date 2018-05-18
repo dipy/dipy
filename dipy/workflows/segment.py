@@ -141,9 +141,9 @@ class RecoBundlesFlow(Workflow):
         out_recognized_labels : string, optional
             Indices of recognized bundle in the original tractogram
             (default 'labels.npy')
-        
+
         """
-        
+
         slr = not no_slr
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
@@ -175,9 +175,9 @@ class RecoBundlesFlow(Workflow):
             bounds = bounds[:9]
 
         print('### RecoBundles ###')
-        
+
         io_it = self.get_io_iterator()
-       
+
         for sf, mb, out_rec, out_labels in io_it:
 
             t = time()
@@ -207,7 +207,7 @@ class RecoBundlesFlow(Workflow):
                 slr_method='L-BFGS-B')
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
-          
+
             print('saving output files')
 
             np.save(out_labels, np.array(labels))
@@ -218,7 +218,7 @@ class ApplyLabelsFlow(Workflow):
     def get_short_name(cls):
         return 'ApplyLabels'
 
-    def run(self, streamline_files, labels, out_transf='transformed.trk'):             
+    def run(self, streamline_files, labels, out_transf='transformed.trk'):
         """ Apply Labels to Tractogram
 
         Parameters
@@ -237,5 +237,4 @@ class ApplyLabelsFlow(Workflow):
 
             streamlines, header = load_trk(sf)
             location = np.load(lb)
-            save_trk(out_transf, streamlines[location], np.eye(4))
-
+            save_trk(out_rfile, streamlines[location], np.eye(4))
