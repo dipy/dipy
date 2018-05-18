@@ -4,7 +4,7 @@ import numpy as np
 from dipy.align.reslice import reslice
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qbx, slr_with_qb
+from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 
@@ -75,7 +75,6 @@ class SlrWithQbxFlow(Workflow):
             qbx_thr=[40, 30, 20, 15],
             num_threads=None,
             slr_bundles=False,
-            qbx=False,
             out_dir='',
             out_moved='moved.trk',
             out_affine='affine.txt',
@@ -109,9 +108,6 @@ class SlrWithQbxFlow(Workflow):
             Use slr for bundle registration if slr_bundles
             is True (Default False)
 
-        qbx : boolean, optional
-            Use slr_with_qbx instead of slr_with_qb,
-            if qbx is True (Default False)
         out_dir : string, optional
             Output directory (default input file directory)
 
@@ -134,7 +130,7 @@ class SlrWithQbxFlow(Workflow):
         -----
         The order of operations is the following. First short or long
         streamlines are removed. Second the tractogram or a random selection
-        of the tractogram is clustered with QuickBundles. Then SLR
+        of the tractogram is clustered with QuickBundlesX. Then SLR
         [Garyfallidis15]_ is applied.
 
         References
@@ -150,39 +146,31 @@ class SlrWithQbxFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
+        logging.info("QuickBundlesX clustering is in use")
+        logging.info('    QBX thresholds {0}'.format(qbx_thr))
+
         for static_file, moving_file, out_moved_file, out_affine_file, \
                 static_centroids_file, moving_centroids_file, \
                 moved_centroids_file in io_it:
 
-            print(static_file + '-<-' + moving_file)
+            logging.info('Loading static file {0}'.format(static_file))
+            logging.info('Loading moving file {0}'.format(moving_file))
 
             static, static_header = load_trk(static_file)
             moving, moving_header = load_trk(moving_file)
 
-
             if slr_bundles:
-                print("bundle registration")
-                if qbx:
-                    print("qbx registration")
-                    moved, affine, centroids_static, centroids_moving = \
-                        slr_with_qbx(static, moving, x0, rm_small_clusters=2,
-                              greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
-                else:
-                    print("qb registration")
-                    moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qb(static, moving, "affine", rm_small_clusters=2,
-                              greater_than=0, less_than=np.Inf, qb_thr=0.5)
+                logging.info("Specific bundles registration")
+
+                moved, affine, centroids_static, centroids_moving = \
+                    slr_with_qbx(
+                        static, moving, x0, rm_small_clusters=0,
+                        greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
 
             else:
-                print("whole brain registration")
-                if qbx:
-                    print("qbx registration")
-                    moved, affine, centroids_static, centroids_moving = \
-                        slr_with_qbx(static, moving, qbx_thr=qbx_thr)
-                else:
-                    print("qb registration")
-                    moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qb(static, moving)
+                logging.info("Tractogram registration")
+                moved, affine, centroids_static, centroids_moving = \
+                    slr_with_qbx(static, moving, qbx_thr=qbx_thr)
 
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)

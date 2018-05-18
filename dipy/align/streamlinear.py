@@ -973,14 +973,6 @@ def slr_with_qb(static, moving,
     return moved, slm.matrix, qb_centroids1, qb_centroids2
 
 
-# In essence whole_brain_slr can be thought as a combination of
-# SLR on QuickBundles centroids and some thresholding see
-# Garyfallidis et al. Recognition of white matter
-# bundles using local and global streamline-based registration and
-# clustering, Neuroimage, 2017.
-whole_brain_slr = slr_with_qb
-
-
 def slr_with_qbx(static, moving,
                  x0='affine',
                  rm_small_clusters=50,
@@ -1128,6 +1120,15 @@ def slr_with_qbx(static, moving,
     moved = slm.transform(moving)
 
     return moved, slm.matrix, qb_centroids1, qb_centroids2
+
+
+# In essence whole_brain_slr can be thought as a combination of
+# SLR on QuickBundles centroids and some thresholding see
+# Garyfallidis et al. Recognition of white matter
+# bundles using local and global streamline-based registration and
+# clustering, Neuroimage, 2017.
+whole_brain_slr = slr_with_qbx
+
 
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
