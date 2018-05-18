@@ -179,6 +179,7 @@ class RecoBundlesFlow(Workflow):
         for sf, mb, out_rec, out_labels in io_it:
 
             t = time()
+            logging.info(sf)
             streamlines, header = load_trk(sf)
             #streamlines = trkfile.streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
@@ -186,30 +187,29 @@ class RecoBundlesFlow(Workflow):
             rb = RecoBundles(streamlines)
 
             t = time()
+            logging.info(mb)
             model_bundle, _ = load_trk(mb)
-            #model_bundle = model_trkfile.streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
 
-            recognized_bundle, labels, original_recognized_bundle = rb.recognize(
-                model_bundle,
-                model_clust_thr=model_clust_thr,
-                reduction_thr=reduction_thr,
-                reduction_distance=reduction_distance,
-                pruning_thr=pruning_thr,
-                pruning_distance=pruning_distance,
-                slr=slr,
-                slr_metric=slr_metric,
-                slr_x0=slr_transform,
-                slr_bounds=bounds,
-                slr_select=slr_select,
-                slr_method='L-BFGS-B')
+            recognized_bundle, labels, original_recognized_bundle = \
+                rb.recognize(
+                    model_bundle,
+                    model_clust_thr=model_clust_thr,
+                    reduction_thr=reduction_thr,
+                    reduction_distance=reduction_distance,
+                    pruning_thr=pruning_thr,
+                    pruning_distance=pruning_distance,
+                    slr=slr,
+                    slr_metric=slr_metric,
+                    slr_x0=slr_transform,
+                    slr_bounds=bounds,
+                    slr_select=slr_select,
+                    slr_method='L-BFGS-B')
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
 
-            logging.info('Saving output files')
-
+            logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
-
             logging.info(out_rec)
             logging.info(out_labels)
 
@@ -236,7 +236,15 @@ class LabelsBundlesFlow(Workflow):
         io_it = self.get_io_iterator()
         for sf, lb, out_rfile in io_it:
 
+            t = time()
+            logging.info(sf)
             streamlines, header = load_trk(sf)
-            location = np.load(lb)
-            save_trk(out_transf, streamlines[location], np.eye(4))
+            #streamlines = trkfile.streamlines
 
+            logging.info(' Loading time %0.3f sec' % (time() - t,))
+            streamlines, header = load_trk(sf)
+            logging.info(sf)
+            location = np.load(lb)
+            logging.info('Saving output files ...')
+            save_trk(out_transf, streamlines[location], np.eye(4))
+            logging.info(save_trk)
