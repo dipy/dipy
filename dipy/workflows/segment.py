@@ -251,16 +251,8 @@ class LabelsBundlesFlow(Workflow):
         """
 
         io_it = self.get_io_iterator()
-
-        print('Yo')
-
-        # for sf, mb, out_rec, out_labels in io_it:
-
-        """
         for sf, lb, out_rfile in io_it:
 
             streamlines, header = load_trk(sf)
             location = np.load(lb)
-            save_trk(out_transf, streamlines[location], np.eye(4))
-        """
-        return io_it
+            save_trk(out_bundle, streamlines[location], np.eye(4))
