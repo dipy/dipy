@@ -4,14 +4,11 @@ import logging
 
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
-import nibabel as nib
 import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
 from dipy.workflows.align import load_trk, save_trk
-import os
-from dipy.utils.six import string_types
-from dipy.segment.bundles import RecoBundles #, KDTreeBundles
+from dipy.segment.bundles import RecoBundles
 from dipy.tracking.streamline import transform_streamlines
 from dipy.io.pickles import save_pickle, load_pickle
 
@@ -126,7 +123,8 @@ class RecoBundlesFlow(Workflow):
         pruning_distance : string, optional
             Pruning distance type can be mdf or mam (default mdf)
         slr_metric : string, optional
-            Options are None, symmetric, asymmetric or diagonal (default symmetric).
+            Options are None, symmetric, asymmetric or diagonal
+            (default symmetric).
         slr_transform : string, optional
             Transformation allowed. translation, rigid, similarity or scaling
             (Default 'similarity').
@@ -141,9 +139,9 @@ class RecoBundlesFlow(Workflow):
         out_recognized_labels : string, optional
             Indices of recognized bundle in the original tractogram
             (default 'labels.npy')
-        
+
         """
-        
+
         slr = not no_slr
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
@@ -174,23 +172,23 @@ class RecoBundlesFlow(Workflow):
         if slr_transform == 'scaling':
             bounds = bounds[:9]
 
-        print('### RecoBundles ###')
-        
+        logging.info('### RecoBundles ###')
+
         io_it = self.get_io_iterator()
-       
+
         for sf, mb, out_rec, out_labels in io_it:
 
             t = time()
             streamlines, header = load_trk(sf)
             #streamlines = trkfile.streamlines
-            print(' Loading time %0.3f sec' % (time() - t,))
+            logging.info(' Loading time %0.3f sec' % (time() - t,))
 
             rb = RecoBundles(streamlines)
 
             t = time()
             model_bundle, _ = load_trk(mb)
             #model_bundle = model_trkfile.streamlines
-            print(' Loading time %0.3f sec' % (time() - t,))
+            logging.info(' Loading time %0.3f sec' % (time() - t,))
 
             recognized_bundle, labels, original_recognized_bundle = rb.recognize(
                 model_bundle,
@@ -207,18 +205,21 @@ class RecoBundlesFlow(Workflow):
                 slr_method='L-BFGS-B')
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
-          
-            print('saving output files')
+
+            logging.info('Saving output files')
 
             np.save(out_labels, np.array(labels))
 
+            logging.info(out_rec)
+            logging.info(out_labels)
 
-class ApplyLabelsFlow(Workflow):
+
+class LabelsBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'ApplyLabels'
+        return 'labelsbundles'
 
-    def run(self, streamline_files, labels, out_transf='transformed.trk'):             
+    def run(self, streamline_files, labels, out_transf='transformed.trk'):
         """ Apply Labels to Tractogram
 
         Parameters
