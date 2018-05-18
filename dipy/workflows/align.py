@@ -74,7 +74,10 @@ class SlrWithQbxFlow(Workflow):
             rm_small_clusters=50,
             qbx_thr=[40, 30, 20, 15],
             num_threads=None,
-            slr_bundles=False,
+            greater_than=50,
+            less_than=250,
+            nb_pts=20,
+            progressive=True,
             out_dir='',
             out_moved='moved.trk',
             out_affine='affine.txt',
@@ -104,9 +107,18 @@ class SlrWithQbxFlow(Workflow):
             Number of threads. If None (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
 
-        slr_bundles : boolean, optional
-            Use slr for bundle registration if slr_bundles
-            is True (Default False)
+        greater_than : int, optional
+            Keep streamlines that have length greater than
+            this value (default 50)
+
+        less_than : int, optional
+            Keep streamlines have length less than this value (default 250)
+
+        np_pts : int, optional
+            Number of points for discretizing each streamline (default 20)
+
+        progressive : boolean, optional
+            (default True)
 
         out_dir : string, optional
             Output directory (default input file directory)
@@ -147,7 +159,7 @@ class SlrWithQbxFlow(Workflow):
         io_it = self.get_io_iterator()
 
         logging.info("QuickBundlesX clustering is in use")
-        logging.info('    QBX thresholds {0}'.format(qbx_thr))
+        logging.info('QBX thresholds {0}'.format(qbx_thr))
 
         for static_file, moving_file, out_moved_file, out_affine_file, \
                 static_centroids_file, moving_centroids_file, \
@@ -159,32 +171,33 @@ class SlrWithQbxFlow(Workflow):
             static, static_header = load_trk(static_file)
             moving, moving_header = load_trk(moving_file)
 
-            if slr_bundles:
-                logging.info("Specific bundles registration")
+            moved, affine, centroids_static, centroids_moving = \
+                slr_with_qbx(
+                    static, moving, x0, rm_small_clusters=rm_small_clusters,
+                    greater_than=greater_than, less_than=less_than,
+                    qbx_thr=qbx_thr)
 
-                moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qbx(
-                        static, moving, x0, rm_small_clusters=0,
-                        greater_than=0, less_than=np.Inf, qbx_thr=qbx_thr)
-
-            else:
-                logging.info("Tractogram registration")
-                moved, affine, centroids_static, centroids_moving = \
-                    slr_with_qbx(static, moving, qbx_thr=qbx_thr)
-
+            logging.info('Saving output file {0}'.format(out_moved_file))
             save_trk(out_moved_file, moved, affine=np.eye(4),
                      header=static_header)
 
+            logging.info('Saving output file {0}'.format(out_affine_file))
             np.savetxt(out_affine_file, affine)
 
+            logging.info('Saving output file {0}'
+                         .format(static_centroids_file))
             save_trk(static_centroids_file, centroids_static, affine=np.eye(4),
                      header=static_header)
 
+            logging.info('Saving output file {0}'
+                         .format(moving_centroids_file))
             save_trk(moving_centroids_file, centroids_moving,
                      affine=np.eye(4),
                      header=static_header)
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
+            logging.info('Saving output file {0}'
+                         .format(moved_centroids_file))
             save_trk(moved_centroids_file, centroids_moved, affine=np.eye(4),
                      header=static_header)

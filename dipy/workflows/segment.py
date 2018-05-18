@@ -255,4 +255,5 @@ class LabelsBundlesFlow(Workflow):
 
             streamlines, header = load_trk(sf)
             location = np.load(lb)
+
             save_trk(out_bundle, streamlines[location], np.eye(4))

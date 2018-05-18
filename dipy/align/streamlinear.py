@@ -1058,22 +1058,15 @@ def slr_with_qbx(static, moving,
     else:
         rstreamlines1 = streamlines1
 
-    print(type(rstreamlines1))
-
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
-    print(type(rstreamlines1))
 
     # qb1 = QuickBundles(threshold=qb_thr)
     rstreamlines1._data.astype('f4')
-    #rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
-    # cluster_map1 = qb1.cluster(rstreamlines1)
-
-    print(type(rstreamlines1))
-
+    '''#rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
+    # cluster_map1 = qb1.cluster(rstreamlines1)'''
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-
 
     qb_centroids1 = clusters1 #.centroids
     #[cluster.centroid for cluster in clusters1]
@@ -1086,9 +1079,9 @@ def slr_with_qbx(static, moving,
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
     rstreamlines2._data.astype('f4')
-    # qb2 = QuickBundles(threshold=qb_thr)
+    '''# qb2 = QuickBundles(threshold=qb_thr)
     #rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
-    # cluster_map2 = qb2.cluster(rstreamlines2)
+    # cluster_map2 = qb2.cluster(rstreamlines2)'''
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr)
 
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
