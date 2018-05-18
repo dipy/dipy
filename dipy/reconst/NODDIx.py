@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 17 14:08:04 2017
-@author: mafzalid
-"""
-
-# -*- coding: utf-8 -*-
 from dipy.reconst.base import ReconstModel
 import numpy as np
 import cvxpy as cvx
