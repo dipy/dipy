@@ -10,7 +10,8 @@ from dipy.tracking.streamline import (transform_streamlines,
                                       center_streamlines,
                                       set_number_of_points,
                                       select_random_set_of_streamlines,
-                                      length)
+                                      length,
+                                      Streamlines)
 from dipy.segment.clustering import QuickBundles, qbx_and_merge
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
@@ -693,8 +694,18 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
 
 
 def remove_clusters_by_size(clusters, min_size=0):
+    #for cl in clusters:
+    #    if len(cl) < min_size:
+    #        clusters.remove_cluster(cl)
+    #return clusters
     by_size = lambda c: len(c) >= min_size
-    return filter(by_size, clusters)
+    ob = filter(by_size, clusters)
+
+    cul = Streamlines()
+    for som in ob:
+        cul.append(som.centroid)
+
+    return cul
 
 
 def progressive_slr(static, moving, metric, x0, bounds,
@@ -829,17 +840,17 @@ def progressive_slr(static, moving, metric, x0, bounds,
     return slm
 
 
-def slr_with_qbx(static, moving,
-                 x0='affine',
-                 rm_small_clusters=50,
-                 maxiter=100,
-                 select_random=None,
-                 verbose=False,
-                 greater_than=50,
-                 less_than=250,
-                 qbx_thr=[40, 30, 20, 15],
-                 nb_pts=20,
-                 progressive=True, num_threads=None):
+def slr_with_qb(static, moving,
+                x0='affine',
+                rm_small_clusters=50,
+                maxiter=100,
+                select_random=None,
+                verbose=False,
+                greater_than=50,
+                less_than=250,
+                qb_thr=15,
+                nb_pts=20,
+                progressive=True, num_threads=None):
     """ Utility function for registering large tractograms.
 
     For efficiency we apply the registration on cluster centroids and remove
@@ -915,13 +926,11 @@ def slr_with_qbx(static, moving,
         rstreamlines1 = streamlines1
 
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
-
-    # qb1 = QuickBundles(threshold=qb_thr)
+    qb1 = QuickBundles(threshold=qb_thr)
     rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
-    # cluster_map1 = qb1.cluster(rstreamlines1)
-    cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
+    cluster_map1 = qb1.cluster(rstreamlines1)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-    qb_centroids1 = [cluster.centroid for cluster in clusters1]
+    qb_centroids1 = clusters1 #[cluster.centroid for cluster in clusters1]
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
@@ -930,12 +939,11 @@ def slr_with_qbx(static, moving,
         rstreamlines2 = streamlines2
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
-    # qb2 = QuickBundles(threshold=qb_thr)
+    qb2 = QuickBundles(threshold=qb_thr)
     rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
-    # cluster_map2 = qb2.cluster(rstreamlines2)
-    cluster_map2 = qbx_and_merge(thresholds=qbx_thr)
+    cluster_map2 = qb2.cluster(rstreamlines2)
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = [cluster.centroid for cluster in clusters2]
+    qb_centroids2 = clusters2 #[cluster.centroid for cluster in clusters2]
 
     if verbose:
         t = time()
@@ -970,8 +978,156 @@ def slr_with_qbx(static, moving,
 # Garyfallidis et al. Recognition of white matter
 # bundles using local and global streamline-based registration and
 # clustering, Neuroimage, 2017.
-whole_brain_slr = slr_with_qbx
+whole_brain_slr = slr_with_qb
 
+
+def slr_with_qbx(static, moving,
+                 x0='affine',
+                 rm_small_clusters=50,
+                 maxiter=100,
+                 select_random=None,
+                 verbose=False,
+                 greater_than=50,
+                 less_than=250,
+                 qbx_thr=[40, 30, 20, 15],
+                 nb_pts=20,
+                 progressive=True, num_threads=None):
+    """ Utility function for registering large tractograms.
+
+    For efficiency we apply the registration on cluster centroids and remove
+    small clusters.
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+    x0 : str
+        rigid, similarity or affine transformation model (default affine)
+
+    rm_small_clusters : int
+        Remove clusters that have less than `rm_small_clusters` (default 50)
+
+    verbose : bool,
+        If True then information about the optimization is shown.
+
+    select_random : int
+        If not None select a random number of streamlines to apply clustering
+        Default None.
+
+    options : None or dict,
+        Extra options to be used with the selected method.
+
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used. Only metrics using OpenMP will use this variable.
+
+    Notes
+    -----
+    The order of operations is the following. First short or long streamlines
+    are removed. Second the tractogram or a random selection of the tractogram
+    is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+            registration of white-matter fascicles in the space of streamlines"
+            , NeuroImage, 117, 124--140, 2015
+    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+            bundle alignment for group comparisons", ISMRM, 2014.
+    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+            bundles using local and global streamline-based registration and
+            clustering, Neuroimage, 2017.
+    """
+    if verbose:
+        print('Static streamlines size {}'.format(len(static)))
+        print('Moving streamlines size {}'.format(len(moving)))
+
+    def check_range(streamline, gt=greater_than, lt=less_than):
+
+        if (length(streamline) > gt) & (length(streamline) < lt):
+            return True
+        else:
+            return False
+
+    # TODO change this to the new Streamlines API
+    streamlines1 = static[np.array([check_range(s) for s in static])]
+    streamlines2 = moving[np.array([check_range(s) for s in moving])]
+
+    if verbose:
+
+        print('Static streamlines after length reduction {}'
+              .format(len(streamlines1)))
+        print('Moving streamlines after length reduction {}'
+              .format(len(streamlines2)))
+
+    if select_random is not None:
+        rstreamlines1 = select_random_set_of_streamlines(streamlines1,
+                                                         select_random)
+    else:
+        rstreamlines1 = streamlines1
+
+    print(type(rstreamlines1))
+
+    rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
+    print(type(rstreamlines1))
+
+    # qb1 = QuickBundles(threshold=qb_thr)
+    rstreamlines1._data.astype('f4')
+    #rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
+    # cluster_map1 = qb1.cluster(rstreamlines1)
+
+    print(type(rstreamlines1))
+
+
+    cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
+    clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
+
+
+    qb_centroids1 = clusters1 #.centroids
+    #[cluster.centroid for cluster in clusters1]
+
+    if select_random is not None:
+        rstreamlines2 = select_random_set_of_streamlines(streamlines2,
+                                                         select_random)
+    else:
+        rstreamlines2 = streamlines2
+
+    rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
+    rstreamlines2._data.astype('f4')
+    # qb2 = QuickBundles(threshold=qb_thr)
+    #rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
+    # cluster_map2 = qb2.cluster(rstreamlines2)
+    cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr)
+
+    clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
+    qb_centroids2 = clusters2 #.centroids #[cluster.centroid for cluster in clusters2]
+
+    if verbose:
+        t = time()
+
+    if not progressive:
+        slr = StreamlineLinearRegistration(x0=x0,
+                                           options={'maxiter': maxiter},
+                                           num_threads=num_threads)
+        slm = slr.optimize(qb_centroids1, qb_centroids2)
+    else:
+        bounds = DEFAULT_BOUNDS
+
+        slm = progressive_slr(qb_centroids1, qb_centroids2,
+                              x0=x0, metric=None,
+                              bounds=bounds, num_threads=num_threads)
+
+    if verbose:
+        print('QB static centroids size %d' % len(qb_centroids1,))
+        print('QB moving centroids size %d' % len(qb_centroids2,))
+        duration = time() - t
+        print('SLR finished in  %0.3f seconds.' % (duration,))
+        if slm.iterations is not None:
+            print('SLR iterations: %d ' % (slm.iterations,))
+
+    moved = slm.transform(moving)
+
+    return moved, slm.matrix, qb_centroids1, qb_centroids2
 
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)

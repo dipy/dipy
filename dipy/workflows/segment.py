@@ -93,17 +93,16 @@ class RecoBundlesFlow(Workflow):
         return 'recobundles'
 
     def run(self, streamline_files, model_bundle_files,
-            clust_thr=15.,
+            no_slr=False, clust_thr=15.,
             reduction_thr=10., reduction_distance='mdf',
             model_clust_thr=5.,
             pruning_thr=5., pruning_distance='mdf',
-            slr=True, slr_metric='symmetric',
+            slr_metric='symmetric',
             slr_transform='similarity',
             slr_matrix='small',
             out_dir='',
             out_recognized_transf='recognized.trk',
-            out_recognized_labels='labels.npy',
-            out_recognized_orig='recognized_orig.trk'):
+            out_recognized_labels='labels.npy'):
         """ Recognize bundles
 
         Parameters
@@ -112,10 +111,12 @@ class RecoBundlesFlow(Workflow):
             The path of streamline files where you want to recognize bundles
         model_bundle_files : string
             The path of model bundle files
+        no_slr : boolean, optional
+            Enable local Streamline-based Linear Registration (default False).
         clust_thr : float, optional
-            MDF distance threshold for all streamlines
+            MDF distance threshold for all streamlines (default 15)
         reduction_thr : float, optional
-            Reduce search space by (mm) (default 20)
+            Reduce search space by (mm) (default 10)
         reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
         model_clust_thr : float, optional
@@ -124,8 +125,6 @@ class RecoBundlesFlow(Workflow):
             Pruning after matching (default 5).
         pruning_distance : string, optional
             Pruning distance type can be mdf or mam (default mdf)
-        slr : bool, optional
-            Enable local Streamline-based Linear Registration (default True).
         slr_metric : string, optional
             Options are None, symmetric, asymmetric or diagonal (default symmetric).
         slr_transform : string, optional
@@ -142,10 +141,10 @@ class RecoBundlesFlow(Workflow):
         out_recognized_labels : string, optional
             Indices of recognized bundle in the original tractogram
             (default 'labels.npy')
-        out_recognized_orig : string, optional
-            Recognized bundle in the space of the original tractogram
-            (default 'recognized_orig.trk')
+        
         """
+        
+        slr = not no_slr
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45),
@@ -176,10 +175,10 @@ class RecoBundlesFlow(Workflow):
             bounds = bounds[:9]
 
         print('### RecoBundles ###')
-
+        
         io_it = self.get_io_iterator()
-
-        for sf, mb, out_rec, out_labels, out_rec_orig in io_it:
+       
+        for sf, mb, out_rec, out_labels in io_it:
 
             t = time()
             streamlines, header = load_trk(sf)
@@ -198,33 +197,45 @@ class RecoBundlesFlow(Workflow):
                 model_clust_thr=model_clust_thr,
                 reduction_thr=reduction_thr,
                 reduction_distance=reduction_distance,
+                pruning_thr=pruning_thr,
+                pruning_distance=pruning_distance,
                 slr=slr,
                 slr_metric=slr_metric,
                 slr_x0=slr_transform,
                 slr_bounds=bounds,
                 slr_select=slr_select,
-                slr_method='L-BFGS-B',
-                pruning_thr=pruning_thr,
-                pruning_distance=pruning_distance)
+                slr_method='L-BFGS-B')
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
-            #recognized_tractogram = nib.streamlines.Tractogram(
-            #    recognized_bundle, affine_to_rasmm=np.eye(4))
-            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
-
+          
             print('saving output files')
 
-            #nib.streamlines.save(recognized_trkfile, out_rec)
             np.save(out_labels, np.array(labels))
 
-            save_trk(out_rec_orig, original_recognized_bundle,
-                     affine= np.eye(4),#header['voxel_to_rasmm'],
-                     header=header)
 
-            #recognized_tractogram = nib.streamlines.Tractogram(
-            #    recognized_bundle, affine_to_rasmm=np.eye(4))
-            #recognized_trkfile = nib.streamlines.TrkFile(recognized_tractogram)
+class ApplyLabelsFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'ApplyLabels'
 
+    def run(self, streamline_files, labels, out_transf='transformed.trk'):             
+        """ Apply Labels to Tractogram
 
+        Parameters
+        ----------
+        streamline_files : string
+            The path of streamline files where you want to recognize bundles
+        labels : string
+            The path of label files to apply of tractogram
+        out_transf : string, optional
+            Recognized bundle in the native space by applying labels
+            (default 'rtransformed.trk')
 
+        """
+        io_it = self.get_io_iterator()
+        for sf, lb, out_rfile in io_it:
+
+            streamlines, header = load_trk(sf)
+            location = np.load(lb)
+            save_trk(out_transf, streamlines[location], np.eye(4))
 
