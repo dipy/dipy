@@ -926,6 +926,13 @@ def tensor_slicer(evals, evecs, affine=None, mask=None, sphere=None, scale=2.2,
         Ellipsoid
     """
 
+    if not evals.shape == evecs.shape[:-1]:
+        e_s = "You provided an eigenvalues array with a shape"
+        e_s += "{0} for eigenvectors with".format(evals.shape)
+        e_s += "shape {0}. Please provide an eigenvector array".format(evecs.shape)
+        e_s += " that compatible with the eigenvalues array."
+        raise ValueError(e_s)
+
     if mask is None:
         mask = np.ones(evals.shape[:3], dtype=np.bool)
     else:
