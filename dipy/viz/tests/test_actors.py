@@ -667,8 +667,9 @@ def test_tensor_slicer(interactive=False):
     mevecs = np.zeros((3, 2, 4, 3, 3))
 
     with npt.assert_raises(RuntimeError):
-        tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine, mask=mask,
-                                           scalar_colors=cfa, sphere=sphere, scale=.3)
+        tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                           mask=mask, scalar_colors=cfa,
+                                           sphere=sphere, scale=.3)
 
 
 @npt.dec.skipif(not run_test)
