@@ -228,7 +228,7 @@ class LabelsBundlesFlow(Workflow):
     def run(self, streamline_files, labels_files,
             out_dir='',
             out_bundle='recognized_orig.trk'):
-        """ Recognize bundles
+        """ Extract bundles using existing indices (labels)
 
         Parameters
         ----------
@@ -249,11 +249,15 @@ class LabelsBundlesFlow(Workflow):
          clustering, Neuroimage, 2017.
 
         """
+        logging.info('### Labels to Bundles ###')
 
         io_it = self.get_io_iterator()
-        for sf, lb, out_rfile in io_it:
+        for sf, lb, out_bundle in io_it:
 
+            logging.info(sf)
             streamlines, header = load_trk(sf)
+            logging.info(lb)
             location = np.load(lb)
-
+            logging.info('Saving output files ...')
             save_trk(out_bundle, streamlines[location], np.eye(4))
+            logging.info(out_bundle)
