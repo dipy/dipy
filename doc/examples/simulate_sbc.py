@@ -89,6 +89,16 @@ def test_sticks_and_ball():
                                                          [0, 0, 0],
                                                          [1, 0, 0]])
     assert_array_almost_equal(S, S_st)
+    dtimodel = dti.TensorModel(gtab)
+    dtifit = dtimodel.fit(S)
+    
+    # checking if the eigen values of the simulated data look the same as the
+    # diffusivity index
+    assert_array_almost_equal(dtifit.evals[0], d)
+
+
+print("Running the test case...")
     
 test_sticks_and_ball()
+
 print("-----------------------------------------------------Test Case Passed!")
