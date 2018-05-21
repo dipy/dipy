@@ -223,7 +223,7 @@ class RecoBundlesFlow(Workflow):
 class LabelsBundlesFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'labbundles'
+        return 'labelsbundles'
 
     def run(self, streamline_files, labels_files,
             out_dir='',
