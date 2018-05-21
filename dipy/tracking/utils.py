@@ -134,7 +134,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
         This argument is deprecated.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline coordinates.
-    symmetric : bool, False by default
+    symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
     return_mapping : bool, False by default
