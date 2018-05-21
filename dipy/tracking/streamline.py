@@ -281,8 +281,8 @@ def transform_streamlines(streamlines, mat):
 
     Parameters
     ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
+    streamlines : Streamlines
+        Streamlines object
     mat : array, (4, 4)
         transformation matrix
 
@@ -291,6 +291,9 @@ def transform_streamlines(streamlines, mat):
     new_streamlines : list
         List of the transformed 2D ndarrays of shape[-1]==3
     """
+
+    if isinstance(streamlines, Streamlines):
+        streamlines._data = apply_affine(mat, streamlines._data)
     return [apply_affine(mat, s) for s in streamlines]
 
 
