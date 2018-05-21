@@ -165,6 +165,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     world_coords = True
     interactive = True
+    global select_all
+    select_all = False
 
     prng = np.random.RandomState(27) #1838
     global centroid_actors, cluster_actors
@@ -221,6 +223,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetLineWidth(6)
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
+                        ren.add(bundle)
                         cluster_actors.append(bundle)
 
         else:
@@ -286,7 +289,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 bundle.VisibilityOn()
                 picked_actors[prop] = bundle
                 bundle.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
-                ren.add(bundle)
+                # ren.add(bundle)
 
         if prop in picked_actors.values():
             ren.rm(prop)
@@ -304,7 +307,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     def key_press(obj, event):
         print('Inside key_press')
-        global centroid_visibility
+        global centroid_visibility, select_all
         key = obj.GetKeySym()
         if cluster:
             if key == 'h' or key == 'H':
@@ -318,10 +321,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                     centroid_visibility = True
                 show_m.render()
             if key == 'a' or key == 'A':
-                print('a pressed')
-                for bundle in cluster_actors:
-                    bundle.VisibilityOn()
-                    ren.add(bundle)
+                if select_all:
+                    for bundle in cluster_actors:
+                        bundle.VisibilityOn()
+                else:
+                    for bundle in cluster_actors:
+                        bundle.VisibilityOff()
+                select_all = not select_all
                 show_m.render()
     ren.zoom(1.5)
     ren.reset_clipping_range()
