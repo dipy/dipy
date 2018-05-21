@@ -16,7 +16,6 @@ def check_range(streamline, lt, gt):
         return False
 
 
-
 def imager(showm, data, affine, world_coords):
 
     renderer = showm.ren
@@ -161,19 +160,17 @@ def imager(showm, data, affine, world_coords):
     return panel
 
 
-def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
+def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 length_lt, length_gt, clusters_lt, clusters_gt):
 
     world_coords = True
     interactive = True
 
     prng = np.random.RandomState(27) #1838
-    global centroid_actors
+    global centroid_actors, cluster_actors
     centroid_actors = []
+    cluster_actors = []
 
-#    if not world_coords:
-#        from dipy.tracking.streamline import transform_streamlines
-#        streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
     ren = window.Renderer()
     for streamlines in tractograms:
@@ -181,6 +178,13 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
             colors = prng.random_sample(3)
         else:
             colors = None
+
+        """
+        if not world_coords:
+            # !!! Needs AFFINE from header or image
+            streamlines = transform_streamlines(streamlines,
+                                                np.linalg.inv(affine))
+        """
 
         if cluster:
             print(' Clustering threshold {} \n'.format(cluster_thr))
@@ -198,6 +202,8 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
             print(' Maximum number of streamlines in cluster {}'
                   .format(sizes.max()))
 
+            print(' Construct cluster actors')
+
             for (i, c) in enumerate(centroids):
                 # set_trace()
                 if check_range(c, length_lt, length_gt):
@@ -208,6 +214,14 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
                         centroid_actors.append(act)
                         ren.add(act)
                         visible_cluster_id.append(i)
+
+                        bundle = actor.line(clusters[i],
+                                            lod=False)
+                        bundle.GetProperty().SetRenderLinesAsTubes(1)
+                        bundle.GetProperty().SetLineWidth(6)
+                        bundle.GetProperty().SetOpacity(1)
+                        bundle.VisibilityOff()
+                        cluster_actors.append(bundle)
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -222,7 +236,7 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
 
     if len(images) > 0:
 
-        print('Cannot enter')
+        print('!!Only first image loading supported')
         data, affine = images[0]
         panel = imager(show_m, data, affine, world_coords)
         # show_m.ren.add(panel)
@@ -254,18 +268,22 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
         index = np.where(ac == prop)[0]
         print(index)
 
-
         if len(index) > 0:
             try:
                 bundle = picked_actors[prop]
                 ren.rm(bundle)
                 del picked_actors[prop]
             except:
+
+                """
                 bundle = actor.line(clusters[visible_cluster_id[index[0]]],
                                     lod=False)
                 bundle.GetProperty().SetRenderLinesAsTubes(1)
                 bundle.GetProperty().SetLineWidth(6)
                 bundle.GetProperty().SetOpacity(1)
+                """
+                bundle = cluster_actors[visible_cluster_id[index[0]]]
+                bundle.VisibilityOn()
                 picked_actors[prop] = bundle
                 bundle.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
                 ren.add(bundle)
@@ -288,8 +306,8 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
         print('Inside key_press')
         global centroid_visibility
         key = obj.GetKeySym()
-        if key == 'h' or key == 'H':
-            if cluster:
+        if cluster:
+            if key == 'h' or key == 'H':
                 if centroid_visibility is True:
                     for ca in centroid_actors:
                         ca.VisibilityOff()
@@ -299,7 +317,12 @@ def horizon_new(tractograms, images, cluster, cluster_thr, random_colors,
                         ca.VisibilityOn()
                     centroid_visibility = True
                 show_m.render()
-
+            if key == 'a' or key == 'A':
+                print('a pressed')
+                for bundle in cluster_actors:
+                    bundle.VisibilityOn()
+                    ren.add(bundle)
+                show_m.render()
     ren.zoom(1.5)
     ren.reset_clipping_range()
 
@@ -364,6 +387,6 @@ class HorizonFlow(Workflow):
                 if verbose:
                     print(affine)
 
-        horizon_new(tractograms, images, cluster, cluster_thr,
-                    random_colors, length_lt, length_gt, clusters_lt,
-                    clusters_gt)
+        horizon(tractograms, images, cluster, cluster_thr,
+                random_colors, length_lt, length_gt, clusters_lt,
+                clusters_gt)
