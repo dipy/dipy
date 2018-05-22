@@ -16,9 +16,9 @@ def check_range(streamline, lt, gt):
         return False
 
 
-def imager(showm, data, affine, world_coords):
+def imager(renderer, data, affine, world_coords):
 
-    renderer = showm.ren
+    #renderer = showm.ren
     shape = data.shape
     if not world_coords:
         image_actor_z = actor.slicer(data, affine=np.eye(4))
@@ -156,7 +156,8 @@ def imager(showm, data, affine, world_coords):
     panel.add_element(opacity_slider_label, 'relative', (0.1, 0.15))
     panel.add_element(opacity_slider, 'relative', (0.65, 0.2))
 
-    showm.ren.add(panel)
+    #showm.ren.add(panel)
+    renderer.add(panel)
     return panel
 
 
@@ -169,10 +170,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     select_all = False
 
     prng = np.random.RandomState(27) #1838
-    global centroid_actors, cluster_actors
-    centroid_actors = []
-    cluster_actors = []
-
+    global centroid_actors, cluster_actors, visible_centroids, visible_clusters
+    global cluster_access
+    centroid_actors = {}
+    cluster_actors = {}
+    # cluster_actor_access = {}
 
     ren = window.Renderer()
     for streamlines in tractograms:
@@ -205,15 +207,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                   .format(sizes.max()))
 
             print(' Construct cluster actors')
-
             for (i, c) in enumerate(centroids):
-                # set_trace()
                 if check_range(c, length_lt, length_gt):
                     if sizes[i] > clusters_lt and sizes[i] < clusters_gt:
                         act = actor.streamtube([c], colors,
                                                linewidth=linewidths[i],
                                                lod=False)
-                        centroid_actors.append(act)
+
                         ren.add(act)
                         visible_cluster_id.append(i)
 
@@ -224,7 +224,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
                         ren.add(bundle)
-                        cluster_actors.append(bundle)
+
+                        centroid_actors[act] = bundle
+
+                        cluster_actors[bundle] = act
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -241,7 +244,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         print('!!Only first image loading supported')
         data, affine = images[0]
-        panel = imager(show_m, data, affine, world_coords)
+        panel = imager(ren, data, affine, world_coords)
         # show_m.ren.add(panel)
 
     global size
@@ -262,6 +265,26 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     picked_actors = {}
 
     def pick_callback(obj, event):
+
+
+        try:
+            paired_obj = cluster_actors[obj]
+            obj.SetVisibility(not obj.GetVisibility())
+            paired_obj.SetVisibility(not paired_obj.GetVisibility())
+
+        except:
+            pass
+
+        try:
+            paired_obj = centroid_actors[obj]
+            obj.SetVisibility(not obj.GetVisibility())
+            paired_obj.SetVisibility(not paired_obj.GetVisibility())
+
+        except:
+            pass
+
+    """
+    def pick_callback(obj, event):
         print('Inside pick_callback')
         global centroid_actors
         global picked_actors
@@ -270,6 +293,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         ac = np.array(centroid_actors)
         index = np.where(ac == prop)[0]
         print(index)
+        print(obj.GetName())
 
         if len(index) > 0:
             try:
@@ -278,13 +302,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 del picked_actors[prop]
             except:
 
-                """
-                bundle = actor.line(clusters[visible_cluster_id[index[0]]],
-                                    lod=False)
-                bundle.GetProperty().SetRenderLinesAsTubes(1)
-                bundle.GetProperty().SetLineWidth(6)
-                bundle.GetProperty().SetOpacity(1)
-                """
                 bundle = cluster_actors[visible_cluster_id[index[0]]]
                 bundle.VisibilityOn()
                 picked_actors[prop] = bundle
@@ -293,10 +310,16 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
         if prop in picked_actors.values():
             ren.rm(prop)
+    """
 
     for act in centroid_actors:
 
         act.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
+
+    for cl in cluster_actors:
+
+        cl.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
+
 
     #for prop in picked_actors.values():
     #    prop.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
