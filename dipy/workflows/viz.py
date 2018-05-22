@@ -163,18 +163,19 @@ def slicer_panel(renderer, data, affine, world_coords):
 
 
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
-                length_lt, length_gt, clusters_lt, clusters_gt):
+            length_lt, length_gt, clusters_lt, clusters_gt):
 
     world_coords = True
     interactive = True
     global select_all
     select_all = False
 
-    prng = np.random.RandomState(27) #1838
+    prng = np.random.RandomState(27) # 1838
     global centroid_actors, cluster_actors, visible_centroids, visible_clusters
     global cluster_access
     centroid_actors = {}
     cluster_actors = {}
+    global tractogram_clusters
     tractogram_clusters = {}
 
     # cluster_actor_access = {}
@@ -227,6 +228,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
                         ren.add(bundle)
+
                         # Every centroid actor is paired to a cluster actor
                         centroid_actors[act] = {
                             'pair': bundle, 'cluster': i, 'tractogram': t}
@@ -305,7 +307,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     def key_press(obj, event):
         print('Inside key_press')
-        global centroid_visibility, select_all
+        global centroid_visibility, select_all, tractogram_clusters
         key = obj.GetKeySym()
         if cluster:
             if key == 'h' or key == 'H':
@@ -332,13 +334,15 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 show_m.render()
 
             if key == 's' or key == 'S':
-                #s = Streamlines()
+                saving_streamlines = Streamlines()
                 for bundle in cluster_actors.keys():
                     if bundle.GetVisibility():
                         t = cluster_actors[bundle]['tractogram']
-                        streamlines = tractograms[t]
                         c = cluster_actors[bundle]['cluster']
-                        tractogram_clusters[t][c]
+                        indices = tractogram_clusters[t][c]
+                        saving_streamlines.extend(Streamlines(indices))
+                print('Saving result in tmp.trk')
+                save_trk('tmp.trk', saving_streamlines, np.eye(4))
 
 
     ren.zoom(1.5)
