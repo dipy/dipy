@@ -175,7 +175,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global cluster_access
     centroid_actors = {}
     cluster_actors = {}
-    global tractogram_clusters
+    global tractogram_clusters, text_block
     tractogram_clusters = {}
 
     # cluster_actor_access = {}
@@ -195,6 +195,12 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         """
 
         if cluster:
+
+            text_block = ui.TextBlock2D()
+            text_block.message = \
+                ' >> a: show all, c: on/off centroids, s: save in file'
+
+            ren.add(text_block.get_actor())
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
                                      [40, 30, 25, 20, cluster_thr])
@@ -310,7 +316,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         global centroid_visibility, select_all, tractogram_clusters
         key = obj.GetKeySym()
         if cluster:
-            if key == 'h' or key == 'H':
+            if key == 'c' or key == 'C':
                 if centroid_visibility is True:
                     for ca in centroid_actors:
                         ca.VisibilityOff()
