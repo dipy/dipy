@@ -1,11 +1,12 @@
 import numpy as np
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import load_trk, save_trk
-from dipy.tracking.streamline import transform_streamlines, length
+from dipy.tracking.streamline import transform_streamlines, length, Streamlines
 from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.clustering import qbx_and_merge
 from dipy.viz import actor, window, ui
 from dipy.viz.window import vtk
+from dipy.viz.utils import get_polydata_lines
 
 
 def check_range(streamline, lt, gt):
@@ -16,7 +17,7 @@ def check_range(streamline, lt, gt):
         return False
 
 
-def imager(renderer, data, affine, world_coords):
+def slicer_panel(renderer, data, affine, world_coords):
 
     #renderer = showm.ren
     shape = data.shape
@@ -174,10 +175,12 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global cluster_access
     centroid_actors = {}
     cluster_actors = {}
+    tractogram_clusters = {}
+
     # cluster_actor_access = {}
 
     ren = window.Renderer()
-    for streamlines in tractograms:
+    for (t, streamlines) in enumerate(tractograms):
         if random_colors:
             colors = prng.random_sample(3)
         else:
@@ -194,12 +197,13 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             print(' Clustering threshold {} \n'.format(cluster_thr))
             clusters = qbx_and_merge(streamlines,
                                      [40, 30, 25, 20, cluster_thr])
+            tractogram_clusters[t] = clusters
             centroids = clusters.centroids
             print(' Number of centroids is {}'.format(len(centroids)))
             sizes = np.array([len(c) for c in clusters])
             linewidths = np.interp(sizes,
                                    [sizes.min(), sizes.max()], [0.1, 2.])
-            visible_cluster_id = []
+
             print(' Minimum number of streamlines in cluster {}'
                   .format(sizes.min()))
 
@@ -215,7 +219,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                                                lod=False)
 
                         ren.add(act)
-                        visible_cluster_id.append(i)
 
                         bundle = actor.line(clusters[i],
                                             lod=False)
@@ -224,10 +227,11 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                         bundle.GetProperty().SetOpacity(1)
                         bundle.VisibilityOff()
                         ren.add(bundle)
-
-                        centroid_actors[act] = bundle
-
-                        cluster_actors[bundle] = act
+                        # Every centroid actor is paired to a cluster actor
+                        centroid_actors[act] = {
+                            'pair': bundle, 'cluster': i, 'tractogram': t}
+                        cluster_actors[bundle] = {
+                            'pair': act, 'cluster': i, 'tractogram': t}
 
         else:
             streamline_actor = actor.line(streamlines, colors=colors)
@@ -242,9 +246,9 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     if len(images) > 0:
 
-        print('!!Only first image loading supported')
+        # !!Only first image loading supported')
         data, affine = images[0]
-        panel = imager(ren, data, affine, world_coords)
+        panel = slicer_panel(ren, data, affine, world_coords)
         # show_m.ren.add(panel)
 
     global size
@@ -266,51 +270,22 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
 
     def pick_callback(obj, event):
 
-
         try:
-            paired_obj = cluster_actors[obj]
+            paired_obj = cluster_actors[obj]['pair']
             obj.SetVisibility(not obj.GetVisibility())
             paired_obj.SetVisibility(not paired_obj.GetVisibility())
 
-        except:
+        except KeyError:
             pass
 
         try:
-            paired_obj = centroid_actors[obj]
+            paired_obj = centroid_actors[obj]['pair']
             obj.SetVisibility(not obj.GetVisibility())
             paired_obj.SetVisibility(not paired_obj.GetVisibility())
 
-        except:
+        except KeyError:
             pass
 
-    """
-    def pick_callback(obj, event):
-        print('Inside pick_callback')
-        global centroid_actors
-        global picked_actors
-
-        prop = obj
-        ac = np.array(centroid_actors)
-        index = np.where(ac == prop)[0]
-        print(index)
-        print(obj.GetName())
-
-        if len(index) > 0:
-            try:
-                bundle = picked_actors[prop]
-                ren.rm(bundle)
-                del picked_actors[prop]
-            except:
-
-                bundle = cluster_actors[visible_cluster_id[index[0]]]
-                bundle.VisibilityOn()
-                picked_actors[prop] = bundle
-                bundle.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
-                # ren.add(bundle)
-
-        if prop in picked_actors.values():
-            ren.rm(prop)
-    """
 
     for act in centroid_actors:
 
@@ -321,8 +296,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         cl.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
 
 
-    #for prop in picked_actors.values():
-    #    prop.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
+    # for prop in picked_actors.values():
+    #   prop.AddObserver('LeftButtonPressEvent', pick_callback, 1.0)
 
 
     global centroid_visibility
@@ -345,13 +320,27 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                 show_m.render()
             if key == 'a' or key == 'A':
                 if select_all:
-                    for bundle in cluster_actors:
+                    for bundle in cluster_actors.keys():
                         bundle.VisibilityOn()
+                        cluster_actors[bundle]['pair'].VisibilityOff()
                 else:
-                    for bundle in cluster_actors:
+                    for bundle in cluster_actors.keys():
                         bundle.VisibilityOff()
+                        cluster_actors[bundle]['pair'].VisibilityOn()
+
                 select_all = not select_all
                 show_m.render()
+
+            if key == 's' or key == 'S':
+                #s = Streamlines()
+                for bundle in cluster_actors.keys():
+                    if bundle.GetVisibility():
+                        t = cluster_actors[bundle]['tractogram']
+                        streamlines = tractograms[t]
+                        c = cluster_actors[bundle]['cluster']
+                        tractogram_clusters[t][c]
+
+
     ren.zoom(1.5)
     ren.reset_clipping_range()
 
