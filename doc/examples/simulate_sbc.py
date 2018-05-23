@@ -96,9 +96,9 @@ def test_sticks_and_ball():
     # diffusivity index
     assert_array_almost_equal(dtifit.evals[0], d)
 
-
+print("----------------------------------------------------------------------")
 print("Running the test case...")
     
 test_sticks_and_ball()
 
-print("-----------------------------------------------------Test Case Passed!")
+print("Test Case Passed!")
