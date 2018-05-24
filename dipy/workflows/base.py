@@ -124,6 +124,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                             " the same as the doc string.")
             exit(1)
 
+        len_args = len(args)
+        len_defaults = len(defaults)
 
         for i, arg in enumerate(args):
             prefix = ''
@@ -277,9 +279,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         """
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
-
-
-        print(dct)
 
         return dict((k, v) for k, v in dct.items() if v is not None)
 
