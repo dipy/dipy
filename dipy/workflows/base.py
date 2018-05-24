@@ -112,20 +112,21 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         output_args = \
             self.add_argument_group('output arguments(optional)')
 
+        len_args = len(args)
+        len_defaults = len(defaults)
+
         #  This check simply shows a helpful message to the user if there
         #  is a mismatch in the number of arguments in the run method and
         #  the doc string. Doc string refers to the parameter help written
         # in the workflow python script.
 
-        if len(args) != len(self.doc):
+        if len_args != len(self.doc):
             print(self.prog+": Number of parameters in the doc string and "
                             "run method does not match. Please ensure that"
                             " the number of parameters in the run method is"
                             " the same as the doc string.")
             exit(1)
 
-        len_args = len(args)
-        len_defaults = len(defaults)
 
         for i, arg in enumerate(args):
             prefix = ''
