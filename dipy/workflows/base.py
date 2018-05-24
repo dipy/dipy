@@ -109,9 +109,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         args, defaults = get_args_default(workflow.run)
 
-        len_args = len(args)
-        len_defaults = len(defaults)
-
         output_args = \
             self.add_argument_group('output arguments(optional)')
 
@@ -133,9 +130,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             is_optionnal = i >= len_args - len_defaults
             if is_optionnal:
                 prefix = '--'
-
-            print(i)
-            print(self.doc[i])
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
