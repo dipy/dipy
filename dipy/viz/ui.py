@@ -2965,6 +2965,8 @@ class Option(UI):
         The label for the option.
     font_size : int
         The size of the font for the label.
+    font_size : int
+            Font Size of the label.
     """
 
     def __init__(self, label, position=(0, 0), font_size=18):
@@ -2981,6 +2983,7 @@ class Option(UI):
         """
         self.label = label
         self.font_size = font_size
+        self.checked = False
         self.button_size = (font_size * 1.2, font_size * 1.2)
         super(Option, self).__init__(position)
 
@@ -2994,9 +2997,6 @@ class Option(UI):
         self.button = Button2D(icon_fnames=self.button_icons, size=self.button_size)
 
         self.text = TextBlock2D(text=self.label, font_size=self.font_size)
-
-        # Add default events listener for this UI component.
-        self.button.on_left_mouse_button_pressed = self.toggle_check
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -3031,10 +3031,6 @@ class Option(UI):
         offset = (self.button.size[0] + 10, 0)
         self.text.position = coords + offset
 
-    def toggle_check(self, i_ren, obj, button_object):
-        self.button.next_icon()
-        i_ren.force_render()
-
 
 class Checkbox(UI):
 
@@ -3043,8 +3039,6 @@ class Checkbox(UI):
 
     Attributes
     ----------
-    num_lines : int
-        Maximum number of lines in the label of an option.
     num_options : int
         Number of options
     labels : list(string)
@@ -3074,7 +3068,6 @@ class Checkbox(UI):
         """
         self.labels = labels
         self.num_options = len(labels)
-        self.num_lines = self.find_textblock_height()
         self._padding = padding
         self._font_size = font_size
         self.font_family = font_family
@@ -3086,19 +3079,10 @@ class Checkbox(UI):
         self.options = []
         button_y = self.position[1]
         for option_no in range(self.num_options):
-            print(button_y)
             option = Option(label=self.labels[option_no], font_size=self.font_size, position=(self.position[0], button_y))
             button_y = button_y + self.font_size * (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
+            option.button.on_left_mouse_button_pressed = self.toggle_check
             self.options.append(option)
-            # button.on_left_mouse_button_pressed = self.toggle_check
-
-    def find_textblock_height(self):
-        """ Find the maximum number of lines a label has.
-        """
-        lines = 0
-        for label in self.labels:
-            lines = max(lines, label.count('\n') + 1)
-        return lines
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -3123,19 +3107,25 @@ class Checkbox(UI):
         height = num_options * (option_height + self.padding) - self.padding
         return np.asarray([option_width, height])
 
-    # def toggle_check(self, i_ren, obj, button):
-    #     """ Toggles the checked status of a button by changed its icon
+    def toggle_check(self, i_ren, obj, button):
+        """ Toggles the checked status of an option.
 
-    #     Parameters
-    #     ----------
-    #     i_ren : :class:`CustomInteractorStyle`
-    #     obj : :class:`vtkActor`
-    #         The picked actor
-    #     button : :class:`Button2D`
-
-    #     """
-    #     button.next_icon()
-    #     i_ren.force_render()
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        button : :class:`Button2D`
+        """
+        event = []
+        button.next_icon()
+        for option in self.options:
+            if option.button == button:
+                option.checked = not option.checked
+            if option.checked == True:
+                event.append(option.label)
+        i_ren.force_render()
+        print(event)
 
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component.
