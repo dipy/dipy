@@ -13,7 +13,46 @@ from itertools import chain
 
 from dipy.tracking.streamline import Streamlines
 from nibabel.affines import apply_affine
+import nibabel as nib
 
+def bundle_adjacency(dtracks0, dtracks1, threshold):
+    d01 = bundles_distances_mdf(dtracks0, dtracks1)
+
+    pair12 = []
+    solo1 = []
+
+    for i in range(len(dtracks0)):
+        if np.min(d01[i, :]) < threshold:
+            j = np.argmin(d01[i, :])
+            pair12.append((i, j))
+        else:
+            solo1.append(dtracks0[i])
+
+    pair12 = np.array(pair12)
+    pair21 = []
+
+    solo2 = []
+    for i in range(len(dtracks1)):
+        if np.min(d01[:, i]) < threshold:
+            j = np.argmin(d01[:, i])
+            pair21.append((i, j))
+        else:
+            solo2.append(dtracks1[i])
+
+    pair21 = np.array(pair21)
+    A = len(pair12) / np.float(len(dtracks0))
+    B = len(pair21) / np.float(len(dtracks1))
+    res = 0.5 * (A + B)
+    return res
+
+
+def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
+
+    recognized_bundle = set_number_of_points(recognized_bundle, 20)
+
+    expert_bundle = set_number_of_points(expert_bundle, 20)
+
+    return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
 class RecoBundles(object):
 
@@ -150,7 +189,7 @@ class RecoBundles(object):
             Indices of recognized bundle in the original tractogram
         recognized_bundle : Streamlines
             Recognized bundle in the space of the original tractogram
-
+ n
         References
         ----------
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
@@ -168,6 +207,8 @@ class RecoBundles(object):
             model_centroids,
             reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
+        #print("neighbour indices type ", type(neighb_indices))
+
         if len(neighb_streamlines) == 0:
             return Streamlines([]), [], Streamlines([])
         if slr:
@@ -190,12 +231,68 @@ class RecoBundles(object):
             neighb_indices,
             pruning_thr=pruning_thr,
             pruning_distance=pruning_distance)
+#---------------------------------------------------
+        pruned_streamlines = Streamlines(pruned_streamlines)
+        pruned_model_centroids = self._cluster_model_bundle(
+                pruned_streamlines,
+                model_clust_thr=model_clust_thr)
+        neighb_streamlines, neighb_indices = self._reduce_search_space(
+            pruned_model_centroids,
+            reduction_thr=reduction_thr,
+            reduction_distance=reduction_distance)
+##-------------- 2nd local slr ---------------------
+
+        print("2nd local Slr")
+        print(type(pruned_streamlines))
+        if slr:
+            x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0]) #affine
+            bounds = [(-30, 30), (-30, 30), (-30, 30),
+                  (-45, 45), (-45, 45), (-45, 45),
+                  (0.8, 1.2), (0.8, 1.2), (0.8, 1.2), (-10, 10), (-10, 10), (-10, 10)]
+            transf_streamlines = self._register_neighb_to_model(
+                model_bundle,
+                pruned_streamlines,
+                metric=slr_metric,
+                x0=x0,
+                bounds=bounds,
+                select_model=slr_select[0],
+                select_target=slr_select[1],
+                method=slr_method)
+
+##-------------- 2nd pruning after local slr ---------------------
+        print("pruning after 2nd local Slr")
+        pruned_streamlines, labels = self._prune_what_not_in_model(
+            model_centroids,
+            transf_streamlines,
+            neighb_indices,
+            pruning_thr=pruning_thr,
+            pruning_distance=pruning_distance)
+
+#---------------------------------------------------------
 
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
                   % (time()-t,))
         # return recognized bundle in original streamlines, labels of
         # recognized bundle and transformed recognized bundle
+
+        # metric for checking how good results we have
+        print("BA metric = ", ba_analysis(pruned_streamlines, model_bundle))
+
+        BMD = BundleMinDistanceMetric()
+        static = select_random_set_of_streamlines(model_bundle,
+                                                  slr_select[0])
+        moving = select_random_set_of_streamlines(pruned_streamlines,
+                                                  slr_select[1])
+        nb_pts = 20
+        static = set_number_of_points(static, nb_pts)
+        moving = set_number_of_points(moving, nb_pts)
+
+        BMD.setup(static, moving)
+        x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
+        value = BMD.distance(x0.tolist())
+        print("BMD metric = ", value)
+
         return pruned_streamlines, labels, self.streamlines[labels]
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,

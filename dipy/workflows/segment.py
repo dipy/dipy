@@ -11,6 +11,9 @@ from dipy.workflows.align import load_trk, save_trk
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.streamline import transform_streamlines
 from dipy.io.pickles import save_pickle, load_pickle
+from dipy.align.streamlinear import BundleMinDistanceMetric
+from dipy.tracking.streamline import (set_number_of_points, nbytes,
+                                      select_random_set_of_streamlines)
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -218,6 +221,8 @@ class RecoBundlesFlow(Workflow):
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
             logging.info(out_labels)
+
+
 
 
 class LabelsBundlesFlow(Workflow):
