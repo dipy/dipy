@@ -157,8 +157,8 @@ def test_ui_button_panel(recording=False):
     fetch_viz_icons()
 
     icon_files = []
-    icon_files.append(('stop',read_viz_icons(fname='stop2.png')))
-    icon_files.append(('play',read_viz_icons(fname='play3.png')))
+    icon_files.append(('stop', read_viz_icons(fname='stop2.png')))
+    icon_files.append(('play', read_viz_icons(fname='play3.png')))
 
     button_test = ui.Button2D(icon_fnames=icon_files)
     button_test.set_center((20, 20))
