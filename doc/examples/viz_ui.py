@@ -56,10 +56,10 @@ Add the icon filenames to a dict.
 """
 
 icon_files = []
-icon_files.append(('stop',read_viz_icons(fname='stop2.png')))
-icon_files.append(('play',read_viz_icons(fname='play3.png')))
-icon_files.append(('plus',read_viz_icons(fname='plus.png')))
-icon_files.append(('cross',read_viz_icons(fname='cross.png')))
+icon_files.append(('stop', read_viz_icons(fname='stop2.png')))
+icon_files.append(('play', read_viz_icons(fname='play3.png')))
+icon_files.append(('plus', read_viz_icons(fname='plus.png')))
+icon_files.append(('cross', read_viz_icons(fname='cross.png')))
 
 """
 Create a button through our API.

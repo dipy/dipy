@@ -254,7 +254,7 @@ class Button2D(UI):
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
                 png.Update()
-                icons.append((icon_name,png.GetOutput()))
+                icons.append((icon_name, png.GetOutput()))
 
         return icons
 
@@ -2256,7 +2256,8 @@ class FileSelectMenu2D(UI):
         panel.add_element(up_button, 'relative', (0.95, 0.95))
         self.buttons["up"] = up_button
 
-        down_button = Button2D([("down", read_viz_icons(fname="arrow-down.png"))])
+        down_button = Button2D([("down",
+                                 read_viz_icons(fname="arrow-down.png"))])
         panel.add_element(down_button, 'relative', (0.95, 0.05))
         self.buttons["down"] = down_button
 
