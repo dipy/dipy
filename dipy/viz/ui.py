@@ -215,17 +215,16 @@ class Button2D(UI):
         ----------
         size : 2-tuple of int, optional
             Button size.
-        icon_fnames : dict
-            {iconname : filename, iconname : filename, ...}
+        icon_fnames : List(string, string)
+            ((iconname, filename), (iconname, filename), ....)
 
         """
         super(Button2D, self).__init__()
         self.icon_extents = dict()
         self.icons = self.__build_icons(icon_fnames)
-        self.icon_names = list(self.icons.keys())
+        self.icon_names = [icon[0] for icon in self.icons]
         self.current_icon_id = 0
-        self.current_icon_name = self.icon_names[self.current_icon_id]
-        self.actor = self.build_actor(self.icons[self.current_icon_name])
+        self.actor = self.build_actor(self.icons[self.current_icon_id][1])
         self.size = size
         self.handle_events(self.actor)
 
@@ -237,17 +236,17 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon_fnames : dict
-            {iconname: filename, iconname: filename, ...}
+        icon_fnames : List(string, string)
+            ((iconname, filename), (iconname, filename), ....)
 
         Returns
         -------
-        icons : dict
-            A dictionary of corresponding vtkImageDataGeometryFilters.
+        icons : List
+            A list of corresponding vtkImageDataGeometryFilters.
 
         """
-        icons = {}
-        for icon_name, icon_fname in icon_fnames.items():
+        icons = []
+        for icon_name, icon_fname in icon_fnames:
             if icon_fname.split(".")[-1] not in ["png", "PNG"]:
                 error_msg = "A specified icon file is not in the PNG format. SKIPPING."
                 warn(Warning(error_msg))
@@ -255,7 +254,7 @@ class Button2D(UI):
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
                 png.Update()
-                icons[icon_name] = png.GetOutput()
+                icons.append((icon_name,png.GetOutput()))
 
         return icons
 
@@ -396,14 +395,13 @@ class Button2D(UI):
         else:
             self.texture.SetInputData(icon)
 
-    def next_icon_name(self):
-        """ Returns the next icon name while cycling through icons.
+    def next_icon_id(self):
+        """ Sets the next icon ID while cycling through icons.
 
         """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
             self.current_icon_id = 0
-        self.current_icon_name = self.icon_names[self.current_icon_id]
 
     def next_icon(self):
         """ Increments the state of the Button.
@@ -411,8 +409,8 @@ class Button2D(UI):
             Also changes the icon.
 
         """
-        self.next_icon_name()
-        self.set_icon(self.icons[self.current_icon_name])
+        self.next_icon_id()
+        self.set_icon(self.icons[self.current_icon_id][1])
 
     def set_center(self, position):
         """ Sets the icon center to position.
@@ -2254,11 +2252,11 @@ class FileSelectMenu2D(UI):
                                float(self.n_text_actors-i - 1) /
                                float(self.n_text_actors)))
 
-        up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
+        up_button = Button2D([("up", read_viz_icons(fname="arrow-up.png"))])
         panel.add_element(up_button, 'relative', (0.95, 0.95))
         self.buttons["up"] = up_button
 
-        down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
+        down_button = Button2D([("down", read_viz_icons(fname="arrow-down.png"))])
         panel.add_element(down_button, 'relative', (0.95, 0.05))
         self.buttons["down"] = down_button
 
