@@ -269,21 +269,22 @@ class Button2D(UI):
         """
         Parameters
         ----------
-        icon_fnames : dict
-            {iconname : filename, iconname : filename, ...}
+        icon_fnames : List(string, string)
+            ((iconname, filename), (iconname, filename), ....)
         position : (float, float), optional
             Absolute coordinates (x, y) of the lower-left corner of the button.
         size : (int, int), optional
             Width and height in pixels of the button.
+
         """
         super(Button2D, self).__init__(position)
 
         self.icon_extents = dict()
         self.icons = self._build_icons(icon_fnames)
-        self.icon_names = list(self.icons.keys())
+        self.icon_names = [icon[0] for icon in self.icons]
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
-        self.set_icon(self.icons[self.current_icon_name])
+        self.set_icon(self.icons[self.current_icon_id][1])
         self.resize(size)
 
     def _get_size(self):
@@ -300,16 +301,17 @@ class Button2D(UI):
 
         Parameters
         ----------
-        icon_fnames : dict
-            {iconname: filename, iconname: filename, ...}
+        icon_fnames : List(string, string)
+            ((iconname, filename), (iconname, filename), ....)
 
         Returns
         -------
-        icons : dict
-            A dictionary of corresponding vtkImageDataGeometryFilters.
+        icons : List
+            A list of corresponding vtkImageDataGeometryFilters.
+
         """
-        icons = {}
-        for icon_name, icon_fname in icon_fnames.items():
+        icons = []
+        for icon_name, icon_fname in icon_fnames:
             if icon_fname.split(".")[-1] not in ["png", "PNG"]:
                 error_msg = "A specified icon file is not in the PNG format. SKIPPING."
                 warn(Warning(error_msg))
@@ -317,7 +319,7 @@ class Button2D(UI):
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
                 png.Update()
-                icons[icon_name] = png.GetOutput()
+                icons.append((icon_name,png.GetOutput()))
 
         return icons
 
@@ -454,8 +456,8 @@ class Button2D(UI):
         else:
             self.texture.SetInputData(icon)
 
-    def next_icon_name(self):
-        """ Returns the next icon name while cycling through icons.
+    def next_icon_id(self):
+        """ Sets the next icon ID while cycling through icons.
         """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
@@ -467,8 +469,8 @@ class Button2D(UI):
 
             Also changes the icon.
         """
-        self.next_icon_name()
-        self.set_icon(self.icons[self.current_icon_name])
+        self.next_icon_id()
+        self.set_icon(self.icons[self.current_icon_id][1])
 
 
 class Rectangle2D(UI):
