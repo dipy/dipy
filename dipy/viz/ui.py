@@ -319,7 +319,7 @@ class Button2D(UI):
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
                 png.Update()
-                icons.append((icon_name,png.GetOutput()))
+                icons.append((icon_name, png.GetOutput()))
 
         return icons
 
