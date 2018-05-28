@@ -329,8 +329,9 @@ diffusion hindered tortuosity:
 AWF = dki_micro_fit.awf
 TORT = dki_micro_fit.tortuosity
 
-
-""" These parameters are plotted below on top of the mean kurtosis maps: """
+"""
+These parameters are plotted below on top of the mean kurtosis maps:
+"""
 
 fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
                         subplot_kw={'xticks': [], 'yticks': []})
