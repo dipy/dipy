@@ -8,10 +8,7 @@ single voxel using a MultiTensor.
 """
 
 import numpy as np
-from dipy.sims.voxel import (multi_tensor,
-                             multi_tensor_odf,
-                             single_tensor_odf,
-                             all_tensor_evecs)
+from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
 
 """
