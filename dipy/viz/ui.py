@@ -1574,11 +1574,12 @@ class TextBox2D(UI):
         self.right_move_right()
 
     def remove_character(self):
-        """ Removes a character from the text and moves window and caret accordingly.
+        """ Removes a character and moves window and caret accordingly.
         """
         if self.caret_pos == 0:
             return
-        self.message = self.message[:self.caret_pos - 1] + self.message[self.caret_pos:]
+        self.message = self.message[:self.caret_pos - 1] + \
+                       self.message[self.caret_pos:]
         self.move_caret_left()
         if len(self.message) < self.height * self.width - 1:
             self.right_move_left()
@@ -1768,7 +1769,7 @@ class LineSlider2D(UI):
                                 vertical_justification="top")
 
         # Add default events listener for this UI component.
-        self.track.on_left_mouse_button_pressed = self.slider_track_click_callback
+        self.track.on_left_mouse_button_pressed = self.track_click_callback
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
         self.handle.on_left_mouse_button_dragged = self.handle_move_callback
 
@@ -1883,7 +1884,7 @@ class LineSlider2D(UI):
 
         self.on_change(self)
 
-    def slider_track_click_callback(self, i_ren, vtkactor, slider):
+    def track_click_callback(self, i_ren, vtkactor, slider):
         """ Update disk position and grab the focus.
 
         Parameters
@@ -2007,7 +2008,7 @@ class RingSlider2D(UI):
                                 vertical_justification="middle")
 
         # Add default events listener for this UI component.
-        self.track.on_left_mouse_button_pressed = self.slider_track_click_callback
+        self.track.on_left_mouse_button_pressed = self.track_click_callback
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
         self.handle.on_left_mouse_button_dragged = self.handle_move_callback
 
@@ -2131,7 +2132,7 @@ class RingSlider2D(UI):
 
         self.angle = angle
 
-    def slider_track_click_callback(self, i_ren, obj, slider):
+    def track_click_callback(self, i_ren, obj, slider):
         """ Update disk position and grab the focus.
 
         Parameters
