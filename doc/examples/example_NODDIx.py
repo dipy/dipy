@@ -1,11 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Oct 28 12:42:55 2017
-
-@author: mafzalid
-"""
-
-# -*- coding: utf-8 -*-
 from time import time
 import numpy as np
 import nibabel as nib
