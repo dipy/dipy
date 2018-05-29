@@ -49,7 +49,7 @@ class EventCounter(object):
 
     def monitor(self, ui_component):
         for event in self.events_counts:
-            for actor in ui_component.get_actors():
+            for actor in ui_component.actors:
                 ui_component.add_callback(actor, event, self.count)
 
     def save(self, filename):
@@ -104,7 +104,7 @@ def test_broken_ui_component():
         setattr(SimplestUI, attr, bkp)
 
     simple_ui = SimplestUI()
-    npt.assert_raises(NotImplementedError, simple_ui.get_actors)
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'actors')
     npt.assert_raises(NotImplementedError, getattr, simple_ui, 'size')
     npt.assert_raises(NotImplementedError, getattr, simple_ui, 'center')
 
@@ -437,8 +437,6 @@ def test_ui_line_slider_2d(recording=False):
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(line_slider_2d_test)
-    event_counter.monitor(line_slider_2d_test.track)
-    event_counter.monitor(line_slider_2d_test.handle)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
@@ -472,8 +470,6 @@ def test_ui_disk_slider_2d(recording=False):
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(disk_slider_2d_test)
-    event_counter.monitor(disk_slider_2d_test.track)
-    event_counter.monitor(disk_slider_2d_test.handle)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
