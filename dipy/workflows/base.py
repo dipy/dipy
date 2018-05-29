@@ -256,7 +256,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         is_nargs : Whether or not this argument is nargs
         (arparse's multiple values argument)
         """
-        print(text)
         text = text.lower()
         nargs_str = 'variable'
         is_nargs = nargs_str in text
