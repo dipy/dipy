@@ -8,7 +8,7 @@ from dipy.workflows.multi_io import io_iterator_
 
 
 class Workflow(object):
-    def __init__(self, output_strategy='append', mix_names=False,
+    def __init__(self, output_strategy='absolute', mix_names=False,
                  force=False, skip=False):
         """ The basic workflow object.
 
@@ -20,6 +20,7 @@ class Workflow(object):
         self.last_generated_outputs = None
         self._force_overwrite = force
         self._skip = skip
+
 
     def get_io_iterator(self):
         """  Create an iterator for IO.

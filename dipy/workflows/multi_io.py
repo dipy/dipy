@@ -49,6 +49,8 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
     -------
         A list of output file paths.
     """
+
+
     outputs = []
     if isinstance(inputs, string_types):
         inputs = [inputs]
@@ -139,6 +141,7 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
     -------
         Properly instantiated IOIterator object.
     """
+
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
     io_it.set_out_dir(out_dir)
@@ -146,6 +149,9 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
     io_it.create_outputs()
     if out_keys:
         io_it.set_output_keys(*out_keys)
+
+    #for it in io_it:
+    #    print(it)
 
     return io_it
 
@@ -167,6 +173,7 @@ def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
     -------
         Properly instantiated IOIterator object.
     """
+
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')
     del values['self']
@@ -211,7 +218,6 @@ class IOIterator(object):
         self.mix_names = mix_names
         self.inputs = []
         self.out_keys = None
-
 
     def set_inputs(self, *args):
         self.input_args = list(args)

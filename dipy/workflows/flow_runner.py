@@ -22,6 +22,9 @@ def run_flow(flow):
     force and output strategies. The resulting parameters are then fed to
     the workflow's run method.
     """
+    #import pdb
+    #pdb.set_trace()
+
     parser = IntrospectiveArgumentParser()
     sub_flows_dicts = parser.add_workflow(flow)
 
@@ -50,6 +53,8 @@ def run_flow(flow):
                         help='Log file to be saved.')
 
     args = parser.get_flow_args()
+
+
 
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
