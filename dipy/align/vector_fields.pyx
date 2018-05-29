@@ -8,6 +8,7 @@ cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
 
+from cython.parallel import prange
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -3104,7 +3105,7 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         int nslices = out.shape[0]
         int nrows = out.shape[1]
         int ncols = out.shape[2]
-        int i, j, k, in_flag
+        int i, j, k, in_flag, p
         double tmp
         double[:] x = np.empty(shape=(3,), dtype=np.float64)
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
@@ -3114,7 +3115,7 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
-        for k in range(nslices):
+        for k in prange(nslices):
             for i in range(nrows):
                 for j in range(ncols):
                     inside[k, i, j] = 1
