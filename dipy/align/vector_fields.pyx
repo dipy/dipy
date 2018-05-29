@@ -3284,7 +3284,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     cdef:
         int nrows = out.shape[0]
         int ncols = out.shape[1]
-        int i, j, k, in_flag
+        int i, j, k, in_flag, p
         double tmp
         double[:] x = np.empty(shape=(2,), dtype=np.float64)
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
@@ -3293,7 +3293,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
-        for i in range(nrows):
+        for i in prange(nrows):
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
