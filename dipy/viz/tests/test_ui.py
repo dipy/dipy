@@ -443,7 +443,6 @@ def test_ui_line_slider_2d(recording=False):
                                       title="DIPY Line Slider")
 
     show_manager.ren.add(line_slider_2d_test)
-    # show_manager.start()
 
     if recording:
         show_manager.record_events_to_file(recording_filename)
@@ -458,34 +457,33 @@ def test_ui_line_slider_2d(recording=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_disk_slider_2d(recording=False):
-    filename = "test_ui_disk_slider_2d"
+def test_ui_ring_slider_2d(recording=False):
+    filename = "test_ui_ring_slider_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
-    disk_slider_2d_test = ui.RingSlider2D()
-    disk_slider_2d_test.center = (300, 300)
-    disk_slider_2d_test.value = 90
+    ring_slider_2d_test = ui.RingSlider2D()
+    ring_slider_2d_test.center = (300, 300)
+    ring_slider_2d_test.value = 90
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
-    event_counter.monitor(disk_slider_2d_test)
+    event_counter.monitor(ring_slider_2d_test)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
-                                      title="DIPY Disk Slider")
+                                      title="DIPY Ring Slider")
 
-    show_manager.ren.add(disk_slider_2d_test)
-    # show_manager.start()
+    show_manager.ren.add(ring_slider_2d_test)
 
     if recording:
         # Record the following events
-        # 1. Left Click on the disk and hold it
-        # 2. Move to the left the disk and make 1.5 tour
-        # 3. Release the disk
-        # 4. Left Click on the disk and hold it
-        # 5. Move to the right the disk and make 1 tour
-        # 6. Release the disk
+        # 1. Left Click on the handle and hold it
+        # 2. Move to the left the handle and make 1.5 tour
+        # 3. Release the handle
+        # 4. Left Click on the handle and hold it
+        # 5. Move to the right the handle and make 1 tour
+        # 6. Release the handle
         show_manager.record_events_to_file(recording_filename)
         print(list(event_counter.events_counts.items()))
         event_counter.save(expected_events_counts_filename)
@@ -506,5 +504,5 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_slider_2d":
         test_ui_line_slider_2d(recording=True)
 
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_disk_slider_2d":
-        test_ui_disk_slider_2d(recording=True)
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_ring_slider_2d":
+        test_ui_ring_slider_2d(recording=True)
