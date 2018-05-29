@@ -149,7 +149,7 @@ line_slider = ui.LineSlider2D(center=(450, 300),
 line_slider.on_change = translate_green_cube
 
 """
-2D Disk Slider
+2D Ring Slider
 ==============
 """
 
@@ -161,9 +161,9 @@ def rotate_red_cube(slider):
     cube_actor_1.RotateY(rotation_angle)
 
 
-disk_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
-disk_slider.center = (200, 200)
-disk_slider.on_change = rotate_red_cube
+ring_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
+ring_slider.center = (200, 200)
+ring_slider.on_change = rotate_red_cube
 
 """
 Adding Elements to the ShowManager
@@ -181,7 +181,7 @@ show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
-show_manager.ren.add(disk_slider)
+show_manager.ren.add(ring_slider)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
