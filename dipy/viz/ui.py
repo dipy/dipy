@@ -6,9 +6,7 @@ import glob
 import numpy as np
 
 from dipy.data import read_viz_icons
-from dipy.utils import str2bool
 from dipy.viz.interactor import CustomInteractorStyle
-from dipy.viz.ui_utils import has_size, get_bounding_box
 
 from dipy.utils.optpkg import optional_package
 
@@ -125,10 +123,6 @@ class UI(object):
 
         """
         self._add_to_renderer(ren)
-
-        # Show bounding box if viz debug mode is true and component has a size.
-        if str2bool(os.environ.get("DIPY_VIZ_DEBUG", False)) and has_size(self):
-            ren.add(get_bounding_box(self, color=(1, 0.5, 0)))
 
         # Get a hold on the current interactor style.
         iren = ren.GetRenderWindow().GetInteractor().GetInteractorStyle()
