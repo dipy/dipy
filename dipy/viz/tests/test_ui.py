@@ -539,6 +539,45 @@ def test_ui_range_slider(interactive=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_option(interactive=False):
+    option_test = ui.Option(label="option 1", position=(10, 10))
+
+    npt.assert_equal(option_test.checked, False)
+
+    if interactive:
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(option_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_checkbox(interactive=False):
+    checkbox_test = ui.Checkbox(labels=["option 1", "option 2\nOption 2",
+                                        "option 3", "option 4"],
+                                position=(10, 10))
+
+    npt.assert_equal(checkbox_test.num_options, 4)
+
+    old_positions = []
+    for option in checkbox_test.options:
+        old_positions.append(option.position)
+    old_positions = np.asarray(old_positions)
+    checkbox_test.position = (100, 100)
+    new_positions = []
+    for option in checkbox_test.options:
+        new_positions.append(option.position)
+    new_positions = np.asarray(new_positions)
+    npt.assert_equal(new_positions - old_positions, 90 * np.ones((checkbox_test.num_options, 2)))
+
+    if interactive:
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(checkbox_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_listbox_2d(recording=False):
     filename = "test_ui_listbox_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -645,6 +684,12 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_range_slider":
         test_ui_range_slider(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_option":
+        test_ui_option(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_checkbox":
+        test_ui_checkbox(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)

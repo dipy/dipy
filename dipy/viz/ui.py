@@ -3139,7 +3139,7 @@ class Checkbox(UI):
         for option_no, option in enumerate(self.options):
             option.position = (coords[0], button_y)
             button_y = button_y + self.font_size * (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
-
+    
     @property
     def font_size(self):
         """ Gets the font size of text.
