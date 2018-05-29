@@ -53,7 +53,6 @@ class UI(object):
         (i.e. pressed -> released).
     on_right_mouse_button_dragged: function
         Callback function for when dragging using the right mouse button.
-
     """
 
     def __init__(self, position=(0, 0)):
@@ -109,7 +108,6 @@ class UI(object):
         Parameters
         ----------
         ren : renderer
-
         """
         msg = "Subclasses of UI must implement `_add_to_renderer(self, ren)`."
         raise NotImplementedError(msg)
@@ -120,7 +118,6 @@ class UI(object):
         Parameters
         ----------
         ren : renderer
-
         """
         self._add_to_renderer(ren)
 
@@ -148,7 +145,6 @@ class UI(object):
             The callback function.
         priority : int
             Higher number is higher priority.
-
         """
         # Actually since we need an interactor style we will add the callback
         # only when this UI component is added to the renderer.
@@ -171,7 +167,6 @@ class UI(object):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         msg = "Subclasses of UI must implement `_set_position(self, coords)`."
         raise NotImplementedError(msg)
@@ -196,7 +191,6 @@ class UI(object):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         if not hasattr(self, "size"):
             msg = "Subclasses of UI must implement the `size` property."
@@ -209,7 +203,6 @@ class UI(object):
 
     def set_visibility(self, visibility):
         """ Sets visibility of this UI component.
-
         """
         for actor in self.actors:
             actor.SetVisibility(visibility)
@@ -270,7 +263,6 @@ class Button2D(UI):
     Currently supports:
     - Multiple icons.
     - Switching between icons.
-
     """
 
     def __init__(self, icon_fnames, position=(0, 0), size=(30, 30)):
@@ -283,7 +275,6 @@ class Button2D(UI):
             Absolute coordinates (x, y) of the lower-left corner of the button.
         size : (int, int), optional
             Width and height in pixels of the button.
-
         """
         super(Button2D, self).__init__(position)
 
@@ -316,7 +307,6 @@ class Button2D(UI):
         -------
         icons : dict
             A dictionary of corresponding vtkImageDataGeometryFilters.
-
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
@@ -396,7 +386,6 @@ class Button2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         ren.add(self.actor)
 
@@ -407,7 +396,6 @@ class Button2D(UI):
         ----------
         size : (float, float)
             Button size (width, height) in pixels.
-
         """
         # Update actor.
         self.texture_points.SetPoint(0, 0, 0, 0.0)
@@ -423,14 +411,12 @@ class Button2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         self.actor.SetPosition(*coords)
 
     @property
     def color(self):
         """ Gets the button's color.
-
         """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
@@ -443,7 +429,6 @@ class Button2D(UI):
         ----------
         color : (float, float, float)
             RGB. Must take values in [0, 1].
-
         """
         self.actor.GetProperty().SetColor(*color)
 
@@ -454,7 +439,6 @@ class Button2D(UI):
         ----------
         factor : (float, float)
             Scaling factor (width, height) in pixels.
-
         """
         self.resize(self.size * factor)
 
@@ -464,7 +448,6 @@ class Button2D(UI):
         Parameters
         ----------
         icon : imageDataGeometryFilter
-
         """
         if major_version <= 5:
             self.texture.SetInput(icon)
@@ -473,7 +456,6 @@ class Button2D(UI):
 
     def next_icon_name(self):
         """ Returns the next icon name while cycling through icons.
-
         """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
@@ -484,7 +466,6 @@ class Button2D(UI):
         """ Increments the state of the Button.
 
             Also changes the icon.
-
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
@@ -492,7 +473,6 @@ class Button2D(UI):
 
 class Rectangle2D(UI):
     """ A 2D rectangle sub-classed from UI.
-
     """
 
     def __init__(self, size=(0, 0), position=(0, 0), color=(1, 1, 1),
@@ -509,7 +489,6 @@ class Rectangle2D(UI):
             Must take values in [0, 1].
         opacity : float
             Must take values in [0, 1].
-
         """
         super(Rectangle2D, self).__init__(position)
         self.color = color
@@ -570,7 +549,6 @@ class Rectangle2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         ren.add(self.actor)
 
@@ -604,7 +582,6 @@ class Rectangle2D(UI):
         ----------
         size : (float, float)
             Button size (width, height) in pixels.
-
         """
         self._points.SetPoint(0, 0, 0, 0.0)
         self._points.SetPoint(1, size[0], 0, 0.0)
@@ -619,14 +596,12 @@ class Rectangle2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         self.actor.SetPosition(*coords)
 
     @property
     def color(self):
         """ Gets the rectangle's color.
-
         """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
@@ -639,14 +614,12 @@ class Rectangle2D(UI):
         ----------
         color : (float, float, float)
             RGB. Must take values in [0, 1].
-
         """
         self.actor.GetProperty().SetColor(*color)
 
     @property
     def opacity(self):
         """ Gets the rectangle's opacity.
-
         """
         return self.actor.GetProperty().GetOpacity()
 
@@ -658,14 +631,12 @@ class Rectangle2D(UI):
         ----------
         opacity : float
             Degree of transparency. Must be between [0, 1].
-
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
 
 class Disk2D(UI):
     """ A 2D disk UI component.
-
     """
 
     def __init__(self, outer_radius, inner_radius=0, center=(0, 0),
@@ -684,7 +655,6 @@ class Disk2D(UI):
             Must take values in [0, 1].
         opacity : float, optional
             Must take values in [0, 1].
-
         """
         super(Disk2D, self).__init__()
         self.outer_radius = outer_radius
@@ -726,7 +696,6 @@ class Disk2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         ren.add(self.actor)
 
@@ -742,7 +711,6 @@ class Disk2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         # Disk actor are positioned with respect to their center.
         self.actor.SetPosition(*coords + self.outer_radius)
@@ -750,7 +718,6 @@ class Disk2D(UI):
     @property
     def color(self):
         """ Gets the rectangle's color.
-
         """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
@@ -763,14 +730,12 @@ class Disk2D(UI):
         ----------
         color : (float, float, float)
             RGB. Must take values in [0, 1].
-
         """
         self.actor.GetProperty().SetColor(*color)
 
     @property
     def opacity(self):
         """ Gets the rectangle's opacity.
-
         """
         return self.actor.GetProperty().GetOpacity()
 
@@ -782,7 +747,6 @@ class Disk2D(UI):
         ----------
         opacity : float
             Degree of transparency. Must be between [0, 1].
-
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
@@ -814,7 +778,6 @@ class Panel2D(UI):
     ----------
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
-
     """
 
     def __init__(self, size, position=(0, 0), color=(0.1, 0.1, 0.1),
@@ -832,7 +795,6 @@ class Panel2D(UI):
             Must take values in [0, 1].
         align : [left, right]
             Alignment of the panel with respect to the overall screen.
-
         """
         super(Panel2D, self).__init__(position)
         self.resize(size)
@@ -871,7 +833,6 @@ class Panel2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         for element in self._elements:
             element.add_to_renderer(ren)
@@ -886,7 +847,6 @@ class Panel2D(UI):
         ----------
         size : (float, float)
             Panel size (width, height) in pixels.
-
         """
         self.background.resize(size)
 
@@ -897,7 +857,6 @@ class Panel2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         coords = np.array(coords)
         for element, offset in self.element_positions:
@@ -934,7 +893,6 @@ class Panel2D(UI):
             between [0,1].
             If int, pixels coordinates are assumed and it must fit within the
             panel's size.
-
         """
         coords = np.array(coords)
 
@@ -967,7 +925,6 @@ class Panel2D(UI):
         ----------
         window_size_change : (int, int)
             New window size (width, height) in pixels.
-
         """
         if self.alignment == "left":
             pass
@@ -1072,7 +1029,6 @@ class TextBlock2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         if self._background is not None:
             ren.add(self._background)
@@ -1087,7 +1043,6 @@ class TextBlock2D(UI):
         -------
         str
             The current text message.
-
         """
         return self.actor.GetInput()
 
@@ -1099,7 +1054,6 @@ class TextBlock2D(UI):
         ----------
         text : str
             The message to be set.
-
         """
         self.actor.SetInput(text)
 
@@ -1111,7 +1065,6 @@ class TextBlock2D(UI):
         ----------
         int
             Text font size.
-
         """
         return self.actor.GetTextProperty().GetFontSize()
 
@@ -1123,7 +1076,6 @@ class TextBlock2D(UI):
         ----------
         size : int
             Text font size.
-
         """
         self.actor.GetTextProperty().SetFontSize(size)
 
@@ -1135,7 +1087,6 @@ class TextBlock2D(UI):
         ----------
         str
             Text font family.
-
         """
         return self.actor.GetTextProperty().GetFontFamilyAsString()
 
@@ -1149,7 +1100,6 @@ class TextBlock2D(UI):
         ----------
         family : str
             The font family.
-
         """
         if family == 'Arial':
             self.actor.GetTextProperty().SetFontFamilyToArial()
@@ -1166,7 +1116,6 @@ class TextBlock2D(UI):
         -------
         str
             Text justification.
-
         """
         justification = self.actor.GetTextProperty().GetJustificationAsString()
         if justification == 'Left':
@@ -1184,7 +1133,6 @@ class TextBlock2D(UI):
         ----------
         justification : str
             Possible values are left, right, center.
-
         """
         text_property = self.actor.GetTextProperty()
         if justification == 'left':
@@ -1204,7 +1152,6 @@ class TextBlock2D(UI):
         -------
         str
             Text vertical justification.
-
         """
         text_property = self.actor.GetTextProperty()
         vjustification = text_property.GetVerticalJustificationAsString()
@@ -1223,7 +1170,6 @@ class TextBlock2D(UI):
         ----------
         vertical_justification : str
             Possible values are bottom, middle, top.
-
         """
         text_property = self.actor.GetTextProperty()
         if vertical_justification == 'bottom':
@@ -1244,7 +1190,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is bold if True.
-
         """
         return self.actor.GetTextProperty().GetBold()
 
@@ -1256,7 +1201,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Sets text bold if True.
-
         """
         self.actor.GetTextProperty().SetBold(flag)
 
@@ -1268,7 +1212,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is italicised if True.
-
         """
         return self.actor.GetTextProperty().GetItalic()
 
@@ -1280,7 +1223,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Italicises text if True.
-
         """
         self.actor.GetTextProperty().SetItalic(flag)
 
@@ -1292,7 +1234,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is shadowed if True.
-
         """
         return self.actor.GetTextProperty().GetShadow()
 
@@ -1304,7 +1245,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Shadows text if True.
-
         """
         self.actor.GetTextProperty().SetShadow(flag)
 
@@ -1316,7 +1256,6 @@ class TextBlock2D(UI):
         -------
         (float, float, float)
             Returns text color in RGB.
-
         """
         return self.actor.GetTextProperty().GetColor()
 
@@ -1328,7 +1267,6 @@ class TextBlock2D(UI):
         ----------
         color : (float, float, float)
             RGB: Values must be between 0-1.
-
         """
         self.actor.GetTextProperty().SetColor(*color)
 
@@ -1341,7 +1279,6 @@ class TextBlock2D(UI):
         (float, float, float) or None
             If None, there no background color.
             Otherwise, background color in RGB.
-
         """
         if major_version < 7:
             if self._background is None:
@@ -1363,7 +1300,6 @@ class TextBlock2D(UI):
         color : (float, float, float) or None
             If None, remove background.
             Otherwise, RGB values (must be between 0-1).
-
         """
 
         if color is None:
@@ -1393,7 +1329,6 @@ class TextBlock2D(UI):
         -------
         (float, float)
             The current actor position. (x, y) in pixels.
-
         """
         return self.actor.GetPosition()
 
@@ -1405,7 +1340,6 @@ class TextBlock2D(UI):
         ----------
         position : (float, float)
             The new position. (x, y) in pixels.
-
         """
         self.actor.SetPosition(*position)
         if self._background is not None:
@@ -1439,7 +1373,6 @@ class TextBox2D(UI):
         Position of the caret in the text.
     init : bool
         Flag which says whether the textbox has just been initialized.
-
     """
     def __init__(self, width, height, text="Enter Text", position=(100, 10),
                  color=(0, 0, 0), font_size=18, font_family='Arial',
@@ -1470,7 +1403,6 @@ class TextBox2D(UI):
             Makes text italicised.
         shadow : bool
             Adds text shadow.
-
         """
         super(TextBox2D, self).__init__(position=position)
 
@@ -1514,7 +1446,6 @@ class TextBox2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         self.text.add_to_renderer(ren)
 
@@ -1525,7 +1456,6 @@ class TextBox2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         self.text.position = coords
 
@@ -1536,7 +1466,6 @@ class TextBox2D(UI):
         ----------
         message: str
             The custom message to be set.
-
         """
         self.message = message
         self.text.message = message
@@ -1559,7 +1488,6 @@ class TextBox2D(UI):
         -------
         str
             A multi line formatted text.
-
         """
         multi_line_text = ""
         for i in range(len(text)):
@@ -1576,7 +1504,6 @@ class TextBox2D(UI):
         Parameters
         ----------
         character : str
-
         """
         if character.lower() == "return":
             self.render_text(False)
@@ -1594,40 +1521,34 @@ class TextBox2D(UI):
 
     def move_caret_right(self):
         """ Moves the caret towards right.
-
         """
         self.caret_pos = min(self.caret_pos + 1, len(self.message))
 
     def move_caret_left(self):
         """ Moves the caret towards left.
-
         """
         self.caret_pos = max(self.caret_pos - 1, 0)
 
     def right_move_right(self):
         """ Moves right boundary of the text window right-wards.
-
         """
         if self.window_right <= len(self.message):
             self.window_right += 1
 
     def right_move_left(self):
         """ Moves right boundary of the text window left-wards.
-
         """
         if self.window_right > 0:
             self.window_right -= 1
 
     def left_move_right(self):
         """ Moves left boundary of the text window right-wards.
-
         """
         if self.window_left <= len(self.message):
             self.window_left += 1
 
     def left_move_left(self):
         """ Moves left boundary of the text window left-wards.
-
         """
         if self.window_left > 0:
             self.window_left -= 1
@@ -1638,7 +1559,6 @@ class TextBox2D(UI):
         Parameters
         ----------
         character : str
-
         """
         if len(character) > 1 and character.lower() != "space":
             return
@@ -1655,7 +1575,6 @@ class TextBox2D(UI):
 
     def remove_character(self):
         """ Removes a character from the text and moves window and caret accordingly.
-
         """
         if self.caret_pos == 0:
             return
@@ -1671,7 +1590,6 @@ class TextBox2D(UI):
 
     def move_left(self):
         """ Handles left button press.
-
         """
         self.move_caret_left()
         if self.caret_pos == self.window_left - 1:
@@ -1682,7 +1600,6 @@ class TextBox2D(UI):
 
     def move_right(self):
         """ Handles right button press.
-
         """
         self.move_caret_right()
         if self.caret_pos == self.window_right + 1:
@@ -1698,7 +1615,6 @@ class TextBox2D(UI):
         ----------
         show_caret : bool
             Whether or not to show the caret.
-
         """
         if show_caret:
             ret_text = (self.message[:self.caret_pos] +
@@ -1716,7 +1632,6 @@ class TextBox2D(UI):
         ----------
         show_caret : bool
             Whether or not to show the caret.
-
         """
         text = self.showable_text(show_caret)
         if text == "":
@@ -1725,7 +1640,6 @@ class TextBox2D(UI):
 
     def edit_mode(self):
         """ Turns on edit mode.
-
         """
         if self.init:
             self.message = ""
@@ -1742,7 +1656,6 @@ class TextBox2D(UI):
         obj: :class:`vtkActor`
             The picked actor
         textbox_object: :class:`TextBox2D`
-
         """
         i_ren.add_active_prop(self.text.actor)
         self.edit_mode()
@@ -1757,7 +1670,6 @@ class TextBox2D(UI):
         obj: :class:`vtkActor`
             The picked actor
         textbox_object: :class:`TextBox2D`
-
         """
         key = i_ren.event.key
         is_done = self.handle_character(key)
@@ -1784,7 +1696,6 @@ class LineSlider2D(UI):
         The moving part of the slider.
     text : :class:`TextBlock2D`
         The text that shows percentage.
-
     """
     def __init__(self, center=(0, 0),
                  initial_value=50, min_value=0, max_value=100,
@@ -1818,7 +1729,6 @@ class LineSlider2D(UI):
             replacement fields: `{value:}`, `{ratio:}`.
             If callable, this instance of `:class:LineSlider2D` will be
             passed as argument to the text template function.
-
         """
         super(LineSlider2D, self).__init__()
 
@@ -1873,7 +1783,6 @@ class LineSlider2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         self.track.add_to_renderer(ren)
         self.handle.add_to_renderer(ren)
@@ -1892,7 +1801,6 @@ class LineSlider2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         # Offset the slider line by the handle's radius.
         track_position = coords + self.handle.size / 2.
@@ -1919,7 +1827,6 @@ class LineSlider2D(UI):
         ----------
         position : (float, float)
             The absolute position of the disk (x, y).
-
         """
         x_position = position[0]
         x_position = max(x_position, self.left_x_position)
@@ -1985,7 +1892,6 @@ class LineSlider2D(UI):
         vtkactor : :class:`vtkActor`
             The picked actor
         slider : :class:`LineSlider2D`
-
         """
         position = i_ren.event.position
         self.set_position(position)
@@ -2001,7 +1907,6 @@ class LineSlider2D(UI):
         vtkactor : :class:`vtkActor`
             The picked actor
         slider : :class:`LineSlider2D`
-
         """
         position = i_ren.event.position
         self.set_position(position)
@@ -2036,7 +1941,6 @@ class RingSlider2D(UI):
                  handle_inner_radius=0, handle_outer_radius=10,
                  font_size=16,
                  text_template="{ratio:.0%}"):
-
         """
         Parameters
         ----------
@@ -2063,7 +1967,6 @@ class RingSlider2D(UI):
             replacement fields: `{value:}`, `{ratio:}`, `{angle:}`.
             If callable, this instance of `:class:RingSlider2D` will be
             passed as argument to the text template function.
-
         """
         super(RingSlider2D, self).__init__()
 
@@ -2119,7 +2022,6 @@ class RingSlider2D(UI):
         Parameters
         ----------
         ren : renderer
-
         """
         self.track.add_to_renderer(ren)
         self.handle.add_to_renderer(ren)
@@ -2135,7 +2037,6 @@ class RingSlider2D(UI):
         ----------
         coords: (float, float)
             Absolute pixel coordinates (x, y).
-
         """
         self.track.position = coords + self.handle.size / 2.
         self.handle.position += coords - self.position
@@ -2222,7 +2123,6 @@ class RingSlider2D(UI):
         ----------
         click_position: (float, float)
             Position of the mouse click.
-
         """
         x, y = np.array(click_position) - self.center
         angle = np.arctan2(y, x)
@@ -2240,7 +2140,6 @@ class RingSlider2D(UI):
         obj : :class:`vtkActor`
             The picked actor
         slider : :class:`RingSlider2D`
-
         """
         click_position = i_ren.event.position
         self.move_handle(click_position=click_position)
@@ -2256,7 +2155,6 @@ class RingSlider2D(UI):
         obj : :class:`vtkActor`
             The picked actor
         slider : :class:`RingSlider2D`
-
         """
         click_position = i_ren.event.position
         self.move_handle(click_position=click_position)
