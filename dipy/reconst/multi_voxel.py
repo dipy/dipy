@@ -115,9 +115,9 @@ def parallel_fit_worker(arguments):
     result: list of tuple
         return a list of tuple(voxel index, model fitted instance)
     """
-    model, input_queue, args, kwargs = arguments
-    return [(idx, model.fit(shared_arr[idx], *args, **kwargs))
-            for idx in input_queue]
+    model, chunks = arguments
+    return [(idx, model.fit(shared_arr[idx]))
+            for idx in chunks]
 
 
 def _init_parallel_fit_worker(arr_to_populate, shape):
@@ -174,10 +174,10 @@ def parallel_voxel_fit(single_voxel_fit):
     def new_fit(model, data, *args, **kwargs):
         """Fit method in parallel for every voxel in data """
         # Pop the mask, if there is one
-        mask = kwargs.pop('mask', None)
+        mask = kwargs.get('mask', None)
         # print(mask, mask.shape)
         if data.ndim == 1:
-            return single_voxel_fit(model, data, *args, **kwargs)
+            return single_voxel_fit(model, data)
         if mask is None:
             mask = np.ones(data.shape[:-1], bool)
         elif mask.shape != data.shape[:-1]:
@@ -188,7 +188,7 @@ def parallel_voxel_fit(single_voxel_fit):
         nb_processes = nb_processes if nb_processes >= 1 else cpu_count()
 
         if nb_processes == 1:
-            return single_voxel_fit(model, data, *args, **kwargs)
+            return single_voxel_fit(model, data)
 
         # Get non null indexes from mask
         indexes = np.argwhere(mask)
@@ -207,8 +207,7 @@ def parallel_voxel_fit(single_voxel_fit):
                     initializer=_init_parallel_fit_worker,
                     initargs=(shared_arr_in,  data.shape))
         result = pool.map_async(parallel_fit_worker,
-                                [(model, c, args, kwargs)
-                                 for c in chunks])
+                                [(model, c) for c in chunks])
         result.wait()
         pool.close()
         pool.join()
