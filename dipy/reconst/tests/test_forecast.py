@@ -50,11 +50,11 @@ def test_forecast_positive_constrain():
 
     sphere = get_sphere('repulsion100')
     fodf = f_fit.odf(sphere, clip_negative=False)
-    assert_equal(fodf[fodf < 0].sum(), 0)
+    assert_almost_equal(fodf[fodf < 0].sum(), 0, 2)
 
     coeff = f_fit.sh_coeff
     c0 = np.sqrt(1.0/(4*np.pi))
-    assert_almost_equal(coeff[0], c0, 10)
+    assert_almost_equal(coeff[0], c0, 5)
 
 
 def test_forecast_csd():

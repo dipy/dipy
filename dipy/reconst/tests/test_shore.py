@@ -53,7 +53,7 @@ def test_shore_positive_constrain():
                      pos_radius=20e-03)
     asmfit = asm.fit(data.S)
     eap = asmfit.pdf_grid(11, 20e-03)
-    assert_equal(eap[eap < 0].sum(), 0)
+    assert_almost_equal(eap[eap < 0].sum(), 0, 3)
 
 
 def test_shore_fitting_no_constrain_e0():
