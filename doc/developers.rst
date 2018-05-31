@@ -43,7 +43,7 @@ And here is the rest of the wonderful contributors:
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
 - **Qiyuan Tian**, Stanford University, Stanford, CA, USA
-- **Rafael Neto Henriques**, Cambridge University, UK
+- **Rafael Neto Henriques**, Champalimaud Neuroscience Programme, Champalimaud Centre for the Unknown, Lisbon, PT
 - **Stephan Meesters**, Eindhoven University of Technology, NL
 - **Himanshu Mishra**, Indian Institute of Technology, Karaghpur, IN
 - **Alexander Gauvin**, University of Sherbrooke, QC, CA
