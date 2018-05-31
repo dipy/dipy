@@ -121,11 +121,10 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         # in the workflow python script.
 
         if len_args != len(self.doc):
-            print(self.prog+": Number of parameters in the doc string and "
-                            "run method does not match. Please ensure that"
-                            " the number of parameters in the run method is"
-                            " the same as the doc string.")
-            exit(1)
+            raise ValueError(self.prog+": Number of parameters in the"
+                            " doc string and run method does not match."
+                            " Please ensure that the number of parameters"
+                            " in the run method is same as the doc string.")
 
 
         for i, arg in enumerate(args):
