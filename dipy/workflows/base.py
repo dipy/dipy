@@ -101,7 +101,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             ref_text = [text if text else "\n" for text in npds['References']]
             ref_idx = self.epilog.find('References: \n') + len('References: \n')
             self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
-                                               ''.join([text for text in ref_text]),
+                                        ''.join([text for text in ref_text]),
                                                self.epilog[ref_idx:])
 
         self.outputs = [param for param in npds['Parameters'] if
@@ -121,10 +121,12 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         # in the workflow python script.
 
         if len_args != len(self.doc):
-            raise ValueError(self.prog+": Number of parameters in the"
-                            " doc string and run method does not match."
-                            " Please ensure that the number of parameters"
-                            " in the run method is same as the doc string.")
+            raise ValueError(
+                            self.prog +
+                            ": Number of parameters in the "
+                            "doc string and run method does not match. "
+                            "Please ensure that the number of parameters "
+                            "in the run method is same as the doc string.")
 
 
         for i, arg in enumerate(args):
