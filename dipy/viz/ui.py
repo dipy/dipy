@@ -28,16 +28,13 @@ class UI(object):
 
     Attributes
     ----------
-    ui_param : object
-        This is an attribute that can be passed to the UI object by the
-        interactor.
-    ui_list : list of :class:`UI`
-        This is used when there are more than one UI elements inside
-        a UI element. They're all automatically added to the renderer at the
-        same time as this one.
-    parent_ui: UI
-        Reference to the parent UI element. This is useful of there is a parent
-        UI element and its reference needs to be passed down to the child.
+    position : (float, float)
+        Absolute coordinates (x, y) of the lower-left corner of this
+        UI component.
+    center : (float, float)
+        Absolute coordinates (x, y) of the center of this UI component.
+    size : (int, int)
+        Width and height in pixels of this UI component.
     on_left_mouse_button_pressed: function
         Callback function for when the left mouse button is pressed.
     on_left_mouse_button_released: function
@@ -56,15 +53,21 @@ class UI(object):
         (i.e. pressed -> released).
     on_right_mouse_button_dragged: function
         Callback function for when dragging using the right mouse button.
-
     """
 
-    def __init__(self):
-        self.ui_param = None
-        self.ui_list = list()
-
-        self.parent_ui = None
+    def __init__(self, position=(0, 0)):
+        """
+        Parameters
+        ----------
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of this
+            UI component.
+        """
+        self._position = np.array([0, 0])
         self._callbacks = []
+
+        self._setup()  # Setup needed actors and sub UI components.
+        self.position = position
 
         self.left_button_state = "released"
         self.right_button_state = "released"
@@ -79,11 +82,34 @@ class UI(object):
         self.on_right_mouse_button_dragged = lambda i_ren, obj, element: None
         self.on_key_press = lambda i_ren, obj, element: None
 
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
+    def _setup(self):
+        """ Setup this UI component.
 
+        This is where you should create all your needed actors and sub UI
+        components.
         """
-        msg = "Subclasses of UI must implement `get_actors(self)`."
+        msg = "Subclasses of UI must implement `_setup(self)`."
+        raise NotImplementedError(msg)
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        msg = "Subclasses of UI must implement `_get_actors(self)`."
+        raise NotImplementedError(msg)
+
+    @property
+    def actors(self):
+        """ Actors composing this UI component. """
+        return self._get_actors()
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        msg = "Subclasses of UI must implement `_add_to_renderer(self, ren)`."
         raise NotImplementedError(msg)
 
     def add_to_renderer(self, ren):
@@ -92,9 +118,8 @@ class UI(object):
         Parameters
         ----------
         ren : renderer
-
         """
-        ren.add(*self.get_actors())
+        self._add_to_renderer(ren)
 
         # Get a hold on the current interactor style.
         iren = ren.GetRenderWindow().GetInteractor().GetInteractorStyle()
@@ -120,30 +145,66 @@ class UI(object):
             The callback function.
         priority : int
             Higher number is higher priority.
-
         """
         # Actually since we need an interactor style we will add the callback
         # only when this UI component is added to the renderer.
         self._callbacks.append((prop, event_type, callback, priority))
 
-    def set_center(self, position):
-        """ Sets the center of the UI component
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, coords):
+        coords = np.asarray(coords)
+        self._set_position(coords)
+        self._position = coords
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            These are the x and y coordinates respectively, with the
-            origin at the bottom left.
-
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
         """
-        msg = "Subclasses of UI must implement `set_center(self, position)`."
+        msg = "Subclasses of UI must implement `_set_position(self, coords)`."
         raise NotImplementedError(msg)
 
-    def set_visibility(self, visibility):
-        """ Sets visibility of this UI component and all its sub-components.
+    @property
+    def size(self):
+        return np.asarray(self._get_size())
 
+    def _get_size(self):
+        msg = "Subclasses of UI must implement property `size`."
+        raise NotImplementedError(msg)
+
+    @property
+    def center(self):
+        return self.position + self.size / 2.
+
+    @center.setter
+    def center(self, coords):
+        """ Position the center of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
         """
-        for actor in self.get_actors():
+        if not hasattr(self, "size"):
+            msg = "Subclasses of UI must implement the `size` property."
+            raise NotImplementedError(msg)
+
+        new_center = np.array(coords)
+        size = np.array(self.size)
+        new_lower_left_corner = new_center - size / 2.
+        self.position = new_lower_left_corner
+
+    def set_visibility(self, visibility):
+        """ Sets visibility of this UI component.
+        """
+        for actor in self.actors:
             actor.SetVisibility(visibility)
 
     def handle_events(self, actor):
@@ -198,38 +259,40 @@ class UI(object):
 
 class Button2D(UI):
     """ A 2D overlay button and is of type vtkTexturedActor2D.
+
     Currently supports:
     - Multiple icons.
     - Switching between icons.
-
-    Attributes
-    ----------
-    size: (float, float)
-        Button size (width, height) in pixels.
-
     """
 
-    def __init__(self, icon_fnames, size=(30, 30)):
+    def __init__(self, icon_fnames, position=(0, 0), size=(30, 30)):
         """
         Parameters
         ----------
-        size : 2-tuple of int, optional
-            Button size.
         icon_fnames : dict
             {iconname : filename, iconname : filename, ...}
-
+        position : (float, float), optional
+            Absolute coordinates (x, y) of the lower-left corner of the button.
+        size : (int, int), optional
+            Width and height in pixels of the button.
         """
-        super(Button2D, self).__init__()
+        super(Button2D, self).__init__(position)
+
         self.icon_extents = dict()
-        self.icons = self.__build_icons(icon_fnames)
+        self.icons = self._build_icons(icon_fnames)
         self.icon_names = list(self.icons.keys())
         self.current_icon_id = 0
         self.current_icon_name = self.icon_names[self.current_icon_id]
-        self.actor = self.build_actor(self.icons[self.current_icon_name])
-        self.size = size
-        self.handle_events(self.actor)
+        self.set_icon(self.icons[self.current_icon_name])
+        self.resize(size)
 
-    def __build_icons(self, icon_fnames):
+    def _get_size(self):
+        lower_left_corner = self.texture_points.GetPoint(0)
+        upper_right_corner = self.texture_points.GetPoint(2)
+        size = np.array(upper_right_corner) - np.array(lower_left_corner)
+        return abs(size[:2])
+
+    def _build_icons(self, icon_fnames):
         """ Converts file names to vtkImageDataGeometryFilters.
 
         A pre-processing step to prevent re-read of file names during every
@@ -244,7 +307,6 @@ class Button2D(UI):
         -------
         icons : dict
             A dictionary of corresponding vtkImageDataGeometryFilters.
-
         """
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
@@ -259,74 +321,10 @@ class Button2D(UI):
 
         return icons
 
-    @property
-    def size(self):
-        """ Gets the button size.
+    def _setup(self):
+        """ Setup this UI component.
 
-        """
-        return self._size
-
-    @size.setter
-    def size(self, size):
-        """ Sets the button size.
-
-        Parameters
-        ----------
-        size : (float, float)
-            Button size (width, height) in pixels.
-
-        """
-        self._size = np.asarray(size)
-
-        # Update actor.
-        self.texture_points.SetPoint(0, 0, 0, 0.0)
-        self.texture_points.SetPoint(1, size[0], 0, 0.0)
-        self.texture_points.SetPoint(2, size[0], size[1], 0.0)
-        self.texture_points.SetPoint(3, 0, size[1], 0.0)
-        self.texture_polydata.SetPoints(self.texture_points)
-
-    @property
-    def color(self):
-        """ Gets the button's color.
-
-        """
-        color = self.actor.GetProperty().GetColor()
-        return np.asarray(color)
-
-    @color.setter
-    def color(self, color):
-        """ Sets the button's color.
-
-        Parameters
-        ----------
-        color : (float, float, float)
-            RGB. Must take values in [0, 1].
-
-        """
-        self.actor.GetProperty().SetColor(*color)
-
-    def scale(self, size):
-        """ Scales the button.
-
-        Parameters
-        ----------
-        size : (float, float)
-            Scaling factor (width, height) in pixels.
-
-        """
-        self.size *= size
-
-    def build_actor(self, icon):
-        """ Return an image as a 2D actor with a specific position.
-
-        Parameters
-        ----------
-        icon : :class:`vtkImageData`
-
-        Returns
-        -------
-        :class:`vtkTexturedActor2D`
-
+        Creating the button actor used internally.
         """
         # This is highly inspired by
         # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474\
@@ -335,7 +333,6 @@ class Button2D(UI):
         self.texture_polydata = vtk.vtkPolyData()
         self.texture_points = vtk.vtkPoints()
         self.texture_points.SetNumberOfPoints(4)
-        self.size = icon.GetExtent()
 
         polys = vtk.vtkCellArray()
         polys.InsertNextCell(4)
@@ -373,15 +370,77 @@ class Button2D(UI):
         button_property = vtk.vtkProperty2D()
         button_property.SetOpacity(1.0)
         button.SetProperty(button_property)
+        self.actor = button
 
-        self.set_icon(icon)
-        return button
+        # Add default events listener to the VTK actor.
+        self.handle_events(self.actor)
 
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
         """
         return [self.actor]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.actor)
+
+    def resize(self, size):
+        """ Resize the button.
+
+        Parameters
+        ----------
+        size : (float, float)
+            Button size (width, height) in pixels.
+        """
+        # Update actor.
+        self.texture_points.SetPoint(0, 0, 0, 0.0)
+        self.texture_points.SetPoint(1, size[0], 0, 0.0)
+        self.texture_points.SetPoint(2, size[0], size[1], 0.0)
+        self.texture_points.SetPoint(3, 0, size[1], 0.0)
+        self.texture_polydata.SetPoints(self.texture_points)
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.actor.SetPosition(*coords)
+
+    @property
+    def color(self):
+        """ Gets the button's color.
+        """
+        color = self.actor.GetProperty().GetColor()
+        return np.asarray(color)
+
+    @color.setter
+    def color(self, color):
+        """ Sets the button's color.
+
+        Parameters
+        ----------
+        color : (float, float, float)
+            RGB. Must take values in [0, 1].
+        """
+        self.actor.GetProperty().SetColor(*color)
+
+    def scale(self, factor):
+        """ Scales the button.
+
+        Parameters
+        ----------
+        factor : (float, float)
+            Scaling factor (width, height) in pixels.
+        """
+        self.resize(self.size * factor)
 
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
@@ -389,7 +448,6 @@ class Button2D(UI):
         Parameters
         ----------
         icon : imageDataGeometryFilter
-
         """
         if major_version <= 5:
             self.texture.SetInput(icon)
@@ -398,7 +456,6 @@ class Button2D(UI):
 
     def next_icon_name(self):
         """ Returns the next icon name while cycling through icons.
-
         """
         self.current_icon_id += 1
         if self.current_icon_id == len(self.icons):
@@ -409,83 +466,47 @@ class Button2D(UI):
         """ Increments the state of the Button.
 
             Also changes the icon.
-
         """
         self.next_icon_name()
         self.set_icon(self.icons[self.current_icon_name])
 
-    def set_center(self, position):
-        """ Sets the icon center to position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new center of the button (x, y).
-
-        """
-        new_position = np.asarray(position) - self.size / 2.
-        self.actor.SetPosition(*new_position)
-
 
 class Rectangle2D(UI):
     """ A 2D rectangle sub-classed from UI.
-    Uses vtkPolygon.
-
-    Attributes
-    ----------
-    size : (float, float)
-        The size of the rectangle (height, width) in pixels.
-
     """
 
-    def __init__(self, size, center=(0, 0), color=(1, 1, 1), opacity=1.0):
+    def __init__(self, size=(0, 0), position=(0, 0), color=(1, 1, 1),
+                 opacity=1.0):
         """ Initializes a rectangle.
 
         Parameters
         ----------
-        size : (float, float)
-            The size of the rectangle (height, width) in pixels.
-        center : (float, float)
-            The center of the rectangle (x, y).
+        size : (int, int)
+            The size of the rectangle (width, height) in pixels.
+        position : (float, float)
+            Coordinates (x, y) of the lower-left corner of the rectangle.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
             Must take values in [0, 1].
-
         """
-        super(Rectangle2D, self).__init__()
-        self.size = size
-        self.actor = self.build_actor(size=size)
+        super(Rectangle2D, self).__init__(position)
         self.color = color
-        self.set_center(center)
         self.opacity = opacity
-        self.handle_events(self.actor)
+        self.resize(size)
 
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
+    def _setup(self):
+        """ Setup this UI component.
 
-        """
-        return [self.actor]
-
-    def build_actor(self, size):
-        """ Builds the text actor.
-
-        Parameters
-        ----------
-        size : (float, float)
-            The size of the rectangle (height, width) in pixels.
-
-        Returns
-        -------
-        :class:`vtkActor2D`
-
+        Creating the polygon actor used internally.
         """
         # Setup four points
-        points = vtk.vtkPoints()
-        points.InsertNextPoint(0, 0, 0)
-        points.InsertNextPoint(size[0], 0, 0)
-        points.InsertNextPoint(size[0], size[1], 0)
-        points.InsertNextPoint(0, size[1], 0)
+        size = (1, 1)
+        self._points = vtk.vtkPoints()
+        self._points.InsertNextPoint(0, 0, 0)
+        self._points.InsertNextPoint(size[0], 0, 0)
+        self._points.InsertNextPoint(size[0], size[1], 0)
+        self._points.InsertNextPoint(0, size[1], 0)
 
         # Create the polygon
         polygon = vtk.vtkPolygon()
@@ -500,41 +521,87 @@ class Rectangle2D(UI):
         polygons.InsertNextCell(polygon)
 
         # Create a PolyData
-        polygonPolyData = vtk.vtkPolyData()
-        polygonPolyData.SetPoints(points)
-        polygonPolyData.SetPolys(polygons)
+        self._polygonPolyData = vtk.vtkPolyData()
+        self._polygonPolyData.SetPoints(self._points)
+        self._polygonPolyData.SetPolys(polygons)
 
         # Create a mapper and actor
         mapper = vtk.vtkPolyDataMapper2D()
         if vtk.VTK_MAJOR_VERSION <= 5:
-            mapper.SetInput(polygonPolyData)
+            mapper.SetInput(self._polygonPolyData)
         else:
-            mapper.SetInputData(polygonPolyData)
+            mapper.SetInputData(self._polygonPolyData)
 
-        actor = vtk.vtkActor2D()
-        actor.SetMapper(mapper)
+        self.actor = vtk.vtkActor2D()
+        self.actor.SetMapper(mapper)
 
-        return actor
+        # Add default events listener to the VTK actor.
+        self.handle_events(self.actor)
 
-    def set_position(self, position):
-        self.actor.SetPosition(*position)
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return [self.actor]
 
-    def set_center(self, position):
-        """ Sets the center to position.
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
 
         Parameters
         ----------
-        position : (float, float)
-            The new center of the rectangle (x, y).
-
+        ren : renderer
         """
-        self.actor.SetPosition(position[0] - self.size[0] / 2,
-                               position[1] - self.size[1] / 2)
+        ren.add(self.actor)
+
+    def _get_size(self):
+        # Get 2D coordinates of two opposed corners of the rectangle.
+        lower_left_corner = np.array(self._points.GetPoint(0)[:2])
+        upper_right_corner = np.array(self._points.GetPoint(2)[:2])
+        size = abs(upper_right_corner - lower_left_corner)
+        return size
+
+    @property
+    def width(self):
+        return self._points.GetPoint(2)[0]
+
+    @width.setter
+    def width(self, width):
+        self.resize((width, self.height))
+
+    @property
+    def height(self):
+        return self._points.GetPoint(2)[1]
+
+    @height.setter
+    def height(self, height):
+        self.resize((self.width, height))
+
+    def resize(self, size):
+        """ Sets the button size.
+
+        Parameters
+        ----------
+        size : (float, float)
+            Button size (width, height) in pixels.
+        """
+        self._points.SetPoint(0, 0, 0, 0.0)
+        self._points.SetPoint(1, size[0], 0, 0.0)
+        self._points.SetPoint(2, size[0], size[1], 0.0)
+        self._points.SetPoint(3, 0, size[1], 0.0)
+        self._polygonPolyData.SetPoints(self._points)
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.actor.SetPosition(*coords)
 
     @property
     def color(self):
         """ Gets the rectangle's color.
-
         """
         color = self.actor.GetProperty().GetColor()
         return np.asarray(color)
@@ -547,14 +614,12 @@ class Rectangle2D(UI):
         ----------
         color : (float, float, float)
             RGB. Must take values in [0, 1].
-
         """
         self.actor.GetProperty().SetColor(*color)
 
     @property
     def opacity(self):
         """ Gets the rectangle's opacity.
-
         """
         return self.actor.GetProperty().GetOpacity()
 
@@ -566,33 +631,142 @@ class Rectangle2D(UI):
         ----------
         opacity : float
             Degree of transparency. Must be between [0, 1].
+        """
+        self.actor.GetProperty().SetOpacity(opacity)
 
+
+class Disk2D(UI):
+    """ A 2D disk UI component.
+    """
+
+    def __init__(self, outer_radius, inner_radius=0, center=(0, 0),
+                 color=(1, 1, 1), opacity=1.0):
+        """ Initializes a rectangle.
+
+        Parameters
+        ----------
+        outer_radius : int
+            Outer radius of the disk.
+        inner_radius : int, optional
+            Inner radius of the disk. A value > 0, makes a ring.
+        center : (float, float), optional
+            Coordinates (x, y) of the center of the disk.
+        color : (float, float, float), optional
+            Must take values in [0, 1].
+        opacity : float, optional
+            Must take values in [0, 1].
+        """
+        super(Disk2D, self).__init__()
+        self.outer_radius = outer_radius
+        self.inner_radius = inner_radius
+        self.color = color
+        self.opacity = opacity
+        self.center = center
+
+    def _setup(self):
+        """ Setup this UI component.
+
+        Creating the disk actor used internally.
+        """
+        # Setting up disk actor.
+        self._disk = vtk.vtkDiskSource()
+        self._disk.SetRadialResolution(10)
+        self._disk.SetCircumferentialResolution(50)
+        self._disk.Update()
+
+        # Mapper
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper.SetInputConnection(self._disk.GetOutputPort())
+
+        # Actor
+        self.actor = vtk.vtkActor2D()
+        self.actor.SetMapper(mapper)
+
+        # Add default events listener to the VTK actor.
+        self.handle_events(self.actor)
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return [self.actor]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.actor)
+
+    def _get_size(self):
+        diameter = 2 * self.outer_radius
+        size = (diameter, diameter)
+        return size
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component's bounding box.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        # Disk actor are positioned with respect to their center.
+        self.actor.SetPosition(*coords + self.outer_radius)
+
+    @property
+    def color(self):
+        """ Gets the rectangle's color.
+        """
+        color = self.actor.GetProperty().GetColor()
+        return np.asarray(color)
+
+    @color.setter
+    def color(self, color):
+        """ Sets the rectangle's color.
+
+        Parameters
+        ----------
+        color : (float, float, float)
+            RGB. Must take values in [0, 1].
+        """
+        self.actor.GetProperty().SetColor(*color)
+
+    @property
+    def opacity(self):
+        """ Gets the rectangle's opacity.
+        """
+        return self.actor.GetProperty().GetOpacity()
+
+    @opacity.setter
+    def opacity(self, opacity):
+        """ Sets the rectangle's opacity.
+
+        Parameters
+        ----------
+        opacity : float
+            Degree of transparency. Must be between [0, 1].
         """
         self.actor.GetProperty().SetOpacity(opacity)
 
     @property
-    def position(self):
-        """ Gets text actor position.
+    def inner_radius(self):
+        return self._disk.GetInnerRadius()
 
-        Returns
-        -------
-        (float, float)
-            The current actor position. (x, y) in pixels.
+    @inner_radius.setter
+    def inner_radius(self, radius):
+        self._disk.SetInnerRadius(radius)
+        self._disk.Update()
 
-        """
-        return self.actor.GetPosition()
+    @property
+    def outer_radius(self):
+        return self._disk.GetOuterRadius()
 
-    @position.setter
-    def position(self, position):
-        """ Set text actor position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            The new position. (x, y) in pixels.
-
-        """
-        self.actor.SetPosition(*position)
+    @outer_radius.setter
+    def outer_radius(self, radius):
+        self._disk.SetOuterRadius(radius)
+        self._disk.Update()
 
 
 class Panel2D(UI):
@@ -602,135 +776,146 @@ class Panel2D(UI):
 
     Attributes
     ----------
-    center : (float, float)
-        The center of the panel (x, y).
-    size : (float, float)
-        The size of the panel (width, height) in pixels.
     alignment : [left, right]
         Alignment of the panel with respect to the overall screen.
-
     """
 
-    def __init__(self, center, size, color=(0.1, 0.1, 0.1), opacity=0.7, align="left"):
+    def __init__(self, size, position=(0, 0), color=(0.1, 0.1, 0.1),
+                 opacity=0.7, align="left"):
         """
         Parameters
         ----------
-        center : (float, float)
-            The center of the panel (x, y).
-        size : (float, float)
-            The size of the panel (width, height) in pixels.
+        size : (int, int)
+            Size (width, height) in pixels of the panel.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of the panel.
         color : (float, float, float)
             Must take values in [0, 1].
         opacity : float
             Must take values in [0, 1].
         align : [left, right]
             Alignment of the panel with respect to the overall screen.
-
         """
-        super(Panel2D, self).__init__()
-        self.center = center
-        self.size = size
-        self.lower_limits = (self.center[0] - self.size[0] / 2,
-                             self.center[1] - self.size[1] / 2)
-
-        self.panel = Rectangle2D(size=size, center=center, color=color,
-                                 opacity=opacity)
-
-        self.element_positions = []
-        self.element_positions.append([self.panel, 'relative', 0.5, 0.5])
+        super(Panel2D, self).__init__(position)
+        self.resize(size)
         self.alignment = align
+        self.color = color
+        self.opacity = opacity
+        self.position = position
+        self._drag_offset = None
 
-        self.handle_events(self.panel.actor)
+    def _setup(self):
+        """ Setup this UI component.
 
-        self.on_left_mouse_button_pressed = self.left_button_pressed
-        self.on_left_mouse_button_dragged = self.left_button_dragged
+        Create the background (Rectangle2D) of the panel.
+        """
+        self._elements = []
+        self.element_positions = []
+        self.background = Rectangle2D()
+        self.add_element(self.background, (0, 0))
 
-    def add_to_renderer(self, ren):
-        """ Allows UI objects to add their own props to the renderer.
+        # Add default events listener for this UI component.
+        self.background.on_left_mouse_button_pressed = self.left_button_pressed
+        self.background.on_left_mouse_button_dragged = self.left_button_dragged
 
-        Here, we add only call add_to_renderer for the additional components.
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        actors = []
+        for element in self._elements:
+            actors += element.actors
+
+        return actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
 
         Parameters
         ----------
         ren : renderer
-
         """
-        super(Panel2D, self).add_to_renderer(ren)
-        for ui_item in self.ui_list:
-            ui_item.add_to_renderer(ren)
+        for element in self._elements:
+            element.add_to_renderer(ren)
 
-    def get_actors(self):
-        """ Returns the panel actor.
+    def _get_size(self):
+        return self.background.size
 
+    def resize(self, size):
+        """ Sets the panel size.
+
+        Parameters
+        ----------
+        size : (float, float)
+            Panel size (width, height) in pixels.
         """
-        return [self.panel.actor]
+        self.background.resize(size)
 
-    def add_element(self, element, position_type, position):
-        """ Adds an element to the panel.
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
-        The center of the rectangular panel is its bottom lower position.
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        coords = np.array(coords)
+        for element, offset in self.element_positions:
+            element.position = coords + offset
+
+    @property
+    def color(self):
+        return self.background.color
+
+    @color.setter
+    def color(self, color):
+        self.background.color = color
+
+    @property
+    def opacity(self):
+        return self.background.opacity
+
+    @opacity.setter
+    def opacity(self, opacity):
+        self.background.opacity = opacity
+
+    def add_element(self, element, coords):
+        """ Adds a UI component to the panel.
+
+        The coordinates represent an offset from the lower left corner of the
+        panel.
 
         Parameters
         ----------
         element : UI
             The UI item to be added.
-        position_type: string
-            'absolute' or 'relative'
-        position : (float, float)
-            Absolute for absolute and relative for relative
-
+        coords : (float, float) or (int, int)
+            If float, normalized coordinates are assumed and they must be
+            between [0,1].
+            If int, pixels coordinates are assumed and it must fit within the
+            panel's size.
         """
-        self.ui_list.append(element)
-        if position_type == 'relative':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((self.lower_limits[0] + position[0] * self.size[0],
-                                self.lower_limits[1] + position[1] * self.size[1]))
-        elif position_type == 'absolute':
-            self.element_positions.append([element, position_type, position[0], position[1]])
-            element.set_center((position[0], position[1]))
-        else:
-            raise ValueError("Position can only be absolute or relative")
+        coords = np.array(coords)
 
-    def set_center(self, position):
-        """ Sets the panel center to position.
+        if np.issubdtype(coords.dtype, np.floating):
+            if np.any(coords < 0) or np.any(coords > 1):
+                raise ValueError("Normalized coordinates must be in [0,1].")
 
-        The center of the rectangular panel is its bottom lower position.
+            coords = coords * self.size
 
-        Parameters
-        ----------
-        position : (float, float)
-            The new center of the panel (x, y).
+        self._elements.append(element)
+        self.element_positions.append((element, coords))
+        element.position = self.position + coords
 
-        """
-        shift = [position[0] - self.center[0], position[1] - self.center[1]]
-        self.center = position
-        self.lower_limits = (position[0] - self.size[0] / 2, position[1] - self.size[1] / 2)
-        for ui_element in self.element_positions:
-            if ui_element[1] == 'relative':
-                ui_element[0].set_center((self.lower_limits[0] + ui_element[2] * self.size[0],
-                                          self.lower_limits[1] + ui_element[3] * self.size[1]))
-            elif ui_element[1] == 'absolute':
-                ui_element[2] += shift[0]
-                ui_element[3] += shift[1]
-                ui_element[0].set_center((ui_element[2], ui_element[3]))
-
-    @staticmethod
-    def left_button_pressed(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        panel2d_object.ui_param = (click_position[0] -
-                                   panel2d_object.panel.actor.GetPosition()[0] -
-                                   panel2d_object.panel.size[0] / 2,
-                                   click_position[1] -
-                                   panel2d_object.panel.actor.GetPosition()[1] -
-                                   panel2d_object.panel.size[1] / 2)
+    def left_button_pressed(self, i_ren, obj, panel2d_object):
+        click_pos = np.array(i_ren.event.position)
+        self._drag_offset = click_pos - panel2d_object.position
         i_ren.event.abort()  # Stop propagating the event.
 
-    @staticmethod
-    def left_button_dragged(i_ren, obj, panel2d_object):
-        click_position = i_ren.event.position
-        if panel2d_object.ui_param is not None:
-            panel2d_object.set_center((click_position[0] - panel2d_object.ui_param[0],
-                                       click_position[1] - panel2d_object.ui_param[1]))
+    def left_button_dragged(self, i_ren, obj, panel2d_object):
+        if self._drag_offset is not None:
+            click_position = np.array(i_ren.event.position)
+            new_position = click_position - self._drag_offset
+            self.position = new_position
         i_ren.force_render()
 
     def re_align(self, window_size_change):
@@ -740,15 +925,14 @@ class Panel2D(UI):
         ----------
         window_size_change : (int, int)
             New window size (width, height) in pixels.
-
         """
         if self.alignment == "left":
             pass
         elif self.alignment == "right":
-            self.set_center((self.center[0] + window_size_change[0],
-                             self.center[1] + window_size_change[1]))
+            self.position += np.array(window_size_change)
         else:
-            raise ValueError("You can only left-align or right-align objects in a panel.")
+            msg = "You can only left-align or right-align objects in a panel."
+            raise ValueError(msg)
 
 
 class TextBlock2D(UI):
@@ -814,11 +998,7 @@ class TextBlock2D(UI):
         shadow : bool
             Adds text shadow.
         """
-        super(TextBlock2D, self).__init__()
-        self.actor = vtk.vtkTextActor()
-
-        self._background = None  # For VTK < 7
-        self.position = position
+        super(TextBlock2D, self).__init__(position=position)
         self.color = color
         self.background_color = bg_color
         self.font_size = font_size
@@ -830,24 +1010,30 @@ class TextBlock2D(UI):
         self.vertical_justification = vertical_justification
         self.message = text
 
-    def get_actor(self):
-        """ Returns the actor composing this element.
+    def _setup(self):
+        self.actor = vtk.vtkTextActor()
+        self._background = None  # For VTK < 7
+        self.handle_events(self.actor)
 
-        Returns
-        -------
-        :class:`vtkTextActor`
-            The actor composing this class.
-        """
-        return self.actor
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
         """
         if self._background is not None:
-            return [self._background, self.actor]
+            return [self.actor, self._background]
 
         return [self.actor]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        if self._background is not None:
+            ren.add(self._background)
+
+        ren.add(self.actor)
 
     @property
     def message(self):
@@ -857,7 +1043,6 @@ class TextBlock2D(UI):
         -------
         str
             The current text message.
-
         """
         return self.actor.GetInput()
 
@@ -869,7 +1054,6 @@ class TextBlock2D(UI):
         ----------
         text : str
             The message to be set.
-
         """
         self.actor.SetInput(text)
 
@@ -881,7 +1065,6 @@ class TextBlock2D(UI):
         ----------
         int
             Text font size.
-
         """
         return self.actor.GetTextProperty().GetFontSize()
 
@@ -893,7 +1076,6 @@ class TextBlock2D(UI):
         ----------
         size : int
             Text font size.
-
         """
         self.actor.GetTextProperty().SetFontSize(size)
 
@@ -905,7 +1087,6 @@ class TextBlock2D(UI):
         ----------
         str
             Text font family.
-
         """
         return self.actor.GetTextProperty().GetFontFamilyAsString()
 
@@ -919,7 +1100,6 @@ class TextBlock2D(UI):
         ----------
         family : str
             The font family.
-
         """
         if family == 'Arial':
             self.actor.GetTextProperty().SetFontFamilyToArial()
@@ -936,7 +1116,6 @@ class TextBlock2D(UI):
         -------
         str
             Text justification.
-
         """
         justification = self.actor.GetTextProperty().GetJustificationAsString()
         if justification == 'Left':
@@ -954,7 +1133,6 @@ class TextBlock2D(UI):
         ----------
         justification : str
             Possible values are left, right, center.
-
         """
         text_property = self.actor.GetTextProperty()
         if justification == 'left':
@@ -974,7 +1152,6 @@ class TextBlock2D(UI):
         -------
         str
             Text vertical justification.
-
         """
         text_property = self.actor.GetTextProperty()
         vjustification = text_property.GetVerticalJustificationAsString()
@@ -993,7 +1170,6 @@ class TextBlock2D(UI):
         ----------
         vertical_justification : str
             Possible values are bottom, middle, top.
-
         """
         text_property = self.actor.GetTextProperty()
         if vertical_justification == 'bottom':
@@ -1014,7 +1190,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is bold if True.
-
         """
         return self.actor.GetTextProperty().GetBold()
 
@@ -1026,7 +1201,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Sets text bold if True.
-
         """
         self.actor.GetTextProperty().SetBold(flag)
 
@@ -1038,7 +1212,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is italicised if True.
-
         """
         return self.actor.GetTextProperty().GetItalic()
 
@@ -1050,7 +1223,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Italicises text if True.
-
         """
         self.actor.GetTextProperty().SetItalic(flag)
 
@@ -1062,7 +1234,6 @@ class TextBlock2D(UI):
         -------
         bool
             Text is shadowed if True.
-
         """
         return self.actor.GetTextProperty().GetShadow()
 
@@ -1074,7 +1245,6 @@ class TextBlock2D(UI):
         ----------
         flag : bool
             Shadows text if True.
-
         """
         self.actor.GetTextProperty().SetShadow(flag)
 
@@ -1086,7 +1256,6 @@ class TextBlock2D(UI):
         -------
         (float, float, float)
             Returns text color in RGB.
-
         """
         return self.actor.GetTextProperty().GetColor()
 
@@ -1098,7 +1267,6 @@ class TextBlock2D(UI):
         ----------
         color : (float, float, float)
             RGB: Values must be between 0-1.
-
         """
         self.actor.GetTextProperty().SetColor(*color)
 
@@ -1111,7 +1279,6 @@ class TextBlock2D(UI):
         (float, float, float) or None
             If None, there no background color.
             Otherwise, background color in RGB.
-
         """
         if major_version < 7:
             if self._background is None:
@@ -1133,7 +1300,6 @@ class TextBlock2D(UI):
         color : (float, float, float) or None
             If None, remove background.
             Otherwise, RGB values (must be between 0-1).
-
         """
 
         if color is None:
@@ -1163,7 +1329,6 @@ class TextBlock2D(UI):
         -------
         (float, float)
             The current actor position. (x, y) in pixels.
-
         """
         return self.actor.GetPosition()
 
@@ -1175,21 +1340,10 @@ class TextBlock2D(UI):
         ----------
         position : (float, float)
             The new position. (x, y) in pixels.
-
         """
         self.actor.SetPosition(*position)
         if self._background is not None:
             self._background.SetPosition(*self.actor.GetPosition())
-
-    def set_center(self, position):
-        """ Sets the text center to position.
-
-        Parameters
-        ----------
-        position : (float, float)
-
-        """
-        self.position = position
 
 
 class TextBox2D(UI):
@@ -1219,7 +1373,6 @@ class TextBox2D(UI):
         Position of the caret in the text.
     init : bool
         Flag which says whether the textbox has just been initialized.
-
     """
     def __init__(self, width, height, text="Enter Text", position=(100, 10),
                  color=(0, 0, 0), font_size=18, font_family='Arial',
@@ -1250,12 +1403,20 @@ class TextBox2D(UI):
             Makes text italicised.
         shadow : bool
             Adds text shadow.
-
         """
-        super(TextBox2D, self).__init__()
-        self.text = text
-        self.actor = self.build_actor(self.text, position, color, font_size,
-                                      font_family, justification, bold, italic, shadow)
+        super(TextBox2D, self).__init__(position=position)
+
+        self.message = text
+        self.text.message = text
+        self.text.font_size = font_size
+        self.text.font_family = font_family
+        self.text.justification = justification
+        self.text.bold = bold
+        self.text.italic = italic
+        self.text.shadow = shadow
+        self.text.color = color
+        self.text.background_color = (1, 1, 1)
+
         self.width = width
         self.height = height
         self.window_left = 0
@@ -1263,58 +1424,40 @@ class TextBox2D(UI):
         self.caret_pos = 0
         self.init = True
 
-        self.handle_events(self.actor.get_actor())
+    def _setup(self):
+        """ Setup this UI component.
 
-        self.on_left_mouse_button_pressed = self.left_button_press
-        self.on_key_press = self.key_press
+        Create the TextBlock2D component used for the textbox.
+        """
+        self.text = TextBlock2D()
 
-    def build_actor(self, text, position, color, font_size,
-                    font_family, justification, bold, italic, shadow):
+        # Add default events listener for this UI component.
+        self.text.on_left_mouse_button_pressed = self.left_button_press
+        self.text.on_key_press = self.key_press
 
-        """ Builds a text actor.
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.text.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
 
         Parameters
         ----------
-        text : str
-            The initial text while building the actor.
-        position : (float, float)
-            (x, y) in pixels.
-        color : (float, float, float)
-            RGB: Values must be between 0-1.
-        font_size : int
-            Size of the text font.
-        font_family : str
-            Currently only supports Arial.
-        justification : str
-            left, right or center.
-        bold : bool
-            Makes text bold.
-        italic : bool
-            Makes text italicised.
-        shadow : bool
-            Adds text shadow.
-
-        Returns
-        -------
-        :class:`TextBlock2D`
-
+        ren : renderer
         """
-        text_block = TextBlock2D()
-        text_block.position = position
-        text_block.message = text
-        text_block.font_size = font_size
-        text_block.font_family = font_family
-        text_block.justification = justification
-        text_block.bold = bold
-        text_block.italic = italic
-        text_block.shadow = shadow
+        self.text.add_to_renderer(ren)
 
-        if major_version >= 7:
-            text_block.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_block.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-            text_block.color = color
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
-        return text_block
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.text.position = coords
 
     def set_message(self, message):
         """ Set custom text to textbox.
@@ -1323,20 +1466,13 @@ class TextBox2D(UI):
         ----------
         message: str
             The custom message to be set.
-
         """
-        self.text = message
-        self.actor.message = message
+        self.message = message
+        self.text.message = message
         self.init = False
-        self.window_right = len(self.text)
+        self.window_right = len(self.message)
         self.window_left = 0
         self.caret_pos = self.window_right
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.actor.get_actor()]
 
     def width_set_text(self, text):
         """ Adds newlines to text where necessary.
@@ -1352,7 +1488,6 @@ class TextBox2D(UI):
         -------
         str
             A multi line formatted text.
-
         """
         multi_line_text = ""
         for i in range(len(text)):
@@ -1369,7 +1504,6 @@ class TextBox2D(UI):
         Parameters
         ----------
         character : str
-
         """
         if character.lower() == "return":
             self.render_text(False)
@@ -1387,40 +1521,34 @@ class TextBox2D(UI):
 
     def move_caret_right(self):
         """ Moves the caret towards right.
-
         """
-        self.caret_pos = min(self.caret_pos + 1, len(self.text))
+        self.caret_pos = min(self.caret_pos + 1, len(self.message))
 
     def move_caret_left(self):
         """ Moves the caret towards left.
-
         """
         self.caret_pos = max(self.caret_pos - 1, 0)
 
     def right_move_right(self):
         """ Moves right boundary of the text window right-wards.
-
         """
-        if self.window_right <= len(self.text):
+        if self.window_right <= len(self.message):
             self.window_right += 1
 
     def right_move_left(self):
         """ Moves right boundary of the text window left-wards.
-
         """
         if self.window_right > 0:
             self.window_right -= 1
 
     def left_move_right(self):
         """ Moves left boundary of the text window right-wards.
-
         """
-        if self.window_left <= len(self.text):
+        if self.window_left <= len(self.message):
             self.window_left += 1
 
     def left_move_left(self):
         """ Moves left boundary of the text window left-wards.
-
         """
         if self.window_left > 0:
             self.window_left -= 1
@@ -1431,15 +1559,14 @@ class TextBox2D(UI):
         Parameters
         ----------
         character : str
-
         """
         if len(character) > 1 and character.lower() != "space":
             return
         if character.lower() == "space":
             character = " "
-        self.text = (self.text[:self.caret_pos] +
-                     character +
-                     self.text[self.caret_pos:])
+        self.message = (self.message[:self.caret_pos] +
+                        character +
+                        self.message[self.caret_pos:])
         self.move_caret_right()
         if (self.window_right -
                 self.window_left == self.height * self.width - 1):
@@ -1447,14 +1574,14 @@ class TextBox2D(UI):
         self.right_move_right()
 
     def remove_character(self):
-        """ Removes a character from the text and moves window and caret accordingly.
-
+        """ Removes a character and moves window and caret accordingly.
         """
         if self.caret_pos == 0:
             return
-        self.text = self.text[:self.caret_pos - 1] + self.text[self.caret_pos:]
+        self.message = self.message[:self.caret_pos - 1] + \
+                       self.message[self.caret_pos:]
         self.move_caret_left()
-        if len(self.text) < self.height * self.width - 1:
+        if len(self.message) < self.height * self.width - 1:
             self.right_move_left()
         if (self.window_right -
                 self.window_left == self.height * self.width - 1):
@@ -1464,7 +1591,6 @@ class TextBox2D(UI):
 
     def move_left(self):
         """ Handles left button press.
-
         """
         self.move_caret_left()
         if self.caret_pos == self.window_left - 1:
@@ -1475,7 +1601,6 @@ class TextBox2D(UI):
 
     def move_right(self):
         """ Handles right button press.
-
         """
         self.move_caret_right()
         if self.caret_pos == self.window_right + 1:
@@ -1491,14 +1616,13 @@ class TextBox2D(UI):
         ----------
         show_caret : bool
             Whether or not to show the caret.
-
         """
         if show_caret:
-            ret_text = (self.text[:self.caret_pos] +
+            ret_text = (self.message[:self.caret_pos] +
                         "_" +
-                        self.text[self.caret_pos:])
+                        self.message[self.caret_pos:])
         else:
-            ret_text = self.text
+            ret_text = self.message
         ret_text = ret_text[self.window_left:self.window_right + 1]
         return ret_text
 
@@ -1509,35 +1633,22 @@ class TextBox2D(UI):
         ----------
         show_caret : bool
             Whether or not to show the caret.
-
         """
         text = self.showable_text(show_caret)
         if text == "":
             text = "Enter Text"
-        self.actor.message = self.width_set_text(text)
+        self.text.message = self.width_set_text(text)
 
     def edit_mode(self):
         """ Turns on edit mode.
-
         """
         if self.init:
-            self.text = ""
+            self.message = ""
             self.init = False
             self.caret_pos = 0
         self.render_text()
 
-    def set_center(self, position):
-        """ Sets the text center to position.
-
-        Parameters
-        ----------
-        position : (float, float)
-
-        """
-        self.actor.position = position
-
-    @staticmethod
-    def left_button_press(i_ren, obj, textbox_object):
+    def left_button_press(self, i_ren, obj, textbox_object):
         """ Left button press handler for textbox
 
         Parameters
@@ -1546,14 +1657,12 @@ class TextBox2D(UI):
         obj: :class:`vtkActor`
             The picked actor
         textbox_object: :class:`TextBox2D`
-
         """
-        i_ren.add_active_prop(textbox_object.actor.get_actor())
-        textbox_object.edit_mode()
+        i_ren.add_active_prop(self.text.actor)
+        self.edit_mode()
         i_ren.force_render()
 
-    @staticmethod
-    def key_press(i_ren, obj, textbox_object):
+    def key_press(self, i_ren, obj, textbox_object):
         """ Key press handler for textbox
 
         Parameters
@@ -1562,12 +1671,11 @@ class TextBox2D(UI):
         obj: :class:`vtkActor`
             The picked actor
         textbox_object: :class:`TextBox2D`
-
         """
         key = i_ren.event.key
-        is_done = textbox_object.handle_character(key)
+        is_done = self.handle_character(key)
         if is_done:
-            i_ren.remove_active_prop(textbox_object.actor.get_actor())
+            i_ren.remove_active_prop(self.text.actor)
 
         i_ren.force_render()
 
@@ -1575,140 +1683,143 @@ class TextBox2D(UI):
 class LineSlider2D(UI):
     """ A 2D Line Slider.
 
-    A sliding ring on a line with a percentage indicator.
-
-    Currently supports:
-    - A disk on a line (a thin rectangle).
-    - Setting disk position.
+    A sliding handle on a line with a percentage indicator.
 
     Attributes
     ----------
     line_width : int
         Width of the line on which the disk will slide.
-    inner_radius : int
-        Inner radius of the disk (ring).
-    outer_radius : int
-        Outer radius of the disk.
-    center : (float, float)
-        Center of the slider.
     length : int
         Length of the slider.
-    slider_line : :class:`vtkActor`
-        The line on which the slider disk moves.
-    slider_disk : :class:`vtkActor`
-        The moving slider disk.
+    track : :class:`Rectangle2D`
+        The line on which the slider's handle moves.
+    handle : :class:`Disk2D`
+        The moving part of the slider.
     text : :class:`TextBlock2D`
         The text that shows percentage.
-
     """
-    def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
-                 center=(450, 300), length=200, initial_value=50,
-                 min_value=0, max_value=100, text_size=16,
+    def __init__(self, center=(0, 0),
+                 initial_value=50, min_value=0, max_value=100,
+                 length=200, line_width=5,
+                 inner_radius=0, outer_radius=10,
+                 font_size=16,
                  text_template="{value:.1f} ({ratio:.0%})"):
         """
         Parameters
         ----------
-        line_width : int
-            Width of the line on which the disk will slide.
-        inner_radius : int
-            Inner radius of the disk (ring).
-        outer_radius : int
-            Outer radius of the disk.
         center : (float, float)
-            Center of the slider.
-        length : int
-            Length of the slider.
+            Center of the slider's center.
         initial_value : float
             Initial value of the slider.
         min_value : float
             Minimum value of the slider.
         max_value : float
             Maximum value of the slider.
-        text_size : int
+        length : int
+            Length of the slider.
+        line_width : int
+            Width of the line on which the disk will slide.
+        inner_radius : int
+            Inner radius of the slider's handle.
+        outer_radius : int
+            Outer radius of the slider's handle.
+        font_size : int
             Size of the text to display alongside the slider (pt).
         text_template : str, callable
             If str, text template can contain one or multiple of the
             replacement fields: `{value:}`, `{ratio:}`.
             If callable, this instance of `:class:LineSlider2D` will be
             passed as argument to the text template function.
-
         """
         super(LineSlider2D, self).__init__()
 
-        self.length = length
+        self.track.width = length
+        self.track.height = line_width
+        self.handle.inner_radius = inner_radius
+        self.handle.outer_radius = outer_radius
+        self.center = center
+
         self.min_value = min_value
         self.max_value = max_value
-
+        self.text.font_size = font_size
         self.text_template = text_template
 
-        self.line_width = line_width
-        self.center = center
-        self.current_state = center[0]
-        self.left_x_position = center[0] - length / 2
-        self.right_x_position = center[0] + length / 2
-        self._ratio = (self.current_state - self.left_x_position) / length
+        # Offer some standard hooks to the user.
+        self.on_change = lambda ui: None
 
-        self.slider_line = None
-        self.slider_disk = None
-        self.text = None
-
-        self.build_actors(inner_radius=inner_radius,
-                          outer_radius=outer_radius, text_size=text_size)
-
-        # Setting the disk position will also update everything.
         self.value = initial_value
-        # self.update()
+        self.update()
 
-        self.handle_events(None)
+    def _setup(self):
+        """ Setup this UI component.
 
-    def build_actors(self, inner_radius, outer_radius, text_size):
-        """ Builds required actors.
+        Create the slider's track (Rectangle2D), the handle (Disk2D) and
+        the text (TextBlock2D).
+        """
+        # Slider's track
+        self.track = Rectangle2D()
+        self.track.color = (1, 0, 0)
+
+        # Slider's handle
+        self.handle = Disk2D(outer_radius=1)
+        self.handle.color = (1, 1, 1)
+
+        # Slider Text
+        self.text = TextBlock2D(justification="center",
+                                vertical_justification="top")
+
+        # Add default events listener for this UI component.
+        self.track.on_left_mouse_button_pressed = self.track_click_callback
+        self.track.on_left_mouse_button_dragged = self.handle_move_callback
+        self.handle.on_left_mouse_button_dragged = self.handle_move_callback
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.track.actors + self.handle.actors + self.text.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
 
         Parameters
         ----------
-        inner_radius: int
-            The inner radius of the sliding disk.
-        outer_radius: int
-            The outer radius of the sliding disk.
-        text_size: int
-            Size of the text that displays percentage.
-
+        ren : renderer
         """
-        # Slider Line
-        self.slider_line = Rectangle2D(size=(self.length, self.line_width),
-                                       center=self.center).actor
-        self.slider_line.GetProperty().SetColor(1, 0, 0)
-        # /Slider Line
+        self.track.add_to_renderer(ren)
+        self.handle.add_to_renderer(ren)
+        self.text.add_to_renderer(ren)
 
-        # Slider Disk
-        # Create source
-        disk = vtk.vtkDiskSource()
-        disk.SetInnerRadius(inner_radius)
-        disk.SetOuterRadius(outer_radius)
-        disk.SetRadialResolution(10)
-        disk.SetCircumferentialResolution(50)
-        disk.Update()
+    def _get_size(self):
+        # Consider the handle's size when computing the slider's size.
+        width = self.track.width + self.handle.size[0]
+        height = max(self.track.height, self.handle.size[1])
+        return np.array([width, height])
 
-        # Mapper
-        mapper = vtk.vtkPolyDataMapper2D()
-        mapper.SetInputConnection(disk.GetOutputPort())
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
 
-        # Actor
-        self.slider_disk = vtk.vtkActor2D()
-        self.slider_disk.SetMapper(mapper)
-        # /Slider Disk
-
-        # Slider Text
-        self.text = TextBlock2D()
-        self.text.position = (self.left_x_position - 50, self.center[1] - 10)
-        self.text.font_size = text_size
-        # /Slider Text
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
         """
-        return [self.slider_line, self.slider_disk, self.text.get_actor()]
+        # Offset the slider line by the handle's radius.
+        track_position = coords + self.handle.size / 2.
+        # Offset the slider line height by half the slider line width.
+        track_position[1] -= self.track.size[1] / 2.
+        self.track.position = track_position
+        self.handle.position += coords - self.position
+        # Position the text below the handle.
+        self.text.position = (self.handle.center[0],
+                              self.handle.position[1] - 10)
+
+    @property
+    def left_x_position(self):
+        return self.track.position[0]
+
+    @property
+    def right_x_position(self):
+        return self.track.position[0] + self.track.size[0]
 
     def set_position(self, position):
         """ Sets the disk's position.
@@ -1717,18 +1828,14 @@ class LineSlider2D(UI):
         ----------
         position : (float, float)
             The absolute position of the disk (x, y).
-
         """
         x_position = position[0]
+        x_position = max(x_position, self.left_x_position)
+        x_position = min(x_position, self.right_x_position)
 
-        if x_position < self.center[0] - self.length/2:
-            x_position = self.center[0] - self.length/2
-
-        if x_position > self.center[0] + self.length/2:
-            x_position = self.center[0] + self.length/2
-
-        self.current_state = x_position
-        self.update()
+        # Move slider disk.
+        self.handle.center = (x_position, self.track.center[1])
+        self.update()  # Update information.
 
     @property
     def value(self):
@@ -1745,7 +1852,7 @@ class LineSlider2D(UI):
 
     @ratio.setter
     def ratio(self, ratio):
-        position_x = self.left_x_position + ratio*self.length
+        position_x = self.left_x_position + ratio * self.track.width
         self.set_position((position_x, None))
 
     def format_text(self):
@@ -1760,107 +1867,55 @@ class LineSlider2D(UI):
 
         # Compute the ratio determined by the position of the slider disk.
         length = float(self.right_x_position - self.left_x_position)
-        assert length == self.length
-        self._ratio = (self.current_state - self.left_x_position) / length
+        assert length == self.track.width
+        disk_position_x = self.handle.center[0]
+        self._ratio = (disk_position_x - self.left_x_position) / length
 
         # Compute the selected value considering min_value and max_value.
         value_range = self.max_value - self.min_value
-        self._value = self.min_value + self.ratio*value_range
-
-        # Update text disk actor.
-        self.slider_disk.SetPosition(self.current_state, self.center[1])
+        self._value = self.min_value + self.ratio * value_range
 
         # Update text.
         text = self.format_text()
         self.text.message = text
-        offset_x = 8 * len(text) / 2.
-        offset_y = 30
-        self.text.position = (self.current_state - offset_x,
-                              self.center[1] - offset_y)
 
-    def set_center(self, position):
-        """ Sets the center of the slider to position.
+        # Move the text below the slider's handle.
+        self.text.position = (disk_position_x, self.text.position[1])
 
-        Parameters
-        ----------
-        position : (float, float)
-            The new center of the whole slider (x, y).
+        self.on_change(self)
 
-        """
-        self.slider_line.SetPosition(position[0] - self.length / 2,
-                                     position[1] - self.line_width / 2)
-
-        x_change = position[0] - self.center[0]
-        self.current_state += x_change
-        self.center = position
-        self.left_x_position = position[0] - self.length / 2
-        self.right_x_position = position[0] + self.length / 2
-        self.set_position((self.current_state, self.center[1]))
-
-    @staticmethod
-    def line_click_callback(i_ren, obj, slider):
+    def track_click_callback(self, i_ren, vtkactor, slider):
         """ Update disk position and grab the focus.
 
         Parameters
         ----------
         i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
+        vtkactor : :class:`vtkActor`
             The picked actor
         slider : :class:`LineSlider2D`
-
         """
         position = i_ren.event.position
-        slider.set_position(position)
+        self.set_position(position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
-    @staticmethod
-    def disk_press_callback(i_ren, obj, slider):
-        """ Only need to grab the focus.
+    def handle_move_callback(self, i_ren, vtkactor, slider):
+        """ Actual handle movement.
 
         Parameters
         ----------
         i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
+        vtkactor : :class:`vtkActor`
             The picked actor
         slider : :class:`LineSlider2D`
-
-        """
-        i_ren.event.abort()  # Stop propagating the event.
-
-    @staticmethod
-    def disk_move_callback(i_ren, obj, slider):
-        """ Actual disk movement.
-
-        Parameters
-        ----------
-        i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
-            The picked actor
-        slider : :class:`LineSlider2D`
-
         """
         position = i_ren.event.position
-        slider.set_position(position)
+        self.set_position(position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
-    def handle_events(self, actor):
-        """ Handle all events for the LineSlider.
-        Base method needs to be overridden due to multiple actors.
 
-        """
-        self.add_callback(self.slider_line, "LeftButtonPressEvent",
-                          self.line_click_callback, 1)
-        self.add_callback(self.slider_disk, "LeftButtonPressEvent",
-                          self.disk_press_callback)
-        self.add_callback(self.slider_disk, "MouseMoveEvent",
-                          self.disk_move_callback)
-        self.add_callback(self.slider_line, "MouseMoveEvent",
-                          self.disk_move_callback)
-
-
-class DiskSlider2D(UI):
+class RingSlider2D(UI):
     """ A disk slider.
 
     A disk moves along the boundary of a ring.
@@ -1868,35 +1923,29 @@ class DiskSlider2D(UI):
 
     Attributes
     ----------
-    base_disk_center: (float, float)
-        Position of the system.
-    slider_inner_radius: int
-        Inner radius of the base disk.
-    slider_outer_radius: int
-        Outer radius of the base disk.
-    slider_radius: float
-        Average radius of the base disk.
-    handle_outer_radius: int
-        Outer radius of the slider's handle.
-    handle_inner_radius: int
-        Inner radius of the slider's handle.
+    mid_track_radius: float
+        Distance from the center of the slider to the middle of the track.
     previous_value: float
         Value of Rotation of the actor before the current value.
     initial_value: float
         Initial Value of Rotation of the actor assigned on creation of object.
-
+    track : :class:`Disk2D`
+        The circle on which the slider's handle moves.
+    handle : :class:`Disk2D`
+        The moving part of the slider.
+    text : :class:`TextBlock2D`
+        The text that shows percentage.
     """
-    def __init__(self, position=(0, 0),
+    def __init__(self, center=(0, 0),
                  initial_value=180, min_value=0, max_value=360,
                  slider_inner_radius=40, slider_outer_radius=44,
-                 handle_inner_radius=10, handle_outer_radius=0,
-                 text_size=16,
+                 handle_inner_radius=0, handle_outer_radius=10,
+                 font_size=16,
                  text_template="{ratio:.0%}"):
-
         """
         Parameters
         ----------
-        position : (float, float)
+        center : (float, float)
             Position (x, y) of the slider's center.
         initial_value : float
             Initial value of the slider.
@@ -1912,76 +1961,92 @@ class DiskSlider2D(UI):
             Outer radius of the slider's handle.
         handle_inner_radius : int
             Inner radius of the slider's handle.
-        text_size : int
+        font_size : int
             Size of the text to display alongside the slider (pt).
         text_template : str, callable
             If str, text template can contain one or multiple of the
             replacement fields: `{value:}`, `{ratio:}`, `{angle:}`.
-            If callable, this instance of `:class:DiskSlider2D` will be
+            If callable, this instance of `:class:RingSlider2D` will be
             passed as argument to the text template function.
-
         """
-        super(DiskSlider2D, self).__init__()
-        self.center = np.array(position)
+        super(RingSlider2D, self).__init__()
+
+        self.track.inner_radius = slider_inner_radius
+        self.track.outer_radius = slider_outer_radius
+        self.handle.inner_radius = handle_inner_radius
+        self.handle.outer_radius = handle_outer_radius
+        self.center = center
+
         self.min_value = min_value
         self.max_value = max_value
-        self.initial_value = initial_value
-        self.slider_inner_radius = slider_inner_radius
-        self.slider_outer_radius = slider_outer_radius
-        self.handle_inner_radius = handle_inner_radius
-        self.handle_outer_radius = handle_outer_radius
-        self.slider_radius = (slider_inner_radius + slider_outer_radius) / 2.
-
-        self.handle = None
-        self.base_disk = None
-
-        self.text = None
-        self.text_size = text_size
+        self.text.font_size = font_size
         self.text_template = text_template
 
-        self.build_actors()
+        # Offer some standard hooks to the user.
+        self.on_change = lambda ui: None
 
-        # By setting the value, it also updates everything.
+        self.initial_value = initial_value
         self.value = initial_value
         self.previous_value = initial_value
-        self.handle_events(None)
 
-    def build_actors(self):
-        """ Builds actors for the system.
+    def _setup(self):
+        """ Setup this UI component.
 
+        Create the slider's circle (Disk2D), the handle (Disk2D) and
+        the text (TextBlock2D).
         """
-        base_disk = vtk.vtkDiskSource()
-        base_disk.SetInnerRadius(self.slider_inner_radius)
-        base_disk.SetOuterRadius(self.slider_outer_radius)
-        base_disk.SetRadialResolution(10)
-        base_disk.SetCircumferentialResolution(50)
-        base_disk.Update()
+        # Slider's track.
+        self.track = Disk2D(outer_radius=1)
+        self.track.color = (1, 0, 0)
 
-        base_disk_mapper = vtk.vtkPolyDataMapper2D()
-        base_disk_mapper.SetInputConnection(base_disk.GetOutputPort())
+        # Slider's handle.
+        self.handle = Disk2D(outer_radius=1)
+        self.handle.color = (1, 1, 1)
 
-        self.base_disk = vtk.vtkActor2D()
-        self.base_disk.SetMapper(base_disk_mapper)
-        self.base_disk.GetProperty().SetColor(1, 0, 0)
-        self.base_disk.SetPosition(self.center)
+        # Slider Text
+        self.text = TextBlock2D(justification="center",
+                                vertical_justification="middle")
 
-        handle = vtk.vtkDiskSource()
-        handle.SetInnerRadius(self.handle_inner_radius)
-        handle.SetOuterRadius(self.handle_outer_radius)
-        handle.SetRadialResolution(10)
-        handle.SetCircumferentialResolution(50)
-        handle.Update()
+        # Add default events listener for this UI component.
+        self.track.on_left_mouse_button_pressed = self.track_click_callback
+        self.track.on_left_mouse_button_dragged = self.handle_move_callback
+        self.handle.on_left_mouse_button_dragged = self.handle_move_callback
 
-        handle_mapper = vtk.vtkPolyDataMapper2D()
-        handle_mapper.SetInputConnection(handle.GetOutputPort())
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.track.actors + self.handle.actors + self.text.actors
 
-        self.handle = vtk.vtkActor2D()
-        self.handle.SetMapper(handle_mapper)
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
 
-        self.text = TextBlock2D()
-        offset = np.array((16., 8.))
-        self.text.position = self.center - offset
-        self.text.font_size = self.text_size
+        Parameters
+        ----------
+        ren : renderer
+        """
+        self.track.add_to_renderer(ren)
+        self.handle.add_to_renderer(ren)
+        self.text.add_to_renderer(ren)
+
+    def _get_size(self):
+        return self.track.size + self.handle.size
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.track.position = coords + self.handle.size / 2.
+        self.handle.position += coords - self.position
+        # Position the text in the center of the slider's track.
+        self.text.position = coords + self.size / 2.
+
+    @property
+    def mid_track_radius(self):
+        return (self.track.inner_radius + self.track.outer_radius) / 2.
 
     @property
     def value(self):
@@ -2038,22 +2103,19 @@ class DiskSlider2D(UI):
             self._previous_value = self.value
         except:
             self._previous_value = self.initial_value
-        self._value = self.min_value + self.ratio*value_range
+
+        self._value = self.min_value + self.ratio * value_range
 
         # Update text disk actor.
-        x = self.slider_radius * np.cos(self.angle) + self.center[0]
-        y = self.slider_radius * np.sin(self.angle) + self.center[1]
-        self.handle.SetPosition(x, y)
+        x = self.mid_track_radius * np.cos(self.angle) + self.center[0]
+        y = self.mid_track_radius * np.sin(self.angle) + self.center[1]
+        self.handle.center = (x, y)
 
         # Update text.
         text = self.format_text()
         self.text.message = text
 
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.base_disk, self.handle, self.text.get_actor()]
+        self.on_change(self)  # Call hook.
 
     def move_handle(self, click_position):
         """Moves the slider's handle.
@@ -2062,7 +2124,6 @@ class DiskSlider2D(UI):
         ----------
         click_position: (float, float)
             Position of the mouse click.
-
         """
         x, y = np.array(click_position) - self.center
         angle = np.arctan2(y, x)
@@ -2071,24 +2132,7 @@ class DiskSlider2D(UI):
 
         self.angle = angle
 
-    def set_center(self, position):
-        """ Changes the slider's center position.
-
-        Parameters
-        ----------
-        position : (float, float)
-            New position (x, y).
-
-        """
-        position = np.array(position)
-        offset = position - self.center
-        self.base_disk.SetPosition(position)
-        self.handle.SetPosition(*(offset + self.handle.GetPosition()))
-        self.text.position += offset
-        self.center = position
-
-    @staticmethod
-    def base_disk_click_callback(i_ren, obj, slider):
+    def track_click_callback(self, i_ren, obj, slider):
         """ Update disk position and grab the focus.
 
         Parameters
@@ -2096,16 +2140,14 @@ class DiskSlider2D(UI):
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
-        slider : :class:`DiskSlider2D`
-
+        slider : :class:`RingSlider2D`
         """
         click_position = i_ren.event.position
-        slider.move_handle(click_position=click_position)
+        self.move_handle(click_position=click_position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
-    @staticmethod
-    def handle_move_callback(i_ren, obj, slider):
+    def handle_move_callback(self, i_ren, obj, slider):
         """ Move the slider's handle.
 
         Parameters
@@ -2113,525 +2155,9 @@ class DiskSlider2D(UI):
         i_ren : :class:`CustomInteractorStyle`
         obj : :class:`vtkActor`
             The picked actor
-        slider : :class:`DiskSlider2D`
-
+        slider : :class:`RingSlider2D`
         """
         click_position = i_ren.event.position
-        slider.move_handle(click_position=click_position)
+        self.move_handle(click_position=click_position)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
-
-    @staticmethod
-    def handle_press_callback(i_ren, obj, slider):
-        """ This is only needed to grab the focus.
-
-        Parameters
-        ----------
-        i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
-            The picked actor
-        slider : :class:`DiskSlider2D`
-
-        """
-        i_ren.event.abort()  # Stop propagating the event.
-
-    def handle_events(self, actor):
-        """ Handle all default slider events.
-
-        """
-        self.add_callback(self.base_disk, "LeftButtonPressEvent",
-                          self.base_disk_click_callback, 1)
-        self.add_callback(self.handle, "LeftButtonPressEvent",
-                          self.handle_press_callback)
-        self.add_callback(self.base_disk, "MouseMoveEvent",
-                          self.handle_move_callback)
-        self.add_callback(self.handle, "MouseMoveEvent",
-                          self.handle_move_callback)
-
-
-class FileSelectMenu2D(UI):
-    """ A menu to select files in the current folder.
-
-    Can go to new folder, previous folder and select a file
-    and keep it in a variable.
-
-    Attributes
-    ----------
-    n_text_actors: int
-        The number of text actors. Calculated dynamically.
-    selected_file: string
-        Current selected file.
-    text_item_list: list(:class:`FileSelectMenuText2D`)
-        List of FileSelectMenuText2Ds - both visible and invisible.
-    window_offset: int
-        Used for scrolling.
-        Tells you the index of the first visible FileSelectMenuText2D
-        object.
-    size: (float, float)
-        The size of the system (x, y) in pixels.
-    font_size: int
-        The font size in pixels.
-    line_spacing: float
-        Distance between menu text items in pixels.
-    parent_ui: :class:`UI`
-        The UI component this object belongs to.
-    extensions: list(string)
-            List of extensions to be shown as files.
-
-    """
-
-    def __init__(self, size, font_size, position, parent, extensions,
-                 directory_path, reverse_scrolling=False, line_spacing=1.4):
-        """
-        Parameters
-        ----------
-        size: (float, float)
-            The size of the system (x, y) in pixels.
-        font_size: int
-            The font size in pixels.
-        parent: :class:`UI`
-            The UI component this object belongs to.
-            This will be useful when this UI element is used as a
-            part of other UI elements, like a file save dialog.
-        position: (float, float)
-            The initial position (x, y) in pixels.
-        reverse_scrolling: {True, False}
-            If True, scrolling up will move the list of files down.
-        line_spacing: float
-            Distance between menu text items in pixels.
-        extensions: list(string)
-            List of extensions to be shown as files.
-        directory_path: string
-            Path of the directory where this dialog should open.
-            Example: os.getcwd()
-
-        """
-        super(FileSelectMenu2D, self).__init__()
-
-        self.size = size
-        self.font_size = font_size
-        self.parent_ui = parent
-        self.reverse_scrolling = reverse_scrolling
-        self.line_spacing = line_spacing
-        self.extensions = extensions
-
-        self.n_text_actors = 0  # Initialisation Value
-        self.text_item_list = []
-        self.selected_file = ""
-        self.window_offset = 0
-        self.current_directory = directory_path
-        self.buttons = dict()
-
-        self.menu = self.build_actors(position)
-
-        self.fill_text_actors()
-        self.handle_events(None)
-
-    def add_to_renderer(self, ren):
-        self.menu.add_to_renderer(ren)
-        super(FileSelectMenu2D, self).add_to_renderer(ren)
-        for menu_text in self.text_item_list:
-            menu_text.add_to_renderer(ren)
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.buttons["up"], self.buttons["down"]]
-
-    def build_actors(self, position):
-        """ Builds the number of text actors that will fit in the given size.
-
-        Allots them positions in the panel, which is only there to allot positions,
-        otherwise the panel itself is invisible.
-
-        Parameters
-        ----------
-        position: (float, float)
-            Position of the panel (x, y) in pixels.
-
-        """
-        # Calculating the number of text actors.
-        self.n_text_actors = int(self.size[1]/(self.font_size*self.line_spacing))
-
-        # This panel is just to facilitate the addition of actors at the right positions
-        panel = Panel2D(center=position, size=self.size, color=(1, 1, 1))
-
-        # Initialisation of empty text actors
-        for i in range(self.n_text_actors):
-
-            text = FileSelectMenuText2D(position=(0, 0), font_size=self.font_size,
-                                        file_select=self)
-            text.parent_UI = self.parent_ui
-            self.ui_list.append(text)
-            self.text_item_list.append(text)
-
-            panel.add_element(text, 'relative',
-                              (0.1,
-                               float(self.n_text_actors-i - 1) /
-                               float(self.n_text_actors)))
-
-        up_button = Button2D({"up": read_viz_icons(fname="arrow-up.png")})
-        panel.add_element(up_button, 'relative', (0.95, 0.95))
-        self.buttons["up"] = up_button
-
-        down_button = Button2D({"down": read_viz_icons(fname="arrow-down.png")})
-        panel.add_element(down_button, 'relative', (0.95, 0.05))
-        self.buttons["down"] = down_button
-
-        return panel
-
-    @staticmethod
-    def up_button_callback(i_ren, obj, file_select_menu):
-        """ Pressing up button scrolls up in the menu.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_menu: :class:`FileSelectMenu2D`
-
-        """
-        all_file_names = file_select_menu.get_all_file_names()
-
-        if (file_select_menu.n_text_actors +
-                file_select_menu.window_offset) <= len(all_file_names):
-            if file_select_menu.window_offset > 0:
-                file_select_menu.window_offset -= 1
-                file_select_menu.fill_text_actors()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    @staticmethod
-    def down_button_callback(i_ren, obj, file_select_menu):
-        """ Pressing down button scrolls down in the menu.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_menu: :class:`FileSelectMenu2D`
-
-        """
-        all_file_names = file_select_menu.get_all_file_names()
-
-        if (file_select_menu.n_text_actors +
-                file_select_menu.window_offset) < len(all_file_names):
-            file_select_menu.window_offset += 1
-            file_select_menu.fill_text_actors()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    def fill_text_actors(self):
-        """ Fills file/folder names to text actors.
-
-        The list is truncated if the number of file/folder names is greater
-        than the available number of text actors.
-
-        """
-        # Flush all the text actors
-        for text_item in self.text_item_list:
-            text_item.text_actor.message = ""
-            text_item.text_actor.actor.SetVisibility(False)
-
-        all_file_names = self.get_all_file_names()
-
-        clipped_file_names = all_file_names[self.window_offset:self.n_text_actors + self.window_offset]
-
-        # Allot file names as in the above list
-        i = 0
-        for file_name in clipped_file_names:
-            self.text_item_list[i].text_actor.actor.SetVisibility(True)
-            self.text_item_list[i].set_attributes(file_name[0], file_name[1])
-            if file_name[0] == self.selected_file:
-                self.text_item_list[i].mark_selected()
-            i += 1
-
-    def get_all_file_names(self):
-        """ Gets file and directory names.
-
-        Returns
-        -------
-        all_file_names: list(string)
-            List of all file and directory names as string.
-
-        """
-        all_file_names = []
-
-        directory_names = self.get_directory_names()
-        for directory_name in directory_names:
-            all_file_names.append((directory_name, "directory"))
-
-        file_names = self.get_file_names()
-        for file_name in file_names:
-            all_file_names.append((file_name, "file"))
-
-        return all_file_names
-
-    def get_directory_names(self):
-        """ Re-allots file names to the text actors.
-
-        Uses FileSelectMenuText2D for selecting files and folders.
-
-        Returns
-        -------
-        directory_names: list(string)
-            List of all directory names as string.
-
-        """
-        # A list of directory names in the current directory
-        directory_names = next(os.walk(self.current_directory))[1]
-        directory_names = [os.path.basename(os.path.abspath(dn)) for dn in directory_names]
-        directory_names = ["../"] + directory_names
-
-        return directory_names
-
-    def get_file_names(self):
-        """ Re-allots file names to the text actors.
-
-        Uses FileSelectMenuText2D for selecting files and folders.
-
-        Returns
-        -------
-        file_names: list(string)
-            List of all file names as string.
-
-        """
-        # A list of file names with extension in the current directory
-        file_names = []
-        for extension in self.extensions:
-            file_names += glob.glob(self.current_directory + "/*." + extension)
-        file_names = [os.path.basename(os.path.abspath(fn)) for fn in file_names]
-        return file_names
-
-    def select_file(self, file_name):
-        """ Changes the selected file name.
-
-        Parameters
-        ----------
-        file_name: string
-            Name of the file.
-
-        """
-        self.selected_file = file_name
-
-    def set_center(self, position):
-        """ Sets the elements center.
-
-        Parameters
-        ----------
-        position: (float, float)
-            New position (x, y) in pixels.
-
-        """
-        self.menu.set_center(position=position)
-
-    def handle_events(self, actor):
-        self.add_callback(self.buttons["up"].actor, "LeftButtonPressEvent",
-                          self.up_button_callback)
-        self.add_callback(self.buttons["down"].actor, "LeftButtonPressEvent",
-                          self.down_button_callback)
-
-        # Handle mouse wheel events
-        up_event = "MouseWheelForwardEvent"
-        down_event = "MouseWheelBackwardEvent"
-        if self.reverse_scrolling:
-            up_event, down_event = down_event, up_event  # Swap events
-
-        self.add_callback(self.menu.get_actors()[0], up_event,
-                          self.up_button_callback)
-        self.add_callback(self.menu.get_actors()[0], down_event,
-                          self.down_button_callback)
-
-        for text_ui in self.text_item_list:
-            self.add_callback(text_ui.text_actor.get_actors()[0], up_event,
-                              self.up_button_callback)
-            self.add_callback(text_ui.text_actor.get_actors()[0], down_event,
-                              self.down_button_callback)
-
-
-class FileSelectMenuText2D(UI):
-    """ The text to select folder in a file select menu.
-
-    Provides a callback to change the directory.
-
-    Attributes
-    ----------
-    file_name: string
-        The name of the file the text is displaying.
-    file_type: string
-        Whether the file is a file or directory.
-    file_select: :class:`FileSelect2D`
-        The FileSelectMenu2D reference this text belongs to.
-
-    """
-
-    def __init__(self, font_size, position, file_select):
-        """
-        Parameters
-        ----------
-        font_size: int
-            The font size of the text in pixels.
-        position: (float, float)
-            Absolute text position (x, y) in pixels.
-        file_select: :class:`FileSelect2D`
-            The FileSelectMenu2D reference this text belongs to.
-
-        """
-        super(FileSelectMenuText2D, self).__init__()
-
-        self.file_name = ""
-        self.file_type = ""
-        self.file_select = file_select
-
-        self.text_actor = self.build_actor(position=position, font_size=font_size)
-
-        self.handle_events(self.text_actor.get_actor())
-
-        self.on_left_mouse_button_clicked = self.left_button_clicked
-
-    def build_actor(self, position, text="Text", color=(1, 1, 1), font_family='Arial',
-                    justification='left', bold=False, italic=False,
-                    shadow=False, font_size='14'):
-        """ Builds a text actor.
-
-        Parameters
-        ----------
-        text: string
-            The initial text while building the actor.
-        position: (float, float)
-            The text position (x, y) in pixels.
-        color: (float, float, float)
-            Values must be between 0-1 (RGB).
-        font_family: string
-            Currently only supports Arial.
-        justification: string
-            Text justification - left, right or center.
-        bold: bool
-            Whether or not the text is bold.
-        italic: bool
-            Whether or not the text is italicized.
-        shadow: bool
-            Whether or not the text has shadow.
-        font_size: int
-            The font size of the text in pixels.
-
-        Returns
-        -------
-        text_actor: :class:`TextBlock2D`
-            The base text actor.
-
-        """
-        text_actor = TextBlock2D()
-        text_actor.position = position
-        text_actor.message = text
-        text_actor.font_size = font_size
-        text_actor.font_family = font_family
-        text_actor.justification = justification
-        text_actor.bold = bold
-        text_actor.italic = italic
-        text_actor.shadow = shadow
-        text_actor.color = color
-
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            pass
-        else:
-            text_actor.actor.GetTextProperty().SetBackgroundColor(1, 1, 1)
-            text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-
-        text_actor.actor.GetTextProperty().SetColor(0, 0, 0)
-        text_actor.actor.GetTextProperty().SetLineSpacing(1)
-
-        return text_actor
-
-    def get_actors(self):
-        """ Returns the actors that compose this UI component.
-
-        """
-        return [self.text_actor.get_actor()]
-
-    def set_attributes(self, file_name, file_type):
-        """  Set attributes (file name and type) of this component.
-
-        This function is for use by a FileSelectMenu2D to set the
-        current file_name and file_type for this FileSelectMenuText2D
-        component.
-
-        Parameters
-        ----------
-        file_name: string
-            The name of the file.
-        file_type: string
-            File type = directory or file.
-
-        """
-        self.file_name = file_name
-        self.file_type = file_type
-        self.text_actor.message = file_name
-
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
-            if file_type != "file":
-                self.text_actor.get_actor().GetTextProperty().SetBold(True)
-
-        else:
-            if file_type == "file":
-                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(0, 0, 0)
-                self.text_actor.get_actor().GetTextProperty().SetColor(1, 1, 1)
-            else:
-                self.text_actor.get_actor().GetTextProperty().SetBackgroundColor(1, 1, 1)
-                self.text_actor.get_actor().GetTextProperty().SetColor(0, 0, 0)
-
-    def mark_selected(self):
-        """ Changes the background color of the actor.
-
-        """
-        if vtk.vtkVersion.GetVTKVersion() <= "6.2.0":
-            self.text_actor.actor.GetTextProperty().SetColor(1, 0, 0)
-        else:
-            self.text_actor.actor.GetTextProperty().SetBackgroundColor(1, 0, 0)
-            self.text_actor.actor.GetTextProperty().SetBackgroundOpacity(1.0)
-
-    @staticmethod
-    def left_button_clicked(i_ren, obj, file_select_text):
-        """ A callback to handle left click for this UI element.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        file_select_text: :class:`FileSelectMenuText2D`
-
-        """
-
-        if file_select_text.file_type == "directory":
-            file_select_text.file_select.select_file(file_name="")
-            file_select_text.file_select.window_offset = 0
-            file_select_text.file_select.current_directory = os.path.abspath(
-                os.path.join(file_select_text.file_select.current_directory,
-                             file_select_text.text_actor.message))
-            file_select_text.file_select.window = 0
-            file_select_text.file_select.fill_text_actors()
-        else:
-            file_select_text.file_select.select_file(
-                file_name=file_select_text.file_name)
-            file_select_text.file_select.fill_text_actors()
-            file_select_text.mark_selected()
-
-        i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
-
-    def set_center(self, position):
-        """ Sets the text center to position.
-
-        Parameters
-        ----------
-        position: (float, float)
-            The new position (x, y) in pixels.
-        """
-        self.text_actor.position = position
