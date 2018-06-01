@@ -9,7 +9,6 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
-
 import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
@@ -122,10 +121,10 @@ Panels
 Simply create a panel and add elements to it.
 """
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
-                   align="right")
-panel.add_element(button_example, 'relative', (0.2, 0.2))
-panel.add_element(second_button_example, 'absolute', (480, 100))
+panel = ui.Panel2D(size=(300, 150), color=(1, 1, 1), align="right")
+panel.center = (440, 90)
+panel.add_element(button_example, (0.2, 0.2))
+panel.add_element(second_button_example, (190, 85))
 
 """
 TextBox
@@ -140,54 +139,31 @@ text = ui.TextBox2D(height=3, width=10)
 """
 
 
-def translate_green_cube(i_ren, obj, slider):
+def translate_green_cube(slider):
     value = slider.value
     cube_actor_2.SetPosition(value, 0, 0)
 
-line_slider = ui.LineSlider2D(initial_value=-2,
-                              min_value=-5, max_value=5)
 
-line_slider.add_callback(line_slider.slider_disk,
-                         "MouseMoveEvent",
-                         translate_green_cube)
-
-line_slider.add_callback(line_slider.slider_line,
-                         "LeftButtonPressEvent",
-                         translate_green_cube)
+line_slider = ui.LineSlider2D(center=(450, 300),
+                              initial_value=-2, min_value=-5, max_value=5)
+line_slider.on_change = translate_green_cube
 
 """
-2D Disk Slider
+2D Ring Slider
 ==============
 """
 
 
-def rotate_red_cube(i_ren, obj, slider):
+def rotate_red_cube(slider):
     angle = slider.value
     previous_angle = slider.previous_value
     rotation_angle = angle - previous_angle
     cube_actor_1.RotateY(rotation_angle)
 
 
-disk_slider = ui.DiskSlider2D()
-disk_slider.set_center((200, 200))
-disk_slider.add_callback(disk_slider.handle,
-                         "MouseMoveEvent",
-                         rotate_red_cube)
-
-disk_slider.add_callback(disk_slider.base_disk,
-                         "LeftButtonPressEvent",
-                         rotate_red_cube)
-"""
-2D File Select Menu
-==============
-"""
-
-file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
-                                       position=(300, 300),
-                                       font_size=16,
-                                       extensions=["py", "png"],
-                                       directory_path=os.getcwd(),
-                                       parent=None)
+ring_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
+ring_slider.center = (200, 200)
+ring_slider.on_change = rotate_red_cube
 
 """
 Adding Elements to the ShowManager
@@ -205,8 +181,7 @@ show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
-show_manager.ren.add(disk_slider)
-show_manager.ren.add(file_select_menu)
+show_manager.ren.add(ring_slider)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)

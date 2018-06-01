@@ -23,10 +23,7 @@ from dipy.utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
-if use_xvfb == 'skip':
-    skip_it = True
-else:
-    skip_it = False
+skip_it = use_xvfb == 'skip'
 
 if have_vtk:
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))
@@ -52,7 +49,7 @@ class EventCounter(object):
 
     def monitor(self, ui_component):
         for event in self.events_counts:
-            for actor in ui_component.get_actors():
+            for actor in ui_component.actors:
                 ui_component.add_callback(actor, event, self.count)
 
     def save(self, filename):
@@ -86,20 +83,36 @@ class EventCounter(object):
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_broken_ui_component():
-    class BrokenUI(UI):
+    class SimplestUI(UI):
         def __init__(self):
-            self.actor = vtk.vtkActor()
-            super(BrokenUI, self).__init__()
+            super(SimplestUI, self).__init__()
 
-    broken_ui = BrokenUI()
-    npt.assert_raises(NotImplementedError, broken_ui.get_actors)
-    npt.assert_raises(NotImplementedError, broken_ui.set_center, (1, 2))
+        def _setup(self):
+            self.actor = vtk.vtkActor2D()
+
+        def _set_position(self, coords):
+            self.actor.SetPosition(*coords)
+
+    # Can be instantiated.
+    SimplestUI()
+
+    # Instantiating UI subclasses that don't override all abstract methods.
+    for attr in ["_setup", "_set_position"]:
+        bkp = getattr(SimplestUI, attr)
+        delattr(SimplestUI, attr)
+        npt.assert_raises(NotImplementedError, SimplestUI)
+        setattr(SimplestUI, attr, bkp)
+
+    simple_ui = SimplestUI()
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'actors')
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'size')
+    npt.assert_raises(NotImplementedError, getattr, simple_ui, 'center')
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_wrong_interactor_style():
-    panel = ui.Panel2D(center=(440, 90), size=(300, 150))
+    panel = ui.Panel2D(size=(300, 150))
     dummy_renderer = window.Renderer()
     dummy_show_manager = window.ShowManager(dummy_renderer,
                                             interactor_style='trackball')
@@ -108,12 +121,12 @@ def test_wrong_interactor_style():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_rectangle_2d():
+def test_ui_rectangle_2d():
     window_size = (700, 700)
     show_manager = window.ShowManager(size=window_size)
 
     rect = ui.Rectangle2D(size=(100, 50))
-    rect.set_position((50, 80))
+    rect.position = (50, 80)
     npt.assert_equal(rect.position, (50, 80))
 
     rect.color = (1, 0.5, 0)
@@ -142,6 +155,40 @@ def test_rectangle_2d():
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_disk_2d():
+    window_size = (700, 700)
+    show_manager = window.ShowManager(size=window_size)
+
+    disk = ui.Disk2D(outer_radius=20, inner_radius=5)
+    disk.position = (50, 80)
+    npt.assert_equal(disk.position, (50, 80))
+
+    disk.color = (1, 0.5, 0)
+    npt.assert_equal(disk.color, (1, 0.5, 0))
+
+    disk.opacity = 0.5
+    npt.assert_equal(disk.opacity, 0.5)
+
+    # Check the rectangle is drawn at right place.
+    show_manager.ren.add(disk)
+    # Uncomment this to start the visualisation
+    # show_manager.start()
+
+    colors = [disk.color]
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr, colors=colors)
+    assert report.objects == 1
+    assert report.colors_found
+
+    # Test visibility off.
+    disk.set_visibility(False)
+    arr = window.snapshot(show_manager.ren, size=window_size, offscreen=True)
+    report = window.analyze_snapshot(arr)
+    assert report.objects == 0
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_button_panel(recording=False):
     filename = "test_ui_button_panel"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -149,9 +196,7 @@ def test_ui_button_panel(recording=False):
 
     # Rectangle
     rectangle_test = ui.Rectangle2D(size=(10, 10))
-    rectangle_test.get_actors()
     another_rectangle_test = ui.Rectangle2D(size=(1, 1))
-    # /Rectangle
 
     # Button
     fetch_viz_icons()
@@ -161,7 +206,7 @@ def test_ui_button_panel(recording=False):
     icon_files['play'] = read_viz_icons(fname='play3.png')
 
     button_test = ui.Button2D(icon_fnames=icon_files)
-    button_test.set_center((20, 20))
+    button_test.center = (20, 20)
 
     def make_invisible(i_ren, obj, button):
         # i_ren: CustomInteractorStyle
@@ -184,7 +229,6 @@ def test_ui_button_panel(recording=False):
     button_test.scale((2, 2))
     button_color = button_test.color
     button_test.color = button_color
-    # /Button
 
     # TextBlock
     text_block_test = ui.TextBlock2D()
@@ -192,19 +236,21 @@ def test_ui_button_panel(recording=False):
     text_block_test.color = (0, 0, 0)
 
     # Panel
-    panel = ui.Panel2D(center=(440, 90), size=(300, 150),
+    panel = ui.Panel2D(size=(300, 150),
+                       position=(290, 15),
                        color=(1, 1, 1), align="right")
-    panel.add_element(rectangle_test, 'absolute', (580, 150))
-    panel.add_element(button_test, 'relative', (0.2, 0.2))
-    panel.add_element(text_block_test, 'relative', (0.7, 0.7))
+    panel.add_element(rectangle_test, (290, 135))
+    panel.add_element(button_test, (0.1, 0.1))
+    panel.add_element(text_block_test, (0.7, 0.7))
     npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
-                      'error_string', (1, 2))
-    # /Panel
+                      (10., 0.5))
+    npt.assert_raises(ValueError, panel.add_element, another_rectangle_test,
+                      (-0.5, 0.5))
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
     event_counter.monitor(button_test)
-    event_counter.monitor(panel)
+    event_counter.monitor(panel.background)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size, title="DIPY Button")
@@ -234,8 +280,8 @@ def test_ui_textbox(recording=False):
 
     another_textbox_test = ui.TextBox2D(height=3, width=10, text="Enter Text")
     another_textbox_test.set_message("Enter Text")
-    another_textbox_test.set_center((10, 100))
-    # /TextBox
+    npt.assert_raises(NotImplementedError, setattr,
+                      another_textbox_test, "center", (10, 100))
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
@@ -311,7 +357,8 @@ def test_text_block_2d_justification():
     grid_specs = [grid_top, grid_bottom, grid_left, grid_right,
                   grid_middle, grid_center]
     for spec in grid_specs:
-        line = ui.Rectangle2D(center=spec[0], size=spec[1], color=line_color)
+        line = ui.Rectangle2D(size=spec[1], color=line_color)
+        line.center = spec[0]
         show_manager.ren.add(line)
 
     font_size = 60
@@ -385,7 +432,7 @@ def test_ui_line_slider_2d(recording=False):
 
     line_slider_2d_test = ui.LineSlider2D(initial_value=-2,
                                           min_value=-5, max_value=5)
-    line_slider_2d_test.set_center((300, 300))
+    line_slider_2d_test.center = (300, 300)
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
@@ -410,33 +457,33 @@ def test_ui_line_slider_2d(recording=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_disk_slider_2d(recording=False):
-    filename = "test_ui_disk_slider_2d"
+def test_ui_ring_slider_2d(recording=False):
+    filename = "test_ui_ring_slider_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
-    disk_slider_2d_test = ui.DiskSlider2D()
-    disk_slider_2d_test.set_center((300, 300))
-    disk_slider_2d_test.value = 90
+    ring_slider_2d_test = ui.RingSlider2D()
+    ring_slider_2d_test.center = (300, 300)
+    ring_slider_2d_test.value = 90
 
     # Assign the counter callback to every possible event.
     event_counter = EventCounter()
-    event_counter.monitor(disk_slider_2d_test)
+    event_counter.monitor(ring_slider_2d_test)
 
     current_size = (600, 600)
     show_manager = window.ShowManager(size=current_size,
-                                      title="DIPY Disk Slider")
+                                      title="DIPY Ring Slider")
 
-    show_manager.ren.add(disk_slider_2d_test)
+    show_manager.ren.add(ring_slider_2d_test)
 
     if recording:
         # Record the following events
-        # 1. Left Click on the disk and hold it
-        # 2. Move to the left the disk and make 1.5 tour
-        # 3. Release the disk
-        # 4. Left Click on the disk and hold it
-        # 5. Move to the right the disk and make 1 tour
-        # 6. Release the disk
+        # 1. Left Click on the handle and hold it
+        # 2. Move to the left the handle and make 1.5 tour
+        # 3. Release the handle
+        # 4. Left Click on the handle and hold it
+        # 5. Move to the right the handle and make 1 tour
+        # 6. Release the handle
         show_manager.record_events_to_file(recording_filename)
         print(list(event_counter.events_counts.items()))
         event_counter.save(expected_events_counts_filename)
@@ -446,54 +493,6 @@ def test_ui_disk_slider_2d(recording=False):
         expected = EventCounter.load(expected_events_counts_filename)
         event_counter.check_counts(expected)
 
-
-@npt.dec.skipif(not have_vtk or skip_it)
-@xvfb_it
-def test_ui_file_select_menu_2d(recording=False):
-    filename = "test_ui_file_select_menu_2d"
-    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
-    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
-    with InTemporaryDirectory():
-        for i in range(10):
-            _ = open("test" + str(i) + ".txt", 'wt').write('some text')
-
-        file_select_menu = ui.FileSelectMenu2D(size=(500, 500),
-                                               position=(300, 300),
-                                               font_size=16,
-                                               extensions=["txt"],
-                                               directory_path=os.getcwd(),
-                                               parent=None)
-        file_select_menu.set_center((300, 300))
-
-        npt.assert_equal(file_select_menu.text_item_list[1].file_name[:4], "test")
-        npt.assert_equal(file_select_menu.text_item_list[5].file_name[:4], "test")
-
-        event_counter = EventCounter()
-        for event in event_counter.events_counts:
-            file_select_menu.add_callback(file_select_menu.buttons["up"].actor,
-                                          event, event_counter.count)
-            file_select_menu.add_callback(file_select_menu.buttons["down"].actor,
-                                          event, event_counter.count)
-            file_select_menu.menu.add_callback(file_select_menu.menu.panel.actor,
-                                               event, event_counter.count)
-            for text_ui in file_select_menu.text_item_list:
-                file_select_menu.add_callback(text_ui.text_actor.get_actors()[0],
-                                              event, event_counter.count)
-
-        current_size = (600, 600)
-        show_manager = window.ShowManager(size=current_size,
-                                          title="DIPY File Select Menu")
-        show_manager.ren.add(file_select_menu)
-
-        if recording:
-            show_manager.record_events_to_file(recording_filename)
-            print(list(event_counter.events_counts.items()))
-            event_counter.save(expected_events_counts_filename)
-
-        else:
-            show_manager.play_events_from_file(recording_filename)
-            expected = EventCounter.load(expected_events_counts_filename)
-            event_counter.check_counts(expected)
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
@@ -505,8 +504,5 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_slider_2d":
         test_ui_line_slider_2d(recording=True)
 
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_disk_slider_2d":
-        test_ui_disk_slider_2d(recording=True)
-
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_select_menu_2d":
-        test_ui_file_select_menu_2d(recording=True)
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_ring_slider_2d":
+        test_ui_ring_slider_2d(recording=True)
