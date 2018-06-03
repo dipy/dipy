@@ -23,7 +23,7 @@
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
   :target: https://github.com/nipy/dipy/blob/master/LICENSE
 
-DIPY is a python toolbox for analysis of MR diffusion imaging.
+DIPY [DIPYREF]_ is a python library for analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
