@@ -1873,7 +1873,6 @@ class LineSlider2D(UI):
         """ Returns formatted text to display along the slider. """
         if callable(self.text_template):
             return self.text_template(self)
-
         return self.text_template.format(ratio=self.ratio, value=self.value)
 
     def update(self):
@@ -1940,12 +1939,6 @@ class LineDoubleSlider2D(UI):
     ----------
     line_width : int
         Width of the line on which the disk will slide.
-    inner_radius : int
-        Inner radius of the disk (ring).
-    outer_radius : int
-        Outer radius of the disk.
-    center : (float, float)
-        Center of the slider.
     length : int
         Length of the slider.
     track : :class:`vtkActor`
@@ -1966,15 +1959,15 @@ class LineDoubleSlider2D(UI):
         line_width : int
             Width of the line on which the disk will slide.
         inner_radius : int
-            Inner radius of the disk (ring).
+            Inner radius of the handles.
         outer_radius : int
-            Outer radius of the disk.
+            Outer radius of the handles.
         center : (float, float)
             Center of the slider.
         length : int
             Length of the slider.
         initial_values : (float, float)
-            Initial values of the two slider disks.
+            Initial values of the two handles.
         min_value : float
             Minimum value of the slider.
         max_value : float
@@ -2004,8 +1997,7 @@ class LineDoubleSlider2D(UI):
         self.text[1].font_size = font_size
         self.text_template = text_template
 
-        # Setting the disk position will also update everything.
-
+        # Setting the handle positions will also update everything.
         self._values = [initial_values[0], initial_values[1]]
         self._ratio = [None, None]
         self.left_disk_value = initial_values[0]
@@ -2021,7 +2013,7 @@ class LineDoubleSlider2D(UI):
         self.track = Rectangle2D()
         self.track.color = (1, 0, 0)
 
-        # Slider Disks
+        # Handles
         self.handles = []
         self.handles.append(Disk2D(outer_radius = 1))
         self.handles.append(Disk2D(outer_radius = 1))
@@ -2095,7 +2087,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         value : float
-
         """
         value_range = self.max_value - self.min_value
         return (value - self.min_value) / value_range
@@ -2106,9 +2097,27 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         ratio : float
-
         """
         return self.left_x_position + ratio * self.track.width
+
+    def coord_to_ratio(self, coord):
+        """ Converts the x coordinate of a disk to the ratio
+
+        Parameters
+        ----------
+        coord : float
+        """
+        return (coord - self.left_x_position) / self.track.width
+
+    def ratio_to_value(self, ratio):
+        """ Converts the ratio to the value of the disk.
+
+        Parameters
+        ----------
+        ratio : float
+        """
+        value_range = self.max_value - self.min_value
+        return self.min_value + ratio * value_range
 
     def set_position(self, position, disk_number):
         """ Sets the disk's position.
@@ -2119,7 +2128,6 @@ class LineDoubleSlider2D(UI):
             The absolute position of the disk (x, y).
         disk_number : int
             The index of disk being moved.
-
         """
         x_position = position[0]
 
@@ -2149,7 +2157,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         left_disk_value : New value for the left disk.
-
         """
         self.left_disk_ratio = self.value_to_ratio(left_disk_value)
 
@@ -2165,7 +2172,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         right_disk_value : New value for the right disk.
-
         """
         self.right_disk_ratio = self.value_to_ratio(right_disk_value)
 
@@ -2181,7 +2187,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         left_disk_ratio : New ratio for the left disk.
-
         """
         position_x = self.ratio_to_coord(left_disk_ratio)
         self.set_position((position_x, None), 0)
@@ -2198,7 +2203,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         right_disk_ratio : New ratio for the right disk.
-
         """
         position_x = self.ratio_to_coord(right_disk_ratio)
         self.set_position((position_x, None), 1)
@@ -2209,7 +2213,6 @@ class LineDoubleSlider2D(UI):
         Parameters
         ----------
         disk_number : Index of the disk.
-
         """
         if callable(self.text_template):
             return self.text_template(self)
@@ -2224,14 +2227,12 @@ class LineDoubleSlider2D(UI):
         disk_number : Index of the disk to be updated.
         """
         # Compute the ratio determined by the position of the slider disk.
-        length = float(self.right_x_position - self.left_x_position)
-        self._ratio[disk_number] = (self.handles[disk_number].center[0] -
-                                    self.left_x_position) / length
+        self._ratio[disk_number] = self.coord_to_ratio(
+            self.handles[disk_number].center[0])
 
         # Compute the selected value considering min_value and max_value.
-        value_range = self.max_value - self.min_value
-        self._values[disk_number] = self.min_value + \
-            self._ratio[disk_number] * value_range
+        self._values[disk_number] = self.ratio_to_value(
+            self._ratio[disk_number])
 
         # Update text.
         text = self.format_text(disk_number)
@@ -2491,6 +2492,146 @@ class RingSlider2D(UI):
         """
         click_position = i_ren.event.position
         self.move_handle(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+
+class RangeSlider(UI):
+
+    """ A set of a LineSlider2D and a LineDoubleSlider2D.
+    The double slider is used to set the min and max value
+    for the LineSlider2D
+
+    Attributes
+    ----------
+    range_slider_center : (float, float)
+        Center of the LineDoubleSlider2D object.
+    value_slider_center : (float, float)
+        Center of the LineSlider2D object.
+    range_slider : :class:`LineDoubleSlider2D`
+        The line slider which sets the min and max values
+    value_slider : :class:`LineSlider2D`
+        The line slider which sets the value
+
+    """
+    def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
+                 range_slider_center=(450, 400),
+                 value_slider_center=(450, 300), length=200, min_value=0,
+                 max_value=100, font_size=16, range_precision=1,
+                 value_precision=2):
+        """
+        Parameters
+        ----------
+        line_width : int
+            Width of the slider tracks
+        inner_radius : int
+            Inner radius of the handles.
+        outer_radius : int
+            Outer radius of the handles.
+        range_slider_center : (float, float)
+            Center of the LineDoubleSlider2D object.
+        value_slider_center : (float, float)
+            Center of the LineSlider2D object.
+        length : int
+            Length of the sliders.
+        min_value : float
+            Minimum value of the double slider.
+        max_value : float
+            Maximum value of the double slider.
+        font_size : int
+            Size of the text to display alongside the sliders (pt).
+        range_precision : int
+            Number of decimal places to show the min and max values set.
+        value_precision : int
+            Number of decimal places to show the value set on slider.
+        """
+        self.min_value = min_value
+        self.max_value = max_value
+        self.inner_radius = inner_radius
+        self.outer_radius = outer_radius
+        self.length = length
+        self.line_width = line_width
+        self.font_size = font_size
+
+        self.range_slider_text_template = \
+            "{value:." + str(range_precision) + "f}"
+        self.value_slider_text_template = \
+            "{value:." + str(value_precision) + "f}"
+
+        self.range_slider_center = range_slider_center
+        self.value_slider_center = value_slider_center
+        super(RangeSlider, self).__init__()
+
+    def _setup(self):
+        """ Setup this UI component.
+        """
+        self.range_slider = \
+            LineDoubleSlider2D(line_width=self.line_width,
+                               inner_radius=self.inner_radius,
+                               outer_radius=self.outer_radius,
+                               center=self.range_slider_center,
+                               length=self.length, min_value=self.min_value,
+                               max_value=self.max_value,
+                               initial_values=(self.min_value,
+                                               self.max_value),
+                               font_size=self.font_size,
+                               text_template=self.range_slider_text_template)
+
+        self.value_slider = \
+            LineSlider2D(line_width=self.line_width, length=self.length,
+                         inner_radius=self.inner_radius,
+                         outer_radius=self.outer_radius,
+                         center=self.value_slider_center,
+                         min_value=self.min_value, max_value=self.max_value,
+                         initial_value=(self.min_value + self.max_value) / 2,
+                         font_size=self.font_size,
+                         text_template=self.value_slider_text_template)
+
+        # Add default events listener for this UI component.
+        self.range_slider.handles[0].on_left_mouse_button_dragged = self.range_slider_handle_move_callback
+        self.range_slider.handles[1].on_left_mouse_button_dragged = self.range_slider_handle_move_callback
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.range_slider.actors + self.value_slider.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        self.range_slider.add_to_renderer(ren)
+        self.value_slider.add_to_renderer(ren)
+
+    def _get_size(self):
+        return self.range_slider.size + self.value_slider.size
+
+    def _set_position(self, coords):
+        pass
+
+    def range_slider_handle_move_callback(self, i_ren, obj, slider):
+        """ Actual movement of range_slider's handles.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        slider : :class:`RangeSlider`
+
+        """
+        position = i_ren.event.position
+        if obj == self.range_slider.handles[0].actors[0]:
+            self.range_slider.set_position(position, 0)
+            self.value_slider.min_value = self.range_slider.left_disk_value
+            self.value_slider.update()
+        elif obj == self.range_slider.handles[1].actors[0]:
+            self.range_slider.set_position(position, 1)
+            self.value_slider.max_value = self.range_slider.right_disk_value
+            self.value_slider.update()
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
