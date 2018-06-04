@@ -170,7 +170,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     global select_all
     select_all = False
 
-    prng = np.random.RandomState(27) # 1838
+    prng = np.random.RandomState(198) # 1838
     global centroid_actors, cluster_actors, visible_centroids, visible_clusters
     global cluster_access
     centroid_actors = {}
