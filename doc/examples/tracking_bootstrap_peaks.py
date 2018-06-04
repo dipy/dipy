@@ -5,8 +5,9 @@ Bootstrap and Closest Peak Direction Getters Example
 
 This example shows how choices in direction-getter impact fiber
 tracking results by demonstrating the bootstrap direction getter (a type of
-probabilistic tracking) and the closest peak direction getter (a type of
-deterministic tracking).
+probabilistic tracking, as described in [Berman2008]_) and the closest peak
+direction getter (a type of deterministic tracking).
+(Amirbekian, PhD thesis, 2016)
 
 Let's load the necessary modules for executing this tutorial.
 """
@@ -127,11 +128,9 @@ software for visualization or further analysis.
 save_trk("closest_peak_dg_CSD.trk", streamlines, affine, labels.shape)
 
 """
-.. [Berman_boot] Berman, J. et al. Probabilistic streamline q-ball
-tractography using the residual bootstrap
+.. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
+tractography using the residual bootstrap, NeuroImage, vol 39, no 1, 2008
 
-.. [Jeurissen_boot] Jeurissen, B. et al. Probabilistic fiber tracking
-using the residual bootstrap with constrained spherical deconvolution.
-
+.. include:: ../links_names.inc
 
 """
