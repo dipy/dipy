@@ -84,8 +84,8 @@ Contributing
 
 We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`_.
 
-References
-==========
+Reference
+=========
 
 .. [DIPYREF] E. Garyfallidis, M. Brett, B. Amirbekian, A. Rokem,
     S. Van Der Walt, M. Descoteaux, I. Nimmo-Smith and DIPY contributors,
