@@ -1373,9 +1373,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         x = range(self.energy_window)
         y = self.energy_list[(n_iter - self.energy_window):n_iter]
         ss = sum(y)
-        if(ss > 0):
-            ss *= -1
-        y = [v / ss for v in y]
+        if not ss == 0:  # avoid division by zero
+            ss = - ss if ss > 0 else ss
+            y = [v / ss for v in y]
         der = self._approximate_derivative_direct(x, y)
         return der
 
