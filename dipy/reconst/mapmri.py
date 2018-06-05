@@ -401,8 +401,8 @@ class MapmriModel(ReconstModel, Cache):
                 lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             M0 = M[self.gtab.b0s_mask, :]
-            constraints = [M0[0] * c == 1,
-                           K * c > -.1]
+            constraints = [(M0[0] * c) == 1,
+                           (K * c) >= -0.1]
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver)
