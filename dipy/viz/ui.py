@@ -2212,12 +2212,13 @@ class ImageHolder(UI):
         img : vtkImageDataGeometryFilters
             The corresponding image .
         """
-        if imgPath.split(".")[-1] in ["png", "PNG"]:
+        imgExt = imgPath.split(".")[-1].lower()
+        if imgExt == "png":
             png = vtk.vtkPNGReader()
             png.SetFileName(imgPath)
             png.Update()
             img = png.GetOutput()
-        elif imgPath.split(".")[-1] in ["jpg", "jpeg", "JPG", "JPEG"]:
+        elif imgExt in ["jpg", "jpeg"]:
             jpeg = vtk.vtkJPEGReader()
             jpeg.SetFileName(imgPath)
             jpeg.Update()
