@@ -101,32 +101,25 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             ref_text = [text if text else "\n" for text in npds['References']]
             ref_idx = self.epilog.find('References: \n') + len('References: \n')
             self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
-                                        ''.join([text for text in ref_text]),
-                                               self.epilog[ref_idx:])
+                                               ''.join(ref_text),
+                                                self.epilog[ref_idx:])
 
         self.outputs = [param for param in npds['Parameters'] if
                         'out_' in param[0]]
 
         args, defaults = get_args_default(workflow.run)
 
-        output_args = \
-            self.add_argument_group('output arguments(optional)')
+        output_args = self.add_argument_group('output arguments(optional)')
 
         len_args = len(args)
         len_defaults = len(defaults)
 
-        #  This check simply shows a helpful message to the user if there
-        #  is a mismatch in the number of arguments in the run method and
-        #  the doc string. Doc string refers to the parameter help written
-        # in the workflow python script.
-
         if len_args != len(self.doc):
             raise ValueError(
-                            self.prog +
-                            ": Number of parameters in the "
-                            "doc string and run method does not match. "
-                            "Please ensure that the number of parameters "
-                            "in the run method is same as the doc string.")
+                    self.prog + ": Number of parameters in the "
+                    "doc string and run method does not match. "
+                    "Please ensure that the number of parameters "
+                    "in the run method is same as the doc string.")
 
 
         for i, arg in enumerate(args):
