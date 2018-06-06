@@ -568,7 +568,8 @@ def test_ui_checkbox(interactive=False):
     for option in checkbox_test.options:
         new_positions.append(option.position)
     new_positions = np.asarray(new_positions)
-    npt.assert_equal(new_positions - old_positions, 90 * np.ones((checkbox_test.num_options, 2)))
+    npt.assert_equal(new_positions - old_positions,
+                     90 * np.ones((checkbox_test.num_options, 2)))
 
     if interactive:
         showm = window.ShowManager(size=(600, 600))

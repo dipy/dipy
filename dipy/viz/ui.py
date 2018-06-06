@@ -2994,7 +2994,8 @@ class Option(UI):
         self.button_icons = {}
         self.button_icons['unchecked'] = read_viz_icons(fname="stop2.png")
         self.button_icons['checked'] = read_viz_icons(fname="checkmark.png")
-        self.button = Button2D(icon_fnames=self.button_icons, size=self.button_size)
+        self.button = Button2D(icon_fnames=self.button_icons,
+                               size=self.button_size)
 
         self.text = TextBlock2D(text=self.label, font_size=self.font_size)
 
@@ -3027,7 +3028,8 @@ class Option(UI):
             Absolute pixel coordinates (x, y).
         """
         num_newlines = self.label.count('\n')
-        self.button.position = coords + (0, num_newlines * self.font_size * 0.5)
+        self.button.position = coords + \
+            (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + 10, 0)
         self.text.position = coords + offset
 
@@ -3079,8 +3081,11 @@ class Checkbox(UI):
         self.options = []
         button_y = self.position[1]
         for option_no in range(self.num_options):
-            option = Option(label=self.labels[option_no], font_size=self.font_size, position=(self.position[0], button_y))
-            button_y = button_y + self.font_size * (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
+            option = Option(label=self.labels[option_no],
+                            font_size=self.font_size,
+                            position=(self.position[0], button_y))
+            button_y = button_y + self.font_size * \
+                (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
             option.button.on_left_mouse_button_pressed = self.toggle_check
             self.options.append(option)
 
@@ -3122,7 +3127,7 @@ class Checkbox(UI):
         for option in self.options:
             if option.button == button:
                 option.checked = not option.checked
-            if option.checked == True:
+            if option.checked is True:
                 event.append(option.label)
         i_ren.force_render()
         print(event)
@@ -3138,8 +3143,9 @@ class Checkbox(UI):
         button_y = coords[1]
         for option_no, option in enumerate(self.options):
             option.position = (coords[0], button_y)
-            button_y = button_y + self.font_size * (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
-    
+            button_y = button_y + self.font_size * \
+                (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
+
     @property
     def font_size(self):
         """ Gets the font size of text.
