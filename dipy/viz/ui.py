@@ -2990,7 +2990,7 @@ class Option(UI):
     def _setup(self):
         """ Setup this UI component.
         """
-        # Checkbox's button
+        # Option's button
         self.button_icons = {}
         self.button_icons['unchecked'] = read_viz_icons(fname="stop2.png")
         self.button_icons['checked'] = read_viz_icons(fname="checkmark.png")
@@ -3157,6 +3157,69 @@ class Checkbox(UI):
         """ Gets the padding between options.
         """
         return self._padding
+
+
+class RadioButton(Checkbox):
+    """ A 2D set of :class:'Option' objects.
+    Only one option can be selected.
+
+    Attributes
+    ----------
+    num_options : int
+        Number of options
+    labels : list(string)
+        List of labels of each option.
+    options : list(Option)
+        List of all the options in the checkbox set.
+    padding : float
+        Distance between two adjacent options
+    """
+
+    def __init__(self, labels, padding=1, font_size=18,
+                 font_family='Arial', position=(0, 0)):
+        """
+        Parameters
+        ----------
+        labels : list(string)
+            List of labels of each option.
+        padding : float
+            The distance between two adjacent options
+        font_size : int
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of
+            the button of the first option.
+        """
+        super(RadioButton, self).__init__(labels=labels, position=position,
+                                          padding=padding,
+                                          font_size=font_size,
+                                          font_family=font_family)
+
+    def toggle_check(self, i_ren, obj, button):
+        """ Toggles the checked status of an option.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        obj : :class:`vtkActor`
+            The picked actor
+        button : :class:`Button2D`
+        """
+        for option in self.options:
+            if option.button == button:
+                if option.checked is not True:
+                    option.checked = True
+                    option.button.next_icon()
+                event = option.label
+
+            elif option.checked is True:
+                option.checked = False
+                option.button.next_icon()
+
+        i_ren.force_render()
+        print(event)
 
 
 class ListBox2D(UI):

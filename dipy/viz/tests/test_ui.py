@@ -579,6 +579,33 @@ def test_ui_checkbox(interactive=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_radio_button(interactive=False):
+    radio_button_test = ui.RadioButton(
+        labels=["option 1", "option 2\nOption 2", "option 3", "option 4"],
+        position=(10, 10))
+
+    npt.assert_equal(radio_button_test.num_options, 4)
+
+    old_positions = []
+    for option in radio_button_test.options:
+        old_positions.append(option.position)
+    old_positions = np.asarray(old_positions)
+    radio_button_test.position = (100, 100)
+    new_positions = []
+    for option in radio_button_test.options:
+        new_positions.append(option.position)
+    new_positions = np.asarray(new_positions)
+    npt.assert_equal(new_positions - old_positions,
+                     90 * np.ones((radio_button_test.num_options, 2)))
+
+    if interactive:
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(radio_button_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_listbox_2d(recording=False):
     filename = "test_ui_listbox_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -691,6 +718,9 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_checkbox":
         test_ui_checkbox(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_radio_button":
+        test_ui_radio_button(interactive=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
