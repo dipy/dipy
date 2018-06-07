@@ -67,7 +67,8 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines, cluster_map=None, clust_thr=15, nb_pts=20,
+    def __init__(self, streamlines,  greater_than=50, less_than=1000000,
+                 cluster_map=None, clust_thr=15, nb_pts=20,
                  seed=42, verbose=True):
         """ Recognition of bundles
 
@@ -79,6 +80,11 @@ class RecoBundles(object):
         ----------
         streamlines : Streamlines
             The tractogram in which you want to recognize bundles.
+        greater_than : int, optional
+            Keep streamlines that have length greater than
+            this value (default 50)
+        less_than : int, optional
+            Keep streamlines have length less than this value (default 1000000)
         cluster_map : QB map
             Provide existing clustering to start RB faster (default None).
         clust_thr : float
@@ -101,11 +107,13 @@ class RecoBundles(object):
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
         """
-        map_ind = np.zeros(len(streamlines))
-        for i in range(len(streamlines)):
-            map_ind[i] = check_range(streamlines[i], 50, 10000)
+        map_ind = np.zeros(len(streamlines)-1)
+        for i in range(len(streamlines)-1):
+            map_ind[i] = check_range(streamlines[i], greater_than, less_than)
         map_ind = map_ind.astype(bool)
 
+        self.orig_indices = np.array(list(range(0,len(streamlines)-1)))
+        self.filtered_indices = np.array(self.orig_indices[map_ind])
         self.streamlines = streamlines[map_ind]
         print("target brain streamlines length = ", len(streamlines))
         print("After refining target brain streamlines length = ", len(self.streamlines))
@@ -262,13 +270,16 @@ class RecoBundles(object):
             pruning_thr=pruning_thr,
             pruning_distance=pruning_distance)
 # ---------------------------------------------------
+
         pruned_streamlines = Streamlines(pruned_streamlines)
         pruned_model_centroids = self._cluster_model_bundle(
                 pruned_streamlines,
                 model_clust_thr=model_clust_thr)
+
+
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             pruned_model_centroids,
-            reduction_thr=reduction_thr,
+            reduction_thr=reduction_thr-3,
             reduction_distance=reduction_distance)
 # -------------- 2nd local slr ---------------------
 
@@ -280,8 +291,8 @@ class RecoBundles(object):
                   (-45, 45), (-45, 45), (-45, 45),
                   (0.8, 1.2), (0.8, 1.2), (0.8, 1.2), (-10, 10), (-10, 10), (-10, 10)]
             transf_streamlines = self._register_neighb_to_model(
-                model_bundle,
-                pruned_streamlines,
+                model_bundle, # pruned_streamlines, #
+                neighb_streamlines, # pruned_streamlines, #
                 metric=slr_metric,
                 x0=x0,
                 bounds=bounds,
@@ -290,12 +301,14 @@ class RecoBundles(object):
                 method=slr_method)
 
 # -------------- 2nd pruning after local slr ---------------------
+
+
         print("pruning after 2nd local Slr")
         pruned_streamlines, labels = self._prune_what_not_in_model(
-            model_centroids,
+            model_centroids, # pruned_model_centroids, #
             transf_streamlines,
             neighb_indices,
-            pruning_thr=pruning_thr-3,
+            pruning_thr=pruning_thr-4,
             pruning_distance=pruning_distance)
 
 # ---------------------------------------------------------
@@ -335,8 +348,8 @@ class RecoBundles(object):
 
 
         print("BMD metric = ", value)
-
-        return pruned_streamlines, labels, self.streamlines[labels]
+        print("before= ", len(labels), " after= ", len(self.orig_indices[labels]))
+        return pruned_streamlines, self.filtered_indices[labels], self.streamlines[labels]
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
                               select_randomly=500000):
@@ -544,4 +557,5 @@ class RecoBundles(object):
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
+        print(labels)
         return pruned_streamlines, labels

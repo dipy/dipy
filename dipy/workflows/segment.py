@@ -1,7 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import logging
-
+from dipy.viz import window, actor, fvtk
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
 import numpy as np
@@ -93,9 +93,10 @@ class RecoBundlesFlow(Workflow):
         return 'recobundles'
 
     def run(self, streamline_files, model_bundle_files,
+            greater_than=50, less_than=1000000,
             no_slr=False, clust_thr=15.,
             reduction_thr=10., reduction_distance='mdf',
-            model_clust_thr=5.,
+            model_clust_thr=2.5,
             pruning_thr=5., pruning_distance='mdf',
             slr_metric='symmetric',
             slr_transform='similarity',
@@ -111,6 +112,11 @@ class RecoBundlesFlow(Workflow):
             The path of streamline files where you want to recognize bundles
         model_bundle_files : string
             The path of model bundle files
+        greater_than : int, optional
+            Keep streamlines that have length greater than
+            this value (default 50)
+        less_than : int, optional
+            Keep streamlines have length less than this value (default 1000000)
         no_slr : boolean, optional
             Enable local Streamline-based Linear Registration (default False).
         clust_thr : float, optional
@@ -120,7 +126,7 @@ class RecoBundlesFlow(Workflow):
         reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
         model_clust_thr : float, optional
-            MDF distance threshold for the model bundles (default 5)
+            MDF distance threshold for the model bundles (default 2.5)
         pruning_thr : float, optional
             Pruning after matching (default 5).
         pruning_distance : string, optional
@@ -183,17 +189,22 @@ class RecoBundlesFlow(Workflow):
 
         logging.info('### RecoBundles ###')
 
+        #from pdb import set_trace
+        #set_trace()
+
         io_it = self.get_io_iterator()
 
         for sf, mb, out_rec, out_labels in io_it:
 
+            # from pdb import set_trace
+            # set_trace()
             t = time()
             logging.info(sf)
             streamlines, header = load_trk(sf)
             #streamlines = trkfile.streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
 
-            rb = RecoBundles(streamlines)
+            rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
             t = time()
             logging.info(mb)
@@ -263,6 +274,17 @@ class LabelsBundlesFlow(Workflow):
             streamlines, header = load_trk(sf)
             logging.info(lb)
             location = np.load(lb)
+            print(location)
             logging.info('Saving output files ...')
             save_trk(out_bundle, streamlines[location], np.eye(4))
             logging.info(out_bundle)
+
+            ren = window.Renderer()
+            stream_actor = fvtk.line( streamlines[location], linewidth=1, opacity=1, colors=(0,1,0))
+
+            ren.add(stream_actor)
+
+            show_m = window.ShowManager(ren)
+            show_m.initialize()
+            show_m.render()
+            show_m.start()
