@@ -260,4 +260,3 @@ class IOIterator(object):
         for input_path in sorted(input_args):
             if len(glob(input_path)) == 0:
                 raise OSError('File not found: '+input_path)
-
