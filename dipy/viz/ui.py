@@ -1711,13 +1711,16 @@ class LineSlider2D(UI):
         The moving part of the slider.
     text : :class:`TextBlock2D`
         The text that shows percentage.
+    shape : string
+        Describes the shape of the handle.
+        Currently supports 'disk' and 'square'.
     """
     def __init__(self, center=(0, 0),
                  initial_value=50, min_value=0, max_value=100,
                  length=200, line_width=5,
-                 inner_radius=0, outer_radius=10,
+                 inner_radius=0, outer_radius=10, handle_side=20,
                  font_size=16,
-                 text_template="{value:.1f} ({ratio:.0%})"):
+                 text_template="{value:.1f} ({ratio:.0%})", shape="disk"):
         """
         Parameters
         ----------
@@ -1734,9 +1737,11 @@ class LineSlider2D(UI):
         line_width : int
             Width of the line on which the disk will slide.
         inner_radius : int
-            Inner radius of the slider's handle.
+            Inner radius of the handles (if disk).
         outer_radius : int
-            Outer radius of the slider's handle.
+            Outer radius of the handles (if disk).
+        handle_side : int
+            Side length of the handles (if sqaure).
         font_size : int
             Size of the text to display alongside the slider (pt).
         text_template : str, callable
@@ -1744,13 +1749,21 @@ class LineSlider2D(UI):
             replacement fields: `{value:}`, `{ratio:}`.
             If callable, this instance of `:class:LineSlider2D` will be
             passed as argument to the text template function.
+        shape : string
+            Describes the shape of the handle.
+            Currently supports 'disk' and 'square'.
         """
+        self.shape = shape
         super(LineSlider2D, self).__init__()
 
         self.track.width = length
         self.track.height = line_width
-        self.handle.inner_radius = inner_radius
-        self.handle.outer_radius = outer_radius
+        if shape == "disk":
+            self.handle.inner_radius = inner_radius
+            self.handle.outer_radius = outer_radius
+        elif shape == "square":
+            self.handle.width = handle_side
+            self.handle.height = handle_side
         self.center = center
 
         self.min_value = min_value
@@ -1775,7 +1788,10 @@ class LineSlider2D(UI):
         self.track.color = (1, 0, 0)
 
         # Slider's handle
-        self.handle = Disk2D(outer_radius=1)
+        if self.shape == "disk":
+            self.handle = Disk2D(outer_radius=1)
+        elif self.shape == "square":
+            self.handle = Rectangle2D(size=(1, 1))
         self.handle.color = (1, 1, 1)
 
         # Slider Text
@@ -1822,6 +1838,7 @@ class LineSlider2D(UI):
         # Offset the slider line height by half the slider line width.
         track_position[1] -= self.track.size[1] / 2.
         self.track.position = track_position
+        self.handle.position = self.handle.position.astype('float64')
         self.handle.position += coords - self.position
         # Position the text below the handle.
         self.text.position = (self.handle.center[0],
@@ -1947,21 +1964,26 @@ class LineDoubleSlider2D(UI):
         The moving slider disks.
     text : [:class:`TextBlock2D`, :class:`TextBlock2D`]
         The texts that show the values of the disks.
+    shape : string
+        Describes the shape of the handle.
+        Currently supports 'disk' and 'square'.
 
     """
     def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
-                 center=(450, 300), length=200, initial_values=(0, 100),
-                 min_value=0, max_value=100, font_size=16,
-                 text_template="{value:.1f}"):
+                 handle_side = 20, center=(450, 300), length=200,
+                 initial_values=(0, 100), min_value=0, max_value=100,
+                 font_size=16, text_template="{value:.1f}", shape="disk"):
         """
         Parameters
         ----------
         line_width : int
             Width of the line on which the disk will slide.
         inner_radius : int
-            Inner radius of the handles.
+            Inner radius of the handles (if disk).
         outer_radius : int
-            Outer radius of the handles.
+            Outer radius of the handles (if disk).
+        handle_side : int
+            Side length of the handles (if sqaure).
         center : (float, float)
             Center of the slider.
         length : int
@@ -1979,17 +2001,27 @@ class LineDoubleSlider2D(UI):
             replacement fields: `{value:}`, `{ratio:}`.
             If callable, this instance of `:class:LineDoubleSlider2D` will be
             passed as argument to the text template function.
+        shape : string
+            Describes the shape of the handle.
+            Currently supports 'disk' and 'square'.
 
         """
+        self.shape = shape
         super(LineDoubleSlider2D, self).__init__()
 
         self.track.width = length
         self.track.height = line_width
         self.center = center
-        self.handles[0].inner_radius = inner_radius
-        self.handles[0].outer_radius = outer_radius
-        self.handles[1].inner_radius = inner_radius
-        self.handles[1].outer_radius = outer_radius
+        if shape == "disk":
+            self.handles[0].inner_radius = inner_radius
+            self.handles[0].outer_radius = outer_radius
+            self.handles[1].inner_radius = inner_radius
+            self.handles[1].outer_radius = outer_radius
+        elif shape == "square":
+            self.handles[0].width = handle_side
+            self.handles[0].height = handle_side
+            self.handles[1].width = handle_side
+            self.handles[1].height = handle_side
 
         self.min_value = min_value
         self.max_value = max_value
@@ -2015,15 +2047,21 @@ class LineDoubleSlider2D(UI):
 
         # Handles
         self.handles = []
-        self.handles.append(Disk2D(outer_radius=1))
-        self.handles.append(Disk2D(outer_radius=1))
+        if self.shape == "disk":
+            self.handles.append(Disk2D(outer_radius=1))
+            self.handles.append(Disk2D(outer_radius=1))
+        elif self.shape == "square":
+            self.handles.append(Rectangle2D(size=(1, 1)))
+            self.handles.append(Rectangle2D(size=(1, 1)))
         self.handles[0].color = (1, 1, 1)
         self.handles[1].color = (1, 1, 1)
 
         # Slider Text
-        display_text = TextBlock2D(justification="center",
-                                   vertical_justification="top")
-        self.text = [display_text, display_text]
+        self.text = [TextBlock2D(justification="center", 
+                                 vertical_justification="top"),
+                     TextBlock2D(justification="center", 
+                                 vertical_justification="top")
+                     ]
 
         # Add default events listener for this UI component.
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
@@ -2071,6 +2109,8 @@ class LineDoubleSlider2D(UI):
         # Offset the slider line height by half the slider line width.
         track_position[1] -= self.track.size[1] / 2.
         self.track.position = track_position
+        self.handles[0].position = self.handles[0].position.astype('float64')
+        self.handles[1].position = self.handles[1].position.astype('float64')
         self.handles[0].position += coords - self.position
         self.handles[1].position += coords - self.position
         # Position the text below the handles.
@@ -2523,10 +2563,10 @@ class RangeSlider(UI):
 
     """
     def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
-                 range_slider_center=(450, 400),
+                 handle_side=20, range_slider_center=(450, 400),
                  value_slider_center=(450, 300), length=200, min_value=0,
                  max_value=100, font_size=16, range_precision=1,
-                 value_precision=2):
+                 value_precision=2, shape="disk"):
         """
         Parameters
         ----------
@@ -2536,6 +2576,8 @@ class RangeSlider(UI):
             Inner radius of the handles.
         outer_radius : int
             Outer radius of the handles.
+        handle_side : int
+            Side length of the handles (if sqaure).
         range_slider_center : (float, float)
             Center of the LineDoubleSlider2D object.
         value_slider_center : (float, float)
@@ -2552,14 +2594,19 @@ class RangeSlider(UI):
             Number of decimal places to show the min and max values set.
         value_precision : int
             Number of decimal places to show the value set on slider.
+        shape : string
+            Describes the shape of the handle.
+            Currently supports 'disk' and 'square'.
         """
         self.min_value = min_value
         self.max_value = max_value
         self.inner_radius = inner_radius
         self.outer_radius = outer_radius
+        self.handle_side = handle_side
         self.length = length
         self.line_width = line_width
         self.font_size = font_size
+        self.shape = shape
 
         self.range_slider_text_template = \
             "{value:." + str(range_precision) + "f}"
@@ -2577,22 +2624,24 @@ class RangeSlider(UI):
             LineDoubleSlider2D(line_width=self.line_width,
                                inner_radius=self.inner_radius,
                                outer_radius=self.outer_radius,
+                               handle_side=self.handle_side,
                                center=self.range_slider_center,
                                length=self.length, min_value=self.min_value,
                                max_value=self.max_value,
                                initial_values=(self.min_value,
                                                self.max_value),
-                               font_size=self.font_size,
+                               font_size=self.font_size, shape=self.shape,
                                text_template=self.range_slider_text_template)
 
         self.value_slider = \
             LineSlider2D(line_width=self.line_width, length=self.length,
                          inner_radius=self.inner_radius,
                          outer_radius=self.outer_radius,
+                         handle_side=self.handle_side,
                          center=self.value_slider_center,
                          min_value=self.min_value, max_value=self.max_value,
                          initial_value=(self.min_value + self.max_value) / 2,
-                         font_size=self.font_size,
+                         font_size=self.font_size, shape=self.shape,
                          text_template=self.value_slider_text_template)
 
         # Add default events listener for this UI component.
