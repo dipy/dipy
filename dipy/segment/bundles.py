@@ -236,22 +236,12 @@ class RecoBundles(object):
             reduction_distance=reduction_distance)
         # print("neighbour indices type ", type(neighb_indices))
 
-        #visualizing neighbours
-        ren = window.Renderer()
-        stream_actor = fvtk.line(neighb_streamlines, linewidth=1, opacity=1, colors=(0,1,0))
-        model_actor = fvtk.line(model_bundle, linewidth=1, opacity=1, colors=(1,1,0))
-        ren.add(stream_actor)
-        ren.add(model_actor)
-        show_m = window.ShowManager(ren)
-        show_m.initialize()
-        show_m.render()
-        show_m.start()
-# ----------------------
+
         if len(neighb_streamlines) == 0:
             return Streamlines([]), [], Streamlines([])
         if slr:
 
-            transf_streamlines = self._register_neighb_to_model(
+            transf_streamlines, slr1_bmd = self._register_neighb_to_model(
                 model_bundle,
                 neighb_streamlines,
                 metric=slr_metric,
@@ -260,6 +250,7 @@ class RecoBundles(object):
                 select_model=slr_select[0],
                 select_target=slr_select[1],
                 method=slr_method)
+
         else:
             transf_streamlines = neighb_streamlines
 
@@ -271,7 +262,6 @@ class RecoBundles(object):
             pruning_distance=pruning_distance)
 # ---------------------------------------------------
 
-        #pruned_streamlines = Streamlines(pruned_streamlines)
         pruned_model_centroids = self._cluster_model_bundle(
                 pruned_streamlines,
                 model_clust_thr=model_clust_thr)
@@ -290,7 +280,7 @@ class RecoBundles(object):
             bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45),
                   (0.8, 1.2), (0.8, 1.2), (0.8, 1.2), (-10, 10), (-10, 10), (-10, 10)]
-            transf_streamlines = self._register_neighb_to_model(
+            transf_streamlines, slr2_bmd = self._register_neighb_to_model(
                 model_bundle, # pruned_streamlines, #
                 neighb_streamlines, # pruned_streamlines, #
                 metric=slr_metric,
@@ -337,7 +327,7 @@ class RecoBundles(object):
         static = select_random_set_of_streamlines(model_bundle,
                                                   slr_select[0])
         moving = select_random_set_of_streamlines(pruned_streamlines,
-                                                                                      slr_select[1])
+                                                  slr_select[1])
         nb_pts = 20
         static = set_number_of_points(static, nb_pts)
         moving = set_number_of_points(moving, nb_pts)
@@ -466,9 +456,7 @@ class RecoBundles(object):
         transf_matrix = slm.matrix
         slr_bmd = slm.fopt
         slr_iterations = slm.iterations
-        print("=======================")
-        print("SLR BMD = " , slr_bmd)
-        print("=======================")
+
         if self.verbose:
             print(' Square-root of BMD is %.3f' % (np.sqrt(slr_bmd),))
             if slr_iterations is not None:
@@ -482,7 +470,7 @@ class RecoBundles(object):
 
             print(' Duration %0.3f sec. \n' % (time() - t,))
 
-        return transf_streamlines
+        return transf_streamlines, slr_bmd
 
     def _prune_what_not_in_model(self, model_centroids,
                                  transf_streamlines,
