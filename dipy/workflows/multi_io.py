@@ -197,7 +197,6 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names,
                        out_keys=out_keys)
 
-
 class IOIterator(object):
     """ Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
@@ -214,6 +213,7 @@ class IOIterator(object):
 
 
     def set_inputs(self, *args):
+        self.file_existence_check(args)
         self.input_args = list(args)
         self.inputs = [sorted(glob(inp)) for inp in self.input_args if type(inp) == str]
 
@@ -253,3 +253,11 @@ class IOIterator(object):
         IO = np.concatenate([I, O], axis=1)
         for i_o in IO:
             yield i_o
+
+    @staticmethod
+    def file_existence_check(args):
+        input_args = list(args)
+        for input_path in sorted(input_args):
+            if len(glob(input_path)) == 0:
+                raise OSError('File not found: '+input_path)
+
