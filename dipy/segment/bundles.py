@@ -107,12 +107,12 @@ class RecoBundles(object):
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
         """
-        map_ind = np.zeros(len(streamlines)-1)
+        map_ind = np.zeros(len(streamlines)) #-1
         for i in range(len(streamlines)-1):
             map_ind[i] = check_range(streamlines[i], greater_than, less_than)
         map_ind = map_ind.astype(bool)
 
-        self.orig_indices = np.array(list(range(0,len(streamlines)-1)))
+        self.orig_indices = np.array(list(range(0,len(streamlines)))) #-1
         self.filtered_indices = np.array(self.orig_indices[map_ind])
         self.streamlines = streamlines[map_ind]
         print("target brain streamlines length = ", len(streamlines))
@@ -271,7 +271,7 @@ class RecoBundles(object):
             pruning_distance=pruning_distance)
 # ---------------------------------------------------
 
-        pruned_streamlines = Streamlines(pruned_streamlines)
+        #pruned_streamlines = Streamlines(pruned_streamlines)
         pruned_model_centroids = self._cluster_model_bundle(
                 pruned_streamlines,
                 model_clust_thr=model_clust_thr)
@@ -284,7 +284,7 @@ class RecoBundles(object):
 # -------------- 2nd local slr ---------------------
 
         print("2nd local Slr")
-        print(type(pruned_streamlines))
+        #print(type(pruned_streamlines))
         if slr:
             x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
             bounds = [(-30, 30), (-30, 30), (-30, 30),
@@ -348,7 +348,7 @@ class RecoBundles(object):
 
 
         print("BMD metric = ", value)
-        print("before= ", len(labels), " after= ", len(self.orig_indices[labels]))
+        #print("before= ", len(labels), " after= ", len(self.orig_indices[labels]))
         return pruned_streamlines, self.filtered_indices[labels], self.streamlines[labels]
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
@@ -537,8 +537,7 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
-        pruned_streamlines = [transf_streamlines[i]
-                              for i in pruned_indices]
+        pruned_streamlines = transf_streamlines[np.array(pruned_indices)]
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
@@ -557,5 +556,5 @@ class RecoBundles(object):
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
-        print(labels)
+
         return pruned_streamlines, labels

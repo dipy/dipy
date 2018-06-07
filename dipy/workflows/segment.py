@@ -192,25 +192,27 @@ class RecoBundlesFlow(Workflow):
         #from pdb import set_trace
         #set_trace()
 
+
+        # from pdb import set_trace
+        # set_trace()
+
         io_it = self.get_io_iterator()
 
-        for sf, mb, out_rec, out_labels in io_it:
+        t = time()
+        logging.info(streamline_files)
+        streamlines, header = load_trk(streamline_files)
+        #streamlines = trkfile.streamlines
+        logging.info(' Loading time %0.3f sec' % (time() - t,))
 
-            # from pdb import set_trace
-            # set_trace()
-            t = time()
-            logging.info(sf)
-            streamlines, header = load_trk(sf)
-            #streamlines = trkfile.streamlines
-            logging.info(' Loading time %0.3f sec' % (time() - t,))
+        rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
-            rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
 
+        for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
             model_bundle, _ = load_trk(mb)
             logging.info(' Loading time %0.3f sec' % (time() - t,))
-
+            print("model file = ", mb)
             recognized_bundle, labels, original_recognized_bundle = \
                 rb.recognize(
                     model_bundle,
@@ -232,9 +234,6 @@ class RecoBundlesFlow(Workflow):
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
             logging.info(out_labels)
-
-
-
 
 class LabelsBundlesFlow(Workflow):
     @classmethod
