@@ -1990,7 +1990,7 @@ class LineDoubleSlider2D(UI):
         self.handles[0].outer_radius = outer_radius
         self.handles[1].inner_radius = inner_radius
         self.handles[1].outer_radius = outer_radius
-        
+
         self.min_value = min_value
         self.max_value = max_value
         self.text[0].font_size = font_size
@@ -2015,23 +2015,29 @@ class LineDoubleSlider2D(UI):
 
         # Handles
         self.handles = []
-        self.handles.append(Disk2D(outer_radius = 1))
-        self.handles.append(Disk2D(outer_radius = 1))
+        self.handles.append(Disk2D(outer_radius=1))
+        self.handles.append(Disk2D(outer_radius=1))
         self.handles[0].color = (1, 1, 1)
         self.handles[1].color = (1, 1, 1)
 
         # Slider Text
-        self.text = [TextBlock2D(justification="center", vertical_justification="top"), TextBlock2D(justification="center", vertical_justification="top")]
+        display_text = TextBlock2D(justification="center",
+                                   vertical_justification="top")
+        self.text = [display_text, display_text]
 
         # Add default events listener for this UI component.
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
-        self.handles[0].on_left_mouse_button_dragged = self.handle_move_callback
-        self.handles[1].on_left_mouse_button_dragged = self.handle_move_callback
+        self.handles[0].on_left_mouse_button_dragged = \
+            self.handle_move_callback
+        self.handles[1].on_left_mouse_button_dragged = \
+            self.handle_move_callback
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
-        return self.track.actors + self.handles[0].actors + self.handles[1].actors + self.text[0].actors + self.text[1].actors
+        return (self.track.actors + self.handles[0].actors +
+                self.handles[1].actors + self.text[0].actors +
+                self.text[1].actors)
 
     def _add_to_renderer(self, ren):
         """ Add all subcomponents or VTK props that compose this UI component.
@@ -2069,9 +2075,9 @@ class LineDoubleSlider2D(UI):
         self.handles[1].position += coords - self.position
         # Position the text below the handles.
         self.text[0].position = (self.handles[0].center[0],
-                              self.handles[0].position[1] - 20)
+                                 self.handles[0].position[1] - 20)
         self.text[1].position = (self.handles[1].center[0],
-                              self.handles[1].position[1] - 20)
+                                 self.handles[1].position[1] - 20)
 
     @property
     def left_x_position(self):
@@ -2238,7 +2244,9 @@ class LineDoubleSlider2D(UI):
         text = self.format_text(disk_number)
         self.text[disk_number].message = text
 
-        self.text[disk_number].position = (self.handles[disk_number].center[0], self.text[disk_number].position[1])
+        self.text[disk_number].position = (
+            self.handles[disk_number].center[0],
+            self.text[disk_number].position[1])
 
     def handle_move_callback(self, i_ren, vtkactor, slider):
         """ Actual handle movement.
@@ -2252,9 +2260,9 @@ class LineDoubleSlider2D(UI):
         """
         position = i_ren.event.position
         if vtkactor == self.handles[0].actors[0]:
-            self.set_position(position,0)
+            self.set_position(position, 0)
         elif vtkactor == self.handles[1].actors[0]:
-            self.set_position(position,1)
+            self.set_position(position, 1)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
@@ -2588,8 +2596,10 @@ class RangeSlider(UI):
                          text_template=self.value_slider_text_template)
 
         # Add default events listener for this UI component.
-        self.range_slider.handles[0].on_left_mouse_button_dragged = self.range_slider_handle_move_callback
-        self.range_slider.handles[1].on_left_mouse_button_dragged = self.range_slider_handle_move_callback
+        self.range_slider.handles[0].on_left_mouse_button_dragged = \
+            self.range_slider_handle_move_callback
+        self.range_slider.handles[1].on_left_mouse_button_dragged = \
+            self.range_slider_handle_move_callback
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
