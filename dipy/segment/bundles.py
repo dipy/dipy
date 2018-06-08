@@ -292,7 +292,6 @@ class RecoBundles(object):
 
 # -------------- 2nd pruning after local slr ---------------------
 
-
         print("pruning after 2nd local Slr")
         pruned_streamlines, labels = self._prune_what_not_in_model(
             model_centroids, # pruned_model_centroids, #

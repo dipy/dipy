@@ -114,9 +114,10 @@ class RecoBundlesFlow(Workflow):
             The path of model bundle files
         greater_than : int, optional
             Keep streamlines that have length greater than
-            this value (default 50)
+            this value (default 50) in mm.
         less_than : int, optional
-            Keep streamlines have length less than this value (default 1000000)
+            Keep streamlines have length less than this value
+            (default 1000000) in mm.
         no_slr : boolean, optional
             Enable local Streamline-based Linear Registration (default False).
         clust_thr : float, optional
