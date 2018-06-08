@@ -90,15 +90,16 @@ class RecoBundlesFlow(Workflow):
     def run(self, streamline_files, model_bundle_files,
             greater_than=50, less_than=1000000,
             no_slr=False, clust_thr=15.,
-            reduction_thr=15., r_reduction_thr=12.,
+            reduction_thr=15.,
             reduction_distance='mdf',
             model_clust_thr=2.5,
-            pruning_thr=9., r_pruning_thr=6.,
+            pruning_thr=8.,
             pruning_distance='mdf',
             slr_metric='symmetric',
             slr_transform='similarity',
             slr_matrix='small',
-            refine=False,
+            refine=False, r_reduction_thr=12.,
+            r_pruning_thr=6.,
             out_dir='',
             out_recognized_transf='recognized.trk',
             out_recognized_labels='labels.npy'):
@@ -122,16 +123,12 @@ class RecoBundlesFlow(Workflow):
             MDF distance threshold for all streamlines (default 15)
         reduction_thr : float, optional
             Reduce search space by (mm) (default 15)
-        r_reduction_thr : float, optional
-            Refine reduce search space by (mm) (default 12)
         reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
         model_clust_thr : float, optional
             MDF distance threshold for the model bundles (default 2.5)
         pruning_thr : float, optional
-            Pruning after matching (default 9).
-        r_pruning_thr : float, optional
-            Refine pruning after matching (default 6).
+            Pruning after matching (default 8).
         pruning_distance : string, optional
             Pruning distance type can be mdf or mam (default mdf)
         slr_metric : string, optional
@@ -145,6 +142,10 @@ class RecoBundlesFlow(Workflow):
             (default 'small')
         refine : boolean, optional
             Enable refine recognized bunle (default False)
+        r_reduction_thr : float, optional
+            Refine reduce search space by (mm) (default 12)
+        r_pruning_thr : float, optional
+            Refine pruning after matching (default 6).
         out_dir : string, optional
             Output directory (default input file directory)
         out_recognized_transf : string, optional
@@ -253,8 +254,9 @@ class RecoBundlesFlow(Workflow):
                          model_bundle, recognized_bundle,
                          slr_select)
 
-            print("BA = ", ba)
-            print("BMD = ", bmd)
+            print("Bundle adjacency Metric = ", ba)
+            print("Bundle Min Distance Metric = ", bmd)
+
             save_trk(out_rec, recognized_bundle, np.eye(4))
 
             logging.info('Saving output files ...')

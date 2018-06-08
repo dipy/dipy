@@ -370,7 +370,6 @@ class RecoBundles(object):
             Select the number of streamlines from model to neirborhood of
             model to perform the local SLR.
 
-
         Returns
         -------
         ba_value : float
@@ -383,10 +382,10 @@ class RecoBundles(object):
         spruned_streamlines = Streamlines(pruned_streamlines)
         recog_centroids = self._cluster_model_bundle(
                 spruned_streamlines,
-                model_clust_thr=2)
+                model_clust_thr=1.25)
         mod_centroids = self._cluster_model_bundle(
                 model_bundle,
-                model_clust_thr=2)
+                model_clust_thr=1.25)
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
         ba_value = ba_analysis(recog_centroids, model_centroids, threshold=10)

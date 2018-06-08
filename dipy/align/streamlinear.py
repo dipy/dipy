@@ -694,18 +694,15 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
 
 
 def remove_clusters_by_size(clusters, min_size=0):
-    #for cl in clusters:
-    #    if len(cl) < min_size:
-    #        clusters.remove_cluster(cl)
-    #return clusters
+
     by_size = lambda c: len(c) >= min_size
     ob = filter(by_size, clusters)
 
-    cul = Streamlines()
-    for som in ob:
-        cul.append(som.centroid)
+    centroids = Streamlines()
+    for cluster in ob:
+        centroids.append(cluster.centroid)
 
-    return cul
+    return centroids
 
 
 def progressive_slr(static, moving, metric, x0, bounds,
@@ -930,7 +927,7 @@ def slr_with_qb(static, moving,
     rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
     cluster_map1 = qb1.cluster(rstreamlines1)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-    qb_centroids1 = clusters1 #[cluster.centroid for cluster in clusters1]
+    qb_centroids1 = clusters1
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
@@ -943,7 +940,7 @@ def slr_with_qb(static, moving,
     rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
     cluster_map2 = qb2.cluster(rstreamlines2)
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = clusters2 #[cluster.centroid for cluster in clusters2]
+    qb_centroids2 = clusters2
 
     if verbose:
         t = time()
@@ -1068,8 +1065,7 @@ def slr_with_qbx(static, moving,
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
 
-    qb_centroids1 = clusters1 #.centroids
-    #[cluster.centroid for cluster in clusters1]
+    qb_centroids1 = clusters1
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
@@ -1085,7 +1081,7 @@ def slr_with_qbx(static, moving,
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr)
 
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = clusters2 #.centroids #[cluster.centroid for cluster in clusters2]
+    qb_centroids2 = clusters2
 
     if verbose:
         t = time()
