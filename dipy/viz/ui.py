@@ -1970,7 +1970,7 @@ class LineDoubleSlider2D(UI):
 
     """
     def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
-                 handle_side = 20, center=(450, 300), length=200,
+                 handle_side=20, center=(450, 300), length=200,
                  initial_values=(0, 100), min_value=0, max_value=100,
                  font_size=16, text_template="{value:.1f}", shape="disk"):
         """
@@ -2057,9 +2057,9 @@ class LineDoubleSlider2D(UI):
         self.handles[1].color = (1, 1, 1)
 
         # Slider Text
-        self.text = [TextBlock2D(justification="center", 
+        self.text = [TextBlock2D(justification="center",
                                  vertical_justification="top"),
-                     TextBlock2D(justification="center", 
+                     TextBlock2D(justification="center",
                                  vertical_justification="top")
                      ]
 
