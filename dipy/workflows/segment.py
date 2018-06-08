@@ -99,7 +99,7 @@ class RecoBundlesFlow(Workflow):
             slr_transform='similarity',
             slr_matrix='small',
             refine=False, r_reduction_thr=12.,
-            r_pruning_thr=6.,
+            r_pruning_thr=6., no_r_slr=False,
             out_dir='',
             out_recognized_transf='recognized.trk',
             out_recognized_labels='labels.npy'):
@@ -118,7 +118,8 @@ class RecoBundlesFlow(Workflow):
             Keep streamlines have length less than this value
             (default 1000000) in mm.
         no_slr : boolean, optional
-            Enable local Streamline-based Linear Registration (default False).
+            Don't enable local Streamline-based Linear
+            Registration (default False).
         clust_thr : float, optional
             MDF distance threshold for all streamlines (default 15)
         reduction_thr : float, optional
@@ -146,6 +147,9 @@ class RecoBundlesFlow(Workflow):
             Refine reduce search space by (mm) (default 12)
         r_pruning_thr : float, optional
             Refine pruning after matching (default 6).
+        no_r_slr : boolean, optional
+            Don't enable Refine local Streamline-based Linear
+            Registration (default False).
         out_dir : string, optional
             Output directory (default input file directory)
         out_recognized_transf : string, optional
@@ -164,6 +168,7 @@ class RecoBundlesFlow(Workflow):
         """
 
         slr = not no_slr
+        r_slr = not no_r_slr
 
         bounds = [(-30, 30), (-30, 30), (-30, 30),
                   (-45, 45), (-45, 45), (-45, 45),
@@ -243,7 +248,7 @@ class RecoBundlesFlow(Workflow):
                         reduction_distance=reduction_distance,
                         pruning_thr=r_pruning_thr,
                         pruning_distance=pruning_distance,
-                        slr=slr,
+                        slr=r_slr,
                         slr_metric=slr_metric,
                         slr_x0=x0,
                         slr_bounds=bounds,
