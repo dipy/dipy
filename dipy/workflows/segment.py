@@ -1,7 +1,6 @@
 from __future__ import division, print_function, absolute_import
 
 import logging
-from dipy.viz import window, actor, fvtk
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
 import numpy as np
@@ -9,11 +8,7 @@ from time import time
 from dipy.segment.mask import median_otsu
 from dipy.workflows.align import load_trk, save_trk
 from dipy.segment.bundles import RecoBundles
-from dipy.tracking.streamline import transform_streamlines
-from dipy.io.pickles import save_pickle, load_pickle
-from dipy.align.streamlinear import BundleMinDistanceMetric
-from dipy.tracking.streamline import (set_number_of_points, nbytes,
-                                      select_random_set_of_streamlines)
+
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -95,12 +90,13 @@ class RecoBundlesFlow(Workflow):
     def run(self, streamline_files, model_bundle_files,
             greater_than=50, less_than=1000000,
             no_slr=False, clust_thr=15.,
-            reduction_thr=10., reduction_distance='mdf',
+            reduction_thr=15., reduction_distance='mdf',
             model_clust_thr=2.5,
             pruning_thr=5., pruning_distance='mdf',
             slr_metric='symmetric',
             slr_transform='similarity',
             slr_matrix='small',
+            refine=False,
             out_dir='',
             out_recognized_transf='recognized.trk',
             out_recognized_labels='labels.npy'):
@@ -123,7 +119,7 @@ class RecoBundlesFlow(Workflow):
         clust_thr : float, optional
             MDF distance threshold for all streamlines (default 15)
         reduction_thr : float, optional
-            Reduce search space by (mm) (default 10)
+            Reduce search space by (mm) (default 15)
         reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
         model_clust_thr : float, optional
@@ -141,6 +137,8 @@ class RecoBundlesFlow(Workflow):
         slr_matrix : string, optional
             Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge'
             (default 'small')
+        refine : boolean, optional
+            Enable refine recognized bunle (default False)
         out_dir : string, optional
             Output directory (default input file directory)
         out_recognized_transf : string, optional
@@ -190,23 +188,21 @@ class RecoBundlesFlow(Workflow):
 
         logging.info('### RecoBundles ###')
 
-        #from pdb import set_trace
-        #set_trace()
-
-
-        # from pdb import set_trace
-        # set_trace()
-
         io_it = self.get_io_iterator()
 
         t = time()
         logging.info(streamline_files)
         streamlines, header = load_trk(streamline_files)
-        #streamlines = trkfile.streamlines
+
         logging.info(' Loading time %0.3f sec' % (time() - t,))
 
-        rb = RecoBundles(streamlines, greater_than=greater_than, less_than=less_than)
-
+        rb = RecoBundles(streamlines, greater_than=greater_than,
+                         less_than=less_than)
+        print("there")
+        if refine:
+            recognize = rb.refine
+        else:
+            recognize = rb.recognize
 
         for _, mb, out_rec, out_labels in io_it:
             t = time()
@@ -214,8 +210,8 @@ class RecoBundlesFlow(Workflow):
             model_bundle, _ = load_trk(mb)
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             print("model file = ", mb)
-            recognized_bundle, labels, original_recognized_bundle = \
-                rb.recognize(
+            recognized_bundle, labels = \
+                recognize(
                     model_bundle,
                     model_clust_thr=model_clust_thr,
                     reduction_thr=reduction_thr,
@@ -235,6 +231,7 @@ class RecoBundlesFlow(Workflow):
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
             logging.info(out_labels)
+
 
 class LabelsBundlesFlow(Workflow):
     @classmethod
@@ -278,13 +275,3 @@ class LabelsBundlesFlow(Workflow):
             logging.info('Saving output files ...')
             save_trk(out_bundle, streamlines[location], np.eye(4))
             logging.info(out_bundle)
-
-            ren = window.Renderer()
-            stream_actor = fvtk.line( streamlines[location], linewidth=1, opacity=1, colors=(0,1,0))
-
-            ren.add(stream_actor)
-
-            show_m = window.ShowManager(ren)
-            show_m.initialize()
-            show_m.render()
-            show_m.start()
