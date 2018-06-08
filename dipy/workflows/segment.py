@@ -90,9 +90,11 @@ class RecoBundlesFlow(Workflow):
     def run(self, streamline_files, model_bundle_files,
             greater_than=50, less_than=1000000,
             no_slr=False, clust_thr=15.,
-            reduction_thr=15., reduction_distance='mdf',
+            reduction_thr=15., r_reduction_thr=12.,
+            reduction_distance='mdf',
             model_clust_thr=2.5,
-            pruning_thr=5., pruning_distance='mdf',
+            pruning_thr=9., r_pruning_thr=6.,
+            pruning_distance='mdf',
             slr_metric='symmetric',
             slr_transform='similarity',
             slr_matrix='small',
@@ -120,12 +122,16 @@ class RecoBundlesFlow(Workflow):
             MDF distance threshold for all streamlines (default 15)
         reduction_thr : float, optional
             Reduce search space by (mm) (default 15)
+        r_reduction_thr : float, optional
+            Refine reduce search space by (mm) (default 12)
         reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
         model_clust_thr : float, optional
             MDF distance threshold for the model bundles (default 2.5)
         pruning_thr : float, optional
-            Pruning after matching (default 5).
+            Pruning after matching (default 9).
+        r_pruning_thr : float, optional
+            Refine pruning after matching (default 6).
         pruning_distance : string, optional
             Pruning distance type can be mdf or mam (default mdf)
         slr_metric : string, optional
@@ -198,11 +204,6 @@ class RecoBundlesFlow(Workflow):
 
         rb = RecoBundles(streamlines, greater_than=greater_than,
                          less_than=less_than)
-        print("there")
-        if refine:
-            recognize = rb.refine
-        else:
-            recognize = rb.recognize
 
         for _, mb, out_rec, out_labels in io_it:
             t = time()
@@ -211,7 +212,7 @@ class RecoBundlesFlow(Workflow):
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             print("model file = ", mb)
             recognized_bundle, labels = \
-                recognize(
+                rb.recognize(
                     model_bundle,
                     model_clust_thr=model_clust_thr,
                     reduction_thr=reduction_thr,
@@ -225,6 +226,35 @@ class RecoBundlesFlow(Workflow):
                     slr_select=slr_select,
                     slr_method='L-BFGS-B')
 
+            if refine:
+                x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
+                bounds = [(-30, 30), (-30, 30), (-30, 30),
+                          (-45, 45), (-45, 45), (-45, 45),
+                          (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
+                          (-10, 10), (-10, 10), (-10, 10)]
+
+                recognized_bundle, labels = \
+                    rb.refine(
+                        model_bundle,
+                        recognized_bundle,
+                        model_clust_thr=model_clust_thr,
+                        reduction_thr=r_reduction_thr,
+                        reduction_distance=reduction_distance,
+                        pruning_thr=r_pruning_thr,
+                        pruning_distance=pruning_distance,
+                        slr=slr,
+                        slr_metric=slr_metric,
+                        slr_x0=x0,
+                        slr_bounds=bounds,
+                        slr_select=slr_select,
+                        slr_method='L-BFGS-B')
+
+            ba, bmd = rb.evaluate_results(
+                         model_bundle, recognized_bundle,
+                         slr_select)
+
+            print("BA = ", ba)
+            print("BMD = ", bmd)
             save_trk(out_rec, recognized_bundle, np.eye(4))
 
             logging.info('Saving output files ...')

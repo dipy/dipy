@@ -262,15 +262,10 @@ class RecoBundles(object):
         # return recognized bundle, labels of
         # recognized bundle
 
-        ba, bmd = self.evaluate_results(model_bundle,
-                                        pruned_streamlines, slr_select)
-        print("BA = ", ba)
-        print("BMD = ", bmd)
-
         return pruned_streamlines, self.filtered_indices[labels]
 
-    def refine(self, model_bundle, model_clust_thr,
-               reduction_thr=15,
+    def refine(self, model_bundle, pruned_streamlines, model_clust_thr,
+               reduction_thr=14,
                reduction_distance='mdf',
                slr=True,
                slr_metric=None,
@@ -278,13 +273,14 @@ class RecoBundles(object):
                slr_bounds=None,
                slr_select=(400, 600),
                slr_method='L-BFGS-B',
-               pruning_thr=10,
+               pruning_thr=6,
                pruning_distance='mdf'):
         """ Refine recognize the model_bundle in self.streamlines
 
         Parameters
         ----------
         model_bundle : Streamlines
+        pruned_streamlines : Streamlines
         model_clust_thr : float
         reduction_thr : float
         reduction_distance : string
@@ -322,21 +318,7 @@ class RecoBundles(object):
         print("slr= ", slr)
         if self.verbose:
             t = time()
-            print('## Recognize given bundle ## \n')
-
-        pruned_streamlines, labels = self.recognize(
-                    model_bundle,
-                    model_clust_thr=model_clust_thr,
-                    reduction_thr=reduction_thr,
-                    reduction_distance=reduction_distance,
-                    pruning_thr=pruning_thr,
-                    pruning_distance=pruning_distance,
-                    slr=slr,
-                    slr_metric=slr_metric,
-                    slr_x0=slr_x0,
-                    slr_bounds=slr_bounds,
-                    slr_select=slr_select,
-                    slr_method='L-BFGS-B')
+            print('## Refine recognize given bundle ## \n')
 
         model_centroids = self._cluster_model_bundle(
                 model_bundle,
@@ -348,22 +330,17 @@ class RecoBundles(object):
 
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             pruned_model_centroids,
-            reduction_thr=reduction_thr-3,
+            reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
 
         print("2nd local Slr")
         if slr:
-            x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
-            bounds = [(-30, 30), (-30, 30), (-30, 30),
-                      (-45, 45), (-45, 45), (-45, 45),
-                      (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
-                      (-10, 10), (-10, 10), (-10, 10)]
             transf_streamlines, slr2_bmd = self._register_neighb_to_model(
                 model_bundle,
                 neighb_streamlines,
                 metric=slr_metric,
-                x0=x0,
-                bounds=bounds,
+                x0=slr_x0,
+                bounds=slr_bounds,
                 select_model=slr_select[0],
                 select_target=slr_select[1],
                 method=slr_method)
@@ -373,16 +350,12 @@ class RecoBundles(object):
             model_centroids,
             transf_streamlines,
             neighb_indices,
-            pruning_thr=pruning_thr-4,
+            pruning_thr=pruning_thr,
             pruning_distance=pruning_distance)
 
         if self.verbose:
             print('Total duration of recognition time is %0.3f sec.\n'
                   % (time()-t,))
-        ba, bmd = self.evaluate_results(model_bundle, pruned_streamlines,
-                                        slr_select)
-        print("BA = ", ba)
-        print("BMD = ", bmd)
 
         return pruned_streamlines, self.filtered_indices[labels]
 
