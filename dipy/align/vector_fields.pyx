@@ -3115,7 +3115,7 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
-        for k in prange(nslices):
+        for k in prange(nslices, schedule='guided'):
             for i in range(nrows):
                 for j in range(ncols):
                     inside[k, i, j] = 1
