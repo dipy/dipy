@@ -80,7 +80,7 @@ tracking. Generally, the seeds chosen will depend on the pathways one is
 interested in modeling. In this example, we'll use a $2 \times 2 \times 2$ grid
 of seeds per voxel, in a sagittal slice of the corpus callosum. Tracking from
 this region will give us a model of the corpus callosum tract. This slice has
-label value ``2`` in the labels image. 
+label value ``2`` in the labels image.
 """
 
 from dipy.tracking import utils
@@ -103,7 +103,8 @@ from dipy.tracking.streamline import Streamlines
 interactive = False
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(csa_peaks, classifier, seeds, affine=np.eye(4), step_size=.5)
+streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
+                                      affine=np.eye(4), step_size=.5)
 
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
@@ -194,8 +195,9 @@ Next we can pass this direction getter, along with the ``classifier`` and
 callosum.
 """
 
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine=np.eye(4),
-                            step_size=.5, max_cross=1)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds,
+                                      affine=np.eye(4), step_size=.5,
+                                      max_cross=1)
 
 # Generate streamlines object.
 streamlines = Streamlines(streamlines_generator)
