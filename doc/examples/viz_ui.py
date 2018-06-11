@@ -1,3 +1,4 @@
+ #-*- coding: utf-8 -*-
 """
 ===============
 User Interfaces
@@ -169,11 +170,12 @@ ring_slider.on_change = rotate_red_cube
 ===========
 """
 
-values = list(map(str, range(1, 50+1)))
+values = list(map(str, range(1, 50 + 1)))
 listbox = ui.ListBox2D(values=values,
-                       position=(300, 300),
-                       size=(500, 500),
+                       position=(300, 420),
+                       size=(250, 160),
                        multiselection=True)
+
 
 def _print_nb_selected_elements():
     msg = "{}/{} elements are now selected."
@@ -205,7 +207,7 @@ show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
 
 window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 
