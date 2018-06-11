@@ -1,4 +1,4 @@
- #-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 ===============
 User Interfaces
@@ -207,7 +207,7 @@ show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation
-show_manager.start()
+# show_manager.start()
 
 window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 
