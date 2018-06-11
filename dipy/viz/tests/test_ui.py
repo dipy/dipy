@@ -512,6 +512,7 @@ def test_ui_listbox_2d(recording=False):
 
     # We will collect the sequence of values that have been selected.
     selected_values = []
+
     def _on_change():
         selected_values.append(list(listbox.selected))
 
