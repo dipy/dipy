@@ -218,7 +218,7 @@ class RecoBundles(object):
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
         """
-        print("slr= ", slr)
+
         if self.verbose:
             t = time()
             print('## Recognize given bundle ## \n')
@@ -315,7 +315,7 @@ class RecoBundles(object):
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
         """
-        print("slr= ", slr)
+
         if self.verbose:
             t = time()
             print('## Refine recognize given bundle ## \n')
