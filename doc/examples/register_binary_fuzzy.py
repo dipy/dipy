@@ -2,9 +2,10 @@
 =========================================================
 Diffeomorphic Registration with binary and fuzzy images
 =========================================================
-This example for registering binary and fuzzy images together.
-This may be seen as aligning sensed (fuzzy) image to the
-and template (binary) image.
+
+This example demonstrates registration of a binary and a fuzzy image.
+This could be seen as aligning a fuzzy (sensed) image to a binary
+(e.g., template) image.
 """
 
 import numpy as np
@@ -15,8 +16,9 @@ from dipy.align.metrics import SSDMetric
 from dipy.viz import regtools
 
 """
-Let's generate sample template image as combination of three ellipses.
-The fuzzy (sensed) is a smooth version of the reference image.
+Let's generate a sample template image as the combination of three ellipses.
+We will generate the fuzzy (sensed) version of the image by smoothing
+the reference image.
 """
 
 
@@ -26,6 +28,7 @@ def draw_ellipse(img, center, axis):
     img[rr, cc] = 1
     return img
 
+
 img_ref = np.zeros((64, 64))
 img_ref = draw_ellipse(img_ref, (25, 15), (10, 5))
 img_ref = draw_ellipse(img_ref, (20, 45), (15, 10))
@@ -34,7 +37,7 @@ img_ref = draw_ellipse(img_ref, (50, 40), (7, 15))
 img_in = filters.gaussian(img_ref, sigma=3)
 
 """
-Let's write down a short visualisation function.
+Let's define a small visualization function.
 """
 
 
@@ -50,6 +53,7 @@ def show_images(img_ref, img_warp, fig_name):
     fig.tight_layout()
     fig.savefig(fig_name + '.png')
 
+
 show_images(img_ref, img_in, 'input')
 
 """
@@ -60,9 +64,9 @@ show_images(img_ref, img_in, 'input')
 """
 
 """
-Let's use the use the general Registration function with some naive parameters, 
-such as set `step_length` as 1 assuming maximal step 1 pixel and reasonable 
-small number of iteration since the deformation with already aligned images 
+Let's the use the general Registration function with some naive parameters,
+such as set `step_length` as 1 assuming maximal step 1 pixel and reasonable
+small number of iteration since the deformation with already aligned images
 should be minimal.
 """
 
@@ -74,7 +78,7 @@ sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
                                          opt_tol=1.e-3)
 
 """
-Perform the registration in equal images.
+Perform the registration with equal images.
 """
 
 mapping = sdr.optimize(img_ref.astype(float), img_ref.astype(float))
@@ -92,7 +96,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-0.png')
 """
 
 """
-Perform the registration on binary and fuzzy images.
+Perform the registration with binary and fuzzy images.
 """
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
@@ -110,15 +114,15 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-1.png')
 """
 
 """
-Unfortunately, we did not realised that we are still using multi scale approach 
-which makes `step_length` in the upper level multiplicatively larger. 
-Let's experiment with `step_length` and set as quite small.
+Note, we are still using multi-scale approach which makes `step_length`
+in the upper level multiplicatively larger.
+What happens if we set `step_length` to a rather small value?
 """
 
 sdr.step_length = 0.1
 
 """
-Perform the registration and see output.
+Perform the registration and examine the output.
 """
 
 mapping = sdr.optimize(img_ref.astype(float), img_in.astype(float))
@@ -132,12 +136,13 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-2.png')
 .. figure:: map-2.png
    :align: center
 
-   Registration results for decrease learning step.
+   Registration results for decreased step size.
 """
 
 """
-Another alternative for such scenario is using just single scale level. 
-Although the warped image may look fine the estimated deformations is quite wild.
+An alternative scenario is to use just a single scale level.
+Even though the warped image may look fine, the estimated deformations show
+that it is off the mark.
 """
 
 sdr = SymmetricDiffeomorphicRegistration(metric=SSDMetric(img_ref.ndim),
