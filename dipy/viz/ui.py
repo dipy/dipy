@@ -1714,6 +1714,10 @@ class LineSlider2D(UI):
     shape : string
         Describes the shape of the handle.
         Currently supports 'disk' and 'square'.
+    default_color : (float, float, float)
+        Color of the handle when in unpressed state.
+    active_color : (float, float, float)
+        Color of the handle when it is pressed.
     """
     def __init__(self, center=(0, 0),
                  initial_value=50, min_value=0, max_value=100,
@@ -1754,6 +1758,8 @@ class LineSlider2D(UI):
             Currently supports 'disk' and 'square'.
         """
         self.shape = shape
+        self.default_color = (1, 1, 1)
+        self.active_color = (0, 0, 1)
         super(LineSlider2D, self).__init__()
 
         self.track.width = length
@@ -1792,7 +1798,7 @@ class LineSlider2D(UI):
             self.handle = Disk2D(outer_radius=1)
         elif self.shape == "square":
             self.handle = Rectangle2D(size=(1, 1))
-        self.handle.color = (1, 1, 1)
+        self.handle.color = self.default_color
 
         # Slider Text
         self.text = TextBlock2D(justification="center",
@@ -1801,7 +1807,11 @@ class LineSlider2D(UI):
         # Add default events listener for this UI component.
         self.track.on_left_mouse_button_pressed = self.track_click_callback
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
+        self.track.on_left_mouse_button_released = \
+            self.handle_release_callback
         self.handle.on_left_mouse_button_dragged = self.handle_move_callback
+        self.handle.on_left_mouse_button_released = \
+            self.handle_release_callback
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -1939,8 +1949,23 @@ class LineSlider2D(UI):
             The picked actor
         slider : :class:`LineSlider2D`
         """
+        self.handle.color = self.active_color
         position = i_ren.event.position
         self.set_position(position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_release_callback(self, i_ren, vtkactor, slider):
+        """ Change color when handle is released.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        vtkactor : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineSlider2D`
+        """
+        self.handle.color = self.default_color
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
@@ -1967,6 +1992,10 @@ class LineDoubleSlider2D(UI):
     shape : string
         Describes the shape of the handle.
         Currently supports 'disk' and 'square'.
+    default_color : (float, float, float)
+        Color of the handles when in unpressed state.
+    active_color : (float, float, float)
+        Color of the handles when they are pressed.
 
     """
     def __init__(self, line_width=5, inner_radius=0, outer_radius=10,
@@ -2007,6 +2036,8 @@ class LineDoubleSlider2D(UI):
 
         """
         self.shape = shape
+        self.default_color = (1, 1, 1)
+        self.active_color = (0, 0, 1)
         super(LineDoubleSlider2D, self).__init__()
 
         self.track.width = length
@@ -2053,8 +2084,8 @@ class LineDoubleSlider2D(UI):
         elif self.shape == "square":
             self.handles.append(Rectangle2D(size=(1, 1)))
             self.handles.append(Rectangle2D(size=(1, 1)))
-        self.handles[0].color = (1, 1, 1)
-        self.handles[1].color = (1, 1, 1)
+        self.handles[0].color = self.default_color
+        self.handles[1].color = self.default_color
 
         # Slider Text
         self.text = [TextBlock2D(justification="center",
@@ -2069,6 +2100,10 @@ class LineDoubleSlider2D(UI):
             self.handle_move_callback
         self.handles[1].on_left_mouse_button_dragged = \
             self.handle_move_callback
+        self.handles[0].on_left_mouse_button_released = \
+            self.handle_release_callback
+        self.handles[1].on_left_mouse_button_released = \
+            self.handle_release_callback
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -2296,13 +2331,32 @@ class LineDoubleSlider2D(UI):
         i_ren : :class:`CustomInteractorStyle`
         vtkactor : :class:`vtkActor`
             The picked actor
-        slider : :class:`LineSlider2D`
+        slider : :class:`LineDoubleSlider2D`
         """
         position = i_ren.event.position
         if vtkactor == self.handles[0].actors[0]:
             self.set_position(position, 0)
+            self.handles[0].color = self.active_color
         elif vtkactor == self.handles[1].actors[0]:
             self.set_position(position, 1)
+            self.handles[1].color = self.active_color
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_release_callback(self, i_ren, vtkactor, slider):
+        """ Change color when handle is released.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        vtkactor : :class:`vtkActor`
+            The picked actor
+        slider : :class:`LineDoubleSlider2D`
+        """
+        if vtkactor == self.handles[0].actors[0]:
+            self.handles[0].color = self.default_color
+        elif vtkactor == self.handles[1].actors[0]:
+            self.handles[1].color = self.default_color
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
@@ -2325,6 +2379,10 @@ class RingSlider2D(UI):
         The moving part of the slider.
     text : :class:`TextBlock2D`
         The text that shows percentage.
+    default_color : (float, float, float)
+        Color of the handle when in unpressed state.
+    active_color : (float, float, float)
+        Color of the handle when it is pressed.
     """
     def __init__(self, center=(0, 0),
                  initial_value=180, min_value=0, max_value=360,
@@ -2359,6 +2417,8 @@ class RingSlider2D(UI):
             If callable, this instance of `:class:RingSlider2D` will be
             passed as argument to the text template function.
         """
+        self.default_color = (1, 1, 1)
+        self.active_color = (0, 0, 1)
         super(RingSlider2D, self).__init__()
 
         self.track.inner_radius = slider_inner_radius
@@ -2390,7 +2450,7 @@ class RingSlider2D(UI):
 
         # Slider's handle.
         self.handle = Disk2D(outer_radius=1)
-        self.handle.color = (1, 1, 1)
+        self.handle.color = self.default_color
 
         # Slider Text
         self.text = TextBlock2D(justification="center",
@@ -2399,7 +2459,11 @@ class RingSlider2D(UI):
         # Add default events listener for this UI component.
         self.track.on_left_mouse_button_pressed = self.track_click_callback
         self.track.on_left_mouse_button_dragged = self.handle_move_callback
+        self.track.on_left_mouse_button_released = \
+            self.handle_release_callback
         self.handle.on_left_mouse_button_dragged = self.handle_move_callback
+        self.handle.on_left_mouse_button_released = \
+            self.handle_release_callback
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -2539,7 +2603,22 @@ class RingSlider2D(UI):
         slider : :class:`RingSlider2D`
         """
         click_position = i_ren.event.position
+        self.handle.color = self.active_color
         self.move_handle(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def handle_release_callback(self, i_ren, obj, slider):
+        """ Change color when handle is released.
+
+        Parameters
+        ----------
+        i_ren : :class:`CustomInteractorStyle`
+        vtkactor : :class:`vtkActor`
+            The picked actor
+        slider : :class:`RingSlider2D`
+        """
+        self.handle.color = self.default_color
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
@@ -2684,10 +2763,14 @@ class RangeSlider(UI):
         """
         position = i_ren.event.position
         if obj == self.range_slider.handles[0].actors[0]:
+            self.range_slider.handles[0].color = \
+                self.range_slider.active_color
             self.range_slider.set_position(position, 0)
             self.value_slider.min_value = self.range_slider.left_disk_value
             self.value_slider.update()
         elif obj == self.range_slider.handles[1].actors[0]:
+            self.range_slider.handles[1].color = \
+                self.range_slider.active_color
             self.range_slider.set_position(position, 1)
             self.value_slider.max_value = self.range_slider.right_disk_value
             self.value_slider.update()
