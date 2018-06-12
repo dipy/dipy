@@ -184,6 +184,15 @@ def _print_nb_selected_elements():
 
 listbox.on_change = _print_nb_selected_elements
 
+
+"""
+Image Container
+======
+"""
+
+img = ui.ImageContainer2D(img_path=read_viz_icons(fname='home3.png'))
+
+
 """
 Adding Elements to the ShowManager
 ==================================
@@ -202,6 +211,7 @@ show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(ring_slider)
 show_manager.ren.add(listbox)
+show_manager.ren.add(img)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)

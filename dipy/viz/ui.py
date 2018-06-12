@@ -5,6 +5,7 @@ import numpy as np
 
 from dipy.data import read_viz_icons
 from dipy.viz.interactor import CustomInteractorStyle
+from dipy.viz.utils import set_input
 
 from dipy.utils.optpkg import optional_package
 
@@ -2168,8 +2169,8 @@ class RingSlider2D(UI):
         i_ren.event.abort()  # Stop propagating the event.
 
 
-class ImageHolder(UI):
-    """ A 2D container to hold an image and is of type vtkTexturedActor2D.
+class ImageContainer2D(UI):
+    """ A 2D container to hold an image.
     Currently Supports:
     - png and jpg/jpeg images
 
@@ -2177,26 +2178,28 @@ class ImageHolder(UI):
     ----------
     size: (float, float)
         Image size (width, height) in pixels.
+    img : vtkImageDataGeometryFilters
+        The image loaded from the specified path.
 
     """
 
-    def __init__(self, imgPath, position=(0, 0), size=(100, 100)):
+    def __init__(self, img_path, position=(0, 0), size=(100, 100)):
         """
         Parameters
         ----------
-        imgPath : string
+        img_path : string
             Path of the image
         position : (float, float), optional
             Absolute coordinates (x, y) of the lower-left corner of the image.
         size : (int, int), optional
             Width and height in pixels of the image.
         """
-        super(ImageHolder, self).__init__(position)
-        self.img = self._build_image(imgPath)
+        super(ImageContainer2D, self).__init__(position)
+        self.img = self._build_image(img_path)
         self.set_img(self.img)
         self.resize(size)
 
-    def _build_image(self, imgPath):
+    def _build_image(self, img_path):
         """ Converts image path to vtkImageDataGeometryFilters.
 
         A pre-processing step to prevent re-read of image during every
@@ -2204,7 +2207,7 @@ class ImageHolder(UI):
 
         Parameters
         ----------
-        imgPath : string
+        img_path : string
             Path of the image
 
         Returns
@@ -2212,15 +2215,15 @@ class ImageHolder(UI):
         img : vtkImageDataGeometryFilters
             The corresponding image .
         """
-        imgExt = imgPath.split(".")[-1].lower()
+        imgExt = img_path.split(".")[-1].lower()
         if imgExt == "png":
             png = vtk.vtkPNGReader()
-            png.SetFileName(imgPath)
+            png.SetFileName(img_path)
             png.Update()
             img = png.GetOutput()
         elif imgExt in ["jpg", "jpeg"]:
             jpeg = vtk.vtkJPEGReader()
-            jpeg.SetFileName(imgPath)
+            jpeg.SetFileName(img_path)
             jpeg.Update()
             img = jpeg.GetOutput()
         else:
@@ -2268,10 +2271,7 @@ class ImageHolder(UI):
         self.texture_polydata.GetPointData().SetTCoords(tc)
 
         texture_mapper = vtk.vtkPolyDataMapper2D()
-        if major_version <= 5:
-            texture_mapper.SetInput(self.texture_polydata)
-        else:
-            texture_mapper.SetInputData(self.texture_polydata)
+        texture_mapper = set_input(texture_mapper, self.texture_polydata)
 
         image = vtk.vtkTexturedActor2D()
         image.SetMapper(texture_mapper)
