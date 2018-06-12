@@ -2344,10 +2344,7 @@ class ImageContainer2D(UI):
         img : imageDataGeometryFilter
 
         """
-        if major_version <= 5:
-            self.texture.SetInput(img)
-        else:
-            self.texture.SetInputData(img)
+        self.texture = set_input(self.texture, img)
 
 
 class ListBox2D(UI):
