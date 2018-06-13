@@ -3206,16 +3206,20 @@ def _sparse_gradient_3d(floating[:, :, :] img,
     """
     cdef:
         int n = sample_points.shape[0]
-        int i, in_flag
-        double tmp
-        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
+        int i, in_flag, p
+        double tmp, *dx, *q
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double[:] q = np.empty(shape=(3,), dtype=np.float64)
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
-        for i in range(n):
+        dx = <double *>malloc(sizeof(double) * 3)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 3)
+        if q == NULL:
+            abort()
+        for i in prange(n, schedule='guided'):
             inside[i] = 1
             dx[0] = sample_points[i, 0]
             dx[1] = sample_points[i, 1]
@@ -3254,6 +3258,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+        free(dx)
+        free(q)
 
 
 def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
@@ -3385,15 +3391,19 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     """
     cdef:
         int n = sample_points.shape[0]
-        int i, in_flag
-        double tmp
-        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        int i, in_flag, p
+        double tmp, *dx, *q
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
-        double[:] q = np.empty(shape=(2,), dtype=np.float64)
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
-        for i in range(n):
+        dx = <double *>malloc(sizeof(double) * 3)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 3)
+        if q == NULL:
+            abort()
+        for i in prange(n, schedule='guided'):
             inside[i] = 1
             dx[0] = sample_points[i, 0]
             dx[1] = sample_points[i, 1]
@@ -3423,6 +3433,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+        free(dx)
+        free(q)
 
 
 def gradient(img, img_world2grid, img_spacing, out_shape,
