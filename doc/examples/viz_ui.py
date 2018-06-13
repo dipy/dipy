@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 ===============
 User Interfaces
@@ -164,6 +165,24 @@ def rotate_red_cube(slider):
 ring_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
 ring_slider.center = (200, 200)
 ring_slider.on_change = rotate_red_cube
+"""
+2D List Box
+===========
+"""
+
+values = list(map(str, range(1, 50 + 1)))
+listbox = ui.ListBox2D(values=values,
+                       position=(300, 420),
+                       size=(250, 160),
+                       multiselection=True)
+
+
+def _print_nb_selected_elements():
+    msg = "{}/{} elements are now selected."
+    print(msg.format(len(listbox.selected), len(listbox.values)))
+
+
+listbox.on_change = _print_nb_selected_elements
 
 """
 Adding Elements to the ShowManager
@@ -182,6 +201,7 @@ show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
 show_manager.ren.add(ring_slider)
+show_manager.ren.add(listbox)
 show_manager.ren.reset_camera()
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)

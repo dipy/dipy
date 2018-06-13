@@ -1,8 +1,6 @@
 from __future__ import division
 from _warnings import warn
 
-import os
-import glob
 import numpy as np
 
 from dipy.data import read_viz_icons
@@ -173,7 +171,7 @@ class UI(object):
 
     @property
     def size(self):
-        return np.asarray(self._get_size())
+        return np.asarray(self._get_size(), dtype=int)
 
     def _get_size(self):
         msg = "Subclasses of UI must implement property `size`."
@@ -208,10 +206,14 @@ class UI(object):
             actor.SetVisibility(visibility)
 
     def handle_events(self, actor):
-        self.add_callback(actor, "LeftButtonPressEvent", self.left_button_click_callback)
-        self.add_callback(actor, "LeftButtonReleaseEvent", self.left_button_release_callback)
-        self.add_callback(actor, "RightButtonPressEvent", self.right_button_click_callback)
-        self.add_callback(actor, "RightButtonReleaseEvent", self.right_button_release_callback)
+        self.add_callback(actor, "LeftButtonPressEvent",
+                          self.left_button_click_callback)
+        self.add_callback(actor, "LeftButtonReleaseEvent",
+                          self.left_button_release_callback)
+        self.add_callback(actor, "RightButtonPressEvent",
+                          self.right_button_click_callback)
+        self.add_callback(actor, "RightButtonReleaseEvent",
+                          self.right_button_release_callback)
         self.add_callback(actor, "MouseMoveEvent", self.mouse_move_callback)
         self.add_callback(actor, "KeyPressEvent", self.key_press_callback)
 
@@ -243,14 +245,17 @@ class UI(object):
 
     @staticmethod
     def mouse_move_callback(i_ren, obj, self):
-        if self.left_button_state == "pressing" or self.left_button_state == "dragging":
+        left_pressing_or_dragging = (self.left_button_state == "pressing" or
+                                     self.left_button_state == "dragging")
+
+        right_pressing_or_dragging = (self.right_button_state == "pressing" or
+                                      self.right_button_state == "dragging")
+        if left_pressing_or_dragging:
             self.left_button_state = "dragging"
             self.on_left_mouse_button_dragged(i_ren, obj, self)
-        elif self.right_button_state == "pressing" or self.right_button_state == "dragging":
+        elif right_pressing_or_dragging:
             self.right_button_state = "dragging"
             self.on_right_mouse_button_dragged(i_ren, obj, self)
-        else:
-            pass
 
     @staticmethod
     def key_press_callback(i_ren, obj, self):
@@ -311,8 +316,8 @@ class Button2D(UI):
         icons = {}
         for icon_name, icon_fname in icon_fnames.items():
             if icon_fname.split(".")[-1] not in ["png", "PNG"]:
-                error_msg = "A specified icon file is not in the PNG format. SKIPPING."
-                warn(Warning(error_msg))
+                error_msg = "Skipping {}: not in the PNG format."
+                warn(Warning(error_msg.format(icon_fname)))
             else:
                 png = vtk.vtkPNGReader()
                 png.SetFileName(icon_fname)
@@ -327,8 +332,7 @@ class Button2D(UI):
         Creating the button actor used internally.
         """
         # This is highly inspired by
-        # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474\
-        # /Interaction/Widgets/vtkBalloonRepresentation.cxx#L47
+        # https://github.com/Kitware/VTK/blob/c3ec2495b183e3327820e927af7f8f90d34c3474/Interaction/Widgets/vtkBalloonRepresentation.cxx#L47
 
         self.texture_polydata = vtk.vtkPolyData()
         self.texture_points = vtk.vtkPoints()
@@ -810,7 +814,7 @@ class Panel2D(UI):
         Create the background (Rectangle2D) of the panel.
         """
         self._elements = []
-        self.element_positions = []
+        self.element_offsets = []
         self.background = Rectangle2D()
         self.add_element(self.background, (0, 0))
 
@@ -859,7 +863,7 @@ class Panel2D(UI):
             Absolute pixel coordinates (x, y).
         """
         coords = np.array(coords)
-        for element, offset in self.element_positions:
+        for element, offset in self.element_offsets:
             element.position = coords + offset
 
     @property
@@ -878,7 +882,7 @@ class Panel2D(UI):
     def opacity(self, opacity):
         self.background.opacity = opacity
 
-    def add_element(self, element, coords):
+    def add_element(self, element, coords, anchor="position"):
         """ Adds a UI component to the panel.
 
         The coordinates represent an offset from the lower left corner of the
@@ -902,9 +906,18 @@ class Panel2D(UI):
 
             coords = coords * self.size
 
+        if anchor == "center":
+            element.center = self.position + coords
+        elif anchor == "position":
+            element.position = self.position + coords
+        else:
+            msg = ("Unknown anchor {}. Supported anchors are 'position'"
+                   " and 'center'.")
+            raise ValueError(msg)
+
         self._elements.append(element)
-        self.element_positions.append((element, coords))
-        element.position = self.position + coords
+        offset = element.position - self.position
+        self.element_offsets.append((element, offset))
 
     def left_button_pressed(self, i_ren, obj, panel2d_object):
         click_pos = np.array(i_ren.event.position)
@@ -1142,7 +1155,8 @@ class TextBlock2D(UI):
         elif justification == 'right':
             text_property.SetJustificationToRight()
         else:
-            raise ValueError("Text can only be justified left, right and center.")
+            msg = "Text can only be justified left, right and center."
+            raise ValueError(msg)
 
     @property
     def vertical_justification(self):
@@ -1554,7 +1568,7 @@ class TextBox2D(UI):
             self.window_left -= 1
 
     def add_character(self, character):
-        """ Inserts a character into the text and moves window and caret accordingly.
+        """ Inserts a character into the text and moves window and caret.
 
         Parameters
         ----------
@@ -1578,8 +1592,8 @@ class TextBox2D(UI):
         """
         if self.caret_pos == 0:
             return
-        self.message = self.message[:self.caret_pos - 1] + \
-                       self.message[self.caret_pos:]
+        self.message = (self.message[:self.caret_pos - 1] +
+                        self.message[self.caret_pos:])
         self.move_caret_left()
         if len(self.message) < self.height * self.width - 1:
             self.right_move_left()
@@ -1927,8 +1941,6 @@ class RingSlider2D(UI):
         Distance from the center of the slider to the middle of the track.
     previous_value: float
         Value of Rotation of the actor before the current value.
-    initial_value: float
-        Initial Value of Rotation of the actor assigned on creation of object.
     track : :class:`Disk2D`
         The circle on which the slider's handle moves.
     handle : :class:`Disk2D`
@@ -1985,9 +1997,8 @@ class RingSlider2D(UI):
         # Offer some standard hooks to the user.
         self.on_change = lambda ui: None
 
-        self.initial_value = initial_value
+        self._value = initial_value
         self.value = initial_value
-        self.previous_value = initial_value
 
     def _setup(self):
         """ Setup this UI component.
@@ -2061,10 +2072,6 @@ class RingSlider2D(UI):
     def previous_value(self):
         return self._previous_value
 
-    @previous_value.setter
-    def previous_value(self, previous_value):
-        self._previous_value = previous_value
-
     @property
     def ratio(self):
         return self._ratio
@@ -2099,11 +2106,7 @@ class RingSlider2D(UI):
 
         # Compute the selected value considering min_value and max_value.
         value_range = self.max_value - self.min_value
-        try:
-            self._previous_value = self.value
-        except:
-            self._previous_value = self.initial_value
-
+        self._previous_value = self.value
         self._value = self.min_value + self.ratio * value_range
 
         # Update text disk actor.
@@ -2159,5 +2162,358 @@ class RingSlider2D(UI):
         """
         click_position = i_ren.event.position
         self.move_handle(click_position=click_position)
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+
+class ListBox2D(UI):
+    """ UI component that allows the user to select items from a list.
+
+    Attributes
+    ----------
+    on_change: function
+        Callback function for when the selected items have changed.
+    """
+
+    def __init__(self, values, position=(0, 0), size=(100, 300),
+                 multiselection=True, reverse_scrolling=False,
+                 font_size=20, line_spacing=1.4):
+        """
+        Parameters
+        ----------
+        values: list of objects
+            Values used to populate this listbox. Objects must be castable
+            to string.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of this
+            UI component.
+        size : (int, int)
+            Width and height in pixels of this UI component.
+        multiselection: {True, False}
+            Whether multiple values can be selected at once.
+        reverse_scrolling: {True, False}
+            If True, scrolling up will move the list of files down.
+        font_size: int
+            The font size in pixels.
+        line_spacing: float
+            Distance between listbox's items in pixels.
+
+        """
+        self.view_offset = 0
+        self.slots = []
+        self.selected = []
+
+        self.panel_size = size
+        self.font_size = font_size
+        self.line_spacing = line_spacing
+
+        # self.panel.resize(size)
+        self.values = values
+        self.multiselection = multiselection
+        self.reverse_scrolling = reverse_scrolling
+        super(ListBox2D, self).__init__()
+
+        self.position = position
+        self.update()
+
+        # Offer some standard hooks to the user.
+        self.on_change = lambda: None
+
+    def _setup(self):
+        """ Setup this UI component.
+
+        Create the ListBox (Panel2D) filled with empty slots (ListBoxItem2D).
+        """
+        margin = 10
+        size = self.panel_size
+        font_size = 20
+        line_spacing = 1.4
+        # Calculating the number of slots.
+        slot_height = int(font_size * line_spacing)
+        nb_slots = int((size[1] - 2 * margin) // slot_height)
+
+        # This panel facilitates adding slots at the right position.
+        self.panel = Panel2D(size=size, color=(1, 1, 1))
+
+        # Add up and down buttons
+        arrow_up = read_viz_icons(fname="arrow-up.png")
+        self.up_button = Button2D({"up": arrow_up})
+        pos = self.panel.size - self.up_button.size // 2 - margin
+        self.panel.add_element(self.up_button, pos, anchor="center")
+
+        arrow_down = read_viz_icons(fname="arrow-down.png")
+        self.down_button = Button2D({"down": arrow_down})
+        pos = (pos[0], self.up_button.size[1] // 2 + margin)
+        self.panel.add_element(self.down_button, pos, anchor="center")
+
+        # Initialisation of empty text actors
+        slot_width = size[0] - self.up_button.size[0] - 2 * margin - margin
+        x = margin
+        y = size[1] - margin
+        for _ in range(nb_slots):
+            y -= slot_height
+            item = ListBoxItem2D(list_box=self, size=(slot_width, slot_height))
+            item.textblock.font_size = font_size
+            item.textblock.color = (0, 0, 0)
+            self.slots.append(item)
+            self.panel.add_element(item, (x, y + margin))
+
+        # Add default events listener for this UI component.
+        self.up_button.on_left_mouse_button_pressed = self.up_button_callback
+        self.down_button.on_left_mouse_button_pressed = self.down_button_callback
+
+        # Handle mouse wheel events on the panel.
+        up_event = "MouseWheelForwardEvent"
+        down_event = "MouseWheelBackwardEvent"
+        if self.reverse_scrolling:
+            up_event, down_event = down_event, up_event  # Swap events
+
+        self.add_callback(self.panel.background.actor, up_event,
+                          self.up_button_callback)
+        self.add_callback(self.panel.background.actor, down_event,
+                          self.down_button_callback)
+
+        # Handle mouse wheel events on the slots.
+        for slot in self.slots:
+            self.add_callback(slot.background.actor, up_event,
+                              self.up_button_callback)
+            self.add_callback(slot.background.actor, down_event,
+                              self.down_button_callback)
+            self.add_callback(slot.textblock.actor, up_event,
+                              self.up_button_callback)
+            self.add_callback(slot.textblock.actor, down_event,
+                              self.down_button_callback)
+
+    def resize(self, size):
+        pass
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.panel.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        self.panel.add_to_renderer(ren)
+
+    def _get_size(self):
+        return self.panel.size
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.panel.position = coords
+
+    def up_button_callback(self, i_ren, obj, list_box):
+        """ Pressing up button scrolls up in the combo box.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        list_box: :class:`ListBox2D`
+
+        """
+        if self.view_offset > 0:
+            self.view_offset -= 1
+            self.update()
+
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def down_button_callback(self, i_ren, obj, list_box):
+        """ Pressing down button scrolls down in the combo box.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        list_box: :class:`ListBox2D`
+
+        """
+        view_end = self.view_offset + len(self.slots)
+        if view_end < len(self.values):
+            self.view_offset += 1
+            self.update()
+
+        i_ren.force_render()
+        i_ren.event.abort()  # Stop propagating the event.
+
+    def update(self):
+        """ Refresh listbox's content. """
+        view_start = self.view_offset
+        view_end = view_start + len(self.slots)
+        values_to_show = self.values[view_start:view_end]
+
+        # Populate slots according to the view.
+        for i, choice in enumerate(values_to_show):
+            slot = self.slots[i]
+            slot.element = choice
+            slot.set_visibility(True)
+            if slot.element in self.selected:
+                slot.select()
+            else:
+                slot.deselect()
+
+        # Flush remaining slots.
+        for slot in self.slots[len(values_to_show):]:
+            slot.element = None
+            slot.set_visibility(False)
+            slot.deselect()
+
+    def clear_selection(self):
+        del self.selected[:]
+
+    def select(self, item, multiselect=False, range_select=False):
+        """ Select the item.
+
+        Parameters
+        ----------
+        item: ListBoxItem2D's object
+            Item to select.
+        multiselect: {True, False}
+            If True and multiselection is allowed, the item is added to the
+            selection.
+            Otherwise, the selection will only contain the provided item unless
+            range_select is True.
+        range_select: {True, False}
+            If True and multiselection is allowed, all items between the last
+            selected item and the current one will be added to the selection.
+            Otherwise, the selection will only contain the provided item unless
+            multi_select is True.
+
+        """
+        selection_idx = self.values.index(item.element)
+        if self.multiselection and range_select:
+            self.clear_selection()
+            step = 1 if selection_idx >= self.last_selection_idx else -1
+            for i in range(self.last_selection_idx, selection_idx + step, step):
+                self.selected.append(self.values[i])
+
+        elif self.multiselection and multiselect:
+            if item.element in self.selected:
+                self.selected.remove(item.element)
+            else:
+                self.selected.append(item.element)
+            self.last_selection_idx = selection_idx
+
+        else:
+            self.clear_selection()
+            self.selected.append(item.element)
+            self.last_selection_idx = selection_idx
+
+        self.on_change()  # Call hook.
+        self.update()
+
+
+class ListBoxItem2D(UI):
+    """ The text displayed in a listbox. """
+
+    def __init__(self, list_box, size):
+        """
+        Parameters
+        ----------
+        list_box: :class:`ListBox`
+            The ListBox reference this text belongs to.
+        size: int
+            The size of the listbox item.
+        """
+        super(ListBoxItem2D, self).__init__()
+        self._element = None
+        self.list_box = list_box
+        self.background.resize(size)
+        self.deselect()
+
+    def _setup(self):
+        """ Setup this UI component.
+
+        Create the ListBoxItem2D with its background (Rectangle2D) and its
+        label (TextBlock2D).
+        """
+        self.background = Rectangle2D()
+        self.textblock = TextBlock2D(justification="left",
+                                     vertical_justification="middle")
+
+        # Add default events listener for this UI component.
+        self.textblock.on_left_mouse_button_clicked = self.left_button_clicked
+        self.background.on_left_mouse_button_clicked = self.left_button_clicked
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.background.actors + self.textblock.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        self.background.add_to_renderer(ren)
+        self.textblock.add_to_renderer(ren)
+
+    def _get_size(self):
+        return self.background.size
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self.textblock.position = coords
+        # Center background underneath the text.
+        position = coords
+        self.background.position = (position[0],
+                                    position[1] - self.background.size[1] / 2.)
+
+    def deselect(self):
+        self.background.color = (0.9, 0.9, 0.9)
+        self.textblock.bold = False
+        self.selected = False
+
+    def select(self):
+        self.textblock.bold = True
+        self.background.color = (0, 1, 1)
+        self.selected = True
+
+    @property
+    def element(self):
+        return self._element
+
+    @element.setter
+    def element(self, element):
+        self._element = element
+        self.textblock.message = "" if self._element is None else str(element)
+
+    def left_button_clicked(self, i_ren, obj, list_box_item):
+        """ A callback to handle left click for this UI element.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        list_box_item: :class:`ListBoxItem2D`
+
+        """
+        multiselect = i_ren.event.ctrl_key
+        range_select = i_ren.event.shift_key
+        self.list_box.select(self, multiselect, range_select)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
