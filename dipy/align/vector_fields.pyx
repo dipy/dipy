@@ -8,7 +8,8 @@ cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
 
-from cython.parallel import prange
+from cython.parallel import prange, parallel
+from libc.stdlib cimport abort, malloc, free
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -3107,14 +3108,21 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         int ncols = out.shape[2]
         int i, j, k, in_flag, p
         double tmp
-        double[:] x = np.empty(shape=(3,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double[:] q = np.empty(shape=(3,), dtype=np.float64)
-    with nogil:
+        double *x, *dx, *q
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
+        x = <double *>malloc(sizeof(double) * 3)
+        if x == NULL:
+            abort()
+        dx = <double *>malloc(sizeof(double) * 3)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 3)
+        if q == NULL:
+            abort()
         for k in prange(nslices, schedule='guided'):
             for i in range(nrows):
                 for j in range(ncols):
@@ -3123,7 +3131,8 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                     x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2world)
                     x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2world)
                     x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2world)
-                    dx[:] = x[:]
+                    for p in range(3):
+                        dx[p] = x[p]
                     for p in range(3):
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] - h[p]
@@ -3158,6 +3167,9 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                             continue
                         out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
                         dx[p] = x[p]
+        free(x)
+        free(dx)
+        free(q)
 
 
 def _sparse_gradient_3d(floating[:, :, :] img,
