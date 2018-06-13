@@ -3107,9 +3107,8 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         int nrows = out.shape[1]
         int ncols = out.shape[2]
         int i, j, k, in_flag, p
-        double tmp
+        double tmp, *x, *dx, *q
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double *x, *dx, *q
     with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
