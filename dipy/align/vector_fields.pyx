@@ -3296,21 +3296,28 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         int nrows = out.shape[0]
         int ncols = out.shape[1]
         int i, j, k, in_flag, p
-        double tmp
-        double[:] x = np.empty(shape=(2,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        double tmp, *x, *dx, *q
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
-        double[:] q = np.empty(shape=(2,), dtype=np.float64)
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
-        for i in prange(nrows):
+        x = <double *>malloc(sizeof(double) * 2)
+        if x == NULL:
+            abort()
+        dx = <double *>malloc(sizeof(double) * 2)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 2)
+        if q == NULL:
+            abort()
+        for i in prange(nrows, schedule='guided'):
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
                 x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2world)
                 x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2world)
-                dx[:] = x[:]
+                for p in range(2):
+                    dx[p] = x[p]
                 for p in range(2):
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] - h[p]
@@ -3337,6 +3344,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                         continue
                     out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
                     dx[p] = x[p]
+        free(x)
+        free(dx)
+        free(q)
 
 
 def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
