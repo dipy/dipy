@@ -3320,8 +3320,10 @@ class ListBox2D(UI):
         # pos = (pos[0], self.up_button.size[1] // 2 + margin)
         # self.panel.add_element(self.down_button, pos, anchor="center")
 
-        scroll_bar_height = self.nb_slots * (size[1] - 2 * margin) / len(self.values)
-        self.scroll_bar = Rectangle2D(size=(int(size[0]/20), scroll_bar_height))
+        scroll_bar_height = self.nb_slots * (size[1] - 2 * margin) \
+            / len(self.values)
+        self.scroll_bar = Rectangle2D(size=(int(size[0]/20),
+                                      scroll_bar_height))
         self.scroll_bar.color = (1, 0, 0)
         if len(self.values) <= self.nb_slots:
             self.scroll_bar.set_visibility(False)
@@ -3334,7 +3336,8 @@ class ListBox2D(UI):
         y = size[1] - margin
         for _ in range(self.nb_slots):
             y -= self.slot_height
-            item = ListBoxItem2D(list_box=self, size=(slot_width, self.slot_height))
+            item = ListBoxItem2D(list_box=self,
+                                 size=(slot_width, self.slot_height))
             item.textblock.font_size = font_size
             item.textblock.color = (0, 0, 0)
             self.slots.append(item)
@@ -3342,7 +3345,8 @@ class ListBox2D(UI):
 
         # Add default events listener for this UI component.
         # self.up_button.on_left_mouse_button_pressed = self.up_button_callback
-        # self.down_button.on_left_mouse_button_pressed = self.down_button_callback
+        # self.down_button.on_left_mouse_button_pressed = \
+            # self.down_button_callback
         self.scroll_bar.on_left_mouse_button_dragged = \
             self.scroll_drag_callback
 
