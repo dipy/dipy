@@ -703,6 +703,31 @@ def test_ui_radio_button(interactive=False):
 
     # Values that will be displayed by the listbox.
     values = list(range(1, 42 + 1))
+
+    if interactive:
+        listbox = ui.ListBox2D(values=values,
+                               size=(500, 500),
+                               multiselection=True,
+                               reverse_scrolling=False)
+        listbox.center = (300, 300)
+
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY ListBox")
+        show_manager.ren.add(listbox)
+        show_manager.start()
+
+    # Recorded events:
+    #  1. Click on 1
+    #  2. Ctrl + click on 2,
+    #  3. Ctrl + click on 2.
+    #  4. Use scroll bar to scroll to the bottom.
+    #  5. Click on 42.
+    #  6. Use scroll bar to scroll to the top.
+    #  7. Click on 1
+    #  8. Use mouse wheel to scroll down.
+    #  9. Shift + click on 42.
+    # 10. Use mouse wheel to scroll back up.
+
     listbox = ui.ListBox2D(values=values,
                            size=(500, 500),
                            multiselection=True,
@@ -722,13 +747,27 @@ def test_ui_radio_button(interactive=False):
     event_counter = EventCounter()
     event_counter.monitor(listbox)
 
-    # Create a show manager and record/play events.
     show_manager = window.ShowManager(size=(600, 600),
                                       title="DIPY ListBox")
     show_manager.ren.add(listbox)
+    show_manager.play_events_from_file(recording_filename)
+    expected = EventCounter.load(expected_events_counts_filename)
+    event_counter.check_counts(expected)
 
-    if interactive:
-        show_manager.start()
+    # Check if the right values were selected.
+    expected = [[1], [1, 2], [1], [42], [1], values]
+    assert len(selected_values) == len(expected)
+    assert_arrays_equal(selected_values, expected)
+
+    # Test without multiselection enabled.
+    listbox.multiselection = False
+    del selected_values[:]  # Clear the list.
+    show_manager.play_events_from_file(recording_filename)
+
+    # Check if the right values were selected.
+    expected = [[1], [2], [2], [42], [1], [42]]
+    assert len(selected_values) == len(expected)
+    assert_arrays_equal(selected_values, expected)
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
