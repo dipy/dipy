@@ -10,6 +10,9 @@ import numpy.random as random
 from .fused_types cimport floating
 from . import vector_fields as vf
 
+from cython.parallel import prange, parallel
+from libc.stdlib cimport abort, malloc, free
+
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
                                       _apply_affine_3d_x2,
@@ -994,37 +997,48 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         cnp.npy_intp nrows = static.shape[1]
         cnp.npy_intp ncols = static.shape[2]
         cnp.npy_intp n = theta.shape[0]
-        cnp.npy_intp offset, valid_points
+        cnp.npy_intp offset, valid_points, *vp
         int constant_jacobian = 0
-        cnp.npy_intp l, k, i, j, r, c
-        double rn, cn
+        cnp.npy_intp l, k, i, j, r, c, ii, jj, kk, ll
+        double rn, cn, *J, *prod, *x
         double val, spline_arg, norm_factor
-        double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
-        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
-        double[:] x = np.empty(shape=(3,), dtype=np.float64)
 
     grad_pdf[...] = 0
-    with nogil:
-        valid_points = 0
-        for k in range(nslices):
+    with nogil, parallel():
+        J = <double *>malloc(sizeof(double) * 3 * n)
+        if J == NULL:
+            abort()
+        prod = <double *>malloc(sizeof(double) * n)
+        if prod == NULL:
+            abort()
+        x = <double *>malloc(sizeof(double) * 3)
+        if x == NULL:
+            abort()
+        vp = <cnp.npy_intp *>malloc(sizeof(cnp.npy_intp) * nslices)
+        if vp == NULL:
+            abort()
+        for k in prange(nslices, schedule='guided'):
+            vp[k] = 0
             for i in range(nrows):
                 for j in range(ncols):
                     if smask is not None and smask[k, i, j] == 0:
                         continue
                     if mmask is not None and mmask[k, i, j] == 0:
                         continue
-                    valid_points += 1
+                    vp[k] = vp[k] + 1 # valid_points += 1
                     x[0] = _apply_affine_3d_x0(k, i, j, 1, grid2world)
                     x[1] = _apply_affine_3d_x1(k, i, j, 1, grid2world)
                     x[2] = _apply_affine_3d_x2(k, i, j, 1, grid2world)
 
                     if constant_jacobian == 0:
-                        constant_jacobian = transform._jacobian(theta, x, J)
+                        with gil:
+                            constant_jacobian = transform._jacobian(theta,
+                                                <double[:3]>x, <double[:3, :n]>J)
 
                     for l in range(n):
-                        prod[l] = (J[0, l] * mgradient[k, i, j, 0] +
-                                   J[1, l] * mgradient[k, i, j, 1] +
-                                   J[2, l] * mgradient[k, i, j, 2])
+                        prod[l] = (J[0 * n + l] * mgradient[k, i, j, 0] +
+                                   J[1 * n + l] * mgradient[k, i, j, 1] +
+                                   J[2 * n + l] * mgradient[k, i, j, 2])
 
                     rn = _bin_normalize(static[k, i, j], smin, sdelta)
                     r = _bin_index(rn, nbins, padding)
@@ -1035,15 +1049,24 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                     for offset in range(-2, 3):
                         val = _cubic_spline_derivative(spline_arg)
                         for l in range(n):
-                            grad_pdf[r, c + offset, l] -= val * prod[l]
-                        spline_arg += 1.0
+                            grad_pdf[r, c + offset, l] = grad_pdf[r, c + offset, l] - val * prod[l]
+                        spline_arg = spline_arg + 1.0
+
+        valid_points = 0
+        for ll in range(nslices):
+            valid_points = valid_points + vp[ll]
 
         norm_factor = valid_points * mdelta
         if norm_factor > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    for k in range(n):
-                        grad_pdf[i, j, k] /= norm_factor
+            for ii in range(nbins):
+                for jj in range(nbins):
+                    for kk in range(n):
+                        grad_pdf[ii, jj, kk] /= norm_factor
+
+        free(J)
+        free(prod)
+        free(x)
+        free(vp)
 
 
 cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
