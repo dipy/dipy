@@ -720,7 +720,7 @@ if __name__ == "__main__":
         test_ui_checkbox(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_radio_button":
-        test_ui_radio_button(interactive=True)
+        test_ui_radio_button(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
