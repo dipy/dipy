@@ -567,9 +567,10 @@ def test_ui_listbox_2d(recording=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_image_holder_2d(interactive=False):
+def test_ui_image_container_2d(interactive=False):
     fetch_viz_icons()
-    image_test = ui.ImageContainer2D(img_path=read_viz_icons(fname='home3.png'))
+    image_test = ui.ImageContainer2D(
+        img_path=read_viz_icons(fname='home3.png'))
 
     image_test.center = (300, 300)
     npt.assert_equal(image_test.size, (100, 100))
@@ -600,5 +601,5 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
 
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_holder_2d":
-        test_ui_image_holder_2d(interactive=False)
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
+        test_ui_image_container_2d(interactive=False)
