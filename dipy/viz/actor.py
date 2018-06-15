@@ -1375,7 +1375,7 @@ def label(text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     if major_version <= 5:
         textm.SetInput(atext.GetOutput())
     else:
-        textm.SetInputData(atext.GetOutput())
+        textm.SetInputConnection(atext.GetOutputPort())
 
     texta = vtk.vtkFollower()
     texta.SetMapper(textm)
