@@ -14,7 +14,7 @@ vtk, have_vtk, setup_module = optional_package('vtk')
 
 if have_vtk:
     version = vtk.vtkVersion.GetVTKVersion()
-    major_version = vtk.vtkVersion.GetVTKMajorVersion()
+    VTK_MAJOR_VERSION = vtk.vtkVersion.GetVTKMajorVersion()
 
 TWO_PI = 2 * np.pi
 
@@ -365,10 +365,7 @@ class Button2D(UI):
         self.texture_polydata.GetPointData().SetTCoords(tc)
 
         texture_mapper = vtk.vtkPolyDataMapper2D()
-        if major_version <= 5:
-            texture_mapper.SetInput(self.texture_polydata)
-        else:
-            texture_mapper.SetInputData(self.texture_polydata)
+        texture_mapper = set_input(texture_mapper, self.texture_polydata)
 
         button = vtk.vtkTexturedActor2D()
         button.SetMapper(texture_mapper)
@@ -458,10 +455,7 @@ class Button2D(UI):
         ----------
         icon : imageDataGeometryFilter
         """
-        if major_version <= 5:
-            self.texture.SetInput(icon)
-        else:
-            self.texture.SetInputData(icon)
+        self.texture = set_input(self.texture, icon)
 
     def next_icon_id(self):
         """ Sets the next icon ID while cycling through icons.
@@ -536,10 +530,7 @@ class Rectangle2D(UI):
 
         # Create a mapper and actor
         mapper = vtk.vtkPolyDataMapper2D()
-        if vtk.VTK_MAJOR_VERSION <= 5:
-            mapper.SetInput(self._polygonPolyData)
-        else:
-            mapper.SetInputData(self._polygonPolyData)
+        mapper = set_input(mapper, self._polygonPolyData)
 
         self.actor = vtk.vtkActor2D()
         self.actor.SetMapper(mapper)
@@ -685,7 +676,7 @@ class Disk2D(UI):
 
         # Mapper
         mapper = vtk.vtkPolyDataMapper2D()
-        mapper.SetInputConnection(self._disk.GetOutputPort())
+        mapper = set_input(mapper, self._disk.GetOutputPort())
 
         # Actor
         self.actor = vtk.vtkActor2D()
@@ -1299,7 +1290,7 @@ class TextBlock2D(UI):
             If None, there no background color.
             Otherwise, background color in RGB.
         """
-        if major_version < 7:
+        if VTK_MAJOR_VERSION < 7:
             if self._background is None:
                 return None
 
@@ -1323,13 +1314,13 @@ class TextBlock2D(UI):
 
         if color is None:
             # Remove background.
-            if major_version < 7:
+            if VTK_MAJOR_VERSION < 7:
                 self._background = None
             else:
                 self.actor.GetTextProperty().SetBackgroundOpacity(0.)
 
         else:
-            if major_version < 7:
+            if VTK_MAJOR_VERSION < 7:
                 self._background = vtk.vtkActor2D()
                 self._background.GetProperty().SetColor(*color)
                 self._background.GetProperty().SetOpacity(1)
