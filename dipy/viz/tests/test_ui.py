@@ -458,6 +458,36 @@ def test_ui_line_slider_2d(recording=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_line_double_slider_2d(interactive=False):
+    line_double_slider_2d_test = ui.LineDoubleSlider2D(
+        center=(300, 300), shape="disk", outer_radius=15, min_value=-10,
+        max_value=10, initial_values=(-10, 10))
+    npt.assert_equal(line_double_slider_2d_test.handles[0].size, (30, 30))
+    npt.assert_equal(line_double_slider_2d_test.left_disk_value, -10)
+    npt.assert_equal(line_double_slider_2d_test.right_disk_value, 10)
+
+    if interactive:
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY Line Double Slider")
+        show_manager.ren.add(line_double_slider_2d_test)
+        show_manager.start()
+
+    line_double_slider_2d_test = ui.LineDoubleSlider2D(
+        center=(300, 300), shape="square", handle_side=5,
+        initial_values=(50, 40))
+    npt.assert_equal(line_double_slider_2d_test.handles[0].size, (5, 5))
+    npt.assert_equal(line_double_slider_2d_test._values[0], 39)
+    npt.assert_equal(line_double_slider_2d_test.right_disk_value, 40)
+
+    if interactive:
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY Line Double Slider")
+        show_manager.ren.add(line_double_slider_2d_test)
+        show_manager.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_ring_slider_2d(recording=False):
     filename = "test_ui_ring_slider_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -493,6 +523,18 @@ def test_ui_ring_slider_2d(recording=False):
         show_manager.play_events_from_file(recording_filename)
         expected = EventCounter.load(expected_events_counts_filename)
         event_counter.check_counts(expected)
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_range_slider(interactive=False):
+    range_slider_test = ui.RangeSlider(shape="square")
+
+    if interactive:
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY Line Double Slider")
+        show_manager.ren.add(range_slider_test)
+        show_manager.start()
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
@@ -595,8 +637,14 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_slider_2d":
         test_ui_line_slider_2d(recording=True)
 
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_double_slider_2d":
+        test_ui_line_double_slider_2d(interactive=False)
+
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_ring_slider_2d":
         test_ui_ring_slider_2d(recording=True)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_range_slider":
+        test_ui_range_slider(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
