@@ -565,6 +565,26 @@ def test_ui_listbox_2d(recording=False):
     assert_arrays_equal(selected_values, expected)
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_image_container_2d(interactive=False):
+    fetch_viz_icons()
+    image_test = ui.ImageContainer2D(
+        img_path=read_viz_icons(fname='home3.png'))
+
+    image_test.center = (300, 300)
+    npt.assert_equal(image_test.size, (100, 100))
+
+    image_test.scale((2, 2))
+    npt.assert_equal(image_test.size, (200, 200))
+
+    current_size = (600, 600)
+    show_manager = window.ShowManager(size=current_size, title="DIPY Button")
+    show_manager.ren.add(image_test)
+    if interactive:
+        show_manager.start()
+
+
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
@@ -580,3 +600,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
+        test_ui_image_container_2d(interactive=False)
