@@ -8,6 +8,8 @@ cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
 
+from cython.parallel import prange, parallel
+from libc.stdlib cimport abort, malloc, free
 import timeit
 
 cdef extern from "dpy_math.h" nogil:
@@ -3105,18 +3107,24 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         int nslices = out.shape[0]
         int nrows = out.shape[1]
         int ncols = out.shape[2]
-        int i, j, k, in_flag
-        double tmp
-        double[:] x = np.empty(shape=(3,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
+        int i, j, k, in_flag, p
+        double tmp, *x, *dx, *q
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double[:] q = np.empty(shape=(3,), dtype=np.float64)
     start = timeit.default_timer()
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
-        for k in range(nslices):
+        x = <double *>malloc(sizeof(double) * 3)
+        if x == NULL:
+            abort()
+        dx = <double *>malloc(sizeof(double) * 3)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 3)
+        if q == NULL:
+            abort()
+        for k in prange(nslices, schedule='guided'):
             for i in range(nrows):
                 for j in range(ncols):
                     inside[k, i, j] = 1
@@ -3124,7 +3132,8 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                     x[0] = _apply_affine_3d_x0(k, i, j, 1, out_grid2world)
                     x[1] = _apply_affine_3d_x1(k, i, j, 1, out_grid2world)
                     x[2] = _apply_affine_3d_x2(k, i, j, 1, out_grid2world)
-                    dx[:] = x[:]
+                    for p in range(3):
+                        dx[p] = x[p]
                     for p in range(3):
                         # Compute coordinates of point dx on img's grid
                         dx[p] = x[p] - h[p]
@@ -3159,6 +3168,9 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                             continue
                         out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
                         dx[p] = x[p]
+        free(x)
+        free(dx)
+        free(q)
     stop = timeit.default_timer()
     print(stop - start)
 
@@ -3198,17 +3210,21 @@ def _sparse_gradient_3d(floating[:, :, :] img,
     """
     cdef:
         int n = sample_points.shape[0]
-        int i, in_flag
-        double tmp
-        double[:] dx = np.empty(shape=(3,), dtype=np.float64)
+        int i, in_flag, p
+        double tmp, *dx, *q
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
-        double[:] q = np.empty(shape=(3,), dtype=np.float64)
     start = timeit.default_timer()
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
         h[2] = 0.5 * img_spacing[2]
-        for i in range(n):
+        dx = <double *>malloc(sizeof(double) * 3)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 3)
+        if q == NULL:
+            abort()
+        for i in prange(n, schedule='guided'):
             inside[i] = 1
             dx[0] = sample_points[i, 0]
             dx[1] = sample_points[i, 1]
@@ -3247,6 +3263,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+        free(dx)
+        free(q)
     stop = timeit.default_timer()
     print(stop - start)
 
@@ -3290,23 +3308,30 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     cdef:
         int nrows = out.shape[0]
         int ncols = out.shape[1]
-        int i, j, k, in_flag
-        double tmp
-        double[:] x = np.empty(shape=(2,), dtype=np.float64)
-        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        int i, j, k, in_flag, p
+        double tmp, *x, *dx, *q
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
-        double[:] q = np.empty(shape=(2,), dtype=np.float64)
     start = timeit.default_timer()
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
-        for i in range(nrows):
+        x = <double *>malloc(sizeof(double) * 2)
+        if x == NULL:
+            abort()
+        dx = <double *>malloc(sizeof(double) * 2)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 2)
+        if q == NULL:
+            abort()
+        for i in prange(nrows, schedule='guided'):
             for j in range(ncols):
                 inside[i, j] = 1
                 # Compute coordinates of index (i, j) in physical space
                 x[0] = _apply_affine_2d_x0(i, j, 1, out_grid2world)
                 x[1] = _apply_affine_2d_x1(i, j, 1, out_grid2world)
-                dx[:] = x[:]
+                for p in range(2):
+                    dx[p] = x[p]
                 for p in range(2):
                     # Compute coordinates of point dx on img's grid
                     dx[p] = x[p] - h[p]
@@ -3333,6 +3358,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                         continue
                     out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
                     dx[p] = x[p]
+        free(x)
+        free(dx)
+        free(q)
     stop = timeit.default_timer()
     print(stop - start)
 
@@ -3373,16 +3401,20 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
     """
     cdef:
         int n = sample_points.shape[0]
-        int i, in_flag
-        double tmp
-        double[:] dx = np.empty(shape=(2,), dtype=np.float64)
+        int i, in_flag, p
+        double tmp, *dx, *q
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
-        double[:] q = np.empty(shape=(2,), dtype=np.float64)
     start = timeit.default_timer()
-    with nogil:
+    with nogil, parallel():
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
-        for i in range(n):
+        dx = <double *>malloc(sizeof(double) * 2)
+        if dx == NULL:
+            abort()
+        q = <double *>malloc(sizeof(double) * 2)
+        if q == NULL:
+            abort()
+        for i in prange(n, schedule='guided'):
             inside[i] = 1
             dx[0] = sample_points[i, 0]
             dx[1] = sample_points[i, 1]
@@ -3412,6 +3444,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+        free(dx)
+        free(q)
     stop = timeit.default_timer()
     print(stop - start)
 
