@@ -8,6 +8,7 @@ cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
 
+import timeit
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -3110,6 +3111,7 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
         double[:] q = np.empty(shape=(3,), dtype=np.float64)
+    start = timeit.default_timer()
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3157,6 +3159,8 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                             continue
                         out[k, i, j, p] = (out[k, i, j, p] - tmp) / img_spacing[p]
                         dx[p] = x[p]
+    stop = timeit.default_timer()
+    print(stop - start)
 
 
 def _sparse_gradient_3d(floating[:, :, :] img,
@@ -3199,6 +3203,7 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
         double[:] q = np.empty(shape=(3,), dtype=np.float64)
+    start = timeit.default_timer()
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3242,6 +3247,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+    stop = timeit.default_timer()
+    print(stop - start)
 
 
 def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
@@ -3289,6 +3296,7 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
         double[:] q = np.empty(shape=(2,), dtype=np.float64)
+    start = timeit.default_timer()
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3325,6 +3333,8 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                         continue
                     out[i, j, p] = (out[i, j, p] - tmp) / img_spacing[p]
                     dx[p] = x[p]
+    stop = timeit.default_timer()
+    print(stop - start)
 
 
 def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
@@ -3368,6 +3378,7 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
         double[:] q = np.empty(shape=(2,), dtype=np.float64)
+    start = timeit.default_timer()
     with nogil:
         h[0] = 0.5 * img_spacing[0]
         h[1] = 0.5 * img_spacing[1]
@@ -3401,6 +3412,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
                     continue
                 out[i, p] = (out[i, p] - tmp) / img_spacing[p]
                 dx[p] = sample_points[i, p]
+    stop = timeit.default_timer()
+    print(stop - start)
 
 
 def gradient(img, img_world2grid, img_spacing, out_shape,
