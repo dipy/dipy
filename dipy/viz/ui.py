@@ -2991,9 +2991,11 @@ class Option(UI):
         """ Setup this UI component.
         """
         # Option's button
-        self.button_icons = {}
-        self.button_icons['unchecked'] = read_viz_icons(fname="stop2.png")
-        self.button_icons['checked'] = read_viz_icons(fname="checkmark.png")
+        self.button_icons = []
+        self.button_icons.append(('unchecked',
+                                 read_viz_icons(fname="stop2.png")))
+        self.button_icons.append(('checked',
+                                 read_viz_icons(fname="checkmark.png")))
         self.button = Button2D(icon_fnames=self.button_icons,
                                size=self.button_size)
 
