@@ -157,13 +157,11 @@ class ImageRegistrationFlow(Workflow):
             number of parameters of the specified transformation.
 
         """
-        img_registration = self.center_of_mass(static,
-                                               static_grid2world,
-                                               moving,
-                                               moving_grid2world)[0]
+        moved, affine = self.center_of_mass(static, static_grid2world,
+                                            moving, moving_grid2world)
 
         transform = TranslationTransform3D()
-        starting_affine = img_registration.affine
+        starting_affine = affine
 
         img_registration = affreg.optimize(static, moving, transform,
                                            params0, static_grid2world,
@@ -215,19 +213,19 @@ class ImageRegistrationFlow(Workflow):
         """
 
         if progressive:
-            img_registration = self.translate(static,
-                                              static_grid2world,
-                                              moving, moving_grid2world,
-                                              affreg, params0)[0]
+            moved, affine = self.translate(static,
+                                           static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0)
 
         else:
-            img_registration = self.center_of_mass(static,
-                                                   static_grid2world,
-                                                   moving,
-                                                   moving_grid2world)[0]
+            moved, affine = self.center_of_mass(static,
+                                                static_grid2world,
+                                                moving,
+                                                moving_grid2world)
 
         transform = RigidTransform3D()
-        starting_affine = img_registration.affine
+        starting_affine = affine
 
         img_registration = affreg.optimize(static, moving, transform,
                                            params0, static_grid2world,
@@ -237,9 +235,9 @@ class ImageRegistrationFlow(Workflow):
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine
 
-    def affine_register(self, static,
-                        static_grid2world, moving,
-                        moving_grid2world, affreg, params0, progressive):
+    def affine(self, static, static_grid2world, moving, moving_grid2world,
+               affreg, params0,
+               progressive):
 
         """ Function for full affine registration.
 
@@ -279,19 +277,16 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if progressive:
-            img_registration = self.rigid(static,
-                                          static_grid2world,
-                                          moving, moving_grid2world,
-                                          affreg, params0, progressive)[0]
+            moved, affine = self.rigid(static, static_grid2world,
+                                       moving, moving_grid2world,
+                                       affreg, params0, progressive)
 
         else:
-            img_registration = self.center_of_mass(static,
-                                                   static_grid2world,
-                                                   moving,
-                                                   moving_grid2world)[0]
+            moved, affine = self.center_of_mass(static, static_grid2world,
+                                                moving, moving_grid2world)
 
         transform = AffineTransform3D()
-        starting_affine = img_registration.affine
+        starting_affine = affine
 
         img_registration = affreg.optimize(static, moving, transform,
                                            params0, static_grid2world,
@@ -419,10 +414,10 @@ class ImageRegistrationFlow(Workflow):
         for static_img, mov_img, moved_file, affine_matrix_file in io_it:
 
             """
-            Load the data from the images.
+            Load the data from the input files and store into objects.
             """
             image = nib.load(static_img)
-            static = np.squeeze(image.get_data())
+            static = np.array(image.get_data())
             static_grid2world = image.affine
 
             image = nib.load(mov_img)
@@ -432,20 +427,18 @@ class ImageRegistrationFlow(Workflow):
             self.check_dimensions(static, moving)
 
             if transform.lower() == 'com':
-                moved_image, affine = self.center_of_mass(
-                    static,
-                    static_grid2world,
-                    moving,
-                    moving_grid2world)
+                moved_image, affine = self.center_of_mass(static,
+                                                          static_grid2world,
+                                                          moving,
+                                                          moving_grid2world)
             else:
 
                 params0 = None
-
                 self.check_metric(metric)
                 metric = MutualInformationMetric(nbins, sampling_prop)
 
                 """
-                Instantiating the affine registration class with the configurations.
+                Instantiating the registration class with the configurations.
                 """
 
                 affreg = AffineRegistration(metric=metric,
@@ -454,30 +447,27 @@ class ImageRegistrationFlow(Workflow):
                                             factors=factors)
 
                 if transform.lower() == 'trans':
-                    moved_image, affine = self.translate(
-                        static,
-                        static_grid2world,
-                        moving,
-                        moving_grid2world,
-                        affreg, params0)
+                    moved_image, affine = self.translate(static,
+                                                         static_grid2world,
+                                                         moving,
+                                                         moving_grid2world,
+                                                         affreg, params0)
 
                 elif transform.lower() == 'rigid':
-                    moved_image, affine = self.rigid(
-                        static,
-                        static_grid2world,
-                        moving,
-                        moving_grid2world,
-                        affreg, params0,
-                        progressive)
+                    moved_image, affine = self.rigid(static,
+                                                     static_grid2world,
+                                                     moving,
+                                                     moving_grid2world,
+                                                     affreg, params0,
+                                                     progressive)
 
                 elif transform.lower() == 'affine':
-                    moved_image, affine = self.affine_register(
-                        static,
-                        static_grid2world,
-                        moving,
-                        moving_grid2world,
-                        affreg, params0,
-                        progressive)
+                    moved_image, affine = self.affine(static,
+                                                      static_grid2world,
+                                                      moving,
+                                                      moving_grid2world,
+                                                      affreg, params0,
+                                                      progressive)
                 else:
                     raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'
