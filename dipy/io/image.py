@@ -1,5 +1,5 @@
 from __future__ import division, print_function, absolute_import
-import numpy as np
+
 import nibabel as nib
 import numpy as np
 
@@ -28,7 +28,6 @@ def save_nifti(fname, data, affine, hdr=None):
 
 
 def save_affine_matrix(fname, affine):
-
     """
     Parameters
     ---------
