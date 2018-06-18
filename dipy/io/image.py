@@ -24,3 +24,15 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
 def save_nifti(fname, data, affine, hdr=None):
     result_img = nib.Nifti1Image(data, affine, header=hdr)
     result_img.to_filename(fname)
+
+def save_affine_matrix(fname, affine):
+
+    """
+    Parameters
+    ---------
+    fname : str
+        File name to save the affine matrix.
+    affine : numpy array
+        The object containing the affine matrix.
+    """
+    np.savetxt(fname, affine)
