@@ -1,7 +1,6 @@
 from __future__ import division, print_function, absolute_import
-
-import nibabel as nib
 import numpy as np
+import nibabel as nib
 
 
 def load_nifti(fname, return_img=False, return_voxsize=False,
@@ -37,3 +36,13 @@ def save_affine_matrix(fname, affine):
         The object containing the affine matrix.
     """
     np.savetxt(fname, affine)
+
+
+def load_affine_matrix(fname):
+    """
+        Parameters
+        ---------
+        fname : str
+            The file containing the saved affine matrix.
+    """
+    return np.loadtxt(fname)
