@@ -37,13 +37,3 @@ def save_affine_matrix(fname, affine):
         The object containing the affine matrix.
     """
     np.savetxt(fname, affine)
-
-
-def load_affine_matrix(fname):
-    """
-    Parameters
-    ----------
-    fname : string
-        The file containing the saved affine matrix.
-    """
-    return np.loadtxt(fname)
