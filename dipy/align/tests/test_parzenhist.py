@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from scipy import ndimage
 from functools import reduce
 from operator import mul
 from dipy.core.ndindex import ndindex
