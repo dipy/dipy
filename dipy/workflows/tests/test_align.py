@@ -9,12 +9,10 @@ from dipy.workflows.align import ResliceFlow
 
 import os.path
 from os.path import join as pjoin
-import shutil
 
 from dipy.align.tests.test_parzenhist import setup_random_transform
-from dipy.align.transforms import (Transform, regtransforms)
+from dipy.align.transforms import Transform, regtransforms
 from dipy.io.image import save_nifti
-from glob import glob
 
 from dipy.workflows.align import ImageRegistrationFlow
 

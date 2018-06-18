@@ -209,10 +209,11 @@ class ImageRegistrationFlow(Workflow):
             number of parameters of the specified transformation.
 
         """
+
         _, affine = self.center_of_mass(static, static_grid2world, moving,
                                         moving_grid2world)
-
         transform = TranslationTransform3D()
+        starting_affine = affine
 
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
