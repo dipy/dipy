@@ -5,26 +5,27 @@ Developers
 
 The core development team consists of the following individuals:
 
-- **Eleftherios Garyfallidis**, University of Indiana, IN, USA
+- **Eleftherios Garyfallidis**, Indiana University, IN, USA
 - **Ariel Rokem**, University of Washington, WA, USA
 - **Matthew Brett**, Birmingham University, Birmingham, UK
 - **Bago Amirbekian**, Databricks, San Francisco, CA, USA
-- **Omar Ocegueda**, Center for Research in Mathematics, Guanajuato, MX
-- **Stefan Van der Walt**, University of California, Berkeley, CA, USA
-- **Marc-Alexandre Côté**,  Maluuba, Sherbrooke, QC, CA
-- **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
-- **Maxime Descoteaux**, University of Sherbrooke, QC, CA
-- **Serge Koudoro**, University of Indiana, IN, USA
-
+- **Omar Ocegueda**, Google, San Francisco, CA
+- **Marc-Alexandre Côté**,  Microsoft Research, Montreal, QC, CA
+- **Serge Koudoro**, Indiana University, IN, USA
+- **Gabriel Girard**, Swiss Federal Institute of Technology (EPFL), Lausanne, CH
+- **Mauro Zucchelli**, INRIA, Sophia-Antipolis, France
+- **Rafael Neto Henriques**, Cambridge University, UK
+- **Matthieu Dumont**, Imeka, Sherbrooke, QC, CA
+- **Ranveer Aggarwal**, Microsoft, Hyderabad, Telangana, India
 
 And here is the rest of the wonderful contributors:
 
-- **Mauro Zucchelli**, University of Verona, IT
-- **Matthieu Dumont**, PAVI, Sherbrooke, QC, CA
+- **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
+- **Maxime Descoteaux**, University of Sherbrooke, QC, CA
+- **Stefan Van der Walt**, University of California, Berkeley, CA, USA
 - **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, NL
-- **Gabriel Girard**, Swiss Federal Institute of Technology, Lausanne, CH
-- **Michael Paquette**, University of Sherbrooke, QC, CA
-- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA
+- **Michael Paquette**, Max Planck Institute for Human Cognitive and Brain Sciences, Leipzig, DE
+- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA and Imeka, Sherbrooke, QC, CA
 - **Christopher Nguyen**,  Massachusetts General Hospital, MA, USA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, IT
 - **Yaroslav Halchenco**, PBS Department, Dartmouth, NH, USA
@@ -42,7 +43,7 @@ And here is the rest of the wonderful contributors:
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
 - **Qiyuan Tian**, Stanford University, Stanford, CA, USA
-- **Rafael Neto Henriques**, Cambridge University, UK
+- **Rafael Neto Henriques**, Champalimaud Neuroscience Programme, Champalimaud Centre for the Unknown, Lisbon, PT
 - **Stephan Meesters**, Eindhoven University of Technology, NL
 - **Himanshu Mishra**, Indian Institute of Technology, Karaghpur, IN
 - **Alexander Gauvin**, University of Sherbrooke, QC, CA
@@ -53,6 +54,8 @@ And here is the rest of the wonderful contributors:
 - **Sagun Pai**, Indian Institute of Technology, Bombay, IN
 - **Vatsala Swaroop**, Mombai, IN
 - **Shahnawaz Ahmed**, Birla Institute of Technology and Science, Pilani, Goa, IN
+- **Nil Goyette**, Imeka, Sherbrooke, QC, CA
+
 
 
 Boundless collaboration is in the heart of DIPY_. We encourage everyone from anywhere in the world to join the team. You can start sharing your code `here`__. If you want to contribute but you don't know in area to focus, please send us an e-mail. We will be more than happy to help.
