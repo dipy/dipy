@@ -3023,12 +3023,12 @@ class ListBox2D(UI):
 
         # Add up and down buttons
         arrow_up = read_viz_icons(fname="arrow-up.png")
-        self.up_button = Button2D({"up": arrow_up})
+        self.up_button = Button2D([("up", arrow_up)])
         pos = self.panel.size - self.up_button.size // 2 - margin
         self.panel.add_element(self.up_button, pos, anchor="center")
 
         arrow_down = read_viz_icons(fname="arrow-down.png")
-        self.down_button = Button2D({"down": arrow_down})
+        self.down_button = Button2D([("down", arrow_down)])
         pos = (pos[0], self.up_button.size[1] // 2 + margin)
         self.panel.add_element(self.down_button, pos, anchor="center")
 
