@@ -117,7 +117,6 @@ cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
         return p14(x)
 
 
-
 def legendre(n, x):
     return legendre_eval(n, x)
 

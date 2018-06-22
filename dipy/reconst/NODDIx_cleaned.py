@@ -6,6 +6,20 @@ from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from scipy import special
 
+
+"""
+Parameters
+--------
+bvals
+bvecs
+G: gradient strength
+small_delta
+big_delta
+gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
+D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
+D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+"""
+
 gamma = 2.675987 * 10 ** 8
 D_intra = 1.7 * 10 ** 3  # (mircometer^2/sec for in vivo human)
 D_iso = 3 * 10 ** 3
@@ -54,8 +68,8 @@ class NODDIxModel(ReconstModel):
         self.yhat_zeppelin = np.zeros(self.small_delta.shape[0])
         self.yhat_cylinder = np.zeros(self.small_delta.shape[0])
         self.yhat_dot = np.zeros(self.gtab.bvals.shape)
-        self.exp_phi1 = np.zeros((self.small_delta.shape[0], 5))
-        self.exp_phi1[:, 4] = np.exp(-self.yhat_ball)
+        self.exp_phi = np.zeros((self.small_delta.shape[0], 5))
+        self.exp_phi[:, 4] = np.exp(-self.yhat_ball)
 
     def fit(self, data):
         """ Fit method of the NODDIx model class
@@ -79,7 +93,6 @@ class NODDIxModel(ReconstModel):
         """
         bounds = [(0.011, 0.98), (0.011, np.pi), (0.011, np.pi), (0.11, 1),
                   (0.011, 0.98), (0.011, np.pi), (0.011, np.pi), (0.11, 1)]
-        # can we limit this..
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,))
         x = res_one.x
@@ -101,19 +114,11 @@ class NODDIxModel(ReconstModel):
         Parameters
         ----------
         x : array
-            x.shape = 4x1
-            x(0) theta (radian)
-            x(1) phi (radian)
-            x(2) R (micrometers)
-            x(3) v=f1/(f1+f2) (0.1 - 0.8)
-        bvals
-        bvecs
-        G: gradient strength
-        small_delta
-        big_delta
-        gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
-        D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
-        D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+        x.shape = 4x1
+        x(0) theta (radian)
+        x(1) phi (radian)
+        x(2) R (micrometers)
+        x(3) v=f1/(f1+f2) (0.1 - 0.8)
         Returns
         -------
         (signal -  S)^T(signal -  S)
@@ -121,7 +126,7 @@ class NODDIxModel(ReconstModel):
         --------
         cost function for differential evolution algorithm:
         .. math::
-            (signal -  S)^T(signal -  S)
+        (signal -  S)^T(signal -  S)
         """
         phi = self.Phi(x)
         return self.differential_evol_cost(phi, signal)
@@ -198,27 +203,12 @@ class NODDIxModel(ReconstModel):
         .. math::
             sum{(signal -  phi*f)^2}
         """
+
         x, f = self.x_f_to_x_and_f(x_f)
         phi = self.Phi2(x_f)
         return np.sum((np.dot(phi, f) - signal) ** 2)
 
     def S_ic1(self, x):
-        """
-        This function models the intracellular component.
-        The intra-cellular compartment refrs to the space bounded by the
-        membrane of neurites. We model this space as a set of sticks, i.e.,
-        cylinders of zero radius, to capture the highly restricted nature of
-        diffusion perpendicular to neurites and unhindered diffusion along
-        them. (see [2]_ for a comparison and a thorough discussion)
-
-        ----------
-        References
-        ----------
-        .. [2] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
-               orientation dispersion and density imaging of the human brain.
-               NeuroImage, 61(4), 1000–1016.
-
-        """
         OD1 = x[0]
         sinT1 = np.sin(x[1])
         cosT1 = np.cos(x[1])
@@ -230,122 +220,6 @@ class NODDIxModel(ReconstModel):
         signal_ic1 = self.SynthMeasWatsonSHCylNeuman_PGSE(x1, n1)
         return signal_ic1
 
-    def S_ec1(self, x):
-        """
-        This function models the extracellular component.
-        The extra-cellular compartment refers to the space around the
-        neurites, which is occupied by various types of glial cells and,
-        additionally in gray matter, cell bodies (somas). In this space, the
-        diffusion of water molecules is hindered by the presence of neurites
-        but not restricted, hence is modeled with simple (Gaussian)
-        anisotropic diffusion.
-        (see [2]_ for a comparison and a thorough discussion)
-        ----------
-        References
-        ----------
-        .. [2] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
-               orientation dispersion and density imaging of the human brain.
-               NeuroImage, 61(4), 1000–1016.
-        """
-        OD1 = x[0]
-        sinT1 = np.sin(x[1])
-        cosT1 = np.cos(x[1])
-        sinP1 = np.sin(x[2])
-        cosP1 = np.cos(x[2])
-        v_ic1 = x[3]
-        n1 = [cosP1*sinT1, sinP1*sinT1, cosT1]
-        kappa1 = 1/np.tan(OD1*np.pi/2)
-        d_perp = D_intra * (1 - v_ic1)
-        signal_ec1 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
-                                                                 d_perp,
-                                                                 kappa1], n1)
-        return signal_ec1
-        """
-        We extend the NODDI model as presented in [2] for two fiber
-        orientations. Therefore we have 2 intracellular and extracellular
-        components to account for this.
-        (see Supplimentary note 6: [1]_ for a comparison and a thorough
-        discussion)
-        ----------
-        References
-        ----------
-        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
-        """
-
-    def S_ic2(self, x):
-        OD2 = x[4]
-        sinT2 = np.sin(x[5])
-        cosT2 = np.cos(x[5])
-        sinP2 = np.sin(x[6])
-        cosP2 = np.cos(x[6])
-        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
-        kappa2 = 1/np.tan(OD2*np.pi/2)
-        x2 = [D_intra, 0, kappa2]
-        signal_ic2 = self.SynthMeasWatsonSHCylNeuman_PGSE(x2, n2)
-        return signal_ic2
-
-    def S_ec2(self, x):
-        OD2 = x[4]
-        sinT2 = np.sin(x[5])
-        cosT2 = np.cos(x[5])
-        sinP2 = np.sin(x[6])
-        cosP2 = np.cos(x[6])
-        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
-        v_ic2 = x[7]
-        d_perp2 = D_intra * (1 - v_ic2)
-        kappa2 = 1/np.tan(OD2*np.pi/2)
-        signal_ec2 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
-                                                                 d_perp2,
-                                                                 kappa2], n2)
-        return signal_ec2
-
-    def S_ec1_new(self, x, f):
-        OD1 = x[0]
-        sinT1 = np.sin(x[1])
-        cosT1 = np.cos(x[1])
-        sinP1 = np.sin(x[2])
-        cosP1 = np.cos(x[2])
-        v_ic1 = f[0]
-        n1 = [cosP1*sinT1, sinP1*sinT1, cosT1]
-        kappa1 = 1/np.tan(OD1*np.pi/2)
-        d_perp = D_intra * (1 - v_ic1)
-        signal_ec1 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
-                                                                 d_perp,
-                                                                 kappa1], n1)
-        return signal_ec1
-
-    def S_ec2_new(self, x, f):
-        OD2 = x[3]
-        sinT2 = np.sin(x[4])
-        cosT2 = np.cos(x[4])
-        sinP2 = np.sin(x[5])
-        cosP2 = np.cos(x[5])
-        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
-        v_ic2 = f[2]
-        d_perp2 = D_intra * (1 - v_ic2)
-        kappa2 = 1/np.tan(OD2*np.pi/2)
-        signal_ec2 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
-                                                                 d_perp2,
-                                                                 kappa2], n2)
-        return signal_ec2
-
-    def S_ic2_new(self, x):
-        OD2 = x[3]
-        sinT2 = np.sin(x[4])
-        cosT2 = np.cos(x[4])
-        sinP2 = np.sin(x[5])
-        cosP2 = np.cos(x[5])
-        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
-        kappa2 = 1/np.tan(OD2*np.pi/2)
-        x2 = [D_intra, 0, kappa2]
-        signal_ic2 = self.SynthMeasWatsonSHCylNeuman_PGSE(x2, n2)
-        return signal_ic2
-
-    """
-
-    """
     def SynthMeasWatsonSHCylNeuman_PGSE(self, x, fiberdir):
         d = x[0]
         kappa = x[2]
@@ -409,11 +283,10 @@ class NODDIxModel(ReconstModel):
         I[exact, 0] = np.sqrt(np.pi) * temp / sqrtx
         dx = 1 / x[exact]
         emx = -np.exp(-x[exact])
-        # here-----
+
         for i in range(2, mn + 1):
             I[exact, i - 1] = emx + (i - 1.5) * I[exact, i - 2]
             I[exact, i - 1] = I[exact, i - 1] * dx
-#            b[:,1:] = b[:, :-1] * 10
 
         # Computing the legendre gaussian integrals for large enough x
         L = np.zeros((x.shape[0], n + 1))
@@ -592,6 +465,21 @@ class NODDIxModel(ReconstModel):
             C[6] = 128 * np.sqrt(np.pi) * k6 / 152108775
         return C
 
+    def S_ec1(self, x):
+        OD1 = x[0]
+        sinT1 = np.sin(x[1])
+        cosT1 = np.cos(x[1])
+        sinP1 = np.sin(x[2])
+        cosP1 = np.cos(x[2])
+        v_ic1 = x[3]
+        n1 = [cosP1*sinT1, sinP1*sinT1, cosT1]
+        kappa1 = 1/np.tan(OD1*np.pi/2)
+        d_perp = D_intra * (1 - v_ic1)
+        signal_ec1 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
+                                                                 d_perp,
+                                                                 kappa1], n1)
+        return signal_ec1
+
     def SynthMeasWatsonHinderedDiffusion_PGSE(self, x, fibredir):
         dPar = x[0]
         dPerp = x[1]
@@ -632,6 +520,33 @@ class NODDIxModel(ReconstModel):
         E = np.exp(- self.gtab.bvals * ((dPar - dPerp) * cosThetaSq + dPerp))
         return E
 
+    def S_ic2(self, x):
+        OD2 = x[4]
+        sinT2 = np.sin(x[5])
+        cosT2 = np.cos(x[5])
+        sinP2 = np.sin(x[6])
+        cosP2 = np.cos(x[6])
+        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
+        kappa2 = 1/np.tan(OD2*np.pi/2)
+        x2 = [D_intra, 0, kappa2]
+        signal_ic2 = self.SynthMeasWatsonSHCylNeuman_PGSE(x2, n2)
+        return signal_ic2
+
+    def S_ec2(self, x):
+        OD2 = x[4]
+        sinT2 = np.sin(x[5])
+        cosT2 = np.cos(x[5])
+        sinP2 = np.sin(x[6])
+        cosP2 = np.cos(x[6])
+        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
+        v_ic2 = x[7]
+        d_perp2 = D_intra * (1 - v_ic2)
+        kappa2 = 1/np.tan(OD2*np.pi/2)
+        signal_ec2 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
+                                                                 d_perp2,
+                                                                 kappa2], n2)
+        return signal_ec2
+
     def x_f_to_x_and_f(self, x_f):
         f = np.zeros((1, 5))
         f = x_f[0:5]
@@ -652,19 +567,61 @@ class NODDIxModel(ReconstModel):
         return x_f
 
     def Phi(self, x):
-        self.exp_phi1[:, 0] = self.S_ic1(x)
-        self.exp_phi1[:, 1] = self.S_ec1(x)
-        self.exp_phi1[:, 2] = self.S_ic2(x)
-        self.exp_phi1[:, 3] = self.S_ec2(x)
-        return self.exp_phi1
+        self.exp_phi[:, 0] = self.S_ic1(x)
+        self.exp_phi[:, 1] = self.S_ec1(x)
+        self.exp_phi[:, 2] = self.S_ic2(x)
+        self.exp_phi[:, 3] = self.S_ec2(x)
+        return self.exp_phi
 
     def Phi2(self, x_f):
         x, f = self.x_f_to_x_and_f(x_f)
-        self.exp_phi1[:, 0] = self.S_ic1(x)
-        self.exp_phi1[:, 1] = self.S_ec1_new(x, f)
-        self.exp_phi1[:, 2] = self.S_ic2_new(x)
-        self.exp_phi1[:, 3] = self.S_ec2_new(x, f)
-        return self.exp_phi1
+        self.exp_phi[:, 0] = self.S_ic1(x)
+        self.exp_phi[:, 1] = self.S_ec1_new(x, f)
+        self.exp_phi[:, 2] = self.S_ic2_new(x)
+        self.exp_phi[:, 3] = self.S_ec2_new(x, f)
+        return self.exp_phi
+
+    def S_ec1_new(self, x, f):
+        OD1 = x[0]
+        sinT1 = np.sin(x[1])
+        cosT1 = np.cos(x[1])
+        sinP1 = np.sin(x[2])
+        cosP1 = np.cos(x[2])
+        v_ic1 = f[0]
+        n1 = [cosP1*sinT1, sinP1*sinT1, cosT1]
+        kappa1 = 1/np.tan(OD1*np.pi/2)
+        d_perp = D_intra * (1 - v_ic1)
+        signal_ec1 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
+                                                                 d_perp,
+                                                                 kappa1], n1)
+        return signal_ec1
+
+    def S_ec2_new(self, x, f):
+        OD2 = x[3]
+        sinT2 = np.sin(x[4])
+        cosT2 = np.cos(x[4])
+        sinP2 = np.sin(x[5])
+        cosP2 = np.cos(x[5])
+        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
+        v_ic2 = f[2]
+        d_perp2 = D_intra * (1 - v_ic2)
+        kappa2 = 1/np.tan(OD2*np.pi/2)
+        signal_ec2 = self.SynthMeasWatsonHinderedDiffusion_PGSE([D_intra,
+                                                                 d_perp2,
+                                                                 kappa2], n2)
+        return signal_ec2
+
+    def S_ic2_new(self, x):
+        OD2 = x[3]
+        sinT2 = np.sin(x[4])
+        cosT2 = np.cos(x[4])
+        sinP2 = np.sin(x[5])
+        cosP2 = np.cos(x[5])
+        n2 = [cosP2 * sinT2, sinP2 * sinT2, cosT2]
+        kappa2 = 1/np.tan(OD2*np.pi/2)
+        x2 = [D_intra, 0, kappa2]
+        signal_ic2 = self.SynthMeasWatsonSHCylNeuman_PGSE(x2, n2)
+        return signal_ic2
 
     def estimate_signal(self, x_f):
         x, f = self.x_f_to_x_and_f(x_f)
