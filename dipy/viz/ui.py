@@ -2,7 +2,6 @@ from __future__ import division
 from _warnings import warn
 
 import numpy as np
-import os
 
 from dipy.data import read_viz_icons
 from dipy.viz.interactor import CustomInteractorStyle
@@ -3024,12 +3023,12 @@ class ListBox2D(UI):
 
         # Add up and down buttons
         arrow_up = read_viz_icons(fname="arrow-up.png")
-        self.up_button = Button2D([("up", arrow_up)])
+        self.up_button = Button2D({"up": arrow_up})
         pos = self.panel.size - self.up_button.size // 2 - margin
         self.panel.add_element(self.up_button, pos, anchor="center")
 
         arrow_down = read_viz_icons(fname="arrow-down.png")
-        self.down_button = Button2D([("down", arrow_down)])
+        self.down_button = Button2D({"down": arrow_down})
         pos = (pos[0], self.up_button.size[1] // 2 + margin)
         self.panel.add_element(self.down_button, pos, anchor="center")
 
@@ -3234,10 +3233,8 @@ class ListBoxItem2D(UI):
                                      vertical_justification="middle")
 
         # Add default events listener for this UI component.
-        self.add_callback(self.textblock.actor, "LeftButtonPressEvent",
-                          self.left_button_clicked)
-        self.add_callback(self.background.actor, "LeftButtonPressEvent",
-                          self.left_button_clicked)
+        self.textblock.on_left_mouse_button_clicked = self.left_button_clicked
+        self.background.on_left_mouse_button_clicked = self.left_button_clicked
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -3306,240 +3303,3 @@ class ListBoxItem2D(UI):
         self.list_box.select(self, multiselect, range_select)
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
-
-
-class FileMenu2D(UI):
-    """ A menu to select files in the current folder.
-
-    Can go to new folder, previous folder and select multiple files.
-
-    Attributes
-    ----------
-    extensions: list(string)
-        List of extensions to be shown as files.
-    listbox : :class: 'ListBox2D'
-        Container for the menu.
-
-    """
-
-    def __init__(self, extensions, directory_path, position=(0, 0),
-                 size=(100, 300), multiselection=True, reverse_scrolling=False,
-                 font_size=20, line_spacing=1.4):
-        """
-        Parameters
-        ----------
-        extensions: list(string)
-            List of extensions to be shown as files.
-        directory_path: string
-            Path of the directory where this dialog should open.
-        position : (float, float)
-            Absolute coordinates (x, y) of the lower-left corner of this
-            UI component.
-        size : (int, int)
-            Width and height in pixels of this UI component.
-        multiselection: {True, False}
-            Whether multiple values can be selected at once.
-        reverse_scrolling: {True, False}
-            If True, scrolling up will move the list of files down.
-        font_size: int
-            The font size in pixels.
-        line_spacing: float
-            Distance between listbox's items in pixels.
-
-        """
-        self.font_size = font_size
-        self.multiselection = multiselection
-        self.reverse_scrolling = reverse_scrolling
-        self.line_spacing = line_spacing
-        self.extensions = extensions
-        self.current_directory = directory_path
-        self.menu_size = size
-
-        super(FileMenu2D, self).__init__()
-        self.position = position
-        self.set_slot_colors()
-
-    def _setup(self):
-        """ Setup this UI component.
-
-        Create the ListBox (Panel2D) filled with empty slots (ListBoxItem2D).
-        """
-        self.directory_contents = self.get_all_file_names()
-        content_names = [x[0] for x in self.directory_contents]
-        self.listbox = ListBox2D(
-            values=content_names, multiselection=self.multiselection,
-            font_size=self.font_size, line_spacing=self.line_spacing,
-            reverse_scrolling=self.reverse_scrolling, size=self.menu_size)
-
-        self.add_callback(self.listbox.up_button.actor, "LeftButtonPressEvent",
-                          self.scroll_callback)
-        self.add_callback(self.listbox.down_button.actor,
-                          "LeftButtonPressEvent", self.scroll_callback)
-
-        # Handle mouse wheel events on the panel.
-        up_event = "MouseWheelForwardEvent"
-        down_event = "MouseWheelBackwardEvent"
-        if self.reverse_scrolling:
-            up_event, down_event = down_event, up_event  # Swap events
-
-        self.add_callback(self.listbox.panel.background.actor, up_event,
-                          self.scroll_callback)
-        self.add_callback(self.listbox.panel.background.actor, down_event,
-                          self.scroll_callback)
-
-        # Handle mouse wheel events on the slots.
-        for slot in self.listbox.slots:
-            self.add_callback(slot.background.actor, up_event,
-                              self.scroll_callback)
-            self.add_callback(slot.background.actor, down_event,
-                              self.scroll_callback)
-            self.add_callback(slot.textblock.actor, up_event,
-                              self.scroll_callback)
-            self.add_callback(slot.textblock.actor, down_event,
-                              self.scroll_callback)
-            slot.add_callback(slot.textblock.actor, "LeftButtonPressEvent",
-                              self.directory_click_callback)
-            slot.add_callback(slot.background.actor, "LeftButtonPressEvent",
-                              self.directory_click_callback)
-
-    def _get_actors(self):
-        """ Get the actors composing this UI component.
-        """
-        return self.listbox.actors
-
-    def resize(self, size):
-        pass
-
-    def _set_position(self, coords):
-        """ Position the lower-left corner of this UI component.
-
-        Parameters
-        ----------
-        coords: (float, float)
-            Absolute pixel coordinates (x, y).
-        """
-        self.listbox.position = coords
-
-    def _add_to_renderer(self, ren):
-        """ Add all subcomponents or VTK props that compose this UI component.
-
-        Parameters
-        ----------
-        ren : renderer
-        """
-        self.listbox.add_to_renderer(ren)
-
-    def _get_size(self):
-        return self.listbox.size
-
-    def get_all_file_names(self):
-        """ Gets file and directory names.
-
-        Returns
-        -------
-        all_file_names: list((string, {"directory", "file"}))
-            List of all file and directory names as string.
-
-        """
-        all_file_names = []
-
-        directory_names = self.get_directory_names()
-        for directory_name in directory_names:
-            all_file_names.append((directory_name, "directory"))
-
-        file_names = self.get_file_names()
-        for file_name in file_names:
-            all_file_names.append((file_name, "file"))
-
-        return all_file_names
-
-    def get_directory_names(self):
-        """ Finds names of all directories in the current_directory
-
-        Returns
-        -------
-        directory_names: list(string)
-            List of all directory names as string.
-
-        """
-        # A list of directory names in the current directory
-        directory_names = []
-        for (_, dirnames, _) in os.walk(self.current_directory):
-            directory_names += dirnames
-            break
-        directory_names.sort(key=lambda s: s.lower())
-        directory_names.insert(0, "../")
-        return directory_names
-
-    def get_file_names(self):
-        """ Finds names of all files in the current_directory
-
-        Returns
-        -------
-        file_names: list(string)
-            List of all file names as string.
-
-        """
-        # A list of file names with extension in the current directory
-        for (_, _, files) in os.walk(self.current_directory):
-            break
-
-        file_names = []
-        if "*" in self.extensions:
-            file_names = files
-        else:
-            for ext in self.extensions:
-                for file in files:
-                    if file.endswith("." + ext):
-                        file_names.append(file)
-        file_names.sort(key=lambda s: s.lower())
-        return file_names
-
-    def set_slot_colors(self):
-        """ Sets the text color of the slots based on the type of element
-        they show. Blue for directories and green for files.
-        """
-        for idx, slot in enumerate(self.listbox.slots):
-            list_idx = min(self.listbox.view_offset + idx,
-                           len(self.directory_contents)-1)
-            if self.directory_contents[list_idx][1] == "directory":
-                slot.textblock.color = (0, 0.6, 0)
-            elif self.directory_contents[list_idx][1] == "file":
-                slot.textblock.color = (0, 0, 0.7)
-
-    def scroll_callback(self, i_ren, obj, filemenu_item):
-        """ A callback to handle scroll and change the slot text colors.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        filemenu_item: :class:`FileMenu2D`
-        """
-        self.set_slot_colors()
-        i_ren.force_render()
-        i_ren.event.abort()
-
-    def directory_click_callback(self, i_ren, obj, listboxitem):
-        """ A callback to move into a directory if it has been clicked.
-
-        Parameters
-        ----------
-        i_ren: :class:`CustomInteractorStyle`
-        obj: :class:`vtkActor`
-            The picked actor
-        listboxitem: :class:`ListBoxItem2D`
-        """
-        if (listboxitem.element, "directory") in self.directory_contents:
-            self.current_directory = os.path.join(self.current_directory,
-                                                  listboxitem.element)
-            self.directory_contents = self.get_all_file_names()
-            content_names = [x[0] for x in self.directory_contents]
-            self.listbox.clear_selection()
-            self.listbox.values = content_names
-            self.listbox.view_offset = 0
-            self.listbox.update()
-            self.set_slot_colors()
-        i_ren.force_render()
-        i_ren.event.abort()
