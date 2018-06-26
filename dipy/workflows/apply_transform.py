@@ -1,5 +1,4 @@
 from dipy.workflows.workflow import Workflow
-
 from dipy.align.imaffine import AffineMap
 import nibabel as nib
 import numpy as np
@@ -37,7 +36,7 @@ class ApplyTransformFlow(Workflow):
             static_grid2world = ref_image.affine
 
             image = nib.load(mov_images)
-            image_data = np.array(image.get_data())
+            image_data = image.get_data()
 
             affine_matrix = load_affine_matrix(affine_matrix_file)
 
