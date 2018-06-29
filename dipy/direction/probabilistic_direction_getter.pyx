@@ -180,7 +180,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
                 max_idx = i
                 max_value = pmf[i]
 
-        if pmf[max_idx] == 0:
+        if max_value <= 0:
             return 1
 
         newdir = self.vertices[max_idx]

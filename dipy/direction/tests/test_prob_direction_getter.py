@@ -3,7 +3,8 @@ import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
 from dipy.reconst.shm import SphHarmFit, SphHarmModel
-from dipy.direction import ProbabilisticDirectionGetter
+from dipy.direction import (DeterministicMaximumDirectionGetter,
+                            ProbabilisticDirectionGetter)
 
 
 def test_ProbabilisticDirectionGetter():
@@ -62,3 +63,26 @@ def test_ProbabilisticDirectionGetter():
                       fit.shm_coeff, 90, unit_octahedron,
                       pmf_threshold=0.1,
                       basis_type="not a basis")
+
+
+def test_DeterministicMaximumDirectionGetter():
+    # Test the DeterministicMaximumDirectionGetter
+
+    dir = unit_octahedron.vertices[-1].copy()
+    point = np.zeros(3)
+    N = unit_octahedron.theta.shape[0]
+
+    # No valid direction
+    pmf = np.zeros((3, 3, 3, N))
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90,
+                                                      unit_octahedron)
+    state = dg.get_direction(point, dir)
+    npt.assert_equal(state, 1)
+
+    # Test BF #1566 - bad condition in DeterministicMaximumDirectionGetter
+    pmf = np.zeros((3, 3, 3, N))
+    pmf[0, 0, 0, 0] = 1
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 0,
+                                                      unit_octahedron)
+    state = dg.get_direction(point, dir)
+    npt.assert_equal(state, 1)
