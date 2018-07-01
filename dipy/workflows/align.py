@@ -10,7 +10,8 @@ from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
                                  MutualInformationMetric, AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
-from dipy.io.image import save_nifti, save_affine_matrix, save_quality_assur_metric
+from dipy.io.image import save_nifti, save_affine_matrix, \
+    save_quality_assur_metric
 
 
 class ResliceFlow(Workflow):
@@ -163,13 +164,12 @@ class ImageRegistrationFlow(Workflow):
         transform = TranslationTransform3D()
         starting_affine = affine
 
-        img_registration, xopt, fopt = affreg.optimize(static, moving,
-                                                       transform, params0,
-                                                       static_grid2world,
-                                                       moving_grid2world,
-                                                       starting_affine=
-                                                       starting_affine,
-                                                       ret_metric=True)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
@@ -229,13 +229,12 @@ class ImageRegistrationFlow(Workflow):
         transform = RigidTransform3D()
         starting_affine = affine
 
-        img_registration, xopt, fopt = affreg.optimize(static, moving,
-                                                       transform, params0,
-                                                       static_grid2world,
-                                                       moving_grid2world,
-                                                       starting_affine=
-                                                       starting_affine,
-                                                       ret_metric=True)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
@@ -282,8 +281,9 @@ class ImageRegistrationFlow(Workflow):
         """
         if progressive:
             moved, affine, xopt, fopt = self.rigid(static, static_grid2world,
-                                       moving, moving_grid2world,
-                                       affreg, params0, progressive)
+                                                   moving, moving_grid2world,
+                                                   affreg, params0,
+                                                   progressive)
 
         else:
             moved, affine = self.center_of_mass(static, static_grid2world,
@@ -292,13 +292,12 @@ class ImageRegistrationFlow(Workflow):
         transform = AffineTransform3D()
         starting_affine = affine
 
-        img_registration, xopt, fopt = affreg.optimize(static, moving,
-                                                       transform, params0,
-                                                       static_grid2world,
-                                                       moving_grid2world,
-                                                       starting_affine=
-                                                       starting_affine,
-                                                       ret_metric=True)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
@@ -434,8 +433,8 @@ class ImageRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-
-        for static_img, mov_img, moved_file, affine_matrix_file, qual_val_file in io_it:
+        for static_img, mov_img, moved_file, affine_matrix_file, \
+                qual_val_file in io_it:
 
             """
             Load the data from the input files and store into objects.
@@ -471,27 +470,33 @@ class ImageRegistrationFlow(Workflow):
                                             factors=factors)
 
                 if transform.lower() == 'trans':
-                    moved_image, affine, xopt, fopt = self.translate(static,
-                                                         static_grid2world,
-                                                         moving,
-                                                         moving_grid2world,
-                                                         affreg, params0)
+                    moved_image, affine, \
+                        xopt, fopt = self.translate(static,
+                                                    static_grid2world,
+                                                    moving,
+                                                    moving_grid2world,
+                                                    affreg,
+                                                    params0)
 
                 elif transform.lower() == 'rigid':
-                    moved_image, affine, xopt, fopt = self.rigid(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world,
-                                                     affreg, params0,
-                                                     progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.rigid(static,
+                                                static_grid2world,
+                                                moving,
+                                                moving_grid2world,
+                                                affreg,
+                                                params0,
+                                                progressive)
 
                 elif transform.lower() == 'affine':
-                    moved_image, affine, xopt, fopt = self.affine(static,
-                                                      static_grid2world,
-                                                      moving,
-                                                      moving_grid2world,
-                                                      affreg, params0,
-                                                      progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.affine(static,
+                                                 static_grid2world,
+                                                 moving,
+                                                 moving_grid2world,
+                                                 affreg,
+                                                 params0,
+                                                 progressive)
                 else:
                     raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'
@@ -510,4 +515,3 @@ class ImageRegistrationFlow(Workflow):
 
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
-
