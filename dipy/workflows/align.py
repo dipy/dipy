@@ -14,6 +14,8 @@ from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
     save_quality_assur_metric
 
 
+
+
 class ResliceFlow(Workflow):
 
     @classmethod
@@ -321,16 +323,17 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if progressive:
-
             _, affine, xopt, fopt = self.rigid(static, static_grid2world,
                                                moving, moving_grid2world,
                                                affreg, params0, progressive)
+
 
         else:
             _, affine = self.center_of_mass(static, static_grid2world,
                                             moving, moving_grid2world)
 
         transform = AffineTransform3D()
+
 
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
@@ -498,27 +501,33 @@ class ImageRegistrationFlow(Workflow):
                                             factors=factors)
 
                 if transform.lower() == 'trans':
-                    moved_image, affine, xopt, fopt = self.translate(static,
-                                                         static_grid2world,
-                                                         moving,
-                                                         moving_grid2world,
-                                                         affreg, params0)
+                    moved_image, affine, \
+                        xopt, fopt = self.translate(static,
+                                                    static_grid2world,
+                                                    moving,
+                                                    moving_grid2world,
+                                                    affreg,
+                                                    params0)
 
                 elif transform.lower() == 'rigid':
-                    moved_image, affine, xopt, fopt = self.rigid(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world,
-                                                     affreg, params0,
-                                                     progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.rigid(static,
+                                                static_grid2world,
+                                                moving,
+                                                moving_grid2world,
+                                                affreg,
+                                                params0,
+                                                progressive)
 
                 elif transform.lower() == 'affine':
-                    moved_image, affine, xopt, fopt = self.affine(static,
-                                                      static_grid2world,
-                                                      moving,
-                                                      moving_grid2world,
-                                                      affreg, params0,
-                                                      progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.affine(static,
+                                                 static_grid2world,
+                                                 moving,
+                                                 moving_grid2world,
+                                                 affreg,
+                                                 params0,
+                                                 progressive)
                 else:
                     raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'
