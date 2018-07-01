@@ -13,9 +13,7 @@ from os.path import join as pjoin
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import Transform, regtransforms
 from dipy.io.image import save_nifti
-
 from dipy.workflows.align import ImageRegistrationFlow
-
 
 def test_reslice():
     with TemporaryDirectory() as out_dir:
@@ -154,5 +152,7 @@ def test_image_registration():
         test_affine()
         test_err()
 
+
 if __name__ == "__main__":
     run_module_suite()
+
