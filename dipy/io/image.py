@@ -31,9 +31,32 @@ def save_affine_matrix(fname, affine):
     """
     Parameters
     ---------
-    fname : str
+    fname : string
         File name to save the affine matrix.
     affine : numpy array
         The object containing the affine matrix.
     """
     np.savetxt(fname, affine)
+
+
+def save_quality_assur_metric(fname, xopt, fopt):
+    """
+    Parameters
+    __________
+    fname: string
+        File name to save the metric values.
+    xopt: numpy array
+        The metric containing the
+        optimal parameters for
+        image registration.
+    fopt: int
+        The distance between the registered images.
+    """
+    np.savetxt(fname, xopt, header="Optimal Parameter metric")
+    with open(fname,'a') as f:
+        f.write('# Distance after registration\n')
+        f.write(str(fopt))
+
+
+
+
