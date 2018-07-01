@@ -14,7 +14,7 @@ from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import (Transform,
                                    regtransforms)
 from dipy.io.image import save_nifti
-from glob import glob
+from time import  sleep
 
 from dipy.workflows.align import ImageRegistrationFlow
 
@@ -63,7 +63,7 @@ def test_image_registration():
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
                                      out_affine=out_affine,
-                                     level_iters="100 10 1")
+                                     level_iters=[100, 10, 1])
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -77,7 +77,7 @@ def test_image_registration():
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
                                      out_affine=out_affine,
-                                     level_iters="100 10 1")
+                                     level_iters=[100, 10, 1])
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -91,7 +91,7 @@ def test_image_registration():
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
                                      out_affine=out_affine,
-                                     level_iters="100 10 1")
+                                     level_iters=[100, 10, 1])
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -105,7 +105,7 @@ def test_image_registration():
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
                                      out_affine=out_affine,
-                                     level_iters="100 10 1")
+                                     level_iters=[100, 10, 1])
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
