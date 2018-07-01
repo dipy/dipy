@@ -53,10 +53,6 @@ def save_quality_assur_metric(fname, xopt, fopt):
         The distance between the registered images.
     """
     np.savetxt(fname, xopt, header="Optimal Parameter metric")
-    with open(fname,'a') as f:
+    with open(fname, 'a') as f:
         f.write('# Distance after registration\n')
         f.write(str(fopt))
-
-
-
-
