@@ -220,6 +220,7 @@ class ImageRegistrationFlow(Workflow):
                                            affreg, params0, transform,
                                            affine)
 
+
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
 
@@ -262,6 +263,7 @@ class ImageRegistrationFlow(Workflow):
         """
 
         if progressive:
+
             _, affine, xopt, fopt = self.translate(static, static_grid2world,
                                                    moving, moving_grid2world,
                                                    affreg, params0)
@@ -276,6 +278,7 @@ class ImageRegistrationFlow(Workflow):
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
                                            affine)
+
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
@@ -318,6 +321,7 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if progressive:
+
             _, affine, xopt, fopt = self.rigid(static, static_grid2world,
                                                moving, moving_grid2world,
                                                affreg, params0, progressive)
@@ -327,6 +331,7 @@ class ImageRegistrationFlow(Workflow):
                                             moving, moving_grid2world)
 
         transform = AffineTransform3D()
+
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
@@ -428,6 +433,17 @@ class ImageRegistrationFlow(Workflow):
             If true, quality assessment metric are saved in
             'quality_metric.txt' (default 'False').
 
+
+        save_metric : boolean, optional
+            If true, the metric values are
+            saved in a file called 'quality_metric.txt'
+            (default 'False')
+
+            By default, the similarity measure
+            values such as the distance and the
+            metric of optimal parameters is only
+            displayed but not saved.
+
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
              (default '').
@@ -443,18 +459,13 @@ class ImageRegistrationFlow(Workflow):
         out_quality : string, optional
             Name of the file containing the saved quality
              metric (default 'quality_metric.txt').
-
         """
-
-        # Setting up the io iterator to gobble the input and output paths
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
 
         for static_img, mov_img, moved_file, affine_matrix_file, \
                 qual_val_file in io_it:
-
-            # Load the data from the input files and store into objects.
 
             image = nib.load(static_img)
             static = np.array(image.get_data())
@@ -486,34 +497,28 @@ class ImageRegistrationFlow(Workflow):
                                             sigmas=sigmas,
                                             factors=factors)
 
-                if transform == 'trans':
-                    moved_image, affine, \
-                        xopt, fopt = self.translate(static,
-                                                    static_grid2world,
-                                                    moving,
-                                                    moving_grid2world,
-                                                    affreg,
-                                                    params0)
+                if transform.lower() == 'trans':
+                    moved_image, affine, xopt, fopt = self.translate(static,
+                                                         static_grid2world,
+                                                         moving,
+                                                         moving_grid2world,
+                                                         affreg, params0)
 
-                elif transform == 'rigid':
-                    moved_image, affine, \
-                        xopt, fopt = self.rigid(static,
-                                                static_grid2world,
-                                                moving,
-                                                moving_grid2world,
-                                                affreg,
-                                                params0,
-                                                progressive)
+                elif transform.lower() == 'rigid':
+                    moved_image, affine, xopt, fopt = self.rigid(static,
+                                                     static_grid2world,
+                                                     moving,
+                                                     moving_grid2world,
+                                                     affreg, params0,
+                                                     progressive)
 
-                elif transform == 'affine':
-                    moved_image, affine, \
-                        xopt, fopt = self.affine(static,
-                                                 static_grid2world,
-                                                 moving,
-                                                 moving_grid2world,
-                                                 affreg,
-                                                 params0,
-                                                 progressive)
+                elif transform.lower() == 'affine':
+                    moved_image, affine, xopt, fopt = self.affine(static,
+                                                      static_grid2world,
+                                                      moving,
+                                                      moving_grid2world,
+                                                      affreg, params0,
+                                                      progressive)
                 else:
                     raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'

@@ -37,6 +37,7 @@ def test_reslice():
 
 
 def test_image_registration():
+
     with TemporaryDirectory() as temp_out_dir:
         static, moving, static_g2w, moving_g2w, sm, mm, m = \
             setup_random_transform(transform=regtransforms[('AFFINE', 3)],
@@ -152,7 +153,6 @@ def test_image_registration():
         test_rigid()
         test_affine()
         test_err()
-
 
 if __name__ == "__main__":
     run_module_suite()

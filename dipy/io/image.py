@@ -31,7 +31,7 @@ def save_affine_matrix(fname, affine):
     """
     Parameters
     ---------
-    fname : str
+    fname : string
         File name to save the affine matrix.
     affine : numpy array
         The object containing the affine matrix.
