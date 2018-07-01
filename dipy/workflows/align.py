@@ -345,7 +345,7 @@ class ImageRegistrationFlow(Workflow):
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
-            factors=[4, 2, 1], progressive=True, save_metric=True,
+            factors=[4, 2, 1], progressive=True, save_metric=False,
             out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt'):
 
@@ -359,14 +359,14 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            Type of the transform. [ com : center of mass)
+             com : center of mass
 
-            'trans' (translation)
+            'trans' translation
 
-            'rigid' (rigid body)
+            'rigid' rigid body
 
-            'affine' (full affine including translation, rotation, shearing and
-             scaling). (default 'affine')
+            'affine' full affine including translation, rotation, shearing and
+             scaling (default 'affine')
 
         nbins : int, optional
             The number of bins to discretize the joint and marginal PDF. (def
@@ -508,6 +508,6 @@ class ImageRegistrationFlow(Workflow):
                 if save_metric:
                     save_quality_assur_metric(qual_val_file, xopt, fopt)
 
-            #save_nifti(moved_file, moved_image, static_grid2world)
-            #save_affine_matrix(affine_matrix_file, affine)
+            save_nifti(moved_file, moved_image, static_grid2world)
+            save_affine_matrix(affine_matrix_file, affine)
 
