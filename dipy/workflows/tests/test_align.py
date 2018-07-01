@@ -39,7 +39,7 @@ def test_reslice():
 
 
 def test_image_registration():
-    folder_path = '/Users/schmuck/Documents/register_workflow_test/test'
+
     with TemporaryDirectory() as temp_out_dir:
         static, moving, static_g2w, moving_g2w, smask, mmask, M = setup_random_transform(
             transform=regtransforms[('AFFINE', 3)], rfactor=0.1)
@@ -62,7 +62,8 @@ def test_image_registration():
                                      transform='com',
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
-                                     out_affine=out_affine)
+                                     out_affine=out_affine,
+                                     level_iters="100 10 1")
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -75,7 +76,8 @@ def test_image_registration():
                                      transform='trans',
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
-                                     out_affine=out_affine)
+                                     out_affine=out_affine,
+                                     level_iters="100 10 1")
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -88,7 +90,8 @@ def test_image_registration():
                                      transform='rigid',
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
-                                     out_affine=out_affine)
+                                     out_affine=out_affine,
+                                     level_iters="100 10 1")
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -101,7 +104,8 @@ def test_image_registration():
                                      transform='affine',
                                      out_dir=temp_out_dir
                                      , out_moved=out_moved,
-                                     out_affine=out_affine)
+                                     out_affine=out_affine,
+                                     level_iters="100 10 1")
 
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
@@ -119,14 +123,18 @@ def test_image_registration():
             moving_image_file,
             metric='wrong_metric')
 
-        copy_output(temp_out_dir, folder_path)
+
+# Uncomment for manual debugging
+            #copy_output(temp_out_dir)
 
 
-def copy_output(temp_directory_path, folder_path):
-    out_files = list(glob(pjoin(temp_directory_path, '*.nii.gz')) + glob(pjoin(temp_directory_path, '*.txt')))
-
-    for out_file in out_files:
-        shutil.copy(out_file, folder_path)
+# def copy_output(temp_directory_path):
+# set the folder_path to the directory where the registered images will be copied.
+#     folder_path = ''
+#     out_files = list(glob(pjoin(temp_directory_path, '*.nii.gz')) + glob(pjoin(temp_directory_path, '*.txt')))
+#
+#     for out_file in out_files:
+#         shutil.copy(out_file, folder_path)
 
 
 if __name__ == '__main__':
