@@ -37,9 +37,10 @@ def test_reslice():
 def test_image_registration():
 
     with TemporaryDirectory() as temp_out_dir:
-        static, moving, static_g2w, moving_g2w, sm, mm, m = \
-            setup_random_transform(transform=regtransforms[('AFFINE', 3)],
-                                   rfactor=0.1)
+
+        static, moving, static_g2w, moving_g2w, smask, mmask, M\
+            = setup_random_transform(transform=regtransforms[('AFFINE', 3)],
+                                     rfactor=0.1)
 
         save_nifti(pjoin(temp_out_dir, 'b0.nii.gz'), data=static,
                    affine=static_g2w)
@@ -155,4 +156,6 @@ def test_image_registration():
 
 if __name__ == "__main__":
     run_module_suite()
+
+
 
