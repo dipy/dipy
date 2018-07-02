@@ -1911,8 +1911,9 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
         if positionals:
             #  printing user friendly help message to tell about missing
             #  arguments.
-            print("Too few arguments. Program", self.prog, "expects arguments"
-                    ". Type", self.prog, "-h for help.\n")
+            print("Too few arguments: Program", self.prog,
+                  "expects arguments.\n\nType", self.prog,
+                  "-h for help.\n")
             self.error(_('too few arguments'))
 
         # make sure all required actions were present
