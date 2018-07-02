@@ -7,6 +7,7 @@ from glob import glob
 from dipy.utils.six import string_types
 from dipy.workflows.base import get_args_default
 
+
 def common_start(sa, sb):
     """ Returns the longest common substring from the beginning of sa and sb """
     def _iter():
@@ -83,7 +84,6 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='absolute',
 
         elif output_strategy == 'append':
             dname = path.join(inp_dirname, out_dir)
-
 
         else:
             dname = out_dir
@@ -197,6 +197,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     return io_iterator(inputs, out_dir, outputs, output_strategy, mix_names,
                        out_keys=out_keys)
 
+
 class IOIterator(object):
     """ Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
@@ -210,7 +211,6 @@ class IOIterator(object):
         self.mix_names = mix_names
         self.inputs = []
         self.out_keys = None
-
 
     def set_inputs(self, *args):
         self.file_existence_check(args)
