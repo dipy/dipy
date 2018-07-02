@@ -102,7 +102,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             ref_idx = self.epilog.find('References: \n') + len('References: \n')
             self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
                                                ''.join(ref_text),
-                                                self.epilog[ref_idx:])
+                                               self.epilog[ref_idx:])
 
         self.outputs = [param for param in npds['Parameters'] if
                         'out_' in param[0]]
@@ -120,7 +120,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                     "doc string and run method does not match. "
                     "Please ensure that the number of parameters "
                     "in the run method is same as the doc string.")
-
 
         for i, arg in enumerate(args):
             prefix = ''
