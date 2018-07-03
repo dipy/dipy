@@ -15,7 +15,9 @@ from dipy.align.transforms import Transform, regtransforms
 from dipy.io.image import save_nifti
 from dipy.workflows.align import ImageRegistrationFlow
 
+
 def test_reslice():
+
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_data('small_25')
         vol_img = nib.load(data_path)
@@ -35,7 +37,6 @@ def test_reslice():
 
 
 def test_image_registration():
-
     with TemporaryDirectory() as temp_out_dir:
 
         static, moving, static_g2w, moving_g2w, smask, mmask, M\
@@ -69,7 +70,6 @@ def test_image_registration():
                                          out_dir=temp_out_dir,
                                          out_moved=out_moved,
                                          out_affine=out_affine)
-
             check_existense(out_moved, out_affine)
 
         def test_translation():
@@ -156,6 +156,3 @@ def test_image_registration():
 
 if __name__ == "__main__":
     run_module_suite()
-
-
-
