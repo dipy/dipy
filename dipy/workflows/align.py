@@ -424,7 +424,7 @@ class ImageRegistrationFlow(Workflow):
 
         out_quality : string, optional
             Name of the file containing the saved quality
-            metrices (default 'quality_metric.txt')
+            metric (default 'quality_metric.txt')
 
         """
 
