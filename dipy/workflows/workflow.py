@@ -8,7 +8,7 @@ from dipy.workflows.multi_io import io_iterator_
 
 
 class Workflow(object):
-    def __init__(self, output_strategy='append', mix_names=False,
+    def __init__(self, output_strategy='absolute', mix_names=False,
                  force=False, skip=False):
         """ The basic workflow object.
 

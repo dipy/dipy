@@ -23,7 +23,7 @@ def slash_to_under(dir_str):
     return ''.join(dir_str.replace('/', '_'))
 
 
-def connect_output_paths(inputs, out_dir, out_files, output_strategy='append',
+def connect_output_paths(inputs, out_dir, out_files, output_strategy='absolute',
                          mix_names=True):
     """ Generates a list of output files paths based on input files and
     output strategies.
@@ -119,7 +119,7 @@ def basename_without_extension(fname):
     return result
 
 
-def io_iterator(inputs, out_dir, fnames, output_strategy='append',
+def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
                 mix_names=False, out_keys=None):
     """ Creates an IOIterator from the parameters.
 
@@ -150,7 +150,7 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='append',
     return io_it
 
 
-def io_iterator_(frame, fnc, output_strategy='append', mix_names=False):
+def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     """ Creates an IOIterator using introspection.
 
     Parameters
@@ -206,7 +206,7 @@ class IOIterator(object):
     outputs which can come from long lists of multiple or single inputs.
     """
 
-    def __init__(self, output_strategy='append', mix_names=False):
+    def __init__(self, output_strategy='absolute', mix_names=False):
         self.output_strategy = output_strategy
         self.mix_names = mix_names
         self.inputs = []
