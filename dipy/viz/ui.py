@@ -2964,8 +2964,6 @@ class Option(UI):
     label : str
         The label for the option.
     font_size : int
-        The size of the font for the label.
-    font_size : int
             Font Size of the label.
     """
 
@@ -2974,17 +2972,18 @@ class Option(UI):
         Parameters
         ----------
         label : str
-            Option's label.
+            Text to be displayed next to the option's button.
         position : (float, float)
             Absolute coordinates (x, y) of the lower-left corner of
             the button of the option.
         font_size : int
-            Font Size of the label.
+            Font size of the label.
         """
         self.label = label
         self.font_size = font_size
         self.checked = False
         self.button_size = (font_size * 1.2, font_size * 1.2)
+        self.button_label_gap = 10
         super(Option, self).__init__(position)
 
     def _setup(self):
@@ -3017,7 +3016,7 @@ class Option(UI):
         self.text.add_to_renderer(ren)
 
     def _get_size(self):
-        width = self.button.size[0] + 10 + self.text.size[0]
+        width = self.button.size[0] + self.button_label_gap + self.text.size[0]
         height = max(self.button.size[1], self.text.size[1])
         return np.array([width, height])
 
@@ -3032,7 +3031,7 @@ class Option(UI):
         num_newlines = self.label.count('\n')
         self.button.position = coords + \
             (0, num_newlines * self.font_size * 0.5)
-        offset = (self.button.size[0] + 10, 0)
+        offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
 
 
@@ -3043,8 +3042,6 @@ class Checkbox(UI):
 
     Attributes
     ----------
-    num_options : int
-        Number of options
     labels : list(string)
         List of labels of each option.
     options : list(Option)
@@ -3071,7 +3068,6 @@ class Checkbox(UI):
             the button of the first option.
         """
         self.labels = labels
-        self.num_options = len(labels)
         self._padding = padding
         self._font_size = font_size
         self.font_family = font_family
@@ -3082,12 +3078,13 @@ class Checkbox(UI):
         """
         self.options = []
         button_y = self.position[1]
-        for option_no in range(self.num_options):
-            option = Option(label=self.labels[option_no],
+        for label in self.labels:
+            option = Option(label=label,
                             font_size=self.font_size,
                             position=(self.position[0], button_y))
+            line_spacing = option.text.actor.GetTextProperty().GetLineSpacing()
             button_y = button_y + self.font_size * \
-                (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
+                (label.count('\n') + 1) * (line_spacing + 0.1) + self.padding
             option.button.on_left_mouse_button_pressed = self.toggle_check
             self.options.append(option)
 
@@ -3111,7 +3108,8 @@ class Checkbox(UI):
 
     def _get_size(self):
         option_width, option_height = self.options[0].get_size()
-        height = num_options * (option_height + self.padding) - self.padding
+        height = len(self.labels) * (option_height + self.padding) \
+            - self.padding
         return np.asarray([option_width, height])
 
     def toggle_check(self, i_ren, obj, button):
@@ -3145,8 +3143,10 @@ class Checkbox(UI):
         button_y = coords[1]
         for option_no, option in enumerate(self.options):
             option.position = (coords[0], button_y)
+            line_spacing = option.text.actor.GetTextProperty().GetLineSpacing()
             button_y = button_y + self.font_size * \
-                (self.labels[option_no].count('\n') + 1) * 1.2 + self.padding
+                (self.labels[option_no].count('\n') + 1) * (line_spacing + 0.1)\
+                + self.padding
 
     @property
     def font_size(self):
@@ -3167,8 +3167,6 @@ class RadioButton(Checkbox):
 
     Attributes
     ----------
-    num_options : int
-        Number of options
     labels : list(string)
         List of labels of each option.
     options : list(Option)

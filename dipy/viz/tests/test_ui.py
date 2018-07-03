@@ -557,8 +557,6 @@ def test_ui_checkbox(interactive=False):
                                         "option 3", "option 4"],
                                 position=(10, 10))
 
-    npt.assert_equal(checkbox_test.num_options, 4)
-
     old_positions = []
     for option in checkbox_test.options:
         old_positions.append(option.position)
@@ -569,7 +567,7 @@ def test_ui_checkbox(interactive=False):
         new_positions.append(option.position)
     new_positions = np.asarray(new_positions)
     npt.assert_equal(new_positions - old_positions,
-                     90 * np.ones((checkbox_test.num_options, 2)))
+                     90 * np.ones((4, 2)))
 
     if interactive:
         showm = window.ShowManager(size=(600, 600))
@@ -584,8 +582,6 @@ def test_ui_radio_button(interactive=False):
         labels=["option 1", "option 2\nOption 2", "option 3", "option 4"],
         position=(10, 10))
 
-    npt.assert_equal(radio_button_test.num_options, 4)
-
     old_positions = []
     for option in radio_button_test.options:
         old_positions.append(option.position)
@@ -596,7 +592,7 @@ def test_ui_radio_button(interactive=False):
         new_positions.append(option.position)
     new_positions = np.asarray(new_positions)
     npt.assert_equal(new_positions - old_positions,
-                     90 * np.ones((radio_button_test.num_options, 2)))
+                     90 * np.ones((4, 2)))
 
     if interactive:
         showm = window.ShowManager(size=(600, 600))
