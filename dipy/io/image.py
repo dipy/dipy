@@ -46,3 +46,21 @@ def load_affine_matrix(fname):
             The file containing the saved affine matrix.
     """
     return np.loadtxt(fname)
+
+def save_quality_assur_metric(fname, xopt, fopt):
+    """
+    Parameters
+    __________
+    fname: string
+        File name to save the metric values.
+    xopt: numpy array
+        The metric containing the
+        optimal parameters for
+        image registration.
+    fopt: int
+        The distance between the registered images.
+    """
+    np.savetxt(fname, xopt, header="Optimal Parameter metric")
+    with open(fname, 'a') as f:
+        f.write('# Distance after registration\n')
+        f.write(str(fopt))
