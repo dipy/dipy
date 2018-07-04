@@ -567,7 +567,4 @@ class ApplyTransformFlow(Workflow):
             img_transformation = AffineMap(affine=affine_matrix, domain_grid_shape=image_data.shape)
             transformed = img_transformation.transform(image_data)
 
-            if out_file == 'transformed.nii.gz':
-                save_nifti(pjoin(path.split(moving_image_file)[1]+out_file), transformed, affine=static_grid2world)
-            else:
-                save_nifti(out_file, transformed, affine=static_grid2world)
+            save_nifti(out_dir+out_file, transformed, affine=static_grid2world)
