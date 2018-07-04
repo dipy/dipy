@@ -39,10 +39,10 @@ def test_reslice():
 
 
 def test_image_registration():
-    folder_path = '/Users/schmuck/Documents/register_workflow_test/test'
     with TemporaryDirectory() as temp_out_dir:
-        static, moving, static_g2w, moving_g2w, smask, mmask, M = setup_random_transform(
-            transform=regtransforms[('AFFINE', 3)], rfactor=0.1)
+        static, moving, static_g2w, moving_g2w, sm, mm, m = \
+            setup_random_transform(transform=regtransforms[('AFFINE', 3)],
+                                   rfactor=0.1)
 
         save_nifti(pjoin(temp_out_dir, 'b0.nii.gz'), data=static,
                    affine=static_g2w)
@@ -52,83 +52,107 @@ def test_image_registration():
         static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
         moving_image_file = pjoin(temp_out_dir, 't1.nii.gz')
 
-        out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
-        out_affine = pjoin(temp_out_dir, "com_affine.txt")
-
         image_registeration_flow = ImageRegistrationFlow()
 
-        image_registeration_flow.run(static_image_file,
-                                     moving_image_file,
-                                     transform='com',
-                                     out_dir=temp_out_dir
-                                     , out_moved=out_moved,
-                                     out_affine=out_affine)
+        def read_distance(qual_fname):
+            temp_val = 0
+            with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
+                for line in f:
+                    pass
+                temp_val = line
+            return float(temp_val)
 
-        npt.assert_equal(os.path.exists(out_moved), True)
-        npt.assert_equal(os.path.exists(out_affine), True)
+        def test_com():
 
-        out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
-        out_affine = pjoin(temp_out_dir, "trans_affine.txt")
+            out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "com_affine.txt")
 
-        image_registeration_flow.run(static_image_file,
-                                     moving_image_file,
-                                     transform='trans',
-                                     out_dir=temp_out_dir
-                                     , out_moved=out_moved,
-                                     out_affine=out_affine)
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='com',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine)
 
-        npt.assert_equal(os.path.exists(out_moved), True)
-        npt.assert_equal(os.path.exists(out_affine), True)
+            npt.assert_equal(os.path.exists(out_moved), True)
+            npt.assert_equal(os.path.exists(out_affine), True)
 
-        out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
-        out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
+        def test_translation():
 
-        image_registeration_flow.run(static_image_file,
-                                     moving_image_file,
-                                     transform='rigid',
-                                     out_dir=temp_out_dir
-                                     , out_moved=out_moved,
-                                     out_affine=out_affine)
+            out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "trans_affine.txt")
 
-        npt.assert_equal(os.path.exists(out_moved), True)
-        npt.assert_equal(os.path.exists(out_affine), True)
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='trans',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         save_metric=True,
+                                         level_iters=[100, 10, 1],
+                                         out_quality='trans_q.txt')
 
-        out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
-        out_affine = pjoin(temp_out_dir, "affine_affine.txt")
+            dist = read_distance('trans_q.txt')
+            npt.assert_equal('%.2f' % dist, '%.2f' % -0.3953547764454917)
+            npt.assert_equal(os.path.exists(out_moved), True)
+            npt.assert_equal(os.path.exists(out_affine), True)
 
-        image_registeration_flow.run(static_image_file,
-                                     moving_image_file,
-                                     transform='affine',
-                                     out_dir=temp_out_dir
-                                     , out_moved=out_moved,
-                                     out_affine=out_affine)
+        def test_rigid():
 
-        npt.assert_equal(os.path.exists(out_moved), True)
-        npt.assert_equal(os.path.exists(out_affine), True)
+            out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
+
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='rigid',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         save_metric=True,
+                                         level_iters=[100, 10, 1],
+                                         out_quality='rigid_q.txt')
+
+            dist = read_distance('rigid_q.txt')
+            npt.assert_equal('%.2f' % dist, '%.2f' % -0.6900534794005155)
+            npt.assert_equal(os.path.exists(out_moved), True)
+            npt.assert_equal(os.path.exists(out_affine), True)
+
+        def test_affine():
+
+            out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "affine_affine.txt")
+
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='affine',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         save_metric=True,
+                                         level_iters=[100, 10, 1],
+                                         out_quality='affine_q.txt')
+
+            dist = read_distance('affine_q.txt')
+            npt.assert_equal('%.2f' % dist, '%.2f' % -0.7670650775914811)
+            npt.assert_equal(os.path.exists(out_moved), True)
+            npt.assert_equal(os.path.exists(out_affine), True)
 
         # Creating the erroneous behavior
-        npt.assert_raises(
-            ValueError, image_registeration_flow.run,
-            static_image_file,
-            moving_image_file,
-            transform='notransform')
+        def test_err():
 
-        npt.assert_raises(
-            ValueError, image_registeration_flow.run,
-            static_image_file,
-            moving_image_file,
-            metric='wrong_metric')
+            npt.assert_raises(ValueError, image_registeration_flow.run,
+                              static_image_file,
+                              moving_image_file,
+                              transform='notransform')
 
-        copy_output(temp_out_dir, folder_path)
+            npt.assert_raises(ValueError, image_registeration_flow.run,
+                              static_image_file,
+                              moving_image_file,
+                              metric='wrong_metric')
 
+        test_com()
+        test_translation()
+        test_rigid()
+        test_affine()
+        test_err()
 
-def copy_output(temp_directory_path, folder_path):
-    out_files = list(glob(pjoin(temp_directory_path, '*.nii.gz')) + glob(pjoin(temp_directory_path, '*.txt')))
-
-    for out_file in out_files:
-        shutil.copy(out_file, folder_path)
-
-
-if __name__ == '__main__':
-    test_reslice()
-    test_image_registration()

@@ -1,16 +1,21 @@
 from __future__ import division, print_function, absolute_import
 import logging
+from os import path
+from os.path import  join as pjoin
+import numpy as np
+import nibabel as nib
+
 from dipy.align.reslice import reslice
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 
-import numpy as np
-import nibabel as nib
+
 from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
                                  MutualInformationMetric, AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
-from dipy.io.image import save_nifti, save_affine_matrix
+from dipy.io.image import save_nifti, save_affine_matrix, \
+    save_quality_assur_metric, load_affine_matrix
 
 
 class ResliceFlow(Workflow):
@@ -163,13 +168,15 @@ class ImageRegistrationFlow(Workflow):
         transform = TranslationTransform3D()
         starting_affine = affine
 
-        img_registration = affreg.optimize(static, moving, transform,
-                                           params0, static_grid2world,
-                                           moving_grid2world,
-                                           starting_affine=starting_affine)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine
+        return transformed, img_registration.affine, xopt, fopt
 
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
@@ -213,31 +220,31 @@ class ImageRegistrationFlow(Workflow):
         """
 
         if progressive:
-            moved, affine = self.translate(static,
-                                           static_grid2world,
-                                           moving, moving_grid2world,
-                                           affreg, params0)
+            moved, affine, xopt, fopt = self.translate(static,
+                                                       static_grid2world,
+                                                       moving,
+                                                       moving_grid2world,
+                                                       affreg, params0)
 
         else:
-            moved, affine = self.center_of_mass(static,
-                                                static_grid2world,
-                                                moving,
-                                                moving_grid2world)
+            moved, affine = self.center_of_mass(static, static_grid2world,
+                                                moving, moving_grid2world)
 
         transform = RigidTransform3D()
         starting_affine = affine
 
-        img_registration = affreg.optimize(static, moving, transform,
-                                           params0, static_grid2world,
-                                           moving_grid2world,
-                                           starting_affine=starting_affine)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine
+        return transformed, img_registration.affine, xopt, fopt
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
-               affreg, params0,
-               progressive):
+               affreg, params0, progressive):
 
         """ Function for full affine registration.
 
@@ -277,9 +284,10 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if progressive:
-            moved, affine = self.rigid(static, static_grid2world,
-                                       moving, moving_grid2world,
-                                       affreg, params0, progressive)
+            moved, affine, xopt, fopt = self.rigid(static, static_grid2world,
+                                                   moving, moving_grid2world,
+                                                   affreg, params0,
+                                                   progressive)
 
         else:
             moved, affine = self.center_of_mass(static, static_grid2world,
@@ -288,13 +296,15 @@ class ImageRegistrationFlow(Workflow):
         transform = AffineTransform3D()
         starting_affine = affine
 
-        img_registration = affreg.optimize(static, moving, transform,
-                                           params0, static_grid2world,
-                                           moving_grid2world,
-                                           starting_affine=starting_affine)
+        img_registration, \
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                         params0, static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine
+        return transformed, img_registration.affine, xopt, fopt
 
     @staticmethod
     def check_dimensions(static, moving):
@@ -316,7 +326,7 @@ class ImageRegistrationFlow(Workflow):
         """
         if len(static.shape) != len(moving.shape):
             raise ValueError('Dimension mismatch: The'
-                             ' input images must have same number of '
+                             ' images must have same number of '
                              'dimensions.')
 
     @staticmethod
@@ -338,8 +348,9 @@ class ImageRegistrationFlow(Workflow):
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
-            factors=[4, 2, 1], progressive=True, out_dir='',
-            out_moved='moved.nii.gz', out_affine='affine.txt'):
+            factors=[4, 2, 1], progressive=True, save_metric=False,
+            out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
+            out_quality='quality_metric.txt'):
 
         """
         Parameters
@@ -351,14 +362,14 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            Type of the transform. [ com : center of mass)
+             com : center of mass
 
-            'trans' (translation)
+            'trans' translation
 
-            'rigid' (rigid body)
+            'rigid' rigid body
 
-            'affine' (full affine including translation, rotation, shearing and
-             scaling). (default 'affine')
+            'affine' full affine including translation, rotation, shearing and
+             scaling (default 'affine')
 
         nbins : int, optional
             The number of bins to discretize the joint and marginal PDF. (def
@@ -392,6 +403,17 @@ class ImageRegistrationFlow(Workflow):
             Flag for enabling/disabling the progressive registration.
             (default 'True')
 
+
+        save_metric : boolean, optional
+            If true, the metric values are
+            saved in a file called 'quality_metric.txt'
+            (default 'False')
+
+            By default, the similarity measure
+            values such as the distance and the
+            metric of optimal parameters is only
+            displayed but not saved.
+
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix.
             (default '')
@@ -404,6 +426,10 @@ class ImageRegistrationFlow(Workflow):
             Name for the saved affine matrix.
             (default 'affine.txt')
 
+        out_quality : string, optional
+            Name of the file containing the saved quality
+            metric (default 'quality_metric.txt')
+
         """
 
         """
@@ -411,7 +437,8 @@ class ImageRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for static_img, mov_img, moved_file, affine_matrix_file in io_it:
+        for static_img, mov_img, moved_file, affine_matrix_file, \
+                qual_val_file in io_it:
 
             """
             Load the data from the input files and store into objects.
@@ -447,27 +474,33 @@ class ImageRegistrationFlow(Workflow):
                                             factors=factors)
 
                 if transform.lower() == 'trans':
-                    moved_image, affine = self.translate(static,
-                                                         static_grid2world,
-                                                         moving,
-                                                         moving_grid2world,
-                                                         affreg, params0)
+                    moved_image, affine, \
+                        xopt, fopt = self.translate(static,
+                                                    static_grid2world,
+                                                    moving,
+                                                    moving_grid2world,
+                                                    affreg,
+                                                    params0)
 
                 elif transform.lower() == 'rigid':
-                    moved_image, affine = self.rigid(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world,
-                                                     affreg, params0,
-                                                     progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.rigid(static,
+                                                static_grid2world,
+                                                moving,
+                                                moving_grid2world,
+                                                affreg,
+                                                params0,
+                                                progressive)
 
                 elif transform.lower() == 'affine':
-                    moved_image, affine = self.affine(static,
-                                                      static_grid2world,
-                                                      moving,
-                                                      moving_grid2world,
-                                                      affreg, params0,
-                                                      progressive)
+                    moved_image, affine, \
+                        xopt, fopt = self.affine(static,
+                                                 static_grid2world,
+                                                 moving,
+                                                 moving_grid2world,
+                                                 affreg,
+                                                 params0,
+                                                 progressive)
                 else:
                     raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'
@@ -478,5 +511,63 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
+                logging.info("Similarity metric:"+str(xopt))
+                logging.info("Distance measure:"+str(fopt))
+
+                if save_metric:
+                    save_quality_assur_metric(qual_val_file, xopt, fopt)
+
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
+
+
+class ApplyTransformFlow(Workflow):
+
+    def run(self, reference_image_file, moving_image_files, affine_matrix_file,
+            out_dir='', out_file='transformed.nii.gz'):
+
+        """
+        Parameters
+        ----------
+        reference_image_file : string
+            Path of the static image file.
+
+        moving_image_files : string
+            Location of moving image(s). It can be a single image or a
+            folder containing multiple images.
+
+        affine_matrix_file : string
+            The text file containing the affine matrix for transformation.
+
+        out_dir : string, optional
+            Directory to save the transformed files.
+            (default '')
+
+        out_file : string, optional
+            Name of the transformed file. If no name is given then a
+            suffix 'transformed' will be appended to the name of the
+            original input file (default 'transformed.nii.gz').
+        """
+
+        io = self.get_io_iterator()
+        img_register = ImageRegistrationFlow()
+
+        for static_image_file, moving_image_file, affine_matrix_file, out_file in io:
+
+            static_image = nib.load(static_image_file)
+            static_grid2world = static_image.affine
+
+            moving_image = nib.load(moving_image_file)
+            image_data = moving_image.get_data()
+
+            img_register.check_dimensions(static_image, moving_image)
+
+            affine_matrix = load_affine_matrix(affine_matrix_file)
+
+            img_transformation = AffineMap(affine=affine_matrix, domain_grid_shape=image_data.shape)
+            transformed = img_transformation.transform(image_data)
+
+            if out_file == 'transformed.nii.gz':
+                save_nifti(pjoin(path.split(moving_image_file)[1]+out_file), transformed, affine=static_grid2world)
+            else:
+                save_nifti(out_file, transformed, affine=static_grid2world)
