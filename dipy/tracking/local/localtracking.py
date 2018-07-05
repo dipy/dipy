@@ -36,7 +36,7 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=False):
+                 return_all=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
