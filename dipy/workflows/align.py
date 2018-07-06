@@ -86,8 +86,7 @@ class ImageRegistrationFlow(Workflow):
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
 
-        """ Function for the center of mass based image
-        registration.
+        """ Function for the center of mass based image registration.
 
         Parameters
         ----------
@@ -125,7 +124,7 @@ class ImageRegistrationFlow(Workflow):
     def translate(self, static, static_grid2world, moving,
                   moving_grid2world, affreg, params0):
 
-        """ Function for translating the image.
+        """ Function for translation based registration.
 
         Parameters
         ----------
@@ -177,7 +176,7 @@ class ImageRegistrationFlow(Workflow):
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
 
-        """ Function for rigid image registration.
+        """ Function for rigid body based image registration.
 
         Parameters
         ----------
@@ -432,13 +431,13 @@ class ImageRegistrationFlow(Workflow):
         setting up the io iterator to gobble the input and output paths
         """
         io_it = self.get_io_iterator()
+        transform = transform.lower()
 
         for static_img, mov_img, moved_file, affine_matrix_file, \
                 qual_val_file in io_it:
 
-            """
-            Load the data from the input files and store into objects.
-            """
+            # Load the data from the input files and store into objects.
+
             image = nib.load(static_img)
             static = np.array(image.get_data())
             static_grid2world = image.affine
@@ -449,7 +448,7 @@ class ImageRegistrationFlow(Workflow):
 
             self.check_dimensions(static, moving)
 
-            if transform.lower() == 'com':
+            if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
                                                           static_grid2world,
                                                           moving,
@@ -469,7 +468,7 @@ class ImageRegistrationFlow(Workflow):
                                             sigmas=sigmas,
                                             factors=factors)
 
-                if transform.lower() == 'trans':
+                if transform == 'trans':
                     moved_image, affine, \
                         xopt, fopt = self.translate(static,
                                                     static_grid2world,
@@ -478,7 +477,7 @@ class ImageRegistrationFlow(Workflow):
                                                     affreg,
                                                     params0)
 
-                elif transform.lower() == 'rigid':
+                elif transform == 'rigid':
                     moved_image, affine, \
                         xopt, fopt = self.rigid(static,
                                                 static_grid2world,
@@ -488,7 +487,7 @@ class ImageRegistrationFlow(Workflow):
                                                 params0,
                                                 progressive)
 
-                elif transform.lower() == 'affine':
+                elif transform == 'affine':
                     moved_image, affine, \
                         xopt, fopt = self.affine(static,
                                                  static_grid2world,
