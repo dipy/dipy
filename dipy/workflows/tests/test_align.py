@@ -154,6 +154,8 @@ def test_image_registration():
         test_affine()
         test_err()
 
+
 if __name__ == "__main__":
     run_module_suite()
+
 
