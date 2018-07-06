@@ -27,7 +27,8 @@ File Menu
 =======
 """
 
-menu = ui.FileMenu2D(extensions=["*"], directory_path=os.getcwd(), size=(500, 500))
+menu = ui.FileMenu2D(extensions=["*"], directory_path=os.getcwd(),
+                     size=(500, 500))
 
 """
 Adding Elements to the ShowManager
