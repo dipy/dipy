@@ -500,7 +500,7 @@ class ImageRegistrationFlow(Workflow):
                                             sigmas=sigmas,
                                             factors=factors)
 
-                if transform.lower() == 'trans':
+                if transform == 'trans':
                     moved_image, affine, \
                         xopt, fopt = self.translate(static,
                                                     static_grid2world,
@@ -509,7 +509,7 @@ class ImageRegistrationFlow(Workflow):
                                                     affreg,
                                                     params0)
 
-                elif transform.lower() == 'rigid':
+                elif transform == 'rigid':
                     moved_image, affine, \
                         xopt, fopt = self.rigid(static,
                                                 static_grid2world,
@@ -519,7 +519,7 @@ class ImageRegistrationFlow(Workflow):
                                                 params0,
                                                 progressive)
 
-                elif transform.lower() == 'affine':
+                elif transform == 'affine':
                     moved_image, affine, \
                         xopt, fopt = self.affine(static,
                                                  static_grid2world,
