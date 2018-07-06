@@ -19,14 +19,15 @@ Range Slider
 
 """
 
-range_slider_example = ui.RangeSlider(range_precision=2, value_precision=3, shape="square")
+range_slider_example = ui.RangeSlider(range_precision=2, value_precision=3,
+                                      shape="square")
 
 """
 File Menu
 =======
 """
 
-menu = ui.FileMenu2D(extensions=["*"],directory_path=os.getcwd(),size=(500,500))
+menu = ui.FileMenu2D(extensions=["*"], directory_path=os.getcwd(), size=(500, 500))
 
 """
 Adding Elements to the ShowManager
