@@ -2,6 +2,7 @@ import numpy.testing as npt
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
+from numpy.testing import run_module_suite
 
 from dipy.data import get_data
 from dipy.workflows.align import ResliceFlow
@@ -11,8 +12,7 @@ from os.path import join as pjoin
 import shutil
 
 from dipy.align.tests.test_parzenhist import setup_random_transform
-from dipy.align.transforms import (Transform,
-                                   regtransforms)
+from dipy.align.transforms import (Transform, regtransforms)
 from dipy.io.image import save_nifti
 from glob import glob
 
@@ -57,9 +57,7 @@ def test_image_registration():
         def read_distance(qual_fname):
             temp_val = 0
             with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
-                for line in f:
-                    pass
-                temp_val = line
+                temp_val = f.readlines()[-1]
             return float(temp_val)
 
         def test_com():
@@ -93,7 +91,8 @@ def test_image_registration():
                                          out_quality='trans_q.txt')
 
             dist = read_distance('trans_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.3953547764454917)
+            #npt.assert_equal('%.2f' % dist, '%.2f' % -0.3953547764454917)
+            npt.assert_almost_equal(float(dist), -0.3953547764454917, 7)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
@@ -113,7 +112,8 @@ def test_image_registration():
                                          out_quality='rigid_q.txt')
 
             dist = read_distance('rigid_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.6900534794005155)
+            #npt.assert_equal('%.2f' % dist, '%.2f' % -0.6900534794005155)
+            npt.assert_almost_equal(dist, -0.6900534794005155, 7)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
@@ -133,7 +133,8 @@ def test_image_registration():
                                          out_quality='affine_q.txt')
 
             dist = read_distance('affine_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.7670650775914811)
+            #npt.assert_equal('%.2f' % dist, '%.2f' % -0.7670650775914811)
+            npt.assert_almost_equal(dist, -0.7670650775914811, 7)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
@@ -155,3 +156,7 @@ def test_image_registration():
         test_rigid()
         test_affine()
         test_err()
+
+if __name__ == "__main__":
+    run_module_suite()
+
