@@ -1,7 +1,6 @@
 from __future__ import division, print_function, absolute_import
 import logging
 from dipy.align.reslice import reslice
-from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 
 import numpy as np
@@ -10,8 +9,11 @@ from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
                                  MutualInformationMetric, AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
-from dipy.io.image import save_nifti, save_affine_matrix, \
+from dipy.io.image import load_nifti, save_nifti, save_affine_matrix, \
     save_quality_assur_metric
+
+from dipy.viz.regtools import overlay_images
+from dipy.segment.mask import median_otsu
 
 
 class ResliceFlow(Workflow):
@@ -78,10 +80,27 @@ class ImageRegistrationFlow(Workflow):
     will involve center of mass, translation, rigid body and full affine
     registration. Whereas, when progressive is False the registration will
     include only center of mass and affine registration. The progressive
-    registration will be slower but will improve the quality.
+    registration will be slower but will improve the quality of the results.
 
     This can be controlled by using the progressive flag (True by default).
     """
+
+    def create_overlaid_images(self, static_img, static_grid2world, moved_img,
+                               moving_grid2world):
+
+        identity = np.eye(4)
+        affine_map = AffineMap(identity,
+                               static_img.shape, static_grid2world,
+                               moved_img.shape, moving_grid2world)
+        resampled = affine_map.transform(moved_img)
+        b0_mask, mask = median_otsu(static_img, 4, 4)
+        t1_mask, mask = median_otsu(resampled, 4, 4)
+
+        static = b0_mask[:, :, 60]
+        moving = t1_mask[:, :, 60]
+        overlay_images(static, moving, 'static', 'registered', 'moving', fname='myimage.png')
+
+
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
@@ -507,6 +526,8 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
+                self.create_overlaid_images(static, static_grid2world,
+                                            moved_image, moving_grid2world)
                 logging.info("Similarity metric:"+str(xopt))
                 logging.info("Distance measure:"+str(fopt))
 
