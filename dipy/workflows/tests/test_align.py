@@ -110,7 +110,6 @@ def test_image_registration():
             npt.assert_almost_equal(dist, -0.6900534794005155, 4)
             check_existense(out_moved, out_affine)
 
-
         def test_affine():
 
             out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
@@ -157,3 +156,4 @@ def test_image_registration():
 
 if __name__ == "__main__":
     run_module_suite()
+
