@@ -83,6 +83,59 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
+    def perform_transformation(self, static, static_grid2world, moving,
+                               moving_grid2world,
+                               affreg, params0, transform, starting_affine):
+
+        """ Function for translation based registration.
+
+        Parameters
+        ----------
+        static : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        static_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the static
+            image. The default is None, implying the transform is the
+            identity.
+
+        moving : array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization. It is
+            necessary to pre-align the moving image to ensure its domain
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the
+            'starting_affine' matrix
+
+        moving_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the moving
+            image. The default is None, implying the transform is the
+            identity.
+
+        affreg : An object of the image registration class.
+
+        params0 : array, shape (n,)
+            parameters from which to start the optimization. If None, the
+            optimization will start at the identity transform. n is the
+            number of parameters of the specified transformation.
+
+        transform : An instance of transform type.
+
+        starting_affine : Affine matrix to be used as starting affine
+            for the optimizer.
+
+        """
+        img_registration, \
+        xopt, fopt = affreg.optimize(static, moving, transform,
+                                     params0, static_grid2world,
+                                     moving_grid2world,
+                                     starting_affine=starting_affine,
+                                     ret_metric=True)
+
+        transformed = img_registration.transform(moving)
+        return transformed, img_registration.affine, xopt, fopt
+
+
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
 
@@ -163,15 +216,9 @@ class ImageRegistrationFlow(Workflow):
         transform = TranslationTransform3D()
         starting_affine = affine
 
-        img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform,
-                                         params0, static_grid2world,
-                                         moving_grid2world,
-                                         starting_affine=starting_affine,
-                                         ret_metric=True)
-
-        transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine, xopt, fopt
+        return self.perform_transformation(static, moving, static_grid2world,
+                                           moving_grid2world, transform,
+                                           affreg, params0, starting_affine)
 
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
@@ -228,15 +275,9 @@ class ImageRegistrationFlow(Workflow):
         transform = RigidTransform3D()
         starting_affine = affine
 
-        img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform,
-                                         params0, static_grid2world,
-                                         moving_grid2world,
-                                         starting_affine=starting_affine,
-                                         ret_metric=True)
-
-        transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine, xopt, fopt
+        return self.perform_transformation(static, moving, static_grid2world,
+                                           moving_grid2world, transform,
+                                           affreg, params0, starting_affine)
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
@@ -291,15 +332,9 @@ class ImageRegistrationFlow(Workflow):
         transform = AffineTransform3D()
         starting_affine = affine
 
-        img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform,
-                                         params0, static_grid2world,
-                                         moving_grid2world,
-                                         starting_affine=starting_affine,
-                                         ret_metric=True)
-
-        transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine, xopt, fopt
+        return self.perform_transformation(static, moving, static_grid2world,
+                                           moving_grid2world, transform,
+                                           affreg, params0, starting_affine)
 
     @staticmethod
     def check_dimensions(static, moving):
@@ -311,6 +346,7 @@ class ImageRegistrationFlow(Workflow):
         ----------
         static : array, shape (S, R, C) or (R, C)
             the image to be used as reference during optimization.
+
         moving: array, shape (S', R', C') or (R', C')
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
