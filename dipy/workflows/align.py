@@ -130,10 +130,8 @@ class ImageRegistrationFlow(Workflow):
             xopt, fopt = affreg.optimize(static, moving, transform,
                                      params0, static_grid2world,
                                      moving_grid2world,
-                                     starting_affine=starting_affine,
+                                     starting_affine=affine,
                                      ret_metric=True)
-
-
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
 
