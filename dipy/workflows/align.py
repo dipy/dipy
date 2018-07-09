@@ -124,15 +124,15 @@ class ImageRegistrationFlow(Workflow):
         transform : An instance of transform type.
 
         affine : Affine matrix to be used as starting affine
-            for the optimizer.
 
         """
         img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform, params0,
-                                         static_grid2world,
-                                         moving_grid2world,
-                                         starting_affine=affine,
-                                         ret_metric=True)
+            xopt, fopt = affreg.optimize(static, moving, transform,
+                                     params0, static_grid2world,
+                                     moving_grid2world,
+                                     starting_affine=starting_affine,
+                                     ret_metric=True)
+
 
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
@@ -216,12 +216,10 @@ class ImageRegistrationFlow(Workflow):
                                         moving_grid2world)
         transform = TranslationTransform3D()
         starting_affine = affine
-
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
                                            affine)
-
 
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
@@ -333,12 +331,11 @@ class ImageRegistrationFlow(Workflow):
                                             moving, moving_grid2world)
 
         transform = AffineTransform3D()
-
-
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
                                            affine)
+
 
     @staticmethod
     def check_dimensions(static, moving):
