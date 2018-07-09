@@ -126,15 +126,14 @@ class ImageRegistrationFlow(Workflow):
 
         """
         img_registration, \
-        xopt, fopt = affreg.optimize(static, moving, transform,
-                                     params0, static_grid2world,
-                                     moving_grid2world,
-                                     starting_affine=starting_affine,
-                                     ret_metric=True)
+            xopt, fopt = affreg.optimize(static, moving, transform, params0,
+                                         static_grid2world,
+                                         moving_grid2world,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
 
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
-
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
