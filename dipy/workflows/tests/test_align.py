@@ -91,7 +91,7 @@ def test_image_registration():
                                          out_quality='trans_q.txt')
 
             dist = read_distance('trans_q.txt')
-            npt.assert_almost_equal(float(dist), -0.3953547764454917, 7)
+            npt.assert_almost_equal(float(dist), -0.3953547764454917, 4)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
@@ -111,7 +111,7 @@ def test_image_registration():
                                          out_quality='rigid_q.txt')
 
             dist = read_distance('rigid_q.txt')
-            npt.assert_almost_equal(dist, -0.6900534794005155, 7)
+            npt.assert_almost_equal(dist, -0.6900534794005155, 4)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
@@ -131,7 +131,7 @@ def test_image_registration():
                                          out_quality='affine_q.txt')
 
             dist = read_distance('affine_q.txt')
-            npt.assert_almost_equal(dist, -0.7670650775914811, 7)
+            npt.assert_almost_equal(dist, -0.7670650775914811, 4)
             npt.assert_equal(os.path.exists(out_moved), True)
             npt.assert_equal(os.path.exists(out_affine), True)
 
