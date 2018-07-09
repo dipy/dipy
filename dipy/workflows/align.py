@@ -436,17 +436,6 @@ class ImageRegistrationFlow(Workflow):
             If true, quality assessment metric are saved in
             'quality_metric.txt' (default 'False').
 
-
-        save_metric : boolean, optional
-            If true, the metric values are
-            saved in a file called 'quality_metric.txt'
-            (default 'False')
-
-            By default, the similarity measure
-            values such as the distance and the
-            metric of optimal parameters is only
-            displayed but not saved.
-
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
              (default '').
