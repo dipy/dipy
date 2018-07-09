@@ -2,8 +2,9 @@
 
 from __future__ import division, print_function
 
-from dipy.workflows.align import ResliceFlow
 from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.align import ResliceFlow
+
 
 if __name__ == "__main__":
     run_flow(ResliceFlow())
