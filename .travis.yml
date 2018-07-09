@@ -74,6 +74,10 @@ matrix:
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
+  allow_failures:
+    - python: 3.5
+      env:
+        - USE_PRE=1
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"
