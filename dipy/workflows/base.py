@@ -265,9 +265,9 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
         """ Returns the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
         """
+
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
-
         return dict((k, v) for k, v in dct.items() if v is not None)
 
     def update_argument(self, *args, **kargs):

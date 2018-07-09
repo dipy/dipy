@@ -1,5 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
+#  Disabling the FutureWarning from h5py below.
+#  This disables the FutureWarning warning for all the workflows.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import logging
 
 from dipy.utils.six import iteritems

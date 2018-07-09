@@ -1909,6 +1909,11 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
         # if we didn't use all the Positional objects, there were too few
         # arg strings supplied.
         if positionals:
+            #  printing user friendly help message to tell about missing
+            #  arguments.
+            print("Too few arguments: Program", self.prog,
+                  "expects arguments.\n\nType", self.prog,
+                  "-h for help.\n")
             self.error(_('too few arguments'))
 
         # make sure all required actions were present
