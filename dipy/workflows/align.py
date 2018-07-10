@@ -1,17 +1,18 @@
 from __future__ import division, print_function, absolute_import
 import logging
-from dipy.align.reslice import reslice
-from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 
 import numpy as np
 import nibabel as nib
+
+from dipy.align.reslice import (reslice)
 from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
                                  MutualInformationMetric, AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
-from dipy.io.image import save_nifti, save_affine_matrix, \
-    save_quality_assur_metric
+from dipy.io.image import (save_nifti, save_affine_matrix,
+                           save_quality_assur_metric)
+from dipy.io.image import (load_nifti, save_nifti)
 
 
 class ResliceFlow(Workflow):
@@ -85,9 +86,9 @@ class ImageRegistrationFlow(Workflow):
 
     def perform_transformation(self, static, static_grid2world, moving,
                                moving_grid2world,
-                               affreg, params0, transform, starting_affine):
+                               affreg, params0, transform, affine):
 
-        """ Function for translation based registration.
+        """ Function to apply the transformation.
 
         Parameters
         ----------
@@ -121,7 +122,7 @@ class ImageRegistrationFlow(Workflow):
 
         transform : An instance of transform type.
 
-        starting_affine : Affine matrix to be used as starting affine
+        affine : Affine matrix to be used as starting affine
             for the optimizer.
 
         """
@@ -129,7 +130,7 @@ class ImageRegistrationFlow(Workflow):
             xopt, fopt = affreg.optimize(static, moving, transform, params0,
                                          static_grid2world,
                                          moving_grid2world,
-                                         starting_affine=starting_affine,
+                                         starting_affine=affine,
                                          ret_metric=True)
 
         transformed = img_registration.transform(moving)
@@ -209,15 +210,15 @@ class ImageRegistrationFlow(Workflow):
             number of parameters of the specified transformation.
 
         """
-        moved, affine = self.center_of_mass(static, static_grid2world,
-                                            moving, moving_grid2world)
+        _, affine = self.center_of_mass(static, static_grid2world, moving,
+                                        moving_grid2world)
 
         transform = TranslationTransform3D()
-        starting_affine = affine
 
-        return self.perform_transformation(static, moving, static_grid2world,
-                                           moving_grid2world, transform,
-                                           affreg, params0, starting_affine)
+        return self.perform_transformation(static, static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0, transform,
+                                           affine)
 
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
@@ -261,22 +262,20 @@ class ImageRegistrationFlow(Workflow):
         """
 
         if progressive:
-            moved, affine, xopt, fopt = self.translate(static,
-                                                       static_grid2world,
-                                                       moving,
-                                                       moving_grid2world,
-                                                       affreg, params0)
+            _, affine, xopt, fopt = self.translate(static, static_grid2world,
+                                                   moving, moving_grid2world,
+                                                   affreg, params0)
 
         else:
-            moved, affine = self.center_of_mass(static, static_grid2world,
-                                                moving, moving_grid2world)
+            _, affine, xopt, fopt = self.translate(static, static_grid2world,
+                                                   moving, moving_grid2world,
+                                                   affreg, params0)
 
         transform = RigidTransform3D()
-        starting_affine = affine
-
-        return self.perform_transformation(static, moving, static_grid2world,
-                                           moving_grid2world, transform,
-                                           affreg, params0, starting_affine)
+        return self.perform_transformation(static, static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0, transform,
+                                           affine)
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
@@ -319,21 +318,19 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if progressive:
-            moved, affine, xopt, fopt = self.rigid(static, static_grid2world,
-                                                   moving, moving_grid2world,
-                                                   affreg, params0,
-                                                   progressive)
+            _, affine, xopt, fopt = self.rigid(static, static_grid2world,
+                                               moving, moving_grid2world,
+                                               affreg, params0, progressive)
 
         else:
-            moved, affine = self.center_of_mass(static, static_grid2world,
-                                                moving, moving_grid2world)
+            _, affine = self.center_of_mass(static, static_grid2world,
+                                            moving, moving_grid2world)
 
         transform = AffineTransform3D()
-        starting_affine = affine
-
-        return self.perform_transformation(static, moving, static_grid2world,
-                                           moving_grid2world, transform,
-                                           affreg, params0, starting_affine)
+        return self.perform_transformation(static, static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0, transform,
+                                           affine)
 
     @staticmethod
     def check_dimensions(static, moving):
