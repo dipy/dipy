@@ -70,7 +70,6 @@ def test_image_registration():
                                          out_dir=temp_out_dir,
                                          out_moved=out_moved,
                                          out_affine=out_affine)
-            check_existense(out_moved, out_affine)
 
         def test_translation():
 

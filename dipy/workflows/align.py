@@ -4,7 +4,6 @@ from dipy.workflows.workflow import Workflow
 
 import numpy as np
 import nibabel as nib
-
 from dipy.align.reslice import reslice
 from dipy.align.imaffine import transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
@@ -12,8 +11,6 @@ from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
     AffineTransform3D
 from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
     save_quality_assur_metric
-
-
 
 
 class ResliceFlow(Workflow):
@@ -212,8 +209,8 @@ class ImageRegistrationFlow(Workflow):
 
         _, affine = self.center_of_mass(static, static_grid2world, moving,
                                         moving_grid2world)
+
         transform = TranslationTransform3D()
-        starting_affine = affine
         return self.perform_transformation(static, static_grid2world,
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
@@ -261,7 +258,6 @@ class ImageRegistrationFlow(Workflow):
         """
 
         if progressive:
-
             _, affine, xopt, fopt = self.translate(static, static_grid2world,
                                                    moving, moving_grid2world,
                                                    affreg, params0)
@@ -276,7 +272,6 @@ class ImageRegistrationFlow(Workflow):
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
                                            affine)
-
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
@@ -322,8 +317,6 @@ class ImageRegistrationFlow(Workflow):
             _, affine, xopt, fopt = self.rigid(static, static_grid2world,
                                                moving, moving_grid2world,
                                                affreg, params0, progressive)
-
-
         else:
             _, affine = self.center_of_mass(static, static_grid2world,
                                             moving, moving_grid2world)
@@ -333,7 +326,6 @@ class ImageRegistrationFlow(Workflow):
                                            moving, moving_grid2world,
                                            affreg, params0, transform,
                                            affine)
-
 
     @staticmethod
     def check_dimensions(static, moving):
