@@ -450,7 +450,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
             yield sl
 
 
-def _orient_generator(out, roi1, roi2):
+def _orient_generator(out, roi1, roi2, clip=False):
     """
     Helper function to `orient_by_rois`
 
@@ -463,12 +463,17 @@ def _orient_generator(out, roi1, roi2):
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
-            yield sl[::-1]
+            out = sl[::-1]
+            if clip:
+                out = out[min2:min1]
         else:
-            yield sl
+            out = sl
+            if clip:
+                out = out[min1:min2]
+        yield out
 
 
-def _orient_list(out, roi1, roi2):
+def _orient_list(out, roi1, roi2, clip=False):
     """
     Helper function to `orient_by_rois`
 
@@ -485,11 +490,17 @@ def _orient_list(out, roi1, roi2):
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
             out[idx] = sl[::-1]
+            if clip:
+                out[idx] = out[idx][min2:min1]
+        else:
+            if clip:
+                out[idx] = out[idx][min1:min2]
+
     return out
 
 
 def orient_by_rois(streamlines, roi1, roi2, in_place=False,
-                   as_generator=False, affine=None):
+                   as_generator=False, affine=None, clip=False):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -509,6 +520,8 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         Whether to return a generator as output. Default: False
     affine : ndarray
         Affine transformation from voxels to streamlines. Default: identity.
+    clip : bool
+        Whether to clip the streamlines between the ROIs
 
     Returns
     -------
@@ -518,20 +531,22 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
 
     Examples
     --------
-    >>> streamlines = [np.array([[0, 0., 0],
-    ...                          [1, 0., 0.],
-    ...                          [2, 0., 0.]]),
-    ...                np.array([[2, 0., 0.],
-    ...                          [1, 0., 0],
-    ...                          [0, 0,  0.]])]
+    >>> streamlines = [np.array([[0, 0, 0],
+    ...                          [0.5, 0, 0],
+    ...                          [1, 0, 0],
+    ...                          [2, 0, 0]], dtype=float),
+    ...                np.array([[2, 0, 0],
+    ...                          [1, 0, 0],
+    ...                          [0, 0, 0]], dtype=float)]
     >>> roi1 = np.zeros((4, 4, 4), dtype=bool)
     >>> roi2 = np.zeros_like(roi1)
     >>> roi1[0, 0, 0] = True
     >>> roi2[1, 0, 0] = True
     >>> orient_by_rois(streamlines, roi1, roi2)
-    [array([[ 0.,  0.,  0.],
-           [ 1.,  0.,  0.],
-           [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
+    [array([[ 0. ,  0. ,  0. ],
+           [ 0.5,  0. ,  0. ],
+           [ 1. ,  0. ,  0. ],
+           [ 2. ,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
            [ 1.,  0.,  0.],
            [ 2.,  0.,  0.]])]
 
@@ -550,7 +565,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         if in_place:
             w_s = "Cannot return a generator when in_place is set to True"
             raise ValueError(w_s)
-        return _orient_generator(streamlines, roi1, roi2)
+        return _orient_generator(streamlines, roi1, roi2, clip=clip)
 
     # If it's a generator on input, we may as well generate it
     # here and now:
@@ -563,7 +578,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         # Make a copy, so you don't change the output in place:
         out = deepcopy(streamlines)
 
-    return _orient_list(out, roi1, roi2)
+    return _orient_list(out, roi1, roi2, clip=clip)
 
 
 def _extract_vals(data, streamlines, affine=None, threedvec=False):
