@@ -32,10 +32,10 @@ def test_reslice():
         out_img = nib.load(out_path)
         resliced = out_img.get_data()
 
-        npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
-        npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
-        npt.assert_equal(resliced.shape[2] > volume.shape[2], True)
-        npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+        assert resliced.shape[0] > volume.shape[0]
+        assert resliced.shape[1] > volume.shape[1]
+        assert resliced.shape[2] > volume.shape[2]
+        assert resliced.shape[-1] == volume.shape[-1]
 
 
 def test_image_registration():
@@ -72,8 +72,7 @@ def test_image_registration():
                                          out_moved=out_moved,
                                          out_affine=out_affine)
 
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            check_existense(out_moved, out_affine)
 
         def test_translation():
 
@@ -92,8 +91,7 @@ def test_image_registration():
 
             dist = read_distance('trans_q.txt')
             npt.assert_almost_equal(float(dist), -0.3953547764454917, 4)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            check_existense(out_moved, out_affine)
 
         def test_rigid():
 
@@ -112,8 +110,7 @@ def test_image_registration():
 
             dist = read_distance('rigid_q.txt')
             npt.assert_almost_equal(dist, -0.6900534794005155, 4)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            check_existense(out_moved, out_affine)
 
         def test_affine():
 
@@ -132,8 +129,7 @@ def test_image_registration():
 
             dist = read_distance('affine_q.txt')
             npt.assert_almost_equal(dist, -0.7670650775914811, 4)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            check_existense(out_moved, out_affine)
 
         # Creating the erroneous behavior
         def test_err():
@@ -147,6 +143,11 @@ def test_image_registration():
                               static_image_file,
                               moving_image_file,
                               metric='wrong_metric')
+
+        def check_existense(movedfile, affine_mat_file):
+            assert os.path.exists(movedfile)
+            assert os.path.exists(affine_mat_file)
+            return True
 
         test_com()
         test_translation()
