@@ -288,6 +288,10 @@ def get_data(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == "small_NODDIx_data":
+        fimg = pjoin(DATA_DIR, 'small_NODDIx_HCP.hdr')
+        scheme = pjoin(DATA_DIR, 'HCP_scheme.txt')
+        return fimg, scheme
 
 
 def _gradient_from_file(filename):
