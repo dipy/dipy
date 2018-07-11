@@ -15,6 +15,8 @@ from dipy.io.image import load_nifti, save_nifti, save_affine_matrix, \
 from dipy.viz.regtools import overlay_images
 from dipy.segment.mask import median_otsu
 
+from dipy.viz import window, actor, ui
+
 
 class ResliceFlow(Workflow):
 
@@ -84,6 +86,101 @@ class ImageRegistrationFlow(Workflow):
 
     This can be controlled by using the progressive flag (True by default).
     """
+
+    def test_visual(self, static_img, static_grid2world, moved_img,
+                               moving_grid2world):
+
+        # Normalize the input images to [0,255]
+        static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
+        moved_img = 255 * ((moved_img - moved_img.min()) / (moved_img.max() - moved_img.min()))
+
+        # Create the color images
+        overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
+
+        # Copy the normalized intensities into the appropriate channels of the
+        # color images
+        overlay[..., 0] = static_img
+        overlay[..., 1] = moved_img
+
+        data = overlay
+        affine = moving_grid2world
+
+        renderer = window.Renderer()
+        renderer.background((0.5, 0.5, 0.5))
+
+        mean, std = data[data > 0].mean(), data[data > 0].std()
+        value_range = (mean - 0.5 * std, mean + 1.5 * std)
+
+        lut = actor.colormap_lookup_table(scale_range=(0, 255),
+                                          hue_range=(0.4, 1.),
+                                          saturation_range=(1, 1.),
+                                          value_range=(0., 1.))
+
+        slice_actor = actor.slicer(data, affine, value_range, lookup_colormap=lut)
+        renderer.projection('parallel')
+
+        result_position = ui.TextBlock2D(text='')
+        result_value = ui.TextBlock2D(text='')
+
+        result_position.message = ''
+        result_value.message = ''
+
+        show_m_mosaic = window.ShowManager(renderer, size=(1200, 900))
+        show_m_mosaic.initialize()
+
+        def left_click_callback_mosaic(obj, ev):
+            """Get the value of the clicked voxel and show it in the panel."""
+            event_pos = show_m_mosaic.iren.GetEventPosition()
+
+            obj.picker.Pick(event_pos[0],
+                            event_pos[1],
+                            0,
+                            show_m_mosaic.ren)
+
+            i, j, k = obj.picker.GetPointIJK()
+            result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
+            result_value.message = '%.8f' % data[i, j, k]
+
+        cnt = 0
+        print('hello')
+        print(slice_actor.shape)
+        X, Y, Z = slice_actor.shape
+
+        rows = 10
+        cols = 15
+        border = 10
+        # panel_picking = ui.Panel2D(center=(200, 120),
+        #                            size=(250, 125),
+        #                            color=(0, 0, 0),
+        #                            opacity=0.75,
+        #                            align="left")
+
+        for j in range(rows):
+            for i in range(cols):
+                slice_mosaic = slice_actor.copy()
+                slice_mosaic.display(None, None, cnt)
+                slice_mosaic.SetPosition((X + border) * i,
+                                         0.5 * cols * (Y + border) - (Y + border) * j,
+                                         0)
+                slice_mosaic.SetInterpolate(False)
+                slice_mosaic.AddObserver('LeftButtonPressEvent',
+                                         left_click_callback_mosaic,
+                                         1.0)
+                renderer.add(slice_mosaic)
+                cnt += 1
+                if cnt > Z:
+                    break
+            if cnt > Z:
+                break
+
+        renderer.reset_camera()
+        renderer.zoom(1.6)
+
+        #show_m_mosaic.ren.add(panel_picking)
+        #show_m_mosaic.start()
+
+        window.record(renderer, out_path='mosaic.png', size=(900, 600),
+                      reset_camera=False)
 
     def create_overlaid_images(self, static_img, static_grid2world, moved_img,
                                moving_grid2world):
@@ -473,6 +570,8 @@ class ImageRegistrationFlow(Workflow):
                                                           static_grid2world,
                                                           moving,
                                                           moving_grid2world)
+                self.test_visual(static, static_grid2world,
+                                 moved_image, moving_grid2world)
             else:
 
                 params0 = None
@@ -526,7 +625,7 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                self.create_overlaid_images(static, static_grid2world,
+                self.test_visual(static, static_grid2world,
                                             moved_image, moving_grid2world)
                 logging.info("Similarity metric:"+str(xopt))
                 logging.info("Distance measure:"+str(fopt))
