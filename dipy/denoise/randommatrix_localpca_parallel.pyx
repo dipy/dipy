@@ -18,7 +18,6 @@ from scipy.linalg.cython_lapack cimport dsyevd
 @cython.boundscheck(False)
 @cython.nonecheck(False)
 cpdef int fast_matvec(char ta, double[:,::1] A, double[:] b, double[:] y, double alpha=1.0, double beta=0.0,int incx=1) nogil except -1:
-
     cdef:
         char transa
         int m,n
@@ -49,7 +48,6 @@ cpdef int fast_matvec(char ta, double[:,::1] A, double[:] b, double[:] y, double
 @cython.boundscheck(False)
 @cython.nonecheck(False)
 cpdef int fast_eig(double[:,::1] a, double[::1] W, double[::1] WORK, int LWORK, int[::1] IWORK, int LIWORK) nogil except -1:
-
     cdef:
         char JOBZ='V' 
         char UPLO='U'
@@ -73,7 +71,6 @@ cpdef int fast_eig(double[:,::1] a, double[::1] W, double[::1] WORK, int LWORK, 
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.nonecheck(False)
 cpdef int fast_dgemm(double[:,::1] a, double[:,::1] c) nogil except -1:
-
     cdef:
         char transa 
         char transb
@@ -297,5 +294,4 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
     print("Sigma: %s" % sigma)
     print("--- Denoising took %s seconds ---" % (time.time() - start_time))
     return denoised_arr.astype(calc_dtype), noise_arr.astype(calc_dtype), sigma
-
 
