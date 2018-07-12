@@ -3,8 +3,7 @@ import numpy as np
 from math import floor,sqrt
 from scipy.linalg import eigh
 
-
-def randommatrix_localpca(arr, patch_extent=0, out_dtype=None,num_threads=None):
+def randommatrix_localpca(arr, patch_extent=0, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -55,22 +54,6 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None,num_threads=None):
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
-    """
-    cdef:
-        cnp.npy_intp k
-        int all_cores = openmp.omp_get_num_procs()
-        int threads_to_use = -1
-
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
-
-    if have_openmp:
-        openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
-    """
-
 
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
@@ -86,8 +69,6 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None,num_threads=None):
          
     noise_arr = np.zeros([arr.shape[0],arr.shape[1],arr.shape[2]],dtype=calc_dtype)
     denoised_arr = np.zeros(arr.shape, dtype=calc_dtype)        
-
-
 
     for k in range(patch_radius,arr.shape[2]-patch_radius):   
         kx1 = k - patch_radius
@@ -135,8 +116,7 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None,num_threads=None):
                     nvals=  np.zeros(arr.shape[3],dtype=calc_dtype)
                 
                 denoised_arr[i,j,k,:] = nvals
-                noise_arr[i,j,k] = sqrt(sigma2)
-                
+                noise_arr[i,j,k] = sqrt(sigma2)               
     
     sigma = np.mean(noise_arr[np.nonzero(noise_arr)])
     print(sigma)
@@ -144,4 +124,3 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None,num_threads=None):
     print("--- %s seconds ---" % (time.time() - start_time))
 
     return denoised_arr.astype(calc_dtype), noise_arr.astype(calc_dtype), sigma
-
