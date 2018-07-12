@@ -25,7 +25,6 @@ cpdef int fast_matvec(char ta, double[:,::1] A, double[:] b, double[:] y, double
         double *b0=&b[0]
         double *y0=&y[0]
  
-
     if ta == 'n':
         transa='n'        
         n= A.shape[0]
@@ -37,12 +36,9 @@ cpdef int fast_matvec(char ta, double[:,::1] A, double[:] b, double[:] y, double
         n= A.shape[0]
         m= A.shape[1]
 
-
         dgemv(&transa, &m , &n, &alpha, a0, &m,  b0, &incx, &beta, y0, &incx)
 
     return 0
-
-
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -103,7 +99,6 @@ cpdef int fast_dgemm(double[:,::1] a, double[:,::1] c) nogil except -1:
                &n, &beta, c0, &m)  
        
     return 0
-
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
