@@ -276,6 +276,7 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
                     fast_matvec('n',C[k,:,:],temp3[k,:],temp2[k,:])
               
                 else:
+                    # to satisfy Fortran contiguity.. C[k,:,nn/2] is C contiguous
                     for ii in range(rr):
                         temp1[k,ii]= C[k,ii,nn/2]
 
