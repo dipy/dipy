@@ -89,6 +89,7 @@ for modulename, other_sources, language in (
         ('dipy.segment.clustering_algorithms', [], 'c'),
         ('dipy.segment.mrf', [], 'c'),
         ('dipy.denoise.denspeed', [], 'c'),
+        ('dipy.denoise.randommatrix_localpca_parallel', [], 'c'),
         ('dipy.denoise.pca_noise_estimate', [], 'c'),
         ('dipy.denoise.nlmeans_block', [], 'c'),
         ('dipy.denoise.enhancement_kernel', [], 'c'),
