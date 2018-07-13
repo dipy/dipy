@@ -360,7 +360,8 @@ class NODDIxModel(ReconstModel):
 
         # Compute the Legendre weighted signal
         Lpmp = LePerp - LePar
-        lgi = self.LegendreGaussianIntegral(Lpmp, 6)
+#        lgi = self.LegendreGaussianIntegral(Lpmp, 6)
+        lgi = noddixspeed.legendre_gauss_integral(Lpmp, 6)
 
         # Compute the SH coefficients of the Watson's distribution
         coeff = self.WatsonSHCoeff(kappa)
@@ -397,76 +398,76 @@ class NODDIxModel(ReconstModel):
         LE = -modQ_Sq * difftime * d
         return LE
 
-    def LegendreGaussianIntegral(self, x, n):
-        exact = np.squeeze(np.unravel_index(np.where(x.ravel() > 0.05),
-                                            x.shape))
-        approx = np.squeeze(np.unravel_index(np.where(x.ravel() <= 0.05),
-                                             x.shape))
-        # 288 X 7
-        I = np.zeros((x.shape[0], n + 1))
-        # 270
-        sqrtx = np.sqrt(x[exact])
-        # 7
-        mn = n + 1
-        # Cython component: error_function updates the temp variable.
-        temp = np.empty(sqrtx.shape)
-        noddixspeed.error_function(sqrtx, temp)
-        # 270 X 1
-        I[exact, 0] = np.sqrt(np.pi) * temp / sqrtx
-        # 270
-        dx = 1 / x[exact]
-        # 270
-        emx = -np.exp(-x[exact])
-        # 6
-        vec = np.arange(2, mn+1) - 1.5
-        # 270 X 6
-        I[exact, 1:] = emx[:, None] + np.squeeze(I[exact, :-1] * vec[None, :])
-        # 270 X 6
-        I[exact, 1:] = np.squeeze(I[exact, 1:]) * dx[:, None]
-
-        I_exact_0 = I[exact, 0]
-        I_exact_1 = I[exact, 1]
-        I_exact_2 = I[exact, 2]
-        I_exact_3 = I[exact, 3]
-        I_exact_4 = I[exact, 4]
-        I_exact_5 = I[exact, 5]
-        I_exact_6 = I[exact, 6]
-
-        # Computing the legendre gaussian integrals for large enough x
-        L = np.zeros((x.shape[0], n + 1))
-        L[exact, 0] = I_exact_0
-        L[exact, 1] = -0.5 * I_exact_0 + 1.5 * I_exact_1
-        L[exact, 2] = 0.375 * I_exact_0 - 3.75 * I_exact_1 + 4.375 \
-            * I_exact_2
-        L[exact, 3] = -0.3125 * I_exact_0 + 6.5625 * I_exact_1
-        - 19.6875 * I_exact_2 + 14.4375 * I_exact_3
-        L[exact, 4] = 0.2734375 * I_exact_0 - 9.84375 * I_exact_1
-        + 54.140625 * I_exact_2 - 93.84375 * I_exact_3 + 50.2734375 \
-            * I_exact_4
-        L[exact, 5] = -(63. / 256) * I_exact_0
-        + (3465. / 256) * I_exact_1 - (30030. / 256) * I_exact_2
-        + (90090. / 256) * I_exact_3 - (109395. / 256) * I_exact_4
-        + (46189. / 256) * I_exact_5
-        L[exact, 6] = (231. / 1024) * I_exact_0 - (18018. / 1024) * I_exact_1
-        + (225225. / 1024) * I_exact_2 - (1021020. / 1024) * I_exact_3
-        + (2078505. / 1024) * I_exact_4 - (1939938. / 1024) * I_exact_5
-        + (676039. / 1024) * I_exact_6
-
-        # Computing the legendre gaussian integrals for small x
-        x2 = pow(x[approx], 2)
-        x3 = x2 * x[approx]
-        x4 = x3 * x[approx]
-        x5 = x4 * x[approx]
-        x6 = x5 * x[approx]
-        L[approx, 0] = 2 - 2 * x[approx] / 3 + x2 / 5 - x3 / 21 + x4 / 108
-        L[approx, 1] = -4 * x[approx] / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 \
-            * x4 / 297
-        L[approx, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
-        L[approx, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
-        L[approx, 4] = 32 * x4 / 328185
-        L[approx, 5] = -64 * x5 / 14549535
-        L[approx, 6] = 128 * x6 / 760543875
-        return L
+#    def LegendreGaussianIntegral(self, x, n):
+#        exact = np.squeeze(np.unravel_index(np.where(x.ravel() > 0.05),
+#                                            x.shape))
+#        approx = np.squeeze(np.unravel_index(np.where(x.ravel() <= 0.05),
+#                                             x.shape))
+#        # 288 X 7
+#        I = np.zeros((x.shape[0], n + 1))
+#        # 270
+#        sqrtx = np.sqrt(x[exact])
+#        # 7
+#        mn = n + 1
+#        # Cython component: error_function updates the temp variable.
+#        temp = np.empty(sqrtx.shape)
+#        noddixspeed.error_function(sqrtx, temp)
+#        # 270 X 1
+#        I[exact, 0] = np.sqrt(np.pi) * temp / sqrtx
+#        # 270
+#        dx = 1 / x[exact]
+#        # 270
+#        emx = -np.exp(-x[exact])
+#        # 6
+#        vec = np.arange(2, mn+1) - 1.5
+#        # 270 X 6
+#        I[exact, 1:] = emx[:, None] + np.squeeze(I[exact, :-1] * vec[None, :])
+#        # 270 X 6
+#        I[exact, 1:] = np.squeeze(I[exact, 1:]) * dx[:, None]
+#
+#        I_exact_0 = I[exact, 0]
+#        I_exact_1 = I[exact, 1]
+#        I_exact_2 = I[exact, 2]
+#        I_exact_3 = I[exact, 3]
+#        I_exact_4 = I[exact, 4]
+#        I_exact_5 = I[exact, 5]
+#        I_exact_6 = I[exact, 6]
+#
+#        # Computing the legendre gaussian integrals for large enough x
+#        L = np.zeros((x.shape[0], n + 1))
+#        L[exact, 0] = I_exact_0
+#        L[exact, 1] = -0.5 * I_exact_0 + 1.5 * I_exact_1
+#        L[exact, 2] = 0.375 * I_exact_0 - 3.75 * I_exact_1 + 4.375 \
+#            * I_exact_2
+#        L[exact, 3] = -0.3125 * I_exact_0 + 6.5625 * I_exact_1
+#        - 19.6875 * I_exact_2 + 14.4375 * I_exact_3
+#        L[exact, 4] = 0.2734375 * I_exact_0 - 9.84375 * I_exact_1
+#        + 54.140625 * I_exact_2 - 93.84375 * I_exact_3 + 50.2734375 \
+#            * I_exact_4
+#        L[exact, 5] = -(63. / 256) * I_exact_0
+#        + (3465. / 256) * I_exact_1 - (30030. / 256) * I_exact_2
+#        + (90090. / 256) * I_exact_3 - (109395. / 256) * I_exact_4
+#        + (46189. / 256) * I_exact_5
+#        L[exact, 6] = (231. / 1024) * I_exact_0 - (18018. / 1024) * I_exact_1
+#        + (225225. / 1024) * I_exact_2 - (1021020. / 1024) * I_exact_3
+#        + (2078505. / 1024) * I_exact_4 - (1939938. / 1024) * I_exact_5
+#        + (676039. / 1024) * I_exact_6
+#
+#        # Computing the legendre gaussian integrals for small x
+#        x2 = pow(x[approx], 2)
+#        x3 = x2 * x[approx]
+#        x4 = x3 * x[approx]
+#        x5 = x4 * x[approx]
+#        x6 = x5 * x[approx]
+#        L[approx, 0] = 2 - 2 * x[approx] / 3 + x2 / 5 - x3 / 21 + x4 / 108
+#        L[approx, 1] = -4 * x[approx] / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 \
+#            * x4 / 297
+#        L[approx, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
+#        L[approx, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
+#        L[approx, 4] = 32 * x4 / 328185
+#        L[approx, 5] = -64 * x5 / 14549535
+#        L[approx, 6] = 128 * x6 / 760543875
+#        return L
 
     def WatsonSHCoeff(self, k):
         # The maximum order of SH coefficients (2n)
