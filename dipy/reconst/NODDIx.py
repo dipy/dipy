@@ -398,46 +398,59 @@ class NODDIxModel(ReconstModel):
         return LE
 
     def LegendreGaussianIntegral(self, x, n):
-        exact = np.where(x > 0.05)
-        approx = np.where(x <= 0.05)
+        exact = np.squeeze(np.unravel_index(np.where(x.ravel() > 0.05),
+                                            x.shape))
+        approx = np.squeeze(np.unravel_index(np.where(x.ravel() <= 0.05),
+                                             x.shape))
+        # 288 X 7
         I = np.zeros((x.shape[0], n + 1))
+        # 270
         sqrtx = np.sqrt(x[exact])
+        # 7
         mn = n + 1
-
         # Cython component: error_function updates the temp variable.
         temp = np.empty(sqrtx.shape)
         noddixspeed.error_function(sqrtx, temp)
+        # 270 X 1
         I[exact, 0] = np.sqrt(np.pi) * temp / sqrtx
+        # 270
         dx = 1 / x[exact]
+        # 270
         emx = -np.exp(-x[exact])
+        # 6
         vec = np.arange(2, mn+1) - 1.5
-#        I[exact, 1:] = \
-#            np.swapaxes(emx + np.swapaxes(vec * I[exact, :-1], 2, 1), 1, 2)
-#        I[exact, 1:] = np.swapaxes(np.swapaxes(I[exact, 1:], 2, 1) * dx, 1, 2)
-
+        # 270 X 6
         I[exact, 1:] = emx[:, None] + np.squeeze(I[exact, :-1] * vec[None, :])
+        # 270 X 6
         I[exact, 1:] = np.squeeze(I[exact, 1:]) * dx[:, None]
+
+        I_exact_0 = I[exact, 0]
+        I_exact_1 = I[exact, 1]
+        I_exact_2 = I[exact, 2]
+        I_exact_3 = I[exact, 3]
+        I_exact_4 = I[exact, 4]
+        I_exact_5 = I[exact, 5]
+        I_exact_6 = I[exact, 6]
 
         # Computing the legendre gaussian integrals for large enough x
         L = np.zeros((x.shape[0], n + 1))
-
-        L[exact, 0] = I[exact, 0]
-        L[exact, 1] = -0.5 * I[exact, 0] + 1.5 * I[exact, 1]
-        L[exact, 2] = 0.375 * I[exact, 0] - 3.75 * I[exact, 1] + 4.375 \
-            * I[exact, 2]
-        L[exact, 3] = -0.3125 * I[exact, 0] + 6.5625 * I[exact, 1]
-        - 19.6875 * I[exact, 2] + 14.4375 * I[exact, 3]
-        L[exact, 4] = 0.2734375 * I[exact, 0] - 9.84375 * I[exact, 1]
-        + 54.140625 * I[exact, 2] - 93.84375 * I[exact, 3] + 50.2734375 \
-            * I[exact, 4]
-        L[exact, 5] = -(63. / 256) * I[exact, 0]
-        + (3465. / 256) * I[exact, 1] - (30030. / 256) * I[exact, 2]
-        + (90090. / 256) * I[exact, 3] - (109395. / 256) * I[exact, 4]
-        + (46189. / 256) * I[exact, 5]
-        L[exact, 6] = (231. / 1024) * I[exact, 0] - (18018. / 1024)*I[exact, 1]
-        + (225225. / 1024) * I[exact, 2] - (1021020. / 1024) * I[exact, 3]
-        + (2078505. / 1024) * I[exact, 4] - (1939938. / 1024) * I[exact, 5]
-        + (676039. / 1024) * I[exact, 6]
+        L[exact, 0] = I_exact_0
+        L[exact, 1] = -0.5 * I_exact_0 + 1.5 * I_exact_1
+        L[exact, 2] = 0.375 * I_exact_0 - 3.75 * I_exact_1 + 4.375 \
+            * I_exact_2
+        L[exact, 3] = -0.3125 * I_exact_0 + 6.5625 * I_exact_1
+        - 19.6875 * I_exact_2 + 14.4375 * I_exact_3
+        L[exact, 4] = 0.2734375 * I_exact_0 - 9.84375 * I_exact_1
+        + 54.140625 * I_exact_2 - 93.84375 * I_exact_3 + 50.2734375 \
+            * I_exact_4
+        L[exact, 5] = -(63. / 256) * I_exact_0
+        + (3465. / 256) * I_exact_1 - (30030. / 256) * I_exact_2
+        + (90090. / 256) * I_exact_3 - (109395. / 256) * I_exact_4
+        + (46189. / 256) * I_exact_5
+        L[exact, 6] = (231. / 1024) * I_exact_0 - (18018. / 1024) * I_exact_1
+        + (225225. / 1024) * I_exact_2 - (1021020. / 1024) * I_exact_3
+        + (2078505. / 1024) * I_exact_4 - (1939938. / 1024) * I_exact_5
+        + (676039. / 1024) * I_exact_6
 
         # Computing the legendre gaussian integrals for small x
         x2 = pow(x[approx], 2)
