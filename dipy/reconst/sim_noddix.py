@@ -1,7 +1,6 @@
 from __future__ import division
 import time as time
 import numpy as np
-import nibabel as nib
 from dipy.data import get_data
 from dipy.core.gradients import gradient_table
 import dipy.reconst.NODDIx as noddix
