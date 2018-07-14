@@ -144,40 +144,42 @@ def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
     cdef:
         double[:, :] I = np.zeros((x_vec.shape[0], n + 1))
         double[:, :] L = np.zeros((x_vec.shape[0], n + 1))
-        cnp.npy_intp cnt
+        cnp.npy_intp cnt, i
         double dx, emx, sqrtx, x
+        double x2, x3, x4, x5, x6
 
-    for cnt in range(x_vec.shape[0]):
-        x = x_vec[cnt]
-        if x > 0.05:
-            sqrtx = sqrt(x)
-            I[cnt, 0] = sqrt(pi) * erf(x) / sqrtx
-            dx = 1 / x
-            emx = -exp(-x)
-            for i in range(2, n + 2):
-                I[cnt, i - 1] = emx + (i - 1.5) * I[cnt, i - 2]
-                I[cnt, i - 1] = I[cnt, i - 1] * dx
+    with nogil:
+        for cnt in range(x_vec.shape[0]):
+            x = x_vec[cnt]
+            if x > 0.05:
+                sqrtx = sqrt(x)
+                I[cnt, 0] = sqrt(pi) * erf(x) / sqrtx
+                dx = 1 / x
+                emx = -exp(-x)
+                for i in range(2, n + 2):
+                    I[cnt, i - 1] = emx + (i - 1.5) * I[cnt, i - 2]
+                    I[cnt, i - 1] = I[cnt, i - 1] * dx
 
-            L[cnt, 0] = I[cnt, 0]
-            L[cnt, 1] = -0.5 * I[cnt, 0] + 1.5 * I[cnt, 1]
-            L[cnt, 2] = 0.375 * I[cnt, 0] - 3.75 * I[cnt, 1] + 4.375 * I[cnt, 2]
-            L[cnt, 3] = -0.3125 * I[cnt, 0] + 6.5625 * I[cnt, 1] - 19.6875 * I[cnt, 2] + 14.4375 * I[cnt, 3]
-            L[cnt, 4] = 0.2734375 * I[cnt, 0] - 9.84375 * I[cnt, 1] + 54.140625 * I[cnt, 2] - 93.84375 * I[cnt, 3] + 50.2734375 * I[cnt, 4]
-            L[cnt, 5] = -(63. / 256) * I[cnt, 0] + (3465. / 256) * I[cnt, 1] - (30030. / 256) * I[cnt, 2] + (90090. / 256) * I[cnt, 3] - (109395. / 256) * I[cnt, 4] + (46189. / 256) * I[cnt, 5]
-            L[cnt, 6] = (231. / 1024) * I[cnt, 0] - (18018. / 1024) * I[cnt, 1] + (225225. / 1024) * I[cnt, 2] - (1021020. / 1024) * I[cnt, 3] + (2078505. / 1024) * I[cnt, 4] - (1939938. / 1024) * I[cnt, 5] + (676039. / 1024) * I[cnt, 6]
+                L[cnt, 0] = I[cnt, 0]
+                L[cnt, 1] = -0.5 * I[cnt, 0] + 1.5 * I[cnt, 1]
+                L[cnt, 2] = 0.375 * I[cnt, 0] - 3.75 * I[cnt, 1] + 4.375 * I[cnt, 2]
+                L[cnt, 3] = -0.3125 * I[cnt, 0] + 6.5625 * I[cnt, 1] - 19.6875 * I[cnt, 2] + 14.4375 * I[cnt, 3]
+                L[cnt, 4] = 0.2734375 * I[cnt, 0] - 9.84375 * I[cnt, 1] + 54.140625 * I[cnt, 2] - 93.84375 * I[cnt, 3] + 50.2734375 * I[cnt, 4]
+                L[cnt, 5] = -(63. / 256) * I[cnt, 0] + (3465. / 256) * I[cnt, 1] - (30030. / 256) * I[cnt, 2] + (90090. / 256) * I[cnt, 3] - (109395. / 256) * I[cnt, 4] + (46189. / 256) * I[cnt, 5]
+                L[cnt, 6] = (231. / 1024) * I[cnt, 0] - (18018. / 1024) * I[cnt, 1] + (225225. / 1024) * I[cnt, 2] - (1021020. / 1024) * I[cnt, 3] + (2078505. / 1024) * I[cnt, 4] - (1939938. / 1024) * I[cnt, 5] + (676039. / 1024) * I[cnt, 6]
 
-        elif x <= 0.05:
-            x2 = pow(x, 2)
-            x3 = x2 * x
-            x4 = x3 * x
-            x5 = x4 * x
-            x6 = x5 * x
-            L[cnt, 0] = 2 - 2 * x / 3 + x2 / 5 - x3 / 21 + x4 / 108
-            L[cnt, 1] = -4 * x / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 * x4 / 297
-            L[cnt, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
-            L[cnt, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
-            L[cnt, 4] = 32 * x4 / 328185
-            L[cnt, 5] = -64 * x5 / 14549535
-            L[cnt, 6] = 128 * x6 / 760543875
+            elif x <= 0.05:
+                x2 = pow(x, 2)
+                x3 = x2 * x
+                x4 = x3 * x
+                x5 = x4 * x
+                x6 = x5 * x
+                L[cnt, 0] = 2 - 2 * x / 3 + x2 / 5 - x3 / 21 + x4 / 108
+                L[cnt, 1] = -4 * x / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 * x4 / 297
+                L[cnt, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
+                L[cnt, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
+                L[cnt, 4] = 32 * x4 / 328185
+                L[cnt, 5] = -64 * x5 / 14549535
+                L[cnt, 6] = 128 * x6 / 760543875
     return L
 

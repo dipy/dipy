@@ -13,10 +13,8 @@ gemm = get_blas_funcs("gemm")
 # convert to NiFTi
 fname, fscanner = get_data('small_NODDIx_data')
 params = np.loadtxt(fscanner)
-img = nib.load(fname)
 
 # getting the gtab, bvals and bvecs
-affine = img.affine
 bvecs = params[:, 0:3]
 G = params[:, 3] / 10 ** 6  # gradient strength
 big_delta = params[:, 4]
