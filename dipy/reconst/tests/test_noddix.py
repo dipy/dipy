@@ -51,13 +51,6 @@ phi = noddix_model.Phi2(x_f_sig)
 reconst_signal = np.dot(phi, f)
 
 
-#def normalize_signal(reconst_signal):
-#    norm = np.linalg.norm(reconst_signal)
-#    if norm == 0:
-#        return reconst_signal
-#    return reconst_signal / norm
-
-
 def test_noddix_signal():
     # Fitting the Generated Signal
     t_start = time.time()
