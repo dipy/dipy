@@ -56,7 +56,7 @@ class NODDIxModel(ReconstModel):
         self.yhat_dot = np.zeros(self.gtab.bvals.shape)
         self.exp_phi1 = np.zeros((self.small_delta.shape[0], 5))
         self.exp_phi1[:, 4] = np.exp(-self.yhat_ball)
-
+    @profile
     def fit(self, data):
         """ Fit method of the NODDIx model class
         Parameters
@@ -484,13 +484,11 @@ class NODDIxModel(ReconstModel):
         sk4 = sk3 * k
         sk5 = sk4 * k
         sk6 = sk5 * k
-#        sk7 = sk6 * k[exact]
         k2 = k ** 2
         k3 = k2 * k
         k4 = k3 * k
         k5 = k4 * k
         k6 = k5 * k
-#        k7 = k6 * k
 
         erfik = special.erfi(sk)
         ierfik = 1 / erfik
