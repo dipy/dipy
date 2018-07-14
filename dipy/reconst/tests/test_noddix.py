@@ -103,7 +103,6 @@ def show_with_shore(gtab, reconst_signal):
     ren.add(fvtk.sphere_funcs(odf, sphere))
     window.show(ren)
 
-
 def gqi_viz(reconst_signal):
     gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=2)
     gqfit = gqmodel.fit(reconst_signal)

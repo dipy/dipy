@@ -56,7 +56,7 @@ class NODDIxModel(ReconstModel):
         self.yhat_dot = np.zeros(self.gtab.bvals.shape)
         self.exp_phi1 = np.zeros((self.small_delta.shape[0], 5))
         self.exp_phi1[:, 4] = np.exp(-self.yhat_ball)
-    @profile
+
     def fit(self, data):
         """ Fit method of the NODDIx model class
         Parameters
@@ -364,7 +364,8 @@ class NODDIxModel(ReconstModel):
         lgi = noddixspeed.legendre_gauss_integral(Lpmp, 6)
 
         # Compute the SH coefficients of the Watson's distribution
-        coeff = self.WatsonSHCoeff(kappa)
+#        coeff = self.WatsonSHCoeff(kappa)
+        coeff = noddixspeed.watson_sh_coeff(kappa)
         coeffMatrix = np.tile(coeff, [l_q, 1])
 
         cosTheta = np.dot(self.gtab.bvecs, fiberdir)
@@ -469,119 +470,119 @@ class NODDIxModel(ReconstModel):
 #        L[approx, 6] = 128 * x6 / 760543875
 #        return L
 
-    def WatsonSHCoeff(self, k):
-        # The maximum order of SH coefficients (2n)
-        n = 6
-        # Computing the SH coefficients
-        C = np.zeros((n + 1))
-        # 0th order is a constant
-        C[0] = 2 * np.sqrt(np.pi)
-
-        # Precompute the special function values
-        sk = np.sqrt(k)
-        sk2 = sk * k
-        sk3 = sk2 * k
-        sk4 = sk3 * k
-        sk5 = sk4 * k
-        sk6 = sk5 * k
-        k2 = k ** 2
-        k3 = k2 * k
-        k4 = k3 * k
-        k5 = k4 * k
-        k6 = k5 * k
-
-        erfik = special.erfi(sk)
-        ierfik = 1 / erfik
-        ek = np.exp(k)
-        dawsonk = 0.5 * np.sqrt(np.pi) * erfik / ek
-
-        if k > 0.1:
-            # for large enough kappa
-            C[1] = 3 * sk - (3 + 2 * k) * dawsonk
-            C[1] = np.sqrt(5) * C[1] * ek
-            C[1] = C[1] * ierfik / k
-
-            C[2] = (105 + 60 * k + 12 * k2) * dawsonk
-            C[2] = C[2] - 105 * sk + 10 * sk2
-            C[2] = .375 * C[2] * ek / k2
-            C[2] = C[2] * ierfik
-
-            C[3] = -3465 - 1890 * k - 420 * k2 - 40 * k3
-            C[3] = C[3] * dawsonk
-            C[3] = C[3] + 3465 * sk - 420 * sk2 + 84 * sk3
-            C[3] = C[3] * np.sqrt(13 * np.pi) / 64 / k3
-            C[3] = C[3] / dawsonk
-
-            C[4] = 675675 + 360360 * k + 83160 * k2 + 10080 * k3 + 560 * k4
-            C[4] = C[4] * dawsonk
-            C[4] = C[4] - 675675 * sk + 90090 * sk2 - 23100 * sk3 + 744 * sk4
-            C[4] = np.sqrt(17) * C[4] * ek
-            C[4] = C[4] / 512 / k4
-            C[4] = C[4] * ierfik
-
-            C[5] = -43648605 - 22972950 * k - 5405400 * k2 - 720720 * k3 \
-                - 55440 * k4 - 2016 * k5
-            C[5] = C[5] * dawsonk
-            C[5] = C[5] + 43648605 * sk - 6126120 * sk2 + 1729728 * sk3 \
-                - 82368 * sk4 + 5104 * sk5
-            C[5] = np.sqrt(21 * np.pi) * C[5] / 4096 / k5
-            C[5] = C[5] / dawsonk
-
-            C[6] = 7027425405 + 3666482820 * k + 872972100 * k2 \
-                + 122522400 * k3 + 10810800 * k4 + 576576 * k5 + 14784 * k6
-            C[6] = C[6] * dawsonk
-            C[6] = C[6] - 7027425405 * sk + 1018467450 * sk2 \
-                - 302630328 * sk3 + 17153136 * sk4 - 1553552 * sk5 \
-                + 25376 * sk6
-            C[6] = 5 * C[6] * ek
-            C[6] = C[6] / 16384 / k6
-            C[6] = C[6] * ierfik
-
-        elif k > 30:
-            # for very large kappa
-            lnkd = np.log(k) - np.log(30)
-            lnkd2 = lnkd * lnkd
-            lnkd3 = lnkd2 * lnkd
-            lnkd4 = lnkd3 * lnkd
-            lnkd5 = lnkd4 * lnkd
-            lnkd6 = lnkd5 * lnkd
-            C[1] = 7.52308 + 0.411538 * lnkd - 0.214588 * lnkd2 \
-                + 0.0784091 * lnkd3 - 0.023981 * lnkd4 + 0.00731537 * lnkd5 \
-                - 0.0026467 * lnkd6
-            C[2] = 8.93718 + 1.62147 * lnkd - 0.733421 * lnkd2 \
-                + 0.191568 * lnkd3 - 0.0202906 * lnkd4 - 0.00779095 * lnkd5 \
-                + 0.00574847*lnkd6
-            C[3] = 8.87905 + 3.35689 * lnkd - 1.15935 * lnkd2 \
-                + 0.0673053 * lnkd3 + 0.121857 * lnkd4 - 0.066642 * lnkd5 \
-                + 0.0180215 * lnkd6
-            C[4] = 7.84352 + 5.03178 * lnkd - 1.0193 * lnkd2 \
-                - 0.426362 * lnkd3 + 0.328816 * lnkd4 - 0.0688176 * lnkd5 \
-                - 0.0229398 * lnkd6
-            C[5] = 6.30113 + 6.09914 * lnkd - 0.16088 * lnkd2 \
-                - 1.05578 * lnkd3 + 0.338069 * lnkd4 + 0.0937157 * lnkd5 \
-                - 0.106935 * lnkd6
-            C[6] = 4.65678 + 6.30069 * lnkd + 1.13754 * lnkd2 \
-                - 1.38393 * lnkd3 - 0.0134758 * lnkd4 + 0.331686 * lnkd5 \
-                - 0.105954 * lnkd6
-
-        elif k <= 0.1:
-            # for small kappa
-            C[1] = 4 / 3 * k + 8 / 63 * k2
-            C[1] = C[1] * np.sqrt(np.pi / 5)
-
-            C[2] = 8 / 21 * k2 + 32 / 693 * k3
-            C[2] = C[2] * (np.sqrt(np.pi) * 0.2)
-
-            C[3] = 16 / 693 * k3 + 32 / 10395 * k4
-            C[3] = C[3] * np.sqrt(np.pi / 13)
-
-            C[4] = 32 / 19305 * k4
-            C[4] = C[4] * np.sqrt(np.pi / 17)
-
-            C[5] = 64 * np.sqrt(np.pi / 21) * k5 / 692835
-
-            C[6] = 128 * np.sqrt(np.pi) * k6 / 152108775
-        return C
+#    def WatsonSHCoeff(self, k):
+#        # The maximum order of SH coefficients (2n)
+#        n = 6
+#        # Computing the SH coefficients
+#        C = np.zeros((n + 1))
+#        # 0th order is a constant
+#        C[0] = 2 * np.sqrt(np.pi)
+#
+#        # Precompute the special function values
+#        sk = np.sqrt(k)
+#        sk2 = sk * k
+#        sk3 = sk2 * k
+#        sk4 = sk3 * k
+#        sk5 = sk4 * k
+#        sk6 = sk5 * k
+#        k2 = k ** 2
+#        k3 = k2 * k
+#        k4 = k3 * k
+#        k5 = k4 * k
+#        k6 = k5 * k
+#
+#        erfik = special.erfi(sk)
+#        ierfik = 1 / erfik
+#        ek = np.exp(k)
+#        dawsonk = 0.5 * np.sqrt(np.pi) * erfik / ek
+#
+#        if k > 0.1:
+#            # for large enough kappa
+#            C[1] = 3 * sk - (3 + 2 * k) * dawsonk
+#            C[1] = np.sqrt(5) * C[1] * ek
+#            C[1] = C[1] * ierfik / k
+#
+#            C[2] = (105 + 60 * k + 12 * k2) * dawsonk
+#            C[2] = C[2] - 105 * sk + 10 * sk2
+#            C[2] = .375 * C[2] * ek / k2
+#            C[2] = C[2] * ierfik
+#
+#            C[3] = -3465 - 1890 * k - 420 * k2 - 40 * k3
+#            C[3] = C[3] * dawsonk
+#            C[3] = C[3] + 3465 * sk - 420 * sk2 + 84 * sk3
+#            C[3] = C[3] * np.sqrt(13 * np.pi) / 64 / k3
+#            C[3] = C[3] / dawsonk
+#
+#            C[4] = 675675 + 360360 * k + 83160 * k2 + 10080 * k3 + 560 * k4
+#            C[4] = C[4] * dawsonk
+#            C[4] = C[4] - 675675 * sk + 90090 * sk2 - 23100 * sk3 + 744 * sk4
+#            C[4] = np.sqrt(17) * C[4] * ek
+#            C[4] = C[4] / 512 / k4
+#            C[4] = C[4] * ierfik
+#
+#            C[5] = -43648605 - 22972950 * k - 5405400 * k2 - 720720 * k3 \
+#                - 55440 * k4 - 2016 * k5
+#            C[5] = C[5] * dawsonk
+#            C[5] = C[5] + 43648605 * sk - 6126120 * sk2 + 1729728 * sk3 \
+#                - 82368 * sk4 + 5104 * sk5
+#            C[5] = np.sqrt(21 * np.pi) * C[5] / 4096 / k5
+#            C[5] = C[5] / dawsonk
+#
+#            C[6] = 7027425405 + 3666482820 * k + 872972100 * k2 \
+#                + 122522400 * k3 + 10810800 * k4 + 576576 * k5 + 14784 * k6
+#            C[6] = C[6] * dawsonk
+#            C[6] = C[6] - 7027425405 * sk + 1018467450 * sk2 \
+#                - 302630328 * sk3 + 17153136 * sk4 - 1553552 * sk5 \
+#                + 25376 * sk6
+#            C[6] = 5 * C[6] * ek
+#            C[6] = C[6] / 16384 / k6
+#            C[6] = C[6] * ierfik
+#
+#        elif k > 30:
+#            # for very large kappa
+#            lnkd = np.log(k) - np.log(30)
+#            lnkd2 = lnkd * lnkd
+#            lnkd3 = lnkd2 * lnkd
+#            lnkd4 = lnkd3 * lnkd
+#            lnkd5 = lnkd4 * lnkd
+#            lnkd6 = lnkd5 * lnkd
+#            C[1] = 7.52308 + 0.411538 * lnkd - 0.214588 * lnkd2 \
+#                + 0.0784091 * lnkd3 - 0.023981 * lnkd4 + 0.00731537 * lnkd5 \
+#                - 0.0026467 * lnkd6
+#            C[2] = 8.93718 + 1.62147 * lnkd - 0.733421 * lnkd2 \
+#                + 0.191568 * lnkd3 - 0.0202906 * lnkd4 - 0.00779095 * lnkd5 \
+#                + 0.00574847*lnkd6
+#            C[3] = 8.87905 + 3.35689 * lnkd - 1.15935 * lnkd2 \
+#                + 0.0673053 * lnkd3 + 0.121857 * lnkd4 - 0.066642 * lnkd5 \
+#                + 0.0180215 * lnkd6
+#            C[4] = 7.84352 + 5.03178 * lnkd - 1.0193 * lnkd2 \
+#                - 0.426362 * lnkd3 + 0.328816 * lnkd4 - 0.0688176 * lnkd5 \
+#                - 0.0229398 * lnkd6
+#            C[5] = 6.30113 + 6.09914 * lnkd - 0.16088 * lnkd2 \
+#                - 1.05578 * lnkd3 + 0.338069 * lnkd4 + 0.0937157 * lnkd5 \
+#                - 0.106935 * lnkd6
+#            C[6] = 4.65678 + 6.30069 * lnkd + 1.13754 * lnkd2 \
+#                - 1.38393 * lnkd3 - 0.0134758 * lnkd4 + 0.331686 * lnkd5 \
+#                - 0.105954 * lnkd6
+#
+#        elif k <= 0.1:
+#            # for small kappa
+#            C[1] = 4 / 3 * k + 8 / 63 * k2
+#            C[1] = C[1] * np.sqrt(np.pi / 5)
+#
+#            C[2] = 8 / 21 * k2 + 32 / 693 * k3
+#            C[2] = C[2] * (np.sqrt(np.pi) * 0.2)
+#
+#            C[3] = 16 / 693 * k3 + 32 / 10395 * k4
+#            C[3] = C[3] * np.sqrt(np.pi / 13)
+#
+#            C[4] = 32 / 19305 * k4
+#            C[4] = C[4] * np.sqrt(np.pi / 17)
+#
+#            C[5] = 64 * np.sqrt(np.pi / 21) * k5 / 692835
+#
+#            C[6] = 128 * np.sqrt(np.pi) * k6 / 152108775
+#        return C
 
     def SynthMeasWatsonHinderedDiffusion_PGSE(self, x, fibredir):
         dPar = x[0]
