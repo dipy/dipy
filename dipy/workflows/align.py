@@ -16,6 +16,9 @@ from dipy.viz.regtools import overlay_images
 from dipy.segment.mask import median_otsu
 
 from dipy.viz import window, actor, ui
+from dipy.viz.window import snapshot
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 class ResliceFlow(Workflow):
@@ -117,6 +120,17 @@ class ImageRegistrationFlow(Workflow):
                                           value_range=(0., 1.))
 
         slice_actor = actor.slicer(data, affine, value_range, lookup_colormap=lut)
+        #slice_actor2 = slice_actor.copy()
+        renderer.reset_camera()
+        renderer.zoom(1.4)
+        # for i in range(slice_actor.shape[2]):
+        #     slice_actor2.display(None, None, i)
+        #     renderer.add(slice_actor2)
+        #     window.show(renderer, size=(600, 600), reset_camera=False)
+        #     print(i)
+
+        window.record(renderer, out_path='slices.gif', size=(600, 600),
+                      reset_camera=False)
         renderer.projection('parallel')
 
         result_position = ui.TextBlock2D(text='')
@@ -127,33 +141,12 @@ class ImageRegistrationFlow(Workflow):
 
         show_m_mosaic = window.ShowManager(renderer, size=(1200, 900))
         show_m_mosaic.initialize()
-
-        def left_click_callback_mosaic(obj, ev):
-            """Get the value of the clicked voxel and show it in the panel."""
-            event_pos = show_m_mosaic.iren.GetEventPosition()
-
-            obj.picker.Pick(event_pos[0],
-                            event_pos[1],
-                            0,
-                            show_m_mosaic.ren)
-
-            i, j, k = obj.picker.GetPointIJK()
-            result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
-            result_value.message = '%.8f' % data[i, j, k]
-
         cnt = 0
-        print('hello')
-        print(slice_actor.shape)
         X, Y, Z = slice_actor.shape
 
-        rows = 10
+        rows = 5
         cols = 15
         border = 10
-        # panel_picking = ui.Panel2D(center=(200, 120),
-        #                            size=(250, 125),
-        #                            color=(0, 0, 0),
-        #                            opacity=0.75,
-        #                            align="left")
 
         for j in range(rows):
             for i in range(cols):
@@ -163,9 +156,6 @@ class ImageRegistrationFlow(Workflow):
                                          0.5 * cols * (Y + border) - (Y + border) * j,
                                          0)
                 slice_mosaic.SetInterpolate(False)
-                slice_mosaic.AddObserver('LeftButtonPressEvent',
-                                         left_click_callback_mosaic,
-                                         1.0)
                 renderer.add(slice_mosaic)
                 cnt += 1
                 if cnt > Z:
@@ -197,6 +187,53 @@ class ImageRegistrationFlow(Workflow):
         moving = t1_mask[:, :, 60]
         overlay_images(static, moving, 'static', 'registered', 'moving', fname='myimage.png')
 
+    def visualsss(self, static_img, static_grid2world, moved_img,
+                               moving_grid2world):
+
+        # Normalize the input images to [0,255]
+        static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
+        moved_img = 255 * ((moved_img - moved_img.min()) / (moved_img.max() - moved_img.min()))
+
+        # Create the color images
+        overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
+
+        # Copy the normalized intensities into the appropriate channels of the
+        # color images
+        overlay[..., 0] = static_img
+        overlay[..., 1] = moved_img
+
+        fig, ax = plt.subplots()
+        ln, = plt.plot([], 'ro', animated=True)
+
+        mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
+        value_range = (mean - 0.5 * std, mean + 1.5 * std)
+
+        my_color_map = actor.colormap_lookup_table(scale_range=(0, 255),
+                                          hue_range=(0.7, 1.),
+                                          saturation_range=(1, 1.),
+                                          value_range=(0.3, 1.))
+
+        slice_actor = actor.slicer(overlay, static_grid2world, value_range)
+        print(slice_actor.shape[:3])
+        rend = window.renderer()
+        rend.background((0.5,0.5,0.5))
+        rend.add(slice_actor)
+        myarr = snapshot(rend)
+        slice_ext =  slice_actor.copy()
+
+
+
+        def update(frame):
+            # plt.imshow(overlay[:, :, frame, 0])
+            # plt.imshow(overlay[:, :, frame, 1])
+            plt.imshow(myarr[:,:,frame])
+            #plt.imshow(slice_ext.display(None, None, frame))
+            return ln,
+
+        ani = FuncAnimation(fig, update, frames=range(3),
+                            blit=True)
+
+        ani.save('dynamic_images.html')
 
 
     def center_of_mass(self, static, static_grid2world,
@@ -570,8 +607,10 @@ class ImageRegistrationFlow(Workflow):
                                                           static_grid2world,
                                                           moving,
                                                           moving_grid2world)
-                self.test_visual(static, static_grid2world,
+                self.visualsss(static, static_grid2world,
                                  moved_image, moving_grid2world)
+                # self.test_visual(static, static_grid2world,
+                #                  moved_image, moving_grid2world)
             else:
 
                 params0 = None
@@ -625,7 +664,7 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                self.test_visual(static, static_grid2world,
+                self.visualsss(static, static_grid2world,
                                             moved_image, moving_grid2world)
                 logging.info("Similarity metric:"+str(xopt))
                 logging.info("Distance measure:"+str(fopt))
