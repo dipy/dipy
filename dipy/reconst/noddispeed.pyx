@@ -2,6 +2,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: cdivision=True
+
 cimport cython
 import numpy as np
 cimport numpy as cnp
@@ -165,13 +166,13 @@ def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
                 x4 = x3 * x
                 x5 = x4 * x
                 x6 = x5 * x
-                L[cnt, 0] = 2 - 2 * x / 3 + x2 / 5 - x3 / 21 + x4 / 108
-                L[cnt, 1] = -4 * x / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 * x4 / 297
-                L[cnt, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
-                L[cnt, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
-                L[cnt, 4] = 32 * x4 / 328185
-                L[cnt, 5] = -64 * x5 / 14549535
-                L[cnt, 6] = 128 * x6 / 760543875
+                L[cnt, 0] = 2. - 2. * x / 3. + x2 / 5. - x3 / 21. + x4 / 108.
+                L[cnt, 1] = -4. * x / 15. + 4. * x2 / 35. - 2. * x3 / 63. + 2. * x4 / 297.
+                L[cnt, 2] = 8. * x2 / 315. - 8. * x3 / 693. + 4. * x4 / 1287.
+                L[cnt, 3] = -16. * x3 / 9009. + 16. * x4 / 19305.
+                L[cnt, 4] = 32. * x4 / 328185.
+                L[cnt, 5] = -64. * x5 / 14549535.
+                L[cnt, 6] = 128. * x6 / 760543875.
     return L
 
 def watson_sh_coeff(double k):
