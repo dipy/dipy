@@ -312,7 +312,7 @@ def plot_slices(V, slice_indices=None, fname=None):
 
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
-                   rtitle='Right', fname=None):
+                   rtitle='Right', fname=None, ret_met=False):
     r"""Plot three overlaid slices from the given volumes.
 
     Creates a figure containing three images: the gray scale k-th slice of
@@ -344,6 +344,9 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     fname : string (optional)
         the name of the file to write the image to. If None (default), the
         figure is not saved to disk.
+    ret_slice_data : array, shape(S, R, C) (optional)
+        the k-th slice data after overlapping the k-th slice from the
+        L volume and the R volumne (default 'False')
     """
 
     # Normalize the intensities to [0,255]
@@ -383,6 +386,9 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     # usually background)
     colorImage[..., 0] = ll * (ll > ll[0, 0])
     colorImage[..., 1] = rr * (rr > rr[0, 0])
+
+    if ret_met:
+        return colorImage
 
     fig = _tile_plot([ll, colorImage, rr],
                      [ltitle, 'Overlay', rtitle],

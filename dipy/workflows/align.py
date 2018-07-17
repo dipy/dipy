@@ -12,11 +12,12 @@ from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
 from dipy.io.image import load_nifti, save_nifti, save_affine_matrix, \
     save_quality_assur_metric
 
-from dipy.viz.regtools import overlay_images
+from dipy.viz.regtools import overlay_images, overlay_slices
 from dipy.segment.mask import median_otsu
 
 from dipy.viz import window, actor, ui
 from dipy.viz.window import snapshot
+from  matplotlib.axes  import Axes
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -90,7 +91,7 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
-    def test_visual(self, static_img, static_grid2world, moved_img,
+    def create_mosaic(self, static_img, moved_img,
                                moving_grid2world):
 
         # Normalize the input images to [0,255]
@@ -120,15 +121,8 @@ class ImageRegistrationFlow(Workflow):
                                           value_range=(0., 1.))
 
         slice_actor = actor.slicer(data, affine, value_range, lookup_colormap=lut)
-        #slice_actor2 = slice_actor.copy()
         renderer.reset_camera()
         renderer.zoom(1.4)
-        # for i in range(slice_actor.shape[2]):
-        #     slice_actor2.display(None, None, i)
-        #     renderer.add(slice_actor2)
-        #     window.show(renderer, size=(600, 600), reset_camera=False)
-        #     print(i)
-
         window.record(renderer, out_path='slices.gif', size=(600, 600),
                       reset_camera=False)
         renderer.projection('parallel')
@@ -166,9 +160,6 @@ class ImageRegistrationFlow(Workflow):
         renderer.reset_camera()
         renderer.zoom(1.6)
 
-        #show_m_mosaic.ren.add(panel_picking)
-        #show_m_mosaic.start()
-
         window.record(renderer, out_path='mosaic.png', size=(900, 600),
                       reset_camera=False)
 
@@ -187,8 +178,7 @@ class ImageRegistrationFlow(Workflow):
         moving = t1_mask[:, :, 60]
         overlay_images(static, moving, 'static', 'registered', 'moving', fname='myimage.png')
 
-    def visualsss(self, static_img, static_grid2world, moved_img,
-                               moving_grid2world):
+    def animate_slices(self, static_img, moved_img):
 
         # Normalize the input images to [0,255]
         static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
@@ -202,39 +192,27 @@ class ImageRegistrationFlow(Workflow):
         overlay[..., 0] = static_img
         overlay[..., 1] = moved_img
 
+        #Setting up the plot object.
         fig, ax = plt.subplots()
         ln, = plt.plot([], 'ro', animated=True)
 
+        # Setting the range of values to be displayed.
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
         value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
-        my_color_map = actor.colormap_lookup_table(scale_range=(0, 255),
-                                          hue_range=(0.7, 1.),
-                                          saturation_range=(1, 1.),
-                                          value_range=(0.3, 1.))
-
-        slice_actor = actor.slicer(overlay, static_grid2world, value_range)
-        print(slice_actor.shape[:3])
-        rend = window.renderer()
-        rend.background((0.5,0.5,0.5))
-        rend.add(slice_actor)
-        myarr = snapshot(rend)
-        slice_ext =  slice_actor.copy()
-
-
+        #Selecting the data based on the set value range.
+        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]], fp=[0, 255])
+        overlay = overlay.astype('uint8')
 
         def update(frame):
-            # plt.imshow(overlay[:, :, frame, 0])
-            # plt.imshow(overlay[:, :, frame, 1])
-            plt.imshow(myarr[:,:,frame])
-            #plt.imshow(slice_ext.display(None, None, frame))
+            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1], slice_type=2, slice_index=frame, ret_met=True)
+            ax.imshow(ext_slice, aspect="auto")
             return ln,
 
-        ani = FuncAnimation(fig, update, frames=range(3),
+        ani = FuncAnimation(fig, update, frames=range(74),
                             blit=True)
 
         ani.save('dynamic_images.html')
-
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
@@ -607,9 +585,8 @@ class ImageRegistrationFlow(Workflow):
                                                           static_grid2world,
                                                           moving,
                                                           moving_grid2world)
-                self.visualsss(static, static_grid2world,
-                                 moved_image, moving_grid2world)
-                # self.test_visual(static, static_grid2world,
+                self.animate_slices(static, moved_image)
+                # self.create_mosaic(static,
                 #                  moved_image, moving_grid2world)
             else:
 
@@ -664,8 +641,9 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                self.visualsss(static, static_grid2world,
-                                            moved_image, moving_grid2world)
+                self.animate_slices(static, moved_image)
+                #self.create_mosaic(static, moved_image, moving_grid2world)
+
                 logging.info("Similarity metric:"+str(xopt))
                 logging.info("Distance measure:"+str(fopt))
 
