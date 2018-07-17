@@ -61,8 +61,6 @@ cpdef int fast_eig(double[:,::1] a, double[::1] W, double[::1] WORK, int LWORK, 
     dsyevd( &JOBZ, &UPLO, &N, a0, &lda, w0,work0,&LWORK, iwork0,&liw,&info)
     return 0
 
-
-
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.nonecheck(False)
@@ -105,7 +103,6 @@ cpdef int fast_dgemm(double[:,::1] a, double[:,::1] c) nogil except -1:
 @cython.nonecheck(False)
 def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threads=None):
     r"""Local PCA-based denoising of diffusion datasets.
-
     Parameters
     ----------
     arr : 4D array
@@ -115,14 +112,13 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
         The diameter of the local patch to be taken around each voxel (in
         voxels). The radius will be half of this value. If not provided,
         the default will be automatically computed as:
-
         .. math ::
-
                 patch_extent = max(5,\lfloor N^{1/3} \rfloor)
-
     out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
+    num_threads : int, optional
+         The number of threads that the algorithm can create. Default: Use all cores.
 
     Returns
     -------
@@ -134,7 +130,6 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
     sigma : float
         Mean value of noise standard deviations over all voxels (mean of 
         noise_arr).
-
     References    
     ----------
     .. [Veraart16] Veraart J, Fieremans E, Novikov DS (2016)
@@ -212,7 +207,6 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
         openmp.omp_set_dynamic(0)
         openmp.omp_set_num_threads(threads_to_use)
 
-
     sizes[0] = arr.shape[0]
     sizes[1] = arr.shape[1]
     sizes[2] = arr.shape[2]
@@ -243,7 +237,6 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
                 fast_dgemm(X[k,:, :], C[k,:, :])
                 fast_eig(C[k,:, :], W[k,:], WORK[k,:], LWORK,IWORK[k,:],LIWORK) 
 
-
                 # noise eigenvalue cutoff computations
                 lam_r = W[k,0] / nn
                 clam = 0.
@@ -263,8 +256,7 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
 
                 noise_arr_view[i,j,k]=sqrt(sigma2)               
  
-
-                # Reconstruct the donoised image
+                # Reconstruct the denoised image
                 for p in range(cutoff_p):
                     diag_eigmat[k,p,p]=0
                 for p in range(cutoff_p,rr):
@@ -273,8 +265,7 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
                 if mm<=nn:
                     fast_matvec('t',C[k,:,:], X[k,nn/2,:], temp2[k,:])    
                     fast_matvec('n',diag_eigmat[k,:,:],temp2[k,:],temp3[k,:])
-                    fast_matvec('n',C[k,:,:],temp3[k,:],temp2[k,:])
-              
+                    fast_matvec('n',C[k,:,:],temp3[k,:],temp2[k,:])              
                 else:
                     # to satisfy Fortran contiguity.. C[k,:,nn/2] is C contiguous
                     for ii in range(rr):
@@ -289,5 +280,5 @@ def randommatrix_localpca_parallel(arr, patch_extent=0, out_dtype=None,num_threa
     sigma = np.mean(noise_arr[np.nonzero(noise_arr)])
     print("Sigma: %s" % sigma)
     print("--- Denoising took %s seconds ---" % (time.time() - start_time))
-    return denoised_arr.astype(calc_dtype), noise_arr.astype(calc_dtype), sigma
+    return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype), sigma
 
