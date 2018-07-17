@@ -1,7 +1,7 @@
 #!python
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: cdivision=True
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
 
 cimport cython
 import numpy as np
@@ -134,8 +134,11 @@ def legendre_matrix(cnp.npy_intp n, double [:] x, double[:] out):
 def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
     # creating the 2D array of zeros, modified by both if and else
     cdef:
-        double[:, :] I = np.empty((x_vec.shape[0], n + 1))
-        double[:, :] L = np.empty((x_vec.shape[0], n + 1))
+#        double[:, :] I = np.empty((x_vec.shape[0], n + 1))
+        cnp.ndarray[cnp.float64_t, ndim=2] I = np.empty(x_vec.shape[0], n + 1, dtype = float64)
+#        double[:, :] L = np.empty((x_vec.shape[0], n + 1))
+        cnp.ndarray[cnp.float64_t, ndim=2] L = np.empty(x_vec.shape[0], n + 1, dtype = float64)
+
         cnp.npy_intp cnt, i
         double dx, emx, sqrtx, x
         double x2, x3, x4, x5, x6
