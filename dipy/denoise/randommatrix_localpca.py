@@ -48,12 +48,13 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None):
     if out_dtype is None:
         out_dtype = arr.dtype
 
-    # We retain float64 precision, iff the input is in this precision:
+    # We perform all computations in float64 precision but return the 
+    # results in the original input's precision
     if arr.dtype == np.float64:
         calc_dtype = np.float64
-    # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
+        arr=arr.astype(np.float64)
 
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
@@ -123,4 +124,5 @@ def randommatrix_localpca(arr, patch_extent=0, out_dtype=None):
 
     print("--- %s seconds ---" % (time.time() - start_time))
 
-    return denoised_arr.astype(calc_dtype), noise_arr.astype(calc_dtype), sigma
+    return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype), sigma
+
