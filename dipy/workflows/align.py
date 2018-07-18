@@ -5,21 +5,19 @@ from dipy.workflows.workflow import Workflow
 
 import numpy as np
 import nibabel as nib
-from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
-                                 MutualInformationMetric, AffineRegistration)
-from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
-                                   AffineTransform3D)
-from dipy.io.image import load_nifti, save_nifti, save_affine_matrix, \
-    save_quality_assur_metric
-
-from dipy.viz.regtools import overlay_images, overlay_slices
-from dipy.segment.mask import median_otsu
-
-from dipy.viz import window, actor, ui
-from dipy.viz.window import snapshot
-from  matplotlib.axes  import Axes
+from dipy.viz.regtools import overlay_slices
+from dipy.viz import (window, actor)
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+from dipy.align.imaffine import (transform_centers_of_mass,
+                                 MutualInformationMetric,
+                                 AffineRegistration)
+from dipy.io.image import (load_nifti, save_nifti,
+                           save_affine_matrix,
+                           save_quality_assur_metric)
+from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
+                                   AffineTransform3D)
 
 
 class ResliceFlow(Workflow):
@@ -93,21 +91,22 @@ class ImageRegistrationFlow(Workflow):
 
     def process_image_data(self, static_img, moved_img):
 
-        static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
-        moved_img = 255 * ((moved_img - moved_img.min()) / (moved_img.max() - moved_img.min()))
+        static_img = 255 * ((static_img - static_img.min()) /
+                            (static_img.max() - static_img.min()))
+        moved_img = 255 * ((moved_img - moved_img.min()) /
+                           (moved_img.max() - moved_img.min()))
 
         # Create the color images
         overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
-        overlay[...,0] =  static_img
-        overlay[...,1] = moved_img
+        overlay[..., 0] = static_img
+        overlay[..., 1] = moved_img
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
         value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
         return overlay, value_range
 
-
     def create_mosaic(self, static_img, moved_img,
-                               moving_grid2world, mosaic_slice_type, fname):
+                      moving_grid2world, mosaic_slice_type, fname):
 
         if mosaic_slice_type == 4:
             return
@@ -138,15 +137,15 @@ class ImageRegistrationFlow(Workflow):
         for j in range(rows):
             for i in range(cols):
                 slice_mosaic = slice_actor.copy()
-                if mosaic_slice_type==0:
+                if mosaic_slice_type == 0:
                     slice_mosaic.display(cnt, None, None)
-                elif mosaic_slice_type==1:
+                elif mosaic_slice_type == 1:
                     slice_mosaic.display(None, cnt, None)
-                elif mosaic_slice_type==2:
+                elif mosaic_slice_type == 2:
                     slice_mosaic.display(None, None, cnt)
                 slice_mosaic.SetPosition((X + border) * i,
-                                         0.5 * cols * (Y + border) - (Y + border) * j,
-                                         0)
+                                         0.5 * cols * (Y + border) -
+                                         (Y + border) * j, 0)
                 slice_mosaic.SetInterpolate(False)
                 renderer.add(slice_mosaic)
                 cnt += 1
@@ -158,8 +157,9 @@ class ImageRegistrationFlow(Workflow):
         renderer.reset_camera()
         renderer.zoom(1.6)
 
-        window.record(renderer, out_path = 'mosaic.png' if fname == 'mosaic.png' else fname, size=(900, 600),
-                      reset_camera=False)
+        window.record(renderer,
+                      out_path='mosaic.png' if fname == 'mosaic.png'
+                      else fname, size=(900, 600), reset_camera=False)
 
     def animate_overlap(self, static_img, moved_img, slice_type, fname):
 
@@ -177,30 +177,33 @@ class ImageRegistrationFlow(Workflow):
         overlay, value_range = self.process_image_data(static_img, moved_img)
         X, Y, Z, _ = overlay.shape
 
-        #Setting up the plot object.
+        # Setting up the plot object.
         fig, ax = plt.subplots()
         ln, = plt.plot([], 'ro', animated=True)
 
-        #Selecting the data based on the set value range.
-        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]], fp=[0, 255])
+        # Selecting the data based on the set value range.
+        overlay = np.interp(overlay, xp=[value_range[0],
+                                         value_range[1]], fp=[0, 255])
         overlay = overlay.astype('uint8')
 
         num_slices = 0
-        if slice_type==0:
+        if slice_type == 0:
             num_slices = X
-        elif slice_type==1:
-            num_slices=Y
-        elif slice_type==2:
-            num_slices=Z
+        elif slice_type == 1:
+            num_slices = Y
+        elif slice_type == 2:
+            num_slices = Z
 
         def update(frame):
-            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1], slice_type=slice_type, slice_index=frame, ret_slice=True)
+            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
+                                       slice_type=slice_type,
+                                       slice_index=frame, ret_slice=True)
             ax.imshow(ext_slice)
             return ln,
 
         ani = FuncAnimation(fig, update, frames=range(num_slices),
                             blit=True)
-        ani.save('animation.html' if fname=='animation.html' else fname)
+        ani.save('animation.html' if fname == 'animation.html' else fname)
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
@@ -306,11 +309,9 @@ class ImageRegistrationFlow(Workflow):
 
     @staticmethod
     def check_metric(metric):
-
-      """Check the input metric type."""
-
-      if metric != 'mi':
-        raise ValueError('Invalid similarity metric: Please provide'
+        """Check the input metric type."""
+        if metric != 'mi':
+            raise ValueError('Invalid similarity metric: Please provide'
                              ' a valid metric.')
 
     def run(self, static_img_file, moving_img_file, transform='affine',
@@ -423,7 +424,8 @@ class ImageRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for static_img, mov_img, moved_file, affine_matrix_file, qual_val_file in io_it:
+        for static_img, mov_img, moved_file, \
+                affine_matrix_file, qual_val_file in io_it:
 
             """
             Load the data from the input files and store into objects.
@@ -502,7 +504,8 @@ class ImageRegistrationFlow(Workflow):
                     logging.info("Distance measure: " + str(fopt))
                     save_quality_assur_metric(qual_val_file, xopt, fopt)
 
-            self.animate_overlap(static, moved_image, anim_slice_type, animate_file)
+            self.animate_overlap(static, moved_image, anim_slice_type,
+                                 animate_file)
             self.create_mosaic(static, moved_image, moving_grid2world,
                                mosaic_slice_type, mosaic_file)
 
