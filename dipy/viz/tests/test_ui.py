@@ -627,80 +627,6 @@ def test_ui_image_container_2d(interactive=False):
         show_manager.start()
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
-@xvfb_it
-def test_ui_file_menu_2d(interactive=False):
-    filename = "test_ui_file_menu_2d"
-    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
-    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
-
-    # Create temporary directory and files
-    os.mkdir(os.path.join(os.getcwd(), "testdir"))
-    os.chdir("testdir")
-    os.mkdir(os.path.join(os.getcwd(), "tempdir"))
-    for i in range(10):
-        open(os.path.join(os.getcwd(), "tempdir", "test" + str(i) + ".txt"),
-             'wt').close()
-    open("testfile.txt", 'wt').close()
-
-    filemenu = ui.FileMenu2D(size=(500, 500), extensions=["txt"],
-                             directory_path=os.getcwd())
-
-    # We will collect the sequence of files that have been selected.
-    selected_files = []
-
-    def _on_change():
-        selected_files.append(list(filemenu.listbox.selected))
-
-    # Set up a callback when selection changes.
-    filemenu.listbox.on_change = _on_change
-
-    # Assign the counter callback to every possible event.
-    event_counter = EventCounter()
-    event_counter.monitor(filemenu)
-
-    # Create a show manager and record/play events.
-    show_manager = window.ShowManager(size=(600, 600),
-                                      title="DIPY FileMenu")
-    show_manager.ren.add(filemenu)
-
-    # Recorded events:
-    #  1. Click on 'testfile.txt'
-    #  2. Click on 'tempdir/'
-    #  3. Click on 'test0.txt'.
-    #  4. Shift + Click on 'test6.txt'.
-    #  5. Click on '../'.
-    #  2. Click on 'testfile.txt'.
-    show_manager.play_events_from_file(recording_filename)
-    expected = EventCounter.load(expected_events_counts_filename)
-    event_counter.check_counts(expected)
-
-    # Check if the right files were selected.
-    expected = [["testfile.txt"], ["tempdir"], ["test0.txt"],
-                ["test0.txt", "test1.txt", "test2.txt", "test3.txt",
-                 "test4.txt", "test5.txt", "test6.txt"],
-                ["../"], ["testfile.txt"]]
-    assert len(selected_files) == len(expected)
-    assert_arrays_equal(selected_files, expected)
-
-    # Remove temporary directory and files
-    os.remove("testfile.txt")
-    for i in range(10):
-        os.remove(os.path.join(os.getcwd(), "tempdir",
-                               "test" + str(i) + ".txt"))
-    os.rmdir(os.path.join(os.getcwd(), "tempdir"))
-    os.chdir("..")
-    os.rmdir("testdir")
-
-    if interactive:
-        filemenu = ui.FileMenu2D(size=(500, 500), extensions=["*"],
-                                 directory_path=os.getcwd())
-        show_manager = window.ShowManager(size=(600, 600),
-                                          title="DIPY FileMenu")
-        show_manager.ren.add(filemenu)
-        show_manager.start()
-
-
 if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
@@ -725,6 +651,3 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
         test_ui_image_container_2d(interactive=False)
-
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_menu_2d":
-        test_ui_file_menu_2d(interactive=False)
