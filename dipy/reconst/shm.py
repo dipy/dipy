@@ -997,9 +997,12 @@ def calculate_max_order(n_coeffs):
         Finally, the positive value is chosen between the two options.
         """
 
+        # L2 is negative for all positive values of n_coeffs, so we don't
+        # bother even computing it:
+        # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
         L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
-        L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        return np.int(max([L1, L2]))
+        # L1 is always the larger value, so we go with that:
+        return int(L1)
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
