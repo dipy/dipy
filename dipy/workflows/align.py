@@ -91,159 +91,122 @@ class ImageRegistrationFlow(Workflow):
     This can be controlled by using the progressive flag (True by default).
     """
 
-    def create_mosaic(self, static_img, moved_img,
-                               moving_grid2world):
+    def process_image_data(self, static_img, moved_img):
 
-        # Normalize the input images to [0,255]
         static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
         moved_img = 255 * ((moved_img - moved_img.min()) / (moved_img.max() - moved_img.min()))
 
         # Create the color images
         overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
+        overlay[...,0] =  static_img
+        overlay[...,1] = moved_img
+        mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
+        value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
-        # Copy the normalized intensities into the appropriate channels of the
-        # color images
-        overlay[..., 0] = static_img
-        overlay[..., 1] = moved_img
+        return overlay, value_range
 
-        data = overlay
+
+    def create_mosaic(self, static_img, moved_img,
+                               moving_grid2world, mosaic_slice_type, fname):
+
+        if mosaic_slice_type == 4:
+            return
+
+        overlay, value_range = self.process_image_data(static_img, moved_img)
         affine = moving_grid2world
 
         renderer = window.Renderer()
         renderer.background((0.5, 0.5, 0.5))
 
-        mean, std = data[data > 0].mean(), data[data > 0].std()
-        value_range = (mean - 0.5 * std, mean + 1.5 * std)
-
-        lut = actor.colormap_lookup_table(scale_range=(0, 255),
-                                          hue_range=(0.4, 1.),
-                                          saturation_range=(1, 1.),
-                                          value_range=(0., 1.))
-
-        slice_actor = actor.slicer(data, affine, value_range, lookup_colormap=lut)
-        renderer.reset_camera()
-        renderer.zoom(1.4)
-        window.record(renderer, out_path='slices.gif', size=(600, 600),
-                      reset_camera=False)
+        slice_actor = actor.slicer(overlay, affine, value_range)
         renderer.projection('parallel')
-
-        result_position = ui.TextBlock2D(text='')
-        result_value = ui.TextBlock2D(text='')
-
-        result_position.message = ''
-        result_value.message = ''
-
-        show_m_mosaic = window.ShowManager(renderer, size=(1200, 900))
-        show_m_mosaic.initialize()
         cnt = 0
         X, Y, Z = slice_actor.shape
 
         rows = 5
         cols = 15
-        border = 10
+        border = 5
+
+        num_slices = 0
+        if mosaic_slice_type == 0:
+            num_slices = X
+        elif mosaic_slice_type == 1:
+            num_slices = Y
+        elif mosaic_slice_type == 2:
+            num_slices = Z
 
         for j in range(rows):
             for i in range(cols):
                 slice_mosaic = slice_actor.copy()
-                slice_mosaic.display(None, None, cnt)
+                if mosaic_slice_type==0:
+                    slice_mosaic.display(cnt, None, None)
+                elif mosaic_slice_type==1:
+                    slice_mosaic.display(None, cnt, None)
+                elif mosaic_slice_type==2:
+                    slice_mosaic.display(None, None, cnt)
                 slice_mosaic.SetPosition((X + border) * i,
                                          0.5 * cols * (Y + border) - (Y + border) * j,
                                          0)
                 slice_mosaic.SetInterpolate(False)
                 renderer.add(slice_mosaic)
                 cnt += 1
-                if cnt > Z:
+                if cnt > num_slices:
                     break
-            if cnt > Z:
+            if cnt > num_slices:
                 break
 
         renderer.reset_camera()
         renderer.zoom(1.6)
 
-        window.record(renderer, out_path='mosaic.png', size=(900, 600),
+        window.record(renderer, out_path = 'mosaic.png' if fname == 'mosaic.png' else fname, size=(900, 600),
                       reset_camera=False)
 
-    def create_overlaid_images(self, static_img, static_grid2world, moved_img,
-                               moving_grid2world):
+    def animate_overlap(self, static_img, moved_img, slice_type, fname):
 
-        identity = np.eye(4)
-        affine_map = AffineMap(identity,
-                               static_img.shape, static_grid2world,
-                               moved_img.shape, moving_grid2world)
-        resampled = affine_map.transform(moved_img)
-        b0_mask, mask = median_otsu(static_img, 4, 4)
-        t1_mask, mask = median_otsu(resampled, 4, 4)
+        """
+        Patameters
+        ----------
+        slice_type : int (optional)
+        the type of slice to be extracted:
+        0=sagital, 1=coronal, 2=axial (default), 3=all.
+        """
 
-        static = b0_mask[:, :, 60]
-        moving = t1_mask[:, :, 60]
-        overlay_images(static, moving, 'static', 'registered', 'moving', fname='myimage.png')
+        if slice_type == 4:
+            return
 
-    def animate_slices(self, static_img, moved_img):
-
-        # Normalize the input images to [0,255]
-        static_img = 255 * ((static_img - static_img.min()) / (static_img.max() - static_img.min()))
-        moved_img = 255 * ((moved_img - moved_img.min()) / (moved_img.max() - moved_img.min()))
-
-        # Create the color images
-        overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
-
-        # Copy the normalized intensities into the appropriate channels of the
-        # color images
-        overlay[..., 0] = static_img
-        overlay[..., 1] = moved_img
+        overlay, value_range = self.process_image_data(static_img, moved_img)
+        X, Y, Z, _ = overlay.shape
 
         #Setting up the plot object.
         fig, ax = plt.subplots()
         ln, = plt.plot([], 'ro', animated=True)
 
-        # Setting the range of values to be displayed.
-        mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
-        value_range = (mean - 0.5 * std, mean + 1.5 * std)
-
         #Selecting the data based on the set value range.
         overlay = np.interp(overlay, xp=[value_range[0], value_range[1]], fp=[0, 255])
         overlay = overlay.astype('uint8')
 
+        num_slices = 0
+        if slice_type==0:
+            num_slices = X
+        elif slice_type==1:
+            num_slices=Y
+        elif slice_type==2:
+            num_slices=Z
+
         def update(frame):
-            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1], slice_type=2, slice_index=frame, ret_met=True)
-            ax.imshow(ext_slice, aspect="auto")
+            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1], slice_type=slice_type, slice_index=frame, ret_slice=True)
+            ax.imshow(ext_slice)
             return ln,
 
-        ani = FuncAnimation(fig, update, frames=range(74),
+        ani = FuncAnimation(fig, update, frames=range(num_slices),
                             blit=True)
-
-        ani.save('dynamic_images.html')
+        ani.save('animation.html' if fname=='animation.html' else fname)
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
 
         """ Function for the center of mass based image
-        registration.
-
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        """
+        registration. """
 
         img_registration = transform_centers_of_mass(static,
                                                      static_grid2world,
@@ -256,39 +219,8 @@ class ImageRegistrationFlow(Workflow):
     def translate(self, static, static_grid2world, moving,
                   moving_grid2world, affreg, params0):
 
-        """ Function for translating the image.
+        """ Function for translating the image."""
 
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        """
         moved, affine = self.center_of_mass(static, static_grid2world,
                                             moving, moving_grid2world)
 
@@ -308,43 +240,7 @@ class ImageRegistrationFlow(Workflow):
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
 
-        """ Function for rigid image registration.
-
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        progressive : boolean
-            Flag to enable or disable the progressive registration. (defa
-            ult True)
-
-        """
+        """ Function for rigid image registration."""
 
         if progressive:
             moved, affine, xopt, fopt = self.translate(static,
@@ -373,43 +269,8 @@ class ImageRegistrationFlow(Workflow):
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
 
-        """ Function for full affine registration.
+        """ Function for full affine registration."""
 
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        progressive : boolean
-            Flag to enable or disable the progressive registration. (defa
-            ult True)
-
-        """
         if progressive:
             moved, affine, xopt, fopt = self.rigid(static, static_grid2world,
                                                    moving, moving_grid2world,
@@ -436,21 +297,8 @@ class ImageRegistrationFlow(Workflow):
     @staticmethod
     def check_dimensions(static, moving):
 
-        """
-        Check the dimensions of the input images.
+        """Check the dimensions of the input images."""
 
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-        moving: array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-        """
         if len(static.shape) != len(moving.shape):
             raise ValueError('Dimension mismatch: The'
                              ' input images must have same number of '
@@ -458,26 +306,21 @@ class ImageRegistrationFlow(Workflow):
 
     @staticmethod
     def check_metric(metric):
-        """
-        Check the input metric type.
 
-        Parameters
-        ----------
-        metric: string
-            The similarity metric.
-            (default 'MutualInformation' metric)
+      """Check the input metric type."""
 
-        """
-        if metric != 'mi':
-            raise ValueError('Invalid similarity metric: Please provide'
+      if metric != 'mi':
+        raise ValueError('Invalid similarity metric: Please provide'
                              ' a valid metric.')
 
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
             factors=[4, 2, 1], progressive=True, save_metric=False,
-            out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
-            out_quality='quality_metric.txt'):
+            anim_slice_type=4, mosaic_slice_type=3, out_dir='',
+            out_moved='moved.nii.gz', out_affine='affine.txt',
+            out_quality='quality_metric.txt', animate_file='animation.html',
+            mosaic_file='mosaic.png'):
 
         """
         Parameters
@@ -530,7 +373,6 @@ class ImageRegistrationFlow(Workflow):
             Flag for enabling/disabling the progressive registration.
             (default 'True')
 
-
         save_metric : boolean, optional
             If true, the metric values are
             saved in a file called 'quality_metric.txt'
@@ -540,6 +382,16 @@ class ImageRegistrationFlow(Workflow):
             values such as the distance and the
             metric of optimal parameters is only
             displayed but not saved.
+
+        anim_slice_type : int, optional
+            A html animation showing the overlap of slices
+            from static and moving images will be saved.
+            0=sagital, 1=coronal, 2=axial, 3=None (default).
+
+        mosaic_type : int , optional
+            A mosaic showing all the overlapping slices of specified type
+            from the static and registered image will be saved.
+            0=sagital, 1=coronal, 2=axial, 3=all, 4=None (default).
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix.
@@ -557,6 +409,13 @@ class ImageRegistrationFlow(Workflow):
             Name of the file containing the saved quality
             metrices (default 'quality_metric.txt')
 
+        animate_file : string, optional
+            name of the html file for saving the animation
+            (default animation.html).
+
+        mosaic_file : string, optional
+            Name of the file to save the mosaic (default 'mosaic.png').
+
         """
 
         """
@@ -564,8 +423,7 @@ class ImageRegistrationFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for static_img, mov_img, moved_file, affine_matrix_file, \
-                qual_val_file in io_it:
+        for static_img, mov_img, moved_file, affine_matrix_file, qual_val_file in io_it:
 
             """
             Load the data from the input files and store into objects.
@@ -585,9 +443,7 @@ class ImageRegistrationFlow(Workflow):
                                                           static_grid2world,
                                                           moving,
                                                           moving_grid2world)
-                self.animate_slices(static, moved_image)
-                # self.create_mosaic(static,
-                #                  moved_image, moving_grid2world)
+
             else:
 
                 params0 = None
@@ -641,14 +497,14 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                self.animate_slices(static, moved_image)
-                #self.create_mosaic(static, moved_image, moving_grid2world)
-
-                logging.info("Similarity metric:"+str(xopt))
-                logging.info("Distance measure:"+str(fopt))
-
                 if save_metric:
+                    logging.info("Similarity metric: " + str(xopt))
+                    logging.info("Distance measure: " + str(fopt))
                     save_quality_assur_metric(qual_val_file, xopt, fopt)
+
+            self.animate_overlap(static, moved_image, anim_slice_type, animate_file)
+            self.create_mosaic(static, moved_image, moving_grid2world,
+                               mosaic_slice_type, mosaic_file)
 
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
