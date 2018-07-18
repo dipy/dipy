@@ -102,6 +102,7 @@ for modulename, other_sources, language in (
         ('dipy.align.parzenhist', [], 'c'),
         ('dipy.utils.omp', [], 'c'),
         ('dipy.reconst.noddispeed', [], 'c'),
+        ('dipy.reconst.noddi_speed', [], 'c'),
         ('dipy.utils.fast_numpy', [], 'c')):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
