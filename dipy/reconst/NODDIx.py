@@ -82,7 +82,7 @@ class NODDIxModel(ReconstModel):
         # can we limit this..
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,),
-                                         tol=0.001, seed=200)
+                                         tol=0.001, seed=200, mutation=(0.0, 1.05))
         x = res_one.x
         phi = self.Phi(x)
         f = self.cvx_fit(data, phi)
@@ -377,12 +377,13 @@ class NODDIxModel(ReconstModel):
         sh = np.zeros(coeff.shape[0])
         shMatrix = np.tile(sh, [l_q, 1])
 
-        tmp = np.empty(cosTheta.shape)
-        for i in range(7):
-            shMatrix1 = np.sqrt((i + 1 - .75) / np.pi)
-            noddixspeed.legendre_matrix(2 * (i + 1) - 2, cosTheta, tmp)
-            shMatrix[:, i] = shMatrix1 * tmp
+#        tmp = np.empty((cosTheta.shape))
+#        for i in range(7):
+#            shMatrix1 = np.sqrt((i + 1 - .75) / np.pi)
+#            noddixspeed.legendre_matrix(2 * (i + 1) - 2, cosTheta, tmp)
+#            shMatrix[:, i] = shMatrix1 * tmp
 
+        noddixspeed.synthMeasSHFor(cosTheta, shMatrix)
         E = np.sum(lgi * coeffMatrix * shMatrix, 1)
         E[E <= 0] = min(E[E > 0]) * 0.1
         E = 0.5 * E * ePerp
