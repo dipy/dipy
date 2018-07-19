@@ -82,7 +82,10 @@ class NODDIxModel(ReconstModel):
         # can we limit this..
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,),
-                                         tol=0.001, seed=200, mutation=(0.0, 1.05))
+                                         tol=0.001, seed=200,
+                                         mutation=(0.0, 1.05),
+                                         disp=True, polish=True, popsize=5,
+                                         init='latinhypercube')
         x = res_one.x
         phi = self.Phi(x)
         f = self.cvx_fit(data, phi)
