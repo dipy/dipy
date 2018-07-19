@@ -71,6 +71,15 @@ cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
         - 1.15532279e-12*pow(x, 5) - 3.73908691e+02*pow(x, 4) - 4.24751024e-14*pow(x, 3) + 2.19946289e+01*pow(x, 2) - 1.32734695e-16*x - 2.09472656e-01
 
 
+#def legendre_matrix(cnp.npy_intp n, double[:] x, double[:] out):
+#    cdef cnp.npy_intp i
+#    cdef cnp.npy_intp shape = x.shape[0]
+#
+#    with nogil:
+#        for i in range(shape):
+#            out[i] = legendre_eval(n, x[i])
+
+
 def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
     # creating the 2D array of zeros, modified by both if and else
     cdef:
@@ -216,17 +225,17 @@ def watson_sh_coeff(double k):
             C[6] = 128 * sqrt(pi) * k6 / 152108775
     return C
 
-    def synthMeasSHFor(double[:] cosTheta, double[:, :] shMatrix):
-        cdef:
-            cnp.npy_intp i, j
-            cnp.npy_intp shape = cosTheta.shape[0]
-            double shMatrix1
-            double[:] out
 
-        with nogil:
-            for i in range(7):
-                shMatrix1 = sqrt((i + 1 - .75) / pi)
-                for j in range(shape):
-                    out[j] = legendre_eval(2 * (j + 1) - 2, cosTheta[j])
-                shMatrix[:, i] = shMatrix1 * out
+def synthMeasSHFor(double[:] x, double[:, :] shMatrix):
+    cdef:
+        cnp.npy_intp i, j, n
+        cnp.npy_intp shape = x.shape[0]
+        double shMatrix1, out
 
+    with nogil:
+        for i in range(7):
+            shMatrix1 = sqrt((i + .25) / pi)
+            for j in range(shape):
+                n = 2 * i
+                out = legendre_eval(n, x[j])
+                shMatrix[j, i] = shMatrix1 * out

@@ -30,11 +30,11 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
 Declare the parameters
 """
-volfrac_ic1 = 0.39
-volfrac_ic2 = 0.39
+volfrac_ic1 = 0.395
+volfrac_ic2 = 0.395
 volfrac_ec1 = 0.1
 volfrac_ec2 = 0.1
-volfrac_csf = 0.02
+volfrac_csf = 0.01
 OD1 = 0.1
 OD2 = 0.1
 theta1 = 0.01745329

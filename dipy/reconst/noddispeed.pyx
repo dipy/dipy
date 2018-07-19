@@ -118,10 +118,6 @@ cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
         return p14(x)
 
 
-def legendre(n, x):
-    return legendre_eval(n, x)
-
-
 def legendre_matrix(cnp.npy_intp n, double[:] x, double[:] out):
     cdef cnp.npy_intp i
     cdef cnp.npy_intp shape = x.shape[0]
