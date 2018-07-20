@@ -6,6 +6,12 @@ from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from scipy import special
 
+r"""
+
+gamma: gyromagnetic ratio
+D_intra= intrinsic free diffusivity
+D_iso= isotropic diffusivity
+"""
 gamma = 2.675987 * 10 ** 8
 D_intra = 1.7 * 10 ** 3  # (mircometer^2/sec for in vivo human)
 D_iso = 3 * 10 ** 3
@@ -101,23 +107,9 @@ class NODDIxModel(ReconstModel):
 
     def stoc_search_cost(self, x, signal):
         """
-        Cost function for the differential evolution | genetic algorithm
-        Parameters
-        ----------
-        x : array
-            x.shape = 4x1
-            x(0) theta (radian)
-            x(1) phi (radian)
-            x(2) R (micrometers)
-            x(3) v=f1/(f1+f2) (0.1 - 0.8)
-        bvals
-        bvecs
-        G: gradient strength
-        small_delta
-        big_delta
-        gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
-        D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
-        D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
+        Cost function for the differential evolution
+        Calls another function described by:
+            differential_evol_cost
         Returns
         -------
         (signal -  S)^T(signal -  S)
@@ -130,6 +122,18 @@ class NODDIxModel(ReconstModel):
         phi = self.Phi(x)
         return self.differential_evol_cost(phi, signal)
 
+    def differential_evol_cost(self, phi, signal):
+
+        """
+        To make the cost function for differential evolution algorithm
+        """
+        #  moore-penrose inverse
+        phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
+        #  sigma
+        f = np.dot(phi_mp, signal)
+        yhat = np.dot(phi, f)
+        return np.dot((signal - yhat).T, signal - yhat)
+
     def cvx_fit(self, signal, phi):
         """
         Linear parameters fit using cvx
@@ -141,11 +145,12 @@ class NODDIxModel(ReconstModel):
             signal.shape = number of data points x 1
         Returns
         -------
-        f1, f2, f3, f4 (volume fractions)
-        f1 = f[0]
-        f2 = f[1]
-        f3 = f[2]
-        f4 = f[3]
+        f0, f1, f2, f3, f4 (volume fractions)
+        f0 = f[0]
+        f1 = f[1]
+        f2 = f[2]
+        f3 = f[3]
+        f4 = f[4]
         Notes
         --------
         cost function for genetic algorithm:
@@ -183,16 +188,13 @@ class NODDIxModel(ReconstModel):
         Parameters
         ----------
         x_f : array
-            x_f(0) x_f(1) x_f(2)  are f1 f2 f3
-            x_f(3) theta
-            x_f(4) phi
-            x_f(5) R
-            x_f(6) as f4
-        signal_param : array
-            signal_param.shape = number of data points x 7
-            signal_param = np.hstack([signal[:, None], bvals[:, None], bvecs,
-                                  G[:, None], small_delta[:, None],
-                                  big_delta[:, None]])
+            x_f(0) x_f(1) x_f(2) x_f(3) x_f(4) are f1 f2 f3 f4 f5(volfractions)
+            x_f(5) Orintation Dispersion 1
+            x_f(6) Theta1
+            x_f(7) Phi1
+            x_f(8) Orintation Dispersion 2
+            x_f(9) Theta2
+            x_f(10) Phi2
         Returns
         -------
         sum{(signal -  phi*f)^2}
@@ -357,17 +359,14 @@ class NODDIxModel(ReconstModel):
         LePar = self.CylNeumanLePar_PGSE(d)
 
         # Perpendicular component
-        # LePerp = CylNeumanLePerp_PGSE(d, R, G, delta, smalldel, roots)
         LePerp = np.zeros((self.G.shape[0]))
         ePerp = np.exp(LePerp)
 
         # Compute the Legendre weighted signal
         Lpmp = LePerp - LePar
-#        lgi = self.LegendreGaussianIntegral(Lpmp, 6)
         lgi = noddixspeed.legendre_gauss_integral(Lpmp, 6)
 
         # Compute the SH coefficients of the Watson's distribution
-#        coeff = self.WatsonSHCoeff(kappa)
         coeff = noddixspeed.watson_sh_coeff(kappa)
         coeffMatrix = np.tile(coeff, [l_q, 1])
 
@@ -380,12 +379,8 @@ class NODDIxModel(ReconstModel):
         sh = np.zeros(coeff.shape[0])
         shMatrix = np.tile(sh, [l_q, 1])
 
-#        tmp = np.empty((cosTheta.shape))
-#        for i in range(7):
-#            shMatrix1 = np.sqrt((i + 1 - .75) / np.pi)
-#            noddixspeed.legendre_matrix(2 * (i + 1) - 2, cosTheta, tmp)
-#            shMatrix[:, i] = shMatrix1 * tmp
-
+        # Computes a for loop for the Legendre matrix and evaulates the
+        # Legendre Integral at a Point : Cython Code
         noddixspeed.synthMeasSHFor(cosTheta, shMatrix)
         E = np.sum(lgi * coeffMatrix * shMatrix, 1)
         E[E <= 0] = min(E[E > 0]) * 0.1
@@ -398,195 +393,9 @@ class NODDIxModel(ReconstModel):
         modQ_Sq = modQ ** 2
         # Diffusion time for PGSE, in a matrix for the computation below.
         difftime = (self.big_delta - self.small_delta / 3)
-
         # Parallel component
         LE = -modQ_Sq * difftime * d
         return LE
-
-#    def LegendreGaussianIntegral(self, x, n):
-#        exact = np.squeeze(np.unravel_index(np.where(x.ravel() > 0.05),
-#                                            x.shape))
-#        approx = np.squeeze(np.unravel_index(np.where(x.ravel() <= 0.05),
-#                                             x.shape))
-#        # 288 X 7
-#        I = np.zeros((x.shape[0], n + 1))
-#        # 270
-#        sqrtx = np.sqrt(x[exact])
-#        # 7
-#        mn = n + 1
-#        # Cython component: error_function updates the temp variable.
-#        temp = np.empty(sqrtx.shape)
-#        noddixspeed.error_function(sqrtx, temp)
-#        # 270 X 1
-#        I[exact, 0] = np.sqrt(np.pi) * temp / sqrtx
-#        # 270
-#        dx = 1 / x[exact]
-#        # 270
-#        emx = -np.exp(-x[exact])
-#        # 6
-#        vec = np.arange(2, mn+1) - 1.5
-#        # 270 X 6
-#        I[exact, 1:] = emx[:, None] + np.squeeze(I[exact, :-1] * vec[None, :])
-#        # 270 X 6
-#        I[exact, 1:] = np.squeeze(I[exact, 1:]) * dx[:, None]
-#
-#        I_exact_0 = I[exact, 0]
-#        I_exact_1 = I[exact, 1]
-#        I_exact_2 = I[exact, 2]
-#        I_exact_3 = I[exact, 3]
-#        I_exact_4 = I[exact, 4]
-#        I_exact_5 = I[exact, 5]
-#        I_exact_6 = I[exact, 6]
-#
-#        # Computing the legendre gaussian integrals for large enough x
-#        L = np.zeros((x.shape[0], n + 1))
-#        L[exact, 0] = I_exact_0
-#        L[exact, 1] = -0.5 * I_exact_0 + 1.5 * I_exact_1
-#        L[exact, 2] = 0.375 * I_exact_0 - 3.75 * I_exact_1 + 4.375 \
-#            * I_exact_2
-#        L[exact, 3] = -0.3125 * I_exact_0 + 6.5625 * I_exact_1
-#        - 19.6875 * I_exact_2 + 14.4375 * I_exact_3
-#        L[exact, 4] = 0.2734375 * I_exact_0 - 9.84375 * I_exact_1
-#        + 54.140625 * I_exact_2 - 93.84375 * I_exact_3 + 50.2734375 \
-#            * I_exact_4
-#        L[exact, 5] = -(63. / 256) * I_exact_0
-#        + (3465. / 256) * I_exact_1 - (30030. / 256) * I_exact_2
-#        + (90090. / 256) * I_exact_3 - (109395. / 256) * I_exact_4
-#        + (46189. / 256) * I_exact_5
-#        L[exact, 6] = (231. / 1024) * I_exact_0 - (18018. / 1024) * I_exact_1
-#        + (225225. / 1024) * I_exact_2 - (1021020. / 1024) * I_exact_3
-#        + (2078505. / 1024) * I_exact_4 - (1939938. / 1024) * I_exact_5
-#        + (676039. / 1024) * I_exact_6
-#
-#        # Computing the legendre gaussian integrals for small x
-#        x2 = pow(x[approx], 2)
-#        x3 = x2 * x[approx]
-#        x4 = x3 * x[approx]
-#        x5 = x4 * x[approx]
-#        x6 = x5 * x[approx]
-#        L[approx, 0] = 2 - 2 * x[approx] / 3 + x2 / 5 - x3 / 21 + x4 / 108
-#        L[approx, 1] = -4 * x[approx] / 15 + 4 * x2 / 35 - 2 * x3 / 63 + 2 \
-#            * x4 / 297
-#        L[approx, 2] = 8 * x2 / 315 - 8 * x3 / 693 + 4 * x4 / 1287
-#        L[approx, 3] = -16 * x3 / 9009 + 16 * x4 / 19305
-#        L[approx, 4] = 32 * x4 / 328185
-#        L[approx, 5] = -64 * x5 / 14549535
-#        L[approx, 6] = 128 * x6 / 760543875
-#        return L
-
-#    def WatsonSHCoeff(self, k):
-#        # The maximum order of SH coefficients (2n)
-#        n = 6
-#        # Computing the SH coefficients
-#        C = np.zeros((n + 1))
-#        # 0th order is a constant
-#        C[0] = 2 * np.sqrt(np.pi)
-#
-#        # Precompute the special function values
-#        sk = np.sqrt(k)
-#        sk2 = sk * k
-#        sk3 = sk2 * k
-#        sk4 = sk3 * k
-#        sk5 = sk4 * k
-#        sk6 = sk5 * k
-#        k2 = k ** 2
-#        k3 = k2 * k
-#        k4 = k3 * k
-#        k5 = k4 * k
-#        k6 = k5 * k
-#
-#        erfik = special.erfi(sk)
-#        ierfik = 1 / erfik
-#        ek = np.exp(k)
-#        dawsonk = 0.5 * np.sqrt(np.pi) * erfik / ek
-#
-#        if k > 0.1:
-#            # for large enough kappa
-#            C[1] = 3 * sk - (3 + 2 * k) * dawsonk
-#            C[1] = np.sqrt(5) * C[1] * ek
-#            C[1] = C[1] * ierfik / k
-#
-#            C[2] = (105 + 60 * k + 12 * k2) * dawsonk
-#            C[2] = C[2] - 105 * sk + 10 * sk2
-#            C[2] = .375 * C[2] * ek / k2
-#            C[2] = C[2] * ierfik
-#
-#            C[3] = -3465 - 1890 * k - 420 * k2 - 40 * k3
-#            C[3] = C[3] * dawsonk
-#            C[3] = C[3] + 3465 * sk - 420 * sk2 + 84 * sk3
-#            C[3] = C[3] * np.sqrt(13 * np.pi) / 64 / k3
-#            C[3] = C[3] / dawsonk
-#
-#            C[4] = 675675 + 360360 * k + 83160 * k2 + 10080 * k3 + 560 * k4
-#            C[4] = C[4] * dawsonk
-#            C[4] = C[4] - 675675 * sk + 90090 * sk2 - 23100 * sk3 + 744 * sk4
-#            C[4] = np.sqrt(17) * C[4] * ek
-#            C[4] = C[4] / 512 / k4
-#            C[4] = C[4] * ierfik
-#
-#            C[5] = -43648605 - 22972950 * k - 5405400 * k2 - 720720 * k3 \
-#                - 55440 * k4 - 2016 * k5
-#            C[5] = C[5] * dawsonk
-#            C[5] = C[5] + 43648605 * sk - 6126120 * sk2 + 1729728 * sk3 \
-#                - 82368 * sk4 + 5104 * sk5
-#            C[5] = np.sqrt(21 * np.pi) * C[5] / 4096 / k5
-#            C[5] = C[5] / dawsonk
-#
-#            C[6] = 7027425405 + 3666482820 * k + 872972100 * k2 \
-#                + 122522400 * k3 + 10810800 * k4 + 576576 * k5 + 14784 * k6
-#            C[6] = C[6] * dawsonk
-#            C[6] = C[6] - 7027425405 * sk + 1018467450 * sk2 \
-#                - 302630328 * sk3 + 17153136 * sk4 - 1553552 * sk5 \
-#                + 25376 * sk6
-#            C[6] = 5 * C[6] * ek
-#            C[6] = C[6] / 16384 / k6
-#            C[6] = C[6] * ierfik
-#
-#        elif k > 30:
-#            # for very large kappa
-#            lnkd = np.log(k) - np.log(30)
-#            lnkd2 = lnkd * lnkd
-#            lnkd3 = lnkd2 * lnkd
-#            lnkd4 = lnkd3 * lnkd
-#            lnkd5 = lnkd4 * lnkd
-#            lnkd6 = lnkd5 * lnkd
-#            C[1] = 7.52308 + 0.411538 * lnkd - 0.214588 * lnkd2 \
-#                + 0.0784091 * lnkd3 - 0.023981 * lnkd4 + 0.00731537 * lnkd5 \
-#                - 0.0026467 * lnkd6
-#            C[2] = 8.93718 + 1.62147 * lnkd - 0.733421 * lnkd2 \
-#                + 0.191568 * lnkd3 - 0.0202906 * lnkd4 - 0.00779095 * lnkd5 \
-#                + 0.00574847*lnkd6
-#            C[3] = 8.87905 + 3.35689 * lnkd - 1.15935 * lnkd2 \
-#                + 0.0673053 * lnkd3 + 0.121857 * lnkd4 - 0.066642 * lnkd5 \
-#                + 0.0180215 * lnkd6
-#            C[4] = 7.84352 + 5.03178 * lnkd - 1.0193 * lnkd2 \
-#                - 0.426362 * lnkd3 + 0.328816 * lnkd4 - 0.0688176 * lnkd5 \
-#                - 0.0229398 * lnkd6
-#            C[5] = 6.30113 + 6.09914 * lnkd - 0.16088 * lnkd2 \
-#                - 1.05578 * lnkd3 + 0.338069 * lnkd4 + 0.0937157 * lnkd5 \
-#                - 0.106935 * lnkd6
-#            C[6] = 4.65678 + 6.30069 * lnkd + 1.13754 * lnkd2 \
-#                - 1.38393 * lnkd3 - 0.0134758 * lnkd4 + 0.331686 * lnkd5 \
-#                - 0.105954 * lnkd6
-#
-#        elif k <= 0.1:
-#            # for small kappa
-#            C[1] = 4 / 3 * k + 8 / 63 * k2
-#            C[1] = C[1] * np.sqrt(np.pi / 5)
-#
-#            C[2] = 8 / 21 * k2 + 32 / 693 * k3
-#            C[2] = C[2] * (np.sqrt(np.pi) * 0.2)
-#
-#            C[3] = 16 / 693 * k3 + 32 / 10395 * k4
-#            C[3] = C[3] * np.sqrt(np.pi / 13)
-#
-#            C[4] = 32 / 19305 * k4
-#            C[4] = C[4] * np.sqrt(np.pi / 17)
-#
-#            C[5] = 64 * np.sqrt(np.pi / 21) * k5 / 692835
-#
-#            C[6] = 128 * np.sqrt(np.pi) * k6 / 152108775
-#        return C
 
     def SynthMeasWatsonHinderedDiffusion_PGSE(self, x, fibredir):
         dPar = x[0]
@@ -668,29 +477,3 @@ class NODDIxModel(ReconstModel):
         S = f[0] * self.S1_slow(x1) + f[1] * self.S2_slow(x2)
         + f[2] * self.S3() + f[3] * self.S4()
         return S
-
-    def differential_evol_cost(self, phi, signal):
-
-        """
-        To make the cost function for differential evolution algorithm
-        Parameters
-        ----------
-        phi:
-            phi.shape = number of data points x 4
-        signal:
-            signal.shape = number of data points x 1
-        Returns
-        -------
-        (signal -  S)^T(signal -  S)
-        Notes
-        --------
-        to make cost function for differential evolution algorithm:
-        .. math::
-            (signal -  S)^T(signal -  S)
-        """
-        #  moore-penrose
-        phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
-        #  sigma
-        f = np.dot(phi_mp, signal)
-        yhat = np.dot(phi, f)
-        return np.dot((signal - yhat).T, signal - yhat)
