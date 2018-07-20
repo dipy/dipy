@@ -1,4 +1,4 @@
-from dipy.reconst.base import ReconstModel
+from dipy.reconst.base import ReconstModel as model
 import numpy as np
 import cvxpy as cvx
 import dipy.reconst.noddi_speed as noddixspeed
@@ -17,8 +17,8 @@ D_intra = 1.7 * 10 ** 3  # (mircometer^2/sec for in vivo human)
 D_iso = 3 * 10 ** 3
 
 
-class NODDIxModel(ReconstModel):
-    r""" MIX framework (MIX) [1]_.
+class NODDIxModel(model):
+    """ MIX framework (MIX) [1]_.
     The MIX computes the NODDIx parameters. NODDIx is a multi
     compartment model, (sum of exponentials).
     This algorithm uses three different optimizers. It starts with a
@@ -34,8 +34,11 @@ class NODDIxModel(ReconstModel):
     ----------
     gtab : GradientTable
     fit_method : str or callable
+
     Returns  the 11 parameters of the model
     -------
+
+
     References
     ----------
     .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
