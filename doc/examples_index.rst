@@ -171,6 +171,7 @@ Image-based Registration
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
+- :ref:`register_binary_fuzzy`
 
 Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
