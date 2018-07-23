@@ -1,5 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
+#  Disabling the FutureWarning from h5py below.
+#  This disables the FutureWarning warning for all the workflows.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import logging
 
 from dipy.utils.six import iteritems
@@ -31,7 +36,7 @@ def run_flow(flow):
                         help='Force overwriting output files.')
 
     parser.add_argument('--out_strat', action='store', dest='out_strat',
-                        metavar='string', required=False, default='append',
+                        metavar='string', required=False, default='absolute',
                         help='Strategy to manage output creation.')
 
     parser.add_argument('--mix_names', dest='mix_names',

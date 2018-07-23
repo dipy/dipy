@@ -44,6 +44,10 @@ Release checklist
   outstanding issues that can be closed, and whether there are any issues that
   should delay the release.  Label them !
 
+* Check whether there are no build failing on `Travis`. Indeed, ``PRE`` build is
+  allowed to fail and does not block a PR merge but it should block release !
+  So make sure that ``PRE`` build is not failing. 
+
 * Review and update the release notes.  Review and update the :file:`Changelog`
   file.  Get a partial list of contributors with something like::
 

@@ -457,6 +457,7 @@ def test_calculate_max_order():
     for o, n in zip(orders, n_coeffs):
         assert_equal(calculate_max_order(n), o)
 
+    assert_raises(ValueError, calculate_max_order, 29)
 
 if __name__ == "__main__":
     import nose
