@@ -73,6 +73,7 @@ for modulename, other_sources, language in (
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
         ('dipy.reconst.quick_squash', [], 'c'),
+        ('dipy.reconst.noddi_speed', [], 'c'),
         ('dipy.tracking.distances', [], 'c'),
         ('dipy.tracking.streamlinespeed', [], 'c'),
         ('dipy.tracking.local.localtrack', [], 'c'),
@@ -101,8 +102,6 @@ for modulename, other_sources, language in (
         ('dipy.align.transforms', [], 'c'),
         ('dipy.align.parzenhist', [], 'c'),
         ('dipy.utils.omp', [], 'c'),
-        ('dipy.reconst.noddispeed', [], 'c'),
-        ('dipy.reconst.noddi_speed', [], 'c'),
         ('dipy.utils.fast_numpy', [], 'c')):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
