@@ -106,19 +106,3 @@ print('Actual Signal: ', x_f_sig)
 print('Estimation Result: ', NODDIx_fit)
 print('Errors: ', errors_list)
 print('Sum of Errors: ', sum(errors_list))
-
-#time_diff_cost1 = time.time()
-#
-#
-#def differential_evol_cost(phi, signal):
-#        #  moore-penrose
-#        phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
-#        #  sigma
-#        f = np.dot(phi_mp, signal)
-#        yhat = np.dot(phi, f)
-#        return np.dot((signal - yhat).T, signal - yhat)
-#
-#
-#time_diff_cost2 = time.time()
-#time_taken_cost = time_diff_cost2 - time_diff_cost1
-#print(time_taken_cost)

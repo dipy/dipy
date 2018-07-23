@@ -9,12 +9,6 @@ cimport numpy as cnp
 from scipy.special.cython_special cimport erf, erfi
 from libc.math cimport sqrt, sin, cos, pow, pi, exp, log
 
-"""
-Following is the Cythonized Module for the Legendre Polynomial upto the power
-of 14, as required by the NODDIx model.
-Note: This is an alternative method that statically performs the numerical
-computations as opposed to the scipy module.
-"""
 cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
     if n == 0:
          return 1
@@ -70,19 +64,36 @@ cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
         - 4.34945049e-12*pow(x, 11) + 1.08932065e+04*pow(x, 10) - 1.30483515e-11*pow(x, 9) - 7.10426514e+03*pow(x, 8) - 9.24258229e-12*pow(x, 7) + 2.36808838e+03*pow(x, 6)\
         - 1.15532279e-12*pow(x, 5) - 3.73908691e+02*pow(x, 4) - 4.24751024e-14*pow(x, 3) + 2.19946289e+01*pow(x, 2) - 1.32734695e-16*x - 2.09472656e-01
 
-
-#def legendre_matrix(cnp.npy_intp n, double[:] x, double[:] out):
-#    cdef cnp.npy_intp i
-#    cdef cnp.npy_intp shape = x.shape[0]
-#
-#    with nogil:
-#        for i in range(shape):
-#            out[i] = legendre_eval(n, x[i])
-
-
 def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
-    # creating the 2D array of zeros, modified by both if and else
+    """
+    Computes legendre gaussian integrals up to the order specified and the
+    derivatives if requested.
+
+    The integral takes the following form, in Mathematica syntax:
+    L[x, n] = Integrate[Exp[-x \mu^2] Legendre[2*n, \mu], {\mu, -1, 1}]
+    L[x, n] = Integrate[Exp[-x \mu^2] (-\mu^2) Legendre[2*n, \mu], {\mu, -1, 1}]
+
+    INPUTS:
+        x should be a column vector of positive numbers, specifying the
+        parameters of the gaussian
+        n should be a non-negative integer, such that 2n specifies the maximum
+        order of legendre polynomial
+        The maximum value for n is 6.
+
+    OUTPUTS:
+        L will be a two-dimensional array with each row containing the
+        legendre gaussian integrals of the orders 0, 2, 4, ..., to 2n for the
+        parameter value at the corresponding row in x
+        Note that the legendre gaussian integrals of the odd orders are zero. [1]_
+
+    References
+    ----------
+    .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+        orientation dispersion and density imaging of the human brain.
+        NeuroImage, 61(4), 1000–1016.
+    """
     cdef:
+        # creating the 2D array of zeros, modified by both if and else
         cnp.ndarray[cnp.float64_t, ndim=2] I = np.empty((x_vec.shape[0], n + 1))
         cnp.ndarray[cnp.float64_t, ndim=2] L = np.empty((x_vec.shape[0], n + 1))
 
@@ -126,6 +137,28 @@ def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
     return L
 
 def watson_sh_coeff(double k):
+    """
+    Computes the spherical harmonic (SH) coefficients of the Watson's
+    distribution with the concentration parameter k (kappa) up to the 12th order
+    and the derivatives if requested.
+
+    Truncating at the 12th order gives good approximation for kappa up to 64.
+    INPUTS:
+        k should be an array of positive numbers, specifying a set of
+        concentration parameters for the Watson's distribution.
+
+    OUTPUTS:
+        C will be a 2-D array and each row contains the SH coefficients of the
+        orders 0, 2, 4, ..., to 2n for the parameter in the corresponding row in
+        k.
+    Note that the SH coefficients of the odd orders are always zero. [1]_
+
+    References
+    ----------
+    .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+    orientation dispersion and density imaging of the human brain.
+    NeuroImage, 61(4), 1000–1016.
+    """
     cdef:
         double[:] C = np.empty((7))
         double sk, sk2, sk3, sk4, sk5, sk6

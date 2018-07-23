@@ -6,8 +6,7 @@ from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from scipy import special
 
-r"""
-
+"""
 gamma: gyromagnetic ratio
 D_intra= intrinsic free diffusivity
 D_iso= isotropic diffusivity
@@ -18,7 +17,7 @@ D_iso = 3 * 10 ** 3
 
 
 class NODDIxModel(model):
-    """ MIX framework (MIX) [1]_.
+    r""" MIX framework (MIX) [1]_.
     The MIX computes the NODDIx parameters. NODDIx is a multi
     compartment model, (sum of exponentials).
     This algorithm uses three different optimizers. It starts with a
@@ -30,20 +29,35 @@ class NODDIxModel(model):
     The results of the first and second step are utilized as the initial
     values for the last step of the algorithm.
     (see [1]_ for a comparison and a thorough discussion).
+
     Parameters
     ----------
-    gtab : GradientTable
-    fit_method : str or callable
+    ReconstModel of DIPY
+    Returns  the 10 parameters of the model
 
-    Returns  the 11 parameters of the model
-    -------
-
+    Parameters
+    ----------
+        Volume Fraction 1 - Intracellular 1
+        Volume Fraction 2 - Intracellular 2
+        Volume Fraction 3 - Extracellular 1
+        Volume Fraction 4 - Extracellular 2
+        Volume Fraction 5 - CSF: Isotropic
+        Orientation Dispersion 1
+        Theta 1
+        Phi 1
+        Orientation Dispersion 2
+        Theta 2
+        Phi 2
 
     References
     ----------
     .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
            White Matter Fibers from diffusion MRI." Scientific reports 6
            (2016).
+
+    Notes
+    -----
+    The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
     """
 
     def __init__(self, gtab, params, fit_method='MIX'):
@@ -68,36 +82,27 @@ class NODDIxModel(model):
 
     def fit(self, data):
         """ Fit method of the NODDIx model class
-        Parameters
-        ----------
-        The 11 parameters that the model outputs after fitting are:
-        Volume Fraction 1 - Intracellular 1
-        Volume Fraction 2 - Intracellular 2
-        Volume Fraction 3 - Extracellular 1
-        Volume Fraction 4 - Extracellular 2
-        Volume Fraction 5 - CSF: Isotropic
-        Orientation Dispersion 1
-        Theta 1
-        Phi 1
-        Orientation Dispersion 2
-        Theta 2
-        Phi 2
-        ----------
+
         data : array
         The measured signal from one voxel.
+
         """
         bounds = [(0.011, 0.98), (0.011, np.pi), (0.011, np.pi), (0.11, 1),
                   (0.011, 0.98), (0.011, np.pi), (0.011, np.pi), (0.11, 1)]
-        # can we limit this..
-        res_one = differential_evolution(self.stoc_search_cost, bounds,
-                                         maxiter=self.maxiter, args=(data,),
-                                         tol=0.001, seed=200,
-                                         mutation=(0.0, 1.05),
-                                         disp=True, polish=True, popsize=5,
-                                         init='latinhypercube')
-        x = res_one.x
+
+        diff_res = differential_evolution(self.stoc_search_cost, bounds,
+                                          maxiter=self.maxiter, args=(data,),
+                                          tol=0.001, seed=200,
+                                          mutation=(0.0, 1.05),
+                                          disp=True, polish=True, popsize=5,
+                                          init='latinhypercube')
+
+        # Step 1: store the results of the differential evolution in x
+        x = diff_res.x
         phi = self.Phi(x)
+        # Step 2: perform convex optimization
         f = self.cvx_fit(data, phi)
+        # Combine all 10 parameters of the model into a single array
         x_f = self.x_and_f_to_x_f(x, f)
 
         bounds = ([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
@@ -149,11 +154,11 @@ class NODDIxModel(model):
         Returns
         -------
         f0, f1, f2, f3, f4 (volume fractions)
-        f0 = f[0]
-        f1 = f[1]
-        f2 = f[2]
-        f3 = f[3]
-        f4 = f[4]
+        f0 = f[0]: Volume Fraction of Intra-Cellular Region 1
+        f1 = f[1]: Volume Fraction of Extra-Cellular Region 1
+        f2 = f[2]: Volume Fraction of Intra-Cellular Region 2
+        f3 = f[3]: Volume Fraction of Extra-Cellular Region 2
+        f4 = f[4]: Volume Fraction for region containing CSF
         Notes
         --------
         cost function for genetic algorithm:
@@ -269,6 +274,8 @@ class NODDIxModel(model):
                                                                  d_perp,
                                                                  kappa1], n1)
         return signal_ec1
+
+    def S_ic2(self, x):
         """
         We extend the NODDI model as presented in [2] for two fiber
         orientations. Therefore we have 2 intracellular and extracellular
@@ -282,8 +289,6 @@ class NODDIxModel(model):
                White Matter Fibers from diffusion MRI." Scientific reports 6
                (2016).
         """
-
-    def S_ic2(self, x):
         OD2 = x[4]
         sinT2 = np.sin(x[5])
         cosT2 = np.cos(x[5])
@@ -353,6 +358,30 @@ class NODDIxModel(model):
         return signal_ic2
 
     def SynthMeasWatsonSHCylNeuman_PGSE(self, x, fiberdir):
+        """
+        Substrate: Impermeable cylinders with one radius in an empty background
+        Orientation distribution: Watson's distribution with SH approximation
+        Pulse sequence: Pulsed gradient spin echo
+        Signal approximation: Gaussian phase distribution.
+
+        This returns the measurements E according to the model and the Jacobian
+        J of the measurements with respect to the parameters.  The Jacobian
+        does not include derivates with respect to the fibre direction.
+
+        x is the list of model parameters in SI units:
+            x(1) is the diffusivity of the material inside the cylinders.
+            x(2) is the radius of the cylinders.
+            x(3) is the concentration parameter of the Watson's distribution
+        fibredir is a unit vector along the symmetry axis of the Watson's
+        distribution.  It must be in Cartesian coordinates [x y z]' with size
+        [3 1]. [1]_
+
+        References
+        ----------
+        .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
+        """
         d = x[0]
         kappa = x[2]
 
@@ -367,6 +396,9 @@ class NODDIxModel(model):
 
         # Compute the Legendre weighted signal
         Lpmp = LePerp - LePar
+
+        # The Legendre Gauss Integran is computed from Cython
+        # Please Refere: noddi_speed.pyx
         lgi = noddixspeed.legendre_gauss_integral(Lpmp, 6)
 
         # Compute the SH coefficients of the Watson's distribution
@@ -391,6 +423,28 @@ class NODDIxModel(model):
         return E
 
     def CylNeumanLePar_PGSE(self, d):
+        r"""
+        Substrate: Parallel, impermeable cylinders with one radius in an empty
+        background.
+        Pulse sequence: Pulsed gradient spin echo
+        Signal approximation: Gaussian phase distribution.
+
+        This function returns the log signal attenuation in parallel direction
+        (LePar) according to the Neuman model and the Jacobian J of LePar with
+        respect to the parameters.  The Jacobian does not include derivates
+        with respect to the fibre direction.
+
+        d is the diffusivity of the material inside the cylinders.
+
+        G, delta and smalldel are the gradient strength, pulse separation and
+        pulse length of each measurement in the protocol. [1]_
+
+        References
+        ----------
+        .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
+        """
         # Radial wavenumbers
         modQ = gamma * self.small_delta * self.G
         modQ_Sq = modQ ** 2
@@ -401,6 +455,32 @@ class NODDIxModel(model):
         return LE
 
     def SynthMeasWatsonHinderedDiffusion_PGSE(self, x, fibredir):
+        """
+        Substrate: Anisotropic hindered diffusion compartment
+        Orientation distribution: Watson's distribution
+        Pulse sequence: Pulsed gradient spin echo
+        Signal approximation: N/A
+        returns the measurements E according to the model and the Jacobian J of
+        the measurements with respect to the parameters.  The Jacobian does not
+        include derivates with respect to the fibre direction.
+
+        x is the list of model parameters in SI units:
+        x(0) is the free diffusivity of the material inside and outside the
+        cylinders.
+        x(1): is the hindered diffusivity outside the cylinders in
+              perpendicular directions.
+        x(2) is the concentration parameter of the Watson's distribution
+
+        fibredir is a unit vector along the symmetry axis of the Watson's
+        distribution.
+        It must be in Cartesian coordinates [x y z]' with size [3, 1]. [1]_
+
+        References
+        ----------
+        .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
+        """
         dPar = x[0]
         dPerp = x[1]
         kappa = x[2]
@@ -410,6 +490,27 @@ class NODDIxModel(model):
         return E
 
     def WatsonHinderedDiffusionCoeff(self, dPar, dPerp, kappa):
+        """
+        Substrate: Anisotropic hindered diffusion compartment
+        Orientation distribution: Watson's distribution
+        xh = WatsonHinderedDiffusionCoeff(dPar, dPerp, kappa)
+        returns the equivalent parallel and perpendicular diffusion
+        coefficients for hindered compartment with impermeable cylinder's
+        oriented with a Watson's distribution with a cocentration parameter of
+        kappa.
+
+        dPar is the free diffusivity of the material inside and outside the
+        cylinders.
+        dPerp is the hindered diffusivity outside the cylinders in
+        perpendicular directions.
+        kappa is the concentration parameter of the Watson's distribution. [1]_
+
+        References
+        ----------
+        .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
+        """
         dw = np.zeros((2, 1))
         dParMdPerp = dPar - dPerp
 
@@ -431,6 +532,31 @@ class NODDIxModel(model):
         return dw
 
     def SynthMeasHinderedDiffusion_PGSE(self, x, fibredir):
+        """
+        Substrate: Anisotropic hindered diffusion compartment
+        Pulse sequence: Pulsed gradient spin echo
+        Signal approximation: N/A
+
+        This function returns the measurements E according to the model and the
+        Jacobian J of the measurements with respect to the parameters. The
+        Jacobian does not include derivates with respect to the fibre
+        direction.
+
+        x is the list of model parameters in SI units:
+        x(0): is the free diffusivity of the material inside and outside the
+             cylinders.
+        x(1): is the hindered diffusivity outside the cylinders in
+              perpendicular directions.
+
+        fibredir is a unit vector along the cylinder axis.  It must be in
+        Cartesian coordinates [x y z]' with size [3 1]. [1]_
+
+        References
+        ----------
+        .. [1] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
+        """
         dPar = x[0]
         dPerp = x[1]
         # Angles between gradient directions and fibre direction.
