@@ -9,7 +9,6 @@ from dipy.data import get_sphere
 sphere = get_sphere('repulsion724')
 gemm = get_blas_funcs("gemm")
 
-# convert to NiFTi
 fname, fscanner = get_data('small_NODDIx_data')
 params = np.loadtxt(fscanner)
 
@@ -31,17 +30,19 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
 Declare the parameters
 """
-volfrac_ic1 = 0.39
-volfrac_ic2 = 0.39
-volfrac_ec1 = 0.1
+volfrac_ic1 = 0.3
+volfrac_ec1 = 0.3
+theta2 = 0.01745329  # 1 Degree
+phi2 = 0.01745329  # 1 Degree
+
+volfrac_ic2 = 0.1
 volfrac_ec2 = 0.1
-volfrac_csf = 0.02
+theta1 = 1.57079633  # 90 Degree
+phi1 = 0.01745329  # 1 Degree
+
+volfrac_csf = 0.2
 OD1 = 0.1
 OD2 = 0.1
-theta1 = 0.01745329
-phi1 = 0.01745329
-theta2 = 1.57079633
-phi2 = 0.01745329
 
 """
 Lets contruct the signal now
@@ -67,7 +68,6 @@ def show_with_shore(gtab, reconst_signal):
 
 
 """
-
 Fitting the Generated Signal
 """
 t_start = time.time()

@@ -139,8 +139,8 @@ def legendre_gauss_integral(double[:] x_vec, cnp.npy_intp n):
 def watson_sh_coeff(double k):
     """
     Computes the spherical harmonic (SH) coefficients of the Watson's
-    distribution with the concentration parameter k (kappa) up to the 12th order
-    and the derivatives if requested.
+    distribution with the concentration parameter k (kappa) up to the 12th
+    order and the derivatives if requested.
 
     Truncating at the 12th order gives good approximation for kappa up to 64.
     INPUTS:
@@ -149,8 +149,8 @@ def watson_sh_coeff(double k):
 
     OUTPUTS:
         C will be a 2-D array and each row contains the SH coefficients of the
-        orders 0, 2, 4, ..., to 2n for the parameter in the corresponding row in
-        k.
+        orders 0, 2, 4, ..., to 2n for the parameter in the corresponding row
+        in k.
     Note that the SH coefficients of the odd orders are always zero. [1]_
 
     References

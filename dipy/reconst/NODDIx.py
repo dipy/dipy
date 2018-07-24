@@ -33,7 +33,7 @@ class NODDIxModel(model):
     Parameters
     ----------
     ReconstModel of DIPY
-    Returns  the 10 parameters of the model
+    Returns  the 11 parameters of the model
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ class NODDIxModel(model):
                                           maxiter=self.maxiter, args=(data,),
                                           tol=0.001, seed=200,
                                           mutation=(0.0, 1.05),
-                                          disp=True, polish=True, popsize=5,
+                                          disp=True, polish=True, popsize=12,
                                           init='latinhypercube')
 
         # Step 1: store the results of the differential evolution in x
@@ -280,6 +280,10 @@ class NODDIxModel(model):
         We extend the NODDI model as presented in [2] for two fiber
         orientations. Therefore we have 2 intracellular and extracellular
         components to account for this.
+
+        S_ic2 corresponds to the second intracellular component in the NODDIx
+        model
+
         (see Supplimentary note 6: [1]_ for a comparison and a thorough
         discussion)
         ----------
@@ -301,6 +305,23 @@ class NODDIxModel(model):
         return signal_ic2
 
     def S_ec2(self, x):
+        """
+        We extend the NODDI model as presented in [2] for two fiber
+        orientations. Therefore we have 2 extracellular and extracellular
+        components to account for this.
+
+        S_ic2 corresponds to the second extracellular component in the NODDIx
+        model
+
+        (see Supplimentary note 6: [1]_ for a comparison and a thorough
+        discussion)
+        ----------
+        References
+        ----------
+        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+        """
         OD2 = x[4]
         sinT2 = np.sin(x[5])
         cosT2 = np.cos(x[5])
@@ -316,6 +337,16 @@ class NODDIxModel(model):
         return signal_ec2
 
     def S_ec1_new(self, x, f):
+        """
+        This function is used in the second step of the MIX framework to
+        construct the Phi when the data is fitted using the Differential
+        Evolution. It is used to calculate the cost for non-linear least
+        squares.
+
+        Computes the extracellular component for the first fiber.
+
+        Refer to the nlls_cost() function.
+        """
         OD1 = x[0]
         sinT1 = np.sin(x[1])
         cosT1 = np.cos(x[1])
@@ -331,6 +362,16 @@ class NODDIxModel(model):
         return signal_ec1
 
     def S_ec2_new(self, x, f):
+        """
+        This function is used in the second step of the MIX framework to
+        construct the Phi when the data is fitted using the Differential
+        Evolution. It is used to calculate the cost for non-linear least
+        squares.
+
+        Computes the extracellular component for the second fiber.
+
+        Refer to the nlls_cost() function.
+        """
         OD2 = x[3]
         sinT2 = np.sin(x[4])
         cosT2 = np.cos(x[4])
@@ -346,6 +387,16 @@ class NODDIxModel(model):
         return signal_ec2
 
     def S_ic2_new(self, x):
+        """
+        This function is used in the second step of the MIX framework to
+        construct the Phi when the data is fitted using the Differential
+        Evolution. It is used to calculate the cost for non-linear least
+        squares.
+
+        Computes the intracellular component for the second fiber.
+
+        Refer to the nlls_cost() function.
+        """
         OD2 = x[3]
         sinT2 = np.sin(x[4])
         cosT2 = np.cos(x[4])
@@ -567,12 +618,44 @@ class NODDIxModel(model):
         return E
 
     def x_f_to_x_and_f(self, x_f):
+        """
+        The MIX framework makes use of Variable Projections (VarPro) to
+        separately fit the Volume Fractions and the other parameters that
+        involve exponential functions.
+
+        This function performs this task of taking the 11 input parameters of
+        the signal and creates 2 separate lists:
+            f: Volume  Fractions
+            x: Other Signal Params [1]_
+
+        References
+        ----------
+        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+        """
         f = np.zeros((1, 5))
         f = x_f[0:5]
         x = x_f[5:12]
         return x, f
 
     def x_and_f_to_x_f(self, x, f):
+        """
+        The MIX framework makes use of Variable Projections (VarPro) to
+        separately fit the Volume Fractions and the other parameters that
+        involve exponential functions.
+
+        This function performs this task of taking the 11 input parameters of
+        the signal and creates 2 separate lists:
+            f: Volume  Fractions
+            x: Other Signal Params [1]_
+
+        References
+        ----------
+        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+        """
         x_f = np.zeros(11)
         f = np.squeeze(f)
         f11ga = x[3]

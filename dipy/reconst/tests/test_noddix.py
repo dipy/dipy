@@ -30,17 +30,22 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
 Declare the parameters
 """
-volfrac_ic1 = 0.395
-volfrac_ic2 = 0.395
-volfrac_ec1 = 0.1
-volfrac_ec2 = 0.1
-volfrac_csf = 0.01
-OD1 = 0.1
-OD2 = 0.1
+volfrac_ic1 = 0.3
+volfrac_ec1 = 0.3
+# Angles of the vectors are in Radians
 theta1 = 0.01745329
 phi1 = 0.01745329
+
+volfrac_ic2 = 0.19
+volfrac_ec2 = 0.19
+# Angles of the vectors are in Radians
 theta2 = 1.57079633
 phi2 = 0.01745329
+
+volfrac_csf = 0.02
+OD1 = 0.1
+OD2 = 0.1
+
 """
 This section simulates the signal from the volume fractions and the angles
 """
@@ -93,10 +98,9 @@ def test_noddix_signal():
 
 def show_with_shore(gtab, reconst_signal):
     gtab.bvals = gtab.bvals * 10**6
-    plot(np.sort(gtab.bvals))
+    # plot(np.sort(gtab.bvals))
     shore_model = ShoreModel(gtab)
     shore_fit = shore_model.fit(reconst_signal)
-    plot(reconst_signal)
     odf = shore_fit.odf(sphere)
     from dipy.viz import window, fvtk
     ren = window.Renderer()
