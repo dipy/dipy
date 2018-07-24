@@ -207,26 +207,29 @@ class ImageRegistrationFlow(Workflow):
         window.record(renderer, out_path=fname,
                       size=(900, 600), reset_camera=False)
 
-    def animate_overlap(self, static_img, moved_img, slice_type, fname):
+    def animate_overlap(self, static_img, moved_img, sli_type, fname):
 
         """
         Function for creating the animated GIF from the slices of the
-        registered image.
+        registered image. This function does not perform any
+        orientation correction or quality optimisation. Please see
+        'animate_overlap_with_renderer' for visualising the correct
+        orientation.
 
         Patameters
         ----------
-        slice_type : int (optional)
+        slice_type : str (optional)
             the type of slice to be extracted:
-            0=sagital, 1=coronal, 2=axial, 3=None.
+            sagital, coronal, axial, None (default).
         fname: str, optional
             Filename for saving the GIF (default 'animation.gif').
         """
 
-        if slice_type == 3:
+        if sli_type == 3:
             return
 
         overlay, value_range = self.process_image_data(static_img, moved_img)
-        X, Y, Z, _ = overlay.shape
+        x, y, z, _ = overlay.shape
 
         overlay = overlay.astype('uint8')
 
@@ -235,12 +238,15 @@ class ImageRegistrationFlow(Workflow):
                             fp=[0, 255])
         num_slices = 0
 
-        if slice_type == 0:
-            num_slices = X
-        elif slice_type == 1:
-            num_slices = Y
-        elif slice_type == 2:
-            num_slices = Z
+        if sli_type == 'saggital':
+            num_slices = x
+            slice_type = 0
+        elif sli_type == 'coronal':
+            num_slices = y
+            slice_type = 1
+        elif sli_type == 'axial':
+            num_slices = z
+            slice_type = 2
 
         slices = []
 
@@ -249,6 +255,65 @@ class ImageRegistrationFlow(Workflow):
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
             slices.append(temp_slice)
+
+        # Writing the GIF below
+        write_gif(slices, fname, fps=10)
+
+    def animate_overlap_with_renderer(self, static_img, moved_img,
+                                      sli_type, fname, moving_grid2world):
+
+        """
+        Function for creating the animated GIF from the slices of the
+        registered image. It uses the renderer object to control the
+        dimensions of the created GIF and for correcting the orientation.
+
+        Patameters
+        ----------
+        slice_type : str (optional)
+            the type of slice to be extracted:
+            sagital, coronal, axial, None (default).
+        fname: str, optional
+            Filename for saving the GIF (default 'animation.gif').
+        """
+
+        if sli_type is None:
+            return
+
+        overlay, value_range = self.process_image_data(static_img, moved_img)
+        x, y, z, _ = overlay.shape
+
+        num_slices = 0
+
+        if sli_type == 'saggital':
+            num_slices = x
+            slice_type = 0
+        elif sli_type == 'coronal':
+            num_slices = y
+            slice_type = 1
+        elif sli_type == 'axial':
+            num_slices = z
+            slice_type = 2
+
+        # Creating the renderer object and setting the background.
+        renderer = window.renderer((0.5, 0.5, 0.5))
+
+        # Setting the affine to be used for adjusting the orientation
+        # in the slicer function.
+        affine = moving_grid2world
+        slices = []
+
+        for i in range(num_slices):
+            temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
+                                        slice_type=slice_type,
+                                        slice_index=i, ret_slice=True)
+            slice_actor = actor.slicer(temp_slice, affine, value_range)
+            renderer.add(slice_actor)
+            renderer.reset_camera()
+            renderer.zoom(1.6)
+            snap = snapshot(renderer)
+            slices.append(snap)
+
+        # Writing the GIF below
         write_gif(slices, fname, fps=10)
 
     def center_of_mass(self, static, static_grid2world,
@@ -364,7 +429,7 @@ class ImageRegistrationFlow(Workflow):
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
             factors=[4, 2, 1], progressive=True, save_metric=False,
-            anim_slice_type=3, mosaic_slice_type=3, out_dir='',
+            anim_slice_type=None, mosaic_slice_type=None, out_dir='',
             out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt', animate_file='animation.gif',
             mosaic_file='mosaic.png'):
@@ -430,15 +495,15 @@ class ImageRegistrationFlow(Workflow):
             metric of optimal parameters is only
             displayed but not saved.
 
-        anim_slice_type : int, optional
+        anim_slice_type : str, optional
             A GIF animation showing the overlap of slices
             from static and moving images will be saved.
-            0=sagital, 1=coronal, 2=axial, 3=None (default).
+            sagital, coronal, axial, None (default).
 
-        mosaic_slice_type : int , optional
+        mosaic_slice_type : str , optional
             A mosaic showing all the overlapping slices of specified type
             from the static and registered image will be saved.
-            0=sagital, 1=coronal, 2=axial, 3=None (default).
+            sagital, coronal, axial, None (default).
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix.
@@ -552,11 +617,19 @@ class ImageRegistrationFlow(Workflow):
 
             self.animate_overlap(static, moved_image, anim_slice_type,
                                  animate_file)
+
+            # Uncomment below if need to use the renderer for the animation.
+            # self.animate_overlap_with_renderer(static, moved_image,
+            #                                    anim_slice_type,
+            #                                    animate_file,
+            #                                    moving_grid2world)
+
             self.create_mosaic(static, moved_image, moving_grid2world,
                                mosaic_slice_type, mosaic_file)
 
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
+
 
 from dipy.workflows.flow_runner import run_flow
 if __name__ == "__main__":
