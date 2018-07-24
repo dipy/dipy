@@ -838,9 +838,6 @@ def snapshot(ren, fname=None, size=(300, 300), offscreen=True,
     components = vtk_array.GetNumberOfComponents()
     arr = vtk_to_numpy(vtk_array).reshape(h, w, components)
 
-    if fname is None:
-        return arr
-
     writer = vtk.vtkPNGWriter()
     writer.SetFileName(fname)
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())

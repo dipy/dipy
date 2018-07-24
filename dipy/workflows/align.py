@@ -7,9 +7,10 @@ import numpy as np
 import nibabel as nib
 from dipy.viz.regtools import overlay_slices
 from dipy.viz import (window, actor)
-import matplotlib.pyplot as plt
+from array2gif import write_gif
+from dipy.viz.window import snapshot
 from matplotlib.animation import FuncAnimation
-
+import matplotlib.pyplot as plt
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  MutualInformationMetric,
                                  AffineRegistration)
@@ -90,6 +91,14 @@ class ImageRegistrationFlow(Workflow):
     """
 
     def process_image_data(self, static_img, moved_img):
+        """
+        Function for preprocessing the image data. It involves
+        normalizing and copying static, moving images in the
+        red and green channel.
+
+        return: the normalized image data and range of pixels to be
+        selected.
+        """
 
         static_img = 255 * ((static_img - static_img.min()) /
                             (static_img.max() - static_img.min()))
@@ -101,14 +110,50 @@ class ImageRegistrationFlow(Workflow):
         overlay[..., 0] = static_img
         overlay[..., 1] = moved_img
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
-        value_range = (mean - 0.5 * std, mean + 1.5 * std)
+        value_range = (mean - 0.5*std, mean + 0.05*std)
 
         return overlay, value_range
 
+    def get_row_cols(self, num_slices):
+
+        """
+        Experimetal helper function to get the number
+        of rows and columns for the mosaic.
+
+        num_slices: int
+            The number of slices as obtained from the
+            create_mosaic function.
+        return: the number of rows and columns.
+        """
+        rows, cols = 0, 0
+
+        while True:
+            if num_slices % 5 == 0:
+                break
+            num_slices += 1
+
+        for i in range(5, num_slices):
+
+            if num_slices % i == 0:
+                rows = i
+                cols = num_slices // i
+                break
+
+        return rows, cols
+
     def create_mosaic(self, static_img, moved_img,
                       moving_grid2world, mosaic_slice_type, fname):
+        """
+        Function for creating the mosaic of the moved image.
+        mosaic_slice_type: int
+            The type of slice to be used for making the mosaic
+            0=sagital, 1=coronal, 2=axial, 3=None.
+        fname: str, optional
+            Filename to be used for saving the mosaic
+            (default 'mosaic.png').
+        """
 
-        if mosaic_slice_type == 4:
+        if mosaic_slice_type == 3:
             return
 
         overlay, value_range = self.process_image_data(static_img, moved_img)
@@ -122,10 +167,6 @@ class ImageRegistrationFlow(Workflow):
         cnt = 0
         X, Y, Z = slice_actor.shape
 
-        rows = 5
-        cols = 15
-        border = 5
-
         num_slices = 0
         if mosaic_slice_type == 0:
             num_slices = X
@@ -133,6 +174,10 @@ class ImageRegistrationFlow(Workflow):
             num_slices = Y
         elif mosaic_slice_type == 2:
             num_slices = Z
+
+        rows = 5
+        cols = 15
+        border = 5
 
         for j in range(rows):
             for i in range(cols):
@@ -148,6 +193,8 @@ class ImageRegistrationFlow(Workflow):
                                          (Y + border) * j, 0)
                 slice_mosaic.SetInterpolate(False)
                 renderer.add(slice_mosaic)
+                renderer.reset_camera()
+                renderer.zoom(1.6)
                 cnt += 1
                 if cnt > num_slices:
                     break
@@ -157,36 +204,37 @@ class ImageRegistrationFlow(Workflow):
         renderer.reset_camera()
         renderer.zoom(1.6)
 
-        window.record(renderer,
-                      out_path='mosaic.png' if fname == 'mosaic.png'
-                      else fname, size=(900, 600), reset_camera=False)
+        window.record(renderer, out_path=fname,
+                      size=(900, 600), reset_camera=False)
 
     def animate_overlap(self, static_img, moved_img, slice_type, fname):
 
         """
+        Function for creating the animated GIF from the slices of the
+        registered image.
+
         Patameters
         ----------
         slice_type : int (optional)
-        the type of slice to be extracted:
-        0=sagital, 1=coronal, 2=axial (default), 3=all.
+            the type of slice to be extracted:
+            0=sagital, 1=coronal, 2=axial, 3=None.
+        fname: str, optional
+            Filename for saving the GIF (default 'animation.gif').
         """
 
-        if slice_type == 4:
+        if slice_type == 3:
             return
 
         overlay, value_range = self.process_image_data(static_img, moved_img)
         X, Y, Z, _ = overlay.shape
 
-        # Setting up the plot object.
-        fig, ax = plt.subplots()
-        ln, = plt.plot([], 'ro', animated=True)
-
-        # Selecting the data based on the set value range.
-        overlay = np.interp(overlay, xp=[value_range[0],
-                                         value_range[1]], fp=[0, 255])
         overlay = overlay.astype('uint8')
 
+        # Selecting the pixels based on the obtained value range.
+        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
+                            fp=[0, 255])
         num_slices = 0
+
         if slice_type == 0:
             num_slices = X
         elif slice_type == 1:
@@ -194,16 +242,14 @@ class ImageRegistrationFlow(Workflow):
         elif slice_type == 2:
             num_slices = Z
 
-        def update(frame):
-            ext_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
-                                       slice_type=slice_type,
-                                       slice_index=frame, ret_slice=True)
-            ax.imshow(ext_slice)
-            return ln,
+        slices = []
 
-        ani = FuncAnimation(fig, update, frames=range(num_slices),
-                            blit=True)
-        ani.save('animation.html' if fname == 'animation.html' else fname)
+        for i in range(num_slices):
+            temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
+                                        slice_type=slice_type,
+                                        slice_index=i, ret_slice=True)
+            slices.append(temp_slice)
+        write_gif(slices, fname, fps=10)
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
@@ -318,9 +364,9 @@ class ImageRegistrationFlow(Workflow):
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
             factors=[4, 2, 1], progressive=True, save_metric=False,
-            anim_slice_type=4, mosaic_slice_type=3, out_dir='',
+            anim_slice_type=3, mosaic_slice_type=3, out_dir='',
             out_moved='moved.nii.gz', out_affine='affine.txt',
-            out_quality='quality_metric.txt', animate_file='animation.html',
+            out_quality='quality_metric.txt', animate_file='animation.gif',
             mosaic_file='mosaic.png'):
 
         """
@@ -385,14 +431,14 @@ class ImageRegistrationFlow(Workflow):
             displayed but not saved.
 
         anim_slice_type : int, optional
-            A html animation showing the overlap of slices
+            A GIF animation showing the overlap of slices
             from static and moving images will be saved.
             0=sagital, 1=coronal, 2=axial, 3=None (default).
 
-        mosaic_type : int , optional
+        mosaic_slice_type : int , optional
             A mosaic showing all the overlapping slices of specified type
             from the static and registered image will be saved.
-            0=sagital, 1=coronal, 2=axial, 3=all, 4=None (default).
+            0=sagital, 1=coronal, 2=axial, 3=None (default).
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix.
@@ -412,7 +458,7 @@ class ImageRegistrationFlow(Workflow):
 
         animate_file : string, optional
             name of the html file for saving the animation
-            (default animation.html).
+            (default animation.gif).
 
         mosaic_file : string, optional
             Name of the file to save the mosaic (default 'mosaic.png').
@@ -511,3 +557,7 @@ class ImageRegistrationFlow(Workflow):
 
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
+
+from dipy.workflows.flow_runner import run_flow
+if __name__ == "__main__":
+    run_flow(ImageRegistrationFlow())
