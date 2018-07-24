@@ -28,7 +28,7 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
 # instantiating the noddixmodel class
 noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
-Declare the parameters
+11 parameters of the NODDIx model
 """
 volfrac_ic1 = 0.3
 volfrac_ec1 = 0.3
@@ -47,7 +47,7 @@ OD1 = 0.1
 OD2 = 0.1
 
 """
-This section simulates the signal from the volume fractions and the angles
+This section simulates the signal from the volume fractions and the angles.
 """
 x_f_sig = [volfrac_ic1, volfrac_ic2, volfrac_ec1, volfrac_ec2, volfrac_csf,
            OD1, theta1, phi1, OD2, theta2, phi2]
@@ -116,3 +116,7 @@ def gqi_viz(reconst_signal):
     ren = window.Renderer()
     ren.add(fvtk.sphere_funcs(odf, sphere))
     window.show(ren)
+
+
+test_noddix_signal()
+show_with_shore(gtab, reconst_signal)
