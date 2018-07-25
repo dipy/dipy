@@ -1,8 +1,6 @@
 import numpy.testing as npt
+from numpy.testing import run_module_suite
 import numpy as np
-
-
-from time import sleep
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
@@ -13,8 +11,7 @@ import os.path
 from os.path import join as pjoin
 
 from dipy.align.tests.test_parzenhist import setup_random_transform
-from dipy.align.transforms import (Transform,
-                                   regtransforms)
+from dipy.align.transforms import (Transform, regtransforms)
 from dipy.io.image import save_nifti
 
 from dipy.workflows.align import ImageRegistrationFlow
@@ -34,10 +31,10 @@ def test_reslice():
         out_img = nib.load(out_path)
         resliced = out_img.get_data()
 
-        npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
-        npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
-        npt.assert_equal(resliced.shape[2] > volume.shape[2], True)
-        npt.assert_equal(resliced.shape[-1], volume.shape[-1])
+        assert resliced.shape[0] > volume.shape[0]
+        assert resliced.shape[1] > volume.shape[1]
+        assert resliced.shape[2] > volume.shape[2]
+        assert resliced.shape[-1] == volume.shape[-1]
 
 
 def test_image_registration():
@@ -59,9 +56,7 @@ def test_image_registration():
         def read_distance(qual_fname):
             temp_val = 0
             with open(pjoin(temp_out_dir, qual_fname), 'r') as f:
-                for line in f:
-                    pass
-                temp_val = line
+                temp_val = f.readlines()[-1]
             return float(temp_val)
 
         def test_com():
@@ -76,8 +71,7 @@ def test_image_registration():
                                          out_moved=out_moved,
                                          out_affine=out_affine)
 
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            check_existense(out_moved, out_affine)
 
         def test_translation():
 
@@ -95,9 +89,8 @@ def test_image_registration():
                                          out_quality='trans_q.txt')
 
             dist = read_distance('trans_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.3953547764454917)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            npt.assert_almost_equal(float(dist), -0.3953547764454917, 4)
+            check_existense(out_moved, out_affine)
 
         def test_rigid():
 
@@ -115,9 +108,8 @@ def test_image_registration():
                                          out_quality='rigid_q.txt')
 
             dist = read_distance('rigid_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.6900534794005155)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            npt.assert_almost_equal(dist, -0.6900534794005155, 4)
+            check_existense(out_moved, out_affine)
 
         def test_affine():
 
@@ -135,9 +127,8 @@ def test_image_registration():
                                          out_quality='affine_q.txt')
 
             dist = read_distance('affine_q.txt')
-            npt.assert_equal('%.2f' % dist, '%.2f' % -0.7670650775914811)
-            npt.assert_equal(os.path.exists(out_moved), True)
-            npt.assert_equal(os.path.exists(out_affine), True)
+            npt.assert_almost_equal(dist, -0.7670650775914811, 4)
+            check_existense(out_moved, out_affine)
 
         # Creating the erroneous behavior
         def test_err():
@@ -151,6 +142,11 @@ def test_image_registration():
                               static_image_file,
                               moving_image_file,
                               metric='wrong_metric')
+
+        def check_existense(movedfile, affine_mat_file):
+            assert os.path.exists(movedfile)
+            assert os.path.exists(affine_mat_file)
+            return True
 
         test_com()
         test_translation()
@@ -207,11 +203,8 @@ def test_apply_transform():
         two = pjoin(temp_out_dir, '*moving*')
         apply_trans.run(static_image_file, two, out_affine)
 
-        npt.assert_equal(os.path.exists(pjoin(temp_out_dir,
-                                              'transformed.nii.gz')), True)
-
+        # Checking for the transformed file.
+        assert os.path.exists(pjoin(temp_out_dir, 'transformed.nii.gz'))
 
 if __name__ == "__main__":
-        test_reslice()
-        test_image_registration()
-        test_apply_transform()
+    run_module_suite()
