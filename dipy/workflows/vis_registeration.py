@@ -164,7 +164,8 @@ class VisualizeRegisteredImage(Workflow):
             Filename for saving the GIF (default 'animation.gif').
         """
 
-        overlay, value_range = self.process_image_data(static_img, moved_img, 'anim')
+        overlay, value_range = self.process_image_data(static_img,
+                                                       moved_img, 'anim')
         x, y, z, _ = overlay.shape
 
         num_slices = 0
@@ -181,10 +182,6 @@ class VisualizeRegisteredImage(Workflow):
 
         # Creating the renderer object and setting the background.
         renderer = window.renderer((0.5, 0.5, 0.5))
-
-        # Setting the affine to be used for adjusting the orientation
-        # in the slicer function.
-        #affine = moving_grid2world
         slices = []
         overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
                             fp=[0, 255])
@@ -194,12 +191,12 @@ class VisualizeRegisteredImage(Workflow):
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
 
-            #slice_actor = actor.slicer(temp_slice, affine, value_range)
-            #renderer.add(slice_actor)
-            #renderer.reset_camera()
-            #renderer.zoom(1.6)
-            #snap = snapshot(renderer)
-            slices.append(temp_slice)
+            slice_actor = actor.slicer(temp_slice, affine, value_range)
+            renderer.add(slice_actor)
+            renderer.reset_camera()
+            renderer.zoom(1.6)
+            snap = snapshot(renderer)
+            slices.append(snap)
 
         # Writing the GIF below
         write_gif(slices, fname, fps=10)
@@ -275,7 +272,8 @@ class VisualizeRegisteredImage(Workflow):
                                    mosaic_file)
 
             if anim_slice_type is not None:
-                self.animate_overlap_with_renderer(static, moved_image, anim_slice_type,
-                                     animate_file, affine_matrix)
+                self.animate_overlap_with_renderer(static, moved_image,
+                                                   anim_slice_type,
+                                                   animate_file, affine_matrix)
             if not show_mosaic and anim_slice_type is None:
                 logging.info('No options supplied. Exiting.')
