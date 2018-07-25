@@ -210,6 +210,7 @@ def test_apply_transform():
         npt.assert_equal(os.path.exists(pjoin(temp_out_dir,
                                               'transformed.nii.gz')), True)
 
+
 if __name__ == "__main__":
         test_reslice()
         test_image_registration()
