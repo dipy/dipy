@@ -458,7 +458,7 @@ class Button2D(UI):
         """
         icon_id = self.icon_names.index(icon_name)
         self.set_icon(self.icons[icon_id][1])
-    
+
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -2993,7 +2993,7 @@ class Option(UI):
         self.button_size = (font_size * 1.2, font_size * 1.2)
         self.button_label_gap = 10
         super(Option, self).__init__(position)
-        
+
         # Offer some standard hooks to the user.
         self.on_change = lambda obj: None
 
@@ -3048,7 +3048,7 @@ class Option(UI):
             (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
-    
+
     def toggle(self, i_ren, obj, element):
         if self.checked:
             self.deselect()
@@ -3061,7 +3061,7 @@ class Option(UI):
     def select(self):
         self.checked = True
         self.button.set_icon_by_name("checked")
-    
+
     def deselect(self):
         self.checked = False
         self.button.set_icon_by_name("unchecked")
@@ -3123,7 +3123,7 @@ class Checkbox(UI):
 
             # Set callback
             option.on_change = self._handle_option_change
-        
+
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
@@ -3812,3 +3812,129 @@ class FileMenu2D(UI):
             self.set_slot_colors()
         i_ren.force_render()
         i_ren.event.abort()
+
+
+class ColorPicker(UI):
+    """ A 2D rectangle sub-classed from UI.
+    """
+
+    def __init__(self, side=100, position=(100, 100)):
+        """ Initializes a rectangle.
+
+        Parameters
+        ----------
+        size : (int, int)
+            The size of the rectangle (width, height) in pixels.
+        position : (float, float)
+            Coordinates (x, y) of the lower-left corner of the rectangle.
+        color : (float, float, float)
+            Must take values in [0, 1].
+        opacity : float
+            Must take values in [0, 1].
+        """
+        super(ColorPicker, self).__init__(position)
+        # self.resize(side)
+
+    def _setup(self):
+        """ Setup this UI component.
+
+        Creating the polygon actor used internally.
+        """
+        # Setup four points
+        # side=1
+
+        self.scalarbar=vtk.vtkScalarBarActor()
+        self.scalarbar.SetTitle("Title")
+        self.scalarbar.SetNumberOfLabels(4)
+        hueLut=vtk.vtkLookupTable()
+        hueLut.SetTableRange (0, 1)
+        hueLut.SetHueRange (0, 1)
+        hueLut.SetSaturationRange (1, 1)
+        hueLut.SetValueRange (1, 1)
+        hueLut.Build()
+        self.scalarbar.SetLookupTable(hueLut)
+
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        # return [self.HueBar]
+        return [self.scalarbar]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.scalarbar)
+
+    # def _get_size(self):
+        # Get 2D coordinates of two opposed corners of the rectangle.
+        # lower_left_corner = np.array(self._points.GetPoint(0)[:2])
+        # upper_right_corner = np.array(self._points.GetPoint(2)[:2])
+        # size = abs(upper_right_corner - lower_left_corner)
+        # return size
+
+    # @property
+    # def width(self):
+    #     return self._points.GetPoint(2)[0]
+
+    # @width.setter
+    # def width(self, width):
+    #     self.resize((width, self.height))
+
+    # @property
+    # def height(self):
+    #     return self._points.GetPoint(2)[1]
+
+    # @height.setter
+    # def height(self, height):
+    #     self.resize((self.width, height))
+
+    # def resize(self, size):
+    #     """ Sets the button size.
+
+    #     Parameters
+    #     ----------
+    #     size : (float, float)
+    #         Button size (width, height) in pixels.
+    #     """
+    #     self._points.SetPoint(0, 0, 0, 0.0)
+    #     self._points.SetPoint(1, size[0], 0, 0.0)
+    #     self._points.SetPoint(2, size[0], size[1], 0.0)
+    #     self._points.SetPoint(3, 0, size[1], 0.0)
+    #     self._polygonPolyData.SetPoints(self._points)
+
+    def hsl_to_rgb(self, H, S, L):
+        C=(1-abs(2*L-1))*S
+        X = C * (1 - abs((H / 60) % 2 - 1))
+        m = L - C/2
+        if H<60:
+            (r,g,b)=(C,X,0)
+        elif H<120:
+            (r,g,b)=(X,C,0)
+        elif H<180:
+            (r,g,b)=(0,C,X)
+        elif H<240:
+            (r,g,b)=(0,X,C)
+        elif H<300:
+            (r,g,b)=(X,0,C)
+        else:
+            (r,g,b)=(C,0,X)
+
+        (R,G,B) = ((r+m)*255, (g+m)*255,(b+m)*255)
+        return R,G,B
+
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        # self.HueBar.SetPosition(*coords)
+        self.scalarbar.SetPosition(*coords)
