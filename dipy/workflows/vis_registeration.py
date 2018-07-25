@@ -148,7 +148,7 @@ class VisualizeRegisteredImage(Workflow):
         write_gif(slices, fname, fps=10)
 
     def animate_overlap_with_renderer(self, static_img, moved_img,
-                                      sli_type, fname, moving_grid2world):
+                                      sli_type, fname, affine):
 
         """
         Function for creating the animated GIF from the slices of the
@@ -164,7 +164,7 @@ class VisualizeRegisteredImage(Workflow):
             Filename for saving the GIF (default 'animation.gif').
         """
 
-        overlay, value_range = self.process_image_data(static_img, moved_img)
+        overlay, value_range = self.process_image_data(static_img, moved_img, 'anim')
         x, y, z, _ = overlay.shape
 
         num_slices = 0
@@ -184,19 +184,22 @@ class VisualizeRegisteredImage(Workflow):
 
         # Setting the affine to be used for adjusting the orientation
         # in the slicer function.
-        affine = moving_grid2world
+        #affine = moving_grid2world
         slices = []
+        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
+                            fp=[0, 255])
 
         for i in range(num_slices):
             temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
-            slice_actor = actor.slicer(temp_slice, affine, value_range)
-            renderer.add(slice_actor)
-            renderer.reset_camera()
-            renderer.zoom(1.6)
-            snap = snapshot(renderer)
-            slices.append(snap)
+
+            #slice_actor = actor.slicer(temp_slice, affine, value_range)
+            #renderer.add(slice_actor)
+            #renderer.reset_camera()
+            #renderer.zoom(1.6)
+            #snap = snapshot(renderer)
+            slices.append(temp_slice)
 
         # Writing the GIF below
         write_gif(slices, fname, fps=10)
@@ -213,7 +216,7 @@ class VisualizeRegisteredImage(Workflow):
 
     def run(self, static_img_file, moving_img_file, affine_matrix_file,
             show_mosaic=False, anim_slice_type=None, out_dir='',
-            mosaic_file='mosaic.png', animate_file='animate.gif'):
+            mosaic_file='mosaic.png', animate_file='animation.gif'):
         """
         Parameters
         ----------
@@ -272,7 +275,7 @@ class VisualizeRegisteredImage(Workflow):
                                    mosaic_file)
 
             if anim_slice_type is not None:
-                self.animate_overlap(static, moved_image, anim_slice_type,
-                                     animate_file)
+                self.animate_overlap_with_renderer(static, moved_image, anim_slice_type,
+                                     animate_file, affine_matrix)
             if not show_mosaic and anim_slice_type is None:
                 logging.info('No options supplied. Exiting.')
