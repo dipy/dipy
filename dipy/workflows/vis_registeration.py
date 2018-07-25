@@ -7,7 +7,9 @@ from dipy.viz import (window, actor)
 from dipy.io.image import load_affine_matrix
 
 from dipy.viz.regtools import overlay_slices
+from dipy.viz import (window, actor)
 from array2gif import write_gif
+from dipy.viz.window import snapshot
 
 
 class VisualizeRegisteredImage(Workflow):
@@ -141,6 +143,60 @@ class VisualizeRegisteredImage(Workflow):
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
             slices.append(temp_slice)
+
+        # Writing the GIF below
+        write_gif(slices, fname, fps=10)
+
+    def animate_overlap_with_renderer(self, static_img, moved_img,
+                                      sli_type, fname, moving_grid2world):
+
+        """
+        Function for creating the animated GIF from the slices of the
+        registered image. It uses the renderer object to control the
+        dimensions of the created GIF and for correcting the orientation.
+        Patameters
+        ----------
+        sli_type : str (optional)
+            the type of slice to be extracted:
+            sagital, coronal, axial, None (default).
+
+        fname: str, optional
+            Filename for saving the GIF (default 'animation.gif').
+        """
+
+        overlay, value_range = self.process_image_data(static_img, moved_img)
+        x, y, z, _ = overlay.shape
+
+        num_slices = 0
+
+        if sli_type == 'saggital':
+            num_slices = x
+            slice_type = 0
+        elif sli_type == 'coronal':
+            num_slices = y
+            slice_type = 1
+        elif sli_type == 'axial':
+            num_slices = z
+            slice_type = 2
+
+        # Creating the renderer object and setting the background.
+        renderer = window.renderer((0.5, 0.5, 0.5))
+
+        # Setting the affine to be used for adjusting the orientation
+        # in the slicer function.
+        affine = moving_grid2world
+        slices = []
+
+        for i in range(num_slices):
+            temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
+                                        slice_type=slice_type,
+                                        slice_index=i, ret_slice=True)
+            slice_actor = actor.slicer(temp_slice, affine, value_range)
+            renderer.add(slice_actor)
+            renderer.reset_camera()
+            renderer.zoom(1.6)
+            snap = snapshot(renderer)
+            slices.append(snap)
 
         # Writing the GIF below
         write_gif(slices, fname, fps=10)
