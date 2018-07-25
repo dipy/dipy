@@ -3,12 +3,11 @@ from dipy.workflows.workflow import Workflow
 import logging
 import numpy as np
 import nibabel as nib
-from dipy.viz import (window, actor)
+from dipy.workflows.core import write_gif
 from dipy.io.image import load_affine_matrix
-
 from dipy.viz.regtools import overlay_slices
 from dipy.viz import (window, actor)
-from array2gif import write_gif
+
 from dipy.viz.window import snapshot
 
 
@@ -42,9 +41,36 @@ class VisualizeRegisteredImage(Workflow):
         if type_vis == 'mosaic':
             value_range = (mean - 0.5 * std, mean + 1.5 * std)
         elif type_vis == 'anim':
-            value_range = (mean - 0.5 * std, mean + 0.05 * std)
+            value_range = (mean - 0.5 * std, mean + 1.5 * std)
 
         return overlay, value_range
+
+    def get_row_cols(self, num_slices):
+
+        """
+        Experimetal helper function to get the number
+        of rows and columns for the mosaic.
+
+        num_slices: int
+            The number of slices as obtained from the
+            create_mosaic function.
+        return: the number of rows and columns.
+        """
+        rows, cols = 0, 0
+
+        while True:
+            if num_slices % 5 == 0:
+                break
+            num_slices += 1
+
+        for i in range(5, num_slices):
+
+            if num_slices % i == 0:
+                rows = i
+                cols = num_slices // i
+                break
+
+        return rows, cols
 
     def create_mosaic(self, static_img, moved_img,
                       affine, fname):
@@ -67,10 +93,9 @@ class VisualizeRegisteredImage(Workflow):
         renderer.projection('parallel')
 
         cnt = 0
-        X, Y, Z = slice_actor.shape[:3]
+        _, _, num_slices = slice_actor.shape[:3]
 
-        rows = 5
-        cols = 15
+        rows, cols = self.get_row_cols(num_slices)
         border = 5
 
         for j in range(rows):
@@ -85,9 +110,9 @@ class VisualizeRegisteredImage(Workflow):
                 renderer.reset_camera()
                 renderer.zoom(1.6)
                 cnt += 1
-                if cnt > Z:
+                if cnt > num_slices:
                     break
-            if cnt > Z:
+            if cnt > num_slices:
                 break
 
         renderer.reset_camera()
@@ -95,6 +120,31 @@ class VisualizeRegisteredImage(Workflow):
 
         window.record(renderer, out_path=fname,
                       size=(900, 600), reset_camera=False)
+
+    def adjust_color_range(self, img):
+
+        """
+        Function to adjust the range of colors in numpy array
+        to create the GIF (GIF standard only supports 256 colours).
+
+        return
+        The numpy array with scaled down range of color values.
+        """
+
+        # Interpoloating to range 0-15 for reducing the colours.
+        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(), img[..., 0].max()),
+                                 (0, 15))
+        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(), img[..., 1].max()),
+                                 (0, 15))
+        img = np.round(img, 0).astype('uint8')
+
+        # Interpolating back to the range 0-255 for getting GIF range.
+        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(), img[..., 0].max()),
+                                 (0, 255))
+        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(), img[..., 1].max()),
+                                 (0, 255))
+
+        return img
 
     def animate_overlap(self, static_img, moved_img, sli_type, fname):
 
@@ -183,19 +233,20 @@ class VisualizeRegisteredImage(Workflow):
         # Creating the renderer object and setting the background.
         renderer = window.renderer((0.5, 0.5, 0.5))
         slices = []
-        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
-                            fp=[0, 255])
 
         for i in range(num_slices):
             temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
-
+            temp_slice = temp_slice[..., None]
+            temp_slice = np.round(temp_slice,0).astype('uint8')
+            temp_slice = np.rollaxis(temp_slice, 2, 4)
             slice_actor = actor.slicer(temp_slice, affine, value_range)
             renderer.add(slice_actor)
             renderer.reset_camera()
             renderer.zoom(1.6)
             snap = snapshot(renderer)
+            snap = self.adjust_color_range(snap)
             slices.append(snap)
 
         # Writing the GIF below
