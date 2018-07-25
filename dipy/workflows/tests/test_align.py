@@ -171,19 +171,18 @@ def test_apply_transform():
                                                  -0.07, 0.10, 0.99, -1.4]))}
 
         for i in factors.keys():
-            static, moving, static_g2w, moving_g2w, \
-            smask, mmask, M = setup_random_transform(
-                transform=regtransforms[i], rfactor=factors[i][0])
+            static, moving, static_g2w, moving_g2w, smask, mmask, M = \
+                setup_random_transform(transform=regtransforms[i],
+                                       rfactor=factors[i][0])
 
             some = str(i[0]) + '_static.nii.gz'
-            one =  str(i[0]) + '_moving.nii.gz'
+            one = str(i[0]) + '_moving.nii.gz'
 
             save_nifti(pjoin(temp_out_dir, some), data=static,
                        affine=static_g2w)
 
             save_nifti(pjoin(temp_out_dir, one), data=moving,
                        affine=moving_g2w)
-
 
         static_image_file = pjoin(temp_out_dir, 'TRANSLATION_static.nii.gz')
         moving_image_file = pjoin(temp_out_dir, 'TRANSLATION_moving.nii.gz')
@@ -204,16 +203,14 @@ def test_apply_transform():
         npt.assert_equal(os.path.exists(out_moved), True)
         npt.assert_equal(os.path.exists(out_affine), True)
 
-
         apply_trans = ApplyTransformFlow()
-        two = pjoin(temp_out_dir,'*moving*')
+        two = pjoin(temp_out_dir, '*moving*')
         apply_trans.run(static_image_file, two, out_affine)
 
-        npt.assert_equal(os.path.exists(pjoin(temp_out_dir,'transformed.nii.gz')), True)
-
+        npt.assert_equal(os.path.exists(pjoin(temp_out_dir,
+                                              'transformed.nii.gz')), True)
 
 if __name__ == "__main__":
         test_reslice()
         test_image_registration()
         test_apply_transform()
-

@@ -47,6 +47,7 @@ def load_affine_matrix(fname):
     """
     return np.loadtxt(fname)
 
+
 def save_quality_assur_metric(fname, xopt, fopt):
     """
     Parameters
