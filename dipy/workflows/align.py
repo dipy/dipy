@@ -383,7 +383,7 @@ class ImageRegistrationFlow(Workflow):
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
 
-        """ Function for full affine registration."""
+        """ Function for the full affine registration."""
 
         if progressive:
             moved, affine, xopt, fopt = self.rigid(static, static_grid2world,

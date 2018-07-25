@@ -56,3 +56,12 @@ def save_quality_assur_metric(fname, xopt, fopt):
     with open(fname, 'a') as f:
         f.write('# Distance after registration\n')
         f.write(str(fopt))
+
+def load_affine_matrix(fname):
+    """
+        Parameters
+        ---------
+        fname : str
+            The file containing the saved affine matrix.
+    """
+    return np.loadtxt(fname)
