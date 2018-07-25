@@ -146,64 +146,14 @@ class VisualizeRegisteredImage(Workflow):
 
         return img
 
-    def animate_overlap(self, static_img, moved_img, sli_type, fname):
-
-        """
-        Function for creating the animated GIF from the slices of the
-        registered image. This function does not perform any
-        orientation correction or quality optimisation. Please see
-        'animate_overlap_with_renderer' for visualising the correct
-        orientation.
-
-        Patameters
-        ----------
-        sli_type : str (optional)
-            the type of slice to be extracted:
-            sagital, coronal, axial, None (default).
-        fname: str, optional
-            Filename for saving the GIF (default 'animation.gif').
-        """
-
-        overlay, value_range = self.process_image_data(static_img,
-                                                       moved_img,
-                                                       'anim')
-        x, y, z, _ = overlay.shape
-
-        overlay = overlay.astype('uint8')
-
-        # Selecting the pixels based on the obtained value range.
-        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
-                            fp=[0, 255])
-        num_slices = 0
-
-        if sli_type == 'saggital':
-            num_slices = x
-            slice_type = 0
-        elif sli_type == 'coronal':
-            num_slices = y
-            slice_type = 1
-        elif sli_type == 'axial':
-            num_slices = z
-            slice_type = 2
-
-        slices = []
-
-        for i in range(num_slices):
-            temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
-                                        slice_type=slice_type,
-                                        slice_index=i, ret_slice=True)
-            slices.append(temp_slice)
-
-        # Writing the GIF below
-        write_gif(slices, fname, fps=10)
-
     def animate_overlap_with_renderer(self, static_img, moved_img,
                                       sli_type, fname, affine):
 
         """
         Function for creating the animated GIF from the slices of the
-        registered image. It uses the renderer object to control the
-        dimensions of the created GIF and for correcting the orientation.
+        registered image.
+        It uses the renderer object to control the dimensions of the
+        created GIF and for correcting the orientation.
         Patameters
         ----------
         sli_type : str (optional)
@@ -269,13 +219,13 @@ class VisualizeRegisteredImage(Workflow):
         Parameters
         ----------
         static_img_file : string
-            Path to the reference image.
+            Path to the static image file.
 
         moving_img_file : string
             Path to the moving image file.
 
         affine_matrix_file : string
-            The text file containing the affine matrix for transformation.
+            The text file containing the affine matrix.
 
         show_mosaic : bool, optional
             If enabled, a mosaic of the all the slices from the
@@ -284,7 +234,7 @@ class VisualizeRegisteredImage(Workflow):
         anim_slice_type : str, optional
             A GIF animation showing the overlap of slices
             from static and moving images will be saved.
-            sagital, coronal, axial, None (default).
+            The valid slice type(s): saggital, coronal, axial, None(default).
 
         out_dir : string, optional
             Directory to save the results (default '').
@@ -293,7 +243,7 @@ class VisualizeRegisteredImage(Workflow):
             Name of the file to save the mosaic (default 'mosaic.png').
 
         animate_file : string, optional
-            name of the html file for saving the animation
+            Name of the GIF file for saving the animation
             (default animation.gif).
 
         """
@@ -326,5 +276,6 @@ class VisualizeRegisteredImage(Workflow):
                 self.animate_overlap_with_renderer(static, moved_image,
                                                    anim_slice_type,
                                                    animate_file, affine_matrix)
+
             if not show_mosaic and anim_slice_type is None:
                 logging.info('No options supplied. Exiting.')
