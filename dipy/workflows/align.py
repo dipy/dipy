@@ -1,7 +1,5 @@
 from __future__ import division, print_function, absolute_import
 import logging
-from os import path
-from os.path import  join as pjoin
 import numpy as np
 import nibabel as nib
 
@@ -523,13 +521,13 @@ class ImageRegistrationFlow(Workflow):
 
 class ApplyTransformFlow(Workflow):
 
-    def run(self, reference_image_file, moving_image_files, affine_matrix_file,
+    def run(self, static_image_file, moving_image_files, affine_matrix_file,
             out_dir='', out_file='transformed.nii.gz'):
 
         """
         Parameters
         ----------
-        reference_image_file : string
+        static_image_file : string
             Path of the static image file.
 
         moving_image_files : string
@@ -540,8 +538,7 @@ class ApplyTransformFlow(Workflow):
             The text file containing the affine matrix for transformation.
 
         out_dir : string, optional
-            Directory to save the transformed files.
-            (default '')
+            Directory to save the transformed files (default '').
 
         out_file : string, optional
             Name of the transformed file. If no name is given then a
@@ -552,19 +549,28 @@ class ApplyTransformFlow(Workflow):
         io = self.get_io_iterator()
         img_register = ImageRegistrationFlow()
 
-        for static_image_file, moving_image_file, affine_matrix_file, out_file in io:
+        for static_image_file, moving_image_file, affine_matrix_file, \
+                out_file in io:
 
+            # Loading the image data from the input files into object.
             static_image = nib.load(static_image_file)
             static_grid2world = static_image.affine
 
             moving_image = nib.load(moving_image_file)
             image_data = moving_image.get_data()
 
+            # Doing a sanity check for validating the dimensions of the input
+            # images.
             img_register.check_dimensions(static_image, moving_image)
 
+            # Loading the affine matrix.
             affine_matrix = load_affine_matrix(affine_matrix_file)
 
-            img_transformation = AffineMap(affine=affine_matrix, domain_grid_shape=image_data.shape)
+            # Setting up the affine transformation object.
+            img_transformation = AffineMap(affine=affine_matrix,
+                                           domain_grid_shape=image_data.shape)
+
+            # Transforming the image/
             transformed = img_transformation.transform(image_data)
 
             save_nifti(out_dir+out_file, transformed, affine=static_grid2world)
