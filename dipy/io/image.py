@@ -57,6 +57,7 @@ def save_quality_assur_metric(fname, xopt, fopt):
         f.write('# Distance after registration\n')
         f.write(str(fopt))
 
+
 def load_affine_matrix(fname):
     """
         Parameters
