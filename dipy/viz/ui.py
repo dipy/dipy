@@ -458,7 +458,7 @@ class Button2D(UI):
         """
         icon_id = self.icon_names.index(icon_name)
         self.set_icon(self.icons[icon_id][1])
-    
+
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -2993,7 +2993,7 @@ class Option(UI):
         self.button_size = (font_size * 1.2, font_size * 1.2)
         self.button_label_gap = 10
         super(Option, self).__init__(position)
-        
+
         # Offer some standard hooks to the user.
         self.on_change = lambda obj: None
 
@@ -3048,7 +3048,7 @@ class Option(UI):
             (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
-    
+
     def toggle(self, i_ren, obj, element):
         if self.checked:
             self.deselect()
@@ -3061,7 +3061,7 @@ class Option(UI):
     def select(self):
         self.checked = True
         self.button.set_icon_by_name("checked")
-    
+
     def deselect(self):
         self.checked = False
         self.button.set_icon_by_name("unchecked")
@@ -3123,7 +3123,7 @@ class Checkbox(UI):
 
             # Set callback
             option.on_change = self._handle_option_change
-        
+
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
@@ -3812,3 +3812,134 @@ class FileMenu2D(UI):
             self.set_slot_colors()
         i_ren.force_render()
         i_ren.event.abort()
+
+
+class Preloader(UI):
+    """ A animated component to give the effect of loading.
+    Uses three concentric arcs rotating about their centres.
+    """
+
+    def __init__(self, outer_radius, width=10, center=(0, 0)):
+        """ Initializes a Preloader.
+
+        Parameters
+        ----------
+        outer_radius : int
+            Radius of the outermost arc.
+        width: int, optional
+            Distance between two consecutive arcs in pixels.
+        center : (float, float), optional
+            Coordinates (x, y) of the center of the concentric arcs.
+        """
+        super(Preloader, self).__init__()
+        self.outer_radius = outer_radius
+        self.width = width
+        self.position = center
+        self.outer_arc.GetProperty().SetColor(0,0,1)
+        self.middle_arc.GetProperty().SetColor(1,0,0)
+        self.middle_arc.RotateZ(30)
+        self.inner_arc.GetProperty().SetColor(1,1,0)
+        self.inner_arc.RotateZ(60)
+
+    def _setup(self):
+        """ Setup this UI component.
+        """
+        # Setting up arc actors.
+        self._arc1 = vtk.vtkArcSource()
+        self._arc1.UseNormalAndAngleOn()
+        self._arc1.SetResolution(50)
+        self._arc1.SetAngle(60)
+
+        self._arc2 = vtk.vtkArcSource()
+        self._arc2.UseNormalAndAngleOn()
+        self._arc2.SetResolution(50)
+        self._arc2.SetAngle(50)
+
+        self._arc3 = vtk.vtkArcSource()
+        self._arc3.UseNormalAndAngleOn()
+        self._arc3.SetResolution(50)
+        self._arc3.SetAngle(40)
+
+        # Mappers
+        mapper1 = vtk.vtkPolyDataMapper()
+        mapper1 = set_input(mapper1, self._arc1.GetOutputPort())
+        mapper2 = vtk.vtkPolyDataMapper()
+        mapper2 = set_input(mapper2, self._arc2.GetOutputPort())
+        mapper3 = vtk.vtkPolyDataMapper()
+        mapper3 = set_input(mapper3, self._arc3.GetOutputPort())
+
+        # Actors
+        self.outer_arc = vtk.vtkActor()
+        self.outer_arc.SetMapper(mapper1)
+        self.middle_arc = vtk.vtkActor()
+        self.middle_arc.SetMapper(mapper2)
+        self.inner_arc = vtk.vtkActor()
+        self.inner_arc.SetMapper(mapper3)
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return [self.inner_arc,self.middle_arc,self.outer_arc]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.inner_arc)
+        ren.add(self.middle_arc)
+        ren.add(self.outer_arc)
+
+    def _get_size(self):
+        diameter = 2 * self.outer_radius
+        size = (diameter, diameter)
+        return size
+
+    def _set_position(self, coords):
+        """ Position the center of the arcs.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self._arc1.SetCenter(coords[0],coords[1],0)
+        self._arc2.SetCenter(coords[0],coords[1],0)
+        self._arc3.SetCenter(coords[0],coords[1],0)
+
+    @property
+    def width(self):
+        return self._arc1.GetPolarVector()[0] - self._arc2.GetPolarVector()[0]
+
+    @width.setter
+    def width(self, width):
+        self._arc1.SetPolarVector(self.outer_radius,0,0)
+        self._arc2.SetPolarVector(self.outer_radius - width,0,0)
+        self._arc3.SetPolarVector(self.outer_radius - 2 * width,0,0)
+
+    @property
+    def outer_radius(self):
+        return self._arc1.GetPolarVector()[0]
+
+    @outer_radius.setter
+    def outer_radius(self, radius):
+        self._arc1.SetPolarVector(radius,0,0)
+        self._arc2.SetPolarVector(radius - self.width,0,0)
+        self._arc3.SetPolarVector(radius - 2 * self.width,0,0)
+
+    def rotate(self, style, iren, preloader):
+        """ Rotation of the arcs invoked by timer event.
+
+        Parameters
+        ----------
+        style : :class:`CustomInteractorStyle`
+        iren : :class:`vtkRenderWindowInteractor`
+        slider : :class:`Preloader`
+
+        """
+        self.outer_arc.RotateZ(2)
+        self.middle_arc.RotateZ(2)
+        self.inner_arc.RotateZ(2)
+        style.force_render()
