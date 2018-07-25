@@ -132,17 +132,17 @@ class VisualizeRegisteredImage(Workflow):
         """
 
         # Interpoloating to range 0-15 for reducing the colours.
-        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(), img[..., 0].max()),
-                                 (0, 15))
-        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(), img[..., 1].max()),
-                                 (0, 15))
+        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
+                                              img[..., 0].max()), (0, 15))
+        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
+                                              img[..., 1].max()), (0, 15))
         img = np.round(img, 0).astype('uint8')
 
         # Interpolating back to the range 0-255 for getting GIF range.
-        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(), img[..., 0].max()),
-                                 (0, 255))
-        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(), img[..., 1].max()),
-                                 (0, 255))
+        img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
+                                              img[..., 0].max()), (0, 255))
+        img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
+                                              img[..., 1].max()), (0, 255))
 
         return img
 
@@ -239,7 +239,7 @@ class VisualizeRegisteredImage(Workflow):
                                         slice_type=slice_type,
                                         slice_index=i, ret_slice=True)
             temp_slice = temp_slice[..., None]
-            temp_slice = np.round(temp_slice,0).astype('uint8')
+            temp_slice = np.round(temp_slice, 0).astype('uint8')
             temp_slice = np.rollaxis(temp_slice, 2, 4)
             slice_actor = actor.slicer(temp_slice, affine, value_range)
             renderer.add(slice_actor)
