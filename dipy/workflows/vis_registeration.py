@@ -6,15 +6,22 @@ import nibabel as nib
 from dipy.viz import (window, actor)
 from dipy.io.image import load_affine_matrix
 
+from dipy.viz.regtools import overlay_slices
+from array2gif import write_gif
+
 
 class VisualizeRegisteredImage(Workflow):
 
-    def process_image_data(self, static_img, moved_img):
+    def process_image_data(self, static_img, moved_img, type_vis):
 
         """
         Function for pre-processing the image data. It involves
         normalizing and copying static, moving images in the
         red and green channel, respectively.
+
+        type_vis: str
+            The type of visualisation being created. This affects the
+            range of values to be selected from the moved image.
 
         return: the normalized image data and range of pixels to be
         selected.
@@ -30,7 +37,10 @@ class VisualizeRegisteredImage(Workflow):
         overlay[..., 0] = static_img
         overlay[..., 1] = moved_img
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
-        value_range = (mean - 0.5 * std, mean + 1.5 * std)
+        if type_vis == 'mosaic':
+            value_range = (mean - 0.5 * std, mean + 1.5 * std)
+        elif type_vis == 'anim':
+            value_range = (mean - 0.5 * std, mean + 0.05 * std)
 
         return overlay, value_range
 
@@ -44,7 +54,9 @@ class VisualizeRegisteredImage(Workflow):
             Filename to be used for saving the mosaic (default 'mosaic.png').
         """
 
-        overlay, value_range = self.process_image_data(static_img, moved_img)
+        overlay, value_range = self.process_image_data(static_img,
+                                                       moved_img,
+                                                       'mosaic')
 
         renderer = window.Renderer()
         renderer.background((0.5, 0.5, 0.5))
@@ -82,6 +94,57 @@ class VisualizeRegisteredImage(Workflow):
         window.record(renderer, out_path=fname,
                       size=(900, 600), reset_camera=False)
 
+    def animate_overlap(self, static_img, moved_img, sli_type, fname):
+
+        """
+        Function for creating the animated GIF from the slices of the
+        registered image. This function does not perform any
+        orientation correction or quality optimisation. Please see
+        'animate_overlap_with_renderer' for visualising the correct
+        orientation.
+
+        Patameters
+        ----------
+        sli_type : str (optional)
+            the type of slice to be extracted:
+            sagital, coronal, axial, None (default).
+        fname: str, optional
+            Filename for saving the GIF (default 'animation.gif').
+        """
+
+        overlay, value_range = self.process_image_data(static_img,
+                                                       moved_img,
+                                                       'anim')
+        x, y, z, _ = overlay.shape
+
+        overlay = overlay.astype('uint8')
+
+        # Selecting the pixels based on the obtained value range.
+        overlay = np.interp(overlay, xp=[value_range[0], value_range[1]],
+                            fp=[0, 255])
+        num_slices = 0
+
+        if sli_type == 'saggital':
+            num_slices = x
+            slice_type = 0
+        elif sli_type == 'coronal':
+            num_slices = y
+            slice_type = 1
+        elif sli_type == 'axial':
+            num_slices = z
+            slice_type = 2
+
+        slices = []
+
+        for i in range(num_slices):
+            temp_slice = overlay_slices(overlay[..., 0], overlay[..., 1],
+                                        slice_type=slice_type,
+                                        slice_index=i, ret_slice=True)
+            slices.append(temp_slice)
+
+        # Writing the GIF below
+        write_gif(slices, fname, fps=10)
+
     @staticmethod
     def check_dimensions(static, moving):
 
@@ -93,7 +156,8 @@ class VisualizeRegisteredImage(Workflow):
                              'dimensions.')
 
     def run(self, static_img_file, moving_img_file, affine_matrix_file,
-            show_mosaic=False, out_dir='', mosaic_file='mosaic.png'):
+            show_mosaic=False, anim_slice_type=None, out_dir='',
+            mosaic_file='mosaic.png', animate_file='animate.gif'):
         """
         Parameters
         ----------
@@ -110,11 +174,20 @@ class VisualizeRegisteredImage(Workflow):
             If enabled, a mosaic of the all the slices from the
             axial plane is saved in an image (default False).
 
+        anim_slice_type : str, optional
+            A GIF animation showing the overlap of slices
+            from static and moving images will be saved.
+            sagital, coronal, axial, None (default).
+
         out_dir : string, optional
             Directory to save the results (default '').
 
         mosaic_file : string, optional
             Name of the file to save the mosaic (default 'mosaic.png').
+
+        animate_file : string, optional
+            name of the html file for saving the animation
+            (default animation.gif).
 
         """
 
@@ -141,5 +214,9 @@ class VisualizeRegisteredImage(Workflow):
             if show_mosaic:
                 self.create_mosaic(static, moved_image, affine_matrix,
                                    mosaic_file)
-            else:
+
+            if anim_slice_type is not None:
+                self.animate_overlap(static, moved_image, anim_slice_type,
+                                     animate_file)
+            if not show_mosaic and anim_slice_type is None:
                 logging.info('No options supplied. Exiting.')
