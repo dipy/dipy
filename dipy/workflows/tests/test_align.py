@@ -206,5 +206,6 @@ def test_apply_transform():
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, 'transformed.nii.gz'))
 
+
 if __name__ == "__main__":
     run_module_suite()
