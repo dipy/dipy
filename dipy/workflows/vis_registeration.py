@@ -13,7 +13,7 @@ from dipy.viz.window import snapshot
 
 class VisualizeRegisteredImage(Workflow):
 
-    def process_image_data(self, static_img, moved_img, type_vis):
+    def process_image_data(self, static_img, moved_img):
 
         """
         Function for pre-processing the image data. It involves
@@ -38,11 +38,7 @@ class VisualizeRegisteredImage(Workflow):
         overlay[..., 0] = static_img
         overlay[..., 1] = moved_img
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
-        if type_vis == 'mosaic':
-            value_range = (mean - 0.5 * std, mean + 1.5 * std)
-        elif type_vis == 'anim':
-            value_range = (mean - 0.5 * std, mean + 1.5 * std)
-
+        value_range = (mean - 0.5 * std, mean + 1.5 * std)
         return overlay, value_range
 
     def get_row_cols(self, num_slices):
@@ -83,8 +79,7 @@ class VisualizeRegisteredImage(Workflow):
         """
 
         overlay, value_range = self.process_image_data(static_img,
-                                                       moved_img,
-                                                       'mosaic')
+                                                       moved_img)
 
         renderer = window.Renderer()
         renderer.background((0.5, 0.5, 0.5))
@@ -93,7 +88,7 @@ class VisualizeRegisteredImage(Workflow):
         renderer.projection('parallel')
 
         cnt = 0
-        _, _, num_slices = slice_actor.shape[:3]
+        X, Y, num_slices = slice_actor.shape[:3]
 
         rows, cols = self.get_row_cols(num_slices)
         border = 5
@@ -131,7 +126,7 @@ class VisualizeRegisteredImage(Workflow):
         The numpy array with scaled down range of color values.
         """
 
-        # Interpoloating to range 0-15 for reducing the colours.
+        # Interpolating to range 0-15 for reducing the colours.
         img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
                                               img[..., 0].max()), (0, 15))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
@@ -165,7 +160,7 @@ class VisualizeRegisteredImage(Workflow):
         """
 
         overlay, value_range = self.process_image_data(static_img,
-                                                       moved_img, 'anim')
+                                                       moved_img)
         x, y, z, _ = overlay.shape
 
         num_slices = 0
