@@ -1,6 +1,7 @@
 from dipy.reconst.base import ReconstModel as model
 import numpy as np
 import cvxpy as cvx
+from dipy.reconst.multi_voxel import multi_voxel_fit
 import dipy.reconst.noddi_speed as noddixspeed
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
@@ -33,7 +34,7 @@ class NODDIxModel(model):
     Parameters
     ----------
     ReconstModel of DIPY
-    Returns  the 11 parameters of the model
+    Returns the signal with the following 11 parameters of the model
 
     Parameters
     ----------
@@ -62,7 +63,7 @@ class NODDIxModel(model):
 
     def __init__(self, gtab, params, fit_method='MIX'):
         # The maximum number of generations, genetic algorithm 1000 default, 1
-        self.maxiter = 1000
+        self.maxiter = 100
         # Tolerance for termination, nonlinear least square 1e-8 default, 1e-3
         self.xtol = 1e-8
         self.gtab = gtab
@@ -80,8 +81,9 @@ class NODDIxModel(model):
         self.exp_phi1 = np.zeros((self.small_delta.shape[0], 5))
         self.exp_phi1[:, 4] = np.exp(-self.yhat_ball)
 
+    @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the NODDIx model class
+        r""" Fit method of the NODDIx model class
 
         data : array
         The measured signal from one voxel.
@@ -94,8 +96,9 @@ class NODDIxModel(model):
                                           maxiter=self.maxiter, args=(data,),
                                           tol=0.001, seed=200,
                                           mutation=(0.0, 1.05),
-                                          disp=True, polish=True, popsize=12,
-                                          init='latinhypercube')
+                                          disp=True, polish=False, popsize=22,
+                                          init='latinhypercube',
+                                          strategy='best1bin')
 
         # Step 1: store the results of the differential evolution in x
         x = diff_res.x
@@ -544,7 +547,7 @@ class NODDIxModel(model):
         """
         Substrate: Anisotropic hindered diffusion compartment
         Orientation distribution: Watson's distribution
-        xh = WatsonHinderedDiffusionCoeff(dPar, dPerp, kappa)
+        WatsonHinderedDiffusionCoeff(dPar, dPerp, kappa)
         returns the equivalent parallel and perpendicular diffusion
         coefficients for hindered compartment with impermeable cylinder's
         oriented with a Watson's distribution with a cocentration parameter of

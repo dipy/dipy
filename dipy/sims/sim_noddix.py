@@ -1,11 +1,15 @@
 from __future__ import division
 import time as time
 import numpy as np
+# import nibabel as nib
 from dipy.data import get_data
+from dipy.reconst.shore import ShoreModel
+from dipy.sims.voxel import _add_rician
 from dipy.core.gradients import gradient_table
 import dipy.reconst.NODDIx as noddix
 from scipy.linalg import get_blas_funcs
 from dipy.data import get_sphere
+# from dipy.io import read_bvals_bvecs
 sphere = get_sphere('repulsion724')
 gemm = get_blas_funcs("gemm")
 
@@ -14,15 +18,22 @@ params = np.loadtxt(fscanner)
 
 # getting the gtab, bvals and bvecs
 bvecs = params[:, 0:3]
+# fbvecs = 'C:/Users/Shreyas/Desktop/subj35/35/04_NODDI_10DIR_B300.bvecs'
 G = params[:, 3] / 10 ** 6  # gradient strength
 big_delta = params[:, 4]
 small_delta = params[:, 5]
 gamma = 2.675987 * 10 ** 8
+
 bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
+# fbvals = 'C:/Users/Shreyas/Desktop/subj35/35/04_NODDI_10DIR_B300.bvals'
+# img = nib.load('C:/Users/Shreyas/Desktop/subj35/35/04_NODDI_10DIR_B300.nii.gz')
+# data = img.get_data()
+
+#bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+
 gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       small_delta=small_delta,
                       b0_threshold=0, atol=1e-2)
-
 
 # instantiating the noddixmodel class
 noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
@@ -30,13 +41,13 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
 Declare the parameters
 """
-volfrac_ic1 = 0.3
-volfrac_ec1 = 0.3
+volfrac_ic1 = 0.1
+volfrac_ec1 = 0.1
 theta2 = 0.01745329  # 1 Degree
 phi2 = 0.01745329  # 1 Degree
 
-volfrac_ic2 = 0.1
-volfrac_ec2 = 0.1
+volfrac_ic2 = 0.3
+volfrac_ec2 = 0.3
 theta1 = 1.57079633  # 90 Degree
 phi1 = 0.01745329  # 1 Degree
 
@@ -54,9 +65,10 @@ f = x_f_sig[0:5]
 phi = noddix_model.Phi2(x_f_sig)
 reconst_signal = np.dot(phi, f)
 
+reconst_signal = _add_rician(reconst_signal, 0.2, 0.2)
+
 
 def show_with_shore(gtab, reconst_signal):
-    from dipy.reconst.shore import ShoreModel
     gtab.bvals = gtab.bvals * 10**6
     shore_model = ShoreModel(gtab)
     shore_fit = shore_model.fit(reconst_signal * 100)
@@ -106,3 +118,5 @@ print('Actual Signal: ', x_f_sig)
 print('Estimation Result: ', NODDIx_fit)
 print('Errors: ', errors_list)
 print('Sum of Errors: ', sum(errors_list))
+
+show_with_shore(gtab, reconst_signal)
