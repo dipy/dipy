@@ -44,8 +44,8 @@ theta2 = 1.57079633
 phi2 = 0.01745329
 
 volfrac_csf = 0.02
-OD1 = 0.11
-OD2 = 0.11
+OD1 = 0.1
+OD2 = 0.1
 
 """
 This section simulates the signal from the volume fractions and the angles.
@@ -117,7 +117,3 @@ def gqi_viz(reconst_signal):
     ren = window.Renderer()
     ren.add(fvtk.sphere_funcs(odf, sphere))
     window.show(ren)
-
-
-test_noddix_signal()
-show_with_shore(gtab, reconst_signal)
