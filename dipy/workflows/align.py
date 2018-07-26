@@ -6,8 +6,8 @@ import numpy as np
 import nibabel as nib
 
 from dipy.align.reslice import (reslice)
-from dipy.align.imaffine import (transform_centers_of_mass, MutualInformationMetric,
-                                 AffineRegistration)
+from dipy.align.imaffine import (transform_centers_of_mass,
+                                 MutualInformationMetric, AffineRegistration)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 from dipy.io.image import (save_nifti, save_affine_matrix,
