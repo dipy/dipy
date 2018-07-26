@@ -13,6 +13,7 @@ gemm = get_blas_funcs("gemm")
 
 fname, fscanner = get_data('small_NODDIx_data')
 params = np.loadtxt(fscanner)
+
 # getting the gtab, bvals and bvecs
 bvecs = params[:, 0:3]
 G = params[:, 3] / 10 ** 6  # gradient strength
@@ -30,21 +31,21 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 """
 11 parameters of the NODDIx model
 """
-volfrac_ic1 = 0.3
-volfrac_ec1 = 0.3
+volfrac_ic1 = 0.39
+volfrac_ec1 = 0.39
 # Angles of the vectors are in Radians
 theta1 = 0.01745329
 phi1 = 0.01745329
 
-volfrac_ic2 = 0.19
-volfrac_ec2 = 0.19
+volfrac_ic2 = 0.1
+volfrac_ec2 = 0.1
 # Angles of the vectors are in Radians
 theta2 = 1.57079633
 phi2 = 0.01745329
 
 volfrac_csf = 0.02
-OD1 = 0.1
-OD2 = 0.1
+OD1 = 0.11
+OD2 = 0.11
 
 """
 This section simulates the signal from the volume fractions and the angles.
