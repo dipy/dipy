@@ -120,20 +120,20 @@ class VisualizeRegisteredImage(Workflow):
 
         """
         Function to adjust the range of colors in numpy array
-        to create the GIF (GIF standard only supports 256 colours).
+        to create the GIF (GIF standard only supports 256 colors).
 
         return
         The numpy array with scaled down range of color values.
         """
 
-        # Interpolating to range 0-15 for reducing the colours.
+        # Interpolating to range 0-15 for reducing the color values.
         img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
                                               img[..., 0].max()), (0, 14))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
                                               img[..., 1].max()), (0, 14))
         img = np.round(img, 0).astype('uint8')
 
-        # Interpolating back to the range 0-255 for getting GIF range.
+        # Interpolating the reduced range back to 0-255 for GIF.
         img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
                                               img[..., 0].max()), (0, 255))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
