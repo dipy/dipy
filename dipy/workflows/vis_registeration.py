@@ -203,9 +203,8 @@ class VisualizeRegisteredImage(Workflow):
         """Check the dimensions of the input images."""
 
         if len(static.shape) != len(moving.shape):
-            raise ValueError('Dimension mismatch: The'
-                             ' input images must have same number of '
-                             'dimensions.')
+            raise ValueError('Dimension mismatch: The input images '
+                             'must have same number of dimensions.')
 
     def run(self, static_img_file, moving_img_file, affine_matrix_file,
             show_mosaic=False, anim_slice_type=None, out_dir='',
