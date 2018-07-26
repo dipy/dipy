@@ -141,8 +141,8 @@ class VisualizeRegisteredImage(Workflow):
         window.record(renderer, out_path=fname,
                       size=(900, 600), reset_camera=False)
 
-    def animate_overlap_with_renderer(self, static_img, moved_img,
-                                      slice_type, fname, affine):
+    def animate_overlap(self, static_img, moved_img,
+                        slice_type, fname, affine):
 
         """
         Function for creating the animated GIF from the slices of the
@@ -267,9 +267,8 @@ class VisualizeRegisteredImage(Workflow):
                                    mosaic_file)
 
             if anim_slice_type is not None:
-                self.animate_overlap_with_renderer(static, moved_image,
-                                                   anim_slice_type,
-                                                   animate_file, affine_matrix)
+                self.animate_overlap(static, moved_image, anim_slice_type,
+                                     animate_file, affine_matrix)
 
             if not show_mosaic and anim_slice_type is None:
                 logging.info('No options supplied. Exiting.')
