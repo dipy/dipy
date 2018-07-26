@@ -6,7 +6,7 @@ import nibabel as nib
 from dipy.workflows.core import write_gif
 from dipy.io.image import load_affine_matrix
 from dipy.viz.regtools import overlay_slices
-from dipy.viz import (window, actor)
+from dipy.viz import window, actor
 
 from dipy.viz.window import snapshot
 
