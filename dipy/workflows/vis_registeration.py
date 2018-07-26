@@ -128,9 +128,9 @@ class VisualizeRegisteredImage(Workflow):
 
         # Interpolating to range 0-15 for reducing the colours.
         img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
-                                              img[..., 0].max()), (0, 15))
+                                              img[..., 0].max()), (0, 14))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
-                                              img[..., 1].max()), (0, 15))
+                                              img[..., 1].max()), (0, 14))
         img = np.round(img, 0).astype('uint8')
 
         # Interpolating back to the range 0-255 for getting GIF range.
@@ -138,6 +138,8 @@ class VisualizeRegisteredImage(Workflow):
                                               img[..., 0].max()), (0, 255))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
                                               img[..., 1].max()), (0, 255))
+
+        img = np.round(img, 0).astype('uint8')
 
         return img
 
@@ -191,8 +193,8 @@ class VisualizeRegisteredImage(Workflow):
             renderer.reset_camera()
             renderer.zoom(1.6)
             snap = snapshot(renderer)
-            snap = self.adjust_color_range(snap)
-            slices.append(snap)
+            snap1 = self.adjust_color_range(snap)
+            slices.append(snap1)
 
         # Writing the GIF below
         write_gif(slices, fname, fps=10)
