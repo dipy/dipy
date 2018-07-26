@@ -219,6 +219,29 @@ class NODDIxModel(model):
         phi = self.Phi2(x_f)
         return np.sum((np.dot(phi, f) - signal) ** 2)
 
+    def Phi(self, x):
+        """
+        Constructs the Signal from the intracellular and extracellular compart-
+        ments for the Differential Evolution and Variable Separation.
+        """
+        self.exp_phi1[:, 0] = self.S_ic1(x)
+        self.exp_phi1[:, 1] = self.S_ec1(x)
+        self.exp_phi1[:, 2] = self.S_ic2(x)
+        self.exp_phi1[:, 3] = self.S_ec2(x)
+        return self.exp_phi1
+
+    def Phi2(self, x_f):
+        """
+        Constructs the Signal from the intracellular and extracellular compart-
+        ments: Convex Fitting + NLLS - LM method.
+        """
+        x, f = self.x_f_to_x_and_f(x_f)
+        self.exp_phi1[:, 0] = self.S_ic1(x)
+        self.exp_phi1[:, 1] = self.S_ec1_new(x, f)
+        self.exp_phi1[:, 2] = self.S_ic2_new(x)
+        self.exp_phi1[:, 3] = self.S_ec2_new(x, f)
+        return self.exp_phi1
+
     def S_ic1(self, x):
         """
         This function models the intracellular component.
@@ -674,25 +697,3 @@ class NODDIxModel(model):
         x_f[5:8] = x[0:3]
         x_f[8:11] = x[4:7]
         return x_f
-
-    def Phi(self, x):
-        self.exp_phi1[:, 0] = self.S_ic1(x)
-        self.exp_phi1[:, 1] = self.S_ec1(x)
-        self.exp_phi1[:, 2] = self.S_ic2(x)
-        self.exp_phi1[:, 3] = self.S_ec2(x)
-        return self.exp_phi1
-
-    def Phi2(self, x_f):
-        x, f = self.x_f_to_x_and_f(x_f)
-        self.exp_phi1[:, 0] = self.S_ic1(x)
-        self.exp_phi1[:, 1] = self.S_ec1_new(x, f)
-        self.exp_phi1[:, 2] = self.S_ic2_new(x)
-        self.exp_phi1[:, 3] = self.S_ec2_new(x, f)
-        return self.exp_phi1
-
-    def estimate_signal(self, x_f):
-        x, f = self.x_f_to_x_and_f(x_f)
-        x1, x2 = self.x_to_xs(x)
-        S = f[0] * self.S1_slow(x1) + f[1] * self.S2_slow(x2)
-        + f[2] * self.S3() + f[3] * self.S4()
-        return S
