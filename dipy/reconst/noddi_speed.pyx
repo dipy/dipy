@@ -9,7 +9,13 @@ cimport numpy as cnp
 from scipy.special.cython_special cimport erf, erfi
 from libc.math cimport sqrt, sin, cos, pow, pi, exp, log
 
-cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
+cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:'
+    """
+    Following are the Legendre Polynomials upto the fourteenth power generated
+    using the legendre polynomial generator from the SciPy's special package.
+    The following Polynomials have be precomputed to improve the speedups and
+    remove the bottleneck from SciPy's implememntation.
+    """
     if n == 0:
          return 1
     elif n == 1:
@@ -258,8 +264,12 @@ def watson_sh_coeff(double k):
             C[6] = 128 * sqrt(pi) * k6 / 152108775
     return C
 
-
 def synthMeasSHFor(double[:] x, double[:, :] shMatrix):
+    """
+    This is Cythonized for loop that calls the legendre_eval() function
+    mentioned above. It creates a Matrix of the Spherical Harmonics by
+    evaluating the Legendre Polynomials mentioned above.
+    """
     cdef:
         cnp.npy_intp i, j, n
         cnp.npy_intp shape = x.shape[0]

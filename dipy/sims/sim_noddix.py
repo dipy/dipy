@@ -51,7 +51,7 @@ volfrac_ec2 = 0.3
 theta1 = 1.57079633  # 90 Degree
 phi1 = 0.01745329  # 1 Degree
 
-volfrac_csf = 0.2
+volfrac_csf = 0.6
 OD1 = 0.1
 OD2 = 0.1
 
@@ -65,7 +65,7 @@ f = x_f_sig[0:5]
 phi = noddix_model.Phi2(x_f_sig)
 reconst_signal = np.dot(phi, f)
 
-reconst_signal = _add_rician(reconst_signal, 0.2, 0.2)
+# reconst_signal = _add_rician(reconst_signal, 0.2, 0.2)
 
 
 def show_with_shore(gtab, reconst_signal):
