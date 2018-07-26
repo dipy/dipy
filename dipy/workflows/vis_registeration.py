@@ -20,12 +20,22 @@ class VisualizeRegisteredImage(Workflow):
         normalizing and copying static, moving images in the
         red and green channel, respectively.
 
-        type_vis: str
-            The type of visualisation being created. This affects the
-            range of values to be selected from the moved image.
+        Parameters
+        ----------
+        static_img : array, shape (S, R, C) or (R, C)
+            The image to be used as reference during optimization.
 
-        return: the normalized image data and range of pixels to be
-        selected.
+        moved_img : array, shape (S', R', C') or (R', C')
+            The image to be used as "moving" during optimization.
+
+        Returns
+        ------
+         overlay : ndarray
+            Containing the normalized image data
+
+         value_range : tuple
+            A tuple containing the minimum and maximum range of values to
+            select the pixels.
         """
 
         static_img = 255 * ((static_img - static_img.min()) /
@@ -34,7 +44,7 @@ class VisualizeRegisteredImage(Workflow):
                            (moved_img.max() - moved_img.min()))
 
         # Create the color images
-        overlay = np.zeros(shape=(static_img.shape) + (3,), dtype=np.uint8)
+        overlay = np.zeros(shape=static_img.shape + (3,), dtype=np.uint8)
         overlay[..., 0] = static_img
         overlay[..., 1] = moved_img
         mean, std = overlay[overlay > 0].mean(), overlay[overlay > 0].std()
@@ -44,13 +54,18 @@ class VisualizeRegisteredImage(Workflow):
     def get_row_cols(self, num_slices):
 
         """
-        Experimetal helper function to get the number
+        Experimental helper function to get the number
         of rows and columns for the mosaic.
 
         num_slices: int
             The number of slices as obtained from the
             create_mosaic function.
-        return: the number of rows and columns.
+
+        Returns
+        -------
+        rows, cols : int, int
+            The number of rows and columns to be used in the grid for the
+            mosaic.
         """
         rows, cols = 0, 0
 
@@ -74,7 +89,11 @@ class VisualizeRegisteredImage(Workflow):
         Function to adjust the range of colors in numpy array
         to create the GIF (GIF standard only supports 256 colors).
 
-        return
+        img : ndarray
+            The numpy array containing the image data.
+
+        Returns
+        -------
         The numpy array with scaled down range of color values.
         """
 
@@ -100,8 +119,21 @@ class VisualizeRegisteredImage(Workflow):
         Function for creating the mosaic of the moved image. It
         currently only supports slices from the axial plane.
 
+        static_img : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        moved_img : array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization.
+
+        affine : the affine matrix to be used for transforming the moving
+            image.
+
         fname: str, optional
             Filename to be used for saving the mosaic (default 'mosaic.png').
+
+        Returns
+        -------
+            Saves a png file for the mosaic is saved on the disk.
         """
 
         overlay, value_range = self.process_image_data(static_img,
@@ -149,14 +181,25 @@ class VisualizeRegisteredImage(Workflow):
         registered image.
         It uses the renderer object to control the dimensions of the
         created GIF and for correcting the orientation.
-        Patameters
+
+        Parameters
         ----------
-        sli_type : str (optional)
+        static_img : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        moved_img : array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization.
+
+        slice_type : str (optional)
             the type of slice to be extracted:
             sagittal, coronal, axial.
 
         fname: str, optional
             Filename for saving the GIF (default 'animation.gif').
+
+        Returns
+        -------
+            A GIF animation is saved on the disk.
         """
 
         overlay, value_range = self.process_image_data(static_img,
@@ -198,11 +241,22 @@ class VisualizeRegisteredImage(Workflow):
         write_gif(slices, fname, fps=10)
 
     @staticmethod
-    def check_dimensions(static, moving):
+    def check_dimensions(static_img, moved_img):
 
-        """Check the dimensions of the input images."""
+        """
+        Check the dimensions of the input images.
 
-        if len(static.shape) != len(moving.shape):
+        Parameters
+        ----------
+        static_img : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        moved_img : array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization.
+
+        """
+
+        if len(static_img.shape) != len(moved_img.shape):
             raise ValueError('Dimension mismatch: The input images '
                              'must have same number of dimensions.')
 
