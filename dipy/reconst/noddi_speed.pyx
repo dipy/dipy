@@ -9,7 +9,7 @@ cimport numpy as cnp
 from scipy.special.cython_special cimport erf, erfi
 from libc.math cimport sqrt, sin, cos, pow, pi, exp, log
 
-cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:'
+cdef inline double legendre_eval(cnp.npy_intp n, double x) nogil:
     """
     Following are the Legendre Polynomials upto the fourteenth power generated
     using the legendre polynomial generator from the SciPy's special package.
