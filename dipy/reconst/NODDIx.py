@@ -96,7 +96,7 @@ class NODDIxModel(model):
                                           maxiter=self.maxiter, args=(data,),
                                           tol=0.001, seed=200,
                                           mutation=(0.0, 1.05),
-                                          disp=True, polish=False, popsize=22,
+                                          disp=True, polish=False, popsize=14,
                                           init='latinhypercube',
                                           strategy='best1bin')
 
@@ -280,14 +280,14 @@ class NODDIxModel(model):
 
     def S_ic2(self, x):
         """
-        We extend the NODDI model as presented in [2] for two fiber
+        We extend the NODDI model as presented in [2]_ for two fiber
         orientations. Therefore we have 2 intracellular and extracellular
         components to account for this.
 
         S_ic2 corresponds to the second intracellular component in the NODDIx
         model
 
-        (see Supplimentary note 6: [1]_ for a comparison and a thorough
+        (see Supplimentary note from 6: [1]_ for a comparison and a thorough
         discussion)
         ----------
         References
@@ -295,6 +295,9 @@ class NODDIxModel(model):
         .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
                White Matter Fibers from diffusion MRI." Scientific reports 6
                (2016).
+        .. [2] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
         """
         OD2 = x[4]
         sinT2 = np.sin(x[5])
@@ -324,6 +327,9 @@ class NODDIxModel(model):
         .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
                White Matter Fibers from diffusion MRI." Scientific reports 6
                (2016).
+        .. [2] Zhang, H. et. al. NeuroImage NODDI : Practical in vivo neurite
+               orientation dispersion and density imaging of the human brain.
+               NeuroImage, 61(4), 1000–1016.
         """
         OD2 = x[4]
         sinT2 = np.sin(x[5])
@@ -526,8 +532,7 @@ class NODDIxModel(model):
         x(2) is the concentration parameter of the Watson's distribution
 
         fibredir is a unit vector along the symmetry axis of the Watson's
-        distribution.
-        It must be in Cartesian coordinates [x y z]' with size [3, 1]. [1]_
+        distribution. [1]_
 
         References
         ----------
@@ -602,8 +607,7 @@ class NODDIxModel(model):
         x(1): is the hindered diffusivity outside the cylinders in
               perpendicular directions.
 
-        fibredir is a unit vector along the cylinder axis.  It must be in
-        Cartesian coordinates [x y z]' with size [3 1]. [1]_
+        fibredir is a unit vector along the cylinder axis. [1]_
 
         References
         ----------
