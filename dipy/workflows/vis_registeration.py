@@ -68,54 +68,6 @@ class VisualizeRegisteredImage(Workflow):
 
         return rows, cols
 
-    def create_mosaic(self, static_img, moved_img,
-                      affine, fname):
-        """
-        Function for creating the mosaic of the moved image. It
-        currently only supports slices from the axial plane.
-
-        fname: str, optional
-            Filename to be used for saving the mosaic (default 'mosaic.png').
-        """
-
-        overlay, value_range = self.process_image_data(static_img,
-                                                       moved_img)
-
-        renderer = window.Renderer()
-        renderer.background((0.5, 0.5, 0.5))
-
-        slice_actor = actor.slicer(overlay, affine, value_range)
-        renderer.projection('parallel')
-
-        cnt = 0
-        X, Y, num_slices = slice_actor.shape[:3]
-
-        rows, cols = self.get_row_cols(num_slices)
-        border = 5
-
-        for j in range(rows):
-            for i in range(cols):
-                slice_mosaic = slice_actor.copy()
-                slice_mosaic.display(None, None, cnt)
-                slice_mosaic.SetPosition((X + border) * i,
-                                         0.5 * cols * (Y + border) -
-                                         (Y + border) * j, 0)
-                slice_mosaic.SetInterpolate(False)
-                renderer.add(slice_mosaic)
-                renderer.reset_camera()
-                renderer.zoom(1.6)
-                cnt += 1
-                if cnt > num_slices:
-                    break
-            if cnt > num_slices:
-                break
-
-        renderer.reset_camera()
-        renderer.zoom(1.6)
-
-        window.record(renderer, out_path=fname,
-                      size=(900, 600), reset_camera=False)
-
     def adjust_color_range(self, img):
 
         """
@@ -143,8 +95,54 @@ class VisualizeRegisteredImage(Workflow):
 
         return img
 
+    def create_mosaic(self, static_img, moved_img, affine, fname):
+        """
+        Function for creating the mosaic of the moved image. It
+        currently only supports slices from the axial plane.
+
+        fname: str, optional
+            Filename to be used for saving the mosaic (default 'mosaic.png').
+        """
+
+        overlay, value_range = self.process_image_data(static_img,
+                                                       moved_img)
+        renderer = window.Renderer()
+        renderer.background((0.5, 0.5, 0.5))
+
+        slice_actor = actor.slicer(overlay, affine, value_range)
+        renderer.projection('parallel')
+
+        cnt = 0
+        x, y, num_slices = slice_actor.shape[:3]
+
+        rows, cols = self.get_row_cols(num_slices)
+        border = 5
+
+        for j in range(rows):
+            for i in range(cols):
+                slice_mosaic = slice_actor.copy()
+                slice_mosaic.display(None, None, cnt)
+                slice_mosaic.SetPosition((x + border) * i,
+                                         0.5 * cols * (y + border) -
+                                         (y + border) * j, 0)
+                slice_mosaic.SetInterpolate(False)
+                renderer.add(slice_mosaic)
+                renderer.reset_camera()
+                renderer.zoom(1.6)
+                cnt += 1
+                if cnt > num_slices:
+                    break
+            if cnt > num_slices:
+                break
+
+        renderer.reset_camera()
+        renderer.zoom(1.6)
+
+        window.record(renderer, out_path=fname,
+                      size=(900, 600), reset_camera=False)
+
     def animate_overlap_with_renderer(self, static_img, moved_img,
-                                      sli_type, fname, affine):
+                                      slice_type, fname, affine):
 
         """
         Function for creating the animated GIF from the slices of the
@@ -155,7 +153,7 @@ class VisualizeRegisteredImage(Workflow):
         ----------
         sli_type : str (optional)
             the type of slice to be extracted:
-            sagital, coronal, axial, None (default).
+            sagittal, coronal, axial.
 
         fname: str, optional
             Filename for saving the GIF (default 'animation.gif').
@@ -167,13 +165,13 @@ class VisualizeRegisteredImage(Workflow):
 
         num_slices = 0
 
-        if sli_type == 'saggital':
+        if slice_type == 'sagittal':
             num_slices = x
             slice_type = 0
-        elif sli_type == 'coronal':
+        elif slice_type == 'coronal':
             num_slices = y
             slice_type = 1
-        elif sli_type == 'axial':
+        elif slice_type == 'axial':
             num_slices = z
             slice_type = 2
 
@@ -231,7 +229,7 @@ class VisualizeRegisteredImage(Workflow):
         anim_slice_type : str, optional
             A GIF animation showing the overlap of slices
             from static and moving images will be saved.
-            The valid slice type(s): saggital, coronal, axial, None(default).
+            The valid slice type(s): sagittal, coronal, axial, None(default).
 
         out_dir : string, optional
             Directory to save the results (default '').

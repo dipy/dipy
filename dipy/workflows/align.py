@@ -11,7 +11,8 @@ from dipy.align.imaffine import (transform_centers_of_mass, AffineMap,
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 from dipy.io.image import (save_nifti, save_affine_matrix,
-                           save_quality_assur_metric, load_nifti)
+                           save_quality_assur_metric, load_nifti,
+                           load_affine_matrix)
 
 
 class ResliceFlow(Workflow):
