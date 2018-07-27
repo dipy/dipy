@@ -25,6 +25,7 @@ def assert_arrays_equal(arrays1, arrays2):
     for arr1, arr2 in zip(arrays1, arrays2):
         assert_array_equal(arr1, arr2)
 
+
 def setup_test():
     """ Set numpy print options to "legacy" for new versions of numpy
 
@@ -44,6 +45,6 @@ def setup_test():
     # print the first occurrence of matching warnings for each location
     # (module + line number) where the warning is issued
     if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
-                    LooseVersion(scipy.version.short_version) <= '1.1.0':
+            LooseVersion(scipy.version.short_version) <= '1.1.0':
         import warnings
         warnings.simplefilter("default")
