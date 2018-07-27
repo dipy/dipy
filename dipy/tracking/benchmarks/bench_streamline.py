@@ -14,8 +14,8 @@ Run this benchmark with:
     nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_streamline.py
 """
 import numpy as np
-from numpy.testing import measure
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.utils.testing import measure
+from dipy.utils.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.data import get_data
 from nibabel import trackvis as tv

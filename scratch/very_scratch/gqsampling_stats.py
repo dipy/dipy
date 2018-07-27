@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.utils.testing import assert_true, assert_false, assert_equal, assert_raises
+from dipy.utils.testing import assert_array_equal, assert_array_almost_equal
 import time
 #import dipy.core.reconstruction_performance as rp
 import dipy.reconst.recspeed as rp

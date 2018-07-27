@@ -14,17 +14,17 @@ from numpy.random import randn
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 
-from numpy.testing import measure, dec
+from dipy.utils.testing import measure
+import pytest
 
 try:
     np.einsum
+    found = False
 except AttributeError:
-    with_einsum = dec.skipif(True, "Need einsum for benchmark")
-else:
-    def with_einsum(f): return f
+    found = True
 
 
-@with_einsum
+@pytest.mark.skipif(found, reason="Need einsum for benchmark")
 def bench_vec_val_vect():
     # nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench'
     repeat = 100

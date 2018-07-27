@@ -8,10 +8,10 @@ from scipy.ndimage.filters import median_filter
 from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
                                multi_median, median_otsu)
 
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
+from dipy.utils.testing import (assert_equal,
+                           assert_almost_equal)
 from dipy.data import get_data
+import pytest
 
 
 def test_mask():
@@ -113,4 +113,4 @@ def test_median_otsu():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

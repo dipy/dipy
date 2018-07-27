@@ -2,10 +2,10 @@ import numpy as np
 import dipy.segment.metric as dipymetric
 import itertools
 
-from nose.tools import (assert_true, assert_false, assert_equal,
-                        assert_greater_equal, assert_less_equal)
-from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
-                           assert_almost_equal)
+from dipy.utils.testing import (assert_true, assert_false, assert_equal,
+                                assert_greater_equal, assert_less_equal)
+from dipy.utils.testing import (assert_array_equal, assert_raises, assert_almost_equal)
+import pytest
 
 
 def norm(x, ord=None, axis=None):
@@ -256,4 +256,4 @@ def test_distance_matrix():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

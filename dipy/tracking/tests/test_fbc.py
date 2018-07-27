@@ -5,7 +5,7 @@ from dipy.tracking.fbcmeasures import FBCMeasures
 from dipy.core.sphere import Sphere
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 
 def test_fbc():
@@ -45,4 +45,4 @@ def test_fbc():
     npt.assert_almost_equal(np.mean(rfbc_orig), 1.0500466494329224)
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

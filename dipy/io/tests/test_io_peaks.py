@@ -2,7 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
@@ -127,6 +127,6 @@ def test_io_save_peaks_error():
 
 
 if __name__ == '__main__':
-    #npt.run_module_suite()
+    #pytest.main()
     test_io_peaks()
     test_io_save_peaks_error()

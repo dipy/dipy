@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
@@ -82,4 +82,4 @@ def test_boot_pmf():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

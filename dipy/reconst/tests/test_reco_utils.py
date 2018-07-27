@@ -6,10 +6,10 @@ import numpy as np
 from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
 
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+from dipy.utils.testing import (assert_true, assert_false,
+                                assert_equal, assert_raises)
 
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.utils.testing import assert_array_equal, assert_array_almost_equal
 
 
 def test_adj_countarrs():

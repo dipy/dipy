@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
@@ -28,4 +28,4 @@ def test_reslice():
         
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

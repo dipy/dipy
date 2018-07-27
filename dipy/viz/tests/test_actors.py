@@ -3,7 +3,7 @@ import numpy as np
 
 from dipy.viz import actor, window
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
@@ -11,6 +11,7 @@ from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.testing.decorators import xvfb_it
 from dipy.data import get_sphere
 from tempfile import mkstemp
+import pytest
 
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
@@ -33,8 +34,8 @@ else:
     skip_slicer = False
 
 
-@npt.dec.skipif(skip_slicer)
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(skip_slicer, reason="Slicer Skipped")
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_slicer():
     renderer = window.renderer()
@@ -165,7 +166,7 @@ def test_slicer():
                            np.array(slicer.shape))
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_contour_from_roi():
 
@@ -266,7 +267,7 @@ def test_contour_from_roi():
     # window.show(r2)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_streamtube_and_line_actors():
     renderer = window.renderer()
@@ -311,7 +312,7 @@ def test_streamtube_and_line_actors():
     npt.assert_equal(report.colors_found, [True, True])
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_bundle_maps():
     renderer = window.renderer()
@@ -385,7 +386,7 @@ def test_bundle_maps():
     actor.line(bundle, colors=colors)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_odf_slicer(interactive=False):
 
@@ -511,7 +512,7 @@ def test_odf_slicer(interactive=False):
     os.remove(fname)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_peak_slicer(interactive=False):
 
@@ -567,7 +568,7 @@ def test_peak_slicer(interactive=False):
     npt.assert_equal(report.actors_classnames, ex)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_tensor_slicer(interactive=False):
 
@@ -662,7 +663,7 @@ def test_tensor_slicer(interactive=False):
         window.show(renderer, reset_camera=False)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_dots(interactive=False):
     points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
@@ -702,7 +703,7 @@ def test_dots(interactive=False):
     npt.assert_equal(report.objects, 1)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_points(interactive=False):
     points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
@@ -726,7 +727,7 @@ def test_points(interactive=False):
     npt.assert_equal(report.objects, 3)
 
 
-@npt.dec.skipif(not run_test)
+@pytest.mark.skipif(not run_test, reason="Need vtk, vtk_colors and imread")
 @xvfb_it
 def test_labels(interactive=False):
 
@@ -744,4 +745,4 @@ def test_labels(interactive=False):
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    pytest.main()

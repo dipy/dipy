@@ -3,7 +3,7 @@
 
 from dipy import io
 
-from nose.tools import assert_false
+from dipy.utils.testing import assert_false
 
 
 def test_imports():

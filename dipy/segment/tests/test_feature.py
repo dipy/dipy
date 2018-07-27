@@ -3,9 +3,10 @@ import numpy as np
 import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
 
-from nose.tools import assert_true, assert_false, assert_equal
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite)
+from dipy.utils.testing import assert_true, assert_false, assert_equal
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises)
+import pytest
 
 
 dtype = "float32"
@@ -317,4 +318,4 @@ def test_using_python_feature_with_cython_metric():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

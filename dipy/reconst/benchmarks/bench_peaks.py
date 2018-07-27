@@ -19,7 +19,7 @@ from dipy.reconst.recspeed import local_maxima
 from dipy.data import get_sphere
 from dipy.core.sphere import unique_edges
 
-from numpy.testing import measure
+from dipy.utils.testing import measure
 
 
 def bench_local_maxima():

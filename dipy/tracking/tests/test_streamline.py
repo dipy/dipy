@@ -4,13 +4,13 @@ import types
 
 import numpy as np
 from numpy.linalg import norm
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 
-from nose.tools import assert_true, assert_equal, assert_almost_equal
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite, assert_allclose)
+from dipy.utils.testing import assert_true, assert_equal, assert_almost_equal
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
+                                assert_raises, assert_allclose)
 
 from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
@@ -26,6 +26,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       orient_by_rois,
                                       values_from_volume,
                                       deform_streamlines)
+
+import pytest
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -1100,4 +1102,4 @@ def test_streamlines_generator():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

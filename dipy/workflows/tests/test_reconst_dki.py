@@ -5,7 +5,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-from nose.tools import assert_true, assert_equal
+from dipy.utils.testing import assert_true, assert_equal
 
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstDkiFlow

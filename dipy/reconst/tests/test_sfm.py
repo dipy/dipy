@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
@@ -7,6 +7,7 @@ import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
+import pytest
 
 
 def test_design_matrix():
@@ -19,7 +20,7 @@ def test_design_matrix():
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="Requires sklearn")
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_data()
     data = nib.load(fdata).get_data()
@@ -47,7 +48,7 @@ def test_sfm():
             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="Requires sklearn")
 def test_predict():
     SNR = 1000
     S0 = 100
@@ -129,7 +130,7 @@ def test_sfm_sklearnlinearsolver():
                       solver=EvenSillierSolver())
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="Requires sklearn")
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_data()
     data_dti = nib.load(fdata).get_data()

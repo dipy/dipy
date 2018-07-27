@@ -5,8 +5,9 @@ from os.path import join as pjoin
 from dipy.viz import actor, window, widget
 from dipy.data import DATA_DIR
 from dipy.data import fetch_viz_icons, read_viz_icons
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
+import pytest
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -15,7 +16,7 @@ else:
     skip_it = False
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_button_and_slider_widgets():
     recording = False
@@ -126,7 +127,7 @@ def test_button_and_slider_widgets():
     npt.assert_equal(report.actors, 1)
 
 
-@npt.dec.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not actor.have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_text_widget():
 
@@ -196,4 +197,4 @@ def test_text_widget():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

@@ -10,7 +10,7 @@ from dipy.align.parzenhist import (ParzenJointHistogram,
                                    cubic_spline,
                                    cubic_spline_derivative,
                                    sample_domain_regular)
-from numpy.testing import (assert_array_equal,
+from dipy.utils.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal,

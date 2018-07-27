@@ -6,16 +6,16 @@ except ImportError:
     import dipy.utils._importlib as importlib
 
 try:
-    import nose
+    import pytest
 except ImportError:
-    have_nose = False
+    have_pytest = False
 else:
-    have_nose = True
+    have_pytest = True
 
 from dipy.utils.tripwire import TripWire
 
-if have_nose:
-    class OptionalImportError(ImportError, nose.SkipTest):
+if have_pytest:
+    class OptionalImportError(ImportError):
         pass
 else:
     class OptionalImportError(ImportError):
@@ -92,7 +92,7 @@ def optional_package(name, trip_msg=None):
     pkg = TripWire(trip_msg)
 
     def setup_module():
-        if have_nose:
-            raise nose.plugins.skip.SkipTest('No %s for these tests'
+        if have_pytest:
+            raise pytest.skip('No %s for these tests'
                                              % name)
     return pkg, False, setup_module

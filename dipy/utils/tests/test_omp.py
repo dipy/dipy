@@ -6,8 +6,8 @@ from dipy.utils.omp import (cpu_count, thread_count, default_threads,
                             _set_omp_threads, _restore_omp_threads,
                             have_openmp)
 
-from nose.tools import assert_equal
-from numpy.testing import run_module_suite
+from dipy.utils.testing import assert_equal
+import pytest
 
 
 def test_set_omp_threads():
@@ -44,4 +44,4 @@ def test_default_threads():
 
 if __name__ == '__main__':
 
-    run_module_suite()
+    pytest.main()

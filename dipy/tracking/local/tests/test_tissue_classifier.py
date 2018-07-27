@@ -1,6 +1,6 @@
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import scipy.ndimage
 
 from dipy.core.ndindex import ndindex
@@ -203,4 +203,4 @@ def test_cmc_tissue_classifier():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

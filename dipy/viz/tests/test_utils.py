@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.viz.utils import map_coordinates_3d_4d
 
 
@@ -69,4 +69,4 @@ def test_trilinear_interp():
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    pytest.main()

@@ -24,7 +24,7 @@ from dipy.core.ndindex import ndindex
 
 from dipy.reconst.quick_squash import quick_squash
 
-from numpy.testing import measure, dec
+from dipy.utils.testing import measure
 
 
 def old_squash(arr, mask=None, fill=0):

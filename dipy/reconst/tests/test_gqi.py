@@ -5,14 +5,14 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.data import get_sphere
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
+from dipy.utils.testing import (assert_equal,
+                           assert_almost_equal)
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
+import pytest
 
 
 def test_gqi():
@@ -74,4 +74,4 @@ def test_mvoxel_gqi():
 
 
 if __name__ == "__main__":
-    run_module_suite()
+    pytest.main()

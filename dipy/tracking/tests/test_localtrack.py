@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.tracking.local.tissue_classifier import ThresholdTissueClassifier
 from dipy.data import default_sphere

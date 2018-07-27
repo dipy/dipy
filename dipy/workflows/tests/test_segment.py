@@ -1,4 +1,4 @@
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from os.path import join
 
 import nibabel as nib

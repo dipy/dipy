@@ -9,15 +9,13 @@ from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import MultiTensor
 
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite,
-                           dec)
+from dipy.utils.testing import (assert_almost_equal,
+                           assert_equal)
 
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+import pytest
 
-needs_cvxpy = dec.skipif(not have_cvxpy)
 
 
 # Object to hold module global data
@@ -40,7 +38,7 @@ def setup():
     data.lambdaL = 1e-12
 
 
-@needs_cvxpy
+@pytest.mark.skipif(not have_cvxpy, reason="Requires cvxpy")
 def test_shore_positive_constrain():
     asm = ShoreModel(data.gtab,
                      radial_order=data.radial_order,
@@ -64,7 +62,7 @@ def test_shore_fitting_no_constrain_e0():
     assert_almost_equal(compute_e0(asmfit), 1)
 
 
-@needs_cvxpy
+@pytest.mark.skipif(not have_cvxpy, reason="Requires cvxpy")
 def test_shore_fitting_constrain_e0():
     asm = ShoreModel(data.gtab, radial_order=data.radial_order,
                      zeta=data.zeta, lambdaN=data.lambdaN,
@@ -87,4 +85,4 @@ def compute_e0(shorefit):
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

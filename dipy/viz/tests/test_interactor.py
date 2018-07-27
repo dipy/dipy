@@ -6,8 +6,9 @@ from collections import defaultdict
 from dipy.viz import actor, window, interactor
 from dipy.viz import utils as vtk_utils
 from dipy.data import DATA_DIR
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
+import pytest
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -22,7 +23,7 @@ else:
     skip_it = False
 
 
-@npt.dec.skipif(not have_vtk or not actor.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not have_vtk or not actor.have_vtk_colors or skip_it, reason="Requires vtk or vtk_colors")
 @xvfb_it
 def test_custom_interactor_style_events(recording=False):
     print("Using VTK {}".format(vtk.vtkVersion.GetVTKVersion()))

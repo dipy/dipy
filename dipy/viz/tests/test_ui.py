@@ -4,13 +4,14 @@ import pickle
 import numpy as np
 
 from os.path import join as pjoin
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 from dipy.viz import ui
 from dipy.viz import window
 from dipy.data import DATA_DIR
 from nibabel.tmpdirs import InTemporaryDirectory
+import pytest
 
 from dipy.viz.ui import UI
 
@@ -81,7 +82,7 @@ class EventCounter(object):
                              err_msg=msg.format(event))
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_broken_ui_component():
     class SimplestUI(UI):
@@ -110,7 +111,7 @@ def test_broken_ui_component():
     npt.assert_raises(NotImplementedError, getattr, simple_ui, 'center')
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_wrong_interactor_style():
     panel = ui.Panel2D(size=(300, 150))
@@ -120,7 +121,7 @@ def test_wrong_interactor_style():
     npt.assert_raises(TypeError, panel.add_to_renderer, dummy_renderer)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_rectangle_2d():
     window_size = (700, 700)
@@ -154,7 +155,7 @@ def test_ui_rectangle_2d():
     assert report.objects == 0
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_disk_2d():
     window_size = (700, 700)
@@ -269,7 +270,7 @@ def test_ui_button_panel(recording=False):
         event_counter.check_counts(expected)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_textbox(recording=False):
     filename = "test_ui_textbox"
@@ -304,7 +305,7 @@ def test_ui_textbox(recording=False):
         event_counter.check_counts(expected)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_text_block_2d():
     text_block = ui.TextBlock2D()
@@ -337,7 +338,7 @@ def test_text_block_2d():
         text_block.vertical_justification = "left"
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_text_block_2d_justification():
     window_size = (700, 700)
@@ -424,7 +425,7 @@ def test_text_block_2d_justification():
         npt.assert_array_almost_equal(arr, expected["arr_0"])
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_line_slider_2d(recording=False):
     filename = "test_ui_line_slider_2d"
@@ -456,7 +457,7 @@ def test_ui_line_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_line_double_slider_2d(interactive=False):
     line_double_slider_2d_test = ui.LineDoubleSlider2D(
@@ -525,7 +526,7 @@ def test_ui_ring_slider_2d(recording=False):
         event_counter.check_counts(expected)
 
 
-@npt.dec.skipif(not have_vtk or skip_it)
+@pytest.mark.skipif(not have_vtk or skip_it, reason="Need vtk")
 @xvfb_it
 def test_ui_range_slider(interactive=False):
     range_slider_test = ui.RangeSlider(shape="square")

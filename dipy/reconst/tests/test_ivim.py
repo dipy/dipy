@@ -12,9 +12,8 @@ References
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_array_less, run_module_suite,
-                           assert_warns, dec)
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises, assert_array_less)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -22,6 +21,7 @@ from dipy.sims.voxel import multi_tensor
 
 from distutils.version import LooseVersion
 import scipy
+import pytest
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
@@ -295,8 +295,7 @@ def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
 
 
-@dec.skipif(SCIPY_VERSION < LooseVersion('0.17'),
-            "Gives wrong value for f")
+@pytest.mark.skipif(SCIPY_VERSION < LooseVersion('0.17'), reason="Gives wrong value for f")
 def test_noisy_fit():
     """
     Test fitting for noisy signals. This tests whether the threshold condition
@@ -416,4 +415,4 @@ def test_leastsq_error():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

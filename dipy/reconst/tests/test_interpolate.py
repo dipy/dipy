@@ -2,8 +2,8 @@ from __future__ import division, print_function, absolute_import
 
 from dipy.utils.six.moves import xrange
 
-from nose.tools import assert_equal, assert_raises, assert_true, assert_false
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+from dipy.utils.testing import assert_equal, assert_raises, assert_true, assert_false
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal)
 
 import numpy as np

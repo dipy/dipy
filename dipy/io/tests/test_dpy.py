@@ -5,7 +5,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.io.dpy import Dpy
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.tracking.streamline import Streamlines
 
 
@@ -37,4 +37,4 @@ def test_dpy():
 
 if __name__ == '__main__':
 
-    npt.run_module_suite()
+    pytest.main()

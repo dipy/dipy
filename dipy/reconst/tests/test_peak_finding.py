@@ -1,7 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
 from dipy.data import get_sphere, get_data
@@ -139,5 +139,5 @@ def test_search_descending():
 
 
 if __name__ == '__main__':
-    import nose
-    nose.runmodule()
+    import pytest
+    pytest.main()

@@ -7,9 +7,10 @@ from distutils.version import LooseVersion
 from dipy.viz import fvtk
 from dipy import data
 
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from dipy.testing.decorators import xvfb_it
 from dipy.utils.optpkg import optional_package
+import pytest
 
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
 if use_xvfb == 'skip':
@@ -24,7 +25,7 @@ if have_matplotlib:
     mpl_version = LooseVersion(matplotlib.__version__)
 
 
-@npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it, reason=" Requires vtk or vtk_colors")
 @xvfb_it
 def test_fvtk_functions():
     # This tests will fail if any of the given actors changed inputs or do
@@ -78,7 +79,7 @@ def test_fvtk_functions():
     fvtk.add(r, p2)
 
 
-@npt.dec.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it)
+@pytest.mark.skipif(not fvtk.have_vtk or not fvtk.have_vtk_colors or skip_it, reason=" Requires vtk or vtk_colors")
 @xvfb_it
 def test_fvtk_ellipsoid():
 
@@ -115,7 +116,7 @@ def test_colormap():
     npt.assert_raises(ValueError, fvtk.create_colormap, v, 'no such map')
 
 
-@npt.dec.skipif(not fvtk.have_matplotlib)
+@pytest.mark.skipif(not fvtk.have_matplotlib, reason="Requires matplotlib")
 def test_colormaps_matplotlib():
     v = np.random.random(1000)
     # The "Accent" colormap is deprecated as of 0.12:
@@ -145,4 +146,4 @@ def test_colormaps_matplotlib():
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    pytest.main()

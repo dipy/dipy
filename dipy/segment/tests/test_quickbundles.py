@@ -2,10 +2,11 @@ import numpy as np
 import itertools
 
 
-from nose.tools import assert_equal, assert_raises
-from numpy.testing import assert_array_equal, run_module_suite
+from dipy.utils.testing import assert_equal, assert_raises
+from dipy.utils.testing import assert_array_equal
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
+import pytest
 
 from dipy.segment.clustering import QuickBundles
 
@@ -207,4 +208,4 @@ def test_quickbundles_memory_leaks():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

@@ -35,7 +35,7 @@ import sys
 import textwrap
 
 from dipy.workflows.docstring_parser import NumpyDocString
-from nose.tools import *
+from dipy.utils.testing import assert_equal
 
 if sys.version_info[0] >= 3:
     def sixu(s): return s
@@ -512,5 +512,5 @@ class_doc_txt = """
 """
 
 if __name__ == "__main__":
-    import nose
-    nose.run()
+    import pytest
+    pytest.main()

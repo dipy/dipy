@@ -1,7 +1,8 @@
 import numpy as np
 from numpy import zeros
 from dipy.segment.threshold import upper_bound_by_percent, upper_bound_by_rate
-from numpy.testing import assert_equal, run_module_suite
+from dipy.utils.testing import assert_equal
+import pytest
 
 
 def test_adjustment():
@@ -58,4 +59,4 @@ def test_adjustment():
     assert_equal(count1_upper, count1_upper_test)
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

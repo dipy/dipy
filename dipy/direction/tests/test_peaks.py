@@ -3,8 +3,8 @@ import numpy as np
 import pickle
 from io import BytesIO
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite,
+from dipy.utils.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_almost_equal,
                            assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
@@ -20,7 +20,7 @@ from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
-
+import pytest
 
 def test_peak_directions_nl():
     def discrete_eval(sphere):
@@ -645,4 +645,4 @@ def test_reshape_peaks_for_visualization():
 
 if __name__ == '__main__':
 
-    run_module_suite()
+    pytest.main()

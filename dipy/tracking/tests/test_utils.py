@@ -3,7 +3,6 @@ from __future__ import division, print_function, absolute_import
 from dipy.utils.six.moves import xrange
 
 import numpy as np
-import nose
 
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
@@ -20,9 +19,9 @@ from dipy.tracking._utils import _to_voxel_coordinates
 import dipy.tracking.metrics as metrix
 
 from dipy.tracking.vox2track import streamline_mapping
-import numpy.testing as npt
-from numpy.testing import assert_array_almost_equal, assert_array_equal
-from nose.tools import assert_equal, assert_raises, assert_true
+import dipy.utils.testing as npt
+from dipy.utils.testing import assert_array_almost_equal, assert_array_equal
+from dipy.utils.testing import assert_equal, assert_raises, assert_true
 
 
 def make_streamlines():

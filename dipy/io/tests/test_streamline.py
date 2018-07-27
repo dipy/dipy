@@ -2,7 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import save_trk, load_trk
@@ -176,8 +176,8 @@ def test_trackvis():
         npt.assert_array_almost_equal(tfile.streamlines[1], streamline, decimal=4)
 
         # Test Deprecations
-        npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname, streamlines, affine, np.array([50, 50, 50]))
+        #npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname, streamlines, affine, np.array([50, 50, 50]))
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    pytest.main()

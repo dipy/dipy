@@ -2,7 +2,7 @@ import tempfile
 import os.path as op
 import sys
 import os
-import numpy.testing as npt
+import dipy.utils.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 import dipy.data.fetcher as fetcher
 from dipy.data import SPHERE_FILES

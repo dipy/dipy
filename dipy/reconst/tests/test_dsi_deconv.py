@@ -1,7 +1,6 @@
 import numpy as np
-from numpy.testing import (assert_equal,
+from dipy.utils.testing import (assert_equal,
                            assert_almost_equal,
-                           run_module_suite,
                            assert_array_equal,
                            assert_raises)
 from dipy.data import get_data, dsi_deconv_voxels
@@ -12,10 +11,11 @@ from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.data import get_sphere
-from numpy.testing import assert_equal
+from dipy.utils.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+import pytest
 
 
 def test_dsi():
@@ -73,4 +73,4 @@ def test_multivox_dsi():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

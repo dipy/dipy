@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.core.gradients import GradientTable

@@ -22,10 +22,10 @@ import dipy.tracking.streamline as streamline_utils
 from dipy.segment.metric import Metric
 from dipy.segment.quickbundles import QuickBundles as QB_Old
 from dipy.segment.clustering import QuickBundles as QB_New
-from nose.tools import assert_equal
+from dipy.utils.testing import assert_equal
 
 from dipy.testing import assert_arrays_equal
-from numpy.testing import assert_array_equal, measure
+from dipy.utils.testing import assert_array_equal, measure
 
 
 class MDFpy(Metric):

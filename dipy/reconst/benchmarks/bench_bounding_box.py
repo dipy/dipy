@@ -16,7 +16,7 @@ Run this benchmark with:
     nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_bounding_box.py
 """
 import numpy as np
-from numpy.testing import measure
+from dipy.utils.testing import measure
 from dipy.segment.mask import bounding_box
 
 

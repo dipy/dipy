@@ -1,8 +1,7 @@
 import numpy as np
 from dipy.data import get_gtab_taiwan_dsi
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite)
+from dipy.utils.testing import (assert_almost_equal,
+                           assert_equal)
 from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
@@ -12,6 +11,7 @@ from dipy.sims.voxel import (
     multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
 from dipy.data import get_sphere
 from scipy.special import genlaguerre
+import pytest
 
 
 def test_shore_metrics():
@@ -98,4 +98,4 @@ def test_shore_metrics():
     assert_equal(msd_mt / msd_shore < 1.05 and msd_mt / msd_shore > 0.95, True)
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()

@@ -4,7 +4,7 @@ import os.path as osp
 from nibabel.tmpdirs import InTemporaryDirectory
 
 import numpy as np
-import numpy.testing as npt
+import dipy.utils.testing as npt
 
 from dipy.data import get_data
 from dipy.io.gradients import read_bvals_bvecs
@@ -106,5 +106,5 @@ def test_read_bvals_bvecs():
 
 
 if __name__ == '__main__':
-    from numpy.testing import run_module_suite
-    run_module_suite()
+    import pytest
+    pytest.main()

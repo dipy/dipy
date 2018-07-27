@@ -1,14 +1,16 @@
 import itertools
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
-                           run_module_suite)
+from dipy.utils.testing import (assert_array_equal, assert_equal, assert_raises,
+                           assert_array_almost_equal)
 
 from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points
-from dipy.tracking.streamline import Streamlines
+from dipy.data import get_data
+import nibabel.trackvis as tv
+import pytest
 
 
 def straight_bundle(nb_streamlines=1, nb_pts=30, step_size=1,
@@ -235,4 +237,4 @@ def test_qbx_and_merge():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    pytest.main()
