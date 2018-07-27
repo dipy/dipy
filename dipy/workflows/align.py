@@ -389,67 +389,60 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            The type of transform to be applied on the moving
-            image.
-            com : center of mass
-            trans: translation
-            rigid: rigid body
+            com: center of mass, trans: translation, rigid: rigid body
             affine: full affine including translation, rotation, shearing and
             scaling (default 'affine')
 
         nbins : int, optional
-            The number of bins to discretize the joint and marginal PDF
-            (default '32').
+            Number of bins to discretize the joint and marginal PDF
+             (default '32').
 
         sampling_prop : int, optional
-            Number ([0-100]) of voxels to be used for calculating the PDF.
+            Number ([0-100]) of voxels for calculating the PDF.
              'None' implies all voxels (default 'None').
 
         metric : string, optional
-            The similarity metric to be used for gathering mutual information
-             (default 'Mutual Information metric').
+            Similarity metric for gathering mutual information
+             (default 'mi' , Mutual Information metric).
 
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
              `level_iters[0]` corresponds to the coarsest scale,
-            `level_iters[-1]` the finest, where n is the length of the
-            sequence. By default, a 3-level scale space with iterations
+             `level_iters[-1]` the finest, where n is the length of the
+             sequence. By default, a 3-level scale space with iterations
              sequence equal to [10000, 1000, 100] will be used.
 
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
              for each scale). By default, the sequence of sigmas will be
-            [3, 1, 0].
+             [3, 1, 0].
 
         factors : variable floats, optional
             Custom scale factors to build the scale space (one factor for each
              scale). By default, the sequence of factors will be [4, 2, 1].
 
         progressive : boolean, optional
-            Flag for enabling/disabling the progressive registration
-            (default 'True').
+            Enable/Disable the progressive registration (default 'True').
 
         save_metric : boolean, optional
-            If true, the metrics for quality assessment are saved in a file
-             called 'quality_metric.txt'. By default, the similarity measure
-             values such as the distance and the metric of optimal parameters
-             is only displayed but not saved (default 'False').
+            If true, quality assessment metric are saved in
+            'quality_metric.txt' (default 'False').
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
-             (default '').
+            (default '').
 
         out_moved : string, optional
             Name for the saved transformed image
-             (default 'moved.nii.gz').
+            (default 'moved.nii.gz').
 
         out_affine : string, optional
             Name for the saved affine matrix
-             (default 'affine.txt').
+            (default 'affine.txt').
 
-        out_quality : string, optional
+        out_quality : str, optional
             Name of the file containing the saved quality
-             metric (default 'quality_metric.txt').
+            metric (default 'quality_metric.txt').
 
         """
 
