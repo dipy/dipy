@@ -269,7 +269,7 @@ class ShoreModel(Cache):
                     self.cache_set(
                         'shore_matrix_positive_constraint',
                         (self.pos_grid, self.pos_radius), psi)
-                constraints = [M0[0] * c == 1., psi * c > 1e-3]
+                constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver)

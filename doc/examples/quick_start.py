@@ -8,7 +8,7 @@ diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
 In DIPY_ we provide tools to load and process these files and we also provide
-access to publically available datasets for those who haven't acquired yet
+access to publicly available datasets for those who haven't acquired yet
 their own datasets.
 
 With the following commands we can download a dMRI dataset

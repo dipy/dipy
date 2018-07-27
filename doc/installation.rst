@@ -27,15 +27,11 @@ Using Anaconda:
 
 On all platforms, you can use Anaconda_ to install DIPY. To do so issue the following command in a terminal::
 
-    conda install dipy -c conda-forge
+    conda install -c conda-forge dipy
 
 Some of the visualization methods require the VTK_ library and this can be installed separately (for the time being only on Python 2.7 and Python 3.6)::
 
-    conda install -c conda-forge vtk
-
-For OSX users, VTK_ is not available on conda-forge channel, so we recommend to use the following one::
-
-    conda install -c clinicalgraphics vtk
+    conda install vtk
 
 Using packages:
 ===============
@@ -63,9 +59,9 @@ Windows
 
    This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_::
+#. Some of the visualization methods require the VTK_ library and this can be installed by doing ::
 
-    conda install -c conda-forge vtk
+    pip install vtk
 
 
 OSX
@@ -89,9 +85,9 @@ OSX
 
    This should work with no error.
 
-#. Some of the visualization methods require the VTK_ library and this can be installed using Anaconda_::
+#. Some of the visualization methods require the VTK_ library and this can be installed by doing::
 
-    conda install -c clinicalgraphics vtk
+    pip install vtk
 
 Linux
 -----
@@ -166,7 +162,7 @@ DIPY can process large diffusion datasets. For this reason we recommend using a 
 Note on python versions
 -----------------------
 
-Most of the functionality in DIPY supports versions of Python from 2.6 to 3.5.
+Most of the functionality in DIPY supports versions of Python from 2.6 to 3.6.
 However, some visualization functionality depends on VTK_, which currently does not work with Python 3 versions.
 Therefore, if you want to use the visualization functions in DIPY, please use it with Python 2.
 
