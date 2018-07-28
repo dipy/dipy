@@ -7,6 +7,8 @@ from numpy.testing import (assert_almost_equal,
 from dipy.sims.voxel import (SticksAndBall,
                              MultiTensor)
 
+from dipy.testing import setup_test
+
 
 def test_dsi_metrics():
     btable = np.loadtxt(get_data('dsi4169btable'))
