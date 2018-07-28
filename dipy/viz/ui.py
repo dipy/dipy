@@ -3310,13 +3310,14 @@ class FileMenu2D(UI):
     Can go to new folder, previous folder and select multiple files.
     Attributes
     ----------
-    extensions: list(string)
+    extensions: ['extension1', 'extension2', ....]
+        To show all files, extensions=["*"] or [""]
         List of extensions to be shown as files.
     listbox : :class: 'ListBox2D'
         Container for the menu.
     """
 
-    def __init__(self, extensions, directory_path, position=(0, 0),
+    def __init__(self, directory_path, extensions=["*"], position=(0, 0),
                  size=(100, 300), multiselection=True, reverse_scrolling=False,
                  font_size=20, line_spacing=1.4):
         """
@@ -3469,7 +3470,7 @@ class FileMenu2D(UI):
             break
 
         file_names = []
-        if "*" in self.extensions:
+        if "*" in self.extensions or "" in self.extensions:
             file_names = files
         else:
             for ext in self.extensions:

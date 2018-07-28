@@ -693,8 +693,7 @@ def test_ui_file_menu_2d(interactive=False):
     os.rmdir("testdir")
 
     if interactive:
-        filemenu = ui.FileMenu2D(size=(500, 500), extensions=["*"],
-                                 directory_path=os.getcwd())
+        filemenu = ui.FileMenu2D(size=(500, 500), directory_path=os.getcwd())
         show_manager = window.ShowManager(size=(600, 600),
                                           title="DIPY FileMenu")
         show_manager.ren.add(filemenu)
