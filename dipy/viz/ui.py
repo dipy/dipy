@@ -3072,6 +3072,8 @@ class Checkbox(UI):
         self._font_size = font_size
         self.font_family = font_family
         super(Checkbox, self).__init__(position)
+        self.on_change = lambda: None
+        self.checked = []
 
     def _setup(self):
         """ Setup this UI component.
@@ -3087,13 +3089,16 @@ class Checkbox(UI):
                 (label.count('\n') + 1) * (line_spacing + 0.1) + self.padding
             option.button.on_left_mouse_button_pressed = self.toggle_check
             self.options.append(option)
+            option.button.add_callback(option.text.actor,
+                                       "LeftButtonPressEvent",
+                                       self.toggle_check)
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
         actors = []
         for option in self.options:
-            actors = actors + option.get_actors()
+            actors = actors + option.actors
         return actors
 
     def _add_to_renderer(self, ren):
@@ -3122,15 +3127,18 @@ class Checkbox(UI):
             The picked actor
         button : :class:`Button2D`
         """
-        event = []
         button.next_icon()
         for option in self.options:
             if option.button == button:
                 option.checked = not option.checked
-            if option.checked is True:
-                event.append(option.label)
+                if option.checked is True:
+                    self.checked.append(option.label)
+                else:
+                    self.checked.remove(option.label)
+                break
+
+        self.on_change()
         i_ren.force_render()
-        print(event)
 
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component.
@@ -3212,14 +3220,13 @@ class RadioButton(Checkbox):
                 if option.checked is not True:
                     option.checked = True
                     option.button.next_icon()
-                event = option.label
+                self.checked = option.label
 
             elif option.checked is True:
                 option.checked = False
                 option.button.next_icon()
-
+        self.on_change()
         i_ren.force_render()
-        print(event)
 
 
 class ListBox2D(UI):
