@@ -413,7 +413,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
 
 def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
-                           affine=None):
+                           affine=None, random_seed=0):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
@@ -421,8 +421,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     If ``seed_count_per_voxel`` is ``True``, this function is
     similar to ``seeds_from_mask()``, with the difference that instead of
     evenly distributing the seeds, it randomly places the seeds within the
-    voxels specified by the ``mask``. The initial random conditions can be set
-    using ``numpy.random.seed(...)``, prior to calling this function.
+    voxels specified by the ``mask``.
 
     Parameters
     ----------
@@ -439,6 +438,8 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
+    random_seed : int
+        The seed for the ramdom seed generator.
 
     See Also
     --------
@@ -483,13 +484,19 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     else:
         seeds_per_voxel = seeds_count
 
-    # Generate as many random triplets as the number of seeds needed
-    grid = np.random.random([seeds_per_voxel * num_voxels, 3])
-    # Repeat elements of 'where' so that it can be added to grid
-    where = np.repeat(where, seeds_per_voxel, axis=0)
-    seeds = where + grid - .5
+    seeds = []
+    for i in range(1, seeds_per_voxel + 1):
+        for s in where:
+            # Fix the random seed with the current seed, the current value of
+            # seeds per voxel and the global random seed.
+            np.random.seed(s * i + random_seed)
+            # Generate random triplet
+            grid = np.random.random(3)
+            seed = s + grid - .5
+            seeds.append(seed)
     seeds = asarray(seeds)
 
+    np.random.seed(random_seed)
     if not seed_count_per_voxel:
         # Randomize the seeds and select the requested amount
         np.random.shuffle(seeds)

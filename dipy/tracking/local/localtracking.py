@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
 from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
@@ -116,6 +117,9 @@ class LocalTracking(object):
         B = F.copy()
         for s in self.seeds:
             s = np.dot(lin, s) + offset
+            # Fix the random seed in numpy and random
+            random.seed(np.sum(s))
+            np.random.seed(np.sum(s.astype(np.int)))
             directions = self.direction_getter.initial_direction(s)
             if directions.size == 0 and self.return_all:
                 # only the seed position
