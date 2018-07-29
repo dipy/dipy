@@ -454,11 +454,9 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
-                               random_seed=1)
+    >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, random_seed=1)
     array([[-0.21737596,  0.00929062, -0.43094817]])
-    >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True,
-                               random_seed=1)
+    >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True, random_seed=1)
     array([[-0.21737596,  0.00929062, -0.43094817],
            [ 0.21428948,  0.09422511,  0.19126467],
            [-0.14269321,  0.35726137,  0.31066143],
@@ -466,8 +464,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
            [ 0.38592238, -0.34785705, -0.20592633],
            [-0.48330061, -0.30401038,  0.34485802]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=2, seed_count_per_voxel=True,
-                               random_seed=1)
+    >>> random_seeds_from_mask(mask, seeds_count=2, seed_count_per_voxel=True, random_seed=1)
     array([[-0.21737596,  0.00929062, -0.43094817],
            [-0.00575597,  1.46447015,  2.25477293],
            [ 0.21428948,  0.09422511,  0.19126467],
