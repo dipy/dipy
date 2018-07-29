@@ -195,15 +195,13 @@ def test_probabilistic_odf_weighted_tracker():
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
 
-    path = [False, False]
+    path = False
     for sl in streamlines:
         if allclose(sl, expected[0]):
-            path[0] = True
-        elif allclose(sl, expected[1]):
-            path[1] = True
+            path = True
         else:
             raise AssertionError()
-    npt.assert_(all(path))
+    npt.assert_(path)
 
     # The first path is not possible if 90 degree turns are excluded
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere,
