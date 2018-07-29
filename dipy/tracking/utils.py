@@ -491,7 +491,6 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
         for s in where:
             # Fix the random seed with the current seed, the current value of
             # seeds per voxel and the global random seed.
-            print(s+1,i,random_seed)
             np.random.seed((s + 1) * i + random_seed)
             # Generate random triplet
             grid = np.random.random(3)
