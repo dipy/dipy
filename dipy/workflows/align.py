@@ -124,12 +124,12 @@ class ImageRegistrationFlow(Workflow):
         affine : Affine matrix to be used as starting affine
 
         """
-        img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform,
-                                     params0, static_grid2world,
-                                     moving_grid2world,
-                                     starting_affine=affine,
-                                     ret_metric=True)
+        img_registration, xopt, \
+            fopt = affreg.optimize(static, moving, transform, params0,
+                                   static_grid2world,
+                                   moving_grid2world,
+                                   starting_affine=affine,
+                                   ret_metric=True)
         transformed = img_registration.transform(moving)
         return transformed, img_registration.affine, xopt, fopt
 
@@ -348,9 +348,8 @@ class ImageRegistrationFlow(Workflow):
             'starting_affine' matrix
         """
         if len(static.shape) != len(moving.shape):
-            raise ValueError('Dimension mismatch: The'
-                             ' input images must have same number of '
-                             'dimensions.')
+            raise ValueError('Dimension mismatch: The input images must '
+                             'have same number of dimensions.')
 
     @staticmethod
     def check_metric(metric):
@@ -365,8 +364,8 @@ class ImageRegistrationFlow(Workflow):
 
         """
         if metric != 'mi':
-            raise ValueError('Invalid similarity metric: Please provide'
-                             ' a valid metric.')
+            raise ValueError('Invalid similarity metric: Please provide '
+                             'a valid metric.')
 
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
