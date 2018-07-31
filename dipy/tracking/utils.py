@@ -481,7 +481,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     np.random.seed(random_seed)
     shape = mask.shape
     mask = mask.flatten()
-    indices = range(len(mask))
+    indices = np.arange(len(mask))
     np.random.shuffle(indices)
 
     where = [np.unravel_index(i, shape) for i in indices if mask[i] == 1]
