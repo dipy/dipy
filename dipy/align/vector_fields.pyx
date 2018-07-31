@@ -9,6 +9,8 @@ cimport cython
 from .fused_types cimport floating, number
 
 from cython.parallel import prange
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -3122,7 +3124,7 @@ cdef void _gradient_3d_fun(floating[:, :, :] img, double[:, :] img_world2grid,
 
 def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
                  double[:] img_spacing, double[:, :] out_grid2world,
-                 floating[:, :, :, :] out, int[:, :, :] inside):
+                 floating[:, :, :, :] out, int[:, :, :] inside, num_threads=None):
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
@@ -3156,12 +3158,31 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
     inside : array, shape (S', R', C')
         the buffer in which to store the flags indicating whether the sample
         point lies inside (=1) or outside (=0) the image grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
     """
-    cdef int nslices = out.shape[0], k
+    cdef:
+        int nslices = out.shape[0], k
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
     with nogil:
         for k in prange(nslices, schedule='guided'):
             _gradient_3d_fun(img, img_world2grid, img_spacing,
                              out_grid2world, out, inside, k)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
 
 cdef void _sparse_gradient_3d_fun(floating[:, :, :] img, double[:, :] img_world2grid,
@@ -3217,7 +3238,7 @@ def _sparse_gradient_3d(floating[:, :, :] img,
                         double[:, :] img_world2grid,
                         double[:] img_spacing,
                         double[:, :] sample_points,
-                        floating[:, :] out, int[:] inside):
+                        floating[:, :] out, int[:] inside, num_threads=None):
     r""" Gradient of a 3D image evaluated at a set of points in physical space
 
     For each row (x_i, y_i, z_i) in sample_points, the image is interpolated at
@@ -3245,12 +3266,31 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         (one point per row)
     out : array, shape (n, 3)
         the buffer in which to store the image gradient
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
     """
-    cdef int n = sample_points.shape[0], i
+    cdef:
+        int n = sample_points.shape[0], i
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
     with nogil:
         for i in prange(n, schedule='guided'):
             _sparse_gradient_3d_fun(img, img_world2grid, img_spacing,
                                     sample_points, out, inside, i)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
 
 def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
@@ -3413,7 +3453,7 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
 
 
 def gradient(img, img_world2grid, img_spacing, out_shape,
-             out_grid2world):
+             out_grid2world, num_threads=None):
     r""" Gradient of an image in physical space
 
     Parameters
@@ -3429,6 +3469,9 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         the number of (slices), rows and columns of the sampling grid
     out_grid2world : array, shape (dim+1, dim+1)
         the grid-to-space transform associated to the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -3446,24 +3489,26 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
     ftype = img.dtype.type
     out = np.empty(tuple(out_shape)+(dim,), dtype=ftype)
     inside = np.empty(tuple(out_shape), dtype=np.int32)
-    # Select joint density gradient 2D or 3D
-    if dim == 2:
-        jd_grad = _gradient_2d
-    elif dim == 3:
-        jd_grad = _gradient_3d
-    else:
-        raise ValueError('Undefined gradient for image dimension %d' % (dim,))
     if img_world2grid.dtype != np.float64:
         img_world2grid = img_world2grid.astype(np.float64)
     if img_spacing.dtype != np.float64:
         img_spacing = img_spacing.astype(np.float64)
     if out_grid2world.dtype != np.float64:
         out_grid2world = out_grid2world.astype(np.float64)
-    jd_grad(img, img_world2grid, img_spacing, out_grid2world, out, inside)
+    # Select joint density gradient 2D or 3D
+    if dim == 2:
+        _gradient_2d(img, img_world2grid, img_spacing, out_grid2world,
+                     out, inside)
+    elif dim == 3:
+        _gradient_3d(img, img_world2grid, img_spacing, out_grid2world,
+                     out, inside, num_threads)
+    else:
+        raise ValueError('Undefined gradient for image dimension %d' % (dim,))
     return np.asarray(out), np.asarray(inside)
 
 
-def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
+def sparse_gradient(img, img_world2grid, img_spacing, sample_points,
+                    num_threads=None):
     r""" Gradient of an image in physical space
 
     Parameters
@@ -3494,14 +3539,15 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
     n = sample_points.shape[0]
     out = np.empty(shape=(n, dim), dtype=ftype)
     inside = np.empty(shape=(n,), dtype=np.int32)
-    # Select joint density gradient 2D or 3D
-    if dim == 2:
-        jd_grad = _sparse_gradient_2d
-    else:
-        jd_grad = _sparse_gradient_3d
     if img_world2grid.dtype != np.float64:
         img_world2grid = img_world2grid.astype(np.float64)
     if img_spacing.dtype != np.float64:
         img_spacing = img_spacing.astype(np.float64)
-    jd_grad(img, img_world2grid, img_spacing, sample_points, out, inside)
+    # Select joint density gradient 2D or 3D
+    if dim == 2:
+        _sparse_gradient_2d(img, img_world2grid, img_spacing, sample_points,
+                            out, inside)
+    else:
+        _sparse_gradient_3d(img, img_world2grid, img_spacing, sample_points,
+                            out, inside, num_threads)
     return np.asarray(out), np.asarray(inside)
