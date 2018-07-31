@@ -122,7 +122,7 @@ class LocalTracking(object):
         for s in self.seeds:
             s = np.dot(lin, s) + offset
             # Set the random seed in numpy and random
-            s_random_seed = hash(np.sum(s) + self.random_seed)
+            s_random_seed = hash((np.sum(s) + 1) + self.random_seed)
             random.seed(s_random_seed)
             np.random.seed(s_random_seed)
             directions = self.direction_getter.initial_direction(s)
