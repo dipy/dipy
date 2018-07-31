@@ -19,12 +19,12 @@ import numpy as np
 import nibabel as nib
 
 from dipy.align.reslice import reslice
-from dipy.align.imaffine import transform_centers_of_mass, \
+from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
 from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
     AffineTransform3D
-from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_quality_assur_metric
+from dipy.io.image import save_nifti, load_nifti, load_affine_matrix, \
+    save_affine_matrix, save_quality_assur_metric
 
 
 class ResliceFlow(Workflow):
