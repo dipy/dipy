@@ -16,6 +16,17 @@ from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
 from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
     save_qa_metric
 
+import numpy as np
+import nibabel as nib
+
+from dipy.align.reslice import reslice
+from dipy.align.imaffine import transform_centers_of_mass, \
+    MutualInformationMetric, AffineRegistration
+from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
+    AffineTransform3D
+from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
+    save_qa_metric
+
 
 class ResliceFlow(Workflow):
 
@@ -545,14 +556,16 @@ class ImageRegistrationFlow(Workflow):
              (default '').
 
         out_moved : string, optional
-            The saved transformed image file (default 'moved.nii.gz').
+            Name for the saved transformed image
+             (default 'moved.nii.gz').
 
         out_affine : string, optional
-            The saved affine matrix file (default 'affine.txt').
+            Name for the saved affine matrix
+             (default 'affine.txt').
 
         out_quality : string, optional
-            The file containing the saved quality metric
-             (default 'quality_metric.txt').
+            Name of the file containing the saved quality
+             metric (default 'quality_metric.txt').
         """
 
         io_it = self.get_io_iterator()
@@ -631,7 +644,6 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-
                 logging.info("Optimal parameters: {0}".format(str(xopt)))
                 logging.info("Similarity metric: {0}".format(str(fopt)))
 
