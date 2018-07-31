@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
-                           assert_array_equal)
+                           assert_array_equal, assert_warns)
 from dipy.data import get_sphere, get_data, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -17,6 +17,8 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_deconv,
                                    odf_sh_to_sharp,
                                    auto_response,
+                                   fa_superior,
+                                   fa_inferior,
                                    recursive_response,
                                    response_from_mask)
 from dipy.direction.peaks import peak_directions
@@ -37,7 +39,6 @@ def test_recursive_response_calibration():
     """
     SNR = 100
     S0 = 1
-    sh_order = 8
 
     _, fbvals, fbvecs = get_data('small_64D')
 
@@ -105,6 +106,50 @@ def test_recursive_response_calibration():
     FA = fractional_anisotropy(tenfit.evals)
     FA_gt = fractional_anisotropy(evals)
     assert_almost_equal(FA, FA_gt, 1)
+
+
+def test_auto_response():
+    fdata, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    data = nib.load(fdata).get_data()
+
+    gtab = gradient_table(bvals, bvecs)
+    radius = 3
+
+    def test_fa_superior(FA, fa_thr):
+        return FA > fa_thr
+
+    def test_fa_inferior(FA, fa_thr):
+        return FA < fa_thr
+
+    predefined_functions = [fa_superior, fa_inferior]
+    defined_functions = [test_fa_superior, test_fa_inferior]
+
+    for fa_thr in np.arange(0.1, 1, 0.1):
+        for predefined, defined in zip(predefined_functions, defined_functions):
+            response_predefined, ratio_predefined, nvoxels_predefined = auto_response(
+                gtab,
+                data,
+                roi_center=None,
+                roi_radius=radius,
+                fa_callable=predefined,
+                fa_thr=fa_thr,
+                return_number_of_voxels=True)
+
+            response_defined, ratio_defined, nvoxels_defined = auto_response(
+                gtab,
+                data,
+                roi_center=None,
+                roi_radius=radius,
+                fa_callable=defined,
+                fa_thr=fa_thr,
+                return_number_of_voxels=True)
+
+            assert_equal(nvoxels_predefined, nvoxels_defined)
+            assert_array_almost_equal(response_predefined[0], response_defined[0])
+            assert_almost_equal(response_predefined[1], response_defined[1])
+            assert_almost_equal(ratio_predefined, ratio_defined)
 
 
 def test_response_from_mask():
@@ -178,13 +223,11 @@ def test_csdeconv():
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
 
-    with warnings.catch_warnings(record=True) as w:
-        ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
-        assert_equal(len(w) > 0, True)
+    assert_warns(UserWarning, ConstrainedSphericalDeconvModel, gtab, response, sh_order=10)
 
     with warnings.catch_warnings(record=True) as w:
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
-        assert_equal(len(w) > 0, False)
+        assert_equal(len([local_warn for local_warn in w if issubclass(local_warn.category, UserWarning)]) > 0, False)
 
     mevecs = []
     for s in sticks:
@@ -200,7 +243,7 @@ def test_csdeconv():
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])
 
-    aresponse2, aratio2 = auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
+    auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
 
     _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
@@ -391,7 +434,7 @@ def test_csd_predict():
     S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=[50, 50], snr=SNR)
     sphere = small_sphere
-    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
     csd = ConstrainedSphericalDeconvModel(gtab, response)
@@ -432,7 +475,6 @@ def test_csd_predict_multi():
     Check that we can predict reasonably from multi-voxel fits:
 
     """
-    SNR = 100
     S0 = 123.
     _, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)

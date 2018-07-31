@@ -26,7 +26,7 @@ def test_btable_prepare():
                       [0, sq2, sq2]])
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
-    bt.info
+    # bt.info
     fimg, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
@@ -261,7 +261,7 @@ def test_nan_bvecs():
     """
     fdata, fbvals, fbvecs = get_data()
     with warnings.catch_warnings(record=True) as w:
-        gtab = gradient_table(fbvals, fbvecs)
+        gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)
 
 
@@ -276,7 +276,7 @@ def test_generate_bvecs():
     # Test if two generated vectors are almost orthogonal
     bvecs_2 = generate_bvecs(2)
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
-    npt.assert_almost_equal(cos_theta, 0.)
+    npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
 def test_check_multi_b():

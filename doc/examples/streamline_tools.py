@@ -1,11 +1,12 @@
 """
+.. _streamline_tools:
 
 =========================================================
 Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
 
 This example is meant to be an introduction to some of the streamline tools
-available in dipy. Some of the functions covered in this example are
+available in DIPY_. Some of the functions covered in this example are
 ``target``, ``connectivity_matrix`` and ``density_map``. ``target`` allows one
 to filter streamlines that either pass through or do not pass through some
 region of the brain, ``connectivity_matrix`` groups and counts streamlines
@@ -20,6 +21,7 @@ modules and download the data we'll be using.
 from dipy.tracking.eudx import EuDX
 from dipy.reconst import peaks, shm
 from dipy.tracking import utils
+from dipy.tracking.streamline import Streamlines
 
 from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
 
@@ -62,7 +64,8 @@ streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
                             odf_vertices=peaks.default_sphere.vertices,
                             a_low=.05, step_sz=.5, seeds=seeds)
 affine = streamline_generator.affine
-streamlines = list(streamline_generator)
+
+streamlines = Streamlines(streamline_generator, buffer_size=512)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
@@ -80,47 +83,54 @@ with the ROI and those that don't.
 
 cc_slice = labels == 2
 cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
-cc_streamlines = list(cc_streamlines)
+cc_streamlines = Streamlines(cc_streamlines)
 
 other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
                                  include=False)
-other_streamlines = list(other_streamlines)
+other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
-We can use some of dipy's visualization tools to display the ROI we targeted
+We can use some of DIPY_'s visualization tools to display the ROI we targeted
 above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
+
+# Enables/disables interactive visualization
+interactive = False
 
 # Make display objects
 color = line_colors(cc_streamlines)
-cc_streamlines_actor = fvtk.line(cc_streamlines, line_colors(cc_streamlines))
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
-                            opacities=[1.])
+cc_streamlines_actor = actor.line(cc_streamlines, line_colors(cc_streamlines))
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
+                                      opacity=0.5)
 
-vol_actor = fvtk.slicer(t1_data)
+vol_actor = actor.slicer(t1_data)
 
-vol_actor.display(40, None, None)
+vol_actor.display(x=40)
 vol_actor2 = vol_actor.copy()
-vol_actor2.display(None, None, 35)
+vol_actor2.display(z=35)
 
 # Add display objects to canvas
-r = fvtk.ren()
-fvtk.add(r, vol_actor)
-fvtk.add(r, vol_actor2)
-fvtk.add(r, cc_streamlines_actor)
-fvtk.add(r, cc_ROI_actor)
+r = window.Renderer()
+r.add(vol_actor)
+r.add(vol_actor2)
+r.add(cc_streamlines_actor)
+r.add(cc_ROI_actor)
 
 # Save figures
-fvtk.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
-            size=(800, 800))
-fvtk.camera(r, [-1, 0, 0], [0, 0, 0], viewup=[0, 0, 1])
-fvtk.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
-            size=(800, 800))
+window.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
+              size=(800, 800))
+if interactive:
+    window.show(r)
+r.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
+window.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
+              size=(800, 800))
+if interactive:
+    window.show(r)
 
 """
 .. figure:: corpuscallosum_axial.png
@@ -208,35 +218,30 @@ visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
 
-To do that, we will use tools available in [nibabel](http://nipy.org/nibabel)
+To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
 import nibabel as nib
+from dipy.io.streamline import save_trk
 
 # Save density map
 dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
 dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 
-# Make a trackvis header so we can save streamlines
-voxel_size = labels_img.header.get_zooms()
-trackvis_header = nib.trackvis.empty_header()
-trackvis_header['voxel_size'] = voxel_size
-trackvis_header['dim'] = shape
-trackvis_header['voxel_order'] = "RAS"
-
 # Move streamlines to "trackvis space"
+voxel_size = labels_img.header.get_zooms()
 trackvis_point_space = utils.affine_for_trackvis(voxel_size)
-lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
-                                   trackvis_point_space, input_space=affine)
-lr_sf_trk = list(lr_sf_trk)
+# lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
+#                                   trackvis_point_space, input_space=affine)
+
+lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-for_save = [(sl, None, None) for sl in lr_sf_trk]
-nib.trackvis.write("lr-superiorfrontal.trk", for_save, trackvis_header)
+save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
 
 """
 Let's take a moment here to consider the representation of streamlines used in
-dipy. Streamlines are a path though the 3d space of an image represented by a
+DIPY. Streamlines are a path though the 3D space of an image represented by a
 set of points. For these points to have a meaningful interpretation, these
 points must be given in a known coordinate system. The ``affine`` attribute of
 the ``streamline_generator`` object specifies the coordinate system of the
@@ -257,7 +262,7 @@ moved our streamlines to "trackvis space", we can still compute the density map
 as long as we specify the right coordinate system.
 """
 
-dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=trackvis_point_space)
+dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=np.eye(4))
 assert np.all(dm == dm_trackvis)
 
 """
@@ -270,13 +275,14 @@ image.
 .. rubric:: Footnotes
 
 .. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is a
-    modified version of label map `aparc+aseg.mgz` created by freesurfer.  The
-    corpus callosum region is a combination of the freesurfer labels 251-255.
-    The remaining freesurfer labels were re-mapped and reduced so that they lie
-    between 0 and 88. To see the freesurfer region, label and name, represented
-    by each value see `label_info.txt` in `~/.dipy/stanford_hardi`.
+       modified version of label map `aparc+aseg.mgz` created by `FreeSurfer
+       <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus callosum region is a
+       combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
+       labels were re-mapped and reduced so that they lie between 0 and 88. To
+       see the FreeSurfer region, label and name, represented by each value see
+       `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
-    that can represent scaling, rotation, sheer, translation and reflection.
-    Affine transformations are often represented using a 4x4 matrix where the
-    last row of the matrix is ``[0, 0, 0, 1]``.
+       that can represent scaling, rotation, sheer, translation and reflection.
+       Affine transformations are often represented using a 4x4 matrix where the
+       last row of the matrix is ``[0, 0, 0, 1]``.
 """

@@ -7,6 +7,7 @@ import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import center_streamlines, transform_streamlines
 from dipy.align.tests.test_streamlinear import fornix_streamlines
+from dipy.reconst.dti import color_fa, fractional_anisotropy
 from dipy.testing.decorators import xvfb_it
 from dipy.data import get_sphere
 from tempfile import mkstemp
@@ -48,7 +49,7 @@ def test_slicer():
     # window.show(renderer)
 
     # copy pixels in numpy array directly
-    arr = window.snapshot(renderer, 'test_slicer.png', offscreen=False)
+    arr = window.snapshot(renderer, 'test_slicer.png', offscreen=True)
     import scipy
     print(scipy.__version__)
     print(scipy.__file__)
@@ -60,8 +61,6 @@ def test_slicer():
     print(arr.dtype)
 
     report = window.analyze_snapshot(arr, find_objects=True)
-
-    print(report)
 
     npt.assert_equal(report.objects, 1)
     # print(arr[..., 0])
@@ -76,7 +75,7 @@ def test_slicer():
     with TemporaryDirectory() as tmpdir:
         fname = os.path.join(tmpdir, 'slice.png')
         # window.show(renderer)
-        arr = window.snapshot(renderer, fname, offscreen=False)
+        window.snapshot(renderer, fname, offscreen=True)
         report = window.analyze_snapshot(fname, find_objects=True)
         npt.assert_equal(report.objects, 1)
 
@@ -93,7 +92,7 @@ def test_slicer():
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer, offscreen=False)
+    arr = window.snapshot(renderer, offscreen=True)
     report = window.analyze_snapshot(arr, colors=[(255, 0, 0)])
     npt.assert_equal(report.objects, 1)
     npt.assert_equal(report.colors_found, [True])
@@ -108,14 +107,20 @@ def test_slicer():
     slicer_lut.display(10, None, None)
     slicer_lut.display(None, 10, None)
     slicer_lut.display(None, None, 10)
-
+    
+    slicer_lut.opacity(0.5)
+    slicer_lut.tolerance(0.03)
     slicer_lut2 = slicer_lut.copy()
+    npt.assert_equal(slicer_lut2.GetOpacity(), 0.5)
+    npt.assert_equal(slicer_lut2.picker.GetTolerance(), 0.03)
+    slicer_lut2.opacity(1)
+    slicer_lut2.tolerance(0.025)
     slicer_lut2.display(None, None, 10)
     renderer.add(slicer_lut2)
 
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer, offscreen=False)
+    arr = window.snapshot(renderer, offscreen=True)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
 
@@ -130,7 +135,7 @@ def test_slicer():
     renderer.reset_camera()
     renderer.reset_clipping_range()
 
-    arr = window.snapshot(renderer, offscreen=False)
+    arr = window.snapshot(renderer, offscreen=True)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
     npt.assert_equal(data.shape, slicer.shape)
@@ -153,11 +158,112 @@ def test_slicer():
     renderer.reset_clipping_range()
 
     # window.show(renderer, reset_camera=False)
-    arr = window.snapshot(renderer, offscreen=False)
+    arr = window.snapshot(renderer, offscreen=True)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
     npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
                            np.array(slicer.shape))
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_contour_from_roi():
+
+    # Render volume
+    renderer = window.renderer()
+    data = np.zeros((50, 50, 50))
+    data[20:30, 25, 25] = 1.
+    data[25, 20:30, 25] = 1.
+    affine = np.eye(4)
+    surface = actor.contour_from_roi(data, affine,
+                                     color=np.array([1, 0, 1]),
+                                     opacity=.5)
+    renderer.add(surface)
+
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+    # window.show(renderer)
+
+    # Test binarization
+    renderer2 = window.renderer()
+    data2 = np.zeros((50, 50, 50))
+    data2[20:30, 25, 25] = 1.
+    data2[35:40, 25, 25] = 1.
+    affine = np.eye(4)
+    surface2 = actor.contour_from_roi(data2, affine,
+                                      color=np.array([0, 1, 1]),
+                                      opacity=.5)
+    renderer2.add(surface2)
+
+    renderer2.reset_camera()
+    renderer2.reset_clipping_range()
+    # window.show(renderer2)
+
+    arr = window.snapshot(renderer, 'test_surface.png', offscreen=True)
+    arr2 = window.snapshot(renderer2, 'test_surface2.png', offscreen=True)
+
+    report = window.analyze_snapshot(arr, find_objects=True)
+    report2 = window.analyze_snapshot(arr2, find_objects=True)
+
+    npt.assert_equal(report.objects, 1)
+    npt.assert_equal(report2.objects, 2)
+
+    # test on real streamlines using tracking example
+    from dipy.data import read_stanford_labels
+    from dipy.reconst.shm import CsaOdfModel
+    from dipy.data import default_sphere
+    from dipy.direction import peaks_from_model
+    from dipy.tracking.local import ThresholdTissueClassifier
+    from dipy.tracking import utils
+    from dipy.tracking.local import LocalTracking
+    from dipy.viz.colormap import line_colors
+
+    hardi_img, gtab, labels_img = read_stanford_labels()
+    data = hardi_img.get_data()
+    labels = labels_img.get_data()
+    affine = hardi_img.get_affine()
+
+    white_matter = (labels == 1) | (labels == 2)
+
+    csa_model = CsaOdfModel(gtab, sh_order=6)
+    csa_peaks = peaks_from_model(csa_model, data, default_sphere,
+                                 relative_peak_threshold=.8,
+                                 min_separation_angle=45,
+                                 mask=white_matter)
+
+    classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+
+    seed_mask = labels == 2
+    seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+
+    # Initialization of LocalTracking.
+    # The computation happens in the next step.
+    streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
+                                step_size=2)
+
+    # Compute streamlines and store as a list.
+    streamlines = list(streamlines)
+
+    # Prepare the display objects.
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+    seedroi_actor = actor.contour_from_roi(seed_mask, affine, [0, 1, 1], 0.5)
+
+    # Create the 3d display.
+    r = window.ren()
+    r2 = window.ren()
+    r.add(streamlines_actor)
+    arr3 = window.snapshot(r, 'test_surface3.png', offscreen=True)
+    report3 = window.analyze_snapshot(arr3, find_objects=True)
+    r2.add(streamlines_actor)
+    r2.add(seedroi_actor)
+    arr4 = window.snapshot(r2, 'test_surface4.png', offscreen=True)
+    report4 = window.analyze_snapshot(arr4, find_objects=True)
+
+    # assert that the seed ROI rendering is not far
+    # away from the streamlines (affine error)
+    npt.assert_equal(report3.objects, report4.objects)
+    # window.show(r)
+    # window.show(r2)
 
 
 @npt.dec.skipif(not run_test)
@@ -290,10 +396,10 @@ def test_odf_slicer(interactive=False):
     fid, fname = mkstemp(suffix='_odf_slicer.mmap')
     print(fid)
     print(fname)
-    
+
     odfs = np.memmap(fname, dtype=np.float64, mode='w+',
                      shape=shape)
-    
+
     odfs[:] = 1
 
     affine = np.eye(4)
@@ -322,16 +428,16 @@ def test_odf_slicer(interactive=False):
     renderer.add(odf_actor)
     renderer.reset_camera()
     renderer.reset_clipping_range()
-    
+
     odf_actor.display_extent(0, I, 0, J, k, k)
     odf_actor.GetProperty().SetOpacity(1.0)
     if interactive:
         window.show(renderer, reset_camera=False)
-    
+
     arr = window.snapshot(renderer)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 11 * 11)
-    
+
     renderer.clear()
     renderer.add(fa_actor)
     renderer.reset_camera()
@@ -396,12 +502,12 @@ def test_odf_slicer(interactive=False):
     report = window.analyze_renderer(renderer)
     npt.assert_equal(report.actors, 1)
     npt.assert_equal(report.actors_classnames[0], 'vtkLODActor')
-        
+
     del odf_actor
     odfs._mmap.close()
     del odfs
     os.close(fid)
-    
+
     os.remove(fname)
 
 
@@ -459,7 +565,183 @@ def test_peak_slicer(interactive=False):
     report = window.analyze_renderer(renderer)
     ex = ['vtkLODActor', 'vtkOpenGLActor', 'vtkOpenGLActor', 'vtkOpenGLActor']
     npt.assert_equal(report.actors_classnames, ex)
-    
-    
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_tensor_slicer(interactive=False):
+
+    evals = np.array([1.4, .35, .35]) * 10 ** (-3)
+    evecs = np.eye(3)
+
+    mevals = np.zeros((3, 2, 4, 3))
+    mevecs = np.zeros((3, 2, 4, 3, 3))
+
+    mevals[..., :] = evals
+    mevecs[..., :, :] = evecs
+
+    from dipy.data import get_sphere
+
+    sphere = get_sphere('symmetric724')
+
+    affine = np.eye(4)
+    renderer = window.Renderer()
+
+    tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                       sphere=sphere,  scale=.3)
+    I, J, K = mevals.shape[:3]
+    renderer.add(tensor_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    tensor_actor.display_extent(0, 1, 0, J, 0, K)
+    tensor_actor.GetProperty().SetOpacity(1.0)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    # Test extent
+    big_extent = renderer.GetActors().GetLastActor().GetBounds()
+    big_extent_x = abs(big_extent[1] - big_extent[0])
+    tensor_actor.display(x=2)
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    small_extent = renderer.GetActors().GetLastActor().GetBounds()
+    small_extent_x = abs(small_extent[1] - small_extent[0])
+    npt.assert_equal(big_extent_x > small_extent_x, True)
+
+    # Test empty mask
+    empty_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                      mask=np.zeros(mevals.shape[:3]),
+                                      sphere=sphere,  scale=.3)
+    npt.assert_equal(empty_actor.GetMapper(), None)
+
+    # Test mask
+    mask = np.ones(mevals.shape[:3])
+    mask[:2, :3, :3] = 0
+    cfa = color_fa(fractional_anisotropy(mevals), mevecs)
+    tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine, mask=mask,
+                                       scalar_colors=cfa, sphere=sphere,  scale=.3)
+    renderer.clear()
+    renderer.add(tensor_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    mask_extent = renderer.GetActors().GetLastActor().GetBounds()
+    mask_extent_x = abs(mask_extent[1] - mask_extent[0])
+    npt.assert_equal(big_extent_x > mask_extent_x, True)
+
+    # test display
+    tensor_actor.display()
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_x = abs(current_extent[1] - current_extent[0])
+    npt.assert_equal(big_extent_x > current_extent_x, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    tensor_actor.display(y=1)
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_y = abs(current_extent[3] - current_extent[2])
+    big_extent_y = abs(big_extent[3] - big_extent[2])
+    npt.assert_equal(big_extent_y > current_extent_y, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    tensor_actor.display(z=1)
+    current_extent = renderer.GetActors().GetLastActor().GetBounds()
+    current_extent_z = abs(current_extent[5] - current_extent[4])
+    big_extent_z = abs(big_extent[5] - big_extent[4])
+    npt.assert_equal(big_extent_z > current_extent_z, True)
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_dots(interactive=False):
+    points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
+
+    dots_actor = actor.dots(points, color=(0, 255, 0))
+
+    renderer = window.Renderer()
+    renderer.add(dots_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    extent = renderer.GetActors().GetLastActor().GetBounds()
+    npt.assert_equal(extent, (0.0, 1.0, 0.0, 1.0, 0.0, 0.0))
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=(0, 255, 0))
+    npt.assert_equal(report.objects, 3)
+
+    # Test one point
+    points = np.array([0, 0, 0])
+    dot_actor = actor.dots(points, color=(0, 0, 255))
+
+    renderer.clear()
+    renderer.add(dot_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=(0, 0, 255))
+    npt.assert_equal(report.objects, 1)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_points(interactive=False):
+    points = np.array([[0, 0, 0], [0, 1, 0], [1, 0, 0]])
+    colors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    points_actor = actor.point(points,  colors)
+
+    renderer = window.Renderer()
+    renderer.add(points_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=colors)
+    npt.assert_equal(report.objects, 3)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_labels(interactive=False):
+
+    text_actor = actor.label("Hello")
+
+    renderer = window.Renderer()
+    renderer.add(text_actor)
+    renderer.reset_camera()
+    renderer.reset_clipping_range()
+
+    if interactive:
+        window.show(renderer, reset_camera=False)
+
+    npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+
 if __name__ == "__main__":
     npt.run_module_suite()

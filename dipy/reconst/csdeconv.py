@@ -159,7 +159,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             self.S_r = estimate_response(gtab, self.response[0],
                                          self.response[1])
-            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+            r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi],
+                                   rcond=-1)[0]
             n_response = n
             m_response = m
             self.response_scaling = response[1]
@@ -313,13 +314,15 @@ class ConstrainedSDTModel(SphHarmModel):
 
     @multi_voxel_fit
     def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi],
+                               rcond=-1)[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_reg, odf_sh)
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
         odf_sh /= Z
+
         shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
                                        self.lambda_, self.tau)
         # print 'SDT CSD converged after %d iterations' % num_it
@@ -640,7 +643,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         return np.zeros_like(odf_sh), 0
 
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
+    fodf_sh = np.linalg.lstsq(R, odf_sh, rcond=-1)[0]
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
@@ -652,9 +655,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         Z = np.linalg.norm(fodf)
         fodf_sh /= Z
 
-    fodf = np.dot(B_reg, fodf_sh)
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
-    # print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -675,8 +676,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         try:
-            fodf_sh = np.linalg.lstsq(M, ODF)[0]
-        except np.linalg.LinAlgError as lae:
+            fodf_sh = np.linalg.lstsq(M, ODF, rcond=-1)[0]
+        except np.linalg.LinAlgError:
             # SVD did not converge in Linear Least Squares in current
             # voxel. Proceeding with initial SH estimate for this voxel.
             pass
@@ -759,8 +760,42 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     return fodf_sh
 
 
+def fa_superior(FA, fa_thr):
+    """ Check that the FA is greater than the FA threshold
+
+        Parameters
+        ----------
+        FA : array
+            Fractional Anisotropy
+        fa_thr : int
+            FA threshold
+
+        Returns
+        -------
+        True when the FA value is greater than the FA threshold, otherwise False.
+    """
+    return FA > fa_thr
+
+
+def fa_inferior(FA, fa_thr):
+    """ Check that the FA is lower than the FA threshold
+
+        Parameters
+        ----------
+        FA : array
+            Fractional Anisotropy
+        fa_thr : int
+            FA threshold
+
+        Returns
+        -------
+        True when the FA value is lower than the FA threshold, otherwise False.
+    """
+    return FA < fa_thr
+
+
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  return_number_of_voxels=False):
+                  fa_callable=fa_superior, return_number_of_voxels=False):
     """ Automatic estimation of response function using FA.
 
     Parameters
@@ -775,6 +810,10 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         radius of cubic ROI
     fa_thr : float
         FA threshold
+    fa_callable : callable
+        A callable that defines an operation that compares FA with the fa_thr. The operator
+        should have two positional arguments (e.g., `fa_operator(FA, fa_thr)`) and it should
+        return a bool array.
     return_number_of_voxels : bool
         If True, returns the number of voxels used for estimating the response
         function.
@@ -831,7 +870,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)
     FA[np.isnan(FA)] = 0
-    indices = np.where(FA > fa_thr)
+    indices = np.where(fa_callable(FA, fa_thr))
 
     if indices[0].size == 0:
         msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
@@ -976,7 +1015,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     where_dwi = lazy_index(~gtab.b0s_mask)
     response_p = np.ones(len(n))
 
-    for num_it in range(iter):
+    for _ in range(iter):
         r_sh_all = np.zeros(len(n))
         csd_model = ConstrainedSphericalDeconvModel(gtab, res_obj,
                                                     sh_order=sh_order)
@@ -1004,7 +1043,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
             r, theta, phi = cart2sphere(x, y, z)
             # for the gradient sphere
             B_dwi = real_sph_harm(0, n, theta[:, None], phi[:, None])
-            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi])[0]
+            r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi],
+                                        rcond=-1)[0]
 
         response = r_sh_all / data.shape[0]
         res_obj = AxSymShResponse(data[:, gtab.b0s_mask].mean(), response)

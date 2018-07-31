@@ -1,6 +1,6 @@
  .. _development:
 
-DiPy development
+DIPY development
 ================
 
 Contents:
@@ -12,6 +12,7 @@ Contents:
    gitwash/index
    make_release
    commit_codes
+   coding_style_guideline
    python3
 
 Indices and tables

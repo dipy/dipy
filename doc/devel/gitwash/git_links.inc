@@ -12,11 +12,11 @@
 .. _git: http://git-scm.com/
 .. _github: http://github.com
 .. _github help: http://help.github.com
-.. _msysgit: http://code.google.com/p/msysgit/downloads/list
+.. _msysgit: https://gitforwindows.org/
 .. _git-osx-installer: http://code.google.com/p/git-osx-installer/downloads/list
 .. _subversion: http://subversion.tigris.org/
 .. _git cheat sheet: http://github.com/guides/git-cheat-sheet
-.. _pro git book: http://progit.org/
+.. _pro git book: http://git-scm.com/book
 .. _git svn crash course: http://git-scm.com/course/svn.html
 .. _learn.github: http://learn.github.com/
 .. _network graph visualizer: http://github.com/blog/39-say-hello-to-the-network-graph-visualizer
@@ -52,6 +52,8 @@
 .. _rebase without tears: http://matthew-brett.github.com/pydagogue/rebase_without_tears.html
 .. _resolving a merge: http://schacon.github.com/git/user-manual.html#resolving-a-merge
 .. _ipython git workflow: http://mail.scipy.org/pipermail/ipython-dev/2010-October/006746.html
+.. _Installing Git: http://book.git-scm.com/2_installing_git.html
+.. _remove remote branch: https://www.git-tower.com/learn/git/faq/delete-remote-branch
 
 .. other stuff
 .. _python: http://www.python.org

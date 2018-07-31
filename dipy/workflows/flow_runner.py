@@ -1,5 +1,10 @@
 from __future__ import division, print_function, absolute_import
 
+#  Disabling the FutureWarning from h5py below.
+#  This disables the FutureWarning warning for all the workflows.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import logging
 
 from dipy.utils.six import iteritems
@@ -12,7 +17,7 @@ def get_level(lvl):
     """
     try:
         return logging._levelNames[lvl]
-    except:
+    except Exception:
         return logging.INFO
 
 
@@ -31,7 +36,7 @@ def run_flow(flow):
                         help='Force overwriting output files.')
 
     parser.add_argument('--out_strat', action='store', dest='out_strat',
-                        metavar='string', required=False, default='append',
+                        metavar='string', required=False, default='absolute',
                         help='Strategy to manage output creation.')
 
     parser.add_argument('--mix_names', dest='mix_names',
@@ -39,9 +44,11 @@ def run_flow(flow):
                         help='Prepend mixed input names to output names.')
 
     # Add logging parameters common to all workflows
+    msg = 'Log messsages display level. Accepted options include CRITICAL,'
+    msg += ' ERROR, WARNING, INFO, DEBUG and NOTSET (default INFO).'
     parser.add_argument('--log_level', action='store', dest='log_level',
                         metavar='string', required=False, default='INFO',
-                        help='Log messsages display level')
+                        help=msg)
 
     parser.add_argument('--log_file', action='store', dest='log_file',
                         metavar='string', required=False, default='',

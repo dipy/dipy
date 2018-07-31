@@ -3,16 +3,15 @@
 Reconstruct with Constant Solid Angle (Q-Ball)
 =================================================
 
-We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
-al (MRM 2010) to your datasets.
+We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et
+al. [Aganj2010]_ to your datasets.
 
 First import the necessary modules:
 """
 
 import numpy as np
-import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.reconst.shm import CsaOdfModel, normalize_data
+from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
 
 """
@@ -36,7 +35,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 data.shape ``(81, 106, 76, 160)``
 
-Remove most of the background using dipy's mask module.
+Remove most of the background using DIPY's mask module.
 """
 
 from dipy.segment.mask import median_otsu
@@ -93,8 +92,12 @@ data_small = maskdata[13:43, 44:74, 28:29]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
-from dipy.viz import fvtk
-r = fvtk.ren()
+from dipy.viz import window, actor
+
+# Enables/disables interactive visualization
+interactive = False
+
+r = window.Renderer()
 
 csaodfs = csamodel.fit(data_small).odf(sphere)
 
@@ -103,18 +106,30 @@ It is common with CSA ODFs to produce negative values, we can remove those using
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
+csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=sphere, colormap='plasma', scale=0.4)
+csa_odfs_actor.display(z=0)
 
-fvtk.add(r, fvtk.sphere_funcs(csaodfs, sphere, colormap='jet'))
+r.add(csa_odfs_actor)
 print('Saving illustration as csa_odfs.png')
-fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+window.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+if interactive:
+    window.show(r)
 
 """
 .. figure:: csa_odfs.png
    :align: center
 
-   **Constant Solid Angle ODFs**.
+   Constant Solid Angle ODFs.
 
 .. include:: ../links_names.inc
 
-"""
+References
+----------
 
+.. [Aganj2010] Aganj I, Lenglet C, Sapiro G, Yacoub E, Ugurbil K, Harel N.
+   "Reconstruction of the orientation distribution function in single- and
+   multiple-shell q-ball imaging within constant solid angle", Magnetic
+   Resonance in Medicine. 2010 Aug;64(2):554-66. doi: 10.1002/mrm.22365
+
+
+"""

@@ -12,9 +12,10 @@ from dipy.direction.peaks import (peaks_from_model,
                                   peak_directions,
                                   peak_directions_nl,
                                   reshape_peaks_for_visualization)
+
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
-from dipy.sims.voxel import multi_tensor, all_tensor_evecs, multi_tensor_odf
+from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
@@ -444,6 +445,7 @@ def test_degenerative_cases():
 
     assert_equal(values[0], 1)
     assert_equal(len(values), 1)
+
 
 
 def test_peaksFromModel():

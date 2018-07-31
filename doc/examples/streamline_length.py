@@ -7,7 +7,7 @@ This example shows how to calculate the lengths of a set of streamlines and
 also how to compress the streamlines without considerably reducing their
 lengths or overall shape.
 
-A streamline in Dipy is represented as a numpy array of size
+A streamline in DIPY_ is represented as a numpy array of size
 :math:`(N \times 3)` where each row of the array represent a 3D point of the
 streamline. A set of streamlines is represented with a list of
 numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
@@ -61,7 +61,7 @@ fig_hist, ax = plt.subplots(1)
 ax.hist(lengths, color='burlywood')
 ax.set_xlabel('Length')
 ax.set_ylabel('Count')
-plt.show()
+# plt.show()
 plt.legend()
 plt.savefig('length_histogram.png')
 
@@ -111,31 +111,37 @@ Both, ``downsample`` and ``approx_polygon_track`` can be thought as methods for
 lossy compression of streamlines.
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
-ren = fvtk.ren()
-ren.SetBackground(*fvtk.colors.white)
-bundle_actor = fvtk.streamtube(bundle, fvtk.colors.red, linewidth=0.3)
+# Enables/disables interactive visualization
+interactive = False
 
-fvtk.add(ren, bundle_actor)
+ren = window.Renderer()
+ren.SetBackground(*window.colors.white)
+bundle_actor = actor.streamtube(bundle, window.colors.red, linewidth=0.3)
 
-bundle_actor2 = fvtk.streamtube(bundle_downsampled, fvtk.colors.red, linewidth=0.3)
+ren.add(bundle_actor)
+
+bundle_actor2 = actor.streamtube(bundle_downsampled, window.colors.red, linewidth=0.3)
 bundle_actor2.SetPosition(0, 40, 0)
 
-bundle_actor3 = fvtk.streamtube(bundle_downsampled2, fvtk.colors.red, linewidth=0.3)
+bundle_actor3 = actor.streamtube(bundle_downsampled2, window.colors.red, linewidth=0.3)
 bundle_actor3.SetPosition(0, 80, 0)
 
-fvtk.add(ren, bundle_actor2)
-fvtk.add(ren, bundle_actor3)
+ren.add(bundle_actor2)
+ren.add(bundle_actor3)
 
-fvtk.camera(ren, pos=(0, 0, 0), focal=(30, 0, 0))
-fvtk.record(ren, out_path='simulated_cosine_bundle.png', size=(900, 900))
+ren.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
+window.record(ren, out_path='simulated_cosine_bundle.png', size=(900, 900))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: simulated_cosine_bundle.png
    :align: center
 
-   **Initial bundle (down), downsampled at 12 equidistant points (middle), downsampled not equidistantly(up)**
+   Initial bundle (down), downsampled at 12 equidistant points (middle),
+   downsampled not equidistantly (up).
 
 From the figure above we can see that all 3 bundles look quite similar. However,
 when we plot the histogram of the number of points used for each streamline, it
@@ -151,7 +157,7 @@ ax.hist(n_pts_ds, color='g', histtype='step', label='downsample (12)')
 ax.hist(n_pts_ds2, color='b', histtype='step', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Number of points')
 ax.set_ylabel('Count')
-plt.show()
+# plt.show()
 plt.legend()
 plt.savefig('n_pts_histogram.png')
 
@@ -159,7 +165,7 @@ plt.savefig('n_pts_histogram.png')
 .. figure:: n_pts_histogram.png
    :align: center
 
-   **Histogram of the number of points of the streamlines**
+   Histogram of the number of points of the streamlines.
 
 Finally, we can also show that the lengths of the streamlines haven't changed
 considerably after applying the two methods of downsampling.
@@ -174,7 +180,7 @@ ax.plot(lengths_downsampled, color='g', label='downsample (12)')
 ax.plot(lengths_downsampled2, color='b', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Streamline ID')
 ax.set_ylabel('Length')
-plt.show()
+# plt.show()
 plt.legend()
 plt.savefig('lengths_plots.png')
 
@@ -182,6 +188,8 @@ plt.savefig('lengths_plots.png')
 .. figure:: lengths_plots.png
    :align: center
 
-   **Lengths of each streamline for every one of the 3 bundles**
+   Lengths of each streamline for every one of the 3 bundles.
+
+.. include:: ../links_names.inc
 
 """

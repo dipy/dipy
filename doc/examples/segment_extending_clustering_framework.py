@@ -3,51 +3,55 @@
 Enhancing QuickBundles with different metrics and features
 ==========================================================
 
-QuickBundles is a flexible algorithm that requires only a distance metric and
-an adjacency threshold to perform clustering. There is a wide variety of metrics
-that could be used to cluster streamlines.
+QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
+distance metric and an adjacency threshold to perform clustering. There is a
+wide variety of metrics that could be used to cluster streamlines.
 
-The purpose of this tutorial is to show how to easily create new `Feature` and
-new `Metric` classes that can be used by QuickBundles.
+The purpose of this tutorial is to show how to easily create new ``Feature`` and
+new ``Metric`` classes that can be used by QuickBundles.
 
 .. _clustering-framework:
 
 Clustering framework
 ====================
-Dipy provides a simple, flexible and fast framework to do clustering of
+DIPY_ provides a simple, flexible and fast framework to do clustering of
 sequential data (e.g. streamlines).
 
-A *sequential datum* in Dipy is represented as a numpy array of size
-:math:`(N \times D)` where each row of the array represents a D dimensional
+A *sequential datum* in DIPY is represented as a numpy array of size
+:math:`(N \times D)`, where each row of the array represents a $D$ dimensional
 point of the sequence. A set of these sequences is represented as a list of
 numpy arrays of size :math:`(N_i \times D)` for :math:`i=1:M` where $M$ is the
 number of sequences in the set.
 
 This clustering framework is modular and divided in three parts:
-1) feature extraction
-2) distance computation
-3) clustering algorithm
+
+#. Feature extraction
+
+#. Distance computation
+
+#. Clustering algorithm
 
 The **feature extraction** part includes any preprocessing needed to be done on
 the data before computing distances between them (e.g. resampling the number of
 points of a streamline). To define a new way of extracting features, one has to
-subclass `Feature` (see below).
+subclass ``Feature`` (see below).
 
 The **distance computation** part includes any metric capable of evaluating a
 distance between two set of features previously extracted from the data. To
-define a new way of extracting features, one has to subclass `Metric` (see below).
+define a new way of extracting features, one has to subclass ``Metric`` (see
+below).
 
 The **clustering algorithm** part represents the clustering algorithm itself
 (e.g. QuickBundles, K-means, Hierarchical Clustering). More precisely, it
 includes any algorithms taking as input a list of sequential data and
-outputting a `ClusterMap` object.
+outputting a ``ClusterMap`` object.
 
 
 Extending `Feature`
 ===================
 This section will guide you through the creation of a new feature extraction
 method that can be used in the context of this clustering framework. For a
-list of available features in Dipy see :ref:`example_segment_clustering_features`.
+list of available features in DIPY see :ref:`example_segment_clustering_features`.
 
 Assuming a set of streamlines, the type of features we want to extract is the
 arc length (i.e. the sum of the length of each segment for a given streamline).
@@ -59,9 +63,9 @@ from dipy.segment.metric import Feature
 from dipy.tracking.streamline import length
 
 """
-We now define the class 'ArcLengthFeature' that will perform the desired
-feature extraction. When subclassing `Feature`, two methods have to be
-redefined: `infer_shape` and `extract`.
+We now define the class ``ArcLengthFeature`` that will perform the desired
+feature extraction. When subclassing ``Feature``, two methods have to be
+redefined: ``infer_shape`` and ``extract``.
 
 Also, an important property about feature extraction is whether or not
 its process is invariant to the order of the points within a streamline.
@@ -84,12 +88,12 @@ class ArcLengthFeature(Feature):
     def extract(self, streamline):
         """ Extracts features from `streamline`. """
         # return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
-        # or use a Dipy's function that computes the arc length of a streamline.
+        # or use a DIPY's function that computes the arc length of a streamline.
         return length(streamline)
 
 
 """
-The new feature extraction `ArcLengthFeature` is ready to be used. Let's use
+The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's use
 it to cluster a set of streamlines by their arc length. For educational
 purposes we will try to cluster a small streamline bundle known from
 neuroanatomy as the fornix.
@@ -100,15 +104,15 @@ We start by loading the fornix streamlines.
 import numpy as np
 from nibabel import trackvis as tv
 from dipy.data import get_data
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 fname = get_data('fornix')
 streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-Perform QuickBundles clustering using the metric `SumPointwiseEuclideanMetric`
-and our `ArcLengthFeature`.
+Perform QuickBundles clustering using the metric
+``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
 """
 
 from dipy.segment.clustering import QuickBundles
@@ -123,28 +127,33 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.ravel(clusters.centroids))
+colormap = actor.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = fvtk.ren()
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clusters_arclength.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='fornix_clusters_arclength.png', size=(600, 600))
+
+# Enables/disables interactive visualization
+interactive = False
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_clusters_arclength.png
    :align: center
 
-   **Showing the different clusters obtained by using the arc length**.
+   Showing the different clusters obtained by using the arc length.
 
 
 Extending `Metric`
 ==================
 This section will guide you through the creation of a new metric that can be
 used in the context of this clustering framework. For a list of available
-metrics in Dipy see :ref:`example_segment_clustering_metrics`.
+metrics in DIPY see :ref:`example_segment_clustering_metrics`.
 
 Assuming a set of streamlines, we want a metric that computes the cosine
 distance giving the vector between endpoints of each streamline (i.e. one
@@ -158,10 +167,10 @@ from dipy.segment.metric import Metric
 from dipy.segment.metric import VectorOfEndpointsFeature
 
 """
-We now define the class `CosineMetric` that will perform the desired
-distance computation. When subclassing `Metric`, two methods have to be
-redefined: `are_compatible` and `dist`. Moreover, when implementing the
-`dist` method, one needs to make sure the distance returned is symmetric
+We now define the class ``CosineMetric`` that will perform the desired
+distance computation. When subclassing ``Metric``, two methods have to be
+redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
+``dist`` method, one needs to make sure the distance returned is symmetric
 (i.e. `dist(A, B) == dist(B, A)`).
 """
 
@@ -191,7 +200,7 @@ class CosineMetric(Metric):
         return np.arccos(cos_theta) / np.pi  # Normalized cosine distance
 
 """
-The new distance `CosineMetric` is ready to be used. Let's use
+The new distance ``CosineMetric`` is ready to be used. Let's use
 it to cluster a set of streamlines according to the cosine distance of the
 vector between their endpoints. For educational purposes we will try to
 cluster a small streamline bundle known from neuroanatomy as the fornix.
@@ -202,14 +211,14 @@ We start by loading the fornix streamlines.
 import numpy as np
 from nibabel import trackvis as tv
 from dipy.data import get_data
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 fname = get_data('fornix')
 streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-Perform QuickBundles clustering using our metric `CosineMetric`.
+Perform QuickBundles clustering using our metric ``CosineMetric``.
 """
 
 from dipy.segment.clustering import QuickBundles
@@ -223,20 +232,31 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = fvtk.ren()
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clusters_cosine.png', size=(600, 600))
-
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='fornix_clusters_cosine.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_clusters_cosine.png
    :align: center
 
-   **Showing the different clusters obtained by using the cosine metric**.
+   Showing the different clusters obtained by using the cosine metric.
+
+.. include:: ../links_names.inc
+
+References
+----------
+
+.. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
+   2012.
+
 """

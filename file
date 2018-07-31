@@ -1,0 +1,58 @@
+[?2004h[?1049h[?1h=[?2004h[1;60r[?12;25h[?12l[?25h[27m[m[H[2J[?25l[60;1H"~/dipy/.git/rebase-merge/git-rebase-todo" 118L, 8155C[1;1Hpick d2215cd7 Added the code for saving the affine matrix in image.py file.
+pick b81e3e57 Added the image registration workflow to the align.py and test_align.py
+pick 612d1552 reformatted the align.py file as per the PEP8 standards.
+pick 31b4365c Added the test cases for the affine registration workflow.
+pick 7c030cd3 Added a command line wrapper for the Image Registration workflow.
+pick a3531c21 Added the import for numpy in image.py
+pick 60feca2c Workflow for applying the transform on a set of images.
+pick 7dc68561 Removed the code from this branch which forms part of the apply transform workflow.
+pick 13e909a1 Added the reporting of quality metric values.
+pick 350b8105 Reduced the level of iterations to make tests run faster in travis.
+pick ca7ebd14 Fixed the Pep8 warnings in the test_align.py file.
+pick 183f4562 Fixed the PEP8 warning messages in the align.py file.
+pick d695abf7 Fixed the PEP8 warnings in the image.py file.
+pick 47173f31 1) Made the test cases for image registration modular. 2) Added semantic checks for the image registration, distance metric is being checked now. 3) Removed the code block for running the test ss[15;1Hcript on command line. 4) Manually ran the test script.
+pick 603a1e72 Fixed the issues raised by @nilgoyette in the previous PR.
+pick 54ed8a34 removed the older assert_equal with assert_almost_equal
+pick 0598087c Fixed the PEP8 issues
+pick 4f97dd52 Fixed PEP8 issue in test_align.py
+pick c23da434 Fixed PEP8 issue in test_align.py
+pick 4e90673f Fixed the format and spacing in the help message.
+pick 31231bc4 reduced the number of decimal places in assert_almost_equal()
+pick 284b759c Created separate function to reduce code duplication.
+pick b1f307ee Fixed the PEP8 warnings.
+pick e44c9eed Made the improvements suggested in the PR comments by @nilgoyette.
+pick 18c2f96d Added the code for saving the affine matrix in image.py file.
+pick 3926e520 Added the image registration workflow to the align.py and test_align.py
+pick 5999d0dd reformatted the align.py file as per the PEP8 standards.
+pick 8f9c1163 Added a command line wrapper for the Image Registration workflow.
+pick a9f58315 Added the import for numpy in image.py
+pick bfdb5736 Workflow for applying the transform on a set of images.
+pick b4b8bcf8 Removed the code from this branch which forms part of the apply transform workflow.
+pick 14a27e25 Added the reporting of quality metric values.
+pick 5afe3e36 Reduced the level of iterations to make tests run faster in travis.
+pick e7e1d8df Fixed the Pep8 warnings in the test_align.py file.
+pick 54a38f19 Fixed the PEP8 warning messages in the align.py file.
+pick 24d3bedc 1) Made the test cases for image registration modular. 2) Added semantic checks for the image registration, distance metric is being checked now. 3) Removed the code block for running the test ss[38;1Hcript on command line. 4) Manually ran the test script.
+pick eeccd14d Fixed the issues raised by @nilgoyette in the previous PR.
+pick b50b0db0 removed the older assert_equal with assert_almost_equal
+pick 164de2e0 Fixed the PEP8 issues
+pick 48a65b85 Fixed PEP8 issue in test_align.py
+pick af7df06f Fixed PEP8 issue in test_align.py
+pick 10853e07 Fixed the format and spacing in the help message.
+pick 165bab8d reduced the number of decimal places in assert_almost_equal()
+pick 8fb700c4 Created separate function to reduce code duplication.
+pick 99a633e5 Fixed the PEP8 warnings.
+pick f8e0e0a4 Made the improvements suggested in the PR comments by @nilgoyette.
+pick 6dc8e61b Reformatted the command line parameters help
+pick 8d0cd54d Fixed the formatting of the commanline parameters after rebasing
+pick 4cb0f334 The following REBASE was not successful, commit 8d0cd54da0f50c834b8258238b62b177c5835c47 (HEAD -> affine_registration)
+pick adc16ed7 Added the code for saving the affine matrix in image.py file.
+pick 77808ff1 Added the image registration workflow to the align.py and test_align.py
+pick 24c3bca9 reformatted the align.py file as per the PEP8 standards.
+pick 754343d1 Added the test cases for the affine registration workflow.
+pick 9350c2b1 Added a command line wrapper for the Image Registration workflow.
+pick 298d82ea Added the import for numpy in image.py
+pick f4f90d25 Workflow for applying the transform on a set of images.
+pick f004716a Removed the code from this branch which forms part of the apply transform workflow.[1;1H[?12l[?25h[?25l[60;1HType  :qa!  and press <Enter> to abandon all changes and exit Vim[1;1H[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[60;1H
+[?2004l[?1l>[?1049l[?2004l

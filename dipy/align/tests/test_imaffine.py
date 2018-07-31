@@ -13,7 +13,8 @@ from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
 from dipy.align import imaffine
-from dipy.align.imaffine import AffineInversionError
+from dipy.align.imaffine import AffineInversionError, AffineInvalidValuesError, \
+    AffineMap, _number_dim_affine_matrix
 from dipy.align.transforms import (Transform,
                                    regtransforms)
 from dipy.align.tests.test_parzenhist import (setup_random_transform,
@@ -242,9 +243,7 @@ def test_affreg_defaults():
         else:
             nslices = 45
         factor = factors[ttype][0]
-        sampling_pc = factors[ttype][1]
         transform = regtransforms[ttype]
-        id_param = transform.get_identity_parameters()
         static, moving, static_grid2world, moving_grid2world, smask, mmask, T = \
             setup_random_transform(transform, factor, nslices, 1.0)
         # Sum of absolute differences
@@ -400,9 +399,6 @@ def test_affine_map():
     np.random.seed(2112927)
     dom_shape = np.array([64, 64, 64], dtype=np.int32)
     cod_shape = np.array([80, 80, 80], dtype=np.int32)
-    nx = dom_shape[0]
-    ny = dom_shape[1]
-    nz = dom_shape[2]
     # Radius of the circle/sphere (testing image)
     radius = 16
     # Rotation axis (used for 3D transforms only)
@@ -432,6 +428,14 @@ def test_affine_map():
                                               scales, rot_axis)
         # Include the None case
         gt_affines.append(None)
+
+        # testing str/format/repr
+        for affine_mat in gt_affines:
+            aff_map = AffineMap(affine_mat)
+            assert_equal(str(aff_map), aff_map.__str__())
+            assert_equal(repr(aff_map), aff_map.__repr__())
+            for spec in ['f', 'r', 't', '']:
+                assert_equal(format(aff_map, spec), aff_map.__format__(spec))
 
         for affine in gt_affines:
 
@@ -463,7 +467,14 @@ def test_affine_map():
                 assert(affine_map.affine is None)
                 assert(affine_map.affine_inv is None)
             else:
+                # compatibility with previous versions
                 assert_array_equal(affine, affine_map.affine)
+                # new getter
+                new_copy_affine = affine_map.get_affine()
+                # value must be the same
+                assert_array_equal(affine, new_copy_affine)
+                # but not its reference
+                assert id(affine) != id(new_copy_affine)
                 actual = affine_map.affine.dot(affine_map.affine_inv)
                 assert_array_almost_equal(actual, np.eye(dim + 1))
 
@@ -490,16 +501,36 @@ def test_affine_map():
             assert_array_almost_equal(actual_linear, expected_linear)
             assert_array_almost_equal(actual_nn, expected_nn)
 
+        # Verify AffineMap can not be created with non-square matrix
+        non_square_shapes = [ np.zeros((dim, dim + 1), dtype=np.float64),
+                           np.zeros((dim + 1, dim), dtype=np.float64) ]
+        for nsq in non_square_shapes:
+            assert_raises(AffineInversionError, AffineMap, nsq)
+
+        # Verify incorrect augmentations are caught
+        for affine_mat in gt_affines:
+            aff_map = AffineMap(affine_mat)
+            if affine_mat is None:
+                continue
+            bad_aug = aff_map.get_affine()
+            # no zeros in the first n-1 columns on last row
+            bad_aug[-1,:] = 1
+            assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
+
+            bad_aug = aff_map.get_affine()
+            bad_aug[-1, -1] = 0  # lower right not 1
+            assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
+
         # Verify AffineMap cannot be created with a non-invertible matrix
         invalid_nan = np.zeros((dim + 1, dim + 1), dtype=np.float64)
         invalid_nan[1, 1] = np.nan
         invalid_zeros = np.zeros((dim + 1, dim + 1), dtype=np.float64)
         assert_raises(
-            imaffine.AffineInversionError,
+            imaffine.AffineInvalidValuesError,
             imaffine.AffineMap,
             invalid_nan)
         assert_raises(
-            imaffine.AffineInversionError,
+            AffineInvalidValuesError,
             imaffine.AffineMap,
             invalid_zeros)
 
@@ -539,11 +570,17 @@ def test_affine_map():
             aff_inf[...] = np.inf
 
             assert_raises(
-                AffineInversionError,
+                AffineInvalidValuesError,
                 affine_map.set_affine,
                 aff_sing)
-            assert_raises(AffineInversionError, affine_map.set_affine, aff_nan)
-            assert_raises(AffineInversionError, affine_map.set_affine, aff_inf)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_nan)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_inf)
+
+    # Verify AffineMap can not be created with non-2D matrices : len(shape) != 2
+    for dim_not_2 in range(10):
+        if dim_not_2 != _number_dim_affine_matrix:
+            mat_large_dim = np.random.random([2]*dim_not_2)
+            assert_raises(AffineInversionError, AffineMap, mat_large_dim)
 
 
 def test_MIMetric_invalid_params():

@@ -3,21 +3,12 @@ import numpy as np
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from dipy.io.dpy import Dpy, have_tables
+from dipy.io.dpy import Dpy
 
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
-from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
-
-# Decorator to protect tests from being run without pytables present
-iftables = npt.dec.skipif(not have_tables,
-                          'Pytables does not appear to be installed')
+from dipy.tracking.streamline import Streamlines
 
 
-@iftables
 def test_dpy():
     fname = 'test.bin'
     with InTemporaryDirectory():
@@ -28,13 +19,22 @@ def test_dpy():
         dpw.write_track(A)
         dpw.write_track(B)
         dpw.write_track(C)
-        dpw.write_tracks([C, B, A])
+        dpw.write_tracks(Streamlines([C, B, A]))
+
+        all_tracks = np.ascontiguousarray(np.vstack([A, B, C, C, B, A]))
+        npt.assert_array_equal(all_tracks, dpw.tracks[:])
         dpw.close()
+
         dpr = Dpy(fname, 'r')
-        assert_equal(dpr.version() == '0.0.1', True)
+        npt.assert_equal(dpr.version() == u'0.0.1', True)
         T = dpr.read_tracksi([0, 1, 2, 0, 0, 2])
         T2 = dpr.read_tracks()
-        assert_equal(len(T2), 6)
+        npt.assert_equal(len(T2), 6)
         dpr.close()
-        assert_array_equal(A, T[0])
-        assert_array_equal(C, T[5])
+        npt.assert_array_equal(A, T[0])
+        npt.assert_array_equal(C, T[5])
+
+
+if __name__ == '__main__':
+
+    npt.run_module_suite()

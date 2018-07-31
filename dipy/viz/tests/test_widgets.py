@@ -2,7 +2,7 @@ import os
 import numpy as np
 from os.path import join as pjoin
 
-from dipy.viz import actor, window, widget, fvtk
+from dipy.viz import actor, window, widget
 from dipy.data import DATA_DIR
 from dipy.data import fetch_viz_icons, read_viz_icons
 import numpy.testing as npt
@@ -98,22 +98,7 @@ def test_button_and_slider_widgets():
     global size
     size = renderer.GetSize()
 
-    def win_callback(obj, event):
-        global size
-        if size != obj.GetSize():
-
-            button.place(renderer)
-            button_plus.place(renderer)
-            button_minus.place(renderer)
-            slider.place(renderer)
-            size = obj.GetSize()
-
     if recording:
-        # show_manager.add_window_callback(win_callback)
-        # you can also register any callback in a vtk way like this
-        # show_manager.window.AddObserver(vtk.vtkCommand.ModifiedEvent,
-        #                                 win_callback)
-
         show_manager.record_events_to_file(recording_filename)
         print(states)
     else:
@@ -148,7 +133,7 @@ def test_text_widget():
     interactive = False
 
     renderer = window.Renderer()
-    axes = fvtk.axes()
+    axes = actor.axes()
     window.add(renderer, axes)
     renderer.ResetCamera()
 

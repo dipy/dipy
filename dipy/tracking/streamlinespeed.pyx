@@ -114,7 +114,6 @@ def length(streamlines):
                                       streamlines._lengths.astype(np.intp),
                                       arclengths)
 
-
         return arclengths
 
     only_one_streamlines = False
@@ -201,7 +200,7 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
         np.npy_intp N = streamline.shape[0]
         np.npy_intp D = streamline.shape[1]
         np.npy_intp new_N = out.shape[0]
-        double ratio, step, next_point
+        double ratio, step, next_point, delta
         np.npy_intp i, j, k, dim
 
     # Get arclength at each point.
@@ -218,17 +217,19 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     while next_point < arclengths[N-1]:
         if next_point == arclengths[k]:
             for dim in range(D):
-                out[i,dim] = streamline[j,dim];
+                out[i, dim] = streamline[j, dim]
 
             next_point += step
             i += 1
             j += 1
             k += 1
         elif next_point < arclengths[k]:
-            ratio = 1 - ((arclengths[k]-next_point) / (arclengths[k]-arclengths[k-1]))
+            ratio = 1 - ((arclengths[k]-next_point) /
+                         (arclengths[k]-arclengths[k-1]))
 
             for dim in range(D):
-                out[i,dim] = streamline[j-1,dim] + ratio * (streamline[j,dim] - streamline[j-1,dim])
+                delta = streamline[j, dim] - streamline[j-1, dim]
+                out[i, dim] = streamline[j-1, dim] + ratio * delta
 
             next_point += step
             i += 1
@@ -238,9 +239,30 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
 
     # Last resampled point always the one from original streamline.
     for dim in range(D):
-        out[new_N-1,dim] = streamline[N-1,dim]
+        out[new_N-1, dim] = streamline[N-1, dim]
 
     free(arclengths)
+
+
+cdef void c_set_number_of_points_from_arraysequence(Streamline points,
+                                                    np.npy_intp[:] offsets,
+                                                    np.npy_intp[:] lengths,
+                                                    long nb_points,
+                                                    Streamline out) nogil:
+    cdef:
+        np.npy_intp i, j, k
+        np.npy_intp offset, length
+        np.npy_intp offset_out = 0
+        double dn, sum_dn_sqr
+
+    for i in range(offsets.shape[0]):
+        offset = offsets[i]
+        length = lengths[i]
+
+        c_set_number_of_points(points[offset:offset+length, :],
+                               out[offset_out:offset_out+nb_points, :])
+
+        offset_out += nb_points
 
 
 def set_number_of_points(streamlines, nb_points=3):
@@ -253,21 +275,28 @@ def set_number_of_points(streamlines, nb_points=3):
 
     Parameters
     ----------
-    streamlines : one or a list of array-like shape (N,3)
-       array representing x,y,z of N points in a streamline
+    streamlines : ndarray or a list or :class:`dipy.tracking.Streamlines`
+        If ndarray, must have shape (N,3) where N is the number of points
+        of the streamline.
+        If list, each item must be ndarray shape (Ni,3) where Ni is the number
+        of points of streamline i.
+        If :class:`dipy.tracking.Streamlines`, its `common_shape` must be 3.
+
     nb_points : int
-       integer representing number of points wanted along the curve.
+        integer representing number of points wanted along the curve.
 
     Returns
     -------
-    modified_streamlines : one or a list of array-like shape (`nb_points`,3)
-       array representing x,y,z of `nb_points` points that were interpolated.
+    new_streamlines : ndarray or a list or :class:`dipy.tracking.Streamlines`
+        Results of the downsampling or upsampling process.
 
     Examples
     --------
     >>> from dipy.tracking.streamline import set_number_of_points
     >>> import numpy as np
-    >>> # One streamline: a semi-circle
+
+    One streamline, a semi-circle:
+
     >>> theta = np.pi*np.linspace(0, 1, 100)
     >>> x = np.cos(theta)
     >>> y = np.sin(theta)
@@ -276,15 +305,44 @@ def set_number_of_points(streamlines, nb_points=3):
     >>> modified_streamline = set_number_of_points(streamline, 3)
     >>> len(modified_streamline)
     3
-    >>> # Multiple streamlines
+
+    Multiple streamlines:
+
     >>> streamlines = [streamline, streamline[::2]]
-    >>> modified_streamlines = set_number_of_points(streamlines, 10)
+    >>> new_streamlines = set_number_of_points(streamlines, 10)
     >>> [len(s) for s in streamlines]
     [100, 50]
-    >>> [len(s) for s in modified_streamlines]
+    >>> [len(s) for s in new_streamlines]
     [10, 10]
 
     '''
+    if isinstance(streamlines, Streamlines):
+        if len(streamlines) == 0:
+            return Streamlines()
+
+        nb_streamlines = len(streamlines)
+        dtype = streamlines._data.dtype
+        new_streamlines = Streamlines()
+        new_streamlines._data = np.zeros((nb_streamlines * nb_points, 3),
+                                         dtype=dtype)
+        new_streamlines._offsets = nb_points * np.arange(nb_streamlines,
+                                                         dtype=np.intp)
+        new_streamlines._lengths = nb_points * np.ones(nb_streamlines,
+                                                       dtype=np.intp)
+
+        if dtype == np.float32:
+            c_set_number_of_points_from_arraysequence[float2d](
+                streamlines._data, streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp), nb_points,
+                new_streamlines._data)
+        else:
+            c_set_number_of_points_from_arraysequence[double2d](
+                streamlines._data, streamlines._offsets.astype(np.intp),
+                streamlines._lengths.astype(np.intp), nb_points,
+                new_streamlines._data)
+
+        return new_streamlines
+
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
@@ -305,7 +363,7 @@ def set_number_of_points(streamlines, nb_points=3):
             raise ValueError("All streamlines must have at least 2 points.")
 
     # Allocate memory for each modified streamline
-    modified_streamlines = []
+    new_streamlines = []
     cdef np.npy_intp i
 
     if dtype is None:
@@ -315,55 +373,65 @@ def set_number_of_points(streamlines, nb_points=3):
             # HACK: To avoid memleaks we have to recast with astype(dtype).
             streamline = streamlines[i].astype(dtype)
             if dtype != np.float32 and dtype != np.float64:
-                dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+                dtype = np.float32
+                if dtype == np.int64 or dtype == np.uint64:
+                    dtype = np.float64
+
                 streamline = streamline.astype(dtype)
 
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=dtype)
+            new_streamline = np.empty((nb_points, streamline.shape[1]),
+                                      dtype=dtype)
             if dtype == np.float32:
-                c_set_number_of_points[float2d](streamline, modified_streamline)
+                c_set_number_of_points[float2d](streamline, new_streamline)
             else:
-                c_set_number_of_points[double2d](streamline, modified_streamline)
+                c_set_number_of_points[double2d](streamline, new_streamline)
 
             # HACK: To avoid memleaks we have to recast with astype(dtype).
-            modified_streamlines.append(modified_streamline.astype(dtype))
+            new_streamlines.append(new_streamline.astype(dtype))
 
     elif dtype == np.float32:
         # All streamlines have composed of float32 points
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(dtype)
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
+            modified_streamline = np.empty((nb_points, streamline.shape[1]),
+                                           dtype=streamline.dtype)
             c_set_number_of_points[float2d](streamline, modified_streamline)
             # HACK: To avoid memleaks we have to recast with astype(dtype).
-            modified_streamlines.append(modified_streamline.astype(dtype))
+            new_streamlines.append(modified_streamline.astype(dtype))
     elif dtype == np.float64:
         # All streamlines are composed of float64 points
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(dtype)
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
+            modified_streamline = np.empty((nb_points, streamline.shape[1]),
+                                           dtype=streamline.dtype)
             c_set_number_of_points[double2d](streamline, modified_streamline)
             # HACK: To avoid memleaks we have to recast with astype(dtype).
-            modified_streamlines.append(modified_streamline.astype(dtype))
+            new_streamlines.append(modified_streamline.astype(dtype))
     elif dtype == np.int64 or dtype == np.uint64:
-        # All streamlines are composed of int64 or uint64 points so convert them in float64 one at the time
+        # All streamlines are composed of int64 or uint64 points so convert
+        # them in float64 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float64)
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
+            modified_streamline = np.empty((nb_points, streamline.shape[1]),
+                                           dtype=streamline.dtype)
             c_set_number_of_points[double2d](streamline, modified_streamline)
-            # HACK: To avoid memleaks we have to recast with astype(np.float64).
-            modified_streamlines.append(modified_streamline.astype(np.float64))
+            # HACK: To avoid memleaks we've to recast with astype(np.float64).
+            new_streamlines.append(modified_streamline.astype(np.float64))
     else:
-        # All streamlines are composed of points with a dtype fitting in 32bits so convert them in float32 one at the time
+        # All streamlines are composed of points with a dtype fitting in
+        # 32bits so convert them in float32 one at the time
         for i in range(len(streamlines)):
             streamline = streamlines[i].astype(np.float32)
-            modified_streamline = np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype)
+            modified_streamline = np.empty((nb_points, streamline.shape[1]),
+                                           dtype=streamline.dtype)
             c_set_number_of_points[float2d](streamline, modified_streamline)
-            # HACK: To avoid memleaks we have to recast with astype(np.float32).
-            modified_streamlines.append(modified_streamline.astype(np.float32))
+            # HACK: To avoid memleaks we've to recast with astype(np.float32).
+            new_streamlines.append(modified_streamline.astype(np.float32))
 
     if only_one_streamlines:
-        return modified_streamlines[0]
+        return new_streamlines[0]
     else:
-        return modified_streamlines
+        return new_streamlines
 
 
 cdef double c_norm_of_cross_product(double bx, double by, double bz,

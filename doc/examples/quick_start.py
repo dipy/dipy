@@ -1,14 +1,14 @@
 """
 =========================
-Getting started with Dipy
+Getting started with DIPY
 =========================
 
 In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
 diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
-In Dipy we provide tools to load and process these files and we also provide
-access to publically available datasets for those who haven't acquired yet
+In DIPY_ we provide tools to load and process these files and we also provide
+access to publicly available datasets for those who haven't acquired yet
 their own datasets.
 
 With the following commands we can download a dMRI dataset
@@ -18,7 +18,7 @@ from dipy.data import fetch_sherbrooke_3shell
 fetch_sherbrooke_3shell()
 
 """
-By default these datasets will go in the .dipy folder inside your home directory.
+By default these datasets will go in the ``.dipy`` folder inside your home directory.
 Here is how you can access them.
 """
 
@@ -76,7 +76,7 @@ We can very easily check the size of ``data`` in the following way:
 print(data.shape)
 
 """
-``(128, 128, 60, 194)``
+``(128, 128, 60, 193)``
 
 We can also check the dimensions of each voxel in the following way:
 """
@@ -105,7 +105,7 @@ plt.savefig('data.png', bbox_inches='tight')
 .. figure:: data.png
    :align: center
 
-   **Showing the middle axial slice without (left) and with (right) diffusion weighting**.
+   Showing the middle axial slice without (left) and with (right) diffusion weighting.
 
 The next step is to load the b-values and b-vectors from the disk using
 the function ``read_bvals_bvecs``.
@@ -115,9 +115,9 @@ from dipy.io import read_bvals_bvecs
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
 """
-In Dipy, we use an object called ``GradientTable`` which holds all the acquision
-specific parameters, e.g. b-values, b-vectors, timings and others. To create this
-object you can use the function ``gradient_table``.
+In DIPY, we use an object called ``GradientTable`` which holds all the
+acquisition specific parameters, e.g. b-values, b-vectors, timings and others.
+To create this object you can use the function ``gradient_table``.
 """
 
 from dipy.core.gradients import gradient_table
@@ -138,7 +138,7 @@ B-vectors shape (193, 3)
          min -0.964050
          max 0.999992
 
-You, can also see the b-values using:
+You can also see the b-values using:
 """
 
 print(gtab.bvals)

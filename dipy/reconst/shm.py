@@ -2,13 +2,13 @@
 
 References
 ----------
-Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
     Angle Consideration.
-Descoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
     Q-ball imaging.
-Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
+Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
     populations in white matter of the brain with Funk-Radon transform.
-Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
+Tristan-Vega, A., et al. 2009. Estimation of fiber orientation probability
     density functions in high angular resolution diffusion imaging.
 
 
@@ -640,7 +640,7 @@ class CsaOdfModel(QballBaseModel):
 
     References
     ----------
-    .. [1] Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
+    .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With
            Solid Angle Consideration.
     """
     min = .001
@@ -671,10 +671,10 @@ class OpdtModel(QballBaseModel):
 
     References
     ----------
-    .. [1] Tristan-Vega, A., et. al. 2010. A new methodology for estimation of
+    .. [1] Tristan-Vega, A., et al. 2010. A new methodology for estimation of
            fiber populations in white matter of the brain with Funk-Radon
            transform.
-    .. [2] Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation
+    .. [2] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
            probability density functions in high angular resolution diffusion
            imaging.
     """
@@ -703,7 +703,7 @@ class QballModel(QballBaseModel):
 
     References
     ----------
-    .. [1] Descoteaux, M., et. al. 2007. Regularized, fast, and robust
+    .. [1] Descoteaux, M., et al. 2007. Regularized, fast, and robust
            analytical Q-ball imaging.
     """
 
@@ -997,9 +997,20 @@ def calculate_max_order(n_coeffs):
         Finally, the positive value is chosen between the two options.
         """
 
-        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2
-        L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        return np.int(max([L1, L2]))
+        # L2 is negative for all positive values of n_coeffs, so we don't
+        # bother even computing it:
+        # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+        # L1 is always the larger value, so we go with that:
+        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2.0
+        # Check that it is a whole even number:
+        if L1.is_integer() and not np.mod(L1, 2):
+            return int(L1)
+        else:
+            # Otherwise, the input didn't make sense:
+            raise ValueError("The input to ``calculate_max_order`` was ",
+                             "%s, but that is not a valid number" % n_coeffs,
+                             "of coefficients for a spherical harmonics ",
+                             "basis set.")
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,

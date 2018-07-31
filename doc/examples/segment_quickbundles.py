@@ -11,10 +11,11 @@ First import the necessary modules.
 
 import numpy as np
 from nibabel import trackvis as tv
+from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_data
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 
 """
 For educational purposes we will try to cluster a small streamline bundle known
@@ -91,33 +92,40 @@ methods like `add`, `remove`, and `clear` to modify the clustering result.
 Lets first show the initial dataset.
 """
 
-ren = fvtk.ren()
+# Enables/disables interactive visualization
+interactive = False
+
+ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, fvtk.colors.white))
-fvtk.record(ren, n_frames=1, out_path='fornix_initial.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, window.colors.white))
+window.record(ren, out_path='fornix_initial.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_initial.png
    :align: center
 
-   **Initial Fornix dataset**.
+   Initial Fornix dataset.
 
 Show the centroids of the fornix after clustering (with random colors):
 """
 
-colormap = fvtk.create_colormap(np.arange(len(clusters)))
+colormap = actor.create_colormap(np.arange(len(clusters)))
 
-fvtk.clear(ren)
+window.clear(ren)
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, fvtk.colors.white, opacity=0.05))
-fvtk.add(ren, fvtk.streamtube(clusters.centroids, colormap, linewidth=0.4))
-fvtk.record(ren, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+ren.add(actor.streamtube(clusters.centroids, colormap, linewidth=0.4))
+window.record(ren, out_path='fornix_centroids.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_centroids.png
    :align: center
 
-   **Showing the different QuickBundles centroids with random colors**.
+   Showing the different QuickBundles centroids with random colors.
 
 Show the labeled fornix (colors from centroids).
 """
@@ -126,16 +134,18 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-fvtk.clear(ren)
+window.clear(ren)
 ren.SetBackground(1, 1, 1)
-fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
-fvtk.record(ren, n_frames=1, out_path='fornix_clusters.png', size=(600, 600))
+ren.add(actor.streamtube(streamlines, colormap_full))
+window.record(ren, out_path='fornix_clusters.png', size=(600, 600))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: fornix_clusters.png
    :align: center
 
-   **Showing the different clusters**.
+   Showing the different clusters.
 
 It is also possible to save the complete `ClusterMap` object with pickling.
 """
@@ -150,6 +160,9 @@ Finally, here is a video of QuickBundles applied on a larger dataset.
     <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
 
 .. include:: ../links_names.inc
+
+References
+----------
 
 .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
                     tractography simplification, Frontiers in Neuroscience, vol

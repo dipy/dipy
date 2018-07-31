@@ -21,7 +21,7 @@ def get_vertex_set(key):
     if key[:6] == 'create':
         number = eval(key[6:])
         vertices, edges, faces = create_unit_sphere(number) 
-        omit = 0
+        # omit = 0
         return vertices
     else:
         entry = sphere_dic[key]
@@ -37,36 +37,36 @@ def get_vertex_set(key):
         elif sphere_dic[key]['object'] == 'npy':
             vertices = np.load(filepath)
         elif entry['object'] == 'dicom':
-            data,affine,bvals,gradients=dcm.read_mosaic_dir(filepath)
-            #print (bvals.shape, gradients.shape)
-            grad3 = np.vstack((bvals,bvals,bvals)).transpose()
-            #print grad3.shape
-            #vertices = grad3*gradients
+            data,affine,bvals,gradients = dcm.read_mosaic_dir(filepath)
+            # print (bvals.shape, gradients.shape)
+            # grad3 = np.vstack((bvals, bvals, bvals)).transpose()
+            # print grad3.shape
+            # vertices = grad3*gradients
             vertices = gradients
         if omit > 0:
-            vertices = vertices[omit:,:]
+            vertices = vertices[omit:, :]
         if entry['hemi']:
             vertices = np.vstack([vertices, -vertices])
 
-        return vertices[omit:,:]
+        return vertices[omit:, :]
 
-print sphere_dic.keys()
+print(sphere_dic.keys())
 
-#vertices = get_vertex_set('create5')
-#vertices = get_vertex_set('siem64')
-#vertices = get_vertex_set('dsi102')
+# vertices = get_vertex_set('create5')
+# vertices = get_vertex_set('siem64')
+# vertices = get_vertex_set('dsi102')
 
 vertices = get_vertex_set('fy362')
 gradients = get_vertex_set('siem64')
 gradients = gradients[:gradients.shape[0]/2]
-print gradients.shape
+print(gradients.shape)
 
-from dipy.viz import fvtk
-sph=-np.sinc(np.dot(gradients[1],vertices.T))
-r=fvtk.ren()
-#sph = np.arange(vertices.shape[0]) 
-print sph.shape
-cols=fvtk.colors(sph,'jet')
-fvtk.add(r,fvtk.point(vertices,cols,point_radius=.1,theta=10,phi=10))
-fvtk.show(r)
+from dipy.viz import window, actor
+sph = -np.sinc(np.dot(gradients[1], vertices.T))
+ren = window.Renderer()
+# sph = np.arange(vertices.shape[0])
+print(sph.shape)
+cols = window.colors(sph, 'jet')
+ren.add(actor.point(vertices, cols, point_radius=.1, theta=10, phi=10))
+window.show(ren)
 

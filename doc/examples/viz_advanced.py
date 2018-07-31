@@ -3,7 +3,7 @@
 Advanced interactive visualization
 ==================================
 
-In DIPY we created a thin interface to access many of the capabilities
+In DIPY_ we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
 needs of structural and diffusion imaging. Initially the 3D visualization
 module was named ``fvtk``, meaning functions using vtk. This is still available
@@ -41,8 +41,8 @@ from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 fetch_bundles_2_subjects()
 
 """
-The following function outputs a dictionary with the required bundles e.g., af
-left (left arcuate fasciculus) and maps, e.g., FA for a specific subject.
+The following function outputs a dictionary with the required bundles e.g. ``af
+left`` (left arcuate fasciculus) and maps, e.g. FA for a specific subject.
 """
 
 res = read_bundles_2_subjects('subj_1', ['t1', 'fa'],
@@ -102,7 +102,6 @@ We can add additonal slicers by copying the original and adjusting the
 """
 
 image_actor_x = image_actor_z.copy()
-image_actor_x.opacity(slicer_opacity)
 x_midpoint = int(np.round(shape[0] / 2))
 image_actor_x.display_extent(x_midpoint,
                              x_midpoint, 0,
@@ -111,7 +110,6 @@ image_actor_x.display_extent(x_midpoint,
                              shape[2] - 1)
 
 image_actor_y = image_actor_z.copy()
-image_actor_y.opacity(slicer_opacity)
 y_midpoint = int(np.round(shape[1] / 2))
 image_actor_y.display_extent(0,
                              shape[0] - 1,
@@ -148,89 +146,101 @@ sliders to move the slices and change their opacity.
 line_slider_z = ui.LineSlider2D(min_value=0,
                                 max_value=shape[2] - 1,
                                 initial_value=shape[2] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 line_slider_x = ui.LineSlider2D(min_value=0,
                                 max_value=shape[0] - 1,
                                 initial_value=shape[0] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 line_slider_y = ui.LineSlider2D(min_value=0,
                                 max_value=shape[1] - 1,
                                 initial_value=shape[1] / 2,
-                                text_template="{value:.0f}")
+                                text_template="{value:.0f}",
+                                length=140)
 
 opacity_slider = ui.LineSlider2D(min_value=0.0,
                                  max_value=1.0,
-                                 initial_value=slicer_opacity)
+                                 initial_value=slicer_opacity,
+                                 length=140)
 
 """
 Now we will write callbacks for the sliders and register them.
 """
 
 
-def change_slice_z(i_ren, obj, slider):
+def change_slice_z(slider):
     z = int(np.round(slider.value))
     image_actor_z.display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
 
 
-def change_slice_x(i_ren, obj, slider):
+def change_slice_x(slider):
     x = int(np.round(slider.value))
     image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
 
 
-def change_slice_y(i_ren, obj, slider):
+def change_slice_y(slider):
     y = int(np.round(slider.value))
     image_actor_y.display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
 
 
-def change_opacity(i_ren, obj, slider):
+def change_opacity(slider):
     slicer_opacity = slider.value
     image_actor_z.opacity(slicer_opacity)
     image_actor_x.opacity(slicer_opacity)
     image_actor_y.opacity(slicer_opacity)
 
-line_slider_z.add_callback(line_slider_z.slider_disk,
-                           "MouseMoveEvent",
-                           change_slice_z)
-line_slider_x.add_callback(line_slider_x.slider_disk,
-                           "MouseMoveEvent",
-                           change_slice_x)
-line_slider_y.add_callback(line_slider_y.slider_disk,
-                           "MouseMoveEvent",
-                           change_slice_y)
-opacity_slider.add_callback(opacity_slider.slider_disk,
-                            "MouseMoveEvent",
-                            change_opacity)
 
+line_slider_z.on_change = change_slice_z
+line_slider_x.on_change = change_slice_x
+line_slider_y.on_change = change_slice_y
+opacity_slider.on_change = change_opacity
 """
 We'll also create text labels to identify the sliders.
 """
 
-line_slider_label_z = ui.TextBox2D(text="Z Slice", width=50, height=20)
-line_slider_label_x = ui.TextBox2D(text="X Slice", width=50, height=20)
-line_slider_label_y = ui.TextBox2D(text="Y Slicer", width=50, height=20)
-opacity_slider_label = ui.TextBox2D(text="Opacity", width=50, height=20)
+
+def build_label(text):
+    label = ui.TextBlock2D()
+    label.message = text
+    label.font_size = 18
+    label.font_family = 'Arial'
+    label.justification = 'left'
+    label.bold = False
+    label.italic = False
+    label.shadow = False
+    label.background = (0, 0, 0)
+    label.color = (1, 1, 1)
+
+    return label
+
+
+line_slider_label_z = build_label(text="Z Slice")
+line_slider_label_x = build_label(text="X Slice")
+line_slider_label_y = build_label(text="Y Slice")
+opacity_slider_label = build_label(text="Opacity")
 
 """
 Now we will create a ``panel`` to contain the sliders and labels.
 """
 
 
-panel = ui.Panel2D(center=(1030, 120),
-                   size=(300, 200),
+panel = ui.Panel2D(size=(300, 200),
                    color=(1, 1, 1),
                    opacity=0.1,
                    align="right")
+panel.center = (1030, 120)
 
-panel.add_element(line_slider_label_x, 'relative', (0.1, 0.8))
-panel.add_element(line_slider_x, 'relative', (0.5, 0.8))
-panel.add_element(line_slider_label_y, 'relative', (0.1, 0.6))
-panel.add_element(line_slider_y, 'relative', (0.5, 0.6))
-panel.add_element(line_slider_label_z, 'relative', (0.1, 0.4))
-panel.add_element(line_slider_z, 'relative', (0.5, 0.4))
-panel.add_element(opacity_slider_label, 'relative', (0.1, 0.2))
-panel.add_element(opacity_slider, 'relative', (0.5, 0.2))
+panel.add_element(line_slider_label_x, (0.1, 0.75))
+panel.add_element(line_slider_x, (0.38, 0.75))
+panel.add_element(line_slider_label_y, (0.1, 0.55))
+panel.add_element(line_slider_y, (0.38, 0.55))
+panel.add_element(line_slider_label_z, (0.1, 0.35))
+panel.add_element(line_slider_z, (0.38, 0.35))
+panel.add_element(opacity_slider_label, (0.1, 0.15))
+panel.add_element(opacity_slider, (0.38, 0.15))
 
 show_m.ren.add(panel)
 
@@ -260,25 +270,37 @@ def win_callback(obj, event):
 show_m.initialize()
 
 """
-Finally, please uncomment the following 3 lines so that you can interact with
-the available 3D and 2D objects.
+Finally, please set the following variable to ``True`` to interact with the
+datasets in 3D.
 """
 
-# show_m.add_window_callback(win_callback)
-# show_m.render()
-# show_m.start()
+interactive = False
 
 ren.zoom(1.5)
 ren.reset_clipping_range()
 
-window.record(ren, out_path='bundles_and_a_slice.png', size=(1200, 900),
-              reset_camera=False)
+if interactive:
+
+    show_m.add_window_callback(win_callback)
+    show_m.render()
+    show_m.start()
+
+else:
+
+    window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
+                  reset_camera=False)
 
 """
-.. figure:: bundles_and_a_slice.png
+.. figure:: bundles_and_3_slices.png
    :align: center
 
-   **A few bundles with interactive slicing**.
+   A few bundles with interactive slicing.
 """
 
 del show_m
+
+"""
+
+.. include:: ../links_names.inc
+
+"""

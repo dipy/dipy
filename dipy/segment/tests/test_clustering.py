@@ -435,7 +435,7 @@ def test_cluster_map_str_and_repr():
 def test_cluster_map_size():
     nb_clusters = 11
     cluster_map = ClusterMap()
-    clusters = [Cluster() for i in range(nb_clusters)]
+    clusters = [Cluster() for _ in range(nb_clusters)]
     cluster_map.add_cluster(*clusters)
 
     assert_equal(len(cluster_map), nb_clusters)
@@ -446,7 +446,7 @@ def test_cluster_map_clusters_sizes():
     rng = np.random.RandomState(42)
     nb_clusters = 11
     # Generate random indices
-    indices = [range(rng.randint(1, 10)) for i in range(nb_clusters)]
+    indices = [range(rng.randint(1, 10)) for _ in range(nb_clusters)]
 
     cluster_map = ClusterMap()
     clusters = [Cluster(indices=indices[i]) for i in range(nb_clusters)]
@@ -540,7 +540,7 @@ def test_cluster_map_comparison_with_object():
 
     # Comparison with another ClusterMap object
     other_cluster_map = copy.deepcopy(cluster_map)
-    assert_true(cluster_map == other_cluster_map)
+    assert_equal(cluster_map, other_cluster_map)
 
     other_cluster_map = copy.deepcopy(cluster_map)
     assert_false(cluster_map != other_cluster_map)

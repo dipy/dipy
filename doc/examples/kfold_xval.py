@@ -6,8 +6,8 @@ K-fold cross-validation for model comparison
 
 Different models of diffusion MRI can be compared based on their accuracy in
 fitting the diffusion signal. Here, we demonstrate this by comparing two
-models: the diffusion tensor model (DTI) and constrained spherical
-deconvolution (CSD). These models differ from each other substantially. DTI
+models: the diffusion tensor model (DTI) and Constrained Spherical
+Deconvolution (CSD). These models differ from each other substantially. DTI
 approximates the diffusion pattern as a 3D Gaussian distribution, and has only
 6 free parameters. CSD, on the other hand, fits many more parameters. The
 models aare also not nested, so they cannot be compared using the
@@ -22,7 +22,7 @@ set. This method has been used for comparison of models such as DTI and CSD
 differences in the number of parameters in the model, and it can be used to
 compare models that are not nested.
 
-In `dipy`, we include an implementation of k-fold cross-validation. In this
+In DIPY_, we include an implementation of k-fold cross-validation. In this
 method, the data is divided into $k$ different segments. In each iteration
 $\frac{1}{k}th$ of the data is held out and the model is fit to the other
 $\frac{k-1}{k}$ parts of the data. A prediction of the held out data is done
@@ -95,8 +95,8 @@ each sub-plot (blue=DTI, red=CSD).
 
 """
 
-fig, ax = plt.subplots(1,2)
-fig.set_size_inches([12,6])
+fig, ax = plt.subplots(1, 2)
+fig.set_size_inches([12, 6])
 ax[0].plot(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask], 'o', color='b')
 ax[0].plot(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask], 'o', color='r')
 ax[1].plot(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask], 'o', color='b', label='DTI')
@@ -112,7 +112,7 @@ fig.savefig("model_predictions.png")
 .. figure:: model_predictions.png
    :align: center
 
-   **Model predictions**.
+   Model predictions.
 
 """
 
@@ -124,10 +124,10 @@ R-squared score:
 
 """
 
-cc_dti_r2=stats.pearsonr(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask])[0]**2
-cc_csd_r2=stats.pearsonr(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask])[0]**2
-cso_dti_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**2
-cso_csd_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
+cc_dti_r2 = stats.pearsonr(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask])[0]**2
+cc_csd_r2 = stats.pearsonr(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask])[0]**2
+cso_dti_r2 = stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**2
+cso_csd_r2 = stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
 
 print("Corpus callosum\n"
       "DTI R2 : %s\n"

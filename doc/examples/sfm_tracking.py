@@ -6,11 +6,11 @@ Tracking with the Sparse Fascicle Model
 ==================================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
-Model, described in [Rokem2015]_. This model reconstructs the diffusion signal
-as a combination of the signals from different fascicles (see also
+Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
+signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 
-To begin, we read the Stanford HARDI data-set into memory:
+To begin, we read the Stanford HARDI data set into memory:
 """
 
 from dipy.data import read_stanford_labels
@@ -20,8 +20,9 @@ labels = labels_img.get_data()
 affine = hardi_img.affine
 
 """
-This dataset provides a label map (generated using Freesurfer), in which the
-white matter voxels are labeled as either 1 or 2:
+This data set provides a label map (generated using `FreeSurfer
+<https://surfer.nmr.mgh.harvard.edu/>`_), in which the white matter voxels are
+labeled as either 1 or 2:
 """
 
 white_matter = (labels == 1) | (labels == 2)
@@ -96,16 +97,17 @@ execute the tracking
 """
 
 from dipy.tracking.local import LocalTracking
-streamlines = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
+from dipy.tracking.streamline import Streamlines
+streamlines_generator = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
 
-streamlines = list(streamlines)
+streamlines = Streamlines(streamlines_generator)
 
 """
 Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.viz.colormap import line_colors
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
@@ -114,6 +116,9 @@ t1 = read_stanford_t1()
 t1_data = t1.get_data()
 t1_aff = t1.affine
 color = line_colors(streamlines)
+
+# Enables/disables interactive visualization
+interactive = False
 
 """
 To speed up visualization, we will select a random sub-set of streamlines to
@@ -125,23 +130,24 @@ demonstration purposes, we subselect 900 streamlines.
 from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
-streamlines_actor = fvtk.streamtube(
+streamlines_actor = actor.streamtube(
     list(move_streamlines(plot_streamlines, inv(t1_aff))),
     line_colors(streamlines), linewidth=0.1)
 
-vol_actor = fvtk.slicer(t1_data)
+vol_actor = actor.slicer(t1_data)
 
 vol_actor.display(40, None, None)
 vol_actor2 = vol_actor.copy()
 vol_actor2.display(None, None, 35)
 
-ren = fvtk.ren()
-fvtk.add(ren, streamlines_actor)
-fvtk.add(ren, vol_actor)
-fvtk.add(ren, vol_actor2)
+ren = window.Renderer()
+ren.add(streamlines_actor)
+ren.add(vol_actor)
+ren.add(vol_actor2)
 
-fvtk.record(ren, n_frames=1, out_path='sfm_streamlines.png',
-            size=(800, 800))
+window.record(ren, out_path='sfm_streamlines.png', size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 .. figure:: sfm_streamlines.png
@@ -161,8 +167,8 @@ References
 ----------
 
 .. [Rokem2015] Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
-   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
-   (2015). Evaluating the accuracy of diffusion MRI models in white
-   matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272
+   N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015). Evaluating
+   the accuracy of diffusion MRI models in white matter. PLoS ONE 10(4):
+   e0123272. doi:10.1371/journal.pone.0123272
 
 """

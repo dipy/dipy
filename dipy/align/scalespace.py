@@ -73,7 +73,6 @@ class ScaleSpace(object):
         min_spacing = np.min(input_spacing)
         for i in range(1, num_levels):
             scaling_factor = 2 ** i
-            scaling = np.ndarray((self.dim + 1,))
             # Note: the minimum below is present in ANTS to prevent the scaling
             # from being too large (making the sub-sampled image to be too
             # small) this makes the sub-sampled image at least 32 voxels at

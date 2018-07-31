@@ -12,7 +12,7 @@ biological tissues is non-Gaussian using the kurtosis tensor (KT)
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters, such
-as the density of axonal fibres and diffusion tortuosity [Fierem2011]_.
+as the density of axonal fibres and diffusion tortuosity [Fieremans2011]_.
 Moreover, DKI can be used to resolve crossing fibers in tractography and to
 obtain invariant rotational measures not limited to well-aligned fiber
 populations [NetoHe2015]_.
@@ -107,7 +107,7 @@ suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
 fwhm=1.25) as suggested by pioneer DKI studies (e.g. [Jensen2005]_,
 [NetoHe2012]_). Although here the Gaussian smoothing is used so that results
 are comparable to these studies, it is important to note that more advanced
-noise and artifact suppression algorithms are available in Dipy (e.g. the
+noise and artifact suppression algorithms are available in DIPY_ (e.g. the
 non-local means filter :ref:`example-denoise-nlmeans`).
 """
 
@@ -149,12 +149,12 @@ AD = dkifit.ad
 RD = dkifit.rd
 
 """
-Note that these four standard measures could also be computed from Dipy's DTI
+Note that these four standard measures could also be computed from DIPY's DTI
 module. Theoretically, computing these measures from both models should be
 analogous. However, according to recent studies, the diffusion statistics from
 the kurtosis model are expected to have better accuracy [Veraar2011]_,
 [NetoHe2012]_. For comparison purposes, we calculate below the FA, MD, AD, and
-RD using Dipy's TensorModel.
+RD using DIPY's ``TensorModel``.
 """
 
 tenmodel = dti.TensorModel(gtab)
@@ -179,22 +179,30 @@ fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(FA[:, :, axial_slice], cmap='gray', vmin=0, vmax=0.7)
+ax.flat[0].imshow(FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
+                  origin='lower')
 ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[1].imshow(MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[2].imshow(AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[3].imshow(RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[3].set_title('RD (DKI)')
 
-ax.flat[4].imshow(dti_FA[:, :, axial_slice], cmap='gray', vmin=0, vmax=0.7)
+ax.flat[4].imshow(dti_FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
+                  origin='lower')
 ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[6].imshow(dti_AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD[:, :, axial_slice], cmap='gray', vmin=0, vmax=2.0e-3)
+ax.flat[7].imshow(dti_RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
+                  origin='lower')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
@@ -204,8 +212,8 @@ fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
 .. figure:: Diffusion_tensor_measures_from_DTI_and_DKI.png
    :align: center
 
-   **Diffusion tensor measures obtained from the diffusion tensor estimated
-    from DKI (upper panels) and DTI (lower panels).**.
+   Diffusion tensor measures obtained from the diffusion tensor estimated
+   from DKI (upper panels) and DTI (lower panels).
 
 In addition to the standard diffusion statistics, the DiffusionKurtosisFit
 instance can be used to estimate the non-Gaussian measures of mean kurtosis
@@ -230,11 +238,14 @@ fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[0].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[0].set_title('MK')
-ax.flat[1].imshow(AK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[1].imshow(AK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[1].set_title('AK')
-ax.flat[2].imshow(RK[:, :, axial_slice], cmap='gray', vmin=0, vmax=1.5)
+ax.flat[2].imshow(RK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
 ax.flat[2].set_title('RK')
 
 plt.show()
@@ -244,7 +255,7 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
 
-   **Kurtosis tensor standard measures obtained from the kurtosis tensor.**.
+   Kurtosis tensor standard measures obtained from the kurtosis tensor.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
 diffusion is restricted by compartments and barriers (e.g., myelin sheath).
@@ -254,15 +265,15 @@ than for the radial directions (larger amplitudes shown in the RK map).
 
 As mentioned above, DKI can also be used to derive concrete biophysical
 parameters by applying microstructural models to DT and KT estimated from DKI.
-For instance,  Fieremans et al. (2011) showed that DKI can be used to estimate
-the contribution of hindered and restricted diffusion for well-aligned fibers.
-These tensors can be also interpreted as the influences of intra- and
+For instance,  Fieremans et al. [Fieremans2011]_ showed that DKI can be used to
+estimate the contribution of hindered and restricted diffusion for well-aligned
+fibers. These tensors can be also interpreted as the influences of intra- and
 extra-cellular compartments and can be used to estimate the axonal volume
 fraction and diffusion extra-cellular tortuosity. According to recent studies,
 these latter measures can be used to distinguish processes of axonal loss from
 processes of myelin degeneration [Fieremans2012]_.
 
-The model proposed by Fieremans and colleagues can be defined in dipy by
+The model proposed by Fieremans and colleagues can be defined in DIPY by
 instantiating the 'KurtosisMicrostructureModel' object in the following way:
 """
 
@@ -318,8 +329,9 @@ diffusion hindered tortuosity:
 AWF = dki_micro_fit.awf
 TORT = dki_micro_fit.tortuosity
 
-
-""" These parameters are plotted below on top of the mean kurtosis maps: """
+"""
+These parameters are plotted below on top of the mean kurtosis maps:
+"""
 
 fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
                         subplot_kw={'xticks': [], 'yticks': []})
@@ -327,14 +339,16 @@ fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
 AWF[AWF == 0] = np.nan
 TORT[TORT == 0] = np.nan
 
-ax[0].imshow(MK[:, :, axial_slice], cmap=plt.cm.gray, interpolation='nearest')
-im0 = ax[0].imshow(AWF[:, :, axial_slice], cmap=plt.cm.Reds, alpha=0.9,
-                   vmin=0.3, vmax=0.7, interpolation='nearest')
+ax[0].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
+             origin='lower')
+im0 = ax[0].imshow(AWF[:, :, axial_slice].T, cmap=plt.cm.Reds, alpha=0.9,
+                   vmin=0.3, vmax=0.7, interpolation='nearest', origin='lower')
 fig3.colorbar(im0, ax=ax.flat[0])
 
-ax[1].imshow(MK[:, :, axial_slice], cmap=plt.cm.gray, interpolation='nearest')
-im1 = ax[1].imshow(TORT[:, :, axial_slice], cmap=plt.cm.Blues, alpha=0.9,
-                   vmin=2, vmax=6, interpolation='nearest')
+ax[1].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
+             origin='lower')
+im1 = ax[1].imshow(TORT[:, :, axial_slice].T, cmap=plt.cm.Blues, alpha=0.9,
+                   vmin=2, vmax=6, interpolation='nearest', origin='lower')
 fig3.colorbar(im1, ax=ax.flat[1])
 
 fig3.savefig('Kurtosis_Microstructural_measures.png')
@@ -343,12 +357,13 @@ fig3.savefig('Kurtosis_Microstructural_measures.png')
 .. figure:: Kurtosis_Microstructural_measures.png
    :align: center
 
-   ** Axonal water fraction (left panel) and tortuosity (right panel) values
+   Axonal water fraction (left panel) and tortuosity (right panel) values
    of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
-   image.**.
+   image.
 
 
-References:
+References
+----------
 
 .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
@@ -361,10 +376,10 @@ References:
 .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
                 non-Gaussian water diffusion by kurtosis analysis. NMR in
                 Biomedicine 23(7): 698-710
-.. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
+.. [Fieremans2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
-.. [Fierem2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
+.. [Fieremans2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
                 Inglese M, Novikov DS. (2012). Diffusion distinguishes between
                 axonal loss and demyelination in brain white matter.
                 Proceedings of the 20th Annual Meeting of the International

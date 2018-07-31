@@ -1727,7 +1727,7 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
             # all args after -- are non-options
             if arg_string == '--':
                 arg_string_pattern_parts.append('-')
-                for arg_string in arg_strings_iter:
+                for _ in arg_strings_iter:
                     arg_string_pattern_parts.append('A')
 
             # otherwise, add the arg to the arg strings
@@ -1909,6 +1909,11 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
         # if we didn't use all the Positional objects, there were too few
         # arg strings supplied.
         if positionals:
+            #  printing user friendly help message to tell about missing
+            #  arguments.
+            print("Too few arguments: Program", self.prog,
+                  "expects arguments.\n\nType", self.prog,
+                  "-h for help.\n")
             self.error(_('too few arguments'))
 
         # make sure all required actions were present

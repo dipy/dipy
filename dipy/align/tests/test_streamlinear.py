@@ -155,7 +155,7 @@ def test_stream_rigid():
 
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
-    static_center, shift = center_streamlines(static)
+    center_streamlines(static)
 
     mat = compose_matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
@@ -303,7 +303,7 @@ def test_from_to_rigid():
 def test_matrix44():
 
     assert_raises(ValueError, compose_matrix44, np.ones(5))
-    assert_raises(ValueError, compose_matrix44, np.ones(9))
+    assert_raises(ValueError, compose_matrix44, np.ones(13))
     assert_raises(ValueError, compose_matrix44, np.ones(16))
 
 

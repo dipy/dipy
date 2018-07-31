@@ -24,7 +24,7 @@ Theoretical
 2. **What is q-space?**
 
   Q-space is the space of one or more 3D spin displacement wave vectors
-  $\mathbf{q}$ as shown in equation $\ref{eq:fourier}$. The vector $\mathbf{q}$
+  $\mathbf{q}$. The vector $\mathbf{q}$
   parametrises the space of diffusion gradients. It is related to the
   applied magnetic gradient $\mathbf{g}$ by the formula
   $\mathbf{q}=(2\pi)^{-1}\gamma\delta\mathbf{g}$.
@@ -96,33 +96,27 @@ Practical
 
   True, sometimes Python can be slow, if you are using multiple nested
   ``for`` loops, for example.
-  In that case, we use Cython, which takes execution up to C speed.
+  In that case, we use Cython_, which takes execution up to C speed.
 
 3. **What numerical libraries do you use in Python?**
 
-  The best ever designed numerical library - NumPy.
+  The best ever designed numerical library - NumPy_.
 
 2. **Which Python console do you recommend?**
+  IPython_
 
-  ``ipython``
-
+  
 3. **What do you use for visualization?**
 
-  For 3D visualization we use ``fvtk`` which depends in turn on ``python-vtk``::
+  For 3D visualization we use ``dipy.viz`` which depends in turn on ``python-vtk``::
 
-    from dipy.viz import fvtk
+    from dipy.viz import window, actor
 
   For 2D visualization we use matplotlib_.
 
-4. **What about interactive visualization?**
+4. **Which file formats do you support?**
 
-  There is already interaction in the ``fvtk`` module, but we have started a
-  new project only for visualization which we plan to integrate in ``dipy``
-  in the near future.  For more information, have a look at http://fos.me
-
-5. **Which file formats do you support?**
-
-  Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), Dipy (.dpy),
+  Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), DIPY (.dpy),
   Numpy (.npy, ,npz), text and any other formats supported by nibabel and
   pydicom.
 
@@ -130,29 +124,29 @@ Practical
   using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_
   or any other python-to-hdf5 library e.g. h5py.
 
-  For object serialization you can use `dipy.io.pickles` functions
-  `load_pickle`, `save_pickle`.
+  For object serialization you can use ``dipy.io.pickles`` functions
+  ``load_pickle``, ``save_pickle``.
 
-6. **What is dpy**?
+5. **What is dpy**?
 
-  ``dpy`` is an ``hdf5`` file format which we use in dipy to store
+  ``dpy`` is an ``hdf5`` file format which we use in DIPY to store
   tractography and other information. This allows us to store huge
   tractographies and load different parts of the datasets
   directly from the disk as if it were in memory.
 
-7. **Which python editor should I use?**
+6. **Which python editor should I use?**
 
   Any text editor would do the job but we prefer the following: PyCharm, Sublime, Aptana, Emacs, Vim and Eclipse (with PyDev).
 
-8. **I have problems reading my dicom files using nibabel, what should I do?**
+7. **I have problems reading my dicom files using nibabel, what should I do?**
 
   Use Chris Rorden's dcm2nii to transform them to nifti files.
   http://www.cabiatl.com/mricro/mricron/dcm2nii.html
   Or you can make your own reader using pydicom.
   http://code.google.com/p/pydicom/
-  and then use nibabel to store the data as niftis.
+  and then use nibabel to store the data as nifti.
 
-9. **Where can I find diffusion data?**
+8. **Where can I find diffusion data?**
 
   Have a look at Beijing Enhanced
   http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html

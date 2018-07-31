@@ -30,11 +30,21 @@ class Event(object):
         self.name = event_name
         self.position = np.asarray(interactor.GetEventPosition())
         self.key = interactor.GetKeySym()
+        self.alt_key = bool(interactor.GetAltKey())
+        self.shift_key = bool(interactor.GetShiftKey())
+        self.ctrl_key = bool(interactor.GetControlKey())
         self._abort_flag = False  # Reset abort flag
 
     def abort(self):
         """ Aborts the event i.e. do not propagate it any further. """
         self._abort_flag = True
+
+    def reset(self):
+        """ Done with the current event. Reset the attributes. """
+        self.position = None
+        self.name = None
+        self.key = None
+        self._abort_flag = False
 
 
 class CustomInteractorStyle(vtkInteractorStyleUser):
@@ -172,6 +182,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelForward()
 
+        self.event.reset()
+
     def on_mouse_wheel_backward(self, obj, evt):
         # First, propagate mouse wheel event to underneath prop.
         prop = self.get_prop_at_event_position()
@@ -185,6 +197,8 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         # Finally, to the default interactor.
         if not self.event.abort_flag:
             self.default_interactor.OnMouseWheelBackward()
+
+        self.event.reset()
 
     def on_char(self, obj, evt):
         self.propagate_event(evt, *self.active_props)
@@ -278,12 +292,10 @@ class CustomInteractorStyle(vtkInteractorStyleUser):
         callback : function
         priority : int
         """
-        cmd_id = [None]  # Placeholder accessible in the _callback closure.
 
         def _callback(obj, event_name):
             # Update event information.
             self.event.update(event_name, self.GetInteractor())
             callback(self, prop, *args)
 
-        # Fill the placeholder with the command ID returned by VTK.
-        cmd_id[0] = prop.AddObserver(event_type, _callback, priority)
+        prop.AddObserver(event_type, _callback, priority)

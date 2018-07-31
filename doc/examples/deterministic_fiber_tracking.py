@@ -18,8 +18,8 @@ tractography and unlike EuDX does not follow the peaks of the local models but
 uses the entire orientation distributions.
 
 This example is an extension of the
-:ref:``example_probabilistic_fiber_tracking`` example. We begin by loading the
-data and fitting a constrained spherical deconvolution (CSD) reconstruction
+:ref:`example_probabilistic_fiber_tracking` example. We begin by loading the
+data and fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model.
 """
 
@@ -55,7 +55,7 @@ FA = fractional_anisotropy(tenfit.evals)
 classifier = ThresholdTissueClassifier(FA, .2)
 
 """
-The fiber orientation distribution (FOD) of the CSD model estimates the
+The Fiber Orientation Distribution (FOD) of the CSD model estimates the
 distribution of small fiber bundles within each voxel. This distribution
 can be used for deterministic fiber tracking. As for probabilistic tracking,
 there are many ways to provide those distributions to the deterministic maximum

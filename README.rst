@@ -1,11 +1,29 @@
-======
- DIPY
-======
+.. image:: doc/_static/dipy-logo.png
+  :height: 180px
+  :target: http://dipy.org
+  :alt: DIPY - Diffusion Imaging in Python
+
+|
+
+.. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
+  :target: https://travis-ci.org/nipy/dipy
 
 .. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/nipy/dipy
 
-DIPY is a python toolbox for analysis of MR diffusion imaging.
+.. image:: https://img.shields.io/pypi/v/dipy.svg
+  :target: https://pypi.python.org/pypi/dipy
+
+.. image:: https://anaconda.org/conda-forge/dipy/badges/platforms.svg
+  :target: https://anaconda.org/conda-forge/dipy
+
+.. image:: https://anaconda.org/conda-forge/dipy/badges/downloads.svg
+  :target: https://anaconda.org/conda-forge/dipy
+
+.. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+  :target: https://github.com/nipy/dipy/blob/master/LICENSE
+
+DIPY [DIPYREF]_ is a python library for analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
@@ -39,13 +57,37 @@ You can find our sources and single-click downloads:
 .. _Documentation: http://dipy.org
 .. _current trunk: http://github.com/nipy/dipy/archives/master
 
+
+Installing DIPY
+===============
+
+DIPY can be installed using `pip`::
+
+    pip install dipy
+
+or using `conda`::
+
+    conda install -c conda-forge dipy vtk
+
+For detailed installation instructions, including instructions for installing
+from source, please read our `documentation <http://nipy.org/dipy/installation.html>`_.
+
+
 License
 =======
 
 DIPY is licensed under the terms of the BSD license.
-Please see the LICENSE file in the dipy distribution.
+Please see `LICENSE file <https://github.com/nipy/dipy/blob/master/LICENSE>`_.
 
-DIPY uses other libraries also licensed under the BSD or the
-MIT licenses, with the only exception of the SHORE module which
-optionally uses the cvxopt library. Cvxopt is licensed
-under the GPL license.
+Contributing
+============
+
+We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`_.
+
+Reference
+=========
+
+.. [DIPYREF] E. Garyfallidis, M. Brett, B. Amirbekian, A. Rokem,
+    S. Van Der Walt, M. Descoteaux, I. Nimmo-Smith and DIPY contributors,
+    "DIPY, a library for the analysis of diffusion MRI data",
+    Frontiers in Neuroinformatics, vol. 8, p. 8, Frontiers, 2014.

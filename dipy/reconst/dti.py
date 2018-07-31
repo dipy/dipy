@@ -52,7 +52,7 @@ def _roll_evals(evals, axis=-1):
 
 
 def fractional_anisotropy(evals, axis=-1):
-    r"""
+    """
     Fractional anisotropy (FA) of a diffusion tensor.
 
     Parameters
@@ -68,7 +68,7 @@ def fractional_anisotropy(evals, axis=-1):
         Calculated FA. Range is 0 <= FA <= 1.
 
     Notes
-    --------
+    -----
     FA is calculated using the following equation:
 
     .. math::
@@ -91,7 +91,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 
 def geodesic_anisotropy(evals, axis=-1):
-    r"""
+    """
     Geodesic anisotropy (GA) of a diffusion tensor.
 
     Parameters
@@ -107,7 +107,7 @@ def geodesic_anisotropy(evals, axis=-1):
         Calculated GA. In the range 0 to +infinity
 
     Notes
-    --------
+    -----
     GA is calculated using the following equation given in [1]_:
 
     .. math::
@@ -172,7 +172,7 @@ def geodesic_anisotropy(evals, axis=-1):
 
 
 def mean_diffusivity(evals, axis=-1):
-    r"""
+    """
     Mean Diffusivity (MD) of a diffusion tensor.
 
     Parameters
@@ -188,7 +188,7 @@ def mean_diffusivity(evals, axis=-1):
         Calculated MD.
 
     Notes
-    --------
+    -----
     MD is calculated with the following equation:
 
     .. math::
@@ -201,7 +201,7 @@ def mean_diffusivity(evals, axis=-1):
 
 
 def axial_diffusivity(evals, axis=-1):
-    r"""
+    """
     Axial Diffusivity (AD) of a diffusion tensor.
     Also called parallel diffusivity.
 
@@ -219,7 +219,7 @@ def axial_diffusivity(evals, axis=-1):
         Calculated AD.
 
     Notes
-    --------
+    -----
     AD is calculated with the following equation:
 
     .. math::
@@ -233,7 +233,7 @@ def axial_diffusivity(evals, axis=-1):
 
 
 def radial_diffusivity(evals, axis=-1):
-    r"""
+    """
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
 
@@ -245,13 +245,13 @@ def radial_diffusivity(evals, axis=-1):
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
-        Returns
+    Returns
     -------
     rd : array
         Calculated RD.
 
     Notes
-    --------
+    -----
     RD is calculated with the following equation:
 
     .. math::
@@ -264,7 +264,7 @@ def radial_diffusivity(evals, axis=-1):
 
 
 def trace(evals, axis=-1):
-    r"""
+    """
     Trace of a diffusion tensor.
 
     Parameters
@@ -280,7 +280,7 @@ def trace(evals, axis=-1):
         Calculated trace of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Trace is calculated with the following equation:
 
     .. math::
@@ -293,7 +293,7 @@ def trace(evals, axis=-1):
 
 
 def color_fa(fa, evecs):
-    r""" Color fractional anisotropy of diffusion tensor
+    """ Color fractional anisotropy of diffusion tensor
 
     Parameters
     ----------
@@ -309,7 +309,7 @@ def color_fa(fa, evecs):
         Colormap of the FA with red for the x value, y for the green
         value and z for the blue value.
 
-    Note
+    Notes
     -----
 
     It is computed from the clipped FA between 0 and 1 using the following
@@ -355,7 +355,7 @@ def determinant(q_form):
 
 
 def isotropic(q_form):
-    r"""
+    """
     Calculate the isotropic part of the tensor [1]_.
 
     Parameters
@@ -376,6 +376,8 @@ def isotropic(q_form):
     .. math ::
         \bar{A} = \frac{1}{2} tr(A) I
 
+    References
+    ----------
     .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
         Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
@@ -388,7 +390,7 @@ def isotropic(q_form):
 
 
 def deviatoric(q_form):
-    r"""
+    """
     Calculate the deviatoric (anisotropic) part of the tensor [1]_.
 
     Parameters
@@ -412,6 +414,8 @@ def deviatoric(q_form):
     Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
     part of the tensor.
 
+    References
+    ----------
     .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
         Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
@@ -422,7 +426,7 @@ def deviatoric(q_form):
 
 
 def norm(q_form):
-    r"""
+    """
     Calculate the Frobenius norm of a tensor quadratic form
 
     Parameters
@@ -452,7 +456,7 @@ def norm(q_form):
 
 
 def mode(q_form):
-    r"""
+    """
     Mode (MO) of a diffusion tensor [1]_.
 
     Parameters
@@ -468,7 +472,7 @@ def mode(q_form):
 
     Notes
     -----
-    Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
+    Mode ranges between -1 (planar anisotropy) and +1 (linear anisotropy)
     with 0 representing orthotropy. Mode is calculated with the
     following equation (equation 9 in [1]_):
 
@@ -496,7 +500,7 @@ def mode(q_form):
 
 
 def linearity(evals, axis=-1):
-    r"""
+    """
     The linearity of the tensor [1]_
 
     Parameters
@@ -512,15 +516,15 @@ def linearity(evals, axis=-1):
         Calculated linearity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Linearity is calculated with the following equation:
 
     .. math::
 
         Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -531,7 +535,7 @@ def linearity(evals, axis=-1):
 
 
 def planarity(evals, axis=-1):
-    r"""
+    """
     The planarity of the tensor [1]_
 
     Parameters
@@ -547,7 +551,7 @@ def planarity(evals, axis=-1):
         Calculated linearity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Planarity is calculated with the following equation:
 
     .. math::
@@ -555,8 +559,8 @@ def planarity(evals, axis=-1):
         Planarity =
         \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -567,7 +571,7 @@ def planarity(evals, axis=-1):
 
 
 def sphericity(evals, axis=-1):
-    r"""
+    """
     The sphericity of the tensor [1]_
 
     Parameters
@@ -583,15 +587,15 @@ def sphericity(evals, axis=-1):
         Calculated sphericity of the diffusion tensor.
 
     Notes
-    --------
+    -----
     Sphericity is calculated with the following equation:
 
     .. math::
 
         Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-    Notes
-    -----
+    References
+    ----------
     [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
@@ -602,7 +606,7 @@ def sphericity(evals, axis=-1):
 
 
 def apparent_diffusion_coef(q_form, sphere):
-    r"""
+    """
     Calculate the apparent diffusion coefficient (ADC) in each direction of a
     sphere.
 
@@ -707,7 +711,7 @@ class TensorModel(ReconstModel):
             The minimum signal value. Needs to be a strictly positive
             number. Default: minimal signal in the data provided to `fit`.
 
-        Note
+        Notes
         -----
         In order to increase speed of processing, tensor fitting is done
         simultaneously over many voxels. Many fit_methods use the 'step'
@@ -800,7 +804,7 @@ class TensorModel(ReconstModel):
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
-                S0_params = np.zeros(data.shape[:-1] + (1,))
+                S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
 
         return TensorFit(self, dti_params, model_S0=S0_params)
@@ -909,16 +913,16 @@ class TensorFit(object):
 
     @auto_attr
     def md(self):
-        r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues.
+        """
+        Mean diffusivity (MD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         md : array (V, 1)
             Calculated MD.
 
         Notes
-        --------
+        -----
         MD is calculated with the following equation:
 
         .. math::
@@ -930,16 +934,16 @@ class TensorFit(object):
 
     @auto_attr
     def rd(self):
-        r"""
-        Radial diffusitivity (RD) calculated from cached eigenvalues.
+        """
+        Radial diffusivity (RD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         rd : array (V, 1)
             Calculated RD.
 
         Notes
-        --------
+        -----
         RD is calculated with the following equation:
 
         .. math::
@@ -952,16 +956,16 @@ class TensorFit(object):
 
     @auto_attr
     def ad(self):
-        r"""
+        """
         Axial diffusivity (AD) calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         ad : array (V, 1)
             Calculated AD.
 
         Notes
-        --------
+        -----
         RD is calculated with the following equation:
 
         .. math::
@@ -974,16 +978,16 @@ class TensorFit(object):
 
     @auto_attr
     def trace(self):
-        r"""
+        """
         Trace of the tensor calculated from cached eigenvalues.
 
         Returns
-        ---------
+        -------
         trace : array (V, 1)
             Calculated trace.
 
         Notes
-        --------
+        -----
         The trace is calculated with the following equation:
 
         .. math::
@@ -994,23 +998,23 @@ class TensorFit(object):
 
     @auto_attr
     def planarity(self):
-        r"""
+        """
         Returns
         -------
         sphericity : array
             Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Sphericity is calculated with the following equation:
 
         .. math::
 
             Sphericity =
-            \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+            \frac{2 (\lambda_2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1020,14 +1024,14 @@ class TensorFit(object):
 
     @auto_attr
     def linearity(self):
-        r"""
+        """
         Returns
         -------
         linearity : array
             Calculated linearity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Linearity is calculated with the following equation:
 
         .. math::
@@ -1035,6 +1039,8 @@ class TensorFit(object):
             Linearity =
             \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
 
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1044,22 +1050,22 @@ class TensorFit(object):
 
     @auto_attr
     def sphericity(self):
-        r"""
+        """
         Returns
         -------
         sphericity : array
             Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
-        --------
+        -----
         Sphericity is calculated with the following equation:
 
         .. math::
 
             Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
 
-        Notes
-        -----
+        References
+        ----------
         [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
@@ -1089,6 +1095,8 @@ class TensorFit(object):
         scratch, follow steps in [Descoteaux2008]_, Section 7.9 Equation
         7.24 but with an $r^2$ term in the integral.
 
+        References
+        ----------
         .. [Aganj2010] Aganj, I., Lenglet, C., Sapiro, G., Yacoub, E., Ugurbil,
             K., & Harel, N. (2010). Reconstruction of the orientation
             distribution function in single- and multiple-shell q-ball imaging
@@ -1120,7 +1128,7 @@ class TensorFit(object):
         return odf
 
     def adc(self, sphere):
-        r"""
+        """
         Calculate the apparent diffusion coefficient (ADC) in each direction on
         the sphere for each voxel in the data
 
@@ -1147,7 +1155,7 @@ class TensorFit(object):
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
     def predict(self, gtab, S0=None, step=None):
-        r"""
+        """
         Given a model fit, predict the signal on the vertices of a sphere
 
         Parameters
@@ -1305,7 +1313,7 @@ def iter_fit_tensor(step=1e4):
 
 @iter_fit_tensor()
 def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
-    r"""
+    """
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
@@ -1343,7 +1351,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
         1. calculate OLS estimates of the data
         2. apply the OLS estimates as weights to the WLS fit of the data
 
-    This ensured heteroscadasticity could be properly modeled for various
+    This ensured heteroscedasticity could be properly modeled for various
     types of bootstrap resampling (namely residual bootstrap).
 
     .. math::
@@ -1383,7 +1391,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
 
 @iter_fit_tensor()
 def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
-    r"""
+    """
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
 
@@ -1477,7 +1485,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         The voxel signal in all gradient directions
 
     weighting : str (optional).
-         Whether to use the Geman McClure weighting criterion (see [1]_
+         Whether to use the Geman-McClure weighting criterion (see [1]_
          for details)
 
     sigma : float or float array (optional)
@@ -1486,11 +1494,11 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         all directions (when a float is provided), or to an estimate of the
         noise in each diffusion-weighting direction (if an array is
         provided). If 'gmm', the Geman-Mclure M-estimator is used for
-        weighting (see Notes).
+        weighting (see below).
 
     Notes
     -----
-    The GemanMcClure M-estimator is described as follows [1]_ (page 1089): "The
+    The Geman-McClure M-estimator is described as follows [1]_ (page 1089): "The
     scale factor C affects the shape of the GMM [Geman-McClure M-estimator]
     weighting function and represents the expected spread of the residuals
     (i.e., the SD of the residuals) due to Gaussian distributed noise. The
@@ -1534,7 +1542,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         w = 1 / (sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
@@ -1573,7 +1581,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
     Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors (Basser et al., 1994a). Some fit approaches can produce nan
-    tensor elements in background voxels (particularly non-linear approachs).
+    tensor elements in background voxels (particularly non-linear approaches).
     This function avoids the eigen decomposition errors of nan tensor elements
     by replacing tensor with nan elements by a given alternative tensor
     estimate.
@@ -1732,7 +1740,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
     jac : bool, optional
         Whether to use the Jacobian of the tensor to speed the non-linear
-        optimization procedure used to fit the tensor paramters (see also
+        optimization procedure used to fit the tensor parameters (see also
         :func:`nlls_fit_tensor`). Default: True
 
     return_S0_hat : bool
@@ -1743,8 +1751,8 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     -------
     restore_params : an estimate of the tensor parameters in each voxel.
 
-    Note
-    ----
+    References
+    ----------
     Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
     of tensors by outlier rejection. MRM, 53: 1088-95.
 
@@ -1856,8 +1864,9 @@ _lt_indices = np.array([[0, 1, 3],
 def from_lower_triangular(D):
     """ Returns a tensor given the six unique tensor elements
 
-    Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
-    Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+    Given the six unique tensor elements (in the order: Dxx, Dxy, Dyy, Dxz,
+    Dyz, Dzz) returns a 3 by 3 tensor. All elements after the sixth are
+    ignored.
 
     Parameters
     -----------
@@ -1865,7 +1874,7 @@ def from_lower_triangular(D):
         Unique elements of the tensors
 
     Returns
-    --------
+    -------
     tensor : ndarray (..., 3, 3)
         3 by 3 tensors
 

@@ -2,6 +2,7 @@
 from __future__ import division, print_function, absolute_import
 
 from dipy.utils.six.moves import xrange
+from dipy.testing import setup_test
 
 import numpy as np
 from scipy.interpolate import splprep, splev
@@ -315,7 +316,7 @@ def mean_curvature(xyz):
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> m=tm.mean_curvature(xyz) #mean curvature for semi-circle
+    >>> _= tm.mean_curvature(xyz) #mean curvature for semi-circle
     '''
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
@@ -796,7 +797,7 @@ def downsample(xyz, n_pols=3):
     >>> y=np.cos(theta)
     >>> z=0*y
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=downsample(xyz,3)
+    >>> _= downsample(xyz,3)
     >>> len(xyz2)
     3
     >>> xyz3=downsample(xyz,10)

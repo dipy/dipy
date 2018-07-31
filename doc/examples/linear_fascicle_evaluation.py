@@ -13,7 +13,7 @@ We will use streamlines generated using probabilistic tracking on CSA
 peaks. For brevity, we will include in this example only streamlines going
 through the corpus callosum connecting left to right superior frontal
 cortex. The process of tracking and finding these streamlines is fully
-demonstrated in the `streamline_tools.py` example. If this example has been
+demonstrated in the :ref:`streamline_tools` example. If this example has been
 run, we can read the streamlines from file. Otherwise, we'll run that example
 first, by importing it. This provides us with all of the variables that were
 created in that example:
@@ -23,6 +23,7 @@ created in that example:
 import numpy as np
 import os.path as op
 import nibabel as nib
+from dipy.io.streamline import load_trk
 import dipy.core.optimize as opt
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
@@ -39,8 +40,10 @@ else:
     t1_data = t1.get_data()
     data = hardi_img.get_data()
 # Read the candidates from file in voxel space:
-candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
-                                                  points_space='voxel')[0]]
+
+candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
+# candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
+#                                                  points_space='voxel')[0]]
 
 """
 
@@ -58,26 +61,32 @@ anatomical structure of this brain:
 """
 
 from dipy.viz.colormap import line_colors
-from dipy.viz import fvtk
-candidate_streamlines_actor = fvtk.streamtube(candidate_sl,
-                                       line_colors(candidate_sl))
-cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
-                            opacities=[1.])
+from dipy.viz import window, actor
 
-vol_actor = fvtk.slicer(t1_data)
+# Enables/disables interactive visualization
+interactive = False
 
-vol_actor.display(40, None, None)
+candidate_streamlines_actor = actor.streamtube(candidate_sl, line_colors(candidate_sl))
+cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
+                                      opacity=0.5)
+
+vol_actor = actor.slicer(t1_data)
+
+vol_actor.display(x=40)
 vol_actor2 = vol_actor.copy()
-vol_actor2.display(None, None, 35)
+vol_actor2.display(z=35)
 
 # Add display objects to canvas
-ren = fvtk.ren()
-fvtk.add(ren, candidate_streamlines_actor)
-fvtk.add(ren, cc_ROI_actor)
-fvtk.add(ren, vol_actor)
-fvtk.add(ren, vol_actor2)
-fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
-            size=(800, 800))
+ren = window.Renderer()
+ren.add(candidate_streamlines_actor)
+ren.add(cc_ROI_actor)
+ren.add(vol_actor)
+ren.add(vol_actor2)
+window.record(n_frames=1,
+              out_path='life_candidates.png',
+              size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 
@@ -91,7 +100,7 @@ fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
 
 """
 
-Next, we initialize a LiFE model. We import the `dipy.tracking.life` module,
+Next, we initialize a LiFE model. We import the ``dipy.tracking.life`` module,
 which contains the classes and functions that implement the model:
 
 """
@@ -111,8 +120,8 @@ mid-point of the AC-PC-connecting line), we would use this::
 the inverse transformation from world space to the voxel space as the affine for
 the following model fit.
 
-The next step is to fit the model, producing a `FiberFit` class instance, that
-stores the data, as well as the results of the fitting procedure.
+The next step is to fit the model, producing a ``FiberFit`` class instance,
+that stores the data, as well as the results of the fitting procedure.
 
 The LiFE model posits that the signal in the diffusion MRI volume can be
 explained by the streamlines, by the equation
@@ -126,8 +135,8 @@ streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
 $n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
 voxels in the ROI that contains the streamlines considered in this model. The
 $i^{th}$ column of the matrix contains the expected contributions of the
-$i^{th}$ streamline (arbitrarly ordered) to each of the voxels. $X$ is a sparse
-matrix, because each streamline traverses only a small percentage of the
+$i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
+sparse matrix, because each streamline traverses only a small percentage of the
 voxels. The  expected contributions of the streamline are calculated using a
 forward model, where each node of the streamline is modeled as a cylindrical
 fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
@@ -139,7 +148,7 @@ fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
 
 """
 
-The `FiberFit` class instance holds various properties of the model fit. For
+The ``FiberFit`` class instance holds various properties of the model fit. For
 example, it has the weights $\beta$, that are assigned to each streamline. In
 most cases, a tractography through some region will include redundant
 streamlines, and these streamlines will have $\beta_i$ that are 0.
@@ -171,13 +180,15 @@ optimized group of streamlines:
 
 """
 
-optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta>0)[0]])
-ren = fvtk.ren()
-fvtk.add(ren, fvtk.streamtube(optimized_sl, line_colors(optimized_sl)))
-fvtk.add(ren, cc_ROI_actor)
-fvtk.add(ren, vol_actor)
-fvtk.record(ren, n_frames=1, out_path='life_optimized.png',
-            size=(800, 800))
+optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
+ren = window.Renderer()
+ren.add(actor.streamtube(optimized_sl, line_colors(optimized_sl)))
+ren.add(cc_ROI_actor)
+ren.add(vol_actor)
+window.record(ren, n_frames=1, out_path='life_optimized.png',
+              size=(800, 800))
+if interactive:
+    window.show(ren)
 
 """
 
@@ -196,15 +207,15 @@ streamlines have presumably been removed (in this case, about 50% of the
 streamlines).
 
 But how well does the model do in explaining the diffusion data? We can
-quantify that: the `FiberFit` class instance has a `predict` method, which can
+quantify that: the ``FiberFit`` class instance has a `predict` method, which can
 be used to invert the model and predict back either the data that was used to
 fit the model, or other unseen data (e.g. in cross-validation, see
 :ref:`kfold_xval`).
 
-Without arguments, the `.predict()` method will predict the diffusion signal
-for the same gradient table that was used in the fit data, but `gtab` and `S0`
-key-word arguments can be used to predict for other acquisition schemes and
-other baseline non-diffusion-weighted signals.
+Without arguments, the ``.predict()`` method will predict the diffusion signal
+for the same gradient table that was used in the fit data, but ``gtab`` and
+``S0`` keyword arguments can be used to predict for other acquisition schemes
+and other baseline non-diffusion-weighted signals.
 
 """
 
@@ -231,8 +242,8 @@ voxel.
 
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
 pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
-                                     (fiber_fit.vox_coords.shape[0],
-                                      np.sum(~gtab.b0s_mask)))
+                           (fiber_fit.vox_coords.shape[0],
+                            np.sum(~gtab.b0s_mask)))
 mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
 S0 = fiber_fit.b0_signal
 
@@ -261,12 +272,14 @@ without the model fit.
 
 fig, ax = plt.subplots(1)
 ax.hist(mean_rmse - model_rmse, bins=100, histtype='step')
-ax.text(0.2, 0.9,'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
-     horizontalalignment='left',
-     verticalalignment='center', transform=ax.transAxes)
-ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
-     horizontalalignment='left',
-     verticalalignment='center', transform=ax.transAxes)
+ax.text(0.2, 0.9, 'Median RMSE, mean model: %.2f' % np.median(mean_rmse),
+        horizontalalignment='left',
+        verticalalignment='center',
+        transform=ax.transAxes)
+ax.text(0.2, 0.8, 'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
+        horizontalalignment='left',
+        verticalalignment='center',
+        transform=ax.transAxes)
 ax.set_xlabel('RMS Error')
 ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
@@ -276,7 +289,7 @@ fig.savefig('error_histograms.png')
 .. figure:: error_histograms.png
    :align: center
 
-   **Improvement in error with fitting of the LiFE model**.
+   Improvement in error with fitting of the LiFE model.
 
 """
 
@@ -305,9 +318,9 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
 ax = AxesGrid(fig, 111,
-              nrows_ncols = (1, 3),
-              label_mode = "1",
-              share_all = True,
+              nrows_ncols=(1, 3),
+              label_mode="1",
+              share_all=True,
               cbar_location="top",
               cbar_mode="each",
               cbar_size="10%",
@@ -331,8 +344,7 @@ fig.savefig("spatial_errors.png")
 .. figure:: spatial_errors.png
    :align: center
 
-
-   **Spatial distribution of error and improvement**
+   Spatial distribution of error and improvement.
 
 """
 
@@ -351,12 +363,11 @@ For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
 webpage <http://francopestilli.github.io/life/>`_.
 
 References
-~~~~~~~~~~~~~~~~~~~~~~
+----------
 
-.. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
-                  B.A. (2014). Validation and statistical inference in living
-                  connectomes. Nature Methods 11:
-                  1058-1063. doi:10.1038/nmeth.3098
+.. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A.
+   (2014). Validation and statistical inference in living connectomes. Nature
+   Methods 11: 1058-1063. doi:10.1038/nmeth.3098
 
 .. include:: ../links_names.inc
 

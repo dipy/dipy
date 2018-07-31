@@ -60,7 +60,6 @@ def test_real_sph_harm():
 
     rsh = real_sph_harm
     pi = np.pi
-    exp = np.exp
     sqrt = np.sqrt
     sin = np.sin
     cos = np.cos
@@ -149,7 +148,6 @@ def test_normalize_data():
 
     where_b0 = np.zeros(65, 'bool')
     where_b0[0] = True
-    d = normalize_data(sig, where_b0, 1)
     assert_raises(ValueError, normalize_data, sig, where_b0, out=sig)
 
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
@@ -187,10 +185,6 @@ def make_fake_signal():
 
     evals = np.array([[2.1, .2, .2], [.2, 2.1, .2]]) * 10 ** -3
     evecs0 = np.eye(3)
-    sq3 = np.sqrt(3) / 2.
-    evecs1 = np.array([[sq3, .5, 0],
-                       [.5, sq3, 0],
-                       [0, 0, 1.]])
     evecs1 = evecs0
     a = evecs0[0]
     b = evecs1[1]
@@ -325,8 +319,6 @@ def test_bootstrap_array():
 
     assert_array_almost_equal(bootstrap_data_voxel(dhat, H, R), dhat)
     assert_array_almost_equal(bootstrap_data_array(dhat, H, R), dhat)
-
-    H = np.zeros((5, 5))
 
 
 def test_ResidualBootstrapWrapper():
@@ -465,6 +457,7 @@ def test_calculate_max_order():
     for o, n in zip(orders, n_coeffs):
         assert_equal(calculate_max_order(n), o)
 
+    assert_raises(ValueError, calculate_max_order, 29)
 
 if __name__ == "__main__":
     import nose

@@ -21,84 +21,88 @@ the parallel and perpendicular Non-Gaussianity.
 The estimation of these properties from noisy DWIs requires that the
 fitting of the MAPMRI basis is regularized. We will show that this can
 be done using both constraining the diffusion propagator to positive
-values [Ozarslan2013]_ and analytic Laplacian Regularization [Fick2016_].
+values [Ozarslan2013]_ and analytic Laplacian Regularization (MAPL)
+[Fick2016a]_.
 
 First import the necessary modules:
 """
 
 from dipy.reconst import mapmri
-from dipy.viz import fvtk
-from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
+from dipy.viz import window, actor
+from dipy.data import fetch_cfin_multib, read_cfin_dwi, get_sphere
 from dipy.core.gradients import gradient_table
 import matplotlib.pyplot as plt
+import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 """
 Download and read the data for this tutorial.
 
 MAPMRI requires multi-shell data, to properly fit the radial part of the basis.
-The total size of the downloaded data is 1760 MBytes, however you only need to
-fetch it once. Parameter ``with_raw`` of function ``fetch_cenir_multib`` is set
-to ``False`` to only download eddy-current/motion corrected data:.
+to ``False`` to only download eddy-current/motion corrected data.
+The total size of the downloaded data is 187.66 MBytes, however you only need
+to fetch it once.
 """
 
-fetch_cenir_multib(with_raw=False)
+fetch_cfin_multib()
 
 """
-For this example we select only the shell with b-values equal to the one of the
-Human Connectome Project (HCP).
-
-data contains the voxel data and gtab contains a GradientTable
+``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
 object (gradient information e.g. b-values). For example, to show the b-values
-it is possible to write print(gtab.bvals).
+it is possible to write::
 
-For the values of the q-space
-indices to make sense it is necessary to explicitly state the big_delta and
-small_delta parameters in the gradient table.
+   print(gtab.bvals)
+
+For the values of the q-space indices to make sense it is necessary to
+explicitly state the ``big_delta`` and ``small_delta`` parameters in the
+gradient table.
 """
 
-bvals = [1000, 2000, 3000]
-img, gtab = read_cenir_multib(bvals)
+img, gtab = read_cfin_dwi()
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
 gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
-                      small_delta=big_delta,
-                      big_delta=small_delta)
+                      big_delta=big_delta,
+                      small_delta=small_delta)
 data = img.get_data()
-data_small = data[40:65, 50:51, 35:60]
+data_small = data[40:65, 50:51]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-The MAPMRI Model can now be instantiated. The radial_order determines the
+The MAPMRI Model can now be instantiated. The ``radial_order`` determines the
 expansion order of the basis, i.e., how many basis functions are used to
 approximate the signal.
 
 First, we must decide to use the anisotropic or isotropic MAPMRI basis. As was
-shown in [Fick2016]_, the isotropic basis is best used for tractography
+shown in [Fick2016a]_, the isotropic basis is best used for tractography
 purposes, as the anisotropic basis has a bias towards smaller crossing angles
 in the ODF. For signal fitting and estimation of scalar quantities the
 anisotropic basis is suggested. The choice can be made by setting
-"anisotropic_scaling=True" or "anisotropic_scaling=False".
+``anisotropic_scaling=True`` or ``anisotropic_scaling=False``.
 
 First, we must select the method of regularization and/or constraining the
 basis fitting.
-- "laplacian_regularization=True" makes it use Laplacian regularization
-  [Fick2016]_. This method essentially reduces spurious oscillations in the
+
+- ``laplacian_regularization=True`` makes it use Laplacian regularization
+  [Fick2016a]_. This method essentially reduces spurious oscillations in the
   reconstruction by minimizing the Laplacian of the fitted signal.
   Several options can be given to select the regularization weight:
-      -"regularization_weighting="GCV"" uses generalized cross-validation
-       [Craven1978]_ to find an optimal weight.
-      -"regularization_weighting=0.2" for example would omit the GCV and
-       just set it to 0.2 (found to be reasonable in HCP data [Fick2016]_).
-      -"regularization_weighting=np.array(weights)" would make the GCV use
-       a custom range to find an optimal weight.
-- "positivity_constraint=True" makes it use the positivity constraint on the
+
+    - ``regularization_weighting=GCV`` uses generalized cross-validation
+      [Craven1978]_ to find an optimal weight.
+    - ``regularization_weighting=0.2`` for example would omit the GCV and
+      just set it to 0.2 (found to be reasonable in HCP data [Fick2016a]_).
+    - ``regularization_weighting=np.array(weights)`` would make the GCV use
+      a custom range to find an optimal weight.
+
+- ``positivity_constraint=True`` makes it use the positivity constraint on the
   diffusion propagator [Ozarslan2013]_. This method constrains the final
   solution of the diffusion propagator to be positive at a set of discrete
   points, since negative values should not exist.
-      -the "pos_grid" and "pos_radius" affect the location and number of
-       constraint points in the diffusion propagator.
+
+    - The ``pos_grid`` and ``pos_radius`` affect the location and number of
+      constraint points in the diffusion propagator.
 
 Both methods do a good job of producing viable solutions to the signal fitting
 in practice. The difference is that the Laplacian regularization imposes
@@ -111,6 +115,10 @@ smooth solutions, but does not guarantee it.
 A suggested strategy is to use a low Laplacian weight together with the
 positivity constraint. In this way both desired properties are guaranteed in
 the final solution.
+
+We use package CVXPY (http://www.cvxpy.org/) to solve convex optimization
+problems when "positivity_constraint=True", so we need to first install
+CVXPY.
 
 For now we will generate the anisotropic models for all combinations.
 """
@@ -131,17 +139,19 @@ map_model_both_aniso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                           positivity_constraint=True)
 
 """
-Note that when we use only Laplacian regularization, the "GCV" option may
+Note that when we use only Laplacian regularization, the ``GCV`` option may
 select very low regularization weights in very anisotropic white matter such
 as the corpus callosum, resulting in corrupted scalar indices. In this example
 we therefore choose a preset value of 0.2, which has shown to be quite robust
-and also faster in practice [Fick2016]_.
+and also faster in practice [Fick2016a]_.
 
-We can then fit the MAPMRI model to the data.
+We can then fit the MAPMRI model to the data:
 """
+
 mapfit_laplacian_aniso = map_model_laplacian_aniso.fit(data_small)
 mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
+
 """
 From the fitted models we will first illustrate the estimation of q-space
 indices. For completeness, we will compare the estimation using only Laplacian
@@ -153,26 +163,29 @@ regularization, positivity constraint or both. We first show the RTOP
 fig = plt.figure(figsize=(10, 5))
 ax1 = fig.add_subplot(1, 3, 1, title=r'RTOP - Laplacian')
 ax1.set_axis_off()
-ind = ax1.imshow(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=5e7)
+rtop_laplacian = np.array(mapfit_laplacian_aniso.rtop()[:, 0, :].T,
+                          dtype=float)
+ind = ax1.imshow(rtop_laplacian, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 
 ax2 = fig.add_subplot(1, 3, 2, title=r'RTOP - Positivity')
 ax2.set_axis_off()
-ind = ax2.imshow(mapfit_positivity_aniso.rtop()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=5e7)
+rtop_positivity = np.array(mapfit_positivity_aniso.rtop()[:, 0, :].T,
+                           dtype=float)
+ind = ax2.imshow(rtop_positivity, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray)
 
 ax3 = fig.add_subplot(1, 3, 3, title=r'RTOP - Both')
 ax3.set_axis_off()
-ind = ax3.imshow(mapfit_both_aniso.rtop()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=5e7)
+rtop_both = np.array(mapfit_both_aniso.rtop()[:, 0, :].T, dtype=float)
+ind = ax3.imshow(rtop_both, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
 
 plt.savefig('MAPMRI_maps_regularization.png')
+
 """
 .. figure:: MAPMRI_maps_regularization.png
    :align: center
@@ -186,24 +199,24 @@ visualizing the analytic norm of the Laplacian of the fitted signal.
 fig = plt.figure(figsize=(10, 5))
 ax1 = fig.add_subplot(1, 3, 1, title=r'Laplacian norm - Laplacian')
 ax1.set_axis_off()
-ind = ax1.imshow(mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=3
-                 )
+laplacian_norm_laplacian = np.array(mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T,
+                dtype=float)
+ind = ax1.imshow(laplacian_norm_laplacian, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
 
 ax2 = fig.add_subplot(1, 3, 2, title=r'Laplacian norm - Positivity')
 ax2.set_axis_off()
-ind = ax2.imshow(mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=3
-                 )
+laplacian_norm_positivity = np.array(mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T,
+                dtype=float)
+ind = ax2.imshow(laplacian_norm_positivity, interpolation='nearest',
+                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
 
 ax3 = fig.add_subplot(1, 3, 3, title=r'Laplacian norm - Both')
 ax3.set_axis_off()
-ind = ax3.imshow(mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray,
-                 vmin=0, vmax=3
-                 )
+laplacian_norm_both = np.array(mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T,
+                dtype=float)
+ind = ax3.imshow(laplacian_norm_both, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray, vmin=0, vmax=3)
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
@@ -228,28 +241,33 @@ and explain their significance.
 fig = plt.figure(figsize=(15, 6))
 ax1 = fig.add_subplot(1, 5, 1, title=r'MSD')
 ax1.set_axis_off()
-ind = ax1.imshow(mapfit_both_aniso.msd()[:, 0, :].T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray)
+msd = np.array(mapfit_both_aniso.msd()[:, 0, :].T, dtype=float)
+ind = ax1.imshow(msd, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 
 ax2 = fig.add_subplot(1, 5, 2, title=r'QIV')
 ax2.set_axis_off()
-ind = ax2.imshow(mapfit_both_aniso.qiv()[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+qiv = np.array(mapfit_both_aniso.qiv()[:, 0, :].T, dtype=float)
+ind = ax2.imshow(qiv, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 
 ax3 = fig.add_subplot(1, 5, 3, title=r'RTOP')
 ax3.set_axis_off()
-ind = ax3.imshow((mapfit_both_aniso.rtop()[:, 0, :]).T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray)
+rtop = np.array((mapfit_both_aniso.rtop()[:, 0, :]).T, dtype=float)
+ind = ax3.imshow(rtop, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 
 ax4 = fig.add_subplot(1, 5, 4, title=r'RTAP')
 ax4.set_axis_off()
-ind = ax4.imshow((mapfit_both_aniso.rtap()[:, 0, :]).T,
-                 interpolation='nearest', origin='lower', cmap=plt.cm.gray)
+rtap = np.array((mapfit_both_aniso.rtap()[:, 0, :]).T, dtype=float)
+ind = ax4.imshow(rtap, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 
 ax5 = fig.add_subplot(1, 5, 5, title=r'RTPP')
 ax5.set_axis_off()
-ind = ax5.imshow(mapfit_both_aniso.rtpp()[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+rtpp = np.array(mapfit_both_aniso.rtpp()[:, 0, :].T, dtype=float)
+ind = ax5.imshow(rtpp, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 plt.savefig('MAPMRI_maps.png')
 
 """
@@ -257,6 +275,7 @@ plt.savefig('MAPMRI_maps.png')
    :align: center
 
 From left to right:
+
 - Mean Squared Displacement (MSD) is a measure for how far protons are able to
   diffuse. a decrease in MSD indicates protons are hindered/restricted more,
   as can be seen by the high MSD in the CSF, but low in the white matter.
@@ -272,8 +291,9 @@ From left to right:
 - Return to axis probability (RTAP) is a directional index that quantifies
   the probability that a proton will be along the axis of the main eigenvector
   of a diffusion tensor during both diffusion gradient pulses. RTAP has been
-  related to the apparent axon diameter [Ozarslan2013, Fick2016]_ under several
-  strong assumptions on the tissue composition and acquisition protocol.
+  related to the apparent axon diameter [Ozarslan2013]_ [Fick2016a]_ under
+  several strong assumptions on the tissue composition and acquisition
+  protocol.
 - Return to plane probability (RTPP) is a directional index that quantifies the
   probability that a proton will be on the plane perpendicular to the main
   eigenvector of a diffusion tensor during both gradient pulses. RTPP is
@@ -288,6 +308,7 @@ physically meaningful we must use a b-value threshold in the MAPMRI model. This
 threshold makes the scale estimation in MAPMRI only use samples that
 realistically describe Gaussian diffusion, i.e., at low b-values.
 """
+
 map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                        laplacian_regularization=True,
                                        laplacian_weighting=.05,
@@ -299,8 +320,9 @@ mapfit_both_ng = map_model_both_ng.fit(data_small)
 fig = plt.figure(figsize=(10, 6))
 ax1 = fig.add_subplot(1, 3, 1, title=r'NG')
 ax1.set_axis_off()
-ind = ax1.imshow(mapfit_both_ng.ng()[:, 0, :].T, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ng = np.array(mapfit_both_ng.ng()[:, 0, :].T, dtype=float)
+ind = ax1.imshow(ng, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 divider = make_axes_locatable(ax1)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
@@ -308,18 +330,19 @@ plt.colorbar(ind, cax=cax)
 
 ax2 = fig.add_subplot(1, 3, 2, title=r'NG perpendicular')
 ax2.set_axis_off()
-ind = ax2.imshow(mapfit_both_ng.ng_perpendicular()[:, 0, :].T,
-                 interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ng_perpendicular = np.array(mapfit_both_ng.ng_perpendicular()[:, 0, :].T,
+                            dtype=float)
+ind = ax2.imshow(ng_perpendicular, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 divider = make_axes_locatable(ax2)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
 
 ax3 = fig.add_subplot(1, 3, 3, title=r'NG parallel')
 ax3.set_axis_off()
-ind = ax3.imshow(mapfit_both_ng.ng_parallel()[:, 0, :].T,
-                 interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray)
+ng_parallel = np.array(mapfit_both_ng.ng_parallel()[:, 0, :].T, dtype=float)
+ind = ax3.imshow(ng_parallel, interpolation='nearest', origin='lower',
+                 cmap=plt.cm.gray)
 divider = make_axes_locatable(ax3)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plt.colorbar(ind, cax=cax)
@@ -338,16 +361,18 @@ values in the CSF and higher in the white matter.
 Increases or decreases in these values do not point to a specific
 microstructural change, but can indicate clues as to what is happening, similar
 to Fractional Anisotropy. An initial simulation study that quantifies the added
-value of q-space indices over DTI indices is given in [Fick2016b]_
+value of q-space indices over DTI indices is given in [Fick2016b]_.
 
-The MAPMRI framework also allows for the estimation of orientation distribution
-functions (ODFs). We recommend to use the isotropic implementation for this
+The MAPMRI framework also allows for the estimation of Orientation Distribution
+Functions (ODFs). We recommend to use the isotropic implementation for this
 purpose, as the anisotropic implementation has a bias towards smaller crossing
 angles.
 
-For the isotropic basis we recommend to use a higher_order of 8, as the basis
-needs more generic and needs more basis functions to approximate the signal.
+For the isotropic basis we recommend to use a ``radial_order`` of 8, as the
+basis needs more generic and needs more basis functions to approximate the
+signal.
 """
+
 radial_order = 8
 map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                         laplacian_regularization=True,
@@ -358,53 +383,65 @@ map_model_both_iso = mapmri.MapmriModel(gtab, radial_order=radial_order,
 mapfit_both_iso = map_model_both_iso.fit(data_small)
 
 """
-Load an odf reconstruction sphere
+Load an ODF reconstruction sphere
 """
 
 sphere = get_sphere('symmetric724')
 
 """
-Compute the ODFs
-The radial order s can be increased to sharpen the results, but it might
-also make the odfs noisier. Always check the results visually.
+Compute the ODFs.
+
+The radial order ``s`` can be increased to sharpen the results, but it might
+also make the ODFs noisier. Always check the results visually.
 """
 
 odf = mapfit_both_iso.odf(sphere, s=2)
 print('odf.shape (%d, %d, %d, %d)' % odf.shape)
 
 """
-Display the ODFs
+Display the ODFs.
 """
 
-r = fvtk.ren()
-sfu = fvtk.sphere_funcs(odf, sphere, colormap='jet')
+# Enables/disables interactive visualization
+interactive = False
+
+r = window.Renderer()
+sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
+sfu.display(y=0)
 sfu.RotateX(-90)
-fvtk.add(r, sfu)
-fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
+r.add(sfu)
+window.record(r, out_path='odfs.png', size=(600, 600))
+if interactive:
+    window.show(r)
+
 """
 .. figure:: odfs.png
    :align: center
 
-   **Orientation distribution functions**.
+   Orientation distribution functions (ODFs).
 
-.. [Ozarslan2013]_ Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A
-               novel diffusion imaging method for mapping tissue
-               microstructure", NeuroImage, 2013.
+References
+----------
 
-.. [Fick2016]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
-               using Laplacian-regularized MAP-MRI and its application to HCP
-               data." NeuroImage (2016).
+.. [Ozarslan2013] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A
+   novel diffusion imaging method for mapping tissue microstructure",
+   NeuroImage, 2013.
 
-.. [Craven1978]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
-               NUMER MATH 31.4 (1978): 377-403.
+.. [Fick2016a] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+   using Laplacian-regularized MAP-MRI and its application to HCP data."
+   NeuroImage (2016).
 
-.. [Hosseinbor2013]_ Hosseinbor et al. "Bessel fourier orientation
-               reconstruction (bfor): an analytical diffusion propagator
-               reconstruction for hybrid diffusion imaging and computation
-               of q-space indices. NeuroImage 64, 650–670.
-.. [Fick2016b]_ Fick et al. "A sensitivity analysis of Q-space indices with
-               respect to changes in axonal diameter, dispersion and tissue
-               composition. ISBI 2016.
+.. [Craven1978] Craven et al. "Smoothing Noisy Data with Spline Functions."
+   NUMER MATH 31.4 (1978): 377-403.
+
+.. [Hosseinbor2013] Hosseinbor et al. "Bessel fourier orientation
+   reconstruction (bfor): an analytical diffusion propagator reconstruction
+   for hybrid diffusion imaging and computation of q-space indices. NeuroImage
+   64, 650-670.
+
+.. [Fick2016b] Fick et al. "A sensitivity analysis of Q-space indices with
+   respect to changes in axonal diameter, dispersion and tissue composition.
+   ISBI 2016.
 
 .. include:: ../links_names.inc
 

@@ -4,7 +4,7 @@ Calculate DSI-based scalar maps
 ===============================
 
 We show how to calculate two DSI-based scalar maps: return to origin 
-probability (rtop) [Descoteaux2011]_ and mean square displacement (msd) 
+probability (RTOP) [Descoteaux2011]_ and mean square displacement (MSD)
 [Wu2007]_, [Wu2008]_ on your dataset.
 
 First import the necessary modules:
@@ -64,8 +64,8 @@ rtop_signal = dsmodel.fit(dataslice).rtop_signal()
 Now we calculate the return to origin probability on the propagator, 
 that corresponds to its central value. 
 By default the propagator is divided by its sum in order to obtain a properly normalized pdf,
-however this normalization changes the values of rtop, therefore in order to compare it
-with the rtop previously calculated on the signal we turn the normalized parameter to false.
+however this normalization changes the values of RTOP, therefore in order to compare it
+with the RTOP previously calculated on the signal we turn the normalized parameter to false.
 """
 
 print('Calculating... rtop_pdf')
@@ -83,7 +83,7 @@ print("mse = %f" % mse)
 mse = 0.000000
 
 Leaving the normalized parameter to the default changes the values of the 
-rtop but not the contrast between the voxels.
+RTOP but not the contrast between the voxels.
 """
 
 print('Calculating... rtop_pdf_norm')
@@ -105,7 +105,7 @@ print('Calculating... msd')
 msd = dsmodel.fit(dataslice).msd_discrete(normalized=False)
 
 """
-Show the rtop images and save them in rtop.png.
+Show the RTOP images and save them in rtop.png.
 """
 
 fig = plt.figure(figsize=(6, 6))
@@ -127,9 +127,9 @@ plt.savefig('rtop.png')
 .. figure:: rtop.png
    :align: center
 
-   **Return to origin probability**.
+   Return to origin probability.
 
-Show the msd images and save them in msd.png. 
+Show the MSD images and save them in msd.png. 
 """
 
 fig = plt.figure(figsize=(7, 3))
@@ -147,19 +147,18 @@ plt.savefig('msd.png')
 .. figure:: msd.png
    :align: center
 
-   **Mean square displacement**.
+   Mean square displacement.
 
-.. [Descoteaux2011] Descoteaux M. et. al , "Multiple q-shell diffusion 
-					propagator imaging", Medical Image Analysis, vol 15,
-					No. 4, p. 603-621, 2011.
+.. [Descoteaux2011] Descoteaux M. et al., "Multiple q-shell diffusion
+   propagator imaging", Medical Image Analysis, vol 15, no 4, p. 603-621,
+   2011.
 
 .. [Wu2007] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
-        	p. 617-629, 2007.
+   p. 617-629, 2007.
 
-.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures
-			in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
-			IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
-			2008
+.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures in
+   q-Space Using Magnetic Resonance Hybrid Diffusion Imaging", IEEE
+   Transactions on Medical Imaging, vol 27, no 6, p. 858-865, 2008.
 
 .. include:: ../links_names.inc
 

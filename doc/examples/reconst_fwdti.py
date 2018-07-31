@@ -7,8 +7,8 @@ As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
 model is a simple way to characterize diffusion anisotropy. However, in regions
 near the cerebral ventricle and parenchyma can be underestimated by partial
 volume effects of the cerebral spinal fluid (CSF). This free water
-contamination can particularly corrupt diffusion tensor imaging analysis of
-microstructural changes when different groups of subject show different brain
+contamination can particularly corrupt Diffusion Tensor Imaging analysis of
+microstructural changes when different groups of subjects show different brain
 morphology (e.g. brain ventricle enlargement associated with brain tissue
 atrophy that occurs in several brain pathologies and ageing).
 
@@ -25,8 +25,8 @@ where $\mathbf{g}$ and $b$ are diffusion gradient direction and weighted
 (more information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
 diffusion-weighted signal measured, $S_0$ is the signal in a measurement with
 no diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
-fraction of the free water component, and $D_iso$ is the isotropic value of the
-free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
+fraction of the free water component, and $D_{iso}$ is the isotropic value of
+the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
 In this example, we show how to process a diffusion weighting dataset using the
 free water elimination.
@@ -44,7 +44,7 @@ from dipy.segment.mask import median_otsu
 
 """
 Without spatial constrains the free water elimination model cannot be solved
-in data acquired from one non-zero b-value _[Hoy2014]. Therefore, here we
+in data acquired from one non-zero b-value [Hoy2014]_. Therefore, here we
 download a dataset that was required from multiple b-values.
 """
 
@@ -52,9 +52,9 @@ fetch_cenir_multib(with_raw=False)
 
 """
 From the downloaded data, we read only the data acquired with b-values up to
-2000 $s.mm^{-2} to decrease the influence of non-Gaussian diffusion effects
-of the tisse which are not taken into account by the free water elimination
-model _[Hoy2014].
+2000 $s/mm^2$ to decrease the influence of non-Gaussian diffusion
+effects of the tisse which are not taken into account by the free water
+elimination model [Hoy2014]_.
 """
 
 bvals = [200, 400, 1000, 2000]
@@ -165,21 +165,23 @@ plt.show()
 fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_measures.png')
 
 """
+
 .. figure:: In_vivo_free_water_DTI_and_standard_DTI_measures.png
    :align: center
-   ** In vivo diffusion measures obtain from the free water DTI and standard
+
+   In vivo diffusion measures obtain from the free water DTI and standard
    DTI. The values of Fractional Anisotropy for the free water DTI model and
    standard DTI model and their difference are shown in the upper panels (A-C),
    while respective MD values are shown in the lower panels (D-F). In addition
    the free water volume fraction estimated from the fwDTI model is shown in
-   panel G**.
+   panel G.
 
 From the figure, one can observe that the free water elimination model
 produces in general higher values of FA and lower values of MD than the
 standard DTI model. These differences in FA and MD estimation are expected
 due to the suppression of the free water isotropic diffusion components.
 Unexpected high amplitudes of FA are however observed in the periventricular
-gray mater. This is a known artefact of regions associated to voxels with high
+gray matter. This is a known artefact of regions associated to voxels with high
 water volume fraction (i.e. voxels containing basically CSF). We are able to
 remove this problematic voxels by excluding all FA values associated with
 measured volume fractions above a reasonable threshold of 0.7:
@@ -212,17 +214,21 @@ plt.show()
 fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_corrected.png')
 
 """
+
 .. figure:: In_vivo_free_water_DTI_and_standard_DTI_corrected.png
    :align: center
-   ** In vivo FA measures obtain from the free water DTI (A) and standard
+
+   In vivo FA measures obtain from the free water DTI (A) and standard
    DTI (B) and their difference (C). Problematic inflated FA values of the
    images were removed by dismissing voxels above a volume fraction threshold
-   of 0.7 **.
+   of 0.7.
 
-References:
+References
+----------
 
 .. [Hoy2014] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-             Optimization of a free water elimination two-compartmental model
-             for diffusion tensor imaging. NeuroImage 103, 323-333.
-             doi: 10.1016/j.neuroimage.2014.09.053
+   Optimization of a free water elimination two-compartmental model for
+   diffusion tensor imaging. NeuroImage 103, 323-333. doi:
+   10.1016/j.neuroimage.2014.09.053
+
 """

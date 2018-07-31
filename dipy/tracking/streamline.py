@@ -2,10 +2,11 @@ from copy import deepcopy
 from warnings import warn
 import types
 
+from distutils.version import LooseVersion
 from scipy.spatial.distance import cdist
 import numpy as np
+import nibabel as nib
 from nibabel.affines import apply_affine
-
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.streamlinespeed import compress_streamlines
@@ -13,6 +14,150 @@ import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 import dipy.align.vector_fields as vfu
+from dipy.testing import setup_test
+
+if LooseVersion(nib.__version__) >= '2.3':
+    from nibabel.streamlines import ArraySequence as Streamlines
+else:
+    # This patch fix a streamline bug on windows machine.
+    # For more information, look at https://github.com/nipy/nibabel/pull/597
+    # This patch can be removed when nibabel minimal version is updated to 2.3
+    # Currently, nibabel 2.3 does not exist.
+    from nibabel.streamlines import ArraySequence
+    from functools import reduce
+    from operator import mul
+
+    MEGABYTE = 1024 * 1024
+
+    class _BuildCache(object):
+        def __init__(self, arr_seq, common_shape, dtype):
+            self.offsets = list(arr_seq._offsets)
+            self.lengths = list(arr_seq._lengths)
+            self.next_offset = arr_seq._get_next_offset()
+            self.bytes_per_buf = arr_seq._buffer_size * MEGABYTE
+            # Use the passed dtype only if null data array
+            if arr_seq._data.size == 0:
+                self.dtype = dtype
+            else:
+                arr_seq._data.dtype
+            if (arr_seq.common_shape != () and
+                    common_shape != arr_seq.common_shape):
+                raise ValueError(
+                    "All dimensions, except the first one, must match exactly")
+            self.common_shape = common_shape
+            n_in_row = reduce(mul, common_shape, 1)
+            bytes_per_row = n_in_row * dtype.itemsize
+            self.rows_per_buf = max(1, self.bytes_per_buf // bytes_per_row)
+
+        def update_seq(self, arr_seq):
+            arr_seq._offsets = np.array(self.offsets)
+            arr_seq._lengths = np.array(self.lengths)
+
+    class Streamlines(ArraySequence):
+        def __init__(self, *args, **kwargs):
+            super(Streamlines, self).__init__(*args, **kwargs)
+
+        def append(self, element, cache_build=False):
+            """
+            Appends `element` to this array sequence.
+
+            Append can be a lot faster if it knows that it is appending several
+            elements instead of a single element.  In that case it can cache
+            the parameters it uses between append operations, in a "build
+            cache". To tell append to do this, use ``cache_build=True``.  If
+            you use ``cache_build=True``, you need to finalize the append
+            operations with :meth:`finalize_append`.
+
+            Parameters
+            ----------
+            element : ndarray Element to append. The shape must match already
+                inserted elements shape except for the first dimension.
+                cache_build : {False, True} Whether to save the build cache
+                from this append routine.  If True, append can assume it is the
+                only player updating `self`, and the caller must finalize
+                `self` after all append operations, with
+                ``self.finalize_append()``. Returns
+            -------
+            None Notes
+            -----
+            If you need to add multiple elements you should consider
+            `ArraySequence.extend`.
+            """
+            element = np.asarray(element)
+            if element.size == 0:
+                return
+            el_shape = element.shape
+            n_items, common_shape = el_shape[0], el_shape[1:]
+            build_cache = self._build_cache
+            in_cached_build = build_cache is not None
+            if not in_cached_build:  # One shot append, not part of sequence
+                build_cache = _BuildCache(self, common_shape, element.dtype)
+            next_offset = build_cache.next_offset
+            req_rows = next_offset + n_items
+            if self._data.shape[0] < req_rows:
+                self._resize_data_to(req_rows, build_cache)
+            self._data[next_offset:req_rows] = element
+            build_cache.offsets.append(next_offset)
+            build_cache.lengths.append(n_items)
+            build_cache.next_offset = req_rows
+            if in_cached_build:
+                return
+            if cache_build:
+                self._build_cache = build_cache
+            else:
+                build_cache.update_seq(self)
+
+        def finalize_append(self):
+            """ Finalize process of appending several elements to `self`
+            :meth:`append` can be a lot faster if it knows that it is appending
+            several elements instead of a single element.  To tell the append
+            method this is the case, use ``cache_build=True``.  This method
+            finalizes the series of append operations after a call to
+            :meth:`append` with ``cache_build=True``.
+            """
+            if self._build_cache is None:
+                return
+            self._build_cache.update_seq(self)
+            self._build_cache = None
+            self.shrink_data()
+
+        def extend(self, elements):
+            """ Appends all `elements` to this array sequence.
+            Parameters
+            ----------
+            elements : iterable of ndarrays or :class:`ArraySequence` instance
+
+                If iterable of ndarrays, each ndarray will be concatenated
+                along the first dimension then appended to the data of this
+                ArraySequence.
+                If :class:`ArraySequence` object, its data are simply appended
+                to the data of this ArraySequence.
+
+            Returns
+            -------
+            None Notes
+            -----
+            The shape of the elements to be added must match the one of the
+            data of this :class:`ArraySequence` except for the first dimension.
+            """
+            # If possible try pre-allocating memory.
+            try:
+                iter_len = len(elements)
+            except TypeError:
+                pass
+            else:  # We do know the iterable length
+                if iter_len == 0:
+                    return
+                e0 = np.asarray(elements[0])
+                n_elements = np.sum([len(e) for e in elements])
+                self._build_cache = _BuildCache(self, e0.shape[1:], e0.dtype)
+                self._resize_data_to(self._get_next_offset() + n_elements,
+                                     self._build_cache)
+
+            for e in elements:
+                self.append(e, cache_build=True)
+
+            self.finalize_append()
 
 
 def unlist_streamlines(streamlines):
@@ -33,7 +178,6 @@ def unlist_streamlines(streamlines):
     offsets = np.zeros(len(streamlines), dtype='i8')
 
     curr_pos = 0
-    prev_pos = 0
     for (i, s) in enumerate(streamlines):
 
             prev_pos = curr_pos
@@ -86,6 +230,52 @@ def center_streamlines(streamlines):
     """
     center = np.mean(np.concatenate(streamlines, axis=0), axis=0)
     return [s - center for s in streamlines], center
+
+
+def deform_streamlines(streamlines,
+                       deform_field,
+                       stream_to_current_grid,
+                       current_grid_to_world,
+                       stream_to_ref_grid,
+                       ref_grid_to_world):
+    """ Apply deformation field to streamlines
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 2D ndarrays of shape[-1]==3
+    deform_field : 4D numpy array
+        x,y,z displacements stored in volume, shape[-1]==3
+    stream_to_current_grid : array, (4, 4)
+        transform matrix voxmm space to original grid space
+    current_grid_to_world : array (4, 4)
+        transform matrix original grid space to world coordinates
+    stream_to_ref_grid : array (4, 4)
+        transform matrix voxmm space to new grid space
+    ref_grid_to_world : array(4, 4)
+        transform matrix new grid space to world coordinates
+
+    Returns
+    -------
+    new_streamlines : list
+        List of the transformed 2D ndarrays of shape[-1]==3
+    """
+
+    if deform_field.shape[-1] != 3:
+        raise ValueError("Last dimension of deform_field needs shape==3")
+
+    stream_in_curr_grid = transform_streamlines(streamlines,
+                                                stream_to_current_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid)
+    stream_in_world = transform_streamlines(stream_in_curr_grid,
+                                            current_grid_to_world)
+    new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
+                                                      stream_in_world)]
+    new_streams_grid = transform_streamlines(new_streams_in_world,
+                                             np.linalg.inv(ref_grid_to_world))
+    new_streamlines = transform_streamlines(new_streams_grid,
+                                            np.linalg.inv(stream_to_ref_grid))
+    return new_streamlines
 
 
 def transform_streamlines(streamlines, mat):
@@ -294,7 +484,9 @@ def _orient_list(out, roi1, roi2):
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
-            out[idx] = sl[::-1]
+            out[idx][:, 0] = sl[::-1][:, 0]
+            out[idx][:, 1] = sl[::-1][:, 1]
+            out[idx][:, 2] = sl[::-1][:, 2]
     return out
 
 
@@ -365,7 +557,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     # If it's a generator on input, we may as well generate it
     # here and now:
     if isinstance(streamlines, types.GeneratorType):
-        out = list(streamlines)
+        out = Streamlines(streamlines)
 
     elif in_place:
         out = streamlines
@@ -409,7 +601,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     """
     data = data.astype(np.float)
     if (isinstance(streamlines, list) or
-            isinstance(streamlines, types.GeneratorType)):
+            isinstance(streamlines, types.GeneratorType) or
+            isinstance(streamlines, Streamlines)):
         if affine is not None:
             streamlines = ut.move_streamlines(streamlines,
                                               np.linalg.inv(affine))
@@ -489,7 +682,7 @@ def values_from_volume(data, streamlines, affine=None):
             return _extract_vals(data, streamlines, affine=affine,
                                  threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
-            streamlines = list(streamlines)
+            streamlines = Streamlines(streamlines)
         vals = []
         for ii in range(data.shape[-1]):
             vals.append(_extract_vals(data[..., ii], streamlines,
@@ -510,3 +703,7 @@ def values_from_volume(data, streamlines, affine=None):
         return _extract_vals(data, streamlines, affine=affine)
     else:
         raise ValueError("Data needs to have 3 or 4 dimensions")
+
+
+def nbytes(streamlines):
+    return streamlines._data.nbytes / 1024. ** 2

@@ -226,13 +226,13 @@ def renderer(background=None):
 
     Examples
     --------
-    >>> from dipy.viz import fvtk
+    >>> from dipy.viz import window, actor
     >>> import numpy as np
-    >>> r=fvtk.ren()
+    >>> r = window.Renderer()
     >>> lines=[np.random.rand(10,3)]
-    >>> c=fvtk.line(lines, fvtk.colors.red)
-    >>> fvtk.add(r,c)
-    >>> #fvtk.show(r)
+    >>> c=actor.line(lines, window.colors.red)
+    >>> r.add(c)
+    >>> #window.show(r)
     """
 
     deprecation_msg = ("Method 'dipy.viz.window.renderer' is deprecated, instead"
@@ -501,7 +501,8 @@ class ShowManager(object):
             recorder.SetFileName(filename)
 
             def _stop_recording_and_close(obj, evt):
-                recorder.Stop()
+                if recorder:
+                    recorder.Stop()
                 self.iren.TerminateApp()
 
             self.iren.AddObserver("ExitEvent", _stop_recording_and_close)
@@ -512,10 +513,12 @@ class ShowManager(object):
             self.initialize()
             self.render()
             self.iren.Start()
-
+            # Deleting this object is the unique way
+            # to close the file.
+            recorder = None
             # Retrieved recorded events.
-            events = open(filename).read()
-
+            with open(filename, 'r') as f:
+                events = f.read()
         return events
 
     def record_events_to_file(self, filename="record.log"):
@@ -534,9 +537,11 @@ class ShowManager(object):
 
         # Compress file if needed
         if filename.endswith(".gz"):
-            gzip.open(filename, 'wb').write(asbytes(events))
+            with gzip.open(filename, 'wb') as fgz:
+                fgz.write(asbytes(events))
         else:
-            open(filename, 'w').write(events)
+            with open(filename, 'w') as f:
+                f.write(events)
 
     def play_events(self, events):
         """ Plays recorded events of a past interaction.
@@ -624,15 +629,15 @@ def show(ren, title='DIPY', size=(300, 300),
     Examples
     ----------
     >>> import numpy as np
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> from dipy.viz import window, actor
+    >>> r = window.Renderer()
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]
     >>> colors=np.array([[0.2,0.2,0.2],[0.8,0.8,0.8]])
-    >>> c=fvtk.line(lines,colors)
-    >>> fvtk.add(r,c)
-    >>> l=fvtk.label(r)
-    >>> fvtk.add(r,l)
-    >>> #fvtk.show(r)
+    >>> c=actor.line(lines,colors)
+    >>> r.add(c)
+    >>> l=actor.label(text="Hello")
+    >>> r.add(l)
+    >>> #window.show(r)
 
     See also
     ---------
@@ -688,12 +693,12 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     Examples
     ---------
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
-    >>> a=fvtk.axes()
-    >>> fvtk.add(r,a)
-    >>> #uncomment below to record
-    >>> #fvtk.record(r)
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> a = actor.axes()
+    >>> ren.add(a)
+    >>> # uncomment below to record
+    >>> # window.record(ren)
     >>> #check for new images in current directory
     """
 

@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """
-==============
-User Interface
-==============
+===============
+User Interfaces
+===============
 
 This example shows how to use the UI API.
 Currently includes button, textbox, panel, and line slider.
@@ -9,11 +10,11 @@ Currently includes button, textbox, panel, and line slider.
 First, a bunch of imports.
 
 """
+import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
 
 from dipy.viz import ui, window
-
 
 """
 3D Elements
@@ -38,6 +39,7 @@ def cube_maker(color=None, size=(0.2, 0.2, 0.2), center=None):
         cube_actor.GetProperty().SetColor(color)
     return cube_actor
 
+
 cube_actor_1 = cube_maker((1, 0, 0), (50, 50, 50), center=(0, 0, 0))
 cube_actor_2 = cube_maker((0, 1, 0), (10, 10, 10), center=(100, 0, 0))
 
@@ -54,11 +56,11 @@ fetch_viz_icons()
 Add the icon filenames to a dict.
 """
 
-icon_files = dict()
-icon_files['stop'] = read_viz_icons(fname='stop2.png')
-icon_files['play'] = read_viz_icons(fname='play3.png')
-icon_files['plus'] = read_viz_icons(fname='plus.png')
-icon_files['cross'] = read_viz_icons(fname='cross.png')
+icon_files = []
+icon_files.append(('stop', read_viz_icons(fname='stop2.png')))
+icon_files.append(('play', read_viz_icons(fname='play3.png')))
+icon_files.append(('plus', read_viz_icons(fname='plus.png')))
+icon_files.append(('cross', read_viz_icons(fname='cross.png')))
 
 """
 Create a button through our API.
@@ -78,6 +80,7 @@ def left_mouse_button_click(i_ren, obj, button):
 def left_mouse_button_drag(i_ren, obj, button):
     print ("Left Button Dragged")
 
+
 button_example.on_left_mouse_button_drag = left_mouse_button_drag
 button_example.on_left_mouse_button_pressed = left_mouse_button_click
 
@@ -88,6 +91,7 @@ def right_mouse_button_drag(i_ren, obj, button):
 
 def right_mouse_button_click(i_ren, obj, button):
     print ("Right Button Clicked")
+
 
 button_example.on_right_mouse_button_drag = right_mouse_button_drag
 button_example.on_right_mouse_button_pressed = right_mouse_button_click
@@ -105,11 +109,9 @@ via a callback that is triggered on left click.
 
 
 def modify_button_callback(i_ren, obj, button):
-    # i_ren: CustomInteractorStyle
-    # obj: vtkActor picked
-    # button: Button2D
     button.next_icon()
     i_ren.force_render()
+
 
 second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
@@ -120,10 +122,10 @@ Panels
 Simply create a panel and add elements to it.
 """
 
-panel = ui.Panel2D(center=(440, 90), size=(300, 150), color=(1, 1, 1),
-                   align="right")
-panel.add_element(button_example, 'relative', (0.2, 0.2))
-panel.add_element(second_button_example, 'absolute', (480, 100))
+panel = ui.Panel2D(size=(300, 150), color=(1, 1, 1), align="right")
+panel.center = (440, 90)
+panel.add_element(button_example, (0.2, 0.2))
+panel.add_element(second_button_example, (190, 85))
 
 """
 TextBox
@@ -137,16 +139,59 @@ text = ui.TextBox2D(height=3, width=10)
 ==============
 """
 
-line_slider = ui.LineSlider2D(initial_value=-2,
-                              min_value=-5, max_value=5)
+
+def translate_green_cube(slider):
+    value = slider.value
+    cube_actor_2.SetPosition(value, 0, 0)
+
+
+line_slider = ui.LineSlider2D(center=(450, 300),
+                              initial_value=-2, min_value=-5, max_value=5)
+line_slider.on_change = translate_green_cube
 
 """
-2D Disk Slider
+2D Ring Slider
 ==============
 """
 
-disk_slider = ui.DiskSlider2D()
-disk_slider.set_center((200, 200))
+
+def rotate_red_cube(slider):
+    angle = slider.value
+    previous_angle = slider.previous_value
+    rotation_angle = angle - previous_angle
+    cube_actor_1.RotateY(rotation_angle)
+
+
+ring_slider = ui.RingSlider2D(text_template="{angle:5.1f}°")
+ring_slider.center = (200, 200)
+ring_slider.on_change = rotate_red_cube
+"""
+2D List Box
+===========
+"""
+
+values = list(map(str, range(1, 50 + 1)))
+listbox = ui.ListBox2D(values=values,
+                       position=(300, 420),
+                       size=(250, 160),
+                       multiselection=True)
+
+
+def _print_nb_selected_elements():
+    msg = "{}/{} elements are now selected."
+    print(msg.format(len(listbox.selected), len(listbox.values)))
+
+
+listbox.on_change = _print_nb_selected_elements
+
+
+"""
+Image Container
+======
+"""
+
+img = ui.ImageContainer2D(img_path=read_viz_icons(fname='home3.png'))
+
 
 """
 Adding Elements to the ShowManager
@@ -164,8 +209,11 @@ show_manager.ren.add(cube_actor_2)
 show_manager.ren.add(panel)
 show_manager.ren.add(text)
 show_manager.ren.add(line_slider)
-show_manager.ren.add(disk_slider)
-
+show_manager.ren.add(ring_slider)
+show_manager.ren.add(listbox)
+show_manager.ren.add(img)
+show_manager.ren.reset_camera()
+show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation

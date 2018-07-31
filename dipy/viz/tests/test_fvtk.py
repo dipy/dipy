@@ -120,7 +120,9 @@ def test_colormaps_matplotlib():
     v = np.random.random(1000)
     # The "Accent" colormap is deprecated as of 0.12:
     with warnings.catch_warnings(record=True) as w:
-        accent_cm = data.get_cmap("Accent")
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        data.get_cmap("Accent")
         # Test that the deprecation warning was raised:
         npt.assert_(len(w) > 0)
 
@@ -143,5 +145,4 @@ def test_colormaps_matplotlib():
 
 
 if __name__ == "__main__":
-
     npt.run_module_suite()

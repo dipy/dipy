@@ -144,8 +144,11 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
-    if bvecs.shape[1] != 3 or not np.all(bvecs_close_to_1[dwi_mask]):
-        raise ValueError("bvecs should be (N, 3), a set of N unit vectors")
+    if bvecs.shape[1] != 3:
+        raise ValueError("bvecs should be (N, 3)")
+    if not np.all(bvecs_close_to_1[dwi_mask]):
+        raise ValueError("The vectors in bvecs should be unit (The tolerance "
+                         "can be modified as an input parameter)")
 
     bvecs = np.where(bvecs_close_to_1[:, None], bvecs, 0)
     bvals = bvals * bvecs_close_to_1

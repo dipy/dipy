@@ -1,11 +1,13 @@
 import operator
 import numpy as np
-
+from time import time
 from abc import ABCMeta, abstractmethod
 
 from dipy.segment.metric import Metric
 from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.metric import MinimumAverageDirectFlipMetric
+from dipy.tracking.streamline import set_number_of_points, nbytes
 
 
 class Identity:
@@ -475,6 +477,9 @@ class QuickBundles(Clustering):
         self.threshold = threshold
         self.max_nb_clusters = max_nb_clusters
 
+        if isinstance(metric, MinimumAverageDirectFlipMetric):
+            raise ValueError("Use AveragePointwiseEuclideanMetric instead")
+
         if isinstance(metric, Metric):
             self.metric = metric
         elif metric == "MDF_12points":
@@ -508,3 +513,250 @@ class QuickBundles(Clustering):
 
         cluster_map.refdata = streamlines
         return cluster_map
+
+
+class QuickBundlesX(Clustering):
+    r""" Clusters streamlines using QuickBundlesX.
+
+    Parameters
+    ----------
+    thresholds : list of float
+        Thresholds to use for each clustering layer. A threshold represents the
+        maximum distance from a cluster for a streamline to be still considered
+        as part of it.
+    metric : str or `Metric` object (optional)
+        The distance metric to use when comparing two streamlines. By default,
+        the Minimum average Direct-Flip (MDF) distance [Garyfallidis12]_ is
+        used and streamlines are automatically resampled so they have 12
+        points.
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
+                        clustering of millions of streamlines in multiple
+                        levels of detail at record execution time. Proceedings
+                        of the, International Society of Magnetic Resonance
+                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    """
+    def __init__(self, thresholds, metric="MDF_12points"):
+        self.thresholds = thresholds
+
+        if isinstance(metric, MinimumAverageDirectFlipMetric):
+            raise ValueError("Use AveragePointwiseEuclideanMetric instead")
+
+        if isinstance(metric, Metric):
+            self.metric = metric
+        elif metric == "MDF_12points":
+            feature = ResampleFeature(nb_points=12)
+            self.metric = AveragePointwiseEuclideanMetric(feature)
+        else:
+            raise ValueError("Unknown metric: {0}".format(metric))
+
+    def cluster(self, streamlines, ordering=None):
+        """ Clusters `streamlines` into bundles.
+
+        Performs QuickbundleX using a predefined metric and thresholds.
+
+        Parameters
+        ----------
+        streamlines : list of 2D arrays
+            Each 2D array represents a sequence of 3D points (points, 3).
+        ordering : iterable of indices
+            Specifies the order in which data points will be clustered.
+
+        Returns
+        -------
+        `TreeClusterMap` object
+            Result of the clustering.
+        """
+        from dipy.segment.clustering_algorithms import quickbundlesx
+        tree = quickbundlesx(streamlines, self.metric,
+                             thresholds=self.thresholds,
+                             ordering=ordering)
+        tree.refdata = streamlines
+        return tree
+
+
+class TreeCluster(ClusterCentroid):
+    def __init__(self, threshold, centroid, indices=None):
+        super(TreeCluster, self).__init__(centroid=centroid, indices=indices)
+        self.threshold = threshold
+        self.parent = None
+        self.children = []
+
+    def add(self, child):
+        child.parent = self
+        self.children.append(child)
+
+    @property
+    def is_leaf(self):
+        return len(self.children) == 0
+
+
+class TreeClusterMap(ClusterMap):
+    def __init__(self, root):
+        self.root = root
+        self.leaves = []
+
+        def _retrieves_leaves(node):
+            if node.is_leaf:
+                self.leaves.append(node)
+
+        self.traverse_postorder(self.root, _retrieves_leaves)
+
+    @property
+    def refdata(self):
+        return self._refdata
+
+    @refdata.setter
+    def refdata(self, value):
+        if value is None:
+            value = Identity()
+
+        self._refdata = value
+
+        def _set_refdata(node):
+            node.refdata = self._refdata
+
+        self.traverse_postorder(self.root, _set_refdata)
+
+    def traverse_postorder(self, node, visit):
+        for child in node.children:
+            self.traverse_postorder(child, visit)
+
+        visit(node)
+
+    def iter_preorder(self, node):
+        parent_stack = []
+        while len(parent_stack) > 0 or node is not None:
+            if node is not None:
+                yield node
+                if len(node.children) > 0:
+                    parent_stack += node.children[1:]
+                    node = node.children[0]
+                else:
+                    node = None
+            else:
+                node = parent_stack.pop()
+
+    def __iter__(self):
+        return self.iter_preorder(self.root)
+
+    def get_clusters(self, wanted_level):
+        clusters = ClusterMapCentroid()
+
+        def _traverse(node, level=0):
+            if level == wanted_level:
+                clusters.add_cluster(node)
+                return
+
+            for child in node.children:
+                _traverse(child, level + 1)
+
+        _traverse(self.root)
+        return clusters
+
+
+def qbx_and_merge(streamlines, thresholds,
+                  nb_pts=20, select_randomly=None, rng=None, verbose=True):
+    """ Run QuickBundlesX and then run again on the centroids of the last layer
+
+    Running again QuickBundles at a layer has the effect of merging
+    some of the clusters that maybe originally devided because of branching.
+    This function help obtain a result at a QuickBundles quality but with
+    QuickBundlesX speed. The merging phase has low cost because it is applied
+    only on the centroids rather than the entire dataset.
+
+    Parameters
+    ----------
+    streamlines : Streamlines
+    thresholds : sequence
+        List of distance thresholds for QuickBundlesX.
+    nb_pts : int
+        Number of points for discretizing each streamline
+    select_randomly : int
+        Randomly select a specific number of streamlines. If None all the
+        streamlines are used.
+    rng : RandomState
+        If None then RandomState is initialized internally.
+    verbose : bool
+        If True print information in stdout.
+
+    Returns
+    -------
+    clusters : obj
+        Contains the clusters of the last layer of QuickBundlesX after merging.
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+
+    .. [Garyfallidis16] Garyfallidis E. et al. QuickBundlesX: Sequential
+                        clustering of millions of streamlines in multiple
+                        levels of detail at record execution time. Proceedings
+                        of the, International Society of Magnetic Resonance
+                        in Medicine (ISMRM). Singapore, 4187, 2016.
+    """
+    if verbose:
+        t = time()
+    len_s = len(streamlines)
+    if select_randomly is None:
+        select_randomly = len_s
+
+    if rng is None:
+        rng = np.random.RandomState()
+    indices = rng.choice(len_s, min(select_randomly, len_s),
+                         replace=False)
+    sample_streamlines = set_number_of_points(streamlines, nb_pts)
+
+    if verbose:
+        print(' Resampled to {} points'.format(nb_pts))
+        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+        print(' Duration of resampling is %0.3f sec.' % (time() - t,))
+        print(' QBX phase starting...')
+
+    qbx = QuickBundlesX(thresholds,
+                        metric=AveragePointwiseEuclideanMetric())
+
+    if verbose:
+        t1 = time()
+    qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
+
+    if verbose:
+        print(' Merging phase starting ...')
+
+    qbx_merge = QuickBundlesX([thresholds[-1]],
+                              metric=AveragePointwiseEuclideanMetric())
+
+    final_level = len(thresholds)
+    len_qbx_fl = len(qbx_clusters.get_clusters(final_level))
+    qbx_ordering_final = rng.choice(len_qbx_fl, len_qbx_fl, replace=False)
+
+    qbx_merged_cluster_map = qbx_merge.cluster(
+        qbx_clusters.get_clusters(final_level).centroids,
+        ordering=qbx_ordering_final).get_clusters(1)
+
+    qbx_cluster_map = qbx_clusters.get_clusters(final_level)
+
+    merged_cluster_map = ClusterMapCentroid()
+    for cluster in qbx_merged_cluster_map:
+        merged_cluster = ClusterCentroid(centroid=cluster.centroid)
+        for i in cluster.indices:
+            merged_cluster.indices.extend(qbx_cluster_map[i].indices)
+        merged_cluster_map.add_cluster(merged_cluster)
+
+    merged_cluster_map.refdata = streamlines
+
+    if verbose:
+        print(' QuickBundlesX time for %d random streamlines'
+              % (select_randomly,))
+
+        print(' Duration %0.3f sec. \n' % (time() - t1,))
+
+    return merged_cluster_map

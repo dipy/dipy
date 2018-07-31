@@ -11,7 +11,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
-                                 target_line_based, _rmi, unique_rows, near_roi,
+                                 target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
                                  get_flexi_tvis_affine, _min_at)
 
@@ -139,7 +139,6 @@ def test_connectivity_matrix():
     assert_true(mapping[4, 3][0] is streamlines[2])
 
     # Test passing affine to connectivity_matrix
-    expected = matrix
     affine = np.diag([-1, -1, -1, 1.])
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, label_volume, affine=affine)
@@ -396,7 +395,7 @@ def test_voxel_ornt():
     assert_array_equal(np.dot(toras_affine, sra_affine), I4)
     expected_sl = (sl[:, [2, 0, 1]] for sl in streamlines)
     test_sl = move_streamlines(streamlines, sra_affine)
-    for ii in xrange(len(streamlines)):
+    for _ in xrange(len(streamlines)):
         assert_array_equal(next(test_sl), next(expected_sl))
 
     lpi_affine = reorder_voxels_affine(ras, lpi, sh, sz)
@@ -404,7 +403,7 @@ def test_voxel_ornt():
     assert_array_equal(np.dot(toras_affine, lpi_affine), I4)
     expected_sl = (box - sl for sl in streamlines)
     test_sl = move_streamlines(streamlines, lpi_affine)
-    for ii in xrange(len(streamlines)):
+    for _ in xrange(len(streamlines)):
         assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
@@ -415,7 +414,7 @@ def test_voxel_ornt():
         sl[:, 1] = box[1] - sl[:, 1]
     expected_sl = (sl[:, [2, 0, 1]] for sl in expected_sl)
     test_sl = move_streamlines(streamlines, srp_affine)
-    for ii in xrange(len(streamlines)):
+    for _ in xrange(len(streamlines)):
         assert_array_equal(next(test_sl), next(expected_sl))
 
 
@@ -449,34 +448,6 @@ def test_streamline_mapping():
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
     assert_equal(mapping, expected)
-
-
-def test_rmi():
-    I1 = _rmi([3, 4], [10, 10])
-    assert_equal(I1, 34)
-    I1 = _rmi([0, 0], [10, 10])
-    assert_equal(I1, 0)
-    assert_raises(ValueError, _rmi, [10, 0], [10, 10])
-
-    try:
-        from numpy import ravel_multi_index
-    except ImportError:
-        raise nose.SkipTest()
-
-    # Dtype of random integers is system dependent
-    A, B, C, D = np.random.randint(0, 1000, size=[4, 100])
-    I1 = _rmi([A, B], dims=[1000, 1000])
-    I2 = ravel_multi_index([A, B], dims=[1000, 1000])
-    assert_array_equal(I1, I2)
-    I1 = _rmi([A, B, C, D], dims=[1000] * 4)
-    I2 = ravel_multi_index([A, B, C, D], dims=[1000] * 4)
-    assert_array_equal(I1, I2)
-    # Check for overflow with small int types
-    indices = np.random.randint(0, 255, size=(2, 100))
-    dims = (1000, 1000)
-    I1 = _rmi(indices, dims=dims)
-    I2 = ravel_multi_index(indices, dims=dims)
-    assert_array_equal(I1, I2)
 
 
 def test_affine_for_trackvis():

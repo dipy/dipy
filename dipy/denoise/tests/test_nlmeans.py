@@ -53,8 +53,8 @@ def test_nlmeans_boundary():
 
     S0[:10, :10, :10] = 300 + noise[:10, :10, :10]
 
-    S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
-                  rician=False)
+    nlmeans(S0, sigma=np.ones((20, 20, 20)) * np.std(noise),
+            rician=False)
 
     print(S0[9, 9, 9])
     print(S0[10, 10, 10])
@@ -89,7 +89,7 @@ def test_nlmeans_dtype():
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
 
-@np.testing.dec.skipif(not have_openmp)
+@np.testing.dec.skipif(not have_openmp, 'OpenMP does not appear to be available')
 def test_nlmeans_4d_3dsigma_and_threads():
     # Input is 4D data and 3D sigma
     data = np.ones((50, 50, 50, 5))
@@ -117,7 +117,7 @@ def test_nlmeans_4d_3dsigma_and_threads():
     t = time()
     new_data3 = nlmeans(data, sigma, mask, num_threads=2)
     duration_2core = time() - t
-    print(duration_all_core)
+    print(duration_2core)
 
     assert_array_almost_equal(new_data, new_data2)
     assert_array_almost_equal(new_data2, new_data3)

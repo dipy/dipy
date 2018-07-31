@@ -17,7 +17,7 @@ def test_dsi_metrics():
 
     dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=21, filter_width=4500)
     rtop_signal_norm = dsmodel.fit(data).rtop_signal()
-    rtop_pdf_norm = dsmodel.fit(data).rtop_pdf()
+    dsmodel.fit(data).rtop_pdf()
     rtop_pdf = dsmodel.fit(data).rtop_pdf(normalized=False)
     assert_almost_equal(rtop_signal_norm, rtop_pdf, 6)
     dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=21, filter_width=4500)
