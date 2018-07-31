@@ -954,7 +954,7 @@ class AffineRegistration(object):
 
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
-                 starting_affine=None):
+                 starting_affine=None, ret_metric=False):
         r''' Starts the optimization process
 
         Parameters
@@ -993,11 +993,20 @@ class AffineRegistration(object):
             If None:
                 Start from identity.
             The default is None.
+        ret_metric : boolean, optional
+            if True, it returns the parameters for measuring the
+            similarity between the images (default 'False').
+            The metric containing optimal parameters and
+            the distance between the images.
 
         Returns
         -------
         affine_map : instance of AffineMap
             the affine resulting affine transformation
+        xopt : similarity metric
+            the metric of optimal parameters
+        fopt : distance
+            the distance between the images
         '''
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
@@ -1074,6 +1083,8 @@ class AffineRegistration(object):
             self.params0 = self.transform.get_identity_parameters()
 
         affine_map.set_affine(self.starting_affine)
+        if ret_metric:
+            return affine_map, opt.xopt, opt.fopt
         return affine_map
 
 
