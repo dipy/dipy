@@ -439,7 +439,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     random_seed : int
-        The seed for the ramdom seed generator.
+        The seed for the random seed generator (numpy.random.seed).
 
     See Also
     --------
@@ -454,27 +454,37 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True, random_seed=1)
-    array([[-0.21737596,  0.00929062, -0.43094817]])
-    >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True, random_seed=1)
-    array([[-0.21737596,  0.00929062, -0.43094817],
-           [ 0.21428948,  0.09422511,  0.19126467],
-           [-0.14269321,  0.35726137,  0.31066143],
-           [-0.04067085, -0.32857841, -0.07165318],
-           [ 0.38592238, -0.34785705, -0.20592633],
-           [-0.48330061, -0.30401038,  0.34485802]])
+    >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
+    ... random_seed=1)
+    array([[-0.0640051 , -0.47407377,  0.04966248]])
+    >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True,
+    ... random_seed=1)
+    array([[-0.0640051 , -0.47407377,  0.04966248],
+           [ 0.0507979 ,  0.20814782, -0.20909526],
+           [ 0.46702984,  0.04723225,  0.47268436],
+           [-0.27800683,  0.37073231, -0.29328084],
+           [ 0.39286015, -0.16802019,  0.32122912],
+           [-0.42369171,  0.27991879, -0.06159077]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=2, seed_count_per_voxel=True, random_seed=1)
-    array([[-0.21737596,  0.00929062, -0.43094817],
-           [-0.00575597,  1.46447015,  2.25477293],
-           [ 0.21428948,  0.09422511,  0.19126467],
-           [ 0.36685734,  0.65627817,  1.65830472]])
+    >>> random_seeds_from_mask(mask, seeds_count=2, seed_count_per_voxel=True,
+    ... random_seed=1)
+    array([[-0.0640051 , -0.47407377,  0.04966248],
+           [-0.27800683,  1.37073231,  1.70671916],
+           [ 0.0507979 ,  0.20814782, -0.20909526],
+           [-0.48962585,  1.00187459,  1.99577329]])
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
 
-    where = np.argwhere(mask)
+    # Randomize the voxels
+    np.random.seed(random_seed)
+    shape = mask.shape
+    mask = mask.flatten()
+    indices = range(len(mask))
+    np.random.shuffle(indices)
+
+    where = [np.unravel_index(i, shape) for i in indices if mask[i] == 1]
     num_voxels = len(where)
 
     if not seed_count_per_voxel:
@@ -488,17 +498,15 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
         for s in where:
             # Set the random seed with the current seed, the current value of
             # seeds per voxel and the global random seed.
-            np.random.seed((s + 1) * i + random_seed)
+            np.random.seed(hash((np.sum(s) + 1) * i + random_seed))
             # Generate random triplet
             grid = np.random.random(3)
             seed = s + grid - .5
             seeds.append(seed)
     seeds = asarray(seeds)
 
-    np.random.seed(random_seed)
     if not seed_count_per_voxel:
-        # Randomize the seeds and select the requested amount
-        np.random.shuffle(seeds)
+        # Select the requested amount
         seeds = seeds[:seeds_count]
 
     # Apply the spatial transform
