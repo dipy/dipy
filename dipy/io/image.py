@@ -27,6 +27,16 @@ def save_nifti(fname, data, affine, hdr=None):
     result_img.to_filename(fname)
 
 
+def load_affine_matrix(fname):
+    """
+        Parameters
+        ---------
+        fname : str
+            The file containing the saved affine matrix.
+    """
+    return np.loadtxt(fname)
+
+
 def save_affine_matrix(fname, affine):
     """
     Parameters
