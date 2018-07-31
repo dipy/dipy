@@ -182,4 +182,8 @@ def test_image_registration():
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     npt.run_module_suite()
+=======
+    run_module_suite()
+>>>>>>> Fixed the PEP8 issues.
