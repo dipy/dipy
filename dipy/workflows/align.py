@@ -25,6 +25,51 @@ from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
     AffineTransform3D
 from dipy.io.image import save_nifti, load_nifti, load_affine_matrix, \
     save_affine_matrix, save_quality_assur_metric
+from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric
+
+
+class UtilMethods(object):
+
+    @staticmethod
+    def check_dimensions(static, moving):
+
+        """
+        Check the dimensions of the input images.
+
+        Parameters
+        ----------
+        static : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        moving: array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization. It is
+            necessary to pre-align the moving image to ensure its domain
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the
+            'starting_affine' matrix
+        """
+        if len(static.shape) != len(moving.shape):
+            raise ValueError('Dimension mismatch: The'
+                             ' input images must have same number of '
+                             'dimensions.')
+
+    @staticmethod
+    def check_metric(metric):
+        """
+        Check the input metric type.
+
+        Parameters
+        ----------
+        metric: string
+            The similarity metric.
+            (default 'MutualInformation' metric)
+
+        """
+        if metric not in ['mi', 'cc']:
+            raise ValueError('Invalid similarity metric: Please provide'
+                             ' a valid metric.')
 
 
 class ResliceFlow(Workflow):
@@ -582,7 +627,7 @@ class ImageRegistrationFlow(Workflow):
             moving = np.array(image.get_data())
             moving_grid2world = image.affine
 
-            self.check_dimensions(static, moving)
+            util = UtilMethods()
 
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
@@ -709,3 +754,78 @@ class ApplyAffineFlow(Workflow):
             transformed = img_transformation.transform(moving_image)
 
             save_nifti(out_file, transformed, affine=static_grid2world)
+
+
+class SynRegistrationFlow(Workflow):
+
+    def run(self, static_image_file, moving_image_file, affine_matrix_file,
+            level_iters=[10, 10, 5], metric="cc", out_dir='',
+            out_warped='warped_moved.nii.gz'):
+
+        """
+        Parameters
+        ----------
+        static_image_file : string
+            Path of the static image file.
+
+        moving_image_file : string
+            Path to the moving image file.
+
+        affine_matrix_file : string
+            The text file containing pre alignment information or the
+            affine matrix.
+
+        level_iters : variable int, optional
+            The number of iterations at each level of the gaussian pyramid.
+            By default, a 3-level scale space with iterations
+            sequence equal to [10, 10, 5] will be used. The 0-th
+            level corresponds to the finest resolution.
+
+        metric : string, optional
+            The metric to be used (Default cc, 'Cross Correlation metric').
+
+        out_dir : string, optional
+            Directory to save the transformed files (default '').
+
+        out_warped : string, optional
+            Name of the warped file. If no name is given then a
+            suffix 'transformed' will be appended to the name of the
+            original input file (default 'warped_moved.nii.gz').
+
+        """
+
+        io = self.get_io_iterator()
+        util = UtilMethods()
+        util.check_metric(metric)
+
+        for static_file, moving_file, in_affine, \
+                warped_file in io:
+
+            print(static_file, moving_file, in_affine, warped_file)
+
+            # Loading the image data from the input files into object.
+            static_img_data = nib.load(static_file)
+            static_image = static_img_data.get_data()
+            static_grid2world = static_img_data.affine
+
+            moving_img_data = nib.load(moving_file)
+            moving_image = moving_img_data.get_data()
+            moving_grid2world = moving_img_data.affine
+
+            # Sanity check for the input image dimensions.
+            util.check_dimensions(static_image, moving_image)
+
+            # Loading the affine matrix.
+            affine_matrix = load_affine_matrix(in_affine)
+
+            metric = CCMetric(3)
+            sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+
+            mapping = sdr.optimize(static_image, moving_image,
+                                   static_grid2world, moving_grid2world,
+                                   affine_matrix)
+
+            warped_moving = mapping.transform(moving_image)
+
+            # Saving the warped moving file and the alignment matrix.
+            save_nifti(warped_file, warped_moving, static_grid2world)
