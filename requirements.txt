@@ -2,5 +2,5 @@
 cython>=0.25.1
 numpy>=1.7.1
 scipy>=0.9
-nibabel>=2.1.0
+nibabel>=2.3.0
 h5py>=2.4.0
