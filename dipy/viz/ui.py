@@ -1963,7 +1963,6 @@ class LineSlider2D(UI):
         """
         self.handle.color = self.default_color
         i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
 
 
 class LineDoubleSlider2D(UI):
@@ -2354,7 +2353,6 @@ class LineDoubleSlider2D(UI):
         elif vtkactor == self.handles[1].actors[0]:
             self.handles[1].color = self.default_color
         i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
 
 
 class RingSlider2D(UI):
@@ -2616,7 +2614,6 @@ class RingSlider2D(UI):
         """
         self.handle.color = self.default_color
         i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
 
 
 class RangeSlider(UI):
