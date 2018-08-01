@@ -6,15 +6,11 @@ import dipy.reconst.noddi_speed as noddixspeed
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from scipy import special
+# from numpy.linalg.linalg import LinAlgError
 
-"""
-gamma: gyromagnetic ratio
-D_intra= intrinsic free diffusivity
-D_iso= isotropic diffusivity
-"""
-gamma = 2.675987 * 10 ** 8
-D_intra = 1.7 * 10 ** 3  # (mircometer^2/sec for in vivo human)
-D_iso = 3 * 10 ** 3
+gamma = 2.675987 * 10 ** 8  # gyromagnetic ratio for Hydrogen
+D_intra = 1.7 * 10 ** 3  # intrinsic free diffusivity
+D_iso = 3 * 10 ** 3  # isotropic diffusivity
 
 
 class NODDIxModel(model):
@@ -58,12 +54,12 @@ class NODDIxModel(model):
 
     Notes
     -----
-    The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
+    The implementation of NODDIx may require CVXPY (http://www.cvxpy.org/).
     """
 
     def __init__(self, gtab, params, fit_method='MIX'):
         # The maximum number of generations, genetic algorithm 1000 default, 1
-        self.maxiter = 100
+        self.maxiter = 80
         # Tolerance for termination, nonlinear least square 1e-8 default, 1e-3
         self.xtol = 1e-8
         self.gtab = gtab
@@ -71,14 +67,14 @@ class NODDIxModel(model):
         self.small_delta = gtab.small_delta
         self.gamma = gamma
         self.G = params[:, 3] / 10 ** 6  # gradient strength (Tesla/micrometer)
-        self.G2 = self.G ** 2
+#        self.G2 = self.G ** 2
         self.yhat_ball = D_iso * self.gtab.bvals
         self.L = self.gtab.bvals * D_intra
         self.phi_inv = np.zeros((4, 4))
-        self.yhat_zeppelin = np.zeros(self.small_delta.shape[0])
-        self.yhat_cylinder = np.zeros(self.small_delta.shape[0])
+        self.yhat_zeppelin = np.zeros(self.gtab.bvals.shape[0])
+        self.yhat_cylinder = np.zeros(self.gtab.bvals.shape[0])
         self.yhat_dot = np.zeros(self.gtab.bvals.shape)
-        self.exp_phi1 = np.zeros((self.small_delta.shape[0], 5))
+        self.exp_phi1 = np.zeros((self.gtab.bvals.shape[0], 5))
         self.exp_phi1[:, 4] = np.exp(-self.yhat_ball)
 
     @multi_voxel_fit
@@ -95,10 +91,7 @@ class NODDIxModel(model):
         diff_res = differential_evolution(self.stoc_search_cost, bounds,
                                           maxiter=self.maxiter, args=(data,),
                                           tol=0.001, seed=200,
-                                          mutation=(0.0, 1.05),
-                                          disp=True, polish=False, popsize=14,
-                                          init='latinhypercube',
-                                          strategy='best1bin')
+                                          disp=True, polish=True, popsize=14)
 
         # Step 1: store the results of the differential evolution in x
         x = diff_res.x
@@ -139,6 +132,12 @@ class NODDIxModel(model):
         To make the cost function for differential evolution algorithm
         """
         #  moore-penrose inverse
+#        try:
+#            phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
+#        except LinAlgError:
+#            from pdb import set_trace
+#            set_trace()
+#            pass
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
         #  sigma
         f = np.dot(phi_mp, signal)
