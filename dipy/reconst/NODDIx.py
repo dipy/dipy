@@ -92,7 +92,7 @@ class NODDIxModel(model):
                                           tol=0.001, seed=200,
                                           mutation=(0, 1.05),
                                           strategy='best1bin',
-                                          disp=True, polish=True, popsize=14)
+                                          disp=False, polish=True, popsize=14)
 
         # Step 1: store the results of the differential evolution in x
         x = diff_res.x
