@@ -394,8 +394,8 @@ class ImageRegistrationFlow(Workflow):
                                                    affreg, params0)
 
         else:
-            _, affine = self.center_of_mass(static, static_grid2world, moving
-                                            , moving_grid2world)
+            _, affine = self.center_of_mass(static, static_grid2world, moving,
+                                            moving_grid2world)
 
         transform = RigidTransform3D()
         return self.perform_transformation(static, static_grid2world,
