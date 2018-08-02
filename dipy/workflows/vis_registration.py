@@ -260,6 +260,12 @@ class VisualizeRegisteredImage(Workflow):
             raise ValueError('Dimension mismatch: The input images '
                              'must have same number of dimensions.')
 
+    @staticmethod
+    def check_slice_type(slice_type):
+        if slice_type not in ['axial', 'sagittal', 'coronal']:
+            raise ValueError('Unrecognized slice type {0}. Valid options are '
+                             'axial, sagittal, coronal'.format(slice_type))
+
     def run(self, static_img_file, moving_img_file, affine_matrix_file,
             show_mosaic=False, anim_slice_type=None, out_dir='',
             mosaic_file='mosaic.png', animate_file='animation.gif'):
@@ -321,6 +327,7 @@ class VisualizeRegisteredImage(Workflow):
                                    mosaic_file)
 
             if anim_slice_type is not None:
+                self.check_slice_type(anim_slice_type)
                 self.animate_overlap(static, moved_image, anim_slice_type,
                                      animate_file, affine_matrix)
 
