@@ -759,8 +759,12 @@ class ApplyAffineFlow(Workflow):
 class SynRegistrationFlow(Workflow):
 
     def run(self, static_image_file, moving_image_file, affine_matrix_file,
-            level_iters=[10, 10, 5], metric="cc", out_dir='',
-            out_warped='warped_moved.nii.gz'):
+            inv_static=False,
+            level_iters=[10, 10, 5], metric="cc", step_length=0.25,
+            ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
+            inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
+            out_inv_static='inc_static.nii.gz',
+            out_field='displacefield.txt'):
 
         """
         Parameters
@@ -775,6 +779,9 @@ class SynRegistrationFlow(Workflow):
             The text file containing pre alignment information or the
             affine matrix.
 
+        inv_static : boolean, optional
+            Apply the inverse mapping to the static image (default 'False').
+
         level_iters : variable int, optional
             The number of iterations at each level of the gaussian pyramid.
             By default, a 3-level scale space with iterations
@@ -784,6 +791,27 @@ class SynRegistrationFlow(Workflow):
         metric : string, optional
             The metric to be used (Default cc, 'Cross Correlation metric').
 
+        step_length : float
+            the length of the maximum displacement vector of the update
+            displacement field at each iteration.
+
+        ss_sigma_factor : float
+            parameter of the scale-space smoothing kernel. For example, the
+            std. dev. of the kernel will be factor*(2^i) in the isotropic case
+            where i = 0, 1, ..., n_scales is the scale.
+
+        opt_tol : float
+            the optimization will stop when the estimated derivative of the
+            energy profile w.r.t. time falls below this threshold.
+
+        inv_iter : int
+            the number of iterations to be performed by the displacement field
+            inversion algorithm.
+
+        inv_tol : float
+            the displacement field inversion algorithm will stop iterating
+            when the inversion error falls below this threshold.
+
         out_dir : string, optional
             Directory to save the transformed files (default '').
 
@@ -792,6 +820,13 @@ class SynRegistrationFlow(Workflow):
             suffix 'transformed' will be appended to the name of the
             original input file (default 'warped_moved.nii.gz').
 
+        out_inv_static : string, optional
+            Name of the file to save the static image after applying the
+            inverse mapping (default 'inv_static.nii.gz').
+
+        out_field : string, optional
+            Name of the file to save the diffeomorphic field.
+
         """
 
         io = self.get_io_iterator()
@@ -799,7 +834,7 @@ class SynRegistrationFlow(Workflow):
         util.check_metric(metric)
 
         for static_file, moving_file, in_affine, \
-                warped_file in io:
+                warped_file, inv_static_file, displ_file in io:
 
             print(static_file, moving_file, in_affine, warped_file)
 
