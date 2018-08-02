@@ -262,9 +262,8 @@ class ImageRegistrationFlow(Workflow):
                                                    affreg, params0)
 
         else:
-            _, affine, xopt, fopt = self.translate(static, static_grid2world,
-                                                   moving, moving_grid2world,
-                                                   affreg, params0)
+            _, affine = self.center_of_mass(static, static_grid2world, moving
+                                            , moving_grid2world)
 
         transform = RigidTransform3D()
         return self.perform_transformation(static, static_grid2world,
@@ -454,6 +453,8 @@ class ImageRegistrationFlow(Workflow):
             moving_grid2world = image.affine
 
             self.check_dimensions(static, moving)
+
+            print(progressive)
 
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
