@@ -234,10 +234,10 @@ class RecoBundlesFlow(Workflow):
 
             if refine:
                 x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
-                bounds = [(-30, 30), (-30, 30), (-30, 30),
-                          (-45, 45), (-45, 45), (-45, 45),
-                          (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
-                          (-10, 10), (-10, 10), (-10, 10)]
+                affine_bounds = [(-30, 30), (-30, 30), (-30, 30),
+                                 (-45, 45), (-45, 45), (-45, 45),
+                                 (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
+                                 (-10, 10), (-10, 10), (-10, 10)]
 
                 recognized_bundle, labels = \
                     rb.refine(
@@ -251,7 +251,7 @@ class RecoBundlesFlow(Workflow):
                         slr=r_slr,
                         slr_metric=slr_metric,
                         slr_x0=x0,
-                        slr_bounds=bounds,
+                        slr_bounds=affine_bounds,
                         slr_select=slr_select,
                         slr_method='L-BFGS-B')
 
