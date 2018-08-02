@@ -6,7 +6,7 @@ import numpy as np
 from os.path import join as pjoin
 import numpy.testing as npt
 
-from dipy.data import read_viz_icons, fetch_viz_icons
+from dipy.data import read_viz_icons, fetch_viz_icons, get_sphere
 from dipy.viz import ui
 from dipy.viz import window, actor
 from dipy.data import DATA_DIR
@@ -633,14 +633,23 @@ def test_timer():
     """ Testing add a timer and exit window and app from inside timer.
     """
 
-    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [200, 0, 0, 100]])
-    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.99]])
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [300, 0, 0, 100]])
+    xyzr2 = np.array([[0, 200, 0, 30], [100, 200, 0, 50], [300, 200, 0, 100]])
+    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.45]])
 
     renderer = window.Renderer()
     global sphere_actor, tb, cnt
     sphere_actor = actor.sphere(centers=xyzr[:, :3], colors=colors[:],
                                 radii=xyzr[:, 3])
+
+    sphere = get_sphere('repulsion724')
+
+    sphere_actor2 = actor.sphere(centers=xyzr2[:, :3], colors=colors[:],
+                                 radii=xyzr2[:, 3], vertices=sphere.vertices,
+                                 faces=sphere.faces)
+
     renderer.add(sphere_actor)
+    renderer.add(sphere_actor2)
 
     tb = ui.TextBlock2D()
 
@@ -656,7 +665,7 @@ def test_timer():
         global cnt, sphere_actor, showm, tb
 
         cnt += 1
-        tb.message = "Let's count up to 10 and exit :" + str(cnt)
+        tb.message = "Let's count to 10 and exit :" + str(cnt)
         showm.render()
         if cnt > 9:
             showm.exit()

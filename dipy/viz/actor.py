@@ -1340,7 +1340,8 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     return actor
 
 
-def sphere(centers, colors, radii=1., theta=16, phi=16, vertices=None, faces=None):
+def sphere(centers, colors, radii=1., theta=16, phi=16,
+           vertices=None, faces=None):
     """ Visualize one or many spheres with different colors and radii
 
     Parameters
@@ -1351,8 +1352,10 @@ def sphere(centers, colors, radii=1., theta=16, phi=16, vertices=None, faces=Non
     radii : float or ndarray, shape (N,)
     theta : int
     phi : int
-    vertices : vertices array
-    faces : faces array
+    vertices : ndarray, shape (N, 3)
+    faces : ndarray, shape (M, 3)
+        If faces is None then a sphere is created based on theta and phi angles
+        If not then a sphere is created with the provided vertices and faces.
 
     Returns
     -------
@@ -1381,29 +1384,36 @@ def sphere(centers, colors, radii=1., theta=16, phi=16, vertices=None, faces=Non
     radii_fa = numpy_support.numpy_to_vtk(radii.astype('f8'), deep=0)
     radii_fa.SetName('rad')
 
-    polyData = vtk.vtkPolyData()
+    polyData_centers = vtk.vtkPolyData()
+    polyData_sphere = vtk.vtkPolyData()
+
     if faces is None:
         src = vtk.vtkSphereSource()
-        src.SetRadius(0.5)
+        src.SetRadius(1)
         src.SetThetaResolution(theta)
         src.SetPhiResolution(phi)
 
-        polyData.SetPoints(pts)
-        polyData.GetPointData().AddArray(radii_fa)
-        polyData.GetPointData().SetActiveScalars('rad')
-        polyData.GetPointData().AddArray(cols)
-
     else:
-        for object_ in range(len(sphere_obj)):
-            ut_vtk.set_polydata_vertices(polyData, vertices)
-            ut_vtk.set_polydata_triangles(polyData, faces)
+
+        ut_vtk.set_polydata_vertices(polyData_sphere, vertices)
+        ut_vtk.set_polydata_triangles(polyData_sphere, faces)
+
+    polyData_centers.SetPoints(pts)
+    polyData_centers.GetPointData().AddArray(radii_fa)
+    polyData_centers.GetPointData().SetActiveScalars('rad')
+    polyData_centers.GetPointData().AddArray(cols)
 
     glyph = vtk.vtkGlyph3D()
-    glyph.SetSourceConnection(src.GetOutputPort())
-    if major_version <= 5:
-        glyph.SetInput(polyData)
+
+    if faces is None:
+        glyph.SetSourceConnection(src.GetOutputPort())
     else:
-        glyph.SetInputData(polyData)
+        glyph.SetSourceData(polyData_sphere)
+
+    if major_version <= 5:
+        glyph.SetInput(polyData_centers)
+    else:
+        glyph.SetInputData(polyData_centers)
     glyph.Update()
 
     mapper = vtk.vtkPolyDataMapper()
