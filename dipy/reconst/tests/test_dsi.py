@@ -16,6 +16,7 @@ from numpy.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 
+from dipy.testing import setup_test
 
 def test_dsi():
     # load symmetric 724 sphere

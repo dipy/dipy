@@ -35,7 +35,7 @@ matrix:
     - python: 2.7
       env:
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.1.0 h5py==2.4.0"
+        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.3.0 h5py==2.4.0"
     - python: 2.7
       env:
         - DEPENDS="$DEPENDS scikit_learn"
@@ -72,6 +72,10 @@ matrix:
         - DEPENDS=""
     - python: 3.5
       # Check against latest available pre-release version of all packages
+      env:
+        - USE_PRE=1
+  allow_failures:
+    - python: 3.5
       env:
         - USE_PRE=1
 
