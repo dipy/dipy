@@ -520,7 +520,7 @@ class ImageRegistrationFlow(Workflow):
             save_affine_matrix(affine_matrix_file, affine)
 
 
-class ApplyTransformFlow(Workflow):
+class ApplyAffineFlow(Workflow):
 
     def run(self, static_image_file, moving_image_files, affine_matrix_file,
             out_dir='', out_file='transformed.nii.gz'):
