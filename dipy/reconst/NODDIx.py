@@ -59,7 +59,7 @@ class NODDIxModel(model):
 
     def __init__(self, gtab, params, fit_method='MIX'):
         # The maximum number of generations, genetic algorithm 1000 default, 1
-        self.maxiter = 80
+        self.maxiter = 100
         # Tolerance for termination, nonlinear least square 1e-8 default, 1e-3
         self.xtol = 1e-8
         self.gtab = gtab
@@ -67,7 +67,6 @@ class NODDIxModel(model):
         self.small_delta = gtab.small_delta
         self.gamma = gamma
         self.G = params[:, 3] / 10 ** 6  # gradient strength (Tesla/micrometer)
-#        self.G2 = self.G ** 2
         self.yhat_ball = D_iso * self.gtab.bvals
         self.L = self.gtab.bvals * D_intra
         self.phi_inv = np.zeros((4, 4))
@@ -91,6 +90,8 @@ class NODDIxModel(model):
         diff_res = differential_evolution(self.stoc_search_cost, bounds,
                                           maxiter=self.maxiter, args=(data,),
                                           tol=0.001, seed=200,
+                                          mutation=(0, 1.05),
+                                          strategy='best1bin',
                                           disp=True, polish=True, popsize=14)
 
         # Step 1: store the results of the differential evolution in x
@@ -104,8 +105,7 @@ class NODDIxModel(model):
         bounds = ([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
                    0.01], [0.9, 0.9, 0.9, 0.9, 0.9, 0.99, np.pi, np.pi, 0.99,
                            np.pi, np.pi])
-        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
-                            xtol=self.xtol, args=(data,))
+        res = least_squares(self.nlls_cost, x_f, xtol=self.xtol, args=(data,))
         result = res.x
         return result
 
@@ -500,6 +500,7 @@ class NODDIxModel(model):
         # Legendre Integral at a Point : Cython Code
         noddixspeed.synthMeasSHFor(cosTheta, shMatrix)
         E = np.sum(lgi * coeffMatrix * shMatrix, 1)
+        E[np.isnan(E)] = 0.1
         E[E <= 0] = min(E[E > 0]) * 0.1
         E = 0.5 * E * ePerp
         return E

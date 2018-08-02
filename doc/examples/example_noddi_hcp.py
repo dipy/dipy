@@ -4,29 +4,34 @@ import nibabel as nib
 from dipy.data import get_data
 from dipy.core.gradients import gradient_table
 import dipy.reconst.NODDIx as noddix
-from scipy.linalg import get_blas_funcs
 import matplotlib.pyplot as plt
 from dipy.data import get_sphere
 from dipy.io import read_bvals_bvecs
 sphere = get_sphere('repulsion724')
-gemm = get_blas_funcs("gemm")
 
 fname, fscanner = get_data('small_NODDIx_data')
 params = np.loadtxt(fscanner)
 
 # getting the gtab, bvals and bvecs
-fbval = 'C:/Users/Shreyas/Desktop/dwi_data_HCP/dwi/sub-158035_dwi.bvals'
-fbvec = 'C:/Users/Shreyas/Desktop/dwi_data_HCP/dwi/sub-158035_dwi.bvecs'
+fbval = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.bvals'
+fbvec = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.bvecs'
 
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-bvals = bvals
 
-noddi_data = 'C:/Users/Shreyas/Desktop/dwi_data_HCP/dwi/sub-158035_dwi.nii.gz'
+for i in range(bvals.shape[0]):
+    if bvals[i] > 5:
+        bvals[i] = round(bvals[i] / 500.0) * 500.0
+    else:
+        bvals[i] = bvals[i] - 5
+        
+bvals = bvals/ 10**6
+
+noddi_data = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.nii.gz'
 img = nib.load(noddi_data)
 data = img.get_data()
 
 noddi_mask = \
-    'C:/Users/Shreyas/Desktop/dwi_data_HCP/dwi/sub-158035_dwi_brainmask.nii.gz'
+    '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi_brainmask.nii.gz'
 img_mask = nib.load(noddi_mask)
 mask = img_mask.get_data()
 
@@ -46,10 +51,16 @@ big_delta = params[:, 4]
 small_delta = params[:, 5]
 gamma = 2.675987 * 10 ** 8
 G = params[:, 3] / 10 ** 6
-bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
+
 gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
-                      small_delta=small_delta, mutation=(0, 1.05),
-                      b0_threshold=0, atol=1e-2)
+                      small_delta=small_delta, b0_threshold=0, atol=1e-2)
+
+# Normalizing the data
+S0s = data[..., gtab.b0s_mask]
+S0avg = np.mean(S0s, axis=3)
+datan = data/S0avg[..., None]
+datan[np.isnan(datan)] = 0
+datan[np.isinf(datan)] = 0
 
 noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
-NODDIx_fit = noddix_model.fit(data, mask)
+NODDIx_fit = noddix_model.fit(datan[:, :, 74, :], mask[:, :, 74])
