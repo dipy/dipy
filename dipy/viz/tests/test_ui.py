@@ -615,7 +615,6 @@ def test_ui_checkbox(interactive=False):
     assert len(selected_options) == len(expected)
     assert_arrays_equal(selected_options, expected)
     del show_manager
-    del checkbox_test
 
     if interactive:
         checkbox_test = ui.Checkbox(labels=["option 1", "option 2\nOption 2",
@@ -685,7 +684,6 @@ def test_ui_radio_button(interactive=False):
     assert len(selected_option) == len(expected)
     assert_arrays_equal(selected_option, expected)
     del show_manager
-    del radio_button_test
 
     if interactive:
         radio_button_test = ui.RadioButton(
