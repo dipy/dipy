@@ -13,8 +13,8 @@ fname, fscanner = get_data('small_NODDIx_data')
 params = np.loadtxt(fscanner)
 
 # getting the gtab, bvals and bvecs
-fbval = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.bvals'
-fbvec = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.bvecs'
+fbval = '/u/shfadn/Desktop/sub-158035_dwi.bvals'
+fbvec = '/u/shfadn/Desktop/sub-158035_dwi.bvecs'
 
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
@@ -26,15 +26,15 @@ for i in range(bvals.shape[0]):
         
 bvals = bvals/ 10**6
 
-noddi_data = '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi.nii.gz'
+noddi_data = '/u/shfadn/Desktop/sub-158035_dwi.nii.gz'
 img = nib.load(noddi_data)
 data = img.get_data()
 
-noddi_mask = \
-    '/home/shreyasfadnavis/Desktop/dwi/sub-158035_dwi_brainmask.nii.gz'
+noddi_mask = '/u/shfadn/Desktop/sub-158035_dwi_brainmask.nii.gz'
 img_mask = nib.load(noddi_mask)
 mask = img_mask.get_data()
 
+print("Data Completely Loaded!")
 
 def show_data(data):
     axial_middle = data.shape[2] // 2
@@ -58,9 +58,11 @@ gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
 # Normalizing the data
 S0s = data[..., gtab.b0s_mask]
 S0avg = np.mean(S0s, axis=3)
-datan = data/S0avg[..., None]
+datan = data / S0avg[..., None]
 datan[np.isnan(datan)] = 0
 datan[np.isinf(datan)] = 0
 
 noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
+print("NODDIx Model Completely Constructed!")
+print("Started Running for One Slice....")
 NODDIx_fit = noddix_model.fit(datan[:, :, 74, :], mask[:, :, 74])
