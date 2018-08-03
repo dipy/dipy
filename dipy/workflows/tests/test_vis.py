@@ -41,7 +41,7 @@ def test_mosaic():
                                      out_dir=temp_out_dir,
                                      out_moved=out_moved,
                                      out_affine=out_affine,
-                                     save_metric=True,
+                                     save_metric=False,
                                      level_iters=[100, 10, 1],
                                      out_quality='affine_q.txt')
 
@@ -54,9 +54,9 @@ def test_mosaic():
 
         x, y, z = overlapped.shape[:3]
 
-        assert overlapped[x//2, :, :, 2] is 0
-        assert overlapped[:, y//2, :, 2] is 0
-        assert overlapped[:, :, z//2, 2] is 0
+        assert overlapped[x//2, :, :, 2] == 0
+        assert overlapped[:, y//2, :, 2] == 0
+        assert overlapped[:, :, z//2, 2] == 0
 
 if __name__ == "__main__":
     run_module_suite()

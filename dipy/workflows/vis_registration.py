@@ -139,9 +139,6 @@ class VisualizeRegisteredImage(Workflow):
         overlay, value_range = self.process_image_data(static_img,
                                                        moved_img)
 
-        print(overlay.shape)
-        print(overlay[50,50,50,:])
-
         if fname is None:
             return overlay
 
