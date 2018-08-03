@@ -66,3 +66,28 @@ noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
 print("NODDIx Model Completely Constructed!")
 print("Started Running for One Slice....")
 NODDIx_fit = noddix_model.fit(datan[:, :, 74, :], mask[:, :, 74])
+
+affine = img.affine.copy()
+nib.save(nib.Nifti1Image(NODDIx_fit[0], affine),
+         'f11_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[1], affine),
+         'f21_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[2], affine),
+         'f12_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[3], affine),
+         'f22_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[4], affine),
+         'f3_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[5], affine),
+         'OD1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[6], affine),
+         'theta1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[7], affine),
+         'phi1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[8], affine),
+         'OD2_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[9], affine),
+         'theta2_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[10], affine),
+         'phi2_HCP_NODDIx.nii.gz')
+
