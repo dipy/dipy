@@ -97,7 +97,7 @@ class VisualizeRegisteredImage(Workflow):
         The numpy array with scaled down range of color values.
         """
 
-        # Interpolating to range 0-15 for reducing the color values.
+        # Interpolating to range 0-14 for reducing the color values.
         img[..., 0] = np.interp(img[..., 0], (img[..., 0].min(),
                                               img[..., 0].max()), (0, 14))
         img[..., 1] = np.interp(img[..., 1], (img[..., 1].min(),
@@ -138,6 +138,13 @@ class VisualizeRegisteredImage(Workflow):
 
         overlay, value_range = self.process_image_data(static_img,
                                                        moved_img)
+
+        print(overlay.shape)
+        print(overlay[50,50,50,:])
+
+        if fname is None:
+            return overlay
+
         renderer = window.Renderer()
         renderer.background((0.5, 0.5, 0.5))
 
