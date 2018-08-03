@@ -84,9 +84,10 @@ label value ``2`` in the labels image.
 """
 
 from dipy.tracking import utils
+import numpy as np
 
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=np.eye(4))
 
 """
 Finally, we can bring it all together using ``LocalTracking``. We will then
@@ -102,7 +103,8 @@ from dipy.tracking.streamline import Streamlines
 interactive = False
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
+                                      affine=np.eye(4), step_size=.5)
 
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
@@ -193,8 +195,9 @@ Next we can pass this direction getter, along with the ``classifier`` and
 callosum.
 """
 
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine,
-                            step_size=.5, max_cross=1)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds,
+                                      affine=np.eye(4), step_size=.5,
+                                      max_cross=1)
 
 # Generate streamlines object.
 streamlines = Streamlines(streamlines_generator)
