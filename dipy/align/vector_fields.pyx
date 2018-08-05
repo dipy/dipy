@@ -9,6 +9,8 @@ cimport cython
 from .fused_types cimport floating, number
 
 from cython.parallel import prange
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -3154,8 +3156,9 @@ cdef void _gradient_3d_fun(floating[:, :, :] img, double[:, :] img_world2grid,
 
 
 cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
-                 double[:] img_spacing, double[:, :] out_grid2world,
-                 floating[:, :, :, :] out, int[:, :, :] inside) nogil:
+                       double[:] img_spacing, double[:, :] out_grid2world,
+                       floating[:, :, :, :] out, int[:, :, :] inside,
+                       int num_threads=0) nogil:
     r""" Gradient of a 3D image in physical space coordinates
 
     Each grid cell (i, j, k) in the sampling grid (determined by
@@ -3189,10 +3192,24 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
     inside : array, shape (S', R', C')
         the buffer in which to store the flags indicating whether the sample
         point lies inside (=1) or outside (=0) the image grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
     """
     cdef:
         int nslices = out.shape[0], k
         double h[3]
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads != 0:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     h[0] = 0.5 * img_spacing[0]
     h[1] = 0.5 * img_spacing[1]
@@ -3200,6 +3217,9 @@ cdef void _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
     for k in prange(nslices):
         _gradient_3d_fun(img, img_world2grid, img_spacing, out_grid2world,
                          out, inside, k, h)
+
+    if have_openmp and num_threads != 0:
+        openmp.omp_set_num_threads(all_cores)
 
 
 cdef void _sparse_gradient_3d(floating[:, :, :] img,
@@ -3438,7 +3458,7 @@ cdef void _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
 
 
 def gradient(img, img_world2grid, img_spacing, out_shape,
-             out_grid2world):
+             out_grid2world, num_threads=None):
     r""" Gradient of an image in physical space
 
     Parameters
@@ -3454,6 +3474,9 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         the number of (slices), rows and columns of the sampling grid
     out_grid2world : array, shape (dim+1, dim+1)
         the grid-to-space transform associated to the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -3482,8 +3505,12 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         _gradient_2d[cython.double](img, img_world2grid, img_spacing,
                                     out_grid2world, out, inside)
     elif dim == 3:
-        _gradient_3d[cython.double](img, img_world2grid, img_spacing,
-                                    out_grid2world, out, inside)
+        if num_threads is None:
+            _gradient_3d[cython.double](img, img_world2grid, img_spacing,
+                                        out_grid2world, out, inside)
+        else:
+            _gradient_3d[cython.double](img, img_world2grid, img_spacing,
+                                        out_grid2world, out, inside, num_threads)
     else:
         raise ValueError('Undefined gradient for image dimension %d' % (dim,))
     return np.asarray(out), np.asarray(inside)
