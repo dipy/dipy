@@ -95,46 +95,33 @@ class SlrWithQbxFlow(Workflow):
         moving_files : string
         x0 : string
             rigid, similarity or affine transformation model (default affine)
-
         rm_small_clusters : int
             Remove clusters that have less than `rm_small_clusters`
             (default 50)
-
         qbx_thr : variable int
             Thresholds for QuickBundlesX (default 15)
-
         num_threads : int
             Number of threads. If None (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
-
         greater_than : int, optional
             Keep streamlines that have length greater than
             this value (default 50)
-
         less_than : int, optional
             Keep streamlines have length less than this value (default 250)
-
         np_pts : int, optional
             Number of points for discretizing each streamline (default 20)
-
         progressive : boolean, optional
             (default True)
-
         out_dir : string, optional
             Output directory (default input file directory)
-
         out_moved : string, optional
             Filename of moved tractogram (default 'moved.trk')
-
         out_affine : string, optional
             Filename of affine for SLR transformation (default 'affine.txt')
-
         out_stat_centroids : string, optional
             Filename of static centroids (default 'static_centroids.trk')
-
         out_moving_centroids : string, optional
             Filename of moving centroids (default 'moved_centroids.trk')
-
         out_moved_centroids : string, optional
             Filename of moved centroids (default 'moved_centroids.trk')
 

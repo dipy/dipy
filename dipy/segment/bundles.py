@@ -24,6 +24,19 @@ def check_range(streamline, lt, gt):
 
 
 def bundle_adjacency(dtracks0, dtracks1, threshold):
+    """ Find bundle adjacency between two given tracks/bundles
+
+    Parameters
+        ----------
+        dtracks0 : Streamlines
+        dtracks1 : Streamlines
+        threshold: float
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
     d01 = bundles_distances_mdf(dtracks0, dtracks1)
 
     pair12 = []
@@ -275,7 +288,11 @@ class RecoBundles(object):
                slr_method='L-BFGS-B',
                pruning_thr=6,
                pruning_distance='mdf'):
-        """ Refine recognize the model_bundle in self.streamlines
+        """ Refine and recognize the model_bundle in self.streamlines
+        This method expects once pruned streamlines as input. It refines the
+        first ouput of recobundle by applying second local slr (optional),
+        and second pruning. This method is useful when we are dealing with
+        noisy data or when we want to extract small tracks from tractograms.
 
         Parameters
         ----------
@@ -333,7 +350,9 @@ class RecoBundles(object):
             reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
 
-        print("2nd local Slr")
+        if self.verbose:
+            print("2nd local Slr")
+
         if slr:
             transf_streamlines, slr2_bmd = self._register_neighb_to_model(
                 model_bundle,
@@ -345,7 +364,9 @@ class RecoBundles(object):
                 select_target=slr_select[1],
                 method=slr_method)
 
-        print("pruning after 2nd local Slr")
+        if self.verbose:
+            print("pruning after 2nd local Slr")
+
         pruned_streamlines, labels = self._prune_what_not_in_model(
             model_centroids,
             transf_streamlines,
@@ -360,7 +381,8 @@ class RecoBundles(object):
         return pruned_streamlines, self.filtered_indices[labels]
 
     def evaluate_results(self, model_bundle, pruned_streamlines, slr_select):
-        """ Recognize the model_bundle in self.streamlines
+        """ Comapare the similiarity between two given bundles, model bundle,
+        and extracted bundle.
 
         Parameters
         ----------
@@ -403,7 +425,7 @@ class RecoBundles(object):
         x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
         bmd_value = BMD.distance(x0.tolist())
 
-        return ba_value, bmd_value,
+        return ba_value, bmd_value
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
                               select_randomly=500000):

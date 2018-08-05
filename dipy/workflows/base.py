@@ -160,15 +160,13 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             else:
                 self.add_argument(*_args, **_kwargs)
 
-        print('test')
-
         return self.add_sub_flow_args(workflow.get_sub_runs())
 
     def add_sub_flow_args(self, sub_flows):
         """ Take an array of workflow objects and use introspection to extract
         the parameters, types and docstrings of their run method. Only the
-        optional input parameters are extracted for these as they are treated as
-        sub workflows.
+        optional input parameters are extracted for these as they are treated
+        as sub workflows.
 
         Parameters
         -----------

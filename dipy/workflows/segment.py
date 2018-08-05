@@ -164,9 +164,7 @@ class RecoBundlesFlow(Workflow):
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
          bundles using local and global streamline-based registration and
          clustering, Neuroimage, 2017.
-
         """
-
         slr = not no_slr
         r_slr = not no_r_slr
 
