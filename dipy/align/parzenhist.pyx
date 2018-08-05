@@ -571,12 +571,12 @@ cdef inline double _cubic_spline_derivative(double x) nogil:
     return 0.0
 
 
-cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
+cdef void _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                             int[:, :] smask, int[:, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
                             int nbins, int padding, double[:, :] joint,
-                            double[:] smarginal, double[:] mmarginal):
+                            double[:] smarginal, double[:] mmarginal) nogil:
     r''' Joint Probability Density Function of intensities of two 2D images
 
     Parameters
@@ -622,49 +622,48 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         double val, spline_arg, sum
 
     joint[...] = 0
-    sum = 0
+    smarginal[:] = 0
     valid_points = 0
-    with nogil:
-        smarginal[:] = 0
-        for i in range(nrows):
-            for j in range(ncols):
-                if smask is not None and smask[i, j] == 0:
-                    continue
-                if mmask is not None and mmask[i, j] == 0:
-                    continue
-                valid_points += 1
-                rn = _bin_normalize(static[i, j], smin, sdelta)
-                r = _bin_index(rn, nbins, padding)
-                cn = _bin_normalize(moving[i, j], mmin, mdelta)
-                c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+    sum = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            if smask is not None and smask[i, j] == 0:
+                continue
+            if mmask is not None and mmask[i, j] == 0:
+                continue
+            valid_points += 1
+            rn = _bin_normalize(static[i, j], smin, sdelta)
+            r = _bin_index(rn, nbins, padding)
+            cn = _bin_normalize(moving[i, j], mmin, mdelta)
+            c = _bin_index(cn, nbins, padding)
+            spline_arg = (c - 2) - cn
 
-                smarginal[r] += 1
-                for offset in range(-2, 3):
-                    val = _cubic_spline(spline_arg)
-                    joint[r, c + offset] += val
-                    sum += val
-                    spline_arg += 1.0
-        if sum > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    joint[i, j] /= valid_points
-
-            for i in range(nbins):
-                smarginal[i] /= valid_points
-
+            smarginal[r] += 1
+            for offset in range(-2, 3):
+                val = _cubic_spline(spline_arg)
+                joint[r, c + offset] += val
+                sum += val
+                spline_arg += 1.0
+    if sum > 0:
+        for i in range(nbins):
             for j in range(nbins):
-                mmarginal[j] = 0
-                for i in range(nbins):
-                    mmarginal[j] += joint[i, j]
+                joint[i, j] /= valid_points
+
+        for i in range(nbins):
+            smarginal[i] /= valid_points
+
+        for j in range(nbins):
+            mmarginal[j] = 0
+            for i in range(nbins):
+                mmarginal[j] += joint[i, j]
 
 
-cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
+cdef void _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                             int[:, :, :] smask, int[:, :, :] mmask,
                             double smin, double sdelta,
                             double mmin, double mdelta,
                             int nbins, int padding, double[:, :] joint,
-                            double[:] smarginal, double[:] mmarginal):
+                            double[:] smarginal, double[:] mmarginal) nogil:
     r''' Joint Probability Density Function of intensities of two 3D images
 
     Parameters
@@ -711,49 +710,48 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
         double val, spline_arg, sum
 
     joint[...] = 0
+    smarginal[:] = 0
+    valid_points = 0
     sum = 0
-    with nogil:
-        valid_points = 0
-        smarginal[:] = 0
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if smask is not None and smask[k, i, j] == 0:
-                        continue
-                    if mmask is not None and mmask[k, i, j] == 0:
-                        continue
-                    valid_points += 1
-                    rn = _bin_normalize(static[k, i, j], smin, sdelta)
-                    r = _bin_index(rn, nbins, padding)
-                    cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
-                    c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if smask is not None and smask[k, i, j] == 0:
+                    continue
+                if mmask is not None and mmask[k, i, j] == 0:
+                    continue
+                valid_points += 1
+                rn = _bin_normalize(static[k, i, j], smin, sdelta)
+                r = _bin_index(rn, nbins, padding)
+                cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
+                c = _bin_index(cn, nbins, padding)
+                spline_arg = (c - 2) - cn
 
-                    smarginal[r] += 1
-                    for offset in range(-2, 3):
-                        val = _cubic_spline(spline_arg)
-                        joint[r, c + offset] += val
-                        sum += val
-                        spline_arg += 1.0
+                smarginal[r] += 1
+                for offset in range(-2, 3):
+                    val = _cubic_spline(spline_arg)
+                    joint[r, c + offset] += val
+                    sum += val
+                    spline_arg += 1.0
 
-        if sum > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    joint[i, j] /= sum
-
-            for i in range(nbins):
-                smarginal[i] /= valid_points
-
+    if sum > 0:
+        for i in range(nbins):
             for j in range(nbins):
-                mmarginal[j] = 0
-                for i in range(nbins):
-                    mmarginal[j] += joint[i, j]
+                joint[i, j] /= sum
+
+        for i in range(nbins):
+            smarginal[i] /= valid_points
+
+        for j in range(nbins):
+            mmarginal[j] = 0
+            for i in range(nbins):
+                mmarginal[j] += joint[i, j]
 
 
-cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
+cdef void _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
                           double sdelta, double mmin, double mdelta,
                           int nbins, int padding, double[:, :] joint,
-                          double[:] smarginal, double[:] mmarginal):
+                          double[:] smarginal, double[:] mmarginal) nogil:
     r''' Probability Density Functions of paired intensities
 
     Parameters
@@ -792,38 +790,36 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
         double val, spline_arg, sum
 
     joint[...] = 0
+    smarginal[:] = 0
+    valid_points = 0
     sum = 0
+    for i in range(n):
+        valid_points += 1
+        rn = _bin_normalize(sval[i], smin, sdelta)
+        r = _bin_index(rn, nbins, padding)
+        cn = _bin_normalize(mval[i], mmin, mdelta)
+        c = _bin_index(cn, nbins, padding)
+        spline_arg = (c - 2) - cn
 
-    with nogil:
-        valid_points = 0
-        smarginal[:] = 0
-        for i in range(n):
-            valid_points += 1
-            rn = _bin_normalize(sval[i], smin, sdelta)
-            r = _bin_index(rn, nbins, padding)
-            cn = _bin_normalize(mval[i], mmin, mdelta)
-            c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+        smarginal[r] += 1
+        for offset in range(-2, 3):
+            val = _cubic_spline(spline_arg)
+            joint[r, c + offset] += val
+            sum += val
+            spline_arg += 1.0
 
-            smarginal[r] += 1
-            for offset in range(-2, 3):
-                val = _cubic_spline(spline_arg)
-                joint[r, c + offset] += val
-                sum += val
-                spline_arg += 1.0
-
-        if sum > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    joint[i, j] /= sum
-
-            for i in range(nbins):
-                smarginal[i] /= valid_points
-
+    if sum > 0:
+        for i in range(nbins):
             for j in range(nbins):
-                mmarginal[j] = 0
-                for i in range(nbins):
-                    mmarginal[j] += joint[i, j]
+                joint[i, j] /= sum
+
+        for i in range(nbins):
+            smarginal[i] /= valid_points
+
+        for j in range(nbins):
+            mmarginal[j] = 0
+            for i in range(nbins):
+                mmarginal[j] += joint[i, j]
 
 
 cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
