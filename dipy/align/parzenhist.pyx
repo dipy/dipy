@@ -10,6 +10,8 @@ import numpy.random as random
 from .fused_types cimport floating
 from . import vector_fields as vf
 
+from libc.stdlib cimport abort, malloc, free
+
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
                                       _apply_affine_3d_x2,
@@ -822,13 +824,13 @@ cdef void _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
                 mmarginal[j] += joint[i, j]
 
 
-cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
+cdef void _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                                   double[:, :] static, double[:, :] moving,
                                   double[:, :] grid2world,
                                   floating[:, :, :] mgradient, int[:, :] smask,
                                   int[:, :] mmask, double smin, double sdelta,
                                   double mmin, double mdelta, int nbins,
-                                  int padding, double[:, :, :] grad_pdf):
+                                  int padding, double[:, :, :] grad_pdf) nogil:
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -882,54 +884,60 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
         cnp.npy_intp k, i, j, r, c
-        double rn, cn
+        double rn, cn, *J, *prod, x[2]
         double val, spline_arg, norm_factor
-        double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
-        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
-        double[:] x = np.empty(shape=(2,), dtype=np.float64)
 
     grad_pdf[...] = 0
-    with nogil:
-        valid_points = 0
-        for i in range(nrows):
-            for j in range(ncols):
-                if smask is not None and smask[i, j] == 0:
-                    continue
-                if mmask is not None and mmask[i, j] == 0:
-                    continue
+    valid_points = 0
+    J = <double *>malloc(sizeof(double) * 2 * n)
+    if J == NULL:
+        abort()
+    prod = <double *>malloc(sizeof(double) * n)
+    if prod == NULL:
+        abort()
 
-                valid_points += 1
-                x[0] = _apply_affine_2d_x0(i, j, 1, grid2world)
-                x[1] = _apply_affine_2d_x1(i, j, 1, grid2world)
+    for i in range(nrows):
+        for j in range(ncols):
+            if smask is not None and smask[i, j] == 0:
+                continue
+            if mmask is not None and mmask[i, j] == 0:
+                continue
 
-                if constant_jacobian == 0:
-                    constant_jacobian = transform._jacobian(theta, x, J)
+            valid_points += 1
+            x[0] = _apply_affine_2d_x0(i, j, 1, grid2world)
+            x[1] = _apply_affine_2d_x1(i, j, 1, grid2world)
 
+            if constant_jacobian == 0:
+                constant_jacobian = transform._jacobian_c(theta, x, J)
+
+            for k in range(n):
+                prod[k] = (J[0 * n + k] * mgradient[i, j, 0] +
+                           J[1 * n + k] * mgradient[i, j, 1])
+
+            rn = _bin_normalize(static[i, j], smin, sdelta)
+            r = _bin_index(rn, nbins, padding)
+            cn = _bin_normalize(moving[i, j], mmin, mdelta)
+            c = _bin_index(cn, nbins, padding)
+            spline_arg = (c - 2) - cn
+
+            for offset in range(-2, 3):
+                val = _cubic_spline_derivative(spline_arg)
                 for k in range(n):
-                    prod[k] = (J[0, k] * mgradient[i, j, 0] +
-                               J[1, k] * mgradient[i, j, 1])
+                    grad_pdf[r, c + offset, k] -= val * prod[k]
+                spline_arg += 1.0
 
-                rn = _bin_normalize(static[i, j], smin, sdelta)
-                r = _bin_index(rn, nbins, padding)
-                cn = _bin_normalize(moving[i, j], mmin, mdelta)
-                c = _bin_index(cn, nbins, padding)
-                spline_arg = (c - 2) - cn
+    free(J)
+    free(prod)
 
-                for offset in range(-2, 3):
-                    val = _cubic_spline_derivative(spline_arg)
-                    for k in range(n):
-                        grad_pdf[r, c + offset, k] -= val * prod[k]
-                    spline_arg += 1.0
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    for k in range(n):
-                        grad_pdf[i, j, k] /= norm_factor
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
+        for i in range(nbins):
+            for j in range(nbins):
+                for k in range(n):
+                    grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
+cdef void _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                                   double[:, :, :] static,
                                   double[:, :, :] moving,
                                   double[:, :] grid2world,
@@ -938,7 +946,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                                   int[:, :, :] mmask, double smin,
                                   double sdelta, double mmin, double mdelta,
                                   int nbins, int padding,
-                                  double[:, :, :] grad_pdf):
+                                  double[:, :, :] grad_pdf) nogil:
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -993,62 +1001,68 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
         cnp.npy_intp l, k, i, j, r, c
-        double rn, cn
+        double rn, cn, *J, *prod, x[3]
         double val, spline_arg, norm_factor
-        double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
-        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
-        double[:] x = np.empty(shape=(3,), dtype=np.float64)
 
     grad_pdf[...] = 0
-    with nogil:
-        valid_points = 0
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if smask is not None and smask[k, i, j] == 0:
-                        continue
-                    if mmask is not None and mmask[k, i, j] == 0:
-                        continue
-                    valid_points += 1
-                    x[0] = _apply_affine_3d_x0(k, i, j, 1, grid2world)
-                    x[1] = _apply_affine_3d_x1(k, i, j, 1, grid2world)
-                    x[2] = _apply_affine_3d_x2(k, i, j, 1, grid2world)
+    valid_points = 0
+    J = <double *>malloc(sizeof(double) * 3 * n)
+    if J == NULL:
+        abort()
+    prod = <double *>malloc(sizeof(double) * n)
+    if prod == NULL:
+        abort()
 
-                    if constant_jacobian == 0:
-                        constant_jacobian = transform._jacobian(theta, x, J)
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if smask is not None and smask[k, i, j] == 0:
+                    continue
+                if mmask is not None and mmask[k, i, j] == 0:
+                    continue
+                valid_points += 1
+                x[0] = _apply_affine_3d_x0(k, i, j, 1, grid2world)
+                x[1] = _apply_affine_3d_x1(k, i, j, 1, grid2world)
+                x[2] = _apply_affine_3d_x2(k, i, j, 1, grid2world)
 
+                if constant_jacobian == 0:
+                    constant_jacobian = transform._jacobian_c(theta, x, J)
+
+                for l in range(n):
+                    prod[l] = (J[0 * n + l] * mgradient[k, i, j, 0] +
+                               J[1 * n + l] * mgradient[k, i, j, 1] +
+                               J[2 * n + l] * mgradient[k, i, j, 2])
+
+                rn = _bin_normalize(static[k, i, j], smin, sdelta)
+                r = _bin_index(rn, nbins, padding)
+                cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
+                c = _bin_index(cn, nbins, padding)
+                spline_arg = (c - 2) - cn
+
+                for offset in range(-2, 3):
+                    val = _cubic_spline_derivative(spline_arg)
                     for l in range(n):
-                        prod[l] = (J[0, l] * mgradient[k, i, j, 0] +
-                                   J[1, l] * mgradient[k, i, j, 1] +
-                                   J[2, l] * mgradient[k, i, j, 2])
+                        grad_pdf[r, c + offset, l] -= val * prod[l]
+                    spline_arg += 1.0
 
-                    rn = _bin_normalize(static[k, i, j], smin, sdelta)
-                    r = _bin_index(rn, nbins, padding)
-                    cn = _bin_normalize(moving[k, i, j], mmin, mdelta)
-                    c = _bin_index(cn, nbins, padding)
-                    spline_arg = (c - 2) - cn
+    free(J)
+    free(prod)
 
-                    for offset in range(-2, 3):
-                        val = _cubic_spline_derivative(spline_arg)
-                        for l in range(n):
-                            grad_pdf[r, c + offset, l] -= val * prod[l]
-                        spline_arg += 1.0
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    for k in range(n):
-                        grad_pdf[i, j, k] /= norm_factor
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
+        for i in range(nbins):
+            for j in range(nbins):
+                for k in range(n):
+                    grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
+cdef void _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                                    double[:] sval, double[:] mval,
                                    double[:, :] sample_points,
                                    floating[:, :] mgradient, double smin,
                                    double sdelta, double mmin,
                                    double mdelta, int nbins, int padding,
-                                   double[:, :, :] grad_pdf):
+                                   double[:, :, :] grad_pdf) nogil:
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -1094,51 +1108,58 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
         cnp.npy_intp offset
         int constant_jacobian = 0
         cnp.npy_intp i, j, r, c, valid_points
-        double rn, cn
+        double rn, cn, *J, *prod
         double val, spline_arg, norm_factor
-        double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
-        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
-    with nogil:
-        valid_points = 0
-        for i in range(m):
-            valid_points += 1
-            if constant_jacobian == 0:
-                constant_jacobian = transform._jacobian(theta,
-                                                        sample_points[i], J)
+    valid_points = 0
+    J = <double *>malloc(sizeof(double) * 2 * n)
+    if J == NULL:
+        abort()
+    prod = <double *>malloc(sizeof(double) * n)
+    if prod == NULL:
+        abort()
 
+    for i in range(m):
+        valid_points += 1
+        if constant_jacobian == 0:
+            constant_jacobian = transform._jacobian_c(theta,
+                                                    &sample_points[i, 0], J)
+
+        for j in range(n):
+            prod[j] = (J[0 * n + j] * mgradient[i, 0] +
+                       J[1 * n + j] * mgradient[i, 1])
+
+        rn = _bin_normalize(sval[i], smin, sdelta)
+        r = _bin_index(rn, nbins, padding)
+        cn = _bin_normalize(mval[i], mmin, mdelta)
+        c = _bin_index(cn, nbins, padding)
+        spline_arg = (c - 2) - cn
+
+        for offset in range(-2, 3):
+            val = _cubic_spline_derivative(spline_arg)
             for j in range(n):
-                prod[j] = (J[0, j] * mgradient[i, 0] +
-                           J[1, j] * mgradient[i, 1])
+                grad_pdf[r, c + offset, j] -= val * prod[j]
+            spline_arg += 1.0
 
-            rn = _bin_normalize(sval[i], smin, sdelta)
-            r = _bin_index(rn, nbins, padding)
-            cn = _bin_normalize(mval[i], mmin, mdelta)
-            c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+    free(J)
+    free(prod)
 
-            for offset in range(-2, 3):
-                val = _cubic_spline_derivative(spline_arg)
-                for j in range(n):
-                    grad_pdf[r, c + offset, j] -= val * prod[j]
-                spline_arg += 1.0
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    for k in range(n):
-                        grad_pdf[i, j, k] /= norm_factor
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
+        for i in range(nbins):
+            for j in range(nbins):
+                for k in range(n):
+                    grad_pdf[i, j, k] /= norm_factor
 
 
-cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
+cdef void _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                                    double[:] sval, double[:] mval,
                                    double[:, :] sample_points,
                                    floating[:, :] mgradient, double smin,
                                    double sdelta, double mmin,
                                    double mdelta, int nbins, int padding,
-                                   double[:, :, :] grad_pdf):
+                                   double[:, :, :] grad_pdf) nogil:
     r''' Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
@@ -1184,44 +1205,51 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
         cnp.npy_intp i, j, r, c
-        double rn, cn
+        double rn, cn, *J, *prod
         double val, spline_arg, norm_factor
-        double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
-        double[:] prod = np.empty(shape=(n,), dtype=np.float64)
 
     grad_pdf[...] = 0
-    with nogil:
-        valid_points = 0
-        for i in range(m):
-            valid_points += 1
+    valid_points = 0
+    J = <double *>malloc(sizeof(double) * 3 * n)
+    if J == NULL:
+        abort()
+    prod = <double *>malloc(sizeof(double) * n)
+    if prod == NULL:
+        abort()
 
-            if constant_jacobian == 0:
-                constant_jacobian = transform._jacobian(theta,
-                                                        sample_points[i], J)
+    for i in range(m):
+        valid_points += 1
 
+        if constant_jacobian == 0:
+            constant_jacobian = transform._jacobian_c(theta,
+                                                    &sample_points[i, 0], J)
+
+        for j in range(n):
+            prod[j] = (J[0 * n + j] * mgradient[i, 0] +
+                       J[1 * n + j] * mgradient[i, 1] +
+                       J[2 * n + j] * mgradient[i, 2])
+
+        rn = _bin_normalize(sval[i], smin, sdelta)
+        r = _bin_index(rn, nbins, padding)
+        cn = _bin_normalize(mval[i], mmin, mdelta)
+        c = _bin_index(cn, nbins, padding)
+        spline_arg = (c - 2) - cn
+
+        for offset in range(-2, 3):
+            val = _cubic_spline_derivative(spline_arg)
             for j in range(n):
-                prod[j] = (J[0, j] * mgradient[i, 0] +
-                           J[1, j] * mgradient[i, 1] +
-                           J[2, j] * mgradient[i, 2])
+                grad_pdf[r, c + offset, j] -= val * prod[j]
+            spline_arg += 1.0
 
-            rn = _bin_normalize(sval[i], smin, sdelta)
-            r = _bin_index(rn, nbins, padding)
-            cn = _bin_normalize(mval[i], mmin, mdelta)
-            c = _bin_index(cn, nbins, padding)
-            spline_arg = (c - 2) - cn
+    free(J)
+    free(prod)
 
-            for offset in range(-2, 3):
-                val = _cubic_spline_derivative(spline_arg)
-                for j in range(n):
-                    grad_pdf[r, c + offset, j] -= val * prod[j]
-                spline_arg += 1.0
-
-        norm_factor = valid_points * mdelta
-        if norm_factor > 0:
-            for i in range(nbins):
-                for j in range(nbins):
-                    for k in range(n):
-                        grad_pdf[i, j, k] /= norm_factor
+    norm_factor = valid_points * mdelta
+    if norm_factor > 0:
+        for i in range(nbins):
+            for j in range(nbins):
+                for k in range(n):
+                    grad_pdf[i, j, k] /= norm_factor
 
 
 def compute_parzen_mi(double[:, :] joint,
