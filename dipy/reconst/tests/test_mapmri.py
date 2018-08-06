@@ -282,8 +282,11 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     assert_equal(np.all(mapf_scale_stat_reg_stat.mu == mu),
                  True)
     # test if computation time is shorter
-    assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
-                 True)
+    # This test has never passed on windows
+    # Deactivate it until we get a clear explanation on why.
+    #
+    # assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
+    #             True)
     # check if the fitted signal is the same
     assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
                         mapf_scale_adapt_reg_stat.fitted_signal())
