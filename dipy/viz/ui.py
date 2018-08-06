@@ -3347,6 +3347,9 @@ class ListBox2D(UI):
         # self.up_button.on_left_mouse_button_pressed = self.up_button_callback
         # self.down_button.on_left_mouse_button_pressed = \
             # self.down_button_callback
+        self.scroll_bar.on_left_mouse_button_pressed = \
+            self.scroll_click_callback
+
         self.scroll_bar.on_left_mouse_button_dragged = \
             self.scroll_drag_callback
 
@@ -3453,6 +3456,21 @@ class ListBox2D(UI):
         i_ren.force_render()
         i_ren.event.abort()  # Stop propagating the event.
 
+    def scroll_click_callback(self, i_ren, obj, rect_obj):
+        """ Dragging scroll bar in the combo box.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        rect_obj: :class:`Rectangle2D`
+
+        """
+        self.scroll_init_position = i_ren.event.position[1]
+        i_ren.force_render()
+        i_ren.event.abort()
+
     def scroll_drag_callback(self, i_ren, obj, rect_obj):
         """ Dragging scroll bar in the combo box.
 
@@ -3465,9 +3483,8 @@ class ListBox2D(UI):
 
         """
         position = i_ren.event.position
-        offset = int((position[1] - self.scroll_bar.center[1]) /
+        offset = int((position[1] - self.scroll_init_position) /
                      self.scroll_step_size)
-
         if offset > 0 and self.view_offset > 0:
             offset = min(offset, self.view_offset)
 
@@ -3485,6 +3502,9 @@ class ListBox2D(UI):
         self.scroll_bar.center = (self.scroll_bar.center[0],
                                   self.scroll_bar.center[1] +
                                   offset * self.scroll_step_size)
+
+        self.scroll_init_position += offset * self.scroll_step_size
+
         self.panel.element_offsets[scroll_bar_idx] = (
             self.scroll_bar, (self.scroll_bar.position - self.panel.position))
         i_ren.force_render()
