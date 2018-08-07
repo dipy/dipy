@@ -24,7 +24,7 @@ from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import Transform, regtransforms
 from dipy.io.image import save_nifti
 from dipy.workflows.align import ImageRegistrationFlow
-from dipy.workflows.align import ApplyTransformFlow
+from dipy.workflows.align import ApplyAffineFlow
 
 
 def test_reslice():
