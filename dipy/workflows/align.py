@@ -514,8 +514,8 @@ class ImageRegistrationFlow(Workflow):
 
         transform : string, optional
             com: center of mass, trans: translation, rigid: rigid body
-            affine: full affine including translation, rotation, shearing and
-            scaling (default 'affine').
+             affine: full affine including translation, rotation, shearing and
+             scaling (default 'affine').
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF
