@@ -884,9 +884,10 @@ cdef void _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
         cnp.npy_intp k, i, j, r, c
-        double rn, cn, *prod, x[2]
+        double rn, cn, *prod
         double val, spline_arg, norm_factor
         double[:, :] J = np.empty(shape=(2, n), dtype=np.float64)
+        double[:] x = np.empty(shape=(2,), dtype=np.float64)
 
     prod = <double *>malloc(sizeof(double) * n)
     if prod == NULL:
@@ -999,9 +1000,10 @@ cdef void _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         cnp.npy_intp offset, valid_points
         int constant_jacobian = 0
         cnp.npy_intp l, k, i, j, r, c
-        double rn, cn, *prod, x[3]
+        double rn, cn, *prod
         double val, spline_arg, norm_factor
         double[:, :] J = np.empty(shape=(3, n), dtype=np.float64)
+        double[:] x = np.empty(shape=(3,), dtype=np.float64)
 
     prod = <double *>malloc(sizeof(double) * n)
     if prod == NULL:
