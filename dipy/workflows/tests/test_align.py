@@ -156,7 +156,7 @@ def test_image_registration():
         test_err()
 
 
-def test_apply_transform():
+def test_apply_affine_transform():
     with TemporaryDirectory() as temp_out_dir:
 
         factors = {
