@@ -43,6 +43,10 @@ cdef class Transform:
                        double[:, :] J)nogil:
         return -1
 
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        return -1
+
     cdef void _get_identity_parameters(self, double[:] theta) nogil:
         return
 
@@ -158,6 +162,14 @@ cdef class TranslationTransform2D(Transform):
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef int n = self.number_of_parameters
+        J[0 * n + 0], J[0 * n + 1] = 1.0, 0.0
+        J[1 * n + 0], J[1 * n + 1] = 0.0, 1.0
+        # This Jacobian does not depend on x (it's constant): return 1
+        return 1
+
     cdef void _get_identity_parameters(self, double[:] theta) nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
@@ -226,6 +238,15 @@ cdef class TranslationTransform3D(Transform):
         J[0, 0], J[0, 1], J[0, 2] = 1.0, 0.0, 0.0
         J[1, 0], J[1, 1], J[1, 2] = 0.0, 1.0, 0.0
         J[2, 0], J[2, 1], J[2, 2] = 0.0, 0.0, 1.0
+        # This Jacobian does not depend on x (it's constant): return 1
+        return 1
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef int n = self.number_of_parameters
+        J[0 * n + 0], J[0 * n + 1], J[0 * n + 2] = 1.0, 0.0, 0.0
+        J[1 * n + 0], J[1 * n + 1], J[1 * n + 2] = 0.0, 1.0, 0.0
+        J[2 * n + 0], J[2 * n + 1], J[2 * n + 2] = 0.0, 0.0, 1.0
         # This Jacobian does not depend on x (it's constant): return 1
         return 1
 
@@ -299,6 +320,19 @@ cdef class RotationTransform2D(Transform):
 
         J[0, 0] = -px * st - py * ct
         J[1, 0] = px * ct - py * st
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef:
+            double st = sin(theta[0])
+            double ct = cos(theta[0])
+            double px = x[0], py = x[1]
+            int n = self.number_of_parameters
+
+        J[0 * n + 0] = -px * st - py * ct
+        J[1 * n + 0] = px * ct - py * st
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -380,6 +414,34 @@ cdef class RotationTransform3D(Transform):
         J[1, 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
                   (cc * sb + sc * sa * cb) * z
         J[2, 2] = 0
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef:
+            double sa = sin(theta[0])
+            double ca = cos(theta[0])
+            double sb = sin(theta[1])
+            double cb = cos(theta[1])
+            double sc = sin(theta[2])
+            double cc = cos(theta[2])
+            double px = x[0], py = x[1], z = x[2]
+            int n = self.number_of_parameters
+
+        J[0 * n + 0] = (-sc * ca * sb) * px + (sc * sa) * py + (sc * ca * cb) * z
+        J[1 * n + 0] = (cc * ca * sb) * px + (-cc * sa) * py + (-cc * ca * cb) * z
+        J[2 * n + 0] = (sa * sb) * px + ca * py + (-sa * cb) * z
+
+        J[0 * n + 1] = (-cc * sb - sc * sa * cb) * px + (cc * cb - sc * sa * sb) * z
+        J[1 * n + 1] = (-sc * sb + cc * sa * cb) * px + (sc * cb + cc * sa * sb) * z
+        J[2 * n + 1] = (-ca * cb) * px + (-ca * sb) * z
+
+        J[0 * n + 2] = (-sc * cb - cc * sa * sb) * px + (-cc * ca) * py + \
+                       (-sc * sb + cc * sa * cb) * z
+        J[1 * n + 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
+                       (cc * sb + sc * sa * cb) * z
+        J[2 * n + 2] = 0
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -480,6 +542,19 @@ cdef class RigidTransform2D(Transform):
 
         J[0, 0], J[0, 1], J[0, 2] = -px * st - py * ct, 1, 0
         J[1, 0], J[1, 1], J[1, 2] = px * ct - py * st, 0, 1
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef:
+            double st = sin(theta[0])
+            double ct = cos(theta[0])
+            double px = x[0], py = x[1]
+            int n = self.number_of_parameters
+
+        J[0 * n + 0], J[0 * n + 1], J[0 * n + 2] = -px * st - py * ct, 1, 0
+        J[1 * n + 0], J[1 * n + 1], J[1 * n + 2] = px * ct - py * st, 0, 1
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -588,6 +663,38 @@ cdef class RigidTransform3D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef:
+            double sa = sin(theta[0])
+            double ca = cos(theta[0])
+            double sb = sin(theta[1])
+            double cb = cos(theta[1])
+            double sc = sin(theta[2])
+            double cc = cos(theta[2])
+            double px = x[0], py = x[1], z = x[2]
+            int n = self.number_of_parameters
+
+        J[0 * n + 0] = (-sc * ca * sb) * px + (sc * sa) * py + (sc * ca * cb) * z
+        J[1 * n + 0] = (cc * ca * sb) * px + (-cc * sa) * py + (-cc * ca * cb) * z
+        J[2 * n + 0] = (sa * sb) * px + ca * py + (-sa * cb) * z
+
+        J[0 * n + 1] = (-cc * sb - sc * sa * cb) * px + (cc * cb - sc * sa * sb) * z
+        J[1 * n + 1] = (-sc * sb + cc * sa * cb) * px + (sc * cb + cc * sa * sb) * z
+        J[2 * n + 1] = (-ca * cb) * px + (-ca * sb) * z
+
+        J[0 * n + 2] = (-sc * cb - cc * sa * sb) * px + (-cc * ca) * py + \
+                       (-sc * sb + cc * sa * cb) * z
+        J[1 * n + 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
+                       (cc * sb + sc * sa * cb) * z
+        J[2 * n + 2] = 0
+
+        J[0 * n + 3], J[0 * n + 4], J[0 * n + 5] = 1, 0, 0
+        J[1 * n + 3], J[1 * n + 4], J[1 * n + 5] = 0, 1, 0
+        J[2 * n + 3], J[2 * n + 4], J[2 * n + 5] = 0, 0, 1
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
     cdef void _get_identity_parameters(self, double[:] theta) nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
@@ -680,6 +787,13 @@ cdef class ScalingTransform2D(Transform):
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef int n = self.number_of_parameters
+        J[0 * n + 0], J[1 * n + 0] = x[0], x[1]
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
     cdef void _get_identity_parameters(self, double[:] theta) nogil:
         r""" Parameter values corresponding to the identity
         Sets in theta the parameter values corresponding to the identity
@@ -741,6 +855,13 @@ cdef class ScalingTransform3D(Transform):
             constant (it depends on the value of x)
         """
         J[0, 0], J[1, 0], J[2, 0]= x[0], x[1], x[2]
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef int n = self.number_of_parameters
+        J[0 * n + 0], J[1 * n + 0], J[2 * n + 0]= x[0], x[1], x[2]
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -821,6 +942,17 @@ cdef class AffineTransform2D(Transform):
         J[0, 2] = 1
         J[1, 3:5] = x[:2]
         J[1, 5] = 1
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef int n = self.number_of_parameters
+        J[0 * n + 0], J[0 * n + 1], J[0 * n + 2] = x[0], x[1], 1
+        J[1 * n + 0], J[1 * n + 1], J[1 * n + 2] =   0 ,   0 , 0
+
+        J[0 * n + 3], J[0 * n + 4], J[0 * n + 5] =   0 ,   0 , 0
+        J[1 * n + 3], J[1 * n + 4], J[1 * n + 5] = x[0], x[1], 1
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
@@ -918,6 +1050,32 @@ cdef class AffineTransform3D(Transform):
         J[1, 7] = 1
         J[2, 8:11] = x[:3]
         J[2, 11] = 1
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef int _jacobian_c(self, double[:] theta, double *x,
+                       double *J) nogil:
+        cdef:
+            cnp.npy_intp j
+            int n = self.number_of_parameters
+
+        J[0 * n + 0], J[0 * n + 1], J[0 * n + 2] = x[0], x[1], x[2]
+        J[1 * n + 0], J[1 * n + 1], J[1 * n + 2] =   0 ,   0 ,   0
+        J[2 * n + 0], J[2 * n + 1], J[2 * n + 2] =   0 ,   0 ,   0
+
+        J[0 * n + 3], J[1 * n + 3], J[2 * n + 3] =   1 ,   0 ,   0
+
+        J[0 * n + 4], J[0 * n + 5], J[0 * n + 6] =   0 ,   0 ,   0
+        J[1 * n + 4], J[1 * n + 5], J[1 * n + 6] = x[0], x[1], x[2]
+        J[2 * n + 4], J[2 * n + 5], J[2 * n + 6] =   0 ,   0 ,   0
+
+        J[0 * n + 7], J[1 * n + 7], J[2 * n + 7] =   0 ,   1 ,   0
+
+        J[0 * n + 8], J[0 * n + 9], J[0 * n + 10] =   0 ,   0 ,   0
+        J[1 * n + 8], J[1 * n + 9], J[1 * n + 10] =   0 ,   0 ,   0
+        J[2 * n + 8], J[2 * n + 9], J[2 * n + 10] = x[0], x[1], x[2]
+
+        J[0 * n + 11], J[1 * n + 11], J[2 * n + 11] = 0 ,   0 ,   1
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
