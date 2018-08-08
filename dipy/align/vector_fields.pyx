@@ -3502,15 +3502,33 @@ def gradient(img, img_world2grid, img_spacing, out_shape,
         out_grid2world = out_grid2world.astype(np.float64)
     # Select joint density gradient 2D or 3D
     if dim == 2:
-        _gradient_2d[cython.double](img, img_world2grid, img_spacing,
-                                    out_grid2world, out, inside)
-    elif dim == 3:
-        if num_threads is None:
-            _gradient_3d[cython.double](img, img_world2grid, img_spacing,
+        if img.dtype == np.float32:
+            _gradient_2d[cython.float](img, img_world2grid, img_spacing,
+                                       out_grid2world, out, inside)
+        elif img.dtype == np.float64:
+            _gradient_2d[cython.double](img, img_world2grid, img_spacing,
                                         out_grid2world, out, inside)
         else:
-            _gradient_3d[cython.double](img, img_world2grid, img_spacing,
-                                        out_grid2world, out, inside, num_threads)
+            raise ValueError('Image dtype must be floating point')
+    elif dim == 3:
+        if num_threads is None:
+            if img.dtype == np.float32:
+                _gradient_3d[cython.float](img, img_world2grid, img_spacing,
+                                            out_grid2world, out, inside)
+            elif img.dtype == np.float64:
+                _gradient_3d[cython.double](img, img_world2grid, img_spacing,
+                                            out_grid2world, out, inside)
+            else:
+                raise ValueError('Image dtype must be floating point')
+        else:
+            if img.dtype == np.float32:
+                _gradient_3d[cython.float](img, img_world2grid, img_spacing,
+                                            out_grid2world, out, inside, num_threads)
+            elif img.dtype == np.float64:
+                _gradient_3d[cython.double](img, img_world2grid, img_spacing,
+                                            out_grid2world, out, inside, num_threads)
+            else:
+                raise ValueError('Image dtype must be floating point')
     else:
         raise ValueError('Undefined gradient for image dimension %d' % (dim,))
     return np.asarray(out), np.asarray(inside)
@@ -3553,9 +3571,23 @@ def sparse_gradient(img, img_world2grid, img_spacing, sample_points):
         img_spacing = img_spacing.astype(np.float64)
     # Select joint density gradient 2D or 3D
     if dim == 2:
-        _sparse_gradient_2d[cython.double](img, img_world2grid, img_spacing,
-                                           sample_points, out, inside)
+        if img.dtype == np.float32:
+            _sparse_gradient_2d[cython.float](img, img_world2grid, img_spacing,
+                                              sample_points, out, inside)
+        elif img.dtype == np.float64:
+            _sparse_gradient_2d[cython.double](img, img_world2grid, img_spacing,
+                                               sample_points, out, inside)
+        else:
+            raise ValueError('Image dtype must be floating point')
+    elif dim == 3:
+        if img.dtype == np.float32:
+            _sparse_gradient_3d[cython.float](img, img_world2grid, img_spacing,
+                                              sample_points, out, inside)
+        elif img.dtype == np.float64:
+            _sparse_gradient_3d[cython.double](img, img_world2grid, img_spacing,
+                                               sample_points, out, inside)
+        else:
+            raise ValueError('Image dtype must be floating point')
     else:
-        _sparse_gradient_3d[cython.double](img, img_world2grid, img_spacing,
-                                           sample_points, out, inside)
+        raise ValueError('Undefined gradient for image dimension %d' % (dim,))
     return np.asarray(out), np.asarray(inside)
