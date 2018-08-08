@@ -3815,7 +3815,7 @@ class FileMenu2D(UI):
 
 
 class Preloader(UI):
-    """ A animated component to give the effect of loading.
+    """ An animated component to give the effect of loading.
     Uses three concentric arcs rotating about their centres.
     """
 
@@ -3835,11 +3835,14 @@ class Preloader(UI):
         self.outer_radius = outer_radius
         self.width = width
         self.position = center
-        self.outer_arc.GetProperty().SetColor(0,0,1)
-        self.middle_arc.GetProperty().SetColor(1,0,0)
-        self.middle_arc.RotateZ(30)
-        self.inner_arc.GetProperty().SetColor(1,1,0)
-        self.inner_arc.RotateZ(60)
+        self.outer_arc.GetProperty().SetColor(0, 0, 1)
+        self.middle_arc.GetProperty().SetColor(1, 0, 0)
+        self.rotate(self._arc2, 30)
+        self.inner_arc.GetProperty().SetColor(1, 1, 0)
+        self.rotate(self._arc3, 60)
+
+        self.ticks = 0
+        self.on_tick = lambda: None
 
     def _setup(self):
         """ Setup this UI component.
@@ -3848,38 +3851,39 @@ class Preloader(UI):
         self._arc1 = vtk.vtkArcSource()
         self._arc1.UseNormalAndAngleOn()
         self._arc1.SetResolution(50)
-        self._arc1.SetAngle(60)
+        self._arc1.SetAngle(90)
 
         self._arc2 = vtk.vtkArcSource()
         self._arc2.UseNormalAndAngleOn()
         self._arc2.SetResolution(50)
-        self._arc2.SetAngle(50)
+        self._arc2.SetAngle(80)
 
         self._arc3 = vtk.vtkArcSource()
         self._arc3.UseNormalAndAngleOn()
         self._arc3.SetResolution(50)
-        self._arc3.SetAngle(40)
+        self._arc3.SetAngle(70)
 
         # Mappers
-        mapper1 = vtk.vtkPolyDataMapper()
+
+        mapper1 = vtk.vtkPolyDataMapper2D()
         mapper1 = set_input(mapper1, self._arc1.GetOutputPort())
-        mapper2 = vtk.vtkPolyDataMapper()
+        mapper2 = vtk.vtkPolyDataMapper2D()
         mapper2 = set_input(mapper2, self._arc2.GetOutputPort())
-        mapper3 = vtk.vtkPolyDataMapper()
+        mapper3 = vtk.vtkPolyDataMapper2D()
         mapper3 = set_input(mapper3, self._arc3.GetOutputPort())
 
         # Actors
-        self.outer_arc = vtk.vtkActor()
+        self.outer_arc = vtk.vtkActor2D()
         self.outer_arc.SetMapper(mapper1)
-        self.middle_arc = vtk.vtkActor()
+        self.middle_arc = vtk.vtkActor2D()
         self.middle_arc.SetMapper(mapper2)
-        self.inner_arc = vtk.vtkActor()
+        self.inner_arc = vtk.vtkActor2D()
         self.inner_arc.SetMapper(mapper3)
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
-        return [self.inner_arc,self.middle_arc,self.outer_arc]
+        return [self.inner_arc, self.middle_arc, self.outer_arc]
 
     def _add_to_renderer(self, ren):
         """ Add all subcomponents or VTK props that compose this UI component.
@@ -3905,31 +3909,66 @@ class Preloader(UI):
         coords: (float, float)
             Absolute pixel coordinates (x, y).
         """
-        self._arc1.SetCenter(coords[0],coords[1],0)
-        self._arc2.SetCenter(coords[0],coords[1],0)
-        self._arc3.SetCenter(coords[0],coords[1],0)
+        self._arc1.SetCenter(coords[0], coords[1], 0)
+        self._arc2.SetCenter(coords[0], coords[1], 0)
+        self._arc3.SetCenter(coords[0], coords[1], 0)
+
+    def rotate(self, arc_source, angle):
+        """ Rotate the given arc
+
+        Parameters
+        ----------
+        arc_source : :class:`vtkArcSource`
+            The arc to rotate.
+        angle : float
+            Angle(in degrees) by which the arc is to be rotated.
+        """
+        [x, y, z] = arc_source.GetPolarVector()
+        angle = np.deg2rad(angle)
+        x_new = x * np.cos(angle) - y * np.sin(angle)
+        y_new = x * np.sin(angle) + y * np.cos(angle)
+        arc_source.SetPolarVector(x_new, y_new, z)
 
     @property
     def width(self):
-        return self._arc1.GetPolarVector()[0] - self._arc2.GetPolarVector()[0]
+        [x_outer, y_outer, z] = self._arc1.GetPolarVector()
+        [x_middle, y_middle, z] = self._arc2.GetPolarVector()
+        r_outer = (x_outer ** 2 + y_outer ** 2) ** (1/2)
+        r_middle = (x_middle ** 2 + y_middle ** 2) ** (1/2)
+        return r_outer - r_middle
 
     @width.setter
     def width(self, width):
-        self._arc1.SetPolarVector(self.outer_radius,0,0)
-        self._arc2.SetPolarVector(self.outer_radius - width,0,0)
-        self._arc3.SetPolarVector(self.outer_radius - 2 * width,0,0)
+        [x, y, z] = self._arc1.GetPolarVector()
+        [cos, sin] = [x / self.outer_radius, y / self.outer_radius]
+        self._arc1.SetPolarVector(self.outer_radius * cos,
+                                  self.outer_radius * sin,
+                                  0)
+        self._arc2.SetPolarVector((self.outer_radius - width) * cos,
+                                  (self.outer_radius - width) * sin,
+                                  0)
+        self._arc3.SetPolarVector((self.outer_radius - 2 * width) * cos,
+                                  (self.outer_radius - 2 * width) * sin,
+                                  0)
 
     @property
     def outer_radius(self):
-        return self._arc1.GetPolarVector()[0]
+        [x, y, z] = self._arc1.GetPolarVector()
+        return (x ** 2 + y ** 2) ** (1/2)
 
     @outer_radius.setter
     def outer_radius(self, radius):
-        self._arc1.SetPolarVector(radius,0,0)
-        self._arc2.SetPolarVector(radius - self.width,0,0)
-        self._arc3.SetPolarVector(radius - 2 * self.width,0,0)
+        [x, y, z] = self._arc1.GetPolarVector()
+        [cos, sin] = [x / self.outer_radius, y / self.outer_radius]
+        self._arc1.SetPolarVector(radius * cos, radius * sin, 0)
+        self._arc2.SetPolarVector((radius - self.width) * cos,
+                                  (radius - self.width) * sin,
+                                  0)
+        self._arc3.SetPolarVector((radius - 2 * self.width) * cos,
+                                  (radius - 2 * self.width) * sin,
+                                  0)
 
-    def rotate(self, style, iren, preloader):
+    def rotation_callback(self, style, iren, preloader):
         """ Rotation of the arcs invoked by timer event.
 
         Parameters
@@ -3939,7 +3978,8 @@ class Preloader(UI):
         slider : :class:`Preloader`
 
         """
-        self.outer_arc.RotateZ(2)
-        self.middle_arc.RotateZ(2)
-        self.inner_arc.RotateZ(2)
+        self.rotate(self._arc1, 2)
+        self.rotate(self._arc2, 2)
+        self.rotate(self._arc3, 2)
+        self.on_tick()
         style.force_render()
