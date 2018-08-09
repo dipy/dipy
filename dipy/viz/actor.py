@@ -1385,8 +1385,8 @@ def sphere(centers, colors, radii=1., theta=16, phi=16,
         np.ascontiguousarray(radii.astype('f8')), deep=0)
     radii_fa.SetName('rad')
 
-    polyData_centers = vtk.vtkPolyData()
-    polyData_sphere = vtk.vtkPolyData()
+    polydata_centers = vtk.vtkPolyData()
+    polydata_sphere = vtk.vtkPolyData()
 
     if faces is None:
         src = vtk.vtkSphereSource()
@@ -1396,25 +1396,25 @@ def sphere(centers, colors, radii=1., theta=16, phi=16,
 
     else:
 
-        ut_vtk.set_polydata_vertices(polyData_sphere, vertices)
-        ut_vtk.set_polydata_triangles(polyData_sphere, faces)
+        ut_vtk.set_polydata_vertices(polydata_sphere, vertices)
+        ut_vtk.set_polydata_triangles(polydata_sphere, faces)
 
-    polyData_centers.SetPoints(pts)
-    polyData_centers.GetPointData().AddArray(radii_fa)
-    polyData_centers.GetPointData().SetActiveScalars('rad')
-    polyData_centers.GetPointData().AddArray(cols)
+    polydata_centers.SetPoints(pts)
+    polydata_centers.GetPointData().AddArray(radii_fa)
+    polydata_centers.GetPointData().SetActiveScalars('rad')
+    polydata_centers.GetPointData().AddArray(cols)
 
     glyph = vtk.vtkGlyph3D()
 
     if faces is None:
         glyph.SetSourceConnection(src.GetOutputPort())
     else:
-        glyph.SetSourceData(polyData_sphere)
+        glyph.SetSourceData(polydata_sphere)
 
     if major_version <= 5:
-        glyph.SetInput(polyData_centers)
+        glyph.SetInput(polydata_centers)
     else:
-        glyph.SetInputData(polyData_centers)
+        glyph.SetInputData(polydata_centers)
     glyph.Update()
 
     mapper = vtk.vtkPolyDataMapper()
