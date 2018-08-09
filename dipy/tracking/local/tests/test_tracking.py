@@ -213,9 +213,10 @@ def test_probabilistic_odf_weighted_tracker():
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
-    # The first path is not possible if pmf_threshold > 0.4
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
-                                               pmf_threshold=0.5)
+    # The first path is not possible if pmf_threshold > 0.67
+    # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
+    dg = ProbabilisticDirectionGetter.from_pmf(10*pmf, 90, sphere,
+                                               pmf_threshold=0.67)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
@@ -239,6 +240,7 @@ def test_probabilistic_odf_weighted_tracker():
         npt.assert_(np.all((s + 0.5).astype(int) < mask.shape))
     # Test that the number of streamline return with return_all=True equal the
     # number of seeds places
+
     npt.assert_(np.array([len(streamlines) == len(seeds)]))
 
 
@@ -438,11 +440,11 @@ def test_maximum_deterministic_tracker():
         npt.assert_(np.allclose(sl, expected[1]))
 
     # Both path are not possible if 90 degree turns are exclude and
-    # if pmf_threhold is larger than 0.4. Streamlines should stop at
-    # the crossing
-
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
-                                                      pmf_threshold=0.5)
+    # if pmf_threshold is larger than 0.67. Streamlines should stop at
+    # the crossing.
+    # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
+    dg = DeterministicMaximumDirectionGetter.from_pmf(10*pmf, 80, sphere,
+                                                      pmf_threshold=0.67)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:

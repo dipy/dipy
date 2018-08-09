@@ -98,11 +98,12 @@ cdef class BaseDirectionGetter(DirectionGetter):
         cdef:
             size_t _len, i
             double[:] pmf
+            double relative_pmf_threshold
 
         pmf = self.pmf_gen.get_pmf_c(point)
         _len = pmf.shape[0]
-        max_pmf = np.max(pmf)
-        relative_pmf_threshold = self.pmf_threshold*max_pmf
+
+        relative_pmf_threshold = self.pmf_threshold*np.max(pmf)
         for i in range(_len):
             if pmf[i] < relative_pmf_threshold:
                 pmf[i] = 0.0
