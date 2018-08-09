@@ -1409,7 +1409,10 @@ def sphere(centers, colors, radii=1., theta=16, phi=16,
     if faces is None:
         glyph.SetSourceConnection(src.GetOutputPort())
     else:
-        glyph.SetSourceData(polydata_sphere)
+        if major_version <= 5:
+            glyph.SetSource(polydata_sphere)
+        else:
+            glyph.SetSourceData(polydata_sphere)
 
     if major_version <= 5:
         glyph.SetInput(polydata_centers)
