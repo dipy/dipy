@@ -1377,11 +1377,12 @@ def sphere(centers, colors, radii=1., theta=16, phi=16,
     if isinstance(radii, (float, int)):
         radii = radii * np.ones(len(centers), dtype='f8')
 
-    pts = numpy_to_vtk_points(centers)
-    cols = numpy_to_vtk_colors(255 * colors)
+    pts = numpy_to_vtk_points(np.ascontiguousarray(centers))
+    cols = numpy_to_vtk_colors(255 * np.ascontiguousarray(colors))
     cols.SetName('colors')
 
-    radii_fa = numpy_support.numpy_to_vtk(radii.astype('f8'), deep=0)
+    radii_fa = numpy_support.numpy_to_vtk(
+        np.ascontiguousarray(radii.astype('f8')), deep=0)
     radii_fa.SetName('rad')
 
     polyData_centers = vtk.vtkPolyData()
