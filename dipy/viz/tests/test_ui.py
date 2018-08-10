@@ -552,7 +552,7 @@ def test_ui_option(interactive=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_checkbox(interactive=False):
+def test_ui_checkbox(mode='test'):
     filename = "test_ui_checkbox"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
@@ -576,8 +576,8 @@ def test_ui_checkbox(interactive=False):
     # Collect the sequence of options that have been checked in this list.
     selected_options = []
 
-    def _on_change():
-        selected_options.append(list(checkbox_test.checked))
+    def _on_change(checkbox):
+        selected_options.append(list(checkbox.checked))
 
     # Set up a callback when selection changes
     checkbox_test.on_change = _on_change
@@ -590,40 +590,39 @@ def test_ui_checkbox(interactive=False):
                                       title="DIPY Checkbox")
     show_manager.ren.add(checkbox_test)
 
-    # Recorded events:
-    #  1. Click on button of option 1.
-    #  2. Click on button of option 2.
-    #  3. Click on button of option 1.
-    #  4. Click on text of option 3.
-    #  5. Click on text of option 1.
-    #  6. Click on button of option 4.
-    #  7. Click on text of option 1.
-    #  8. Click on text of option 2.
-    #  9. Click on text of option 4.
-    #  10. Click on button of option 3.
-    show_manager.play_events_from_file(recording_filename)
-    expected = EventCounter.load(expected_events_counts_filename)
-    event_counter.check_counts(expected)
+    if mode == "interactive":
+        show_manager.start()
+        
+    elif mode == "record":
+        # Recorded events:
+        #  1. Click on button of option 1.
+        #  2. Click on button of option 2.
+        #  3. Click on button of option 1.
+        #  4. Click on text of option 3.
+        #  5. Click on text of option 1.
+        #  6. Click on button of option 4.
+        #  7. Click on text of option 1.
+        #  8. Click on text of option 2.
+        #  9. Click on text of option 4.
+        #  10. Click on button of option 3.
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+        
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
 
-    # Check if the right options were selected.
-    expected = [['option 1'], ['option 1', 'option 2\nOption 2'],
-                ['option 2\nOption 2'], ['option 2\nOption 2', 'option 3'],
-                ['option 2\nOption 2', 'option 3', 'option 1'],
-                ['option 2\nOption 2', 'option 3', 'option 1', 'option 4'],
-                ['option 2\nOption 2', 'option 3', 'option 4'],
-                ['option 3', 'option 4'], ['option 3'], []]
-    assert len(selected_options) == len(expected)
-    assert_arrays_equal(selected_options, expected)
-    del show_manager
-
-    if interactive:
-        checkbox_test = ui.Checkbox(labels=["option 1", "option 2\nOption 2",
-                                            "option 3", "option 4"],
-                                    position=(100, 100))
-        showm = window.ShowManager(size=(600, 600))
-        showm.ren.add(checkbox_test)
-        showm.start()
-
+        # Check if the right options were selected.
+        expected = [['option 1'], ['option 1', 'option 2\nOption 2'],
+                    ['option 2\nOption 2'], ['option 2\nOption 2', 'option 3'],
+                    ['option 2\nOption 2', 'option 3', 'option 1'],
+                    ['option 2\nOption 2', 'option 3', 'option 1', 'option 4'],
+                    ['option 2\nOption 2', 'option 3', 'option 4'],
+                    ['option 3', 'option 4'], ['option 3'], []]
+        assert len(selected_options) == len(expected)
+        assert_arrays_equal(selected_options, expected)
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
@@ -785,6 +784,10 @@ def test_ui_image_container_2d(interactive=False):
 
 
 if __name__ == "__main__":
+    mode = "interactive"
+    if len(sys.argv) == 3:
+        mode = sys.argv[2]
+        
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
 
@@ -795,25 +798,25 @@ if __name__ == "__main__":
         test_ui_line_slider_2d(recording=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_line_double_slider_2d":
-        test_ui_line_double_slider_2d(interactive=False)
+        test_ui_line_double_slider_2d(interactive=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_ring_slider_2d":
         test_ui_ring_slider_2d(recording=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_range_slider":
-        test_ui_range_slider(interactive=False)
+        test_ui_range_slider(interactive=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_option":
-        test_ui_option(interactive=False)
+        test_ui_option(interactive=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_checkbox":
-        test_ui_checkbox(interactive=False)
+        test_ui_checkbox(mode=mode)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_radio_button":
-        test_ui_radio_button(interactive=False)
+        test_ui_radio_button(interactive=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
-        test_ui_image_container_2d(interactive=False)
+        test_ui_image_container_2d(interactive=True)
