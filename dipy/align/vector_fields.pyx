@@ -8,6 +8,8 @@ cimport numpy as cnp
 cimport cython
 from .fused_types cimport floating, number
 
+from cython.parallel import prange
+from libc.stdlib cimport abort, malloc, free
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -919,6 +921,83 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     return np.asarray(comp), np.asarray(stats)
 
 
+cdef void _compose_vector_fields_3d_fun(floating[:, :, :, :] d1,
+                                        floating[:, :, :, :] d2,
+                                        double[:, :] premult_index,
+                                        double[:, :] premult_disp,
+                                        double t, floating[:, :, :, :] comp,
+                                        cnp.npy_intp k, int *cnt_ptr,
+                                        double *maxNorm_ptr,
+                                        double *meanNorm_ptr,
+                                        double *stdNorm_ptr) nogil:
+    cdef:
+        cnp.npy_intp nr1 = d1.shape[1]
+        cnp.npy_intp nc1 = d1.shape[2]
+        int inside
+        double nn
+        cnp.npy_intp i, j
+        double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
+
+    cnt_ptr[k] = 0
+    maxNorm_ptr[k] = 0
+    meanNorm_ptr[k] = 0
+    stdNorm_ptr[k] = 0
+
+    for i in range(nr1):
+        for j in range(nc1):
+
+            # This is the only place we access d1[k, i, j]
+            dkk = d1[k, i, j, 0]
+            dii = d1[k, i, j, 1]
+            djj = d1[k, i, j, 2]
+
+            if premult_disp is None:
+                dk = dkk
+                di = dii
+                dj = djj
+            else:
+                dk = _apply_affine_3d_x0(dkk, dii, djj, 0, premult_disp)
+                di = _apply_affine_3d_x1(dkk, dii, djj, 0, premult_disp)
+                dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
+
+            if premult_index is None:
+                dkkk = k
+                diii = i
+                djjj = j
+            else:
+                dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
+                diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
+                djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
+
+            dkkk += dk
+            diii += di
+            djjj += dj
+
+            # If d1 and comp are the same array, this will correctly update
+            # d1[k,i,j], which will never be accessed again
+            # If d2 and comp are the same array, then (dkkk, diii, djjj)
+            # may be in the neighborhood of a previously updated vector
+            # from d2, which may be problematic
+            inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
+                                                      &comp[k, i, j, 0])
+
+            if inside == 1:
+                comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
+                comp[k, i, j, 1] = t * comp[k, i, j, 1] + dii
+                comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
+                nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
+                      comp[k, i, j, 2]**2)
+                meanNorm += nn
+                stdNorm += nn * nn
+                cnt += 1
+                if(maxNorm < nn):
+                    maxNorm = nn
+            else:
+                comp[k, i, j, 0] = 0
+                comp[k, i, j, 1] = 0
+                comp[k, i, j, 2] = 0
+
+
 cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     floating[:, :, :, :] d2,
                                     double[:, :] premult_index,
@@ -987,73 +1066,42 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     intended operation (see comment below).
     """
     cdef:
-        cnp.npy_intp ns1 = d1.shape[0]
-        cnp.npy_intp nr1 = d1.shape[1]
-        cnp.npy_intp nc1 = d1.shape[2]
-        cnp.npy_intp ns2 = d2.shape[0]
-        cnp.npy_intp nr2 = d2.shape[1]
-        cnp.npy_intp nc2 = d2.shape[2]
-        int inside, cnt = 0
-        double maxNorm = 0
-        double meanNorm = 0
-        double stdNorm = 0
-        double nn
-        cnp.npy_intp i, j, k
-        double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
+        cnp.npy_intp ns1 = d1.shape[0], k
+        int cnt = 0, *cnt_ptr
+        double maxNorm = 0, *maxNorm_ptr
+        double meanNorm = 0, *meanNorm_ptr
+        double stdNorm = 0, *stdNorm_ptr
+
+    cnt_ptr = <cnp.npy_intp *>malloc(sizeof(cnp.npy_intp) * ns1)
+    if cnt_ptr == NULL:
+        abort()
+    maxNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if maxNorm_ptr == NULL:
+        abort()
+    meanNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if meanNorm_ptr == NULL:
+        abort()
+    stdNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if stdNorm_ptr == NULL:
+        abort()
+
+    for k in prange(ns1):
+        _compose_vector_fields_3d_fun(d1, d2, premult_index, premult_disp,
+                                      t, comp, k, cnt_ptr, maxNorm_ptr,
+                                      meanNorm_ptr, stdNorm_ptr)
+
     for k in range(ns1):
-        for i in range(nr1):
-            for j in range(nc1):
+        cnt += cnt_ptr[k]
+        meanNorm += meanNorm_ptr[k]
+        stdNorm += stdNorm_ptr[k]
+        if maxNorm < maxNorm_ptr[k]:
+            maxNorm = maxNorm_ptr[k]
 
-                # This is the only place we access d1[k, i, j]
-                dkk = d1[k, i, j, 0]
-                dii = d1[k, i, j, 1]
-                djj = d1[k, i, j, 2]
+    free(cnt_ptr)
+    free(maxNorm_ptr)
+    free(meanNorm_ptr)
+    free(stdNorm_ptr)
 
-                if premult_disp is None:
-                    dk = dkk
-                    di = dii
-                    dj = djj
-                else:
-                    dk = _apply_affine_3d_x0(dkk, dii, djj, 0, premult_disp)
-                    di = _apply_affine_3d_x1(dkk, dii, djj, 0, premult_disp)
-                    dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
-
-                if premult_index is None:
-                    dkkk = k
-                    diii = i
-                    djjj = j
-                else:
-                    dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
-                    diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
-                    djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
-
-                dkkk += dk
-                diii += di
-                djjj += dj
-
-                # If d1 and comp are the same array, this will correctly update
-                # d1[k,i,j], which will never be accessed again
-                # If d2 and comp are the same array, then (dkkk, diii, djjj)
-                # may be in the neighborhood of a previously updated vector
-                # from d2, which may be problematic
-                inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
-                                                          &comp[k, i, j, 0])
-
-                if inside == 1:
-                    comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
-                    comp[k, i, j, 1] = t * comp[k, i, j, 1] + dii
-                    comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
-                    nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
-                          comp[k, i, j, 2]**2)
-                    meanNorm += nn
-                    stdNorm += nn * nn
-                    cnt += 1
-                    if(maxNorm < nn):
-                        maxNorm = nn
-                else:
-                    comp[k, i, j, 0] = 0
-                    comp[k, i, j, 1] = 0
-                    comp[k, i, j, 2] = 0
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
