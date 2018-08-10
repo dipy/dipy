@@ -3067,7 +3067,7 @@ class Checkbox(UI):
             Absolute coordinates (x, y) of the lower-left corner of
             the button of the first option.
         """
-        self.labels = labels
+        self.labels = list(reversed(labels))
         self._padding = padding
         self._font_size = font_size
         self.font_family = font_family
