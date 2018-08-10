@@ -987,11 +987,11 @@ cdef void _compose_vector_fields_3d_fun(floating[:, :, :, :] d1,
                 comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
                 nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
                       comp[k, i, j, 2]**2)
-                meanNorm += nn
-                stdNorm += nn * nn
-                cnt += 1
-                if(maxNorm < nn):
-                    maxNorm = nn
+                meanNorm_ptr[k] += nn
+                stdNorm_ptr[k] += nn * nn
+                cnt_ptr[k] += 1
+                if(maxNorm_ptr[k] < nn):
+                    maxNorm_ptr[k] = nn
             else:
                 comp[k, i, j, 0] = 0
                 comp[k, i, j, 1] = 0
