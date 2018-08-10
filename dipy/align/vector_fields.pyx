@@ -2028,7 +2028,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
         cnp.npy_intp nrows = volume.shape[1]
-        cnp.npy_intp ncols = volume.shape[2]\
+        cnp.npy_intp ncols = volume.shape[2]
         cnp.npy_intp k
 
     if not is_valid_affine(affine_idx_in, 3):
