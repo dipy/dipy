@@ -1,0 +1,93 @@
+from __future__ import division
+import numpy as np
+import nibabel as nib
+from dipy.data import get_data
+from dipy.core.gradients import gradient_table
+import dipy.reconst.NODDIx as noddix
+import matplotlib.pyplot as plt
+from dipy.data import get_sphere
+from dipy.io import read_bvals_bvecs
+sphere = get_sphere('repulsion724')
+
+fname, fscanner = get_data('small_NODDIx_data')
+params = np.loadtxt(fscanner)
+
+# getting the gtab, bvals and bvecs
+fbval = '/u/shfadn/Desktop/sub-158035_dwi.bvals'
+fbvec = '/u/shfadn/Desktop/sub-158035_dwi.bvecs'
+
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+
+for i in range(bvals.shape[0]):
+    if bvals[i] > 5:
+        bvals[i] = round(bvals[i] / 500.0) * 500.0
+    else:
+        bvals[i] = bvals[i] - 5
+        
+bvals = bvals/ 10**6
+
+noddi_data = '/u/shfadn/Desktop/sub-158035_dwi.nii.gz'
+img = nib.load(noddi_data)
+data = img.get_data()
+
+noddi_mask = '/u/shfadn/Desktop/sub-158035_dwi_brainmask.nii.gz'
+img_mask = nib.load(noddi_mask)
+mask = img_mask.get_data()
+
+print("Data Completely Loaded!")
+
+def show_data(data):
+    axial_middle = data.shape[2] // 2
+    plt.figure('Showing the datasets')
+    plt.subplot(1, 2, 1).set_axis_off()
+    plt.imshow(data[:, :, axial_middle, 0].T, cmap='seismic', origin='lower')
+    plt.subplot(1, 2, 2).set_axis_off()
+    plt.imshow(data[:, :, axial_middle, 10].T, cmap='seismic', origin='lower')
+    plt.show()
+    plt.savefig('data.png', bbox_inches='tight')
+
+
+big_delta = params[:, 4]
+small_delta = params[:, 5]
+gamma = 2.675987 * 10 ** 8
+G = params[:, 3] / 10 ** 6
+
+gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
+                      small_delta=small_delta, b0_threshold=0, atol=1e-2)
+
+# Normalizing the data
+S0s = data[..., gtab.b0s_mask]
+S0avg = np.mean(S0s, axis=3)
+datan = data / S0avg[..., None]
+datan[np.isnan(datan)] = 0
+datan[np.isinf(datan)] = 0
+
+noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
+print("NODDIx Model Completely Constructed!")
+print("Started Running for One Slice....")
+NODDIx_fit = noddix_model.fit(datan[:, :, 74, :], mask[:, :, 74])
+
+affine = img.affine.copy()
+nib.save(nib.Nifti1Image(NODDIx_fit[0], affine),
+         'f11_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[1], affine),
+         'f21_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[2], affine),
+         'f12_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[3], affine),
+         'f22_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[4], affine),
+         'f3_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[5], affine),
+         'OD1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[6], affine),
+         'theta1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[7], affine),
+         'phi1_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[8], affine),
+         'OD2_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[9], affine),
+         'theta2_HCP_NODDIx.nii.gz')
+nib.save(nib.Nifti1Image(NODDIx_fit[10], affine),
+         'phi2_HCP_NODDIx.nii.gz')
+

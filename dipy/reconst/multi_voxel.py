@@ -30,6 +30,7 @@ def multi_voxel_fit(single_voxel_fit):
         fit_array = np.empty(data.shape[:-1], dtype=object)
         for ijk in ndindex(data.shape[:-1]):
             if mask[ijk]:
+                print(ijk)
                 fit_array[ijk] = single_voxel_fit(self, data[ijk])
         return MultiVoxelFit(self, fit_array, mask)
     return new_fit
