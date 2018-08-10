@@ -3288,6 +3288,8 @@ class ListBox2D(UI):
                                  self.scroll_bar.height) \
             / (len(self.values) - self.nb_slots)
 
+        self.scroll_bar_active_color = (0.8, 0, 0)
+        self.scroll_bar_inactive_color = (1, 0, 0)
         self.position = position
         self.update()
 
@@ -3309,17 +3311,7 @@ class ListBox2D(UI):
         # This panel facilitates adding slots at the right position.
         self.panel = Panel2D(size=size, color=(1, 1, 1))
 
-        # Add up and down buttons
-        # arrow_up = read_viz_icons(fname="arrow-up.png")
-        # self.up_button = Button2D([("up", arrow_up)])
-        # pos = self.panel.size - self.up_button.size // 2 - margin
-        # self.panel.add_element(self.up_button, pos, anchor="center")
-
-        # arrow_down = read_viz_icons(fname="arrow-down.png")
-        # self.down_button = Button2D([("down", arrow_down)])
-        # pos = (pos[0], self.up_button.size[1] // 2 + margin)
-        # self.panel.add_element(self.down_button, pos, anchor="center")
-
+        # Add a scroll bar
         scroll_bar_height = self.nb_slots * (size[1] - 2 * margin) \
             / len(self.values)
         self.scroll_bar = Rectangle2D(size=(int(size[0]/20),
@@ -3344,12 +3336,10 @@ class ListBox2D(UI):
             self.panel.add_element(item, (x, y + margin))
 
         # Add default events listener for this UI component.
-        # self.up_button.on_left_mouse_button_pressed = self.up_button_callback
-        # self.down_button.on_left_mouse_button_pressed = \
-            # self.down_button_callback
         self.scroll_bar.on_left_mouse_button_pressed = \
             self.scroll_click_callback
-
+        self.scroll_bar.on_left_mouse_button_released = \
+            self.scroll_release_callback
         self.scroll_bar.on_left_mouse_button_dragged = \
             self.scroll_drag_callback
 
@@ -3457,7 +3447,7 @@ class ListBox2D(UI):
         i_ren.event.abort()  # Stop propagating the event.
 
     def scroll_click_callback(self, i_ren, obj, rect_obj):
-        """ Dragging scroll bar in the combo box.
+        """ Callback to change the color of the bar when it is clicked.
 
         Parameters
         ----------
@@ -3467,9 +3457,24 @@ class ListBox2D(UI):
         rect_obj: :class:`Rectangle2D`
 
         """
+        self.scroll_bar.color = self.scroll_bar_active_color
         self.scroll_init_position = i_ren.event.position[1]
         i_ren.force_render()
         i_ren.event.abort()
+
+    def scroll_release_callback(self, i_ren, obj, rect_obj):
+        """ Callback to change the color of the bar when it is released.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        rect_obj: :class:`Rectangle2D`
+
+        """
+        self.scroll_bar.color = self.scroll_bar_inactive_color
+        i_ren.force_render()
 
     def scroll_drag_callback(self, i_ren, obj, rect_obj):
         """ Dragging scroll bar in the combo box.
