@@ -571,7 +571,7 @@ def test_ui_checkbox(interactive=False):
         new_positions.append(option.position)
     new_positions = np.asarray(new_positions)
     npt.assert_allclose(new_positions - old_positions,
-                     90.0 * np.ones((4, 2)))
+                        90.0 * np.ones((4, 2)))
 
     # Collect the sequence of options that have been checked in this list.
     selected_options = []
@@ -646,7 +646,7 @@ def test_ui_radio_button(interactive=False):
         new_positions.append(option.position)
     new_positions = np.asarray(new_positions)
     npt.assert_allclose(new_positions - old_positions,
-                     90 * np.ones((4, 2)))
+                        90 * np.ones((4, 2)))
 
     selected_option = []
 
