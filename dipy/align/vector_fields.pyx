@@ -1914,6 +1914,66 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     return np.asarray(down)
 
 
+cdef void _warp_3d_fun(floating[:, :, :] volume, floating[:, :, :, :] d1,
+                       double[:, :] affine_idx_in,
+                       double[:, :] affine_idx_out,
+                       double[:, :] affine_disp, cnp.npy_intp k,
+                       cnp.npy_intp nrows, cnp.npy_intp ncols,
+                       floating[:, :, :] warped) nogil:
+    cdef:
+        cnp.npy_intp i, j
+        int inside
+        double dkk, dii, djj, dk, di, dj
+        floating tmp[3]
+
+    for i in range(nrows):
+        for j in range(ncols):
+            if affine_idx_in is None:
+                dkk = d1[k, i, j, 0]
+                dii = d1[k, i, j, 1]
+                djj = d1[k, i, j, 2]
+            else:
+                dk = _apply_affine_3d_x0(
+                    k, i, j, 1, affine_idx_in)
+                di = _apply_affine_3d_x1(
+                    k, i, j, 1, affine_idx_in)
+                dj = _apply_affine_3d_x2(
+                    k, i, j, 1, affine_idx_in)
+                inside = _interpolate_vector_3d[floating](d1, dk, di,
+                                                          dj, &tmp[0])
+                dkk = tmp[0]
+                dii = tmp[1]
+                djj = tmp[2]
+
+            if affine_disp is not None:
+                dk = _apply_affine_3d_x0(
+                    dkk, dii, djj, 0, affine_disp)
+                di = _apply_affine_3d_x1(
+                    dkk, dii, djj, 0, affine_disp)
+                dj = _apply_affine_3d_x2(
+                    dkk, dii, djj, 0, affine_disp)
+            else:
+                dk = dkk
+                di = dii
+                dj = djj
+
+            if affine_idx_out is not None:
+                dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                               affine_idx_out)
+                dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                                               affine_idx_out)
+                djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                               affine_idx_out)
+            else:
+                dkk = dk + k
+                dii = di + i
+                djj = dj + j
+
+            inside = _interpolate_scalar_3d[floating](volume, dkk,
+                                                      dii, djj,
+                                                      &warped[k,i,j])
+
+
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
@@ -1968,13 +2028,8 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     cdef:
         cnp.npy_intp nslices = volume.shape[0]
         cnp.npy_intp nrows = volume.shape[1]
-        cnp.npy_intp ncols = volume.shape[2]
-        cnp.npy_intp nsVol = volume.shape[0]
-        cnp.npy_intp nrVol = volume.shape[1]
-        cnp.npy_intp ncVol = volume.shape[2]
-        cnp.npy_intp i, j, k
-        int inside
-        double dkk, dii, djj, dk, di, dj
+        cnp.npy_intp ncols = volume.shape[2]\
+        cnp.npy_intp k
 
     if not is_valid_affine(affine_idx_in, 3):
         raise ValueError("Invalid inner index multiplication matrix")
@@ -1994,57 +2049,13 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
 
         for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if affine_idx_in is None:
-                        dkk = d1[k, i, j, 0]
-                        dii = d1[k, i, j, 1]
-                        djj = d1[k, i, j, 2]
-                    else:
-                        dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
-                        di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
-                        dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
-                        inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, &tmp[0])
-                        dkk = tmp[0]
-                        dii = tmp[1]
-                        djj = tmp[2]
+            _warp_3d_fun(volume, d1, affine_idx_in, affine_idx_out,
+                         affine_disp, k, nrows, ncols, warped)
 
-                    if affine_disp is not None:
-                        dk = _apply_affine_3d_x0(
-                            dkk, dii, djj, 0, affine_disp)
-                        di = _apply_affine_3d_x1(
-                            dkk, dii, djj, 0, affine_disp)
-                        dj = _apply_affine_3d_x2(
-                            dkk, dii, djj, 0, affine_disp)
-                    else:
-                        dk = dkk
-                        di = dii
-                        dj = djj
-
-                    if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
-                                                       affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
-                                                       affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
-                                                       affine_idx_out)
-                    else:
-                        dkk = dk + k
-                        dii = di + i
-                        djj = dj + j
-
-                    inside = _interpolate_scalar_3d[floating](volume, dkk,
-                                                              dii, djj,
-                                                              &warped[k,i,j])
     return np.asarray(warped)
 
 
