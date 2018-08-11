@@ -70,6 +70,7 @@ for modulename, other_sources, language in (
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
         ('dipy.direction.bootstrap_direction_getter', [], 'c'),
         ('dipy.reconst.peak_direction_getter', [], 'c'),
+        ('dipy.reconst.noddi_speed', [], 'c'),
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
         ('dipy.reconst.quick_squash', [], 'c'),
