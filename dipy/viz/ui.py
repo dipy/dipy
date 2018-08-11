@@ -4040,14 +4040,8 @@ class ColorPicker(UI):
         coords = i_ren.event.position
 
         # Ensure coords are within the square
-        if coords[0] < self.position[0]:
-            coords[0] = self.position[0]
-        if coords[1] < self.position[1]:
-            coords[1] = self.position[1]
-        if coords[0] > self.position[0]+self.side:
-            coords[0] = self.position[0]+self.side
-        if coords[1] > self.position[1]+self.side:
-            coords[1] = self.position[1]+self.side
+        coords = np.maximum(coords, self.position)
+        coords = np.minimum(coords, self.position + self.side)
 
         self.pointer.center = coords
         relative_coords = coords - self.position
