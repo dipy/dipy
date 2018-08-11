@@ -3815,51 +3815,73 @@ class FileMenu2D(UI):
 
 
 class ColorPicker(UI):
-    """ A 2D rectangle sub-classed from UI.
+    """ A color picker that uses the HSV color model.
+        It consists of a vertical bar that selects the hue and
+        a square that selects the saturation and value for the selected hue.
     """
 
-    def __init__(self, side=100, position=(100, 100)):
-        """ Initializes a rectangle.
+    def __init__(self, side=100, position=(0, 0)):
+        """ Initialize the color picker.
 
         Parameters
         ----------
-        size : (int, int)
-            The size of the rectangle (width, height) in pixels.
+        side : int
+            The side length of the square(and height of the hue bar) in pixels.
         position : (float, float)
-            Coordinates (x, y) of the lower-left corner of the rectangle.
-        color : (float, float, float)
-            Must take values in [0, 1].
-        opacity : float
-            Must take values in [0, 1].
+                Coordinates (x, y) of the lower-left corner of the sqaure.
         """
         super(ColorPicker, self).__init__(position)
-        # self.resize(side)
+        self.side = side
+        self.pointer.position = self.ColorSelectionSquare.center
+        self.position = position
+        self.current_hue = 0
+        self.current_saturation = 0.5
+        self.current_value = 0.5
+
+        # Offer some standard hooks to the user.
+        self.on_change = lambda color_picker,r,g,b : None
 
     def _setup(self):
         """ Setup this UI component.
-
-        Creating the polygon actor used internally.
         """
-        # Setup four points
-        # side=1
 
-        self.scalarbar=vtk.vtkScalarBarActor()
-        self.scalarbar.SetTitle("Title")
-        self.scalarbar.SetNumberOfLabels(4)
+        # Setup the hue bar
+        self.HueBar=vtk.vtkScalarBarActor()
+        self.HueBar.GetPositionCoordinate().SetCoordinateSystemToDisplay()
+        self.HueBar.GetPosition2Coordinate().SetCoordinateSystemToDisplay()
+        self.HueBar.SetNumberOfLabels(0)
         hueLut=vtk.vtkLookupTable()
         hueLut.SetTableRange (0, 1)
         hueLut.SetHueRange (0, 1)
         hueLut.SetSaturationRange (1, 1)
         hueLut.SetValueRange (1, 1)
         hueLut.Build()
-        self.scalarbar.SetLookupTable(hueLut)
+        self.HueBar.SetLookupTable(hueLut)
+        self.add_callback(self.HueBar, "MouseMoveEvent", self.hue_select_callback)
 
+        #Setup colors for the square
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName("Colors")
+        colors.InsertNextTuple3(*self.hsv2rgb(0, 0, 0))
+        colors.InsertNextTuple3(*self.hsv2rgb(0, 1, 0))
+        colors.InsertNextTuple3(*self.hsv2rgb(0, 1, 1))
+        colors.InsertNextTuple3(*self.hsv2rgb(0, 0, 1))
+
+        #Setup the square
+        self.ColorSelectionSquare = Rectangle2D()
+        self.ColorSelectionSquare._polygonPolyData.GetPointData().SetScalars(colors)
+        if VTK_MAJOR_VERSION <=5:
+            self.ColorSelectionSquare._polygonPolyData.Update()
+        self.ColorSelectionSquare.on_left_mouse_button_dragged = self.color_select_callback
+
+        #Setup the circle pointer
+        self.pointer = Disk2D(outer_radius=1)
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
-        # return [self.HueBar]
-        return [self.scalarbar]
+        return self.ColorSelectionSquare.actors + self.HueBar + self.pointer.actors
 
     def _add_to_renderer(self, ren):
         """ Add all subcomponents or VTK props that compose this UI component.
@@ -3868,49 +3890,90 @@ class ColorPicker(UI):
         ----------
         ren : renderer
         """
-        ren.add(self.scalarbar)
+        self.ColorSelectionSquare.add_to_renderer(ren)
+        self.pointer.add_to_renderer(ren)
+        ren.add(self.HueBar)
 
-    # def _get_size(self):
-        # Get 2D coordinates of two opposed corners of the rectangle.
-        # lower_left_corner = np.array(self._points.GetPoint(0)[:2])
-        # upper_right_corner = np.array(self._points.GetPoint(2)[:2])
-        # size = abs(upper_right_corner - lower_left_corner)
-        # return size
+    def _get_size(self):
+        return (6 * self.side / 5, self.side)
 
-    # @property
-    # def width(self):
-    #     return self._points.GetPoint(2)[0]
+    @property
+    def side(self):
+        return self.HueBar.GetPosition2()[1]
 
-    # @width.setter
-    # def width(self, width):
-    #     self.resize((width, self.height))
+    @side.setter
+    def side(self, side):
+        self.HueBar.SetPosition2(side / 5, side)
+        self.ColorSelectionSquare.resize((side,side))
+        self.pointer.outer_radius = side/50
+        self.pointer.inner_radius = side/50 - 1
 
-    # @property
-    # def height(self):
-    #     return self._points.GetPoint(2)[1]
+    @property
+    def current_hue(self):
+        color = self.ColorSelectionSquare._polygonPolyData.GetPointData().GetScalars().GetTuple(2)
+        return self.rgb2hsv(*color)[0]
 
-    # @height.setter
-    # def height(self, height):
-    #     self.resize((self.width, height))
+    @current_hue.setter
+    def current_hue(self, hue):
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName("Colors")
+        colors.InsertNextTuple3(*self.hsv2rgb(hue, 0, 0))
+        colors.InsertNextTuple3(*self.hsv2rgb(hue, 1, 0))
+        colors.InsertNextTuple3(*self.hsv2rgb(hue, 1, 1))
+        colors.InsertNextTuple3(*self.hsv2rgb(hue, 0, 1))
+        self.ColorSelectionSquare._polygonPolyData.GetPointData().SetScalars(colors)
+        if VTK_MAJOR_VERSION <=5:
+            self.ColorSelectionSquare._polygonPolyData.Update()
 
-    # def resize(self, size):
-    #     """ Sets the button size.
+    def rgb2hsv(self, R, G, B):
+        """ Function to convert given RGB value to HSV
 
-    #     Parameters
-    #     ----------
-    #     size : (float, float)
-    #         Button size (width, height) in pixels.
-    #     """
-    #     self._points.SetPoint(0, 0, 0, 0.0)
-    #     self._points.SetPoint(1, size[0], 0, 0.0)
-    #     self._points.SetPoint(2, size[0], size[1], 0.0)
-    #     self._points.SetPoint(3, 0, size[1], 0.0)
-    #     self._polygonPolyData.SetPoints(self._points)
+        Parameters
+        ----------
+        R : float[0-255]
+            Red value.
+        G : float[0-255]
+            Green value.
+        B : float[0-255]
+            Blue value.
+        """
+        (r, g, b) = (R/255, G/255, B/255)
+        cmax = max(r,g,b)
+        cmin = min(r,g,b)
+        delta = cmax - cmin
+        if delta == 0:
+            H = 0
+        elif cmax == r:
+            H = 60*(((g-b)/delta)%6)
+        elif cmax == g:
+            H = 60*(((b-r)/delta)+2)
+        elif cmax == b:
+            H = 60*(((r-g)/delta)+4)
 
-    def hsl_to_rgb(self, H, S, L):
-        C=(1-abs(2*L-1))*S
+        if cmax==0:
+            S=0
+        else:
+            S=delta/cmax
+        V=cmax
+
+        return H,S,V
+
+    def hsv2rgb(self, H, S, V):
+        """ Function to convert given HSV value to RGB
+
+        Parameters
+        ----------
+        H : float[0-360]
+            Hue.
+        S : float[0-1]
+            Saturation.
+        V : float[0-1]
+            Value.
+        """
+        C = V * S
         X = C * (1 - abs((H / 60) % 2 - 1))
-        m = L - C/2
+        m = V - C
         if H<60:
             (r,g,b)=(C,X,0)
         elif H<120:
@@ -3927,7 +3990,6 @@ class ColorPicker(UI):
         (R,G,B) = ((r+m)*255, (g+m)*255,(b+m)*255)
         return R,G,B
 
-
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component.
 
@@ -3936,5 +3998,52 @@ class ColorPicker(UI):
         coords: (float, float)
             Absolute pixel coordinates (x, y).
         """
-        # self.HueBar.SetPosition(*coords)
-        self.scalarbar.SetPosition(*coords)
+        offset = coords - self.position
+        self.ColorSelectionSquare.position = coords
+        self.pointer.center += offset
+        self.HueBar.SetPosition(coords[0] + self.side, coords[1])
+
+    def hue_select_callback(self, i_ren, obj, color_picker):
+        """ A callback to select the hue from the hue bar.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        color_picker: :class:`ColorPicker`
+        """
+        FractionalHue = (i_ren.event.position[1] - self.position[1])/self.side
+        self.current_hue = FractionalHue * 360
+        self.on_change(self,*self.hsv2rgb(self.current_hue,self.current_saturation,self.current_value))
+        i_ren.force_render()
+        i_ren.event.abort()
+
+    def color_select_callback(self, i_ren, obj, rectangle2d):
+        """ A callback to select the hue and saturation from the sqaure.
+
+        Parameters
+        ----------
+        i_ren: :class:`CustomInteractorStyle`
+        obj: :class:`vtkActor`
+            The picked actor
+        rectangle2d: :class:`Rectangle2D`
+        """
+        coords = i_ren.event.position
+
+        # Ensure coords are within the square
+        if(coords[0]<self.position[0]):
+            coords[0]=self.position[0]
+        if(coords[1]<self.position[1]):
+            coords[1]=self.position[1]
+        if(coords[0]>self.position[0]+self.side):
+            coords[0]=self.position[0]+self.side
+        if(coords[1]>self.position[1]+self.side):
+            coords[1]=self.position[1]+self.side
+
+        self.pointer.center = coords
+        relative_coords = coords - self.position
+        self.current_saturation, self.current_value = relative_coords / self.side
+        self.on_change(self,*self.hsv2rgb(self.current_hue,self.current_saturation,self.current_value))
+        i_ren.force_render()
+        i_ren.event.abort()
