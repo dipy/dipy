@@ -4,6 +4,7 @@ import numpy as np
 from dipy.data import get_data
 from dipy.reconst.shore import ShoreModel
 from dipy.core.gradients import gradient_table
+from dipy.reconst.gqi import GeneralizedQSamplingModel
 import dipy.reconst.NODDIx as noddix
 from scipy.linalg import get_blas_funcs
 from dipy.data import get_sphere
@@ -19,63 +20,50 @@ G = params[:, 3] / 10 ** 6  # gradient strength
 big_delta = params[:, 4]
 small_delta = params[:, 5]
 gamma = 2.675987 * 10 ** 8
-
-bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta - small_delta / 3.)
+bvals = gamma ** 2 * G ** 2 * small_delta ** 2 * (big_delta -
+                                                  small_delta / 3.)
 gtab = gradient_table(bvals, bvecs, big_delta=big_delta,
                       small_delta=small_delta,
                       b0_threshold=0, atol=1e-2)
 
 # instantiating the noddixmodel class
 noddix_model = noddix.NODDIxModel(gtab, params, fit_method='MIX')
-
 """
-Declare the parameters
+11 parameters of the NODDIx model
 """
-volfrac_ic1 = 0.24
-volfrac_ec1 = 0.24
-theta2 = 0.01745329  # 1 Degree
-phi2 = 0.01745329  # 1 Degree
+volfrac_ic1 = 0.39
+volfrac_ec1 = 0.39
+# Angles of the vectors are in Radians
+theta1 = 0.01745329
+phi1 = 0.01745329
 
-volfrac_ic2 = 0.26
-volfrac_ec2 = 0.25
-theta1 = 1.57079633  # 90 Degree
-phi1 = 0.01745329  # 1 Degree
+volfrac_ic2 = 0.1
+volfrac_ec2 = 0.1
+# Angles of the vectors are in Radians
+theta2 = 1.57079633
+phi2 = 0.01745329
 
-volfrac_csf = 0.01
+volfrac_csf = 0.02
 OD1 = 0.1
 OD2 = 0.1
 
 """
-Lets contruct the signal now
+This section simulates the signal from the volume fractions and the angles.
 """
 x_f_sig = [volfrac_ic1, volfrac_ic2, volfrac_ec1, volfrac_ec2, volfrac_csf,
            OD1, theta1, phi1, OD2, theta2, phi2]
 f = x_f_sig[0:5]
-
 phi = noddix_model.Phi2(x_f_sig)
 reconst_signal = np.dot(phi, f)
 
-
-def show_with_shore(gtab, reconst_signal):
-    gtab.bvals = gtab.bvals * 10**6
-    shore_model = ShoreModel(gtab)
-    shore_fit = shore_model.fit(reconst_signal * 100)
-    odf = shore_fit.odf(sphere)
-    from dipy.viz import window, fvtk
-    ren = window.Renderer()
-    ren.add(fvtk.sphere_funcs(odf, sphere))
-    window.show(ren)
-
 @np.testing.dec.skipif(not noddix.have_cvxpy)
-def sim_voxel_fit(reconst_signal):
-    """
-    Fitting the Generated Signal
-    Creating a List of Errors
-    """
+def test_noddix_signal():
+    # Fitting the Generated Signal
     t_start = time.time()
     NODDIx_fit = noddix_model.fit(reconst_signal)
     t_end = time.time()
-    time_noddix = t_end - t_start
+
+    # Creating a List of Errors
     volfic1_err = abs(min(abs(x_f_sig[0] - NODDIx_fit[0]), abs(NODDIx_fit[2] -
                           x_f_sig[0])))
     volfic2_err = abs(min(abs(x_f_sig[1] - NODDIx_fit[1]), abs(NODDIx_fit[3] -
@@ -102,10 +90,30 @@ def sim_voxel_fit(reconst_signal):
 
     time_noddix = t_end - t_start
     print('Time Taken to Fit: ', time_noddix)
-    print('Actual Signal: ', x_f_sig)
-    print('Estimation Result: ', NODDIx_fit)
-    print('Errors: ', errors_list)
-    print('Sum of Errors: ', sum(errors_list))
 
-    show_with_shore(gtab, reconst_signal)
-    return errors_list, time_noddix
+    if sum(errors_list) <= 8:
+        print('Test Passed')
+    else:
+        print('The signal is not fitting properly..')
+
+
+def show_with_shore(gtab, reconst_signal):
+    gtab.bvals = gtab.bvals * 10**6
+    # plot(np.sort(gtab.bvals))
+    shore_model = ShoreModel(gtab)
+    shore_fit = shore_model.fit(reconst_signal)
+    odf = shore_fit.odf(sphere)
+    from dipy.viz import window, fvtk
+    ren = window.Renderer()
+    ren.add(fvtk.sphere_funcs(odf, sphere))
+    window.show(ren)
+
+
+def gqi_viz(reconst_signal):
+    gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=2)
+    gqfit = gqmodel.fit(reconst_signal)
+    odf = gqfit.odf(sphere)
+    from dipy.viz import window, fvtk
+    ren = window.Renderer()
+    ren.add(fvtk.sphere_funcs(odf, sphere))
+    window.show(ren)
