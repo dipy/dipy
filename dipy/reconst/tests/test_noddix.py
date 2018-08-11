@@ -56,6 +56,7 @@ f = x_f_sig[0:5]
 phi = noddix_model.Phi2(x_f_sig)
 reconst_signal = np.dot(phi, f)
 
+
 @np.testing.dec.skipif(not noddix.have_cvxpy)
 def test_noddix_signal():
     # Fitting the Generated Signal

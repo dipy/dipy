@@ -66,6 +66,7 @@ def show_with_shore(gtab, reconst_signal):
     ren.add(fvtk.sphere_funcs(odf, sphere))
     window.show(ren)
 
+
 @np.testing.dec.skipif(not noddix.have_cvxpy)
 def sim_voxel_fit(reconst_signal):
     """
