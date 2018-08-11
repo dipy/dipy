@@ -5,8 +5,10 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 import dipy.reconst.noddi_speed as noddixspeed
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
+from dipy.utils.optpkg import optional_package
 from scipy import special
-# from numpy.linalg.linalg import LinAlgError
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 gamma = 2.675987 * 10 ** 8  # gyromagnetic ratio for Hydrogen
 D_intra = 1.7 * 10 ** 3  # intrinsic free diffusivity
@@ -131,13 +133,6 @@ class NODDIxModel(model):
         """
         To make the cost function for differential evolution algorithm
         """
-        #  moore-penrose inverse
-#        try:
-#            phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
-#        except LinAlgError:
-#            from pdb import set_trace
-#            set_trace()
-#            pass
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
         #  sigma
         f = np.dot(phi_mp, signal)
