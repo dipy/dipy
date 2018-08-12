@@ -54,6 +54,7 @@ def modify_button_callback(i_ren, obj, button):
 
 second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
+
 """
 TextBox
 =======
@@ -125,6 +126,7 @@ def cube_maker(color=(1, 1, 1), size=(0.2, 0.2, 0.2), center=(0, 0, 0)):
         cube_actor.GetProperty().SetColor(color)
     return cube_actor
 
+
 cube = cube_maker(color=(0, 0, 1), size=(20, 20, 20), center=(20, 0, 0))
 
 """
@@ -143,6 +145,7 @@ def rotate_cube(slider):
     previous_angle = slider.previous_value
     rotation_angle = angle - previous_angle
     cube.RotateX(rotation_angle)
+
 
 """
 Ring Slider
@@ -193,6 +196,7 @@ def hide_all_examples():
             element.set_visibility(False)
     cube.SetVisibility(False)
 
+
 hide_all_examples()
 
 """
@@ -215,6 +219,7 @@ def display_element():
         element.set_visibility(True)
     if values.index(listbox.selected[0]) == 4:
         cube.SetVisibility(True)
+
 
 listbox.on_change = display_element
 
