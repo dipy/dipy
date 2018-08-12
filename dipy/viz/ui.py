@@ -458,7 +458,7 @@ class Button2D(UI):
         """
         icon_id = self.icon_names.index(icon_name)
         self.set_icon(self.icons[icon_id][1])
-    
+
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -2993,7 +2993,7 @@ class Option(UI):
         self.button_size = (font_size * 1.2, font_size * 1.2)
         self.button_label_gap = 10
         super(Option, self).__init__(position)
-        
+
         # Offer some standard hooks to the user.
         self.on_change = lambda obj: None
 
@@ -3048,7 +3048,7 @@ class Option(UI):
             (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
-    
+
     def toggle(self, i_ren, obj, element):
         if self.checked:
             self.deselect()
@@ -3061,7 +3061,7 @@ class Option(UI):
     def select(self):
         self.checked = True
         self.button.set_icon_by_name("checked")
-    
+
     def deselect(self):
         self.checked = False
         self.button.set_icon_by_name("unchecked")
@@ -3123,7 +3123,7 @@ class Checkbox(UI):
 
             # Set callback
             option.on_change = self._handle_option_change
-        
+
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
@@ -3588,7 +3588,6 @@ class ListBoxItem2D(UI):
         range_select = i_ren.event.shift_key
         self.list_box.select(self, multiselect, range_select)
         i_ren.force_render()
-        i_ren.event.abort()  # Stop propagating the event.
 
 
 class FileMenu2D(UI):
