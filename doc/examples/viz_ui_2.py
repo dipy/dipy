@@ -47,6 +47,7 @@ Call the built in `next_icon` method via a callback that is
 triggered on left click.
 """
 
+
 def modify_button_callback(i_ren, obj, button):
     button.next_icon()
     i_ren.force_render()
@@ -71,40 +72,43 @@ panel = ui.Panel2D(size=(300, 150), color=(1, 1, 1), align="right")
 panel.center = (500, 400)
 panel.add_element(button_example, (0.2, 0.2))
 panel.add_element(second_button_example, (0.8, 0.6))
-panel.add_element(text, (150,50))
+panel.add_element(text, (150, 50))
 
 """
 Image Container
 ===============
 """
 
-img = ui.ImageContainer2D(img_path=read_viz_icons(fname='home3.png'), position = (500,400))
+img = ui.ImageContainer2D(img_path=read_viz_icons(fname='home3.png'),
+                          position=(500, 400))
 
 """
 Rectangle2D
 ==========
 """
 
-rect = ui.Rectangle2D(size=(200,200), position = (400,300), color=(1,0,1))
+rect = ui.Rectangle2D(size=(200, 200), position=(400, 300), color=(1, 0, 1))
 
 """
 Solid Disk
 =========
 """
 
-disk = ui.Disk2D(outer_radius=50, center=(500,500), color=(1,1,0))
+disk = ui.Disk2D(outer_radius=50, center=(500, 500), color=(1, 1, 0))
 
 """
 Ring Disk
 =========
 """
 
-ring = ui.Disk2D(outer_radius=50, inner_radius=45, center=(500,300), color=(0,1,1))
+ring = ui.Disk2D(outer_radius=50, inner_radius=45, center=(500, 300),
+                 color=(0, 1, 1))
 
 """
 Cube actor
 ==========
 """
+
 
 def cube_maker(color=(1, 1, 1), size=(0.2, 0.2, 0.2), center=(0, 0, 0)):
     cube = window.vtk.vtkCubeSource()
@@ -121,16 +125,18 @@ def cube_maker(color=(1, 1, 1), size=(0.2, 0.2, 0.2), center=(0, 0, 0)):
         cube_actor.GetProperty().SetColor(color)
     return cube_actor
 
-cube = cube_maker((0, 0, 1), (20, 20, 20), center=(20, 0, 0))
+cube = cube_maker(color=(0, 0, 1), size=(20, 20, 20), center=(20, 0, 0))
 
 """
 Add callbacks for moving the cube
 
 """
 
+
 def translate_cube(slider):
     value = slider.value
     cube.SetPosition(value, 0, 0)
+
 
 def rotate_cube(slider):
     angle = slider.value
@@ -173,12 +179,13 @@ List of all elements used as examples
 
 """
 
-examples = [[img], [panel], [rect], [disk, ring], [ring_slider, line_slider], [range_slider]]
+examples = [[img], [panel], [rect], [disk, ring],
+            [ring_slider, line_slider], [range_slider]]
 
 """
 Function to hide all elements
-
 """
+
 
 def hide_all_examples():
     for example in examples:
@@ -195,10 +202,9 @@ This is a listbox with each item corresponding to different elements.
 
 """
 
-values = ["Image", "Panel, Textbox, Buttons", "Rectangle", "Disks", "Line and Ring Slider", "Range Slider"]
-listbox = ui.ListBox2D(values=values,
-                       position=(10, 200),
-                       size=(300, 300),
+values = ["Image", "Panel, Textbox, Buttons", "Rectangle", "Disks",
+          "Line and Ring Slider", "Range Slider"]
+listbox = ui.ListBox2D(values=values, position=(10, 200), size=(300, 300),
                        multiselection=False)
 
 
@@ -235,7 +241,7 @@ show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
 # Uncomment this to start the visualisation
-# show_manager.start()
+show_manager.start()
 
 window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
 
