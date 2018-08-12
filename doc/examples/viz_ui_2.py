@@ -52,8 +52,8 @@ def modify_button_callback(i_ren, obj, button):
     button.next_icon()
     i_ren.force_render()
 
-second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
+second_button_example.on_left_mouse_button_pressed = modify_button_callback
 
 """
 TextBox
