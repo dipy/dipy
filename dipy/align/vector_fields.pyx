@@ -10,6 +10,8 @@ from .fused_types cimport floating, number
 
 from cython.parallel import prange
 from libc.stdlib cimport abort, malloc, free
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -1004,7 +1006,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     double[:, :] premult_disp,
                                     double t,
                                     floating[:, :, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats,
+                                    int num_threads=0) nogil:
     r"""Computes the composition of two 3D displacement fields
 
     Computes the composition of the two 3-D displacements d1 and d2. The
@@ -1045,6 +1048,9 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     stats : array, shape (3,)
         on output, this array will contain three statistics of the vector norms
         of the composition (maximum, mean, standard_deviation)
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -1071,6 +1077,17 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         double maxNorm = 0, *maxNorm_ptr
         double meanNorm = 0, *meanNorm_ptr
         double stdNorm = 0, *stdNorm_ptr
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads != 0:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     cnt_ptr = <cnp.npy_intp *>malloc(sizeof(cnp.npy_intp) * ns1)
     if cnt_ptr == NULL:
@@ -1106,6 +1123,9 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
     stats[2] = sqrt(stdNorm / cnt - meanNorm * meanNorm)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
 
 def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
@@ -1289,7 +1309,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tol,
-                                       floating[:, :, :, :] start=None):
+                                       floating[:, :, :, :] start=None,
+                                       num_threads=None):
     r"""Computes the inverse of a 3D displacement fields
 
     Computes the inverse of the given 3-D displacement field d using the
@@ -1317,6 +1338,9 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         an approximation to the inverse displacement field (if no approximation
         is available, None can be provided and the start displacement field
         will be zero)
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -1341,6 +1365,10 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         double epsilon = 0.5
         double error = 1 + tol
         double ss = spacing[0], sr = spacing[1], sc = spacing[2]
+        int threads_to_use = 0
+
+    if num_threads is not None:
+        threads_to_use = num_threads
 
     ftype = np.asarray(d).dtype
     cdef:
@@ -1365,7 +1393,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
             else:
                 epsilon = 0.5
             _compose_vector_fields_3d[floating](p, d, None, d_world2grid,
-                                                1.0, q, substats)
+                                                1.0, q, substats, threads_to_use)
             difmag = 0
             error = 0
             for k in range(ns):
@@ -1978,7 +2006,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
-            int[:] out_shape=None):
+            int[:] out_shape=None, num_threads=None):
     r"""Warps a 3D volume using trilinear interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -2004,6 +2032,9 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix C in eq. (1) above
     out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -2030,6 +2061,17 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp nrows = volume.shape[1]
         cnp.npy_intp ncols = volume.shape[2]
         cnp.npy_intp k
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     if not is_valid_affine(affine_idx_in, 3):
         raise ValueError("Invalid inner index multiplication matrix")
@@ -2051,10 +2093,12 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                                              dtype=np.asarray(volume).dtype)
 
     with nogil:
-
         for k in range(nslices):
             _warp_3d_fun(volume, d1, affine_idx_in, affine_idx_out,
                          affine_disp, k, nrows, ncols, warped)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     return np.asarray(warped)
 
@@ -2188,7 +2232,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
-               int[:] out_shape=None):
+               int[:] out_shape=None, num_threads=None):
     r"""Warps a 3D volume using using nearest-neighbor interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -2214,6 +2258,9 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix C in eq. (1) above
     out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -2240,6 +2287,17 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp nrows = volume.shape[1]
         cnp.npy_intp ncols = volume.shape[2]
         cnp.npy_intp k
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     if not is_valid_affine(affine_idx_in, 3):
         raise ValueError("Invalid inner index multiplication matrix")
@@ -2264,6 +2322,9 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         for k in prange(nslices):
             _warp_3d_nn_fun(volume, d1, affine_idx_in, affine_idx_out,
                             affine_disp, k, nrows, ncols, warped)
+
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
     return np.asarray(warped)
 
