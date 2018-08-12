@@ -1124,7 +1124,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     stats[1] = sqrt(meanNorm)
     stats[2] = sqrt(stdNorm / cnt - meanNorm * meanNorm)
 
-    if have_openmp and num_threads is not None:
+    if have_openmp and num_threads != 0:
         openmp.omp_set_num_threads(all_cores)
 
 
