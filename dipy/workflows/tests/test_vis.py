@@ -50,18 +50,12 @@ def test_mosaic():
         moving_grid2wordld = moved_data.affine
 
         overlapped = vis_registered.create_mosaic(static,
-                                                  moved_img, moving_grid2wordld, fname=None)
+                                                  moved_img,
+                                                  moving_grid2wordld,
+                                                  fname=None)
 
-        x, y, z = overlapped.shape[:3]
+        assert (overlapped >= 0).all() and (overlapped <= 255).all()
 
-        assert overlapped[x//2, :, :, 2] == 0
-        assert overlapped[:, y//2, :, 2] == 0
-        assert overlapped[:, :, z//2, 2] == 0
 
 if __name__ == "__main__":
     run_module_suite()
-
-
-
-
-
