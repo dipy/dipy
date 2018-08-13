@@ -576,4 +576,4 @@ class ApplyAffineFlow(Workflow):
             # Transforming the image/
             transformed = img_transformation.transform(image_data)
 
-            save_nifti(out_dir+out_file, transformed, affine=static_grid2world)
+            save_nifti(out_file, transformed, affine=static_grid2world)
