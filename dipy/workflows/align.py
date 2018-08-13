@@ -12,6 +12,51 @@ from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
     AffineTransform3D
 from dipy.io.image import save_nifti, load_nifti, load_affine_matrix, \
     save_affine_matrix, save_quality_assur_metric
+from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric
+
+
+class UtilMethods(object):
+
+    @staticmethod
+    def check_dimensions(static, moving):
+
+        """
+        Check the dimensions of the input images.
+
+        Parameters
+        ----------
+        static : array, shape (S, R, C) or (R, C)
+            the image to be used as reference during optimization.
+
+        moving: array, shape (S', R', C') or (R', C')
+            the image to be used as "moving" during optimization. It is
+            necessary to pre-align the moving image to ensure its domain
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the
+            'starting_affine' matrix
+        """
+        if len(static.shape) != len(moving.shape):
+            raise ValueError('Dimension mismatch: The'
+                             ' input images must have same number of '
+                             'dimensions.')
+
+    @staticmethod
+    def check_metric(metric):
+        """
+        Check the input metric type.
+
+        Parameters
+        ----------
+        metric: string
+            The similarity metric.
+            (default 'MutualInformation' metric)
+
+        """
+        if metric not in ['mi', 'cc']:
+            raise ValueError('Invalid similarity metric: Please provide'
+                             ' a valid metric.')
 
 
 class ResliceFlow(Workflow):
@@ -325,45 +370,6 @@ class ImageRegistrationFlow(Workflow):
                                            affreg, params0, transform,
                                            affine)
 
-    @staticmethod
-    def check_dimensions(static, moving):
-
-        """
-        Check the dimensions of the input images.
-
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        moving: array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-        """
-        if len(static.shape) != len(moving.shape):
-            raise ValueError('Dimension mismatch: The input images must '
-                             'have same number of dimensions.')
-
-    @staticmethod
-    def check_metric(metric):
-        """
-        Check the input metric type.
-
-        Parameters
-        ----------
-        metric: string
-            The similarity metric.
-            (default 'MutualInformation' metric)
-
-        """
-        if metric != 'mi':
-            raise ValueError('Invalid similarity metric: Please provide '
-                             'a valid metric.')
-
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
@@ -450,7 +456,8 @@ class ImageRegistrationFlow(Workflow):
             moving = np.array(image.get_data())
             moving_grid2world = image.affine
 
-            self.check_dimensions(static, moving)
+            util = UtilMethods()
+            util.check_dimensions(static, moving)
 
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
@@ -460,7 +467,7 @@ class ImageRegistrationFlow(Workflow):
             else:
 
                 params0 = None
-                self.check_metric(metric)
+                util.check_metric(metric)
                 metric = MutualInformationMetric(nbins, sampling_prop)
 
                 """
@@ -548,7 +555,7 @@ class ApplyAffineFlow(Workflow):
         """
 
         io = self.get_io_iterator()
-        img_register = ImageRegistrationFlow()
+        util = UtilMethods()
 
         for static_image_file, moving_image_file, affine_matrix_file, \
                 out_file in io:
@@ -562,7 +569,7 @@ class ApplyAffineFlow(Workflow):
 
             # Doing a sanity check for validating the dimensions of the input
             # images.
-            img_register.check_dimensions(static_image, moving_image)
+            util.check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
             affine_matrix = load_affine_matrix(affine_matrix_file)
@@ -571,7 +578,114 @@ class ApplyAffineFlow(Workflow):
             img_transformation = AffineMap(affine=affine_matrix,
                                            domain_grid_shape=image_data.shape)
 
-            # Transforming the image/
+            # Transforming the image
             transformed = img_transformation.transform(image_data)
-
             save_nifti(out_file, transformed, affine=static_grid2world)
+
+
+class SynRegistrationFlow(Workflow):
+
+    def run(self, static_image_file, moving_image_file, affine_matrix_file,
+            inv_static=False,
+            level_iters=[10, 10, 5], metric="cc", step_length=0.25,
+            ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
+            inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
+            out_inv_static='inc_static.nii.gz',
+            out_field='displacefield.txt'):
+
+        """
+        Parameters
+        ----------
+        static_image_file : string
+            Path of the static image file.
+
+        moving_image_file : string
+            Path to the moving image file.
+
+        affine_matrix_file : string
+            The text file containing pre alignment information or the
+             affine matrix.
+
+        inv_static : boolean, optional
+            Apply the inverse mapping to the static image (default 'False').
+
+        level_iters : variable int, optional
+            The number of iterations at each level of the gaussian pyramid.
+             By default, a 3-level scale space with iterations
+             sequence equal to [10, 10, 5] will be used. The 0-th
+             level corresponds to the finest resolution.
+
+        metric : string, optional
+            The metric to be used (Default cc, 'Cross Correlation metric').
+
+        step_length : float
+            the length of the maximum displacement vector of the update
+             displacement field at each iteration.
+
+        ss_sigma_factor : float
+            parameter of the scale-space smoothing kernel. For example, the
+             std. dev. of the kernel will be factor*(2^i) in the isotropic case
+             where i = 0, 1, ..., n_scales is the scale.
+
+        opt_tol : float
+            the optimization will stop when the estimated derivative of the
+             energy profile w.r.t. time falls below this threshold.
+
+        inv_iter : int
+            the number of iterations to be performed by the displacement field
+             inversion algorithm.
+
+        inv_tol : float
+            the displacement field inversion algorithm will stop iterating
+             when the inversion error falls below this threshold.
+
+        out_dir : string, optional
+            Directory to save the transformed files (default '').
+
+        out_warped : string, optional
+            Name of the warped file. If no name is given then a
+             suffix 'transformed' will be appended to the name of the
+             original input file (default 'warped_moved.nii.gz').
+
+        out_inv_static : string, optional
+            Name of the file to save the static image after applying the
+             inverse mapping (default 'inv_static.nii.gz').
+
+        out_field : string, optional
+            Name of the file to save the diffeomorphic field.
+
+        """
+
+        io = self.get_io_iterator()
+        util = UtilMethods()
+        util.check_metric(metric)
+
+        for static_file, moving_file, in_affine, \
+                warped_file, inv_static_file, displ_file in io:
+
+            # Loading the image data from the input files into object.
+            static_img_data = nib.load(static_file)
+            static_image = static_img_data.get_data()
+            static_grid2world = static_img_data.affine
+
+            moving_img_data = nib.load(moving_file)
+            moving_image = moving_img_data.get_data()
+            moving_grid2world = moving_img_data.affine
+
+            # Sanity check for the input image dimensions.
+            util.check_dimensions(static_image, moving_image)
+
+            # Loading the affine matrix.
+            affine_matrix = load_affine_matrix(in_affine)
+
+            metric = CCMetric(3)
+            sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+
+            mapping = sdr.optimize(static_image, moving_image,
+                                   static_grid2world, moving_grid2world,
+                                   affine_matrix)
+
+            warped_moving = mapping.transform(moving_image)
+
+            # Saving the warped moving file and the alignment matrix.
+            save_nifti(warped_file, warped_moving, static_grid2world)
