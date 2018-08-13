@@ -519,7 +519,7 @@ class ImageRegistrationFlow(Workflow):
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF
-            (default '32').
+             (default '32').
 
         sampling_prop : int, optional
             Number ([0-100]) of voxels for calculating the PDF.
@@ -557,16 +557,14 @@ class ImageRegistrationFlow(Workflow):
              (default '').
 
         out_moved : string, optional
-            Name for the saved transformed image
-             (default 'moved.nii.gz').
+            The saved transformed image file (default 'moved.nii.gz').
 
         out_affine : string, optional
-            Name for the saved affine matrix
-             (default 'affine.txt').
+            The saved affine matrix file (default 'affine.txt').
 
         out_quality : string, optional
-            Name of the file containing the saved quality
-             metric (default 'quality_metric.txt').
+            The file containing the saved quality metric
+             (default 'quality_metric.txt').
         """
 
         io_it = self.get_io_iterator()
@@ -646,8 +644,8 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                logging.info("Similarity metric:"+str(xopt))
-                logging.info("Distance measure:"+str(fopt))
+                logging.info("Optimal parameters:"+str(xopt))
+                logging.info("Similarity metric:"+str(fopt))
 
                 if save_metric:
                     save_quality_assur_metric(qual_val_file, xopt, fopt)

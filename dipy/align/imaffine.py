@@ -1003,10 +1003,10 @@ class AffineRegistration(object):
         -------
         affine_map : instance of AffineMap
             the affine resulting affine transformation
-        xopt : similarity metric
-            the metric of optimal parameters
-        fopt : distance
-            the distance between the images
+        xopt : optimal parameters
+            the optimal parameters (translation, rotation shear etc.)
+        fopt : Similarity metric
+            the value of the function at the optimal parameters.
         '''
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
