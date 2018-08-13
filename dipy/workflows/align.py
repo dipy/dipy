@@ -452,8 +452,6 @@ class ImageRegistrationFlow(Workflow):
 
             self.check_dimensions(static, moving)
 
-            print(progressive)
-
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
                                                           static_grid2world,
