@@ -3057,17 +3057,16 @@ class Option(UI):
         else:
             self.select()
 
+        self.on_change(self)
         i_ren.force_render()
 
     def select(self):
         self.checked = True
         self.button.set_icon_by_name("checked")
-        self.on_change(self)
     
     def deselect(self):
         self.checked = False
         self.button.set_icon_by_name("unchecked")
-        self.on_change(self)
 
 
 class Checkbox(UI):
@@ -3230,28 +3229,13 @@ class RadioButton(Checkbox):
                                           font_size=font_size,
                                           font_family=font_family)
 
-    def toggle_check(self, i_ren, obj, button):
-        """ Toggles the checked status of an option.
+    def _handle_option_change(self, option):
+        for option_ in self.options:
+            option_.deselect()
 
-        Parameters
-        ----------
-        i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
-            The picked actor
-        button : :class:`Button2D`
-        """
-        for option in self.options:
-            if option.button == button:
-                if option.checked is not True:
-                    option.checked = True
-                    option.button.next_icon()
-                self.checked = option.label
-
-            elif option.checked is True:
-                option.checked = False
-                option.button.next_icon()
-        self.on_change()
-        i_ren.force_render()
+        option.select()
+        self.checked = [option.label]
+        self.on_change(self)
 
 
 class ListBox2D(UI):

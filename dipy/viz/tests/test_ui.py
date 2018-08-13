@@ -626,7 +626,7 @@ def test_ui_checkbox(mode='test'):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_radio_button(interactive=False):
+def test_ui_radio_button(mode='test'):
     filename = "test_ui_radio_button"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
@@ -649,8 +649,8 @@ def test_ui_radio_button(interactive=False):
 
     selected_option = []
 
-    def _on_change():
-        selected_option.append(radio_button_test.checked)
+    def _on_change(radiobutton):
+        selected_option.append(list(radiobutton.checked))
 
     # Set up a callback when selection changes
     radio_button_test.on_change = _on_change
@@ -663,35 +663,34 @@ def test_ui_radio_button(interactive=False):
                                       title="DIPY Checkbox")
     show_manager.ren.add(radio_button_test)
 
-    # Recorded events:
-    #  1. Click on button of option 1.
-    #  2. Click on button of option 2.
-    #  2. Click on button of option 2.
-    #  2. Click on text of option 2.
-    #  3. Click on button of option 1.
-    #  4. Click on text of option 3.
-    #  6. Click on button of option 4.
-    #  9. Click on text of option 4.
-    show_manager.play_events_from_file(recording_filename)
-    expected = EventCounter.load(expected_events_counts_filename)
-    event_counter.check_counts(expected)
+    if mode == "interactive":
+        show_manager.start()
+        
+    elif mode == "record":
+        # Recorded events:
+        #  1. Click on button of option 1.
+        #  2. Click on button of option 2.
+        #  3. Click on button of option 2.
+        #  4. Click on text of option 2.
+        #  5. Click on button of option 1.
+        #  6. Click on text of option 3.
+        #  7. Click on button of option 4.
+        #  8. Click on text of option 4.
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+    
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
 
-    # Check if the right options were selected.
-    expected = [['option 1'], ['option 2\nOption 2'], ['option 2\nOption 2'],
-                ['option 2\nOption 2'], ['option 1'], ['option 3'],
-                ['option 4'], ['option 4']]
-    assert len(selected_option) == len(expected)
-    assert_arrays_equal(selected_option, expected)
-    del show_manager
-
-    if interactive:
-        radio_button_test = ui.RadioButton(
-            labels=["option 1", "option 2\nOption 2", "option 3", "option 4"],
-            position=(100, 100))
-        showm = window.ShowManager(size=(600, 600))
-        showm.ren.add(radio_button_test)
-        showm.start()
-
+        # Check if the right options were selected.
+        expected = [['option 1'], ['option 2\nOption 2'], ['option 2\nOption 2'],
+                    ['option 2\nOption 2'], ['option 1'], ['option 3'],
+                    ['option 4'], ['option 4']]
+        assert len(selected_option) == len(expected)
+        assert_arrays_equal(selected_option, expected)
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
@@ -813,7 +812,7 @@ if __name__ == "__main__":
         test_ui_checkbox(mode=mode)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_radio_button":
-        test_ui_radio_button(interactive=True)
+        test_ui_radio_button(mode=mode)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
