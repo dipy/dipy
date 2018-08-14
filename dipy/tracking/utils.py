@@ -619,6 +619,55 @@ def target_line_based(streamlines, target_mask, affine=None, include=True):
         yield streamlines[idx]
 
 
+@_with_initialize
+def clip_streamlines_to_target(streamlines, target_mask, affine):
+    """Clips streamlines to where they first touch a target ROI.
+    Parameters
+    ----------
+    streamlines : iterable
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region. Streamlines will be clipped where they first
+        encounter the ROI
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
+
+    Returns
+    -------
+    streamlines : generator
+        A sequence of streamlines that pass through `target_mask`.
+    Raises
+    ------
+    ValueError
+        When the points of the streamlines lie outside of the `target_mask`
+        or if the ROI is in the center and it's unclear which end to keep
+
+    """
+    target_mask = np.array(target_mask, dtype=bool, copy=True)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    yield
+    # End of initialization
+
+    for sl in streamlines:
+        try:
+            ind = _to_voxel_coordinates(sl, lin_T, offset)
+            i, j, k = ind.T
+            state = target_mask[i, j, k]
+            mymin = np.argwhere(state).min()
+            mymax = np.argwhere(state).max()
+        except IndexError:
+            raise ValueError("streamlines points are outside of target_mask")
+        if state.any():
+            if mymin > state.shape[0]-mymin and mymax > state.shape[0]-mymin:
+                yield sl[:mymin, :]
+            elif mymin < state.shape[0]-mymin and mymax < state.shape[0]-mymin:
+                yield sl[mymax:, :]
+        else:
+            raise ValueError("Don't know which end of streamline to clip")
+
+
 def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
     """Is a streamline near an ROI.
 
