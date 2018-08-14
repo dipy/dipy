@@ -169,6 +169,7 @@ def test_image_registration():
                               moving_image_file,
                               metric='wrong_metric')
 
+
         def check_existense(movedfile, affine_mat_file):
             assert os.path.exists(movedfile)
             assert os.path.exists(affine_mat_file)
