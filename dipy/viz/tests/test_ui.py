@@ -961,6 +961,10 @@ def test_ui_preloader(interactive=False):
          (100-2*preloader_test.width) * np.sin(np.deg2rad(160)),
          0])
 
+    show_manager.window.Finalize()
+    show_manager.iren.TerminateApp()
+    del show_manager
+
     if interactive:
         preloader_test = ui.Preloader(outer_radius=100, center=(300, 300))
         show_manager = window.ShowManager(size=(600, 600),
