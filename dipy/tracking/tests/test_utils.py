@@ -408,6 +408,15 @@ def test_clip_to_target():
     bad = clip_streamlines_to_target(streamlines_outside, roi1, affine=aff)
     npt.assert_raises(ValueError, list, bad)
 
+    # Test smaller voxels
+    affine = np.array([[0.3, 0, 0, 0], [0, 0.2, 0, 0], [0, 0, 0.4, 0], [0, 0, 0, 1]])
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=affine))
+    npt.assert_array_equal([len(i) for i in new1], np.array([5, 5, 5]))
+    # Test with an affine that includes a translation
+    affine = np.array([[1, 0, 0, -1.0], [0, 1, 0, 0.5], [0, 0, 1, 0.5], [0, 0, 0, 1]])
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=affine))
+    npt.assert_array_equal(new1, np.array([]))
+
 
 def test_near_roi():
     streamlines = [
