@@ -642,7 +642,6 @@ def clip_streamlines_to_target(streamlines, target_mask, affine):
     ------
     ValueError
         When the points of the streamlines lie outside of the `target_mask`
-        or if the ROI is in the center and it's unclear which end to keep
 
     """
     target_mask = np.array(target_mask, dtype=bool, copy=True)
@@ -664,8 +663,6 @@ def clip_streamlines_to_target(streamlines, target_mask, affine):
                 yield sl[:mymin, :]
             elif mymin < state.shape[0]-mymin and mymax < state.shape[0]-mymin:
                 yield sl[mymax:, :]
-        else:
-            raise ValueError("Don't know which end of streamline to clip")
 
 
 def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
