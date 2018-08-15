@@ -195,7 +195,7 @@ def test_affreg_all_transforms():
         if dim == 2:
             nslices = 1
         else:
-            nslices = 20
+            nslices = 45
         factor = factors[ttype][0]
         sampling_pc = factors[ttype][1]
         trans = regtransforms[ttype]
