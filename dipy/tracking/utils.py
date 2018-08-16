@@ -657,7 +657,7 @@ def clip_streamlines_to_target(streamlines, target_mask, affine):
             mymin = np.argwhere(state).min()
             mymax = np.argwhere(state).max()
         except IndexError:
-            raise ValueError("streamlines points are outside of target_mask")
+            raise ValueError("streamline points are outside of target_mask")
         if state.any():
             if mymin > state.shape[0]-mymin and mymax > state.shape[0]-mymin:
                 yield sl[:mymin, :]
