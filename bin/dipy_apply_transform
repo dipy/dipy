@@ -1,0 +1,12 @@
+#!python
+
+"""
+Importing the flow runner method and the ApplyTransformFlow
+method from the workflows.
+"""
+
+from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.align import ApplyTransformFlow
+
+if __name__ == "__main__":
+    run_flow(ApplyTransformFlow())
