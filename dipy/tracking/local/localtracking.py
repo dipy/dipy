@@ -1,5 +1,6 @@
-import numpy as np
 import random
+
+import numpy as np
 
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
 from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
@@ -37,7 +38,7 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=0):
+                 return_all=True, random_seed=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -122,8 +123,10 @@ class LocalTracking(object):
         for s in self.seeds:
             s = np.dot(lin, s) + offset
             # Set the random seed in numpy and random
-            s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
-                % (2**32 - 1)
+            s_random_seed = None
+            if self.random_seed is not None:
+                s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
+                    % (2**32 - 1)
             random.seed(s_random_seed)
             np.random.seed(s_random_seed)
             directions = self.direction_getter.initial_direction(s)
@@ -157,7 +160,7 @@ class ParticleFilteringTracking(LocalTracking):
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
-                 random_seed=0):
+                 random_seed=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
