@@ -576,8 +576,8 @@ def test_ui_checkbox(interactive=False):
     # Collect the sequence of options that have been checked in this list.
     selected_options = []
 
-    def _on_change():
-        selected_options.append(list(checkbox_test.checked))
+    def _on_change(checkbox):
+        selected_options.append(list(checkbox.checked))
 
     # Set up a callback when selection changes
     checkbox_test.on_change = _on_change
@@ -650,8 +650,8 @@ def test_ui_radio_button(interactive=False):
 
     selected_option = []
 
-    def _on_change():
-        selected_option.append(radio_button_test.checked)
+    def _on_change(radio_button):
+        selected_option.append(radio_button.checked)
 
     # Set up a callback when selection changes
     radio_button_test.on_change = _on_change
@@ -667,12 +667,12 @@ def test_ui_radio_button(interactive=False):
     # Recorded events:
     #  1. Click on button of option 1.
     #  2. Click on button of option 2.
-    #  2. Click on button of option 2.
-    #  2. Click on text of option 2.
-    #  3. Click on button of option 1.
-    #  4. Click on text of option 3.
-    #  6. Click on button of option 4.
-    #  9. Click on text of option 4.
+    #  3. Click on button of option 2.
+    #  4. Click on text of option 2.
+    #  5. Click on button of option 1.
+    #  6. Click on text of option 3.
+    #  7. Click on button of option 4.
+    #  8. Click on text of option 4.
     show_manager.play_events_from_file(recording_filename)
     expected = EventCounter.load(expected_events_counts_filename)
     event_counter.check_counts(expected)

@@ -448,6 +448,16 @@ class Button2D(UI):
         """
         self.resize(self.size * factor)
 
+    def set_icon_by_name(self, icon_name):
+        """ Set the button icon using its name.
+
+        Parameters
+        ----------
+        icon_name : str
+        """
+        icon_id = self.icon_names.index(icon_name)
+        self.set_icon(self.icons[icon_id][1])
+    
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -2985,6 +2995,9 @@ class Option(UI):
         self.button_size = (font_size * 1.2, font_size * 1.2)
         self.button_label_gap = 10
         super(Option, self).__init__(position)
+        
+        # Offer some standard hooks to the user.
+        self.on_change = lambda obj: None
 
     def _setup(self):
         """ Setup this UI component.
@@ -2999,6 +3012,10 @@ class Option(UI):
                                size=self.button_size)
 
         self.text = TextBlock2D(text=self.label, font_size=self.font_size)
+
+        # Add callbacks
+        self.button.on_left_mouse_button_clicked = self.toggle
+        self.text.on_left_mouse_button_clicked = self.toggle
 
     def _get_actors(self):
         """ Get the actors composing this UI component.
@@ -3033,6 +3050,23 @@ class Option(UI):
             (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
+    
+    def toggle(self, i_ren, obj, element):
+        if self.checked:
+            self.deselect()
+        else:
+            self.select()
+
+        self.on_change(self)
+        i_ren.force_render()
+
+    def select(self):
+        self.checked = True
+        self.button.set_icon_by_name("checked")
+    
+    def deselect(self):
+        self.checked = False
+        self.button.set_icon_by_name("unchecked")
 
 
 class Checkbox(UI):
@@ -3072,7 +3106,7 @@ class Checkbox(UI):
         self._font_size = font_size
         self.font_family = font_family
         super(Checkbox, self).__init__(position)
-        self.on_change = lambda: None
+        self.on_change = lambda checkbox: None
         self.checked = []
 
     def _setup(self):
@@ -3087,12 +3121,11 @@ class Checkbox(UI):
             line_spacing = option.text.actor.GetTextProperty().GetLineSpacing()
             button_y = button_y + self.font_size * \
                 (label.count('\n') + 1) * (line_spacing + 0.1) + self.padding
-            option.button.on_left_mouse_button_pressed = self.toggle_check
             self.options.append(option)
-            option.button.add_callback(option.text.actor,
-                                       "LeftButtonPressEvent",
-                                       self.toggle_check)
 
+            # Set callback
+            option.on_change = self._handle_option_change
+        
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
@@ -3117,28 +3150,19 @@ class Checkbox(UI):
             - self.padding
         return np.asarray([option_width, height])
 
-    def toggle_check(self, i_ren, obj, button):
-        """ Toggles the checked status of an option.
+    def _handle_option_change(self, option):
+        """ Reacts whenever an option changes.
 
         Parameters
         ----------
-        i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
-            The picked actor
-        button : :class:`Button2D`
+        option : :class:`Option`
         """
-        button.next_icon()
-        for option in self.options:
-            if option.button == button:
-                option.checked = not option.checked
-                if option.checked is True:
-                    self.checked.append(option.label)
-                else:
-                    self.checked.remove(option.label)
-                break
+        if option.checked:
+            self.checked.append(option.label)
+        else:
+            self.checked.remove(option.label)
 
-        self.on_change()
-        i_ren.force_render()
+        self.on_change(self)
 
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component.
@@ -3205,28 +3229,13 @@ class RadioButton(Checkbox):
                                           font_size=font_size,
                                           font_family=font_family)
 
-    def toggle_check(self, i_ren, obj, button):
-        """ Toggles the checked status of an option.
+    def _handle_option_change(self, option):
+        for option_ in self.options:
+            option_.deselect()
 
-        Parameters
-        ----------
-        i_ren : :class:`CustomInteractorStyle`
-        obj : :class:`vtkActor`
-            The picked actor
-        button : :class:`Button2D`
-        """
-        for option in self.options:
-            if option.button == button:
-                if option.checked is not True:
-                    option.checked = True
-                    option.button.next_icon()
-                self.checked = option.label
-
-            elif option.checked is True:
-                option.checked = False
-                option.button.next_icon()
-        self.on_change()
-        i_ren.force_render()
+        option.select()
+        self.checked = [option.label]
+        self.on_change(self)
 
 
 class ListBox2D(UI):
