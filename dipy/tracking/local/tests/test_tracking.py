@@ -241,6 +241,15 @@ def test_probabilistic_odf_weighted_tracker():
     # number of seeds places
     npt.assert_(np.array([len(streamlines) == len(seeds)]))
 
+    # Test reproducibility
+    tracking_1 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+                                           0.5,
+                                           random_seed=0)).data
+    tracking_2 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+                                           0.5,
+                                           random_seed=0)).data
+    npt.assert_equal(tracking_1, tracking_2)
+
 
 def test_particle_filtering_tractography():
     """This tests that the ParticleFilteringTracking produces
@@ -373,6 +382,15 @@ def test_particle_filtering_tractography():
         ValueError,
         lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
                                           particle_count=-1))
+
+    # Test reproducibility
+    tracking_1 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                       step_size,
+                                                       random_seed=0)).data
+    tracking_2 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+                                                       step_size,
+                                                       random_seed=0)).data
+    npt.assert_equal(tracking_1, tracking_2)
 
 
 def test_maximum_deterministic_tracker():
