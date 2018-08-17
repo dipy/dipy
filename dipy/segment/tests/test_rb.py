@@ -55,7 +55,7 @@ def test_rb_disable_slr():
 
 def test_rb_no_verbose_and_mam():
 
-    rb = RecoBundles(f, clust_thr=10, verbose=False)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=False)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -100,13 +100,6 @@ def test_rb_no_neighb():
 
     b.extend(b3)
 
-    from dipy.viz import actor, window
-
-    ren = window.Renderer()
-    ren.add(actor.line(b))
-    ren.add(actor.line(b2, colors=(1, 0, 0)))
-    window.show(ren)
-
     rb = RecoBundles(b, greater_than=0, clust_thr=10)
     rec_trans, rec_labels = rb.recognize(model_bundle=b2,
                                          model_clust_thr=5.,
@@ -137,8 +130,8 @@ def test_rb_reduction_mam():
 
 if __name__ == '__main__':
 
-    test_rb_no_neighb()
-    #run_module_suite()
+    #test_rb_no_neighb()
+    run_module_suite()
 
     #test_rb_clustermap()
 
