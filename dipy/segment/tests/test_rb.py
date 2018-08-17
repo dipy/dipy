@@ -26,7 +26,7 @@ f.extend(f3)
 
 def test_rb_check_defaults():
 
-    rb = RecoBundles(f, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10)
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -39,7 +39,7 @@ def test_rb_check_defaults():
 
 def test_rb_disable_slr():
 
-    rb = RecoBundles(f, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -55,7 +55,7 @@ def test_rb_disable_slr():
 
 def test_rb_no_verbose_and_mam():
 
-    rb = RecoBundles(f, clust_thr=10, verbose=False)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=False)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -74,7 +74,8 @@ def test_rb_clustermap():
 
     cluster_map = qbx_and_merge(f, thresholds=[40, 25, 20, 10])
 
-    rb = RecoBundles(f, cluster_map=cluster_map, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, less_than=1000000,
+                     cluster_map=cluster_map, clust_thr=10)
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -99,7 +100,7 @@ def test_rb_no_neighb():
 
     b.extend(b3)
 
-    rb = RecoBundles(b, clust_thr=10)
+    rb = RecoBundles(b, greater_than=0, clust_thr=10)
     rec_trans, rec_labels = rb.recognize(model_bundle=b2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -110,7 +111,7 @@ def test_rb_no_neighb():
 
 def test_rb_reduction_mam():
 
-    rb = RecoBundles(f, clust_thr=10, verbose=True)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=True)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -129,4 +130,8 @@ def test_rb_reduction_mam():
 
 if __name__ == '__main__':
 
+    #test_rb_no_neighb()
     run_module_suite()
+
+    #test_rb_clustermap()
+
