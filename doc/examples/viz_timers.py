@@ -11,6 +11,7 @@ global opacity levels.
 
 """
 
+
 import numpy as np
 from dipy.viz import window, actor, ui
 
@@ -29,7 +30,7 @@ sphere_actor = actor.sphere(centers=xyz,
 renderer.add(sphere_actor)
 
 showm = window.ShowManager(renderer,
-                           size=(1024, 768), reset_camera=False,
+                           size=(900, 768), reset_camera=False,
                            order_transparent=True)
 
 showm.initialize()

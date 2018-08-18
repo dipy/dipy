@@ -230,6 +230,8 @@ Visualization
 - :ref:`example_viz_surfaces`
 - :ref:`example_viz_roi_contour`
 - :ref:`example_viz_ui`
+- :ref:`example_viz_timers`
+
 
 ---------------
 Workflows
