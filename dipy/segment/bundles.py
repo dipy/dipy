@@ -246,7 +246,8 @@ class RecoBundles(object):
             reduction_distance=reduction_distance)
 
         if len(neighb_streamlines) == 0:
-            return Streamlines([]), [], Streamlines([]) # change return values
+            return Streamlines([]), []
+
         if slr:
 
             transf_streamlines, slr1_bmd = self._register_neighb_to_model(
