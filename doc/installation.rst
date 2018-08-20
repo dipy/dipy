@@ -163,8 +163,8 @@ Note on python versions
 -----------------------
 
 Most of the functionality in DIPY supports versions of Python from 2.6 to 3.6.
-However, some visualization functionality depends on VTK_, which currently does not work with Python 3 versions.
-Therefore, if you want to use the visualization functions in DIPY, please use it with Python 2.
+However, some visualization functionality depends on VTK_, VTK 7 work with Python 3 versions.
+Therefore, if you want to use the visualization functions in DIPY with VTK<7, please use it with Python 2.
 
 .. _from-source:
 
