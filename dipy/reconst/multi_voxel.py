@@ -85,11 +85,9 @@ def parallel_voxel_fit(single_voxel_fit):
     ...     assert np.allclose(fit.data, data.sum(-1))
     """
 
-    def new_fit(model, data, *args, **kwargs):
+    def new_fit(model, data, mask=None, *args, **kwargs):
         """Fit method in parallel for every voxel in data """
-        # Pop the mask, if there is one
-        mask = kwargs.get('mask', None)
-        # print(mask, mask.shape)
+
         if data.ndim == 1:
             return single_voxel_fit(model, data)
         if mask is None:
@@ -109,6 +107,7 @@ def parallel_voxel_fit(single_voxel_fit):
         indexes = np.argwhere(mask)
         # Convert indexes to tuple
         indexes = [tuple(v) for v in indexes]
+
         # Create chunks
         chunks_spacing = np.linspace(0, len(indexes), num=nb_processes + 1)
         chunks = [(indexes[int(chunks_spacing[i - 1]): int(chunks_spacing[i])])
