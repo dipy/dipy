@@ -98,11 +98,12 @@ def parallel_voxel_fit(single_voxel_fit):
             raise ValueError("mask and data shape do not match")
 
         # Get number of processes
+        nb_cpu  = cpu_count()
         nb_processes = int(kwargs.pop('nb_processes', '0'))
-        nb_processes = nb_processes if nb_processes >= 1 else cpu_count()
+        nb_processes = nb_processes if nb_cpu > nb_processes >= 1 else nb_cpu
 
         if nb_processes == 1:
-            return single_voxel_fit(model, data)
+            return multi_voxel_fit(single_voxel_fit)(model, data, *args, **kwargs)
 
         # Get non null indexes from mask
         indexes = np.argwhere(mask)
