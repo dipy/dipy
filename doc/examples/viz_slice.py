@@ -280,7 +280,7 @@ for j in range(rows):
 renderer.reset_camera()
 renderer.zoom(1.0)
 
-show_m_mosaic.ren.add(panel_picking)
+# show_m_mosaic.ren.add(panel_picking)
 # show_m_mosaic.start()
 
 """
