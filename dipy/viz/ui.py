@@ -448,6 +448,16 @@ class Button2D(UI):
         """
         self.resize(self.size * factor)
 
+    def set_icon_by_name(self, icon_name):
+        """ Set the button icon using its name.
+
+        Parameters
+        ----------
+        icon_name : str
+        """
+        icon_id = self.icon_names.index(icon_name)
+        self.set_icon(self.icons[icon_id][1])
+    
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -2947,6 +2957,282 @@ class ImageContainer2D(UI):
 
         """
         self.texture = set_input(self.texture, img)
+
+
+class Option(UI):
+
+    """
+    A set of a Button2D and a TextBlock2D to act as a single option
+    for checkboxes and radio buttons.
+    Clicking the button toggles its checked/unchecked status.
+
+    Attributes
+    ----------
+    label : str
+        The label for the option.
+    font_size : int
+            Font Size of the label.
+    """
+
+    def __init__(self, label, position=(0, 0), font_size=18):
+        """
+        Parameters
+        ----------
+        label : str
+            Text to be displayed next to the option's button.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of
+            the button of the option.
+        font_size : int
+            Font size of the label.
+        """
+        self.label = label
+        self.font_size = font_size
+        self.checked = False
+        self.button_size = (font_size * 1.2, font_size * 1.2)
+        self.button_label_gap = 10
+        super(Option, self).__init__(position)
+        
+        # Offer some standard hooks to the user.
+        self.on_change = lambda obj: None
+
+    def _setup(self):
+        """ Setup this UI component.
+        """
+        # Option's button
+        self.button_icons = []
+        self.button_icons.append(('unchecked',
+                                 read_viz_icons(fname="stop2.png")))
+        self.button_icons.append(('checked',
+                                 read_viz_icons(fname="checkmark.png")))
+        self.button = Button2D(icon_fnames=self.button_icons,
+                               size=self.button_size)
+
+        self.text = TextBlock2D(text=self.label, font_size=self.font_size)
+
+        # Add callbacks
+        self.button.on_left_mouse_button_clicked = self.toggle
+        self.text.on_left_mouse_button_clicked = self.toggle
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return self.button.actors + self.text.actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        self.button.add_to_renderer(ren)
+        self.text.add_to_renderer(ren)
+
+    def _get_size(self):
+        width = self.button.size[0] + self.button_label_gap + self.text.size[0]
+        height = max(self.button.size[1], self.text.size[1])
+        return np.array([width, height])
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        num_newlines = self.label.count('\n')
+        self.button.position = coords + \
+            (0, num_newlines * self.font_size * 0.5)
+        offset = (self.button.size[0] + self.button_label_gap, 0)
+        self.text.position = coords + offset
+    
+    def toggle(self, i_ren, obj, element):
+        if self.checked:
+            self.deselect()
+        else:
+            self.select()
+
+        self.on_change(self)
+        i_ren.force_render()
+
+    def select(self):
+        self.checked = True
+        self.button.set_icon_by_name("checked")
+    
+    def deselect(self):
+        self.checked = False
+        self.button.set_icon_by_name("unchecked")
+
+
+class Checkbox(UI):
+
+    """ A 2D set of :class:'Option' objects.
+    Multiple options can be selected.
+
+    Attributes
+    ----------
+    labels : list(string)
+        List of labels of each option.
+    options : list(Option)
+        List of all the options in the checkbox set.
+    padding : float
+        Distance between two adjacent options
+    """
+
+    def __init__(self, labels, padding=1, font_size=18,
+                 font_family='Arial', position=(0, 0)):
+        """
+        Parameters
+        ----------
+        labels : list(string)
+            List of labels of each option.
+        padding : float
+            The distance between two adjacent options
+        font_size : int
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of
+            the button of the first option.
+        """
+        self.labels = list(reversed(labels))
+        self._padding = padding
+        self._font_size = font_size
+        self.font_family = font_family
+        super(Checkbox, self).__init__(position)
+        self.on_change = lambda checkbox: None
+        self.checked = []
+
+    def _setup(self):
+        """ Setup this UI component.
+        """
+        self.options = []
+        button_y = self.position[1]
+        for label in self.labels:
+            option = Option(label=label,
+                            font_size=self.font_size,
+                            position=(self.position[0], button_y))
+            line_spacing = option.text.actor.GetTextProperty().GetLineSpacing()
+            button_y = button_y + self.font_size * \
+                (label.count('\n') + 1) * (line_spacing + 0.1) + self.padding
+            self.options.append(option)
+
+            # Set callback
+            option.on_change = self._handle_option_change
+        
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        actors = []
+        for option in self.options:
+            actors = actors + option.actors
+        return actors
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        for option in self.options:
+            option.add_to_renderer(ren)
+
+    def _get_size(self):
+        option_width, option_height = self.options[0].get_size()
+        height = len(self.labels) * (option_height + self.padding) \
+            - self.padding
+        return np.asarray([option_width, height])
+
+    def _handle_option_change(self, option):
+        """ Reacts whenever an option changes.
+
+        Parameters
+        ----------
+        option : :class:`Option`
+        """
+        if option.checked:
+            self.checked.append(option.label)
+        else:
+            self.checked.remove(option.label)
+
+        self.on_change(self)
+
+    def _set_position(self, coords):
+        """ Position the lower-left corner of this UI component.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        button_y = coords[1]
+        for option_no, option in enumerate(self.options):
+            option.position = (coords[0], button_y)
+            line_spacing = option.text.actor.GetTextProperty().GetLineSpacing()
+            button_y = button_y + self.font_size * \
+                (self.labels[option_no].count('\n') + 1) * (line_spacing + 0.1)\
+                + self.padding
+
+    @property
+    def font_size(self):
+        """ Gets the font size of text.
+        """
+        return self._font_size
+
+    @property
+    def padding(self):
+        """ Gets the padding between options.
+        """
+        return self._padding
+
+
+class RadioButton(Checkbox):
+    """ A 2D set of :class:'Option' objects.
+    Only one option can be selected.
+
+    Attributes
+    ----------
+    labels : list(string)
+        List of labels of each option.
+    options : list(Option)
+        List of all the options in the checkbox set.
+    padding : float
+        Distance between two adjacent options
+    """
+
+    def __init__(self, labels, padding=1, font_size=18,
+                 font_family='Arial', position=(0, 0)):
+        """
+        Parameters
+        ----------
+        labels : list(string)
+            List of labels of each option.
+        padding : float
+            The distance between two adjacent options
+        font_size : int
+            Size of the text font.
+        font_family : str
+            Currently only supports Arial.
+        position : (float, float)
+            Absolute coordinates (x, y) of the lower-left corner of
+            the button of the first option.
+        """
+        super(RadioButton, self).__init__(labels=labels, position=position,
+                                          padding=padding,
+                                          font_size=font_size,
+                                          font_family=font_family)
+
+    def _handle_option_change(self, option):
+        for option_ in self.options:
+            option_.deselect()
+
+        option.select()
+        self.checked = [option.label]
+        self.on_change(self)
 
 
 class ListBox2D(UI):
