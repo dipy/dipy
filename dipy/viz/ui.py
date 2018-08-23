@@ -458,7 +458,7 @@ class Button2D(UI):
         """
         icon_id = self.icon_names.index(icon_name)
         self.set_icon(self.icons[icon_id][1])
-    
+
     def set_icon(self, icon):
         """ Modifies the icon used by the vtkTexturedActor2D.
 
@@ -599,6 +599,10 @@ class Rectangle2D(UI):
         self._points.SetPoint(2, size[0], size[1], 0.0)
         self._points.SetPoint(3, 0, size[1], 0.0)
         self._polygonPolyData.SetPoints(self._points)
+        mapper = vtk.vtkPolyDataMapper2D()
+        mapper = set_input(mapper, self._polygonPolyData)
+
+        self.actor.SetMapper(mapper)
 
     def _set_position(self, coords):
         """ Position the lower-left corner of this UI component.
@@ -925,6 +929,41 @@ class Panel2D(UI):
         self._elements.append(element)
         offset = element.position - self.position
         self.element_offsets.append((element, offset))
+
+    def update_element(self, element, coords, anchor="position"):
+        """ Updates the position of a UI component in the panel.
+
+        Parameters
+        ----------
+        element : UI
+            The UI item to be updated.
+        coords : (float, float) or (int, int)
+            New coordinates.
+            If float, normalized coordinates are assumed and they must be
+            between [0,1].
+            If int, pixels coordinates are assumed and it must fit within the
+            panel's size.
+        """
+        coords = np.array(coords)
+
+        if np.issubdtype(coords.dtype, np.floating):
+            if np.any(coords < 0) or np.any(coords > 1):
+                raise ValueError("Normalized coordinates must be in [0,1].")
+
+            coords = coords * self.size
+
+        if anchor == "center":
+            element.center = self.position + coords
+        elif anchor == "position":
+            element.position = self.position + coords
+        else:
+            msg = ("Unknown anchor {}. Supported anchors are 'position'"
+                   " and 'center'.")
+            raise ValueError(msg)
+        for element_idx, _element in enumerate(self._elements):
+            if _element == element:
+                offset = element.position - self.position
+                self.element_offsets[element_idx] = (element, offset)
 
     def left_button_pressed(self, i_ren, obj, panel2d_object):
         click_pos = np.array(i_ren.event.position)
@@ -2993,7 +3032,7 @@ class Option(UI):
         self.button_size = (font_size * 1.2, font_size * 1.2)
         self.button_label_gap = 10
         super(Option, self).__init__(position)
-        
+
         # Offer some standard hooks to the user.
         self.on_change = lambda obj: None
 
@@ -3048,7 +3087,7 @@ class Option(UI):
             (0, num_newlines * self.font_size * 0.5)
         offset = (self.button.size[0] + self.button_label_gap, 0)
         self.text.position = coords + offset
-    
+
     def toggle(self, i_ren, obj, element):
         if self.checked:
             self.deselect()
@@ -3061,7 +3100,7 @@ class Option(UI):
     def select(self):
         self.checked = True
         self.button.set_icon_by_name("checked")
-    
+
     def deselect(self):
         self.checked = False
         self.button.set_icon_by_name("unchecked")
@@ -3123,7 +3162,7 @@ class Checkbox(UI):
 
             # Set callback
             option.on_change = self._handle_option_change
-        
+
     def _get_actors(self):
         """ Get the actors composing this UI component.
         """
@@ -3301,18 +3340,18 @@ class ListBox2D(UI):
 
         Create the ListBox (Panel2D) filled with empty slots (ListBoxItem2D).
         """
-        margin = 10
+        self.margin = 10
         size = self.panel_size
         font_size = self.font_size
         line_spacing = self.line_spacing
         # Calculating the number of slots.
-        self.nb_slots = int((size[1] - 2 * margin) // self.slot_height)
+        self.nb_slots = int((size[1] - 2 * self.margin) // self.slot_height)
 
         # This panel facilitates adding slots at the right position.
         self.panel = Panel2D(size=size, color=(1, 1, 1))
 
         # Add a scroll bar
-        scroll_bar_height = self.nb_slots * (size[1] - 2 * margin) \
+        scroll_bar_height = self.nb_slots * (size[1] - 2 * self.margin) \
             / len(self.values)
         self.scroll_bar = Rectangle2D(size=(int(size[0]/20),
                                       scroll_bar_height))
@@ -3320,12 +3359,13 @@ class ListBox2D(UI):
         if len(self.values) <= self.nb_slots:
             self.scroll_bar.set_visibility(False)
         self.panel.add_element(
-            self.scroll_bar, size - self.scroll_bar.size - margin)
+            self.scroll_bar, size - self.scroll_bar.size - self.margin)
 
         # Initialisation of empty text actors
-        slot_width = size[0] - self.scroll_bar.size[0] - 2 * margin - margin
-        x = margin
-        y = size[1] - margin
+        slot_width = size[0] - self.scroll_bar.size[0] - \
+            2 * self.margin - self.margin
+        x = self.margin
+        y = size[1] - self.margin
         for _ in range(self.nb_slots):
             y -= self.slot_height
             item = ListBoxItem2D(list_box=self,
@@ -3333,7 +3373,7 @@ class ListBox2D(UI):
             item.textblock.font_size = font_size
             item.textblock.color = (0, 0, 0)
             self.slots.append(item)
-            self.panel.add_element(item, (x, y + margin))
+            self.panel.add_element(item, (x, y + self.margin))
 
         # Add default events listener for this UI component.
         self.scroll_bar.on_left_mouse_button_pressed = \
@@ -3536,6 +3576,26 @@ class ListBox2D(UI):
             slot.element = None
             slot.set_visibility(False)
             slot.deselect()
+
+    def update_scrollbar(self):
+        """ Change the scroll-bar height when the values
+        in the listbox change
+        """
+        self.scroll_bar.set_visibility(True)
+
+        self.scroll_bar.height = self.nb_slots * \
+            (self.panel_size[1] - 2 * self.margin) / len(self.values)
+
+        self.scroll_step_size = (self.slot_height * self.nb_slots -
+                                 self.scroll_bar.height) \
+            / (len(self.values) - self.nb_slots)
+
+        self.panel.update_element(
+            self.scroll_bar, self.panel_size - self.scroll_bar.size -
+            self.margin)
+
+        if len(self.values) <= self.nb_slots:
+            self.scroll_bar.set_visibility(False)
 
     def clear_selection(self):
         del self.selected[:]
@@ -3744,10 +3804,8 @@ class FileMenu2D(UI):
             font_size=self.font_size, line_spacing=self.line_spacing,
             reverse_scrolling=self.reverse_scrolling, size=self.menu_size)
 
-        self.add_callback(self.listbox.up_button.actor, "LeftButtonPressEvent",
+        self.add_callback(self.listbox.scroll_bar.actor, "MouseMoveEvent",
                           self.scroll_callback)
-        self.add_callback(self.listbox.down_button.actor,
-                          "LeftButtonPressEvent", self.scroll_callback)
 
         # Handle mouse wheel events on the panel.
         up_event = "MouseWheelForwardEvent"
@@ -3903,6 +3961,7 @@ class FileMenu2D(UI):
             self.listbox.values = content_names
             self.listbox.view_offset = 0
             self.listbox.update()
+            self.listbox.update_scrollbar()
             self.set_slot_colors()
         i_ren.force_render()
         i_ren.event.abort()

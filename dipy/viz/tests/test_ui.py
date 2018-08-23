@@ -695,7 +695,8 @@ def test_ui_radio_button(interactive=False):
 
 
 @npt.dec.skipif(not have_vtk or skip_it)
-@xvfb_itdef test_ui_listbox_2d(interactive=False):
+@xvfb_it
+def test_ui_listbox_2d(interactive=False):
 
     filename = "test_ui_listbox_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
