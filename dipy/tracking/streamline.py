@@ -278,7 +278,7 @@ def deform_streamlines(streamlines,
     return new_streamlines
 
 
-def transform_streamlines(streamlines, mat):
+def transform_streamlines(streamlines, mat, in_place=False):
     """ Apply affine transformation to streamlines
 
     Parameters
@@ -287,16 +287,25 @@ def transform_streamlines(streamlines, mat):
         Streamlines object
     mat : array, (4, 4)
         transformation matrix
+    in_place : bool
+        If True then change data in place.
+        Be careful changes input streamlines.
 
     Returns
     -------
-    new_streamlines : list
-        List of the transformed 2D ndarrays of shape[-1]==3
+    new_streamlines : Streamlines
+        Sequence transformed 2D ndarrays of shape[-1]==3
     """
-
+    # using new Streamlines API
     if isinstance(streamlines, Streamlines):
-        streamlines._data = apply_affine(mat, streamlines._data)
-    return [apply_affine(mat, s) for s in streamlines]
+        if in_place:
+            streamlines._data = apply_affine(mat, streamlines._data)
+            return streamlines
+        new_streamlines = streamlines.copy()
+        new_streamlines._data = apply_affine(mat, new_streamlines._data)
+        return new_streamlines
+    # supporting old data structure of streamlines
+    return Streamlines([apply_affine(mat, s) for s in streamlines])
 
 
 def select_random_set_of_streamlines(streamlines, select):
