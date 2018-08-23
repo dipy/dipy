@@ -1,4 +1,3 @@
-
 from dipy.io.utils import decfa
 from nibabel import Nifti1Image
 import numpy as np
@@ -9,4 +8,5 @@ def test_decfa():
     img_orig = Nifti1Image(data_orig, np.eye(4))
     img_new = decfa(img_orig)
     data_new = img_new.get_data()
-    assert data_new[0, 0, 0] = (1, 0, 0)
+    assert data_new[0, 0, 0] == (1, 0, 0)
+    assert data_new.dtype ==  np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
