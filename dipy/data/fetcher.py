@@ -440,6 +440,17 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     doc="Download atlas tractogram from the hcp842 dataset with its bundles",
     unzip=True)
 
+fetch_target_tractogram_hcp = _make_fetcher(
+    "fetch_target_tractogram_hcp",
+    pjoin(dipy_home, 'target_tractogram_hcp'),
+    'https://drive.google.com/uc?export=download&id=',
+    ['1KwhiSj1vKoF70tbqauBza6ScMrBnsC8F'],
+    ["hcp_tractogram.zip"],
+    data_size="514MB",
+    doc="Download tractogram of one of the hcp dataset subjects",
+    unzip=True)
+
+    # ['1edftmSJEhHmFyqvqPNz-cnxqYgQUV6ra'],
 
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
