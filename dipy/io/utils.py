@@ -61,7 +61,11 @@ def decfa(img_orig):
     img : Nifti1Image class instance.
 
 
-    See: https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
+    Notes
+    -----
+    For a description of this format, see:
+
+    https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
     """
 
     dest_dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
@@ -78,4 +82,4 @@ def decfa(img_orig):
     new_hdr.set_intent(1001, name='Color FA')
     new_hdr.set_data_dtype(dest_dtype)
 
-    Nifti1Image(out_data, new_hdr)
+    return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
