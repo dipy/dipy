@@ -32,10 +32,10 @@ def test_rb_check_defaults():
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=f2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     D = bundles_distances_mam(f2, f[refine_labels])
 
@@ -53,10 +53,10 @@ def test_rb_disable_slr():
                                          reduction_thr=10,
                                          slr=False)
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=f2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     D = bundles_distances_mam(f2, f[refine_labels])
 
@@ -75,10 +75,10 @@ def test_rb_no_verbose_and_mam():
                                          slr=True,
                                          pruning_distance='mam')
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=f2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     D = bundles_distances_mam(f2, f[refine_labels])
 
@@ -97,10 +97,10 @@ def test_rb_clustermap():
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=f2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     D = bundles_distances_mam(f2, f[refine_labels])
 
@@ -124,14 +124,15 @@ def test_rb_no_neighb():
     b.extend(b3)
 
     rb = RecoBundles(b, greater_than=0, clust_thr=10)
+
     rec_trans, rec_labels = rb.recognize(model_bundle=b2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=b2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     assert_equal(len(refine_labels), 0)
     assert_equal(len(refine_trans), 0)
@@ -149,10 +150,10 @@ def test_rb_reduction_mam():
                                          slr_metric='asymmetric',
                                          pruning_distance='mam')
 
-    refine_trans, refine_labels = rb.recognize(model_bundle=f2,
-                                               pruned_streamlines=rec_trans,
-                                               model_clust_thr=5.,
-                                               reduction_thr=10)
+    refine_trans, refine_labels = rb.refine(model_bundle=f2,
+                                            pruned_streamlines=rec_trans,
+                                            model_clust_thr=5.,
+                                            reduction_thr=10)
 
     D = bundles_distances_mam(f2, f[refine_labels])
 
