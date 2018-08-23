@@ -63,11 +63,10 @@ def test_whole_brain_slr():
     mat = compose_matrix44([0, 0, 0, 15, 0, 0])
 
     f3 = f.copy()
-    old_f3 = f3.copy()
     f3 = transform_streamlines(f3, mat)
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
-            f1, old_f3, verbose=False, rm_small_clusters=0, greater_than=0,
+            f1, f3, verbose=False, rm_small_clusters=0, greater_than=0,
             less_than=np.inf, qbx_thr=[40, 30, 20, 15, 5, 1],
             progressive=True)
 
@@ -79,7 +78,7 @@ def test_whole_brain_slr():
             f1, f3, verbose=False, rm_small_clusters=0, select_random=400,
             greater_than=0,
             less_than=np.inf, qbx_thr=[40, 30, 20, 15, 5, 1],
-            progressive=True)
+            progressive=False)
 
     # we can also check the quality by looking at the decomposed transform
 

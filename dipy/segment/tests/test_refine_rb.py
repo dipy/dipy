@@ -129,13 +129,18 @@ def test_rb_no_neighb():
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    refine_trans, refine_labels = rb.refine(model_bundle=b2,
-                                            pruned_streamlines=rec_trans,
-                                            model_clust_thr=5.,
-                                            reduction_thr=10)
+    if len(rec_trans) > 0:
+        refine_trans, refine_labels = rb.refine(model_bundle=b2,
+                                                pruned_streamlines=rec_trans,
+                                                model_clust_thr=5.,
+                                                reduction_thr=10)
 
-    assert_equal(len(refine_labels), 0)
-    assert_equal(len(refine_trans), 0)
+        assert_equal(len(refine_labels), 0)
+        assert_equal(len(refine_trans), 0)
+
+    else:
+        assert_equal(len(rec_labels), 0)
+        assert_equal(len(rec_trans), 0)
 
 
 def test_rb_reduction_mam():

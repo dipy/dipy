@@ -305,7 +305,7 @@ def transform_streamlines(streamlines, mat, in_place=False):
         new_streamlines._data = apply_affine(mat, new_streamlines._data)
         return new_streamlines
     # supporting old data structure of streamlines
-    return Streamlines([apply_affine(mat, s) for s in streamlines])
+    return [apply_affine(mat, s) for s in streamlines]
 
 
 def select_random_set_of_streamlines(streamlines, select):
