@@ -313,8 +313,8 @@ def select_random_set_of_streamlines(streamlines, select):
 
     Parameters
     ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
+    streamlines : Steamlines
+        Object of 2D ndarrays of shape[-1]==3
 
     select : int
         Number of streamlines to select. If there are less streamlines
@@ -330,6 +330,8 @@ def select_random_set_of_streamlines(streamlines, select):
     """
     len_s = len(streamlines)
     index = np.random.choice(len_s, min(select, len_s), replace=False)
+    if isinstance(streamlines, Streamlines):
+        return streamlines[index]
     return [streamlines[i] for i in index]
 
 
