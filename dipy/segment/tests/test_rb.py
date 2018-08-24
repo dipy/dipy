@@ -8,6 +8,8 @@ from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
 
 
+rng = np.random.RandomState(seed=42)
+
 streams, hdr = nib.trackvis.read(get_data('fornix'))
 fornix = [s[0] for s in streams]
 
@@ -23,10 +25,12 @@ f3._data += np.array([100, 0, 0])
 f.extend(f2)
 f.extend(f3)
 
+from pdb import set_trace
+
 
 def test_rb_check_defaults():
 
-    rb = RecoBundles(f, greater_than=0, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, rng=rng)
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -34,11 +38,14 @@ def test_rb_check_defaults():
 
     # check if the bundle is recognized correctly
     for row in D:
+        if row.min() > 1:
+            set_trace()
         assert_equal(row.min(), 0)
+
 
 def test_rb_disable_slr():
 
-    rb = RecoBundles(f, greater_than=0, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, rng=rng)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -49,12 +56,14 @@ def test_rb_disable_slr():
 
     # check if the bundle is recognized correctly
     for row in D:
+        if row.min() > 1:
+            set_trace()
         assert_equal(row.min(), 0)
 
 
 def test_rb_no_verbose_and_mam():
 
-    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=False)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=False, rng=rng)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -66,6 +75,8 @@ def test_rb_no_verbose_and_mam():
 
     # check if the bundle is recognized correctly
     for row in D:
+        if row.min() > 1:
+            set_trace()
         assert_equal(row.min(), 0)
 
 
@@ -74,7 +85,7 @@ def test_rb_clustermap():
     cluster_map = qbx_and_merge(f, thresholds=[40, 25, 20, 10])
 
     rb = RecoBundles(f, greater_than=0, less_than=1000000,
-                     cluster_map=cluster_map, clust_thr=10)
+                     cluster_map=cluster_map, clust_thr=10, rng=rng)
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -82,6 +93,8 @@ def test_rb_clustermap():
 
     # check if the bundle is recognized correctly
     for row in D:
+        if row.min() > 1:
+            set_trace()
         assert_equal(row.min(), 0)
 
 
@@ -99,7 +112,7 @@ def test_rb_no_neighb():
 
     b.extend(b3)
 
-    rb = RecoBundles(b, greater_than=0, clust_thr=10)
+    rb = RecoBundles(b, greater_than=0, clust_thr=10, rng=rng)
     rec_trans, rec_labels = rb.recognize(model_bundle=b2,
                                          model_clust_thr=5.,
                                          reduction_thr=10)
@@ -110,7 +123,7 @@ def test_rb_no_neighb():
 
 def test_rb_reduction_mam():
 
-    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=True)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=True, rng=rng)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
@@ -124,9 +137,18 @@ def test_rb_reduction_mam():
 
     # check if the bundle is recognized correctly
     for row in D:
+        if row.min() > 1:
+            set_trace()
         assert_equal(row.min(), 0)
 
 
 if __name__ == '__main__':
 
-    run_module_suite()
+    # run_module_suite()
+
+    test_rb_no_verbose_and_mam()
+    test_rb_disable_slr()
+    test_rb_clustermap()
+    test_rb_no_neighb()
+    test_rb_check_defaults()
+    test_rb_reduction_mam()

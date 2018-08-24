@@ -980,7 +980,7 @@ def slr_with_qbx(static, moving,
                  less_than=250,
                  qbx_thr=[40, 30, 20, 15],
                  nb_pts=20,
-                 progressive=True, num_threads=None):
+                 progressive=True, rng=None, num_threads=None):
     """ Utility function for registering large tractograms.
 
     For efficiency we apply the registration on cluster centroids and remove
@@ -1006,6 +1006,9 @@ def slr_with_qbx(static, moving,
     options : None or dict,
         Extra options to be used with the selected method.
 
+    rng : RandomState
+        If None creates RandomState in function.
+
     num_threads : int
         Number of threads. If None (default) then all available threads
         will be used. Only metrics using OpenMP will use this variable.
@@ -1027,6 +1030,9 @@ def slr_with_qbx(static, moving,
             bundles using local and global streamline-based registration and
             clustering, Neuroimage, 2017.
     """
+    if rng is None:
+        rng = np.random.RandomState()
+
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
         print('Moving streamlines size {}'.format(len(moving)))
@@ -1051,7 +1057,8 @@ def slr_with_qbx(static, moving,
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,
-                                                         select_random)
+                                                         select_random,
+                                                         rng=rng)
     else:
         rstreamlines1 = streamlines1
 
@@ -1062,14 +1069,15 @@ def slr_with_qbx(static, moving,
     '''#rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
     # cluster_map1 = qb1.cluster(rstreamlines1)'''
 
-    cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr)
+    cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
 
     qb_centroids1 = clusters1
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
-                                                         select_random)
+                                                         select_random,
+                                                         rng=rng)
     else:
         rstreamlines2 = streamlines2
 
@@ -1078,7 +1086,7 @@ def slr_with_qbx(static, moving,
     '''# qb2 = QuickBundles(threshold=qb_thr)
     #rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
     # cluster_map2 = qb2.cluster(rstreamlines2)'''
-    cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr)
+    cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
     qb_centroids2 = clusters2

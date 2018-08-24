@@ -308,7 +308,7 @@ def transform_streamlines(streamlines, mat, in_place=False):
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def select_random_set_of_streamlines(streamlines, select):
+def select_random_set_of_streamlines(streamlines, select, rng=None):
     """ Select a random set of streamlines
 
     Parameters
@@ -320,6 +320,9 @@ def select_random_set_of_streamlines(streamlines, select):
         Number of streamlines to select. If there are less streamlines
         than ``select`` then ``select=len(streamlines)``.
 
+    rng : RandomState
+        Default None.
+
     Returns
     -------
     selected_streamlines : list
@@ -329,7 +332,9 @@ def select_random_set_of_streamlines(streamlines, select):
     The same streamline will not be selected twice.
     """
     len_s = len(streamlines)
-    index = np.random.choice(len_s, min(select, len_s), replace=False)
+    if rng is None:
+        rng = np.random.RandomState()
+    index = rng.choice(len_s, min(select, len_s), replace=False)
     if isinstance(streamlines, Streamlines):
         return streamlines[index]
     return [streamlines[i] for i in index]

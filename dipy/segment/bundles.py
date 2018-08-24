@@ -15,9 +15,9 @@ from dipy.tracking.streamline import Streamlines, length
 from nibabel.affines import apply_affine
 
 
-def check_range(streamline, lt, gt):
+def check_range(streamline, gt, lt):
     length_s = length(streamline)
-    if (length_s < gt) & (length_s > lt):
+    if (length_s > gt) & (length_s < lt):
         return True
     else:
         return False
@@ -80,7 +80,7 @@ class RecoBundles(object):
 
     def __init__(self, streamlines,  greater_than=50, less_than=1000000,
                  cluster_map=None, clust_thr=15, nb_pts=20,
-                 seed=42, verbose=True):
+                 rng=None, verbose=True):
         """ Recognition of bundles
 
         Extract bundles from a participants' tractograms using model bundles
@@ -100,8 +100,8 @@ class RecoBundles(object):
             Provide existing clustering to start RB faster (default None).
         clust_thr : float
             Distance threshold in mm for clustering `streamlines`
-        seed : int
-            Setup for random number generator (default 42).
+        rng : RandomState
+            If None define RandomState in initialization function.
         nb_pts : int
             Number of points per streamline (default 20)
 
@@ -119,7 +119,7 @@ class RecoBundles(object):
             clustering, Neuroimage, 2017.
         """
         map_ind = np.zeros(len(streamlines))
-        for i in range(len(streamlines)-1):
+        for i in range(len(streamlines)):
             map_ind[i] = check_range(streamlines[i], greater_than, less_than)
         map_ind = map_ind.astype(bool)
 
@@ -133,10 +133,13 @@ class RecoBundles(object):
         self.verbose = verbose
 
         self.start_thr = [40, 25, 20]
+        if rng is None:
+            self.rng = np.random.RandomState()
+        else:
+            self.rng = rng
 
         if cluster_map is None:
-            self._cluster_streamlines(clust_thr=clust_thr, nb_pts=nb_pts,
-                                      seed=seed)
+            self._cluster_streamlines(clust_thr=clust_thr, nb_pts=nb_pts)
         else:
             if self.verbose:
                 t = time()
@@ -153,9 +156,7 @@ class RecoBundles(object):
                 print(' Total loading duration %0.3f sec. \n'
                       % (time() - t,))
 
-    def _cluster_streamlines(self, clust_thr, nb_pts, seed):
-
-        rng = np.random.RandomState(seed=seed)
+    def _cluster_streamlines(self, clust_thr, nb_pts):
 
         if self.verbose:
             t = time()
@@ -169,7 +170,8 @@ class RecoBundles(object):
         thresholds = self.start_thr + [clust_thr]
 
         merged_cluster_map = qbx_and_merge(self.streamlines, thresholds,
-                                           nb_pts, None, rng, self.verbose)
+                                           nb_pts, None, self.rng,
+                                           self.verbose)
 
         self.cluster_map = merged_cluster_map
         self.centroids = merged_cluster_map.centroids
@@ -442,7 +444,7 @@ class RecoBundles(object):
         model_cluster_map = qbx_and_merge(model_bundle, thresholds,
                                           nb_pts=nb_pts,
                                           select_randomly=select_randomly,
-                                          rng=None,
+                                          rng=self.rng,
                                           verbose=self.verbose)
         model_centroids = model_cluster_map.centroids
         nb_model_centroids = len(model_centroids)
@@ -524,9 +526,9 @@ class RecoBundles(object):
 
         # TODO this can be speeded up by using directly the centroids
         static = select_random_set_of_streamlines(model_bundle,
-                                                  select_model)
+                                                  select_model, rng=self.rng)
         moving = select_random_set_of_streamlines(neighb_streamlines,
-                                                  select_target)
+                                                  select_target, rng=self.rng)
 
         static = set_number_of_points(static, nb_pts)
         moving = set_number_of_points(moving, nb_pts)
@@ -579,7 +581,7 @@ class RecoBundles(object):
         rtransf_cluster_map = qbx_and_merge(transf_streamlines,
                                             thresholds, nb_pts=20,
                                             select_randomly=500000,
-                                            rng=None,
+                                            rng=self.rng,
                                             verbose=self.verbose)
 
         if self.verbose:
