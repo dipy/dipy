@@ -24,7 +24,7 @@ def test_whole_brain_slr():
     moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
             f1, f2, x0='affine', verbose=True, rm_small_clusters=2,
             greater_than=0, less_than=np.inf,
-            qbx_thr=[5, 2], progressive=False)
+            qbx_thr=[5, 2, 1], progressive=False)
 
     # we can check the quality of registration by comparing the matrices
     # MAM streamline distances before and after SLR
@@ -67,5 +67,5 @@ def test_whole_brain_slr():
 
 if __name__ == '__main__':
     # run_module_suite()
-
-    test_whole_brain_slr()
+    for i in range(10):
+        test_whole_brain_slr()
