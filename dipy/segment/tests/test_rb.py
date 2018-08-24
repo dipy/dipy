@@ -36,7 +36,6 @@ def test_rb_check_defaults():
     for row in D:
         assert_equal(row.min(), 0)
 
-
 def test_rb_disable_slr():
 
     rb = RecoBundles(f, greater_than=0, clust_thr=10)
@@ -130,8 +129,4 @@ def test_rb_reduction_mam():
 
 if __name__ == '__main__':
 
-    #test_rb_no_neighb()
     run_module_suite()
-
-    #test_rb_clustermap()
-
