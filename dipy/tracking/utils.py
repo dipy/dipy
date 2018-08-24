@@ -1096,7 +1096,7 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     sl_ornt = orientation_from_string(str(sl_vox_order))
     grid_ornt = nib.io_orientation(grid_affine)
     reorder_grid = reorder_voxels_affine(
-        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
+        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1, 1, 1]))
 
     tvis_aff = affine_for_trackvis(voxel_size)
 
@@ -1113,9 +1113,11 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     ----------
     tvis_hdr : header from a trackvis file
     nii_aff : array (4, 4),
-        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+        An affine matrix describing the current space of the grid in relation
+        to RAS+ scanner space
     nii_data : nd array
-        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume.
+        3D array, each with shape (x, y, z) corresponding to the shape of the
+        brain volume.
 
     Returns
     -------
@@ -1145,6 +1147,7 @@ def _min_at(a, index, value):
     value = value[uniq]
 
     a[tuple(index)] = np.minimum(a[tuple(index)], value)
+
 
 try:
     minimum_at = np.minimum.at
