@@ -20,28 +20,12 @@ def test_whole_brain_slr():
 
     # check translation
     f2._data += np.array([50, 0, 0])
-    # old_f2 = f2.copy()
-
-#    from dipy.viz import actor, window
-#
-#    ren = window.Renderer()
-#    ren.add(actor.line(f1, colors=(1, 0, 0)))
-#    ren.add(actor.line(f2, colors=(0, 1, 0)))
-#    window.show(ren)
-
 
     moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
-            f1, f2, x0='affine', verbose=True, rm_small_clusters=1,
+            f1, f2, x0='affine', verbose=True, rm_small_clusters=2,
             greater_than=0, less_than=np.inf,
             qbx_thr=[5, 2], progressive=False)
 
-#    ren = window.Renderer()
-#    ren.add(actor.line(f1, colors=(1, 0, 0)))
-#    ren.add(actor.line(moved, colors=(0, 1, 0)))
-#    #ren.add(actor.line(moved, colors=(0, 0, 1)))
-#    window.show(ren)
-
-    #print("transform = ", transform)
     # we can check the quality of registration by comparing the matrices
     # MAM streamline distances before and after SLR
     D12 = bundles_distances_mam(f1, f2)
@@ -54,7 +38,7 @@ def test_whole_brain_slr():
 
     assert_equal(d1m_minsum < d12_minsum, True)
 
-    assert_array_almost_equal(transform[:3, 3], [-50, -0, -0], 3)
+    assert_array_almost_equal(transform[:3, 3], [-50, -0, -0], 2)
 
     # check rotation
 
@@ -64,8 +48,8 @@ def test_whole_brain_slr():
     f3 = transform_streamlines(f3, mat)
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
-            f1, f3, verbose=False, rm_small_clusters=0, greater_than=0,
-            less_than=np.inf, qbx_thr=[5, 2],
+            f1, f3, verbose=False, rm_small_clusters=1, greater_than=20,
+            less_than=np.inf, qbx_thr=[2],
             progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
@@ -73,8 +57,8 @@ def test_whole_brain_slr():
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
 
     moved, transform, qb_centroids1, qb_centroids2 = slr_with_qbx(
-            f1, f3, verbose=False, rm_small_clusters=0, select_random=400,
-            greater_than=0, less_than=np.inf, qbx_thr=[5, 2],
+            f1, f3, verbose=False, rm_small_clusters=1, select_random=400,
+            greater_than=20, less_than=np.inf, qbx_thr=[2],
             progressive=True)
 
     # we can also check the quality by looking at the decomposed transform
@@ -83,4 +67,5 @@ def test_whole_brain_slr():
 
 if __name__ == '__main__':
     # run_module_suite()
+
     test_whole_brain_slr()
