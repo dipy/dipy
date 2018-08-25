@@ -654,15 +654,17 @@ def clip_streamlines_to_target(streamlines, target_mask, affine):
             ind = _to_voxel_coordinates(sl, lin_T, offset)
             i, j, k = ind.T
             state = target_mask[i, j, k]
-            mymin = np.argwhere(state).min()
-            mymax = np.argwhere(state).max()
         except IndexError:
             raise ValueError("streamline points are outside of target_mask")
         if state.any():
+            mymin = np.argwhere(state).min()
+            mymax = np.argwhere(state).max()
             if mymin > state.shape[0]-mymin and mymax > state.shape[0]-mymin:
                 yield sl[:mymin, :]
             elif mymin < state.shape[0]-mymin and mymax < state.shape[0]-mymin:
                 yield sl[mymax:, :]
+        else:
+            yield sl
 
 
 def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
