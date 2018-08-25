@@ -665,8 +665,6 @@ def test_get_flexi_tvis_affine():
     assert_array_almost_equal(origin[:3],
                               np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
 
-
-    # grid_affine =
     tvis_hdr['voxel_order'] = 'ASL'
     vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
