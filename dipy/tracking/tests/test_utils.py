@@ -312,35 +312,34 @@ def test_clip_to_target():
     # clipping to length 3 if streamline touches
     roi1 = np.zeros([20, 20, 20])  # all clipped
     roi1[3:6, 0:5, 0:5] = 1
-    # I'm only collecting 1: because the first item from generator is "None"
-    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=aff))[1:]
+    new1 = list(clip_streamlines_to_target(streamlines, roi1, affine=aff))
     assert_array_equal([len(i) for i in new1], np.array([3, 3, 3]))
 
     roi2 = np.zeros([20, 20, 20])  # one clipped
     roi2[3:6, 1:5, 0:5] = 1
-    new2 = list(clip_streamlines_to_target(streamlines, roi2, affine=aff))[1:]
+    new2 = list(clip_streamlines_to_target(streamlines, roi2, affine=aff))
     assert_array_equal([len(i) for i in new2], np.array([5, 3, 3]))
 
     roi3 = np.zeros([20, 20, 20])  # two clipped
     roi3[3:6, 2:5, 0:5] = 1
-    new3 = list(clip_streamlines_to_target(streamlines, roi3, affine=aff))[1:]
+    new3 = list(clip_streamlines_to_target(streamlines, roi3, affine=aff))
     assert_array_equal([len(i) for i in new3], np.array([5, 5, 3]))
 
     # check if sls pass through roi instead of terminate in it
     roi4 = np.zeros([20, 20, 20])
     roi4[3:4, 0:5, 0:5] = 1
-    new4 = list(clip_streamlines_to_target(streamlines, roi4, affine=aff))[1:]
+    new4 = list(clip_streamlines_to_target(streamlines, roi4, affine=aff))
     assert_array_equal([len(i) for i in new4], [len(i) for i in new1])
 
     # check if roi on either side it picks bigger piece of streamline
     roi5 = np.zeros([20, 20, 20])
     roi5[4:5, 0:5, 0:5] = 1
-    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))[1:]
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))
     assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
 
     roi5 = np.zeros([20, 20, 20])
     roi5[1:2, 0:5, 0:5] = 1
-    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))[1:]
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))
     assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
 
     # check value error for streamline outside of target mask dimensions
