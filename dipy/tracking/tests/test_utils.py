@@ -326,6 +326,23 @@ def test_clip_to_target():
     new3 = list(clip_streamlines_to_target(streamlines, roi3, affine=aff))[1:]
     assert_array_equal([len(i) for i in new3], np.array([5, 5, 3]))
 
+    # check if sls pass through roi instead of terminate in it
+    roi4 = np.zeros([20, 20, 20])
+    roi4[3:4, 0:5, 0:5] = 1
+    new4 = list(clip_streamlines_to_target(streamlines, roi4, affine=aff))[1:]
+    assert_array_equal([len(i) for i in new4], [len(i) for i in new1])
+
+    # check if roi on either side it picks bigger piece of streamline
+    roi5 = np.zeros([20, 20, 20])
+    roi5[4:5, 0:5, 0:5] = 1
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))[1:]
+    assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
+
+    roi5 = np.zeros([20, 20, 20])
+    roi5[1:2, 0:5, 0:5] = 1
+    new5 = list(clip_streamlines_to_target(streamlines, roi5, affine=aff))[1:]
+    assert_array_equal([len(i) for i in new5], np.array([4, 4, 4]))
+
     # check value error for streamline outside of target mask dimensions
     bad = clip_streamlines_to_target(streamlines_outside, roi1, affine=aff)
     assert_raises(ValueError, list, bad)
