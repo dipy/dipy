@@ -13,7 +13,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
-                                 get_flexi_tvis_affine, _min_at, calclate_cci)
+                                 get_flexi_tvis_affine, _min_at, calculate_cci)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 
@@ -698,8 +698,6 @@ def test_get_flexi_tvis_affine():
     assert_array_almost_equal(origin[:3],
                               np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
 
-
-    # grid_affine =
     tvis_hdr['voxel_order'] = 'ASL'
     vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
