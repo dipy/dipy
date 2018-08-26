@@ -9,17 +9,18 @@ We will use a sphere actor that generates many spheres of different colors,
 radii and opacity. Then we will animate this actor by rotating and changing
 global opacity levels.
 
+The timer will call its callback every 200 milliseconds. Here is how this can
+be done.
 """
 
 
 import numpy as np
 from dipy.viz import window, actor, ui
+import itertools
 
 xyz = 10 * np.random.rand(100, 3)
 colors = np.random.rand(100, 4)
 radii = np.random.rand(100) + 0.5
-
-global showm, tm
 
 renderer = window.Renderer()
 
@@ -37,18 +38,17 @@ showm.initialize()
 
 tb = ui.TextBlock2D(bold=True)
 
-cnt = 0
+# use itertools to avoid global variables
+counter = itertools.count()
 
 
 def timer_callback(obj, event):
-    global cnt, sphere_actor, showm, tb
-
-    cnt += 1
+    cnt = next(counter)
     tb.message = "Let's count up to 100 and exit :" + str(cnt)
     showm.ren.azimuth(0.05 * cnt)
     sphere_actor.GetProperty().SetOpacity(cnt/100.)
     showm.render()
-    if cnt > 100:
+    if cnt == 100:
         showm.exit()
 
 
