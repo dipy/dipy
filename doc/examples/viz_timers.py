@@ -7,10 +7,10 @@ This example shows how to create a simple animation using a timer callback.
 
 We will use a sphere actor that generates many spheres of different colors,
 radii and opacity. Then we will animate this actor by rotating and changing
-global opacity levels.
+global opacity levels from inside a user defined callback.
 
-The timer will call its callback every 200 milliseconds. Here is how this can
-be done.
+The timer will call this user defined callback every 200 milliseconds. The
+application will exit after the callback has been called 100 times.
 """
 
 
