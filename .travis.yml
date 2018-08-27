@@ -27,10 +27,14 @@ python:
     - 3.4
     - 3.5
     - 3.6
-    - 3.7
+    # - "3.7"  # TODO: Re-enable after https://github.com/travis-ci/travis-ci/issues/9815 is fixed
 
 matrix:
   include:
+    # TODO: Disable the local workaround
+    - python: 3.7
+      dist: xenial
+      sudo: true
     - python: 2.7
     # To test minimum dependencies
     - python: 2.7
