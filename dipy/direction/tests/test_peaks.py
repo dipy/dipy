@@ -1,5 +1,5 @@
 import numpy as np
-
+import warnings
 import pickle
 from io import BytesIO
 
@@ -544,15 +544,24 @@ def test_peaksFromModelParallel():
                                     normalize_peaks=True, return_odf=True,
                                     return_sh=True, parallel=False)
 
-        pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
-                                        normalize_peaks=True, return_odf=True,
-                                        return_sh=True, parallel=True,
-                                        nbr_processes=0)
+    with warnings.catch_warnings(record=True) as w:
+        pam_multi_inv1 = peaks_from_model(model, data, _sphere, .5, 45,
+                                          normalize_peaks=True,
+                                          return_odf=True,
+                                          return_sh=True, parallel=True,
+                                          nbr_processes=0)
 
-        pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
-                                        normalize_peaks=True, return_odf=True,
-                                        return_sh=True, parallel=True,
-                                        nbr_processes=-2)
+        pam_multi_inv2 = peaks_from_model(model, data, _sphere, .5, 45,
+                                          normalize_peaks=True,
+                                          return_odf=True,
+                                          return_sh=True, parallel=True,
+                                          nbr_processes=-2)
+        assert_(len(w) == 2)
+        assert_(issubclass(w[0].category, UserWarning))
+        assert_(issubclass(w[1].category, UserWarning))
+        assert_("Invalid number of processes " in str(w[0].message))
+        assert_("Invalid number of processes " in str(w[1].message))
+
 
         for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
             assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
