@@ -152,6 +152,10 @@ def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabalistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
     sphere = HemiSphere.from_sphere(unit_octahedron)
 
     # A simple image with three possible configurations, a vertical tract,
@@ -174,11 +178,6 @@ def test_probabilistic_odf_weighted_tracker():
 
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
-
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
-                                               pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
-
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
@@ -192,9 +191,10 @@ def test_probabilistic_odf_weighted_tracker():
                           [3., 1., 0.],
                           [4., 1., 0.]])]
 
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
-
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
+                                               pmf_threshold=0.1)
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = Streamlines(streamline_generator)
     path = [False, False]
     for sl in streamlines:
         if allclose(sl, expected[0]):
@@ -208,25 +208,25 @@ def test_probabilistic_odf_weighted_tracker():
     # The first path is not possible if 90 degree turns are excluded
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere,
                                                pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
-
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = Streamlines(streamline_generator)
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
     # The first path is not possible if pmf_threshold > 0.67
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = ProbabilisticDirectionGetter.from_pmf(10*pmf, 90, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(10 * pmf, 90, sphere,
                                                pmf_threshold=0.67)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
-
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = Streamlines(streamline_generator)
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
     # Test non WM seed position
     seeds = [[0, 0, 0], [5, 5, 5]]
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
-                                return_all=True)
-    streamlines = Streamlines(streamlines)
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 0.2,
+                                         max_cross=1, return_all=True)
+    streamlines = Streamlines(streamline_generator)
     npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
     npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
 
@@ -386,11 +386,11 @@ def test_particle_filtering_tractography():
                                           particle_count=-1))
 
     # Test reproducibility
-    tracking_1 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                       step_size,
+    tracking_1 = Streamlines(ParticleFilteringTracking(dg, tc, seeds,
+                                                       np.eye(4), step_size,
                                                        random_seed=0)).data
-    tracking_2 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                       step_size,
+    tracking_2 = Streamlines(ParticleFilteringTracking(dg, tc, seeds,
+                                                       np.eye(4), step_size,
                                                        random_seed=0)).data
     npt.assert_equal(tracking_1, tracking_2)
 
@@ -461,7 +461,7 @@ def test_maximum_deterministic_tracker():
     # if pmf_threshold is larger than 0.67. Streamlines should stop at
     # the crossing.
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = DeterministicMaximumDirectionGetter.from_pmf(10*pmf, 80, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(10 * pmf, 80, sphere,
                                                       pmf_threshold=0.67)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
