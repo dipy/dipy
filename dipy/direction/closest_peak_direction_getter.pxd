@@ -10,7 +10,6 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
 cdef class BaseDirectionGetter(DirectionGetter):
 
     cdef:
-        object sphere
         dict _pf_kwargs
         PmfGen pmf_gen
         double pmf_threshold
