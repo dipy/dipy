@@ -443,10 +443,10 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
 fetch_target_tractogram_hcp = _make_fetcher(
     "fetch_target_tractogram_hcp",
     pjoin(dipy_home, 'target_tractogram_hcp'),
-    'https://drive.google.com/uc?export=download&id=',
-    ["1KwhiSj1vKoF70tbqauBza6ScMrBnsC8F"],
+    'https://ndownloader.figshare.com/files/',
+    ["12871127"],
     ["hcp_tractogram.zip"],
-    data_size="514MB",
+    data_size="541MB",
     doc="Download tractogram of one of the hcp dataset subjects",
     unzip=True)
 
@@ -1066,3 +1066,14 @@ def read_bundle_atlas_hcp842():
     file2 = pjoin(dipy_home, 'bundle_atlas_hcp842/bundles/*.trk')
 
     return file1, file2
+
+
+def read_target_tractogram_hcp():
+    """
+    Returns
+    -------
+    file1 : string
+    """
+    file1 = pjoin(dipy_home, 'target_tractogram_hcp/hcp_tractogram/streamlines.trk')
+
+    return file1
