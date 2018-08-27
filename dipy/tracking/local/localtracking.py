@@ -38,7 +38,7 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None):
+                 return_all=True, random_seed=None, initial_directions=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -74,17 +74,26 @@ class LocalTracking(object):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        initial_directions: array (N, npeaks, 3)
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel.
         """
 
         self.direction_getter = direction_getter
         self.tissue_classifier = tissue_classifier
         self.seeds = seeds
+        self.initial_directions = initial_directions
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         if step_size <= 0:
             raise ValueError("step_size must be greater than 0.")
         if maxlen < 1:
             raise ValueError("maxlen must be greater than 0.")
+        if initial_directions is not None:
+            if seeds.shape[0] != initial_directions.shape[0]:
+                raise ValueError("initial_directions and seeds must have the "
+                                 + "same shape[0].")
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
                                                 dtype=float)
@@ -120,19 +129,32 @@ class LocalTracking(object):
 
         F = np.empty((self.max_length + 1, 3), dtype=float)
         B = F.copy()
-        for s in self.seeds:
-            s = np.dot(lin, s) + offset
+        for i in range(len(self.seeds)):
+            s = np.dot(lin, self.seeds[i]) + offset
             # Set the random seed in numpy and random
             if self.random_seed is not None:
                 s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
                     % (2**32 - 1)
                 random.seed(s_random_seed)
                 np.random.seed(s_random_seed)
-            directions = self.direction_getter.initial_direction(s)
-            if directions.size == 0 and self.return_all:
+            if self.initial_directions is None:
+                directions = self.direction_getter.initial_direction(s)
+            else:
+                directions = []
+                for d in self.initial_directions[i, :, :]:
+                    d_norm = np.linalg.norm(d)
+                    if d_norm > 0:
+                        d = d / d_norm
+                        i = self.direction_getter.sphere.find_closest(d)
+                        directions.append(
+                            self.direction_getter.sphere.vertices[i])
+                directions = np.array(directions)
+
+            directions = directions[:self.max_cross]
+            if len(directions) == 0 and self.return_all:
                 # only the seed position
                 yield [s]
-            directions = directions[:self.max_cross]
+
             for first_step in directions:
                 stepsF, tissue_class = self._tracker(s, first_step, F)
                 if not (self.return_all or
@@ -159,7 +181,7 @@ class ParticleFilteringTracking(LocalTracking):
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
-                 random_seed=None):
+                 random_seed=None, initial_directions=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -208,6 +230,10 @@ class ParticleFilteringTracking(LocalTracking):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        initial_directions: array (N, npeaks, 3)
+            Initial direction to follow from the ``seed`` position. If
+            ``max_cross`` is None, one streamline will be generated per peak
+            per voxel.
 
         References
         ----------
@@ -256,7 +282,8 @@ class ParticleFilteringTracking(LocalTracking):
                                                         maxlen,
                                                         True,
                                                         return_all,
-                                                        random_seed)
+                                                        random_seed,
+                                                        initial_directions)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
