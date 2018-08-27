@@ -48,8 +48,7 @@ def test_pmf_from_array():
 
 
 def test_boot_pmf():
-    """This tests the local model used for the bootstrapping.
-    """
+    # This tests the local model used for the bootstrapping.
     hsph_updated = HemiSphere.from_sphere(unit_octahedron)
     vertices = hsph_updated.vertices
     bvecs = vertices
@@ -75,8 +74,9 @@ def test_boot_pmf():
         warnings.simplefilter("always", category=UserWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                     sh_order=6)
-        assert_greater(len([lw for lw in w if issubclass(lw.category,
-                                                         UserWarning)]), 0)
+        npt.assert_(len(w) == 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("Number of parameters required " in str(w[0].message))
 
     boot_pmf_gen_sh4 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
                                   sh_order=4)
