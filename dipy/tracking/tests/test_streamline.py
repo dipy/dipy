@@ -25,7 +25,8 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       select_by_rois,
                                       orient_by_rois,
                                       values_from_volume,
-                                      deform_streamlines)
+                                      deform_streamlines,
+                                      cluster_confidence)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -318,7 +319,7 @@ def test_set_number_of_points():
 
     # Test if nb_points is less than 2
     assert_raises(ValueError, set_number_of_points, [np.ones((10, 3)),
-                  np.ones((10, 3))], nb_points=1)
+                                                     np.ones((10, 3))], nb_points=1)
 
 
 def test_set_number_of_points_memory_leaks():
@@ -720,9 +721,9 @@ def test_compress_streamlines():
 
         # Make sure Cython and Python versions are the same.
         cstreamline_python = compress_streamlines_python(
-                                            special_streamline,
-                                            tol_error=tol_error+1e-4,
-                                            max_segment_length=np.inf)
+            special_streamline,
+            tol_error=tol_error+1e-4,
+            max_segment_length=np.inf)
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
 
@@ -800,13 +801,13 @@ def test_select_by_rois():
                                tol=1)
 
     assert_arrays_equal(list(selection), [streamlines[0],
-                        streamlines[1]])
+                                          streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=1)
 
     assert_arrays_equal(list(selection), [streamlines[0],
-                        streamlines[1]])
+                                          streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, False])
 
@@ -835,7 +836,7 @@ def test_select_by_rois():
 
     selection = select_by_rois(streamlines, [mask1], [True], tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0],
-                        streamlines[1]])
+                                          streamlines[1]])
 
     # Use different modes:
     selection = select_by_rois(streamlines, [mask1, mask2, mask3],
@@ -869,7 +870,7 @@ def test_select_by_rois():
     selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
                                tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0],
-                        streamlines[1]])
+                                          streamlines[1]])
 
 
 def test_orient_by_rois():
@@ -1097,6 +1098,80 @@ def test_streamlines_generator():
     # Test empty streamlines
     streamlines_generator = Streamlines(np.array([]))
     npt.assert_equal(len(streamlines_generator), 0)
+
+
+def test_cluster_confidence():
+    # two identical streamlines should raise an error
+    mysl = np.array([np.arange(10)] * 3, 'float').T
+    test_streamlines = Streamlines()
+    test_streamlines.append(mysl, cache_build=True)
+    test_streamlines.append(mysl)
+    test_streamlines.finalize_append()
+    assert_raises(ValueError, cluster_confidence, test_streamlines)
+
+    # 3 offset collinear streamlines
+    test_streamlines = Streamlines()
+    test_streamlines.append(mysl, cache_build=True)
+    test_streamlines.append(mysl+1)
+    test_streamlines.append(mysl+2)
+    test_streamlines.finalize_append()
+    cci = cluster_confidence(test_streamlines)
+    assert_equal(cci[0], cci[2])
+    assert_true(cci[1] > cci[0])
+
+    # 3 parallel streamlines
+    mysl = np.zeros([10, 3])
+    mysl[:, 0] = np.arange(10)
+    mysl2 = mysl.copy()
+    mysl2[:, 1] = 1
+    mysl3 = mysl.copy()
+    mysl3[:, 1] = 2
+    mysl4 = mysl.copy()
+    mysl4[:, 1] = 4
+    mysl5 = mysl.copy()
+    mysl5[:, 1] = 5000
+
+    test_streamlines_p1 = Streamlines()
+    test_streamlines_p1.append(mysl, cache_build=True)
+    test_streamlines_p1.append(mysl2)
+    test_streamlines_p1.append(mysl3)
+    test_streamlines_p1.finalize_append()
+    test_streamlines_p2 = Streamlines()
+    test_streamlines_p2.append(mysl, cache_build=True)
+    test_streamlines_p2.append(mysl3)
+    test_streamlines_p2.append(mysl4)
+    test_streamlines_p2.finalize_append()
+    test_streamlines_p3 = Streamlines()
+    test_streamlines_p3.append(mysl, cache_build=True)
+    test_streamlines_p3.append(mysl2)
+    test_streamlines_p3.append(mysl3)
+    test_streamlines_p3.append(mysl5)
+    test_streamlines_p3.finalize_append()
+
+    cci_p1 = cluster_confidence(test_streamlines_p1)
+    cci_p2 = cluster_confidence(test_streamlines_p2)
+
+    # test relative distance
+    assert_array_equal(cci_p1, cci_p2*2)
+
+    # test simple cci calculation
+    expected_p1 = np.array([1/1+1/2, 1/1+1/1, 1/1+1/2])
+    expected_p2 = np.array([1/2+1/4, 1/2+1/2, 1/2+1/4])
+    assert_array_equal(expected_p1, cci_p1)
+    assert_array_equal(expected_p2, cci_p2)
+
+    # test power variable calculation (dropoff with distance)
+    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2)
+    expected_p1_pow2 = np.array([np.power(1/1, 2)+np.power(1/2, 2),
+                                 np.power(1/1, 2)+np.power(1/1, 2),
+                                 np.power(1/1, 2)+np.power(1/2, 2)])
+
+    assert_array_equal(cci_p1_pow2, expected_p1_pow2)
+
+    # test max distance (ignore distant sls)
+    cci_dist = cluster_confidence(test_streamlines_p3, max_mdf=5)
+    expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
+    assert_array_equal(cci_dist, expected_cci_dist)
 
 
 if __name__ == '__main__':

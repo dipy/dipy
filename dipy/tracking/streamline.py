@@ -9,6 +9,7 @@ import nibabel as nib
 from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
+from dipy.tracking.distances import bundles_distances_mdf
 from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
@@ -180,10 +181,10 @@ def unlist_streamlines(streamlines):
     curr_pos = 0
     for (i, s) in enumerate(streamlines):
 
-            prev_pos = curr_pos
-            curr_pos += s.shape[0]
-            points[prev_pos:curr_pos] = s
-            offsets[i] = curr_pos
+        prev_pos = curr_pos
+        curr_pos += s.shape[0]
+        points[prev_pos:curr_pos] = s
+        offsets[i] = curr_pos
 
     return points, offsets
 
@@ -450,6 +451,82 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
             yield sl
 
 
+def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
+                       override=False):
+    """ Computes the cluster confidence index (cci), which is an
+    estimation of the support a set of streamlines gives to
+    a particular pathway.
+
+    Ex: A single streamline with no others in the dataset
+    following a similar pathway has a low cci. A streamline
+    in a bundle of 100 streamlines that follow similar
+    pathways has a high cci.
+
+    See: Jordan et al. 2017
+    (Based on streamline MDF distance from Garyfallidis et al. 2012)
+
+    Parameters
+    ----------
+    streamlines : list of 2D (N, 3) arrays
+        A sequence of streamlines of length N (# streamlines)
+    max_mdf : int
+        The maximum MDF distance (mm) that will be considered a
+        "supporting" streamline and included in cci calculation
+    subsample: int
+        The number of points that are considered for each streamline
+        in the calculation. To save on calculation time, each
+        streamline is subsampled to subsampleN points.
+    power: int
+        The power to which the MDF distance for each streamline
+        will be raised to determine how much it contributes to
+        the cci. High values of power make the contribution value
+        degrade much faster. Example: a streamline with 5mm MDF
+        similarity contributes 1/5 to the cci if power is 1, but
+        only contributes 1/5^2 = 1/25 if power is 2.
+    override: bool, False by default
+        override means that the cci calculation will still occur even
+        though there are short streamlines in the dataset that may alter
+        expected behaviour.
+
+    Returns
+    -------
+    Returns an array of CCI scores
+
+    References
+    ----------
+    [Jordan17] Jordan K. Et al., Cluster Confidence Index: A Streamline‐Wise
+    Pathway Reproducibility Metric for Diffusion‐Weighted MRI Tractography,
+    Journal of Neuroimaging, vol 28, no 1, 2017.
+
+    [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+    tractography simplification, Frontiers in Neuroscience,
+    vol 6, no 175, 2012.
+
+    """
+
+    # error if any streamlines are shorter than 20mm
+    lengths = list(length(streamlines))
+    if min(lengths) < 20 and not override:
+        ValueError('Short streamlines found. We recommend removing them.'
+                   'To continue with short streamlines set override=True')
+
+    # calculate the pairwise MDF distance between all streamlines in dataset
+    subsamp_sls = set_number_of_points(streamlines, subsample)
+
+    cci_score_mtrx = np.zeros([len(subsamp_sls)])
+
+    for i, sl in enumerate(subsamp_sls):
+        mdf_mx = bundles_distances_mdf([subsamp_sls[i]], subsamp_sls)
+        if (1 * mdf_mx == 0).sum() > 1:
+            raise ValueError('Identical streamlines. CCI calculation invalid')
+        mdf_mx_oi = (mdf_mx > 0) & (mdf_mx < max_mdf) & ~ np.isnan(mdf_mx)
+        mdf_mx_oi_only = mdf_mx[mdf_mx_oi]
+        cci_score = np.sum(np.divide(1, np.power(mdf_mx_oi_only, power)))
+        cci_score_mtrx[i] = cci_score
+
+    return cci_score_mtrx
+
+
 def _orient_generator(out, roi1, roi2):
     """
     Helper function to `orient_by_rois`
@@ -611,10 +688,10 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         for sl in streamlines:
             if threedvec:
                 vals.append(list(vfu.interpolate_vector_3d(data,
-                                 sl.astype(np.float))[0]))
+                                                           sl.astype(np.float))[0]))
             else:
                 vals.append(list(vfu.interpolate_scalar_3d(data,
-                                 sl.astype(np.float))[0]))
+                                                           sl.astype(np.float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
@@ -686,7 +763,7 @@ def values_from_volume(data, streamlines, affine=None):
         vals = []
         for ii in range(data.shape[-1]):
             vals.append(_extract_vals(data[..., ii], streamlines,
-                        affine=affine))
+                                      affine=affine))
 
         if isinstance(vals[-1], np.ndarray):
             return np.swapaxes(np.array(vals), 2, 1).T
