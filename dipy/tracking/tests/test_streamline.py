@@ -1155,16 +1155,16 @@ def test_cluster_confidence():
     assert_array_equal(cci_p1, cci_p2*2)
 
     # test simple cci calculation
-    expected_p1 = np.array([1/1+1/2, 1/1+1/1, 1/1+1/2])
-    expected_p2 = np.array([1/2+1/4, 1/2+1/2, 1/2+1/4])
+    expected_p1 = np.array([1./1+1./2, 1./1+1./1, 1./1+1./2])
+    expected_p2 = np.array([1./2+1./4, 1./2+1./2, 1./2+1./4])
     assert_array_equal(expected_p1, cci_p1)
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
     cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2)
-    expected_p1_pow2 = np.array([np.power(1/1, 2)+np.power(1/2, 2),
-                                 np.power(1/1, 2)+np.power(1/1, 2),
-                                 np.power(1/1, 2)+np.power(1/2, 2)])
+    expected_p1_pow2 = np.array([np.power(1./1, 2)+np.power(1./2, 2),
+                                 np.power(1./1, 2)+np.power(1./1, 2),
+                                 np.power(1./1, 2)+np.power(1./2, 2)])
 
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 
