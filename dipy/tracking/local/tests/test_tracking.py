@@ -253,6 +253,19 @@ def test_probabilistic_odf_weighted_tracker():
                                            random_seed=0)).data
     npt.assert_equal(tracking_1, tracking_2)
 
+    # Test reproducibility with randomize_forward_direction
+    tracking_1 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+                                           0.5,
+                                           random_seed=0,
+                                           randomize_forward_direction=True
+                                           )).data
+    tracking_2 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+                                           0.5,
+                                           random_seed=0,
+                                           randomize_forward_direction=True
+                                           )).data
+    npt.assert_equal(tracking_1, tracking_2)
+
 
 def test_particle_filtering_tractography():
     """This tests that the ParticleFilteringTracking produces
