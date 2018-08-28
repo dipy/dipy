@@ -11,10 +11,11 @@ References
        of brain perfusion with intravoxel incoherent motion
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
+import warnings
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
-                           dec)
+                           assert_, assert_equal, dec)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -321,7 +322,16 @@ def test_noisy_fit():
     Scipy version.
     """
     model_one_stage = IvimModel(gtab, fit_method='LM')
-    fit_one_stage = model_one_stage.fit(noisy_single)
+    with warnings.catch_warnings(record=True) as w:
+        fit_one_stage = model_one_stage.fit(noisy_single)
+        assert_equal(len(w), 3)
+        for l_w in w:
+            assert_(issubclass(l_w.category, UserWarning))
+        assert_("" in str(w[0].message))
+        assert_("x0 obtained from linear fitting is not feasibile" in str(w[0].message))
+        assert_("x0 is unfeasible" in str(w[1].message))
+        assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
+
     assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
 
 
@@ -415,7 +425,20 @@ def test_leastsq_failing():
     Test for cases where leastsq fitting fails and the results from a linear
     fit is returned.
     """
+<<<<<<< HEAD
     fit_single = ivim_model_LM.fit(noisy_single)
+=======
+    with warnings.catch_warnings(record=True) as w:
+        fit_single = ivim_model.fit(noisy_single)
+        assert_equal(len(w), 3)
+        for l_w in w:
+            assert_(issubclass(l_w.category, UserWarning))
+        assert_("" in str(w[0].message))
+        assert_("x0 obtained from linear fitting is not feasibile" in str(w[0].message))
+        assert_("x0 is unfeasible" in str(w[1].message))
+        assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
+
+>>>>>>> check ivim warning
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
@@ -427,7 +450,17 @@ def test_leastsq_error():
     passed. If an unfeasible x0 value is passed using which leastsq fails, the
     x0 value is returned as it is.
     """
+<<<<<<< HEAD
     fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
+=======
+    with warnings.catch_warnings(record=True) as w:
+        fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
+        assert_equal(len(w), 1)
+        assert_(issubclass(w[0].category, UserWarning))
+        assert_("" in str(w[0].message))
+        assert_("x0 is unfeasible" in str(w[0].message))
+
+>>>>>>> check ivim warning
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
 
