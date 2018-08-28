@@ -40,7 +40,7 @@ class LocalTracking(object):
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
                  return_all=True, random_seed=None, unidirectional=False,
-                 initial_directions=None):
+                 randomize_forward_direction=False, initial_directions=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -79,16 +79,20 @@ class LocalTracking(object):
         unidirectional : bool
             If true, the tracking is performed only in the forward direction.
             The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
         initial_directions: array (N, npeaks, 3)
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
-            per voxel.
+            per voxel. If None, `direction_getter.initial_direction` is used.
         """
 
         self.direction_getter = direction_getter
         self.tissue_classifier = tissue_classifier
         self.seeds = seeds
         self.unidirectional = unidirectional
+        self.randomize_forward_direction = randomize_forward_direction
         self.initial_directions = initial_directions
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
@@ -145,15 +149,10 @@ class LocalTracking(object):
                 np.random.seed(s_random_seed)
             if self.initial_directions is None:
                 directions = self.direction_getter.initial_direction(s)
-                if self.unidirectional:
-                    directions = [d * random.choice([1, -1])
-                                  for d in directions]
             else:
                 directions = []
                 for d in self.initial_directions[i, :, :]:
-                    d_norm = np.linalg.norm(d)
-                    if d_norm > 0:
-                        d = d / d_norm
+                    if np.linalg.norm(d) > 0:
                         i = self.direction_getter.sphere.find_closest(d)
                         new_d = self.direction_getter.sphere.vertices[i]
                         if np.dot(d, new_d) < 0:
@@ -163,8 +162,10 @@ class LocalTracking(object):
                             new_d = new_d * -1
                         directions.append(new_d)
                 directions = np.array(directions)
-
+            if self.randomize_forward_direction:
+                directions = [d * random.choice([1, -1]) for d in directions]
             directions = directions[:self.max_cross]
+
             if len(directions) == 0 and self.return_all:
                 # only the seed position
                 yield [s]
@@ -198,7 +199,7 @@ class ParticleFilteringTracking(LocalTracking):
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, unidirectional=False,
-                 initial_directions=None):
+                 randomize_forward_direction=False, initial_directions=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -250,10 +251,13 @@ class ParticleFilteringTracking(LocalTracking):
         unidirectional : bool
             If true, the tracking is performed only in the forward direction.
             The seed position will be the first point of all streamlines.
+        randomize_forward_direction : bool
+            If true, the forward direction is randomized (multiplied by 1
+            or -1). Otherwise, the provided forward direction is used.
         initial_directions: array (N, npeaks, 3)
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
-            per voxel.
+            per voxel. If None, `direction_getter.initial_direction` is used.
 
         References
         ----------
