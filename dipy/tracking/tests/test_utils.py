@@ -16,6 +16,8 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  get_flexi_tvis_affine, _min_at,
                                  cluster_confidence)
 
+from dipy.tracking.streamline import Streamlines
+
 from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
@@ -41,11 +43,11 @@ def make_streamlines():
 def test_cluster_confidence():
     # two identical streamlines should raise an error
     mysl = np.array([np.arange(10)] * 3).T
-    test_streamlines = list([mysl])*2
+    test_streamlines = Streamlines([mysl])*2
     assert_raises(ValueError, cluster_confidence, test_streamlines)
 
     # 3 offset collinear streamlines
-    test_streamlines = list([mysl])+[mysl+1]+[mysl+2]
+    test_streamlines = Streamlines([mysl])+[mysl+1]+[mysl+2]
     cci = cluster_confidence(test_streamlines)
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
@@ -62,9 +64,9 @@ def test_cluster_confidence():
     mysl5 = mysl.copy()
     mysl5[:, 1] = 5000
 
-    test_streamlines_p1 = list([mysl])+[mysl2]+[mysl3]
-    test_streamlines_p2 = list([mysl])+[mysl3]+[mysl4]
-    test_streamlines_p3 = list([mysl])+[mysl2]+[mysl3]+[mysl5]
+    test_streamlines_p1 = Streamlines([mysl])+[mysl2]+[mysl3]
+    test_streamlines_p2 = Streamlines([mysl])+[mysl3]+[mysl4]
+    test_streamlines_p3 = Streamlines([mysl])+[mysl2]+[mysl3]+[mysl5]
 
     cci_p1 = cluster_confidence(test_streamlines_p1)
     cci_p2 = cluster_confidence(test_streamlines_p2)
