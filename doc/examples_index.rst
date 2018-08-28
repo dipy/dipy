@@ -199,6 +199,11 @@ Tissue Classification
 
 - :ref:`example_tissue_classification`
 
+Bundle Extraction
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_bundle_extraction`
+
 -----------
 Simulations
 -----------

@@ -24,7 +24,7 @@ from dipy.data.fetcher import (fetch_target_tractogram_hcp,
                                read_bundle_atlas_hcp842,
                                read_target_tractogram_hcp)
 
-fetch_target_tractogram_hcp()
+#fetch_target_tractogram_hcp()
 fetch_bundle_atlas_hcp842()
 atlas_file, all_bundles_files = read_bundle_atlas_hcp842()
 target_file = read_target_tractogram_hcp()
