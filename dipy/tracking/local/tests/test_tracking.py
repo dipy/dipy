@@ -838,8 +838,8 @@ def test_tracking_with_initial_directions():
     streamlines = Streamlines(streamline_generator)
     npt.assert_(allclose(streamlines[0], expected[1]))
     npt.assert_(allclose(streamlines[1], expected[2]))
-    npt.assert_(allclose(streamlines[2], expected[1]))
-    npt.assert_(allclose(streamlines[2], expected[1]))
+    npt.assert_(allclose(streamlines[2], expected[1][::-1]))    
+    npt.assert_(allclose(streamlines[3], expected[1]))
 
     # Test dimension mismatch between seeds and initial_directions
     npt.assert_raises(

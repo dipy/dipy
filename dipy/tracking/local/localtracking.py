@@ -146,8 +146,13 @@ class LocalTracking(object):
                     if d_norm > 0:
                         d = d / d_norm
                         i = self.direction_getter.sphere.find_closest(d)
-                        directions.append(
-                            self.direction_getter.sphere.vertices[i])
+                        new_d = self.direction_getter.sphere.vertices[i]
+                        if np.dot(d, new_d) < 0:
+                            #  The direction is flipped if the original
+                            #  direction is closer to the opposite direction.
+                            #  This will happen if the Sphere is an Hemisphere.
+                            new_d = new_d * -1
+                        directions.append(new_d)
                 directions = np.array(directions)
 
             directions = directions[:self.max_cross]
