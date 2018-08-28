@@ -318,8 +318,8 @@ def test_set_number_of_points():
                  len(streamlines_readonly))
 
     # Test if nb_points is less than 2
-    assert_raises(ValueError, set_number_of_points, [np.ones((10, 3)),
-                                                     np.ones((10, 3))], nb_points=1)
+    assert_raises(ValueError, set_number_of_points, [
+                  np.ones((10, 3)), np.ones((10, 3))], nb_points=1)
 
 
 def test_set_number_of_points_memory_leaks():

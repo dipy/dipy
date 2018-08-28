@@ -687,11 +687,11 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         vals = []
         for sl in streamlines:
             if threedvec:
-                vals.append(list(vfu.interpolate_vector_3d(data,
-                                                           sl.astype(np.float))[0]))
+                vals.append(list(vfu.interpolate_vector_3d(
+                    data, sl.astype(np.float))[0]))
             else:
-                vals.append(list(vfu.interpolate_scalar_3d(data,
-                                                           sl.astype(np.float))[0]))
+                vals.append(list(vfu.interpolate_scalar_3d(
+                    data, sl.astype(np.float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape

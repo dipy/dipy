@@ -15,8 +15,6 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  reduce_rois, path_length, flexi_tvis_affine,
                                  get_flexi_tvis_affine, _min_at)
 
-from dipy.tracking.streamline import Streamlines
-
 from dipy.tracking._utils import _to_voxel_coordinates
 
 import dipy.tracking.metrics as metrix
