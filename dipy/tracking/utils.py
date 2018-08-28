@@ -978,7 +978,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
 
     # error if any streamlines are shorter than 20mm
     lengths = list(length(streamlines))
-    if np.array(lengths).min() < 20 and not override:
+    if min(lengths) < 20 and not override:
         ValueError('Short streamlines found. We recommend removing them.'
                    'To continue with short streamlines set override=True')
 

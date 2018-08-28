@@ -42,14 +42,19 @@ def make_streamlines():
 
 def test_cluster_confidence():
     # two identical streamlines should raise an error
-    mysl = np.array([np.arange(10)] * 3).T
-    test_streamlines = Streamlines().append(
-        mysl, cache_build=True).append(mysl).finalize_append()
+    mysl = np.array([np.arange(10)] * 3, 'float').T
+    test_streamlines = Streamlines()
+    test_streamlines.append(mysl, cache_build=True)
+    test_streamlines.append(mysl)
+    test_streamlines.finalize_append()
     assert_raises(ValueError, cluster_confidence, test_streamlines)
 
     # 3 offset collinear streamlines
-    test_streamlines = Streamlines().append([mysl], cache_build=True).append(
-        [mysl+1]).append([mysl+2]).finalize_append()
+    test_streamlines = Streamlines()
+    test_streamlines.append(mysl, cache_build=True)
+    test_streamlines.append(mysl+1)
+    test_streamlines.append(mysl+2)
+    test_streamlines.finalize_append()
     cci = cluster_confidence(test_streamlines)
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
@@ -66,15 +71,22 @@ def test_cluster_confidence():
     mysl5 = mysl.copy()
     mysl5[:, 1] = 5000
 
-    test_streamlines_p1 = Streamlines().append(
-        [mysl], cache_build=True).append(
-        [mysl2]).append([mysl3]).finalize_append()
-    test_streamlines_p2 = Streamlines().append(
-        [mysl], cache_build=True).append(
-        [mysl3]).append([mysl4]).finalize_append()
-    test_streamlines_p3 = Streamlines().append(
-        [mysl], cache_build=True).append(
-        [mysl2]).append([mysl3]).append([mysl5]).finalize_append()
+    test_streamlines_p1 = Streamlines()
+    test_streamlines_p1.append(mysl, cache_build=True)
+    test_streamlines_p1.append(mysl2)
+    test_streamlines_p1.append(mysl3)
+    test_streamlines_p1.finalize_append()
+    test_streamlines_p2 = Streamlines()
+    test_streamlines_p2.append(mysl, cache_build=True)
+    test_streamlines_p2.append(mysl3)
+    test_streamlines_p2.append(mysl4)
+    test_streamlines_p2.finalize_append()
+    test_streamlines_p3 = Streamlines()
+    test_streamlines_p3.append(mysl, cache_build=True)
+    test_streamlines_p3.append(mysl2)
+    test_streamlines_p3.append(mysl3)
+    test_streamlines_p3.append(mysl5)
+    test_streamlines_p3.finalize_append()
 
     cci_p1 = cluster_confidence(test_streamlines_p1)
     cci_p2 = cluster_confidence(test_streamlines_p2)
@@ -128,12 +140,12 @@ def test_density_map():
 
     # Test passing affine
     affine = np.diag([2, 2, 2, 1.])
-    affine[:3, 3] = 1.
+    affine[: 3, 3] = 1.
     dm = density_map(streamlines, shape, affine=affine)
     assert_array_equal(dm, expected)
 
     # Shift the image by 2 voxels, ie 4mm
-    affine[:3, 3] -= 4.
+    affine[: 3, 3] -= 4.
     expected_old = expected
     new_shape = [i + 2 for i in shape]
     expected = np.zeros(new_shape)
