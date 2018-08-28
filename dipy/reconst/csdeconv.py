@@ -950,8 +950,13 @@ def response_from_mask(gtab, data, mask):
 
 
 def _get_response(S0s, lambdas):
-    S0 = np.mean(S0s)
-    l01 = np.mean(lambdas, axis=0)
+    S0 = np.mean(S0s) if S0s.size else 0
+    # Check if lambdas is empty
+    if not lambdas.size:
+        response = (np.zeros(3), S0)
+        ratio = 0
+        return response, ratio
+    l01 = np.mean(lambdas, axis=0) if S0s.size else 0
     evals = np.array([l01[0], l01[1], l01[1]])
     response = (evals, S0)
     ratio = evals[1] / evals[0]
