@@ -1061,9 +1061,26 @@ def read_bundle_atlas_hcp842():
     file1 : string
     file2 : string
     """
-    file1 = pjoin(dipy_home, 'bundle_atlas_hcp842/whole_brain/whole_brain.trk')
+    file1 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/whole_brain/whole_brain_MNI.trk')
 
-    file2 = pjoin(dipy_home, 'bundle_atlas_hcp842/bundles/*.trk')
+    file2 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/*.trk')
+
+    return file1, file2
+
+def read_two_hcp842_bundle():
+    """
+    Returns
+    -------
+    file1 : string
+    file2 : string
+    """
+    file1 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/AF_L.trk')
+
+    file2 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/CST_L.trk')
 
     return file1, file2
 
