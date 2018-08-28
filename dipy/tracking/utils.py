@@ -502,7 +502,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
             # seeds per voxel and the global random seed.
             if random_seed is not None:
                 s_random_seed = hash((np.sum(s) + 1) * i + random_seed) \
-                           % (2**32 - 1)
+                    % (2**32 - 1)
                 np.random.seed(s_random_seed)
             # Generate random triplet
             grid = np.random.random(3)
@@ -925,7 +925,6 @@ def unique_rows(in_array, dtype='f4'):
 
 def calculate_cci(streamlines, max_mdf=5, subsample=12, power=1,
                   override=False):
-
     """ Computes the cluster confidence index (cci), which is an
     estimation of the support a set of streamlines gives to
     a particular pathway.
