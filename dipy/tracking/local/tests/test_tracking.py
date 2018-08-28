@@ -648,6 +648,13 @@ def test_peak_direction_tracker():
     for i, sl in enumerate(streamlines):
         npt.assert_(np.allclose(sl, expected[i]))
 
+    # Test that the first point is the seed position when using unidirectional
+    # tracking.
+    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.,
+                                unidirectional=True)
+    for i, sl in enumerate(streamlines):
+        npt.assert_(np.allclose(sl[0], seeds[i]))
+
 
 def test_affine_transformations():
     """This tests that the input affine is properly handled by
@@ -854,19 +861,41 @@ def test_tracking_with_initial_directions():
     tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
     crossing_pos = np.array([2, 1, 0])
     seeds = np.array([crossing_pos, crossing_pos, crossing_pos])
-    initial_dir = np.array([[sphere.vertices[0], [0, 0, 0]],
-                            [sphere.vertices[1], sphere.vertices[0]],
-                            [[0, 0, 0], [0, 0, 0]]])
+    initial_directions = np.array([[sphere.vertices[0], [0, 0, 0]],
+                                   [sphere.vertices[1], sphere.vertices[0]],
+                                   [[0, 0, 0], [0, 0, 0]]])
 
     streamline_generator = ParticleFilteringTracking(
             dg, tc, seeds, np.eye(4), 1, return_all=True,
-            initial_directions=initial_dir)
+            initial_directions=initial_directions)
     streamlines = Streamlines(streamline_generator)
     npt.assert_(allclose(streamlines[0], expected[1]))
-
     npt.assert_(allclose(streamlines[1], expected[2]))
     npt.assert_(allclose(streamlines[2], expected[1]))
     npt.assert_(allclose(streamlines[3], np.array([crossing_pos])))
+
+    # Test unidirectional tracking with initial directions
+    initial_directions = np.array([[[1, 0, 0], [0, 0, 0]],
+                                   [[-1, 0, 0], [0, 0, 0]],
+                                   [[0, -1, 0], [0, 1, 0]]])
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
+
+    streamline_generator = ParticleFilteringTracking(
+            dg, tc, seeds, np.eye(4), 1, return_all=True, unidirectional=True,
+            initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_(allclose(streamlines[0], expected[1][2:]))
+    npt.assert_(allclose(streamlines[1], expected[1][:3][::-1]))
+    npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
+    npt.assert_(allclose(streamlines[3], expected[2][1:]))
 
 
 if __name__ == "__main__":
