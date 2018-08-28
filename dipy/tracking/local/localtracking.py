@@ -1,11 +1,12 @@
 import random
+import warnings
 
 import numpy as np
 
+from dipy.align import Bunch
+from dipy.core.sphere import HemiSphere
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
 from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
-
-from dipy.align import Bunch
 from dipy.tracking import utils
 
 
@@ -38,7 +39,8 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None, initial_directions=None):
+                 return_all=True, random_seed=None, unidirectional=False,
+                 initial_directions=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -74,6 +76,9 @@ class LocalTracking(object):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        unidirectional : bool
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
         initial_directions: array (N, npeaks, 3)
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
@@ -83,6 +88,7 @@ class LocalTracking(object):
         self.direction_getter = direction_getter
         self.tissue_classifier = tissue_classifier
         self.seeds = seeds
+        self.unidirectional = unidirectional
         self.initial_directions = initial_directions
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
@@ -139,6 +145,9 @@ class LocalTracking(object):
                 np.random.seed(s_random_seed)
             if self.initial_directions is None:
                 directions = self.direction_getter.initial_direction(s)
+                if self.unidirectional:
+                    directions = [d * random.choice([1, -1])
+                                  for d in directions]
             else:
                 directions = []
                 for d in self.initial_directions[i, :, :]:
@@ -161,17 +170,19 @@ class LocalTracking(object):
                 yield [s]
 
             for first_step in directions:
+                stepsF = stepsB = 1
                 stepsF, tissue_class = self._tracker(s, first_step, F)
                 if not (self.return_all or
                         tissue_class == TissueTypes.ENDPOINT or
                         tissue_class == TissueTypes.OUTSIDEIMAGE):
                     continue
-                first_step = -first_step
-                stepsB, tissue_class = self._tracker(s, first_step, B)
-                if not (self.return_all or
-                        tissue_class == TissueTypes.ENDPOINT or
-                        tissue_class == TissueTypes.OUTSIDEIMAGE):
-                    continue
+                if not self.unidirectional:
+                    first_step = -first_step
+                    stepsB, tissue_class = self._tracker(s, first_step, B)
+                    if not (self.return_all or
+                            tissue_class == TissueTypes.ENDPOINT or
+                            tissue_class == TissueTypes.OUTSIDEIMAGE):
+                        continue
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
@@ -186,7 +197,8 @@ class ParticleFilteringTracking(LocalTracking):
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
-                 random_seed=None, initial_directions=None):
+                 random_seed=None, unidirectional=False,
+                 initial_directions=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -235,6 +247,9 @@ class ParticleFilteringTracking(LocalTracking):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        unidirectional : bool
+            If true, the tracking is performed only in the forward direction.
+            The seed position will be the first point of all streamlines.
         initial_directions: array (N, npeaks, 3)
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
@@ -278,17 +293,19 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_steps = np.empty((2, self.particle_count), dtype=int)
         self.particle_tissue_classes = np.empty((2, self.particle_count),
                                                 dtype=int)
-        super(ParticleFilteringTracking, self).__init__(direction_getter,
-                                                        tissue_classifier,
-                                                        seeds,
-                                                        affine,
-                                                        step_size,
-                                                        max_cross,
-                                                        maxlen,
-                                                        True,
-                                                        return_all,
-                                                        random_seed,
-                                                        initial_directions)
+        super(ParticleFilteringTracking, self).__init__(
+                direction_getter=direction_getter,
+                tissue_classifier=tissue_classifier,
+                seeds=seeds,
+                affine=affine,
+                step_size=step_size,
+                max_cross=max_cross,
+                maxlen=maxlen,
+                fixedstep=True,
+                return_all=return_all,
+                random_seed=random_seed,
+                unidirectional=unidirectional,
+                initial_directions=initial_directions)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
