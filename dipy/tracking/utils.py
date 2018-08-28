@@ -923,8 +923,8 @@ def unique_rows(in_array, dtype='f4'):
     return in_array[diff_in_array]
 
 
-def calculate_cci(streamlines, max_mdf=5, subsample=12, power=1,
-                  override=False):
+def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
+                       override=False):
     """ Computes the cluster confidence index (cci), which is an
     estimation of the support a set of streamlines gives to
     a particular pathway.

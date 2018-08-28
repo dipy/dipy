@@ -13,7 +13,8 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, flexi_tvis_affine,
-                                 get_flexi_tvis_affine, _min_at, calculate_cci)
+                                 get_flexi_tvis_affine, _min_at,
+                                 cluster_confidence)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 
@@ -37,15 +38,15 @@ def make_streamlines():
     return streamlines
 
 
-def test_cci():
+def test_cluster_confidence():
     # two identical streamlines should raise an error
     mysl = np.array([np.arange(10)] * 3).T
     test_streamlines = list([mysl])*2
-    assert_raises(ValueError, calculate_cci, test_streamlines)
+    assert_raises(ValueError, cluster_confidence, test_streamlines)
 
     # 3 offset collinear streamlines
     test_streamlines = list([mysl])+[mysl+1]+[mysl+2]
-    cci = calculate_cci(test_streamlines)
+    cci = cluster_confidence(test_streamlines)
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
@@ -65,8 +66,8 @@ def test_cci():
     test_streamlines_p2 = list([mysl])+[mysl3]+[mysl4]
     test_streamlines_p3 = list([mysl])+[mysl2]+[mysl3]+[mysl5]
 
-    cci_p1 = calculate_cci(test_streamlines_p1)
-    cci_p2 = calculate_cci(test_streamlines_p2)
+    cci_p1 = cluster_confidence(test_streamlines_p1)
+    cci_p2 = cluster_confidence(test_streamlines_p2)
 
     # test relative distance
     assert_array_equal(cci_p1, cci_p2*2)
@@ -78,7 +79,7 @@ def test_cci():
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
-    cci_p1_pow2 = calculate_cci(test_streamlines_p1, power=2)
+    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2)
     expected_p1_pow2 = np.array([np.power(1/1, 2)+np.power(1/2, 2),
                                  np.power(1/1, 2)+np.power(1/1, 2),
                                  np.power(1/1, 2)+np.power(1/2, 2)])
@@ -86,7 +87,7 @@ def test_cci():
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 
     # test max distance (ignore distant sls)
-    cci_dist = calculate_cci(test_streamlines_p3, max_mdf=5)
+    cci_dist = cluster_confidence(test_streamlines_p3, max_mdf=5)
     expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
     assert_array_equal(cci_dist, expected_cci_dist)
 
