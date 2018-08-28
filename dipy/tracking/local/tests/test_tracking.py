@@ -897,6 +897,19 @@ def test_tracking_with_initial_directions():
     npt.assert_(allclose(streamlines[2], expected[2][:2][::-1]))
     npt.assert_(allclose(streamlines[3], expected[2][1:]))
 
+    # Test randomized initial forward direction
+    seeds = np.array([crossing_pos] * 30)
+    initial_directions = np.array([np.array([1, 0, 0])] * 30)[:, np.newaxis, :]
+    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1,
+                                         max_cross=2, return_all=False,
+                                         unidirectional=True,
+                                         randomize_forward_direction=True,
+                                         initial_directions=initial_directions)
+    streamlines = Streamlines(streamline_generator)
+    for sl in streamlines:
+        npt.assert_(np.allclose(sl, expected[1][2:])
+                    or np.allclose(sl, expected[1][:3][::-1]))
+
 
 if __name__ == "__main__":
     npt.run_module_suite()
