@@ -955,6 +955,10 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
         degrade much faster. Example: a streamline with 5mm MDF
         similarity contributes 1/5 to the cci if power is 1, but
         only contributes 1/5^2 = 1/25 if power is 2.
+    override: bool, False by default
+        override means that the cci calculation will still occur even
+        though there are short streamlines in the dataset that may alter
+        expected behaviour.
 
     Returns
     -------
