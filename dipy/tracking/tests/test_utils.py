@@ -27,6 +27,8 @@ import numpy.testing as npt
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 
+import nibabel as nib
+
 
 def make_streamlines():
     streamlines = [np.array([[0, 0, 0],
@@ -43,11 +45,11 @@ def make_streamlines():
 def test_cluster_confidence():
     # two identical streamlines should raise an error
     mysl = np.array([np.arange(10)] * 3).T
-    test_streamlines = Streamlines([mysl])*2
+    test_streamlines = Streamlines([mysl]).append([mysl])
     assert_raises(ValueError, cluster_confidence, test_streamlines)
 
     # 3 offset collinear streamlines
-    test_streamlines = Streamlines([mysl])+[mysl+1]+[mysl+2]
+    test_streamlines = Streamlines([mysl]).append([mysl+1]).append([mysl+2])
     cci = cluster_confidence(test_streamlines)
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
@@ -64,9 +66,10 @@ def test_cluster_confidence():
     mysl5 = mysl.copy()
     mysl5[:, 1] = 5000
 
-    test_streamlines_p1 = Streamlines([mysl])+[mysl2]+[mysl3]
-    test_streamlines_p2 = Streamlines([mysl])+[mysl3]+[mysl4]
-    test_streamlines_p3 = Streamlines([mysl])+[mysl2]+[mysl3]+[mysl5]
+    test_streamlines_p1 = Streamlines([mysl]).append([mysl2]).append([mysl3])
+    test_streamlines_p2 = Streamlines([mysl]).append([mysl3]).append([mysl4])
+    test_streamlines_p3 = Streamlines([mysl]).append(
+        [mysl2]).append([mysl3]).append([mysl5])
 
     cci_p1 = cluster_confidence(test_streamlines_p1)
     cci_p2 = cluster_confidence(test_streamlines_p2)
