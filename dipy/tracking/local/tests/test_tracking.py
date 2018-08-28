@@ -755,8 +755,7 @@ def test_affine_transformations():
 
 
 def test_tracking_with_initial_directions():
-    """This test that tractography play well with using initial seeding
-    directions."""
+    """This test that tractography play well with using seeding directions."""
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
 
@@ -831,8 +830,8 @@ def test_tracking_with_initial_directions():
 
     # Test inital_directions with norm != 1 and not sphere vertices
     initial_directions = np.array([[[0, 0, 0], [2, 0, 0]],
-                                   [[0.1, 0.8, 0], [0.5, 0, 0]],
-                                   [[0, 0, 0], [0.7, 0.6, 0.1]]])
+                                   [[0.1, 0.8, 0], [-0.4, 0, 0]],
+                                   [[0, 0, 0], [0.7, 0.6, -0.1]]])
     streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 1,
                                          max_cross=2, return_all=False,
                                          initial_directions=initial_directions)
@@ -863,7 +862,6 @@ def test_tracking_with_initial_directions():
             dg, tc, seeds, np.eye(4), 1, return_all=True,
             initial_directions=initial_dir)
     streamlines = Streamlines(streamline_generator)
-    print streamlines
     npt.assert_(allclose(streamlines[0], expected[1]))
 
     npt.assert_(allclose(streamlines[1], expected[2]))
