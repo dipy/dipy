@@ -104,6 +104,15 @@ class LocalTracking(object):
             if seeds.shape[0] != initial_directions.shape[0]:
                 raise ValueError("initial_directions and seeds must have the "
                                  + "same shape[0].")
+        if (self.initial_directions is None and self.unidirectional is True and
+                self.randomize_forward_direction is False):
+                warnings.warn("Unidirectional tractography will be performed "
+                              + "without providing initial directions nor "
+                              + "randomizing extracted initial forward "
+                              + "directions. This can introduce directional "
+                              + "biases in the reconstructed streamlines. "
+                              + "See ``initial_directions`` and "
+                              + "``randomize_forward_direction`` parameters.")
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
                                                 dtype=float)

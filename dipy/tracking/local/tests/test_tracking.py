@@ -1,3 +1,4 @@
+import warnings
 
 import nibabel as nib
 import numpy as np
@@ -446,8 +447,7 @@ def test_maximum_deterministic_tracker():
         return x.shape == y.shape and np.allclose(x, y)
 
     for sl in streamlines:
-        if not allclose(sl, expected[0]):
-            raise AssertionError()
+        npt.assert_(allclose(sl, expected[0]))
 
     # The first path is not possible if 90 degree turns are excluded
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
@@ -651,9 +651,18 @@ def test_peak_direction_tracker():
     # Test that the first point is the seed position when using unidirectional
     # tracking.
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.,
-                                unidirectional=True)
+                                unidirectional=True,
+                                randomize_forward_direction=True)
     for i, sl in enumerate(streamlines):
         npt.assert_(np.allclose(sl[0], seeds[i]))
+
+    # Test that a warning is raised when using unidirectional, without
+    # randomize_forward_direction and not providing initial_directions
+    with warnings.catch_warnings(record=True) as w:
+        streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.,
+                                    unidirectional=True,
+                                    randomize_forward_direction=False)
+        assert len(w) == 1
 
 
 def test_affine_transformations():
