@@ -1122,7 +1122,7 @@ def test_cluster_confidence():
     test_streamlines.append(mysl+1)
     test_streamlines.append(mysl+2)
     test_streamlines.finalize_append()
-    cci = cluster_confidence(test_streamlines)
+    cci = cluster_confidence(test_streamlines, override=True)
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
@@ -1155,8 +1155,8 @@ def test_cluster_confidence():
     test_streamlines_p3.append(mysl5)
     test_streamlines_p3.finalize_append()
 
-    cci_p1 = cluster_confidence(test_streamlines_p1)
-    cci_p2 = cluster_confidence(test_streamlines_p2)
+    cci_p1 = cluster_confidence(test_streamlines_p1, override=True)
+    cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
 
     # test relative distance
     assert_array_equal(cci_p1, cci_p2*2)
@@ -1176,7 +1176,8 @@ def test_cluster_confidence():
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 
     # test max distance (ignore distant sls)
-    cci_dist = cluster_confidence(test_streamlines_p3, max_mdf=5)
+    cci_dist = cluster_confidence(test_streamlines_p3,
+                                  max_mdf=5, override=True)
     expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
     assert_array_equal(cci_dist, expected_cci_dist)
 
