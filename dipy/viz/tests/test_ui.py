@@ -803,7 +803,7 @@ def test_timer():
 
     sphere_actor2 = actor.sphere(centers=xyzr2[:, :3], colors=colors[:],
                                  radii=xyzr2[:, 3], vertices=sphere.vertices,
-                                 faces=sphere.faces)
+                                 faces=sphere.faces.astype('i8'))
 
     renderer.add(sphere_actor)
     renderer.add(sphere_actor2)
@@ -833,7 +833,11 @@ def test_timer():
     showm.add_timer_callback(True, 200, timer_callback)
     showm.start()
 
-    
+    arr = window.snapshot(renderer)
+
+    npt.assert_(np.sum(arr) > 0)
+
+
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
 def test_ui_file_menu_2d(interactive=False):
@@ -947,4 +951,3 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_menu_2d":
         test_ui_file_menu_2d(interactive=False)
-
