@@ -507,8 +507,9 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
     # error if any streamlines are shorter than 20mm
     lengths = list(length(streamlines))
     if min(lengths) < 20 and not override:
-        ValueError('Short streamlines found. We recommend removing them.'
-                   'To continue with short streamlines set override=True')
+        raise ValueError('Short streamlines found. We recommend removing them.'
+                         'To continue without removing short streamlines set'
+                         'override=True')
 
     # calculate the pairwise MDF distance between all streamlines in dataset
     subsamp_sls = set_number_of_points(streamlines, subsample)

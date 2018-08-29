@@ -1101,8 +1101,15 @@ def test_streamlines_generator():
 
 
 def test_cluster_confidence():
-    # two identical streamlines should raise an error
     mysl = np.array([np.arange(10)] * 3, 'float').T
+
+    # a short streamline (<20 mm) should raise an error unless override=True
+    test_streamlines = Streamlines()
+    test_streamlines.append(mysl)
+    assert_raises(ValueError, cluster_confidence, test_streamlines)
+    cci = cluster_confidence(test_streamlines, override=True)
+
+    # two identical streamlines should raise an error
     test_streamlines = Streamlines()
     test_streamlines.append(mysl, cache_build=True)
     test_streamlines.append(mysl)
