@@ -597,10 +597,11 @@ class ShowManager(object):
 
     def destroy_timer(self, timer_id):
         self.iren.DestroyTimer(timer_id)
+        del self.timers[self.timers.index(timer_id)]
 
     def destroy_timers(self):
         for timer_id in self.timers:
-            self.iren.DestroyTimer(timer_id)
+            self.destroy_timer(timer_id)
 
     def exit(self):
         """ Close window and terminate interactor
