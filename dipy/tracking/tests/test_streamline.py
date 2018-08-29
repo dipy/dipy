@@ -1168,7 +1168,8 @@ def test_cluster_confidence():
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
-    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2)
+    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
+                                     override=True)
     expected_p1_pow2 = np.array([np.power(1./1, 2)+np.power(1./2, 2),
                                  np.power(1./1, 2)+np.power(1./1, 2),
                                  np.power(1./1, 2)+np.power(1./2, 2)])
