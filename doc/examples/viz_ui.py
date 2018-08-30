@@ -266,7 +266,7 @@ show_manager.ren.set_camera(position=(0, 0, 200))
 show_manager.ren.reset_clipping_range()
 show_manager.ren.azimuth(30)
 
-interactive = True
+interactive = False
 
 if interactive:
     show_manager.start()
