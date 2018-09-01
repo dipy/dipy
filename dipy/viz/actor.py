@@ -1262,7 +1262,6 @@ def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
     return aPolyVertexActor
 
 
-
 def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     """ Visualize points as sphere glyphs
 
@@ -1287,57 +1286,11 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     >>> pts = np.random.rand(5, 3)
     >>> point_actor = actor.point(pts, window.colors.coral)
     >>> ren.add(point_actor)
-    >>> #window.show(ren)
+    >>> # window.show(ren)
     """
 
-    if np.array(colors).ndim == 1:
-        # return dots(points,colors,opacity)
-        colors = np.tile(colors, (len(points), 1))
-
-    scalars = vtk.vtkUnsignedCharArray()
-    scalars.SetNumberOfComponents(3)
-
-    pts = vtk.vtkPoints()
-    cnt_colors = 0
-
-    for p in points:
-
-        pts.InsertNextPoint(p[0], p[1], p[2])
-        scalars.InsertNextTuple3(
-            round(255 * colors[cnt_colors][0]),
-            round(255 * colors[cnt_colors][1]),
-            round(255 * colors[cnt_colors][2]))
-        cnt_colors += 1
-
-    src = vtk.vtkSphereSource()
-    src.SetRadius(point_radius)
-    src.SetThetaResolution(theta)
-    src.SetPhiResolution(phi)
-
-    polyData = vtk.vtkPolyData()
-    polyData.SetPoints(pts)
-    polyData.GetPointData().SetScalars(scalars)
-
-    glyph = vtk.vtkGlyph3D()
-    glyph.SetSourceConnection(src.GetOutputPort())
-    if major_version <= 5:
-        glyph.SetInput(polyData)
-    else:
-        glyph.SetInputData(polyData)
-    glyph.SetColorModeToColorByScalar()
-    glyph.SetScaleModeToDataScalingOff()
-    glyph.Update()
-
-    mapper = vtk.vtkPolyDataMapper()
-    if major_version <= 5:
-        mapper.SetInput(glyph.GetOutput())
-    else:
-        mapper.SetInputData(glyph.GetOutput())
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.GetProperty().SetOpacity(opacity)
-
-    return actor
+    return sphere(centers=points, colors=colors, radii=point_radius,
+                  theta=theta, phi=phi, vertices=None, faces=None)
 
 
 def sphere(centers, colors, radii=1., theta=16, phi=16,
@@ -1368,7 +1321,7 @@ def sphere(centers, colors, radii=1., theta=16, phi=16,
     >>> centers = np.random.rand(5, 3)
     >>> sphere_actor = actor.sphere(centers, window.colors.coral)
     >>> ren.add(sphere_actor)
-    >>> #window.show(ren)
+    >>> # window.show(ren)
     """
 
     if np.array(colors).ndim == 1:
