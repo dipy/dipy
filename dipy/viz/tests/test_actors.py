@@ -746,7 +746,7 @@ def test_labels(interactive=False):
 @xvfb_it
 def test_spheres(interactive=False):
 
-    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [200, 0, 0, 100]])
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 25], [200, 0, 0, 50]])
     colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.99]])
 
     renderer = window.Renderer()
@@ -756,6 +756,11 @@ def test_spheres(interactive=False):
 
     if interactive:
         window.show(renderer, order_transparent=True)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=colors)
+    npt.assert_equal(report.objects, 3)
 
 
 if __name__ == "__main__":
