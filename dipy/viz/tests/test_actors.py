@@ -661,6 +661,16 @@ def test_tensor_slicer(interactive=False):
     if interactive:
         window.show(renderer, reset_camera=False)
 
+    # Test error handling of the method when
+    # incompatible dimension of mevals and evecs are passed.
+    mevals = np.zeros((3, 2, 3))
+    mevecs = np.zeros((3, 2, 4, 3, 3))
+
+    with npt.assert_raises(RuntimeError):
+        tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                           mask=mask, scalar_colors=cfa,
+                                           sphere=sphere, scale=.3)
+
 
 @npt.dec.skipif(not run_test)
 @xvfb_it
