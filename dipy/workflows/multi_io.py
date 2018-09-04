@@ -254,7 +254,7 @@ class IOIterator(object):
         for i_o in IO:
             yield i_o
 
-    def file_existence_check(args):
+    def file_existence_check(self, args):
         input_args = list(args)
         for input_path in sorted(input_args):
             if len(glob(input_path)) == 0:

@@ -49,29 +49,30 @@ def test_run():
     assert_raises(Exception, wf.run, None)
 
 
-class TestMissingFile(Workflow):
-
-    def run(self, input, out_dir=''):
-        """Dummy Workflow used to test if input file is absent.
-
-        Parameters
-        ----------
-
-        input_ : string, positional
-            path of the first input file.
-        out_dir: string, optional
-            folder path to save the results.
-        """
-        io = self.get_io_iterator()
-
-
 def test_missing_file():
-    # The function is invoking the workflow with a non-existent file.
-    # So, an OSError will be raised.
+    # The function is invoking a dummy workflow with a non-existent file.
+    # So, an IOError will be raised.
+
+    class TestMissingFile(Workflow):
+
+        def run(self, input, out_dir=''):
+            """Dummy Workflow used to test if input file is absent.
+
+            Parameters
+            ----------
+
+            input : string, positional
+                path of the first input file.
+            out_dir: string, optional
+                folder path to save the results.
+            """
+            io = self.get_io_iterator()
+
     dummyflow = TestMissingFile()
     with TemporaryDirectory() as tempdir:
-        npt.assert_raises(OSError, dummyflow.run,
-                          pjoin(tempdir, 'missing_file.txt'))
+        npt.assert_raises(IOError, dummyflow.run,
+                          pjoin(tempdir, 'dummy_file.txt'))
+
 
 if __name__ == '__main__':
     test_force_overwrite()
