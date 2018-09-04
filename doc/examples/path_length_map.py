@@ -12,9 +12,10 @@ radiation therapy treatment contours based on a tractography model of the local
 white matter anatomy, as described in [Jordan_2018_plm]_, by
 executing this tutorial with the gross tumor volume (GTV) as the ROI.
 
+NOTE: The background value is set to -1 by default
 """
 
-from dipy.data import read_stanford_labels
+from dipy.data import read_stanford_labels, fetch_stanford_t1
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
@@ -27,6 +28,8 @@ from dipy.viz.colormap import line_colors
 from dipy.tracking.utils import path_length
 import nibabel as nib
 import numpy as np
+import os
+import nilearn.plotting as nip
 
 """
 First, we need to generate some streamlines and visualize. For a more complete
@@ -89,11 +92,9 @@ interactive = False  # this works if it's True but black if False??
 if interactive:
     window.show(ren)
 
-ren.zoom(1.5)
-ren.reset_clipping_range()
+window.record(ren, n_frames=1, out_path='plm_roi_sls.png',
+              size=(800, 800))
 
-window.record(ren, out_path='plm_roi_sls.png', size=(1200, 900),
-              reset_camera=False)
 
 """
 .. figure:: plm_roi_sls.png
@@ -125,13 +126,20 @@ wmpl = path_length(streamlines, path_length_map_base_roi, affine)
 path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
 nib.save(path_length_img, 'example_cc_path_length_map.nii.gz')
 
+# generate display of Path Length map using Nilearn
+t1_path = os.path.join(fetch_stanford_t1()[1], 't1.nii.gz')
+nip.plot_stat_map('example_cc_path_length_map.nii.gz',
+                  output_file='Path_Length_Map.png',
+                  bg_img=t1_path, symmetric_cbar=False,
+                  cmap='jet', threshold=1)
+
 
 """
 .. figure:: Path_Length_Map.png
    :align: center
 
    **Path Length Map showing the shortest distance, along a streamline,
-   from the corpus callosum ROI**.
+   from the corpus callosum ROI with the background set to -1**.
 
 References
 ----------
