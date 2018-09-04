@@ -24,7 +24,7 @@ from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window
 from dipy.viz.colormap import line_colors
-from dipy.tracking.utils import get_flexi_tvis_affine, path_length
+from dipy.tracking.utils import path_length
 import nibabel as nib
 import numpy as np
 
@@ -85,7 +85,7 @@ If you set interactive to True (below), the rendering will pop up in an
 interactive window.
 """
 
-interactive = False
+interactive = False  # this works if it's True but black if False??
 if interactive:
     window.show(ren)
 
@@ -115,32 +115,11 @@ bundle model of the cortico-spinal track (CST) and input a lesion mask as our
 Path Length Map base ROI to restrict the analysis to the CST)
 """
 
-
-# set the path to the data
-basedir = '/path/to/mydata'  # INSERT PATH TO DATA#
-
-# set the path to the ROI (roi) and the streamlines (trk)
-roi_pathfrag = 'GTV_diffusion_space.nii.gz'
-trk_pathfrag = 'GTV_streamlines.trk'
-
-roipath = os.path.join(basedir, roi_pathfrag)
-trkpath = os.path.join(basedir, trk_pathfrag)
-savepath = os.path.join(basedir, 'WMPL_map.nii.gz')
-
-# load the streamlines from the trk file
-trk, hdr = nib.trackvis.read(trkpath)
-sls = [item[0] for item in trk]
-
-# load the ROI from the nifti file
-roiim = nib.load(roipath)
-roidata = roiim.get_data()
-roiaff = roiim.get_affine()
-
-# create mapping between the streamlines and ROI
-grid2trk_aff = get_flexi_tvis_affine(hdr, affine)
+path_length_map_base_roi = seed_mask
 
 # calculate the WMPL
-wmpl = path_length(sls, roidata, grid2trk_aff)
+
+wmpl = path_length(streamlines, path_length_map_base_roi, affine)
 
 # save the WMPL as a nifti
 path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
