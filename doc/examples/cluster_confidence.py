@@ -25,11 +25,14 @@ import matplotlib
 
 from dipy.tracking.streamline import cluster_confidence
 
+
 """
-First, we need to generate some streamlines and visualize. For a more complete
+First, we need to generate some streamlines. For a more complete
 description of these steps, please refer to the CSA Probabilistic Tracking and
 the Visualization of ROI Surface Rendered with Streamlines Tutorials.
  """
+
+
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
@@ -84,15 +87,14 @@ ren = window.renderer()
 hue = [0.5, 1]
 saturation = [0.0, 1.0]
 
-lut_cmap = actor.colormap_lookup_table(
-    scale_range=(cci.min(), cci.max()/4),
-    hue_range=hue,
-    saturation_range=saturation)
+lut_cmap = actor.colormap_lookup_table(scale_range=(cci.min(), cci.max()/4),
+                                       hue_range=hue,
+                                       saturation_range=saturation)
 
 bar3 = actor.scalar_bar(lut_cmap)
 ren.add(bar3)
 
-stream_actor = actor.line(streamlines, cci, linewidth=0.1,
+stream_actor = actor.line(long_streamlines, cci, linewidth=0.1,
                           lookup_colormap=lut_cmap)
 ren.add(stream_actor)
 
@@ -103,7 +105,7 @@ interactive window.
 """
 
 
-interactive = True
+interactive = False
 if interactive:
     window.show(ren)
 window.record(ren, n_frames=1, out_path='cci_streamlines.png',
@@ -114,6 +116,18 @@ window.record(ren, n_frames=1, out_path='cci_streamlines.png',
    :align: center
 
    Cluster Confidence Index of corpus callosum dataset.
+
+
+If you think of each streamline as a sample of a potential pathway through a
+complex landscape of white matter anatomy probed via water diffusion,
+intuitively we have more confidence that pathways represented by many samples
+(streamlines) reflect a more stable representation of the underlying phenomenon
+we are trying to model (anatomical landscape) than do lone samples.
+
+The CCI provides a voting system where by each streamline (within a set
+tolerance) gets to vote on how much support it lends to. Outlier pathways score
+relatively low on CCI, since they do not have many streamlines voting for them.
+These outliers can be removed by thresholding on the CCI metric.
 
 """
 
@@ -131,11 +145,41 @@ fig.savefig('cci_histogram.png')
 
    Histogram of Cluster Confidence Index values.
 
+Now we threshold the CCI, defining outliers as streamlines that score below 1.
+
+"""
+
+keep_streamlines = []
+for i, sl in enumerate(long_streamlines):
+    if cci[i] >= 1:
+        keep_streamlines.append(sl)
+
+# Visualize the streamlines we kept
+ren = window.renderer()
+
+keep_streamlines_actor = actor.line(keep_streamlines, linewidth=0.1)
+
+ren.add(keep_streamlines_actor)
+
+
+interactive = False
+if interactive:
+    window.show(ren)
+window.record(ren, n_frames=1, out_path='filtered_cci_streamlines.png',
+              size=(800, 800))
+
+"""
+
+.. figure:: filtered_cci_streamlines.png
+   :align: center
+
+   Outliers, defined as streamlines scoring CCI < 1, were excluded.
+
 
 References
 ----------
 
-.. [Jordan_2018_plm] Jordan, K.M., Amirbekian, B., Keshavan, A., Henry, R.G.
+.. [Jordan_2018_plm] Jordan, K., Amirbekian, B., Keshavan, A., Henry, R.G.
 "Cluster Confidence Index: A Streamline‐Wise Pathway Reproducibility Metric
 for Diffusion‐Weighted MRI Tractography", Journal of Neuroimaging, 2017.
 
