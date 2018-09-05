@@ -36,7 +36,7 @@ def make_bundle_atlas(bundle_list, keystone_boi, qb_thresh=5., Nsubsamp=20,
                       keystone and MNI**
     verbose: print info about each bundle as it runs
 
-    *qb_thresh adn clsz_thresh are related. If you have a fine parcellation
+    *qb_thresh and clsz_thresh are related. If you have a fine parcellation
     (low qb_thresh) then the clsz_threshold should be quite low since clusters
     will be small.
 

@@ -3,7 +3,7 @@
 Bundle Atlas Generation
 ==========================
 
-This example explains how you can create a streamline atlas from a set of
+This example demonstrates how to create a streamline bundle atlas from a set of
 segmented bundles. This atlas can be used with Recobundles to segment a
 desired bundle. See this preprint _[Jordan_2018_bundle_templates] for details.
 
@@ -69,10 +69,16 @@ points per streamline, cluster all of the templates, and put the resulting
 centroids in the same space. For more information on how choice of quickbundles
 parameters influence the template, see _[Jordan_2018_bundle_templates].
 
-NOTE: Nsubsamp will determine the resolution of your bundle atlas.
-
-If you want to export your bundles in MNI space, input the MNI-to-keystone
-space affine transformation into the variable keystone2MNI_xfm. NOTE: set this variable if (and only if) you want the result to be in MNI space. Otherwise it will be in keystone space (keystone patient's diffusion space)
+Notes on parameters:
+- Nsubsamp will determine the resolution of your bundle atlas.
+- qb_thresh and clsz_thresh are related. If you have a fine parcellation
+(low qb_thresh) then the clsz_threshold should be quite low since clusters
+will be small.
+- If you want to export your bundles in MNI space, input the MNI-to-keystone
+space affine transformation into the variable keystone2MNI_xfm.
+NOTE: set this variable if (and only if) you want the result to be in
+MNI space. Otherwise it will be in keystone space (keystone patient's
+diffusion space)
 """
 
 rb_template = make_bundle_atlas(bundle_list, keystone_boi, qb_thresh=5.,
