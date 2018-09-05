@@ -20,8 +20,8 @@ def bundle_to_wb(fixed_wb, moving_wb, moving_bundle):
     return moved, transform, bundle_xfmd
 
 
-def make_rb_template(bundle_list, keystone_boi, qb_thresh=5., Nsubsamp=20,
-                     clsz_thresh=5, keystone2MNI_xfm=None, verbose=False):
+def make_bundle_atlas(bundle_list, keystone_boi, qb_thresh=5., Nsubsamp=20,
+                      clsz_thresh=5, keystone2MNI_xfm=None, verbose=False):
     '''
     bundle_list: list of independent bundles (lists) not assumed to be in the
                  same space
