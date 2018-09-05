@@ -15,7 +15,7 @@ subjects, but ideally this procedure would be applied to a much larger dataset.
 
 from dipy.viz import window, actor
 from dipy.data import two_cingulum_bundles
-from dipy.tracking.templates import make_bundle_atlas
+from dipy.segment.templates import make_bundle_atlas
 
 
 cb_subj1, cb_subj2 = two_cingulum_bundles()
