@@ -1062,12 +1062,19 @@ def read_bundle_atlas_hcp842():
     file2 : string
     """
     file1 = pjoin(dipy_home,
-                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/whole_brain/whole_brain_MNI.trk')
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'whole_brain',
+                  'whole_brain_MNI.trk')
 
     file2 = pjoin(dipy_home,
-                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/*.trk')
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  '*.trk')
 
     return file1, file2
+
 
 def read_two_hcp842_bundle():
     """
@@ -1077,10 +1084,16 @@ def read_two_hcp842_bundle():
     file2 : string
     """
     file1 = pjoin(dipy_home,
-                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/AF_L.trk')
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  'AF_L.trk')
 
     file2 = pjoin(dipy_home,
-                  'bundle_atlas_hcp842/Atlas_in_MNI_Space_16_bundles/bundles/CST_L.trk')
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  'CST_L.trk')
 
     return file1, file2
 
@@ -1091,6 +1104,8 @@ def read_target_tractogram_hcp():
     -------
     file1 : string
     """
-    file1 = pjoin(dipy_home, 'target_tractogram_hcp/hcp_tractogram/streamlines.trk')
+    file1 = pjoin(dipy_home, 'target_tractogram_hcp',
+                              'hcp_tractogram',
+                              'streamlines.trk')
 
     return file1
