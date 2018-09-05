@@ -63,3 +63,4 @@
  viz_ui.py
  register_binary_fuzzy.py
  viz_timer.py
+ cluster_confidence.py

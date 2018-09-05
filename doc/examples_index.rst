@@ -160,6 +160,7 @@ Streamline analysis and connectivity
 
 - :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
+- :ref:`example_cluster_confidence`
 
 
 ------------------
