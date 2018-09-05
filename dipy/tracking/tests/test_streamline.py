@@ -10,7 +10,7 @@ from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite, assert_allclose)
+                           assert_raises, assert_allclose)
 
 from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
@@ -178,16 +178,16 @@ def length_python(xyz, along=False):
 def set_number_of_points_python(xyz, n_pols=3):
     def _extrap(xyz, cumlen, distance):
         """ Helper function for extrapolate """
-        ind = np.where((cumlen-distance) > 0)[0][0]
-        len0 = cumlen[ind-1]
+        ind = np.where((cumlen - distance) > 0)[0][0]
+        len0 = cumlen[ind - 1]
         len1 = cumlen[ind]
-        Ds = distance-len0
-        Lambda = Ds/(len1-len0)
-        return Lambda*xyz[ind] + (1-Lambda)*xyz[ind-1]
+        Ds = distance - len0
+        Lambda = Ds / (len1 - len0)
+        return Lambda * xyz[ind] + (1 - Lambda) * xyz[ind - 1]
 
     cumlen = np.zeros(xyz.shape[0])
     cumlen[1:] = length_python(xyz, along=True)
-    step = cumlen[-1] / (n_pols-1)
+    step = cumlen[-1] / (n_pols - 1)
 
     ar = np.arange(0, cumlen[-1], step)
     if np.abs(ar[-1] - cumlen[-1]) < np.finfo('f4').eps:
@@ -340,7 +340,7 @@ def test_set_number_of_points_memory_leaks():
 
         # Calling `set_number_of_points` should increase the refcount of `list`
         #  by one since we kept the returned value.
-        assert_equal(list_refcount_after, list_refcount_before+1)
+        assert_equal(list_refcount_after, list_refcount_before + 1)
 
     # Test mixed dtypes
     rng = np.random.RandomState(1234)
@@ -356,7 +356,7 @@ def test_set_number_of_points_memory_leaks():
 
     # Calling `set_number_of_points` should increase the refcount of `list`
     #  by one since we kept the returned value.
-    assert_equal(list_refcount_after, list_refcount_before+1)
+    assert_equal(list_refcount_after, list_refcount_before + 1)
 
 
 def test_length():
@@ -595,11 +595,11 @@ def compress_streamlines_python(streamline, tol_error=0.01,
 
     # Euclidean distance
     def segment_length(prev, next):
-        return np.sqrt(((prev-next)**2).sum())
+        return np.sqrt(((prev - next)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
     def dist_to_line(prev, next, curr):
-        return norm(np.cross(next-prev, curr-next)) / norm(next-prev)
+        return norm(np.cross(next - prev, curr - next)) / norm(next - prev)
 
     nb_points = 0
     compressed_streamline = np.zeros_like(streamline)
@@ -613,22 +613,23 @@ def compress_streamlines_python(streamline, tol_error=0.01,
     for next_id, next in enumerate(streamline[2:], start=2):
         # Euclidean distance between last added point and current point.
         if segment_length(prev, next) > max_segment_length:
-            compressed_streamline[nb_points, :] = streamline[next_id-1, :]
+            compressed_streamline[nb_points, :] = streamline[next_id - 1, :]
             nb_points += 1
-            prev = streamline[next_id-1]
-            prev_id = next_id-1
+            prev = streamline[next_id - 1]
+            prev_id = next_id - 1
             continue
 
         # Check that each point is not offset by more than `tol_error` mm.
-        for o, curr in enumerate(streamline[prev_id+1:next_id],
-                                 start=prev_id+1):
+        for o, curr in enumerate(streamline[prev_id + 1:next_id],
+                                 start=prev_id + 1):
             dist = dist_to_line(prev, next, curr)
 
             if np.isnan(dist) or dist > tol_error:
-                compressed_streamline[nb_points, :] = streamline[next_id-1, :]
+                compressed_streamline[nb_points,
+                                      :] = streamline[next_id - 1, :]
                 nb_points += 1
-                prev = streamline[next_id-1]
-                prev_id = next_id-1
+                prev = streamline[next_id - 1]
+                prev_id = next_id - 1
                 break
 
     # Copy last point since it is always kept.
@@ -651,7 +652,7 @@ def test_compress_streamlines():
 
         # Compressing a straight streamline that is less than 10mm long
         # should output a two points streamline.
-        linear_streamline = np.linspace(0, 5, 100*3).reshape((100, 3))
+        linear_streamline = np.linspace(0, 5, 100 * 3).reshape((100, 3))
         c_streamline = compress_func(linear_streamline)
         assert_equal(len(c_streamline), 2)
         assert_array_equal(c_streamline, [linear_streamline[0],
@@ -660,7 +661,7 @@ def test_compress_streamlines():
         # The distance of consecutive points must be less or equal than some
         # value.
         max_segment_length = 10
-        linear_streamline = np.linspace(0, 100, 100*3).reshape((100, 3))
+        linear_streamline = np.linspace(0, 100, 100 * 3).reshape((100, 3))
         linear_streamline[:, 1:] = 0.
         c_streamline = compress_func(linear_streamline,
                                      max_segment_length=max_segment_length)
@@ -695,9 +696,9 @@ def test_compress_streamlines():
     # Create a special streamline where every other point is increasingly
     # farther from a straigth line formed by the streamline endpoints.
     tol_errors = np.linspace(0, 10, 21)
-    orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]],
+    orthogonal_line = np.array([[-np.sqrt(2) / 2, np.sqrt(2) / 2, 0]],
                                dtype=np.float32)
-    special_streamline = np.array([range(len(tol_errors)*2+1)] * 3,
+    special_streamline = np.array([range(len(tol_errors) * 2 + 1)] * 3,
                                   dtype=np.float32).T
     special_streamline[1::2] += orthogonal_line * tol_errors[:, None]
 
@@ -709,7 +710,7 @@ def test_compress_streamlines():
     # Test different values for `tol_error`.
     for i, tol_error in enumerate(tol_errors):
         cspecial_streamline = compress_streamlines(special_streamline,
-                                                   tol_error=tol_error+1e-4,
+                                                   tol_error=tol_error + 1e-4,
                                                    max_segment_length=np.inf)
 
         # First and last points should always be the same as the original ones.
@@ -717,12 +718,12 @@ def test_compress_streamlines():
         assert_array_equal(cspecial_streamline[-1], special_streamline[-1])
 
         assert_equal(len(cspecial_streamline),
-                     len(special_streamline)-((i*2)+1))
+                     len(special_streamline) - ((i * 2) + 1))
 
         # Make sure Cython and Python versions are the same.
         cstreamline_python = compress_streamlines_python(
             special_streamline,
-            tol_error=tol_error+1e-4,
+            tol_error=tol_error + 1e-4,
             max_segment_length=np.inf)
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
@@ -746,7 +747,7 @@ def test_compress_streamlines_memory_leaks():
 
         # Calling `compress_streamlines` should increase the refcount of `list`
         # by one since we kept the returned value.
-        assert_equal(list_refcount_after, list_refcount_before+1)
+        assert_equal(list_refcount_after, list_refcount_before + 1)
 
     # Test mixed dtypes
     rng = np.random.RandomState(1234)
@@ -762,7 +763,7 @@ def test_compress_streamlines_memory_leaks():
 
     # Calling `compress_streamlines` should increase the refcount of `list` by
     # one since we kept the returned value.
-    assert_equal(list_refcount_after, list_refcount_before+1)
+    assert_equal(list_refcount_after, list_refcount_before + 1)
 
 
 def generate_sl(streamlines):
@@ -1119,8 +1120,8 @@ def test_cluster_confidence():
     # 3 offset collinear streamlines
     test_streamlines = Streamlines()
     test_streamlines.append(mysl, cache_build=True)
-    test_streamlines.append(mysl+1)
-    test_streamlines.append(mysl+2)
+    test_streamlines.append(mysl + 1)
+    test_streamlines.append(mysl + 2)
     test_streamlines.finalize_append()
     cci = cluster_confidence(test_streamlines, override=True)
     assert_equal(cci[0], cci[2])
@@ -1159,20 +1160,20 @@ def test_cluster_confidence():
     cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
 
     # test relative distance
-    assert_array_equal(cci_p1, cci_p2*2)
+    assert_array_equal(cci_p1, cci_p2 * 2)
 
     # test simple cci calculation
-    expected_p1 = np.array([1./1+1./2, 1./1+1./1, 1./1+1./2])
-    expected_p2 = np.array([1./2+1./4, 1./2+1./2, 1./2+1./4])
+    expected_p1 = np.array([1. / 1 + 1. / 2, 1. / 1 + 1. / 1, 1. / 1 + 1. / 2])
+    expected_p2 = np.array([1. / 2 + 1. / 4, 1. / 2 + 1. / 2, 1. / 2 + 1. / 4])
     assert_array_equal(expected_p1, cci_p1)
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
     cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
                                      override=True)
-    expected_p1_pow2 = np.array([np.power(1./1, 2)+np.power(1./2, 2),
-                                 np.power(1./1, 2)+np.power(1./1, 2),
-                                 np.power(1./1, 2)+np.power(1./2, 2)])
+    expected_p1_pow2 = np.array([np.power(1. / 1, 2) + np.power(1. / 2, 2),
+                                 np.power(1. / 1, 2) + np.power(1. / 1, 2),
+                                 np.power(1. / 1, 2) + np.power(1. / 2, 2)])
 
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 

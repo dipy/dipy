@@ -10,12 +10,10 @@ from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 from dipy.tracking.distances import bundles_distances_mdf
-from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
 from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
 import dipy.align.vector_fields as vfu
-from dipy.testing import setup_test
 
 if LooseVersion(nib.__version__) >= '2.3':
     from nibabel.streamlines import ArraySequence as Streamlines
