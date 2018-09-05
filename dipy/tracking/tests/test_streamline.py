@@ -10,7 +10,7 @@ from dipy.testing import assert_arrays_equal
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_allclose)
+                           assert_raises, run_module_suite, assert_allclose)
 
 from dipy.tracking.streamline import Streamlines
 import dipy.tracking.utils as ut
