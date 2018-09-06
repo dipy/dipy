@@ -255,7 +255,7 @@ class IOIterator(object):
             yield i_o
 
     def file_existence_check(self, args):
-        input_args = list(args)
-        for input_path in sorted(input_args):
-            if len(glob(input_path)) == 0:
-                raise IOError('File not found: '+input_path)
+        input_args = [fname for fname in list(args) if isinstance(fname, str)]
+        for path in input_args:
+            if len(glob(path)) == 0:
+                raise IOError('File not found: '+path)
