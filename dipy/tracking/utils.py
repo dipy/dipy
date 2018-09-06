@@ -412,6 +412,120 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
+def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
+    """
+    Creates randomly sampled seeds for fiber tracking from a surface mesh.
+    Seed points are uniformly sampled from triangles in the mesh.
+
+    Parameters
+    ----------
+    vertices : 2d float array
+        3d coordinates of vertices in a surface mesh
+    faces : list
+        list of triangles in a surface mesh, where each triangle is a list
+        of vertex indices in the triangle
+    n_samples : int
+        number of samples per face
+    affine : array, (4, 4)
+        The mapping between voxel indices and the point space for seeds. A
+        seed point at the center the voxel ``[i, j, k]`` will be represented as
+        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
+    
+    Returns
+    -------
+    seeds : 2d float array
+        3d coordinates of seeds sampled from each triangle in a mesh
+    assignment : 2d int array
+        closest vertex in original mesh to each seed
+    """
+
+    # If n_samples is unspecified, samples are the original vertex coordinates
+    if not n_samples:
+        seeds = vertices
+        assignment = np.arange((len(vertices)))
+    
+    else:
+        # Initialize array of samples
+        seeds = np.zeros((len(faces), 3))
+        # Closest vertex in original mesh to each sample
+        assignment = np.zeros((len(faces), ))
+        
+        for c, face in enumerate(faces):
+
+            # Get coordinates of each vertex in triangle
+            coords = vertices[face, :]
+            # Generate seeds from triangle
+            face_seeds = sample_triangle(coords, n_samples)
+
+            # Compute distance to each vertex in triangle
+            # and assign seeds to nearest vertex
+            distance = cdist(coords, face_seeds)
+            nearest = np.asarray(face)[np.argmin(distance, axis=0)]
+
+            # Which indices to fill
+            low = c*n_samples
+            high = (c+1)*n_samples
+
+            seeds[low:high,:] = face_seeds
+            assignment[low:high] = nearest
+
+    if affine is not None:
+        # Use affine to move seeds into real world coordinates
+        seeds += affine[:3, 3]
+        seeds = np.dot(seeds, affine[:3, :3].T)
+
+    return [seeds, assignment]
+
+
+def sample_triangle(vertices, n_samples=None):
+    """
+    Generates uniformly distributed samples from a triangle.
+
+    Parameters
+    ----------
+    vertices : 2d float array
+        3d coordinates of vertices in a triangle
+    samples : int
+        number of samples to generate
+    
+    Returns
+    -------
+    samples : 2d float array
+        3d coordinates sampled from triangle
+
+    Raises
+    ------
+    TypeError
+        when ``n_samples`` not of type int
+    ValueError
+        when ``n_samples`` less than 0
+    """
+
+    # If n_samples not provided, return original vertex coordinates
+    if n_samples is None:
+        return vertices
+    # Otherwise, check n_samples type and value
+    else:
+        if not isinstance(n_samples, int):
+            raise TypeError('n_samples must be of type int')
+        if n_samples < 0:
+            raise ValueError('n_samples must be greater than 0')
+
+    v1,v2,v3 = vertices[0:3,:]
+
+    r = np.random.uniform(0, 1, n_samples*2)
+    r = np.tile(r, [3,1]).T
+
+    r1 = r[:n_samples, :]
+    r2 = r[n_samples:, :]
+
+    # generate barycentric average of vertex coordinates
+    samples = (1-np.sqrt(r1))*v1 + np.sqrt(r1)*(1-r2)*v2 + \
+        np.sqrt(r1)*r2*v3
+
+    return samples
+
+
 def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
                            affine=None, random_seed=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
