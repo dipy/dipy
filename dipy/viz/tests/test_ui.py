@@ -1014,8 +1014,8 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_timer":
         test_timer()
 
-    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_preloader":
-        test_ui_preloader(interactive=True)
-
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_menu_2d":
         test_ui_file_menu_2d(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_preloader":
+        test_ui_preloader(interactive=False)
