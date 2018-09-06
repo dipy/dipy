@@ -1,4 +1,4 @@
-from dipy.reconst.base import ReconstModel, ReconstFit 
+from dipy.reconst.base import ReconstModel as model
 import numpy as np
 import cvxpy as cvx
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -6,32 +6,14 @@ import dipy.reconst.noddi_speed as noddixspeed
 from scipy.optimize import least_squares
 from scipy.optimize import differential_evolution
 from scipy import special
+# from numpy.linalg.linalg import LinAlgError
 
 gamma = 2.675987 * 10 ** 8  # gyromagnetic ratio for Hydrogen
 D_intra = 1.7 * 10 ** 3  # intrinsic free diffusivity
 D_iso = 3 * 10 ** 3  # isotropic diffusivity
 
 
-# experimental
-class NoddixFit(ReconstFit):
-    """Diffusion data fit to a NODDIx Model"""
-
-    def __init__(self, model, coeff):
-        self.volfrac_ic1 = coeff[0]
-        self.volfrac_ec1 = coeff[2]
-        self.theta2 = coeff[9]
-        self.phi2 = coeff[10]        
-        self.volfrac_ic2 = coeff[1]
-        self.volfrac_ec2 = coeff[3]
-        self.theta1 = coeff[6]  
-        self.phi1 = coeff[7]          
-        self.volfrac_csf = coeff[4]
-        self.OD1 = coeff[5]
-        self.OD2 = coeff[8]
-        self.coeff = coeff
-
-
-class NoddixModel(ReconstModel):
+class NODDIxModel(model):
     r""" MIX framework (MIX) [1]_.
     The MIX computes the NODDIx parameters. NODDIx is a multi
     compartment model, (sum of exponentials).
@@ -117,7 +99,7 @@ class NoddixModel(ReconstModel):
         phi = self.Phi(x)
         # Step 2: perform convex optimization
         f = self.cvx_fit(data, phi)
-        # Combine all 13 parameters of the model into a single array
+        # Combine all 10 parameters of the model into a single array
         x_f = self.x_and_f_to_x_f(x, f)
 
         bounds = ([0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
@@ -125,8 +107,7 @@ class NoddixModel(ReconstModel):
                            np.pi, np.pi])
         res = least_squares(self.nlls_cost, x_f, xtol=self.xtol, args=(data,))
         result = res.x
-        noddix_fit = NoddixFit(self, result)
-        return noddix_fit
+        return result
 
     def stoc_search_cost(self, x, signal):
         """
@@ -247,6 +228,15 @@ class NoddixModel(ReconstModel):
         self.exp_phi1[:, 2] = self.S_ic2(x)
         self.exp_phi1[:, 3] = self.S_ec2(x)
         return self.exp_phi1
+    
+    def Phi_single_fibre(self, x):
+        """
+        Constructs the Signal from the intracellular and extracellular compart-
+        ments for the Differential Evolution and Variable Separation.
+        """
+        self.exp_phi1[:, 0] = self.S_ic1(x)
+        self.exp_phi1[:, 1] = self.S_ec1(x)
+        return self.exp_phi1
 
     def Phi2(self, x_f):
         """
@@ -258,6 +248,16 @@ class NoddixModel(ReconstModel):
         self.exp_phi1[:, 1] = self.S_ec1_new(x, f)
         self.exp_phi1[:, 2] = self.S_ic2_new(x)
         self.exp_phi1[:, 3] = self.S_ec2_new(x, f)
+        return self.exp_phi1
+    
+    def Phi2_single_fibre(self, x_f):
+        """
+        Constructs the Signal from the intracellular and extracellular compart-
+        ments: Convex Fitting + NLLS - LM method.
+        """
+        x, f = self.x_f_to_x_and_f(x_f)
+        self.exp_phi1[:, 0] = self.S_ic1(x)
+        self.exp_phi1[:, 1] = self.S_ec1_new(x, f)
         return self.exp_phi1
 
     def S_ic1(self, x):
