@@ -421,8 +421,8 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
     ----------
     vertices : 2d float array
         3d coordinates of vertices in a surface mesh
-    faces : list
-        list of triangles in a surface mesh, where each triangle is a list
+    faces : 2d int array
+        array of triangles in a surface mesh, where each triangle is a list
         of vertex indices in the triangle
     n_samples : int
         number of samples per face
@@ -437,6 +437,25 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
         3d coordinates of seeds sampled from each triangle in a mesh
     assignment : 2d int array
         closest vertex in original mesh to each seed
+
+    Examples
+    --------
+    Note:  There is some stochasticity involved in the seed generation process,
+    as points are sampled randomly from a uniform distribution.
+
+    >>> vertices = np.asarray([[1, 0, 0],
+                               [0, 1, 0],
+                               [0, 0, 1]])
+    >>> faces = np.asarray([0,1,2])[:,None]
+    >>> n_samples = 3
+    >>> [seeds, assignment] = seeds_from_mesh(vertices, faces, n_samples, affine=None)
+    >>> print(seeds) 
+    >>> array([[0.14434192, 0.3372361 , 0.51842198],
+       [0.31493263, 0.68194987, 0.0031175 ],
+       [0.47816217, 0.49051105, 0.03132679]])
+    >>> print(assignment)
+    >>> [2, 1, 1]
+
     """
 
     # If n_samples is unspecified, samples are the original vertex coordinates
@@ -445,29 +464,27 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
         assignment = np.arange((len(vertices)))
     
     else:
-        # Initialize array of samples
-        seeds = np.zeros((len(faces), 3))
-        # Closest vertex in original mesh to each sample
-        assignment = np.zeros((len(faces), ))
-        
+
+        if isinstance(faces, np.ndarray):
+            faces = faces.T.tolist()
+
+        S = len(faces)*n_samples
+
+        seeds = np.zeros((S, 3))
+        assignment = np.zeros((S, ))
+
         for c, face in enumerate(faces):
 
             # Get coordinates of each vertex in triangle
             coords = vertices[face, :]
-            # Generate seeds from triangle
-            face_seeds = sample_triangle(coords, n_samples)
+            # Generate seeds from triangle and compute nearest vertex
+            face_seeds, nearest = sample_triangle(coords, face, n_samples)
 
-            # Compute distance to each vertex in triangle
-            # and assign seeds to nearest vertex
-            distance = cdist(coords, face_seeds)
-            nearest = np.asarray(face)[np.argmin(distance, axis=0)]
+            lo = c*n_samples
+            hi = (c+1)*n_samples
 
-            # Which indices to fill
-            low = c*n_samples
-            high = (c+1)*n_samples
-
-            seeds[low:high,:] = face_seeds
-            assignment[low:high] = nearest
+            seeds[lo:hi, :] = face_seeds
+            assignment[lo:hi] = nearest
 
     if affine is not None:
         # Use affine to move seeds into real world coordinates
@@ -477,9 +494,10 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
     return [seeds, assignment]
 
 
-def sample_triangle(vertices, n_samples=None):
+def sample_triangle(vertices, face, n_samples=None):
     """
-    Generates uniformly distributed samples from a triangle.
+    Generates uniformly distributed samples from a triangle
+    and computes the nearest vertex to each sample.
 
     Parameters
     ----------
@@ -492,6 +510,8 @@ def sample_triangle(vertices, n_samples=None):
     -------
     samples : 2d float array
         3d coordinates sampled from triangle
+    nearest : 1d int array
+        nearest vertex to each sample
 
     Raises
     ------
@@ -522,8 +542,13 @@ def sample_triangle(vertices, n_samples=None):
     # generate barycentric average of vertex coordinates
     samples = (1-np.sqrt(r1))*v1 + np.sqrt(r1)*(1-r2)*v2 + \
         np.sqrt(r1)*r2*v3
+    
+    # Compute distance to each vertex in triangle
+    # and assign seeds to nearest vertex
+    distance = cdist(vertices, samples)
+    nearest = np.asarray(face)[np.argmin(distance, axis=0)]
 
-    return samples
+    return [samples, nearest]
 
 
 def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
