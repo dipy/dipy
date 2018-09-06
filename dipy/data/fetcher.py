@@ -436,6 +436,7 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     'https://ndownloader.figshare.com/files/',
     ['11921522'],
     ["Atlas_in_MNI_Space_16_bundles.zip"],
+    ["Atlas_in_MNI_Space_16_bundles.zip"],
     data_size="200MB",
     doc="Download atlas tractogram from the hcp842 dataset with its bundles",
     unzip=True)
@@ -445,6 +446,7 @@ fetch_target_tractogram_hcp = _make_fetcher(
     pjoin(dipy_home, 'target_tractogram_hcp'),
     'https://ndownloader.figshare.com/files/',
     ["12871127"],
+    ["hcp_tractogram.zip"],
     ["hcp_tractogram.zip"],
     data_size="541MB",
     doc="Download tractogram of one of the hcp dataset subjects",
