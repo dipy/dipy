@@ -159,9 +159,9 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         return self.get_include_c(&point[0])
 
     cdef double get_include_c(self, double* point):
-        exclude_err = trilinear_interpolate4d_c(self.include_map[..., None],
+        include_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point, self.interp_out_view)
-        if exclude_err != 0:
+        if include_err != 0:
             return 0
         return self.interp_out_view[0]
 
