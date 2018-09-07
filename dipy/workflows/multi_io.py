@@ -7,6 +7,7 @@ from glob import glob
 from dipy.utils.six import string_types
 from dipy.workflows.base import get_args_default
 
+
 def common_start(sa, sb):
     """ Returns the longest common substring from the beginning of sa and sb """
     def _iter():
@@ -83,7 +84,6 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='absolute',
 
         elif output_strategy == 'append':
             dname = path.join(inp_dirname, out_dir)
-
 
         else:
             dname = out_dir
@@ -212,8 +212,8 @@ class IOIterator(object):
         self.inputs = []
         self.out_keys = None
 
-
     def set_inputs(self, *args):
+        self.file_existence_check(args)
         self.input_args = list(args)
         self.inputs = [sorted(glob(inp)) for inp in self.input_args if type(inp) == str]
 
@@ -253,3 +253,9 @@ class IOIterator(object):
         IO = np.concatenate([I, O], axis=1)
         for i_o in IO:
             yield i_o
+
+    def file_existence_check(self, args):
+        input_args = [fname for fname in list(args) if isinstance(fname, str)]
+        for path in input_args:
+            if len(glob(path)) == 0:
+                raise IOError('File not found: '+path)

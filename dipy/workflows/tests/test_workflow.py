@@ -2,12 +2,14 @@ from nose.tools import assert_raises
 
 import os
 import time
+from os.path import join as pjoin
 
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
+import numpy.testing as npt
 
 
 def test_force_overwrite():
@@ -46,7 +48,34 @@ def test_run():
     wf = Workflow()
     assert_raises(Exception, wf.run, None)
 
+
+def test_missing_file():
+    # The function is invoking a dummy workflow with a non-existent file.
+    # So, an IOError will be raised.
+
+    class TestMissingFile(Workflow):
+
+        def run(self, input, out_dir=''):
+            """Dummy Workflow used to test if input file is absent.
+
+            Parameters
+            ----------
+
+            input : string, positional
+                path of the first input file.
+            out_dir: string, optional
+                folder path to save the results.
+            """
+            io = self.get_io_iterator()
+
+    dummyflow = TestMissingFile()
+    with TemporaryDirectory() as tempdir:
+        npt.assert_raises(IOError, dummyflow.run,
+                          pjoin(tempdir, 'dummy_file.txt'))
+
+
 if __name__ == '__main__':
     test_force_overwrite()
     test_get_sub_runs()
     test_run()
+    test_missing_file()
