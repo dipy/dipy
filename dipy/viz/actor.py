@@ -6,6 +6,8 @@ from nibabel.affines import apply_affine
 from dipy.viz.colormap import colormap_lookup_table, create_colormap
 from dipy.viz.utils import lines_to_vtk_polydata
 from dipy.viz.utils import set_input
+from dipy.viz.utils import numpy_to_vtk_points, numpy_to_vtk_colors
+import dipy.viz.utils as ut_vtk
 
 # Conditional import machinery for vtk
 from dipy.utils.optpkg import optional_package
@@ -1291,45 +1293,91 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
     >>> pts = np.random.rand(5, 3)
     >>> point_actor = actor.point(pts, window.colors.coral)
     >>> ren.add(point_actor)
-    >>> #window.show(ren)
+    >>> # window.show(ren)
+    """
+
+    return sphere(centers=points, colors=colors, radii=point_radius,
+                  theta=theta, phi=phi, vertices=None, faces=None)
+
+
+def sphere(centers, colors, radii=1., theta=16, phi=16,
+           vertices=None, faces=None):
+    """ Visualize one or many spheres with different colors and radii
+
+    Parameters
+    ----------
+    centers : ndarray, shape (N, 3)
+    colors : ndarray (N,3) or (N, 4) or tuple (3,) or tuple (4,)
+        RGB or RGBA (for opacity) R, G, B and A should be at the range [0, 1]
+    radii : float or ndarray, shape (N,)
+    theta : int
+    phi : int
+    vertices : ndarray, shape (N, 3)
+    faces : ndarray, shape (M, 3)
+        If faces is None then a sphere is created based on theta and phi angles
+        If not then a sphere is created with the provided vertices and faces.
+
+    Returns
+    -------
+    vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import window, actor
+    >>> ren = window.Renderer()
+    >>> centers = np.random.rand(5, 3)
+    >>> sphere_actor = actor.sphere(centers, window.colors.coral)
+    >>> ren.add(sphere_actor)
+    >>> # window.show(ren)
     """
 
     if np.array(colors).ndim == 1:
-        # return dots(points,colors,opacity)
-        colors = np.tile(colors, (len(points), 1))
+        colors = np.tile(colors, (len(centers), 1))
 
-    scalars = vtk.vtkUnsignedCharArray()
-    scalars.SetNumberOfComponents(3)
+    if isinstance(radii, (float, int)):
+        radii = radii * np.ones(len(centers), dtype='f8')
 
-    pts = vtk.vtkPoints()
-    cnt_colors = 0
+    pts = numpy_to_vtk_points(np.ascontiguousarray(centers))
+    cols = numpy_to_vtk_colors(255 * np.ascontiguousarray(colors))
+    cols.SetName('colors')
 
-    for p in points:
+    radii_fa = numpy_support.numpy_to_vtk(
+        np.ascontiguousarray(radii.astype('f8')), deep=0)
+    radii_fa.SetName('rad')
 
-        pts.InsertNextPoint(p[0], p[1], p[2])
-        scalars.InsertNextTuple3(
-            round(255 * colors[cnt_colors][0]),
-            round(255 * colors[cnt_colors][1]),
-            round(255 * colors[cnt_colors][2]))
-        cnt_colors += 1
+    polydata_centers = vtk.vtkPolyData()
+    polydata_sphere = vtk.vtkPolyData()
 
-    src = vtk.vtkSphereSource()
-    src.SetRadius(point_radius)
-    src.SetThetaResolution(theta)
-    src.SetPhiResolution(phi)
+    if faces is None:
+        src = vtk.vtkSphereSource()
+        src.SetRadius(1)
+        src.SetThetaResolution(theta)
+        src.SetPhiResolution(phi)
 
-    polyData = vtk.vtkPolyData()
-    polyData.SetPoints(pts)
-    polyData.GetPointData().SetScalars(scalars)
+    else:
+
+        ut_vtk.set_polydata_vertices(polydata_sphere, vertices)
+        ut_vtk.set_polydata_triangles(polydata_sphere, faces)
+
+    polydata_centers.SetPoints(pts)
+    polydata_centers.GetPointData().AddArray(radii_fa)
+    polydata_centers.GetPointData().SetActiveScalars('rad')
+    polydata_centers.GetPointData().AddArray(cols)
 
     glyph = vtk.vtkGlyph3D()
-    glyph.SetSourceConnection(src.GetOutputPort())
-    if major_version <= 5:
-        glyph.SetInput(polyData)
+
+    if faces is None:
+        glyph.SetSourceConnection(src.GetOutputPort())
     else:
-        glyph.SetInputData(polyData)
-    glyph.SetColorModeToColorByScalar()
-    glyph.SetScaleModeToDataScalingOff()
+        if major_version <= 5:
+            glyph.SetSource(polydata_sphere)
+        else:
+            glyph.SetSourceData(polydata_sphere)
+
+    if major_version <= 5:
+        glyph.SetInput(polydata_centers)
+    else:
+        glyph.SetInputData(polydata_centers)
     glyph.Update()
 
     mapper = vtk.vtkPolyDataMapper()
@@ -1337,9 +1385,12 @@ def point(points, colors, opacity=1., point_radius=0.1, theta=8, phi=8):
         mapper.SetInput(glyph.GetOutput())
     else:
         mapper.SetInputData(glyph.GetOutput())
+    mapper.SetScalarModeToUsePointFieldData()
+
+    mapper.SelectColorArray('colors')
+
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
-    actor.GetProperty().SetOpacity(opacity)
 
     return actor
 

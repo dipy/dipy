@@ -62,3 +62,4 @@
  viz_roi_contour.py
  viz_ui.py
  register_binary_fuzzy.py
+ viz_timer.py
