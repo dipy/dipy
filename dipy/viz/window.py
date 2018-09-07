@@ -41,9 +41,6 @@ from dipy.viz.interactor import CustomInteractorStyle
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 numpy_support, have_ns, _ = optional_package('vtk.util.numpy_support')
-_, have_imread, _ = optional_package('Image')
-if not have_imread:
-    _, have_imread, _ = optional_package('PIL')
 
 if have_vtk:
     version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
@@ -52,9 +49,6 @@ if have_vtk:
     vtkRenderer = vtk.vtkRenderer
 else:
     vtkRenderer = object
-
-if have_imread:
-    from scipy.misc import imread
 
 
 class Renderer(vtkRenderer):
@@ -398,6 +392,7 @@ class ShowManager(object):
         self.reset_camera = reset_camera
         self.order_transparent = order_transparent
         self.interactor_style = interactor_style
+        self.timers = []
 
         if self.reset_camera:
             self.ren.ResetCamera()
@@ -590,6 +585,29 @@ class ShowManager(object):
         """
         self.window.AddObserver(vtk.vtkCommand.ModifiedEvent, win_callback)
         self.window.Render()
+
+    def add_timer_callback(self, repeat, duration, timer_callback):
+        self.iren.AddObserver("TimerEvent", timer_callback)
+
+        if repeat:
+            timer_id = self.iren.CreateRepeatingTimer(duration)
+        else:
+            timer_id = self.iren.CreateOneShotTimer(duration)
+        self.timers.append(timer_id)
+
+    def destroy_timer(self, timer_id):
+        self.iren.DestroyTimer(timer_id)
+        del self.timers[self.timers.index(timer_id)]
+
+    def destroy_timers(self):
+        for timer_id in self.timers:
+            self.destroy_timer(timer_id)
+
+    def exit(self):
+        """ Close window and terminate interactor
+        """
+        self.iren.GetRenderWindow().Finalize()
+        self.iren.TerminateApp()
 
 
 def show(ren, title='DIPY', size=(300, 300),
@@ -878,7 +896,7 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
     im: str or array
         If string then the image is read from a file otherwise the image is
         read from a numpy array. The array is expected to be of shape (X, Y, 3)
-        where the last dimensions are the RGB values.
+        or (X, Y, 4) where the last dimensions are the RGB or RGBA values.
     colors: tuple (3,) or list of tuples (3,)
         List of colors to search in the image
     find_objects: bool
@@ -895,7 +913,17 @@ def analyze_snapshot(im, bg_color=(0, 0, 0), colors=None,
 
     """
     if isinstance(im, string_types):
-        im = imread(im)
+        reader = vtk.vtkPNGReader()
+        reader.SetFileName(im)
+        reader.Update()
+        vtk_im = reader.GetOutput()
+        vtk_ext = vtk_im.GetExtent()
+        vtk_pd = vtk_im.GetPointData()
+        vtk_comp = vtk_pd.GetNumberOfComponents()
+        shape = (vtk_ext[1] - vtk_ext[0] + 1,
+                 vtk_ext[3] - vtk_ext[2] + 1, vtk_comp)
+        im = numpy_support.vtk_to_numpy(vtk_pd.GetArray(0))
+        im = im.reshape(shape)
 
     class ReportSnapshot(object):
         objects = None

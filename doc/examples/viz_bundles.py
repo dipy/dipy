@@ -113,8 +113,8 @@ Here we will need to input the ``fa`` map in ``streamtube``
 
 renderer.clear()
 
-hue = [0.0, 0.0]  # red only
-saturation = [0.0, 1.0]  # white to red
+hue = (0.0, 0.0)  # red only
+saturation = (0.0, 1.0)  # white to red
 
 lut_cmap = actor.colormap_lookup_table(hue_range=hue,
                                        saturation_range=saturation)
@@ -170,8 +170,8 @@ from dipy.tracking.streamline import length
 
 lengths = length(bundle_native)
 
-hue = [0.5, 0.5]  # red only
-saturation = [0.0, 1.0]  # black to white
+hue = (0.5, 0.5)  # blue only
+saturation = (0.0, 1.0)  # black to white
 
 lut_cmap = actor.colormap_lookup_table(
     scale_range=(lengths.min(), lengths.max()),

@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 
 from dipy.tracking.local.localtrack import local_tracker, pft_tracker
@@ -36,7 +38,7 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True):
+                 return_all=True, random_seed=None):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -69,6 +71,9 @@ class LocalTracking(object):
         return_all : bool
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
+        random_seed : int
+            The seed for the random seed generator (numpy.random.seed and
+            random.seed).
         """
 
         self.direction_getter = direction_getter
@@ -88,6 +93,7 @@ class LocalTracking(object):
         self.max_cross = max_cross
         self.max_length = maxlen
         self.return_all = return_all
+        self.random_seed = random_seed
 
     def _tracker(self, seed, first_step, streamline):
         return local_tracker(self.direction_getter,
@@ -116,6 +122,12 @@ class LocalTracking(object):
         B = F.copy()
         for s in self.seeds:
             s = np.dot(lin, s) + offset
+            # Set the random seed in numpy and random
+            if self.random_seed is not None:
+                s_random_seed = hash(np.abs((np.sum(s)) + self.random_seed)) \
+                    % (2**32 - 1)
+                random.seed(s_random_seed)
+                np.random.seed(s_random_seed)
             directions = self.direction_getter.initial_direction(s)
             if directions.size == 0 and self.return_all:
                 # only the seed position
@@ -146,7 +158,8 @@ class ParticleFilteringTracking(LocalTracking):
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
-                 pft_max_trial=20, particle_count=15, return_all=True):
+                 pft_max_trial=20, particle_count=15, return_all=True,
+                 random_seed=None):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -192,6 +205,9 @@ class ParticleFilteringTracking(LocalTracking):
         return_all : bool
             If true, return all generated streamlines, otherwise only
             streamlines reaching end points or exiting the image.
+        random_seed : int
+            The seed for the random seed generator (numpy.random.seed and
+            random.seed).
 
         References
         ----------
@@ -239,7 +255,8 @@ class ParticleFilteringTracking(LocalTracking):
                                                         max_cross,
                                                         maxlen,
                                                         True,
-                                                        return_all)
+                                                        return_all,
+                                                        random_seed)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
