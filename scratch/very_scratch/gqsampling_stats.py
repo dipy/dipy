@@ -1,21 +1,23 @@
 import os
 import numpy as np
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.testing import assert_true, assert_false
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_equal, assert_raises)
 import time
-#import dipy.core.reconstruction_performance as rp
+# import dipy.core.reconstruction_performance as rp
 import dipy.reconst.recspeed as rp
 from os.path import join as opj
 import nibabel as ni
-#import dipy.core.generalized_q_sampling as gq
+# import dipy.core.generalized_q_sampling as gq
 import dipy.reconst.gqi as gq
-#import dipy.core.track_propagation as tp
+# import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
 import dipy.core.meshes as meshes 
 
+
 def test_gqiodf():
 
-    #read bvals,gradients and data
+    # read bvals,gradients and data
     bvals=np.load(opj(os.path.dirname(__file__), \
                           'data','small_64D.bvals.npy'))
     gradients=np.load(opj(os.path.dirname(__file__), \
@@ -24,11 +26,10 @@ def test_gqiodf():
                                   'data','small_64D.nii'))
     data=img.get_data()    
 
-    #print(bvals.shape)
-    #print(gradients.shape)
-    #print(data.shape)
-
-
+    # print(bvals.shape)
+    # print(gradients.shape)
+    # print(data.shape)
+    
     # t1=time.clock()
     
     gq.GeneralizedQSampling(data,bvals,gradients)
