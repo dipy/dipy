@@ -930,6 +930,18 @@ class Panel2D(UI):
         offset = element.position - self.position
         self.element_offsets.append((element, offset))
 
+    def remove_element(self, element):
+        """ Removes a UI component from the panel.
+
+        Parameters
+        ----------
+        element : UI
+            The UI item to be removed.
+        """
+        idx = self._elements.index(element)
+        del self._elements[idx]
+        del self.element_offsets[idx]
+
     def update_element(self, element, coords, anchor="position"):
         """ Updates the position of a UI component in the panel.
 
@@ -944,26 +956,8 @@ class Panel2D(UI):
             If int, pixels coordinates are assumed and it must fit within the
             panel's size.
         """
-        coords = np.array(coords)
-
-        if np.issubdtype(coords.dtype, np.floating):
-            if np.any(coords < 0) or np.any(coords > 1):
-                raise ValueError("Normalized coordinates must be in [0,1].")
-
-            coords = coords * self.size
-
-        if anchor == "center":
-            element.center = self.position + coords
-        elif anchor == "position":
-            element.position = self.position + coords
-        else:
-            msg = ("Unknown anchor {}. Supported anchors are 'position'"
-                   " and 'center'.")
-            raise ValueError(msg)
-        for element_idx, _element in enumerate(self._elements):
-            if _element == element:
-                offset = element.position - self.position
-                self.element_offsets[element_idx] = (element, offset)
+        self.remove_element(element)
+        self.add_element(element, coords, anchor)
 
     def left_button_pressed(self, i_ren, obj, panel2d_object):
         click_pos = np.array(i_ren.event.position)
@@ -3953,15 +3947,16 @@ class FileMenu2D(UI):
         listboxitem: :class:`ListBoxItem2D`
         """
         if (listboxitem.element, "directory") in self.directory_contents:
-            self.current_directory = os.path.join(self.current_directory,
-                                                  listboxitem.element)
-            self.directory_contents = self.get_all_file_names()
-            content_names = [x[0] for x in self.directory_contents]
-            self.listbox.clear_selection()
-            self.listbox.values = content_names
-            self.listbox.view_offset = 0
-            self.listbox.update()
-            self.listbox.update_scrollbar()
-            self.set_slot_colors()
+            new_directory_path = os.path.join(self.current_directory, listboxitem.element)
+            if os.access(new_directory_path, os.R_OK):
+                self.current_directory = new_directory_path
+                self.directory_contents = self.get_all_file_names()
+                content_names = [x[0] for x in self.directory_contents]
+                self.listbox.clear_selection()
+                self.listbox.values = content_names
+                self.listbox.view_offset = 0
+                self.listbox.update()
+                self.listbox.update_scrollbar()
+                self.set_slot_colors()
         i_ren.force_render()
         i_ren.event.abort()
