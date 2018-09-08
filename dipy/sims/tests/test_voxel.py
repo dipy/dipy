@@ -1,8 +1,7 @@
 import numpy as np
 
-from nose.tools import assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_)
+                           assert_, assert_almost_equal)
 
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              all_tensor_evecs, add_noise, single_tensor,
