@@ -9,6 +9,7 @@ several DIPY UI elements, then use a list box to toggle which element is shown.
 
 First, a bunch of imports.
 """
+
 import os
 
 from dipy.data import read_viz_icons, fetch_viz_icons
