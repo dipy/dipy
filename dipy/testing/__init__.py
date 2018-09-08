@@ -1,4 +1,6 @@
-""" Utilities for testing """
+"""Utilities for testing."""
+import operator
+from functools import partial
 from os.path import dirname, abspath, join as pjoin
 from dipy.testing.spherepoints import sphere_points
 from dipy.testing.decorators import doctest_skip_parser
@@ -11,14 +13,28 @@ from distutils.version import LooseVersion
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
-# Allow failed import of nose if not now running tests
-try:
-    import nose.tools as nt
-except ImportError:
-    pass
-else:
-    from nose.tools import (assert_equal, assert_not_equal,
-                            assert_true, assert_false, assert_raises)
+
+def assert_operator(value1, value2, msg="", op=operator.eq):
+    """Check Boolean statement."""
+    try:
+        assert op(value1, value2)
+    except AssertionError:
+        raise AssertionError(msg.format(str(value2), str(value1)))
+
+
+assert_greater_equal = partial(assert_operator, op=operator.ge,
+                               msg="{0} >= {1}")
+assert_greater = partial(assert_operator, op=operator.gt,
+                         msg="{0} > {1}")
+assert_less_equal = partial(assert_operator, op=operator.le,
+                            msg="{0} =< {1}")
+assert_less = partial(assert_operator, op=operator.lt,
+                      msg="{0} < {1}")
+assert_true = partial(assert_operator, value2=True, op=operator.eq,
+                      msg="False is not true")
+assert_false = partial(assert_operator, value2=False, op=operator.eq,
+                       msg="True is not false")
+assert_not_equal = partial(assert_operator, op=operator.ne)
 
 
 def assert_arrays_equal(arrays1, arrays2):
