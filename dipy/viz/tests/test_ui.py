@@ -963,7 +963,6 @@ def test_ui_preloader(interactive=False):
 
     show_manager.window.Finalize()
     show_manager.iren.TerminateApp()
-    del show_manager
 
     if interactive:
         preloader_test = ui.Preloader(outer_radius=100, center=(300, 300))
