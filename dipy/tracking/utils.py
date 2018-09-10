@@ -435,7 +435,7 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
     -------
     seeds : 2d float array
         3d coordinates of seeds sampled from each triangle in a mesh
-    assignment : 2d int array
+    assignment : 1d int array
         closest vertex in original mesh to each seed
 
     Examples
@@ -466,7 +466,7 @@ def seeds_from_mesh(vertices, faces, n_samples=None, affine=None):
     else:
 
         if isinstance(faces, np.ndarray):
-            faces = faces.T.tolist()
+            faces = faces.tolist()
 
         S = len(faces)*n_samples
 
@@ -519,6 +519,10 @@ def sample_triangle(vertices, face, n_samples=None):
         when ``n_samples`` not of type int
     ValueError
         when ``n_samples`` less than 0
+
+    Examples
+    -------
+    See ``seed_from_mesh`` for examples of usage.
     """
 
     # If n_samples not provided, return original vertex coordinates
