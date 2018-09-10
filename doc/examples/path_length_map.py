@@ -15,7 +15,7 @@ executing this tutorial with the gross tumor volume (GTV) as the ROI.
 NOTE: The background value is set to -1 by default
 """
 
-from dipy.data import read_stanford_labels, fetch_stanford_t1
+from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
@@ -28,8 +28,8 @@ from dipy.viz.colormap import line_colors
 from dipy.tracking.utils import path_length
 import nibabel as nib
 import numpy as np
-import os
-import nilearn.plotting as nip
+import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import AxesGrid
 
 """
 First, we need to generate some streamlines and visualize. For a more complete
@@ -126,12 +126,46 @@ wmpl = path_length(streamlines, path_length_map_base_roi, affine)
 path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
 nib.save(path_length_img, 'example_cc_path_length_map.nii.gz')
 
-# generate display of Path Length map using Nilearn
-t1_path = os.path.join(fetch_stanford_t1()[1], 't1.nii.gz')
-nip.plot_stat_map('example_cc_path_length_map.nii.gz',
-                  output_file='Path_Length_Map.png',
-                  bg_img=t1_path, symmetric_cbar=False,
-                  cmap='jet', threshold=1)
+# get the T1 to show anatomical context of the WMPL
+fetch_stanford_t1()
+t1 = read_stanford_t1()
+t1_data = t1.get_data()
+
+
+fig = mpl.pyplot.figure()
+fig.subplots_adjust(left=0.05, right=0.95)
+ax = AxesGrid(fig, 111,
+              nrows_ncols=(1, 3),
+              cbar_location="right",
+              cbar_mode="single",
+              cbar_size="10%",
+              cbar_pad="5%")
+
+'''
+We will mask our WMPL to ignore values less than zero because negative numbers
+indicate no path back to the ROI was found in the provided streamlines
+'''
+
+wmpl_show = np.ma.masked_where(wmpl < 0, wmpl)
+
+slx, sly, slz = [60, 50, 35]
+ax[0].matshow(np.rot90(t1_data[:, slx, :]), cmap=mpl.cm.bone)
+im = ax[0].matshow(np.rot90(wmpl_show[:, slx, :]),
+                   cmap=mpl.cm.cool, vmin=0, vmax=80)
+
+ax[1].matshow(np.rot90(t1_data[:, sly, :]), cmap=mpl.cm.bone)
+im = ax[1].matshow(np.rot90(wmpl_show[:, sly, :]), cmap=mpl.cm.cool,
+                   vmin=0, vmax=80)
+
+ax[2].matshow(np.rot90(t1_data[:, slz, :]), cmap=mpl.cm.bone)
+im = ax[2].matshow(np.rot90(wmpl_show[:, slz, :]),
+                   cmap=mpl.cm.cool, vmin=0, vmax=80)
+
+ax.cbar_axes[0].colorbar(im)
+for lax in ax:
+    lax.set_xticks([])
+    lax.set_yticks([])
+fig.savefig("Path_Length_Map.png")
 
 
 """
