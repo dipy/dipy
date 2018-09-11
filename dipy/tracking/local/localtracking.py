@@ -182,6 +182,7 @@ class LocalTracking(object):
             for first_step in directions:
                 stepsF = stepsB = 1
                 stepsF, tissue_class = self._tracker(s, first_step, F)
+                #print stepsF, tissue_class, first_step
                 if not (self.return_all or
                         tissue_class == TissueTypes.ENDPOINT or
                         tissue_class == TissueTypes.OUTSIDEIMAGE):
@@ -193,6 +194,7 @@ class LocalTracking(object):
                             tissue_class == TissueTypes.ENDPOINT or
                             tissue_class == TissueTypes.OUTSIDEIMAGE):
                         continue
+                    #print stepsB, tissue_class, first_step
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
@@ -208,7 +210,8 @@ class ParticleFilteringTracking(LocalTracking):
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
                  random_seed=None, unidirectional=False,
-                 randomize_forward_direction=False, initial_directions=None):
+                 randomize_forward_direction=False, initial_directions=None,
+                 min_wm_pve_before_stopping=0):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -267,6 +270,10 @@ class ParticleFilteringTracking(LocalTracking):
             Initial direction to follow from the ``seed`` position. If
             ``max_cross`` is None, one streamline will be generated per peak
             per voxel. If None, `direction_getter.initial_direction` is used.
+        min_wm_pve_before_stopping : int
+            Minimum white matter pve (1 - tissue_classifier.include_map -
+            tissue_classifier.exclude_map) to reach before allowing the
+            tractography to stop.
 
         References
         ----------
@@ -292,6 +299,12 @@ class ParticleFilteringTracking(LocalTracking):
 
         if particle_count <= 0:
             raise ValueError("The particle count must be greater than 0.")
+
+        if min_wm_pve_before_stopping < 0 or min_wm_pve_before_stopping > 1:
+            raise ValueError("The min_wm_pve_before_stopping value must be "
+                             "between 0 and 1.")
+
+        self.min_wm_pve_before_stopping = min_wm_pve_before_stopping
 
         self.directions = np.empty((maxlen + 1, 3), dtype=float)
 
@@ -337,4 +350,5 @@ class ParticleFilteringTracking(LocalTracking):
                            self.particle_dirs,
                            self.particle_weights,
                            self.particle_steps,
-                           self.particle_tissue_classes)
+                           self.particle_tissue_classes,
+                           self.min_wm_pve_before_stopping)

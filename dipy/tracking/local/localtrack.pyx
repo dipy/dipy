@@ -213,7 +213,8 @@ def pft_tracker(
         np.float_t[:, :, :, :] particle_dirs,
         np.float_t[:] particle_weights,
         np.int_t[:, :]  particle_steps,
-        np.int_t[:, :]  particle_tissue_classes):
+        np.int_t[:, :]  particle_tissue_classes,
+        int min_wm_pve_before_stopping):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
     This function is the main workhorse of the ``ParticleFilteringTracking``
@@ -261,6 +262,10 @@ def pft_tracker(
         Temporary array for the number of steps of particles.
     particle_tissue_classes : array, float, (2, particle_count)
         Temporary array for the tissue classes of particles.
+    min_wm_pve_before_stopping : int
+        Minimum white matter pve (1 - tc.include_map - tc.exclude_map) to
+        reach before allowing the tractography to stop.
+
 
     Returns
     -------
@@ -290,7 +295,8 @@ def pft_tracker(
                      directions, step_size, &tissue_class, pft_max_nbr_back_steps,
                      pft_max_nbr_front_steps, pft_max_trials, particle_count,
                      particle_paths, particle_dirs, particle_weights,
-                     particle_steps, particle_tissue_classes)
+                     particle_steps, particle_tissue_classes,
+                     min_wm_pve_before_stopping)
     return i, tissue_class
 
 
@@ -314,10 +320,12 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:, :, :, :] particle_dirs,
                   np.float_t[:] particle_weights,
                   np.int_t[:, :] particle_steps,
-                  np.int_t[:, :] particle_tissue_classes):
+                  np.int_t[:, :] particle_tissue_classes,
+                  min_wm_pve_before_stopping):
     cdef:
         int i, pft_trial, pft_streamline_i, back_steps, front_steps
         int strl_array_len
+        double max_wm_pve, current_wm_pve
         double point[3]
         double voxdir[3]
         void (*step)(double* , double*, double) nogil
@@ -325,7 +333,7 @@ cdef _pft_tracker(DirectionGetter dg,
     copy_point(seed, point)
     copy_point(seed, &streamline[0,0])
     copy_point(dir, &directions[0, 0])
-
+    max_wm_pve = 0
     tissue_class[0] = TRACKPOINT
     pft_trial = 0
     i = 1
@@ -343,8 +351,18 @@ cdef _pft_tracker(DirectionGetter dg,
             copy_point(dir, &directions[i, 0])
             tissue_class[0] = tc.check_point_c(point)
             i += 1
+
+        current_wm_pve = 1 - tc.get_include(point) - tc.get_exclude(point)
+        if current_wm_pve > max_wm_pve:
+            max_wm_pve = current_wm_pve
+
         if tissue_class[0] == TRACKPOINT:
             # The tracking continues normally
+            continue
+        elif (tissue_class[0] == ENDPOINT
+              and max_wm_pve < min_wm_pve_before_stopping
+              and current_wm_pve > 0):
+            # The tracking stopped before reaching the wm
             continue
         elif tissue_class[0] == INVALIDPOINT:
             if pft_trial < pft_max_trials and i > 1:
@@ -367,6 +385,12 @@ cdef _pft_tracker(DirectionGetter dg,
                     # (ENDPOINT, OUTSIDEIMAGE) or failed to find one
                     # (INVALIDPOINT, PYERROR)
                     break
+                # update the max_wm_pve visted using PFT
+                for ii in range(i):
+                    current_wm_pve = (1 - tc.get_include(&streamline[ii, 0])
+                                      - tc.get_exclude(&streamline[ii, 0]))
+                    if current_wm_pve > max_wm_pve:
+                        max_wm_pve = current_wm_pve
             else:
                 # PFT was run more times than `pft_max_trials` without finding
                 # a valid stopping point. The tracking stops with INVALIDPOINT.
