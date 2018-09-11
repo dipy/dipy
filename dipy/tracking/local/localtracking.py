@@ -182,7 +182,6 @@ class LocalTracking(object):
             for first_step in directions:
                 stepsF = stepsB = 1
                 stepsF, tissue_class = self._tracker(s, first_step, F)
-                #print stepsF, tissue_class, first_step
                 if not (self.return_all or
                         tissue_class == TissueTypes.ENDPOINT or
                         tissue_class == TissueTypes.OUTSIDEIMAGE):
@@ -194,7 +193,6 @@ class LocalTracking(object):
                             tissue_class == TissueTypes.ENDPOINT or
                             tissue_class == TissueTypes.OUTSIDEIMAGE):
                         continue
-                    #print stepsB, tissue_class, first_step
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:

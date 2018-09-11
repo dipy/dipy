@@ -376,6 +376,15 @@ cdef _pft_tracker(DirectionGetter dg,
                          particle_paths, particle_dirs, particle_weights,
                          particle_steps, particle_tissue_classes)
                 pft_trial += 1
+
+                # update the max_wm_pve visted using PFT
+                for ii in range(i):
+                    copy_point(&streamline[ii, 0], point)
+                    current_wm_pve = (1 - tc.get_include(point)
+                                      - tc.get_exclude(point))
+                    if current_wm_pve > max_wm_pve:
+                        max_wm_pve = current_wm_pve
+
                 # update the current point with the PFT results
                 copy_point(&streamline[i-1, 0], point)
                 copy_point(&directions[i-1, 0], dir)
@@ -385,12 +394,7 @@ cdef _pft_tracker(DirectionGetter dg,
                     # (ENDPOINT, OUTSIDEIMAGE) or failed to find one
                     # (INVALIDPOINT, PYERROR)
                     break
-                # update the max_wm_pve visted using PFT
-                for ii in range(i):
-                    current_wm_pve = (1 - tc.get_include(&streamline[ii, 0])
-                                      - tc.get_exclude(&streamline[ii, 0]))
-                    if current_wm_pve > max_wm_pve:
-                        max_wm_pve = current_wm_pve
+
             else:
                 # PFT was run more times than `pft_max_trials` without finding
                 # a valid stopping point. The tracking stops with INVALIDPOINT.
