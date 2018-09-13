@@ -873,12 +873,12 @@ def test_select_by_rois():
 
 
 def test_orient_by_rois():
-    streamlines = [np.array([[0, 0., 0],
-                             [1, 0., 0.],
-                             [2, 0., 0.]]),
-                   np.array([[2, 0., 0.],
-                             [1, 0., 0],
-                             [0, 0,  0.]])]
+    streamlines = Streamlines([np.array([[0, 0., 0],
+                                         [1, 0., 0.],
+                                         [2, 0., 0.]]),
+                               np.array([[2, 0., 0.],
+                                         [1, 0., 0],
+                                         [0, 0,  0.]])])
 
     # Make two ROIs:
     mask1_vol = np.zeros((4, 4, 4), dtype=bool)
@@ -892,28 +892,29 @@ def test_orient_by_rois():
     affine = np.eye(4)
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
-    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
+    x_streamlines = Streamlines([sl + affine[:3, 3] for sl in streamlines])
 
     # After reorientation, this should be the answer:
-    flipped_sl = [streamlines[0], streamlines[1][::-1]]
+    flipped_sl = Streamlines([streamlines[0], streamlines[1][::-1]])
     new_streamlines = orient_by_rois(streamlines,
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
                                      affine=None,
                                      as_generator=False)
-    npt.assert_equal(new_streamlines, flipped_sl)
+    npt.assert_array_equal(new_streamlines, flipped_sl)
+
     npt.assert_(new_streamlines is not streamlines)
 
     # Test with affine:
-    x_flipped_sl = [s + affine[:3, 3] for s in flipped_sl]
+    x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
     new_streamlines = orient_by_rois(x_streamlines,
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
                                      affine=affine,
                                      as_generator=False)
-    npt.assert_equal(new_streamlines, x_flipped_sl)
+    npt.assert_array_equal(new_streamlines, x_flipped_sl)
     npt.assert_(new_streamlines is not x_streamlines)
 
     # Test providing coord ROIs instead of vol ROIs:
@@ -923,7 +924,7 @@ def test_orient_by_rois():
                                      in_place=False,
                                      affine=affine,
                                      as_generator=False)
-    npt.assert_equal(new_streamlines, x_flipped_sl)
+    npt.assert_array_equal(new_streamlines, x_flipped_sl)
 
     # Test with as_generator set to True
     new_streamlines = orient_by_rois(streamlines,
@@ -934,8 +935,8 @@ def test_orient_by_rois():
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
-    ll = list(new_streamlines)
-    npt.assert_equal(ll, flipped_sl)
+    ll = Streamlines(new_streamlines)
+    npt.assert_array_equal(ll, flipped_sl)
 
     # Test with as_generator set to True and with the affine
     new_streamlines = orient_by_rois(x_streamlines,
@@ -946,8 +947,8 @@ def test_orient_by_rois():
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
-    ll = list(new_streamlines)
-    npt.assert_equal(ll, x_flipped_sl)
+    ll = Streamlines(new_streamlines)
+    npt.assert_array_equal(ll, x_flipped_sl)
 
     # Test with generator input:
     new_streamlines = orient_by_rois(generate_sl(streamlines),
@@ -958,8 +959,8 @@ def test_orient_by_rois():
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
-    ll = list(new_streamlines)
-    npt.assert_equal(ll, flipped_sl)
+    ll = Streamlines(new_streamlines)
+    npt.assert_array_equal(ll, flipped_sl)
 
     # Generator output cannot take a True `in_place` kwarg:
     npt.assert_raises(ValueError, orient_by_rois, *[generate_sl(streamlines),
@@ -978,7 +979,7 @@ def test_orient_by_rois():
                                      as_generator=False)
 
     npt.assert_(not isinstance(new_streamlines, types.GeneratorType))
-    npt.assert_equal(new_streamlines, flipped_sl)
+    npt.assert_array_equal(new_streamlines, flipped_sl)
 
     # Modify in-place:
     new_streamlines = orient_by_rois(streamlines,
@@ -988,7 +989,7 @@ def test_orient_by_rois():
                                      affine=None,
                                      as_generator=False)
 
-    npt.assert_equal(new_streamlines, flipped_sl)
+    npt.assert_array_equal(new_streamlines, flipped_sl)
     # The two objects are one and the same:
     npt.assert_(new_streamlines is streamlines)
 

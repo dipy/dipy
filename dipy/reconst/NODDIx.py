@@ -151,12 +151,6 @@ class NoddixModel(ReconstModel):
         To make the cost function for differential evolution algorithm
         """
         #  moore-penrose inverse
-#        try:
-#            phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
-#        except LinAlgError:
-#            from pdb import set_trace
-#            set_trace()
-#            pass
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
         #  sigma
         f = np.dot(phi_mp, signal)

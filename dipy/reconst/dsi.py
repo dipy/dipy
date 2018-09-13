@@ -5,6 +5,7 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
+from dipy.testing import setup_test
 
 class DiffusionSpectrumModel(OdfModel, Cache):
 
@@ -73,6 +74,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         and a reconstruction sphere, we calculate generalized FA for the first
         voxel in the data with the reconstruction performed using DSI.
 
+        >>> import warnings
+        >>> warnings.simplefilter("default")
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
