@@ -75,18 +75,19 @@ def gradient(f):
         slice1[axis] = slice(1, -1)
         slice2[axis] = slice(2, None)
         slice3[axis] = slice(None, -2)
+
         # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
-        out[slice1] = (f[slice2] - f[slice3])/2.0
+        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])/2.0
         slice1[axis] = 0
         slice2[axis] = 1
         slice3[axis] = 0
         # 1D equivalent -- out[0] = (f[1] - f[0])
-        out[slice1] = (f[slice2] - f[slice3])
+        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])
         slice1[axis] = -1
         slice2[axis] = -1
         slice3[axis] = -2
         # 1D equivalent -- out[-1] = (f[-1] - f[-2])
-        out[slice1] = (f[slice2] - f[slice3])
+        out[tuple(slice1)] = (f[tuple(slice2)] - f[tuple(slice3)])
 
         # divide by step size
         outvals.append(out / dx[axis])

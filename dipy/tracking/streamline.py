@@ -484,7 +484,9 @@ def _orient_list(out, roi1, roi2):
         min1 = np.argmin(dist1, 0)
         min2 = np.argmin(dist2, 0)
         if min1[0] > min2[0]:
-            out[idx] = sl[::-1]
+            out[idx][:, 0] = sl[::-1][:, 0]
+            out[idx][:, 1] = sl[::-1][:, 1]
+            out[idx][:, 2] = sl[::-1][:, 2]
     return out
 
 
@@ -555,7 +557,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     # If it's a generator on input, we may as well generate it
     # here and now:
     if isinstance(streamlines, types.GeneratorType):
-        out = list(streamlines)
+        out = Streamlines(streamlines)
 
     elif in_place:
         out = streamlines
@@ -599,8 +601,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     """
     data = data.astype(np.float)
     if (isinstance(streamlines, list) or
-       isinstance(streamlines, types.GeneratorType) or
-       isinstance(streamlines, Streamlines)):
+            isinstance(streamlines, types.GeneratorType) or
+            isinstance(streamlines, Streamlines)):
         if affine is not None:
             streamlines = ut.move_streamlines(streamlines,
                                               np.linalg.inv(affine))
@@ -680,7 +682,7 @@ def values_from_volume(data, streamlines, affine=None):
             return _extract_vals(data, streamlines, affine=affine,
                                  threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
-            streamlines = list(streamlines)
+            streamlines = Streamlines(streamlines)
         vals = []
         for ii in range(data.shape[-1]):
             vals.append(_extract_vals(data[..., ii], streamlines,
