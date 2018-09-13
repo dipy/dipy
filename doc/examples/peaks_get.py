@@ -9,7 +9,6 @@ from dipy.sims.voxel import single_tensor_odf
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.direction import peaks_from_model
 from dipy.viz import window, actor
-from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.csdeconv import auto_response
 
@@ -85,25 +84,21 @@ def csd_crossings():
     if interactive:
         window.show(ren)
 
-theta_angle = np.zeros((data_small.shape[0], data.shape[1], 1, 5))
-phi_angle = np.zeros((data_small.shape[0], data.shape[1], 1, 5))
-num_peaks = np.zeros((data_small.shape[0], data.shape[1], 1))
-
-for i, j, k in ndindex((data.shape[0], data.shape[1], 1)):
+for i, j, k in ndindex((data_small.shape[0], data_small.shape[1], 1)):
     if mask[i, j, 0] > 0:
         n = 0
+        num_peaks = []
         for m in range(5):
             x = np.squeeze(csd_peaks.peak_dirs[i, j, k, m, 0])
             y = np.squeeze(csd_peaks.peak_dirs[i, j, k, m, 1])
             z = np.squeeze(csd_peaks.peak_dirs[i, j, k, m, 2])
             
-            if (x**2 + y**2 + z**2) > 0:
-                r, theta_angle[i, j, k, m], phi_angle[i, j, k, m] = \
-                cart2sphere(x, y, z)
-                phi_angle[i, j, k, m] = phi_angle[i, j, k, m] + np.pi
-                theta_angle[i, j, k, m] = np.pi - theta_angle[i, j, k, m]
-                if phi_angle[i, j, k, m] > np.pi:
-                    phi_angle[i, j, k, m] = phi_angle[i, j, k, m] - np.pi
-                    theta_angle[i, j, k, m] = np.pi - theta_angle[i, j, k, m]
-                n = n + 1
-                num_peaks[i, j, k] = n
+            if np.linalg.norm(x, axis=1) == 0:
+                num_peaks.append(0)
+            else:
+                num_peaks.append(1)
+#            elif np.linalg.norm(x, axis=1) == 2:
+#                num_peaks.append(2)
+#            elif np.linalg.norm(x, axis=1) >= 2:
+#                num_peaks.append(3)
+                
