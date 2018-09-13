@@ -79,7 +79,7 @@ surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(seed_mask, affine,
                                        surface_color, surface_opacity)
 
-ren = window.ren()
+ren = window.Renderer()
 ren.add(streamlines_actor)
 ren.add(seedroi_actor)
 
@@ -88,7 +88,7 @@ If you set interactive to True (below), the rendering will pop up in an
 interactive window.
 """
 
-interactive = False  # this works if it's True but black if False??
+interactive = False
 if interactive:
     window.show(ren)
 
