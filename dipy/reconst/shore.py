@@ -371,8 +371,8 @@ class ShoreFit():
         c_sh = np.zeros(J)
         counter = 0
 
-        for l in range(0, self.radial_order + 1, 2):
-            for n in range(l, int((self.radial_order + l) / 2) + 1):
+        for n in range(radial_order + 1):
+            for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
 
                     j = int(l + m + (2 * np.array(range(0, l, 2)) + 1).sum())
@@ -543,19 +543,19 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     theta[np.isnan(theta)] = 0
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
-    M = np.zeros((r.shape[0], n_c))
-
+    #M = np.zeros((r.shape[0], n_c))
+    M = []
     counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                M.append(real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     _kappa(zeta, n, l) * \
-                    (r ** 2 / zeta) ** (l / 2)
+                    (r ** 2 / zeta) ** (l / 2))
                 counter += 1
-    return M
+    return np.column_stack(M)
 
 
 def _kappa(zeta, n, l):
@@ -585,20 +585,21 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
     theta[np.isnan(theta)] = 0
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
-    psi = np.zeros((r.shape[0], n_c))
+    #psi = np.zeros((r.shape[0], n_c))
+    psi = []
     counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                psi.append( real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
                                                 zeta * r ** 2) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
                     _kappa_pdf(zeta, n, l) *\
                     (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
-                    (-1) ** (n - l / 2)
+                    (-1) ** (n - l / 2))
                 counter += 1
-    return psi
+    return np.column_stack(psi)
 
 
 def _kappa_pdf(zeta, n, l):
@@ -631,17 +632,18 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     upsilon = np.zeros((len(sphere_vertices), n_c))
+    upsilon = []
     counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                upsilon[:, counter] = (-1) ** (n - l / 2.0) * \
+                upsilon.append( (-1) ** (n - l / 2.0) * \
                     _kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
-                    real_sph_harm(m, l, theta, phi)
+                    real_sph_harm(m, l, theta, phi))
                 counter += 1
 
-    return upsilon
+    return np.column_stack(upsilon)
 
 
 def _kappa_odf(zeta, n, l):
@@ -655,13 +657,11 @@ def l_shore(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
-    diagL = np.zeros(n_c)
-    counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
+    diagL = []
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                diagL[counter] = (l * (l + 1)) ** 2
-                counter += 1
+                diagL.append( (l * (l + 1)) ** 2)
 
     return np.diag(diagL)
 
@@ -671,12 +671,11 @@ def n_shore(radial_order):
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     diagN = np.zeros(n_c)
-    counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
+    diagN = []
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                diagN[counter] = (n * (n + 1)) ** 2
-                counter += 1
+                diagN.append( (n * (n + 1)) ** 2 )
 
     return np.diag(diagN)
 
@@ -762,7 +761,7 @@ def shore_indices(radial_order, index):
     n_i = 0
     l_i = 0
     m_i = 0
-
+    """
     if n_c < (index + 1):
         msg = "The index %s is higher than the number of" % index
         msg += " coefficients of the truncated basis,"
@@ -770,15 +769,16 @@ def shore_indices(radial_order, index):
         msg += " Select a lower index."
         raise ValueError(msg)
     else:
-        counter = 0
-        for l in range(0, radial_order + 1, 2):
-            for n in range(l, int((radial_order + l) / 2) + 1):
-                for m in range(-l, l + 1):
-                    if counter == index:
-                        n_i = n
-                        l_i = l
-                        m_i = m
-                    counter += 1
+    """
+    counter = 0
+    for n in range(radial_order + 1):
+        for l in range(0, n + 1, 2):
+            for m in range(-l, l + 1):
+                if counter == index:
+                    n_i = n
+                    l_i = l
+                    m_i = m
+                counter += 1
     return n_i, l_i, m_i
 
 
@@ -817,8 +817,8 @@ def shore_order(n, l, m):
         counter_i = 0
 
         counter = 0
-        for l_i in range(0, radial_order + 1, 2):
-            for n_i in range(l_i, int((radial_order + l_i) / 2) + 1):
+        for n_i in range(radial_order + 1):
+            for l_i in range(0, n + 1, 2):
                 for m_i in range(-l_i, l_i + 1):
                     if n == n_i and l == l_i and m == m_i:
                         counter_i = counter
