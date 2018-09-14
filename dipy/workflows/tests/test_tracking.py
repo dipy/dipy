@@ -10,10 +10,11 @@ from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
-from dipy.workflows.tracking import DetTrackPAMFlow
+from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
+                                     PFTrackingPAMFlow)
 
 
-def test_det_track():
+def test_local_fiber_track():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
@@ -41,17 +42,38 @@ def test_det_track():
         save_nifti(gfa_path, gfa_img.get_data(), np.eye(4), gfa_img.header)
 
         # Test tracking with pam no sh
-        det_track_pam = DetTrackPAMFlow()
-        assert_equal(det_track_pam.get_short_name(), 'det_track')
-        det_track_pam.run(pam_path, gfa_path, seeds_path)
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        assert_equal(lf_track_pam.get_short_name(), 'lf_track')
+        lf_track_pam.run(pam_path, gfa_path, seeds_path)
         tractogram_path = \
-            det_track_pam.last_generated_outputs['out_tractogram']
+            lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh
-        det_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True)
+        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True)
         tractogram_path = \
-            det_track_pam.last_generated_outputs['out_tractogram']
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and deterministic getter
+        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
+                         sh_strategy="deterministic")
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and probabilistic getter
+        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
+                         sh_strategy="probabilistic")
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and closestpeaks getter
+        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
+                         sh_strategy="closestpeaks")
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
 
@@ -63,4 +85,4 @@ def is_tractogram_empty(tractogram_path):
 
 
 if __name__ == '__main__':
-    test_det_track()
+    test_local_fiber_track()
