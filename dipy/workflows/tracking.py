@@ -116,7 +116,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
              maximum peak cone. (default False)
         sh_strategy : string, optional
             Select direction getter strategy:
-             - "deterministic" or "det" for a deterministic tracking
+             - "deterministic" or "det" for a deterministic tracking (default)
              - "probabilistic" or "prob" for a Probabilistic tracking
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
         out_dir : string, optional
@@ -240,7 +240,7 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
              maximum peak cone. (default False)
         sh_strategy : string, optional
             Select direction getter strategy:
-             - "deterministic" or "det" for a deterministic tracking
+             - "deterministic" or "det" for a deterministic tracking (default)
              - "probabilistic" or "prob" for a Probabilistic tracking
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
         out_dir : string, optional
