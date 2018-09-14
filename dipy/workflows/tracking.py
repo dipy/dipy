@@ -23,7 +23,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return 'lf_track'
 
-    def _get_direction_getter(self, strategy_name="deterministic"):
+    def _get_direction_getter(self, strategy_name):
         """Get Tracking Direction Getter object.
 
         Parameters
@@ -128,7 +128,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         ----------
         Garyfallidis, University of Cambridge, PhD thesis 2012.
         Amirbekian, University of California San Francisco, PhD thesis 2017.
-        
+
         """
         io_it = self.get_io_iterator()
 
