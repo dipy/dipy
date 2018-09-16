@@ -1,29 +1,31 @@
+import platform
+import time
+from math import factorial
+
+from scipy.special import gamma
+import scipy.integrate as integrate
 import numpy as np
-from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            run_module_suite,
                            assert_raises)
+
+from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor,
                              multi_tensor_pdf,
                              single_tensor,
                              cylinders_and_ball_soderman)
-from scipy.special import gamma
-from math import factorial
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
-import scipy.integrate as integrate
 from dipy.core.sphere_stats import angular_similarity
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.shm import sh_to_sf
-import time
-
 
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
@@ -281,9 +283,12 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     # test if indeed the scale factor is fixed now
     assert_equal(np.all(mapf_scale_stat_reg_stat.mu == mu),
                  True)
-    # test if computation time is shorter
-    assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
-                 True)
+
+    # test if computation time is shorter (except on Windows):
+    if not platform.system() == "Windows":
+        assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
+                    True)
+
     # check if the fitted signal is the same
     assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
                         mapf_scale_adapt_reg_stat.fitted_signal())
