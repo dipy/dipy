@@ -6,7 +6,8 @@ from os.path import join
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import get_fnames
+from dipy.data import (fetch_stanford_hardi, fetch_stanford_pve_maps,
+                       fetch_stanford_labels, get_fnames)
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
@@ -14,7 +15,85 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
 
 
-def test_local_fiber_track():
+def test_particule_filtering_traking_workflows():
+    with TemporaryDirectory() as out_dir:
+        # get dwi files
+        files, folder = fetch_stanford_hardi()
+        dwi_path = join(folder, [k for k in files.keys() if "nii.gz" in k][0])
+        bval_path = join(folder, [k for k in files.keys() if "bval" in k][0])
+        bvec_path = join(folder, [k for k in files.keys() if "bvec" in k][0])
+
+        # get labels
+        files, folder = fetch_stanford_labels()
+        lbl_path = join(folder, [k for k in files.keys() if "nii.gz" in k][0])
+
+        # Get pve maps
+        files, folder = fetch_stanford_pve_maps()
+        wm_path = join(folder, [k for k in files.keys() if "wm" in k][0])
+        gm_path = join(folder, [k for k in files.keys() if "gm" in k][0])
+        csf_path = join(folder, [k for k in files.keys() if "csf" in k][0])
+
+        # Create mask
+        vol_img = nib.load(dwi_path)
+        volume = vol_img.get_data()
+        mask = np.ones_like(volume[:, :, :, 0])
+        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        mask_path = join(out_dir, 'tmp_mask.nii.gz')
+        nib.save(mask_img, mask_path)
+
+        # Create seeding mask
+        seeds_mask = nib.load(lbl_path).get_data() == 2
+        seeds_mask[nib.load(wm_path).get_data() < 0.5] = 0
+        seeds_img = nib.Nifti1Image(seeds_mask.astype(np.uint8),
+                                    vol_img.affine)
+        seeds_path = join(out_dir, 'tmp_seed.nii.gz')
+        nib.save(seeds_img, seeds_path)
+
+        # CSD Reconstruction 
+        reconst_csd_flow = ReconstCSDFlow()
+        reconst_csd_flow.run(dwi_path, bval_path, bvec_path, mask_path,
+                             out_dir=out_dir)
+
+        pam_path = reconst_csd_flow.last_generated_outputs['out_pam']
+
+        # Test tracking with pam no sh
+        pf_track_pam = PFTrackingPAMFlow()
+        assert_equal(pf_track_pam.get_short_name(), 'pf_track')
+        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh
+        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
+                         use_sh=True)
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and deterministic getter
+        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
+                         use_sh=True, sh_strategy="deterministic")
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and probabilistic getter
+        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
+                         use_sh=True, sh_strategy="probabilistic")
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with pam with sh and closestpeaks getter
+        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
+                         use_sh=True, sh_strategy="closestpeaks")
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+
+def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
@@ -85,4 +164,5 @@ def is_tractogram_empty(tractogram_path):
 
 
 if __name__ == '__main__':
-    test_local_fiber_track()
+    # test_local_fiber_track()
+    test_particule_filtering_traking_workflows()
