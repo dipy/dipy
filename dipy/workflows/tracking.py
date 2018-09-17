@@ -157,9 +157,10 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
         wm, affine, voxel_size = load_nifti(wm_path, return_voxsize=True)
         gm, _ = load_nifti(gm_path)
         csf, _ = load_nifti(csf_path)
+        avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
         classifier = CmcTissueClassifier.from_pve(wm, gm, csf,
                                                   step_size=step_size,
-                                                  average_voxel_size=voxel_size)
+                                                  average_voxel_size=avs)
         logging.info('classifier done')
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
