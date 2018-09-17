@@ -150,7 +150,7 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
     def get_short_name(cls):
         return 'pf_track'
 
-    def _core_run(self, wm_path, gm_path, csf_path, seeding_path,
+    def _core_run(self, wm_path, gm_path, csf_path, seeding_path, step_size,
                   d_back, d_front, max_trial, particle_count, seed_density,
                   use_sh, dg, pam, out_tract):
 
@@ -158,7 +158,7 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
         gm, _ = load_nifti(gm_path)
         csf, _ = load_nifti(csf_path)
         classifier = CmcTissueClassifier(wm, gm, csf,
-                                         step_size=0.2,
+                                         step_size=step_size,
                                          average_voxel_size=voxel_size)
         logging.info('classifier done')
         seed_mask, _ = load_nifti(seeding_path)
@@ -176,7 +176,8 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
                                                sphere=pam.sphere)
 
         streamlines = ParticleFilteringTracking(direction_getter, classifier,
-                                                seeds, affine, step_size=.5,
+                                                seeds, affine,
+                                                step_size=step_size,
                                                 pft_back_tracking_dist=d_back,
                                                 pft_front_tracking_dist=d_front,
                                                 pft_max_trial=max_trial,
@@ -189,6 +190,7 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
         logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, wm_files, gm_files, csf_files, seeding_files,
+            step_size=0.2,
             back_tracking_dist=2,
             front_tracking_dist=1,
             max_trial=20,
@@ -215,6 +217,8 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
             Path of cerebrospinal fluid for stopping criteria for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
+        step_size : float, optional
+            Step size used for tracking.
         back_tracking_dist : float, optional
             Distance in mm to back track before starting the particle filtering
             tractography. The total particle filtering tractography distance is
@@ -227,9 +231,9 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
             default this is set to 1 mm.
         max_trial : int, optional
             Maximum number of trial for the particle filtering tractography
-            (Prevents infinite loops).
+            (Prevents infinite loops, default=20).
         particle_count : int, optional
-            Number of particles to use in the particle filter.
+            Number of particles to use in the particle filter. (default 15)
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
              For example, seed_density of 2 means 8 regularly distributed
@@ -265,7 +269,7 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
             pam = load_peaks(pams_path, verbose=False)
             dg = self._get_direction_getter(sh_strategy)
 
-            self._core_run(wm_path, gm_path, csf_path, seeding_path,
+            self._core_run(wm_path, gm_path, csf_path, seeding_path, step_size,
                            back_tracking_dist, front_tracking_dist, max_trial,
                            particle_count, seed_density, use_sh, dg, pam,
                            out_tract)
