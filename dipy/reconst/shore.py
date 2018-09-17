@@ -371,7 +371,7 @@ class ShoreFit():
         c_sh = np.zeros(J)
         counter = 0
 
-        for n in range(radial_order + 1):
+        for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
 
