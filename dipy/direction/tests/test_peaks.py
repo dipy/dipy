@@ -451,7 +451,7 @@ def test_degenerative_cases():
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
-    for sphere in [_sphere, get_sphere('symmetric724')]:
+    for sphere in [_sphere, get_sphere('symmetric642')]:
         # Test basic case
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
