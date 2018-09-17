@@ -17,44 +17,73 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
 
 def test_particule_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
-        # get dwi files
-        files, folder = fetch_stanford_hardi()
-        dwi_path = join(folder, [k for k in files.keys() if "nii.gz" in k][0])
-        bval_path = join(folder, [k for k in files.keys() if "bval" in k][0])
-        bvec_path = join(folder, [k for k in files.keys() if "bvec" in k][0])
-
-        # get labels
-        files, folder = fetch_stanford_labels()
-        lbl_path = join(folder, [k for k in files.keys() if "nii.gz" in k][0])
-
-        # Get pve maps
-        files, folder = fetch_stanford_pve_maps()
-        wm_path = join(folder, [k for k in files.keys() if "wm" in k][0])
-        gm_path = join(folder, [k for k in files.keys() if "gm" in k][0])
-        csf_path = join(folder, [k for k in files.keys() if "csf" in k][0])
-
-        # Create mask
+        dwi_path, bval_path, bvec_path = get_data('small_64D')
         vol_img = nib.load(dwi_path)
         volume = vol_img.get_data()
+
+        # Create some mask
         mask = np.ones_like(volume[:, :, :, 0])
         mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
-        # Create seeding mask
-        seeds_mask = nib.load(lbl_path).get_data() == 2
-        seeds_mask[nib.load(wm_path).get_data() < 0.5] = 0
-        seeds_img = nib.Nifti1Image(seeds_mask.astype(np.uint8),
-                                    vol_img.affine)
-        seeds_path = join(out_dir, 'tmp_seed.nii.gz')
-        nib.save(seeds_img, seeds_path)
+        simple_wm = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+                              [0, 0, 1, 1, 1, 1, 0, 1, 0, 0],
+                              [0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+                              [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+                              [0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
+                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                              ])
+        simple_wm = np.dstack([np.zeros(simple_wm.shape),
+                               np.zeros(simple_wm.shape),
+                               simple_wm, simple_wm, simple_wm,
+                               simple_wm, simple_wm, simple_wm,
+                               np.zeros(simple_wm.shape),
+                               np.zeros(simple_wm.shape)])
+        simple_gm = np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 1, 1, 0, 0, 1, 1, 1, 0],
+                              [0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+                              [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+                              [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+                              [0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+                              [1, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                              [0, 1, 0, 0, 0, 0, 1, 0, 1, 0],
+                              [0, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+                              [0, 0, 0, 1, 0, 0, 0, 1, 1, 0],
+                              ])
+        simple_gm = np.dstack([np.zeros(simple_gm.shape),
+                               np.zeros(simple_gm.shape),
+                               simple_gm, simple_gm, simple_gm,
+                               simple_gm, simple_gm, simple_gm,
+                               np.zeros(simple_gm.shape),
+                               np.zeros(simple_gm.shape)])
+        simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
 
-        # CSD Reconstruction 
+        wm_path = join(out_dir, 'tmp_wm.nii.gz')
+        gm_path = join(out_dir, 'tmp_gm.nii.gz')
+        csf_path = join(out_dir, 'tmp_csf.nii.gz')
+
+        for path, arr in zip([wm_path, gm_path, csf_path],
+                             [simple_wm, simple_gm, simple_csf]):
+            nib.save(nib.Nifti1Image(arr.astype(np.uint8), vol_img.affine),
+                     path)
+
+        # CSD Reconstruction
         reconst_csd_flow = ReconstCSDFlow()
         reconst_csd_flow.run(dwi_path, bval_path, bvec_path, mask_path,
-                             out_dir=out_dir)
+                             out_dir=out_dir, extract_pam_values=True)
 
         pam_path = reconst_csd_flow.last_generated_outputs['out_pam']
+        gfa_path = reconst_csd_flow.last_generated_outputs['out_gfa']
+
+        # Create seeding mask by thresholding the gfa
+        mask_flow = MaskFlow()
+        mask_flow.run(gfa_path, 0.8, out_dir=out_dir)
+        seeds_path = mask_flow.last_generated_outputs['out_mask']
 
         # Test tracking with pam no sh
         pf_track_pam = PFTrackingPAMFlow()
