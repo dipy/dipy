@@ -371,7 +371,7 @@ fetch_scil_b0 = _make_fetcher(
     UW_RW_URL + "1773/38479/",
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
-    None,
+    "e9810fa5bf21b99da786647994d7d5b7",
     doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
          and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
