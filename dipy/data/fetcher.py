@@ -21,7 +21,6 @@ if sys.version_info[0] < 3:
 else:
     from urllib.request import urlopen
 
-
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
     dipy_home = os.environ['DIPY_HOME']
@@ -123,15 +122,11 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
-        if sys.version_info[0] < 3:
-            try:
-                response_size = opener.headers['content-length']
-            except KeyError:
-                response_size = None
-        else:
-            # python3.x
-            # returns none if header not found
-            response_size = opener.getheader("Content-Length")
+        try:
+            response_size = opener.headers['content-length']
+        except KeyError:
+            response_size = None
+
         with open(fname, 'wb') as data:
             if(response_size is None):
                 copyfileobj(opener, data)
