@@ -73,6 +73,7 @@ for modulename, other_sources, language in (
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
         ('dipy.reconst.quick_squash', [], 'c'),
+        ('dipy.reconst.noddi_speed', [], 'c'),
         ('dipy.tracking.distances', [], 'c'),
         ('dipy.tracking.streamlinespeed', [], 'c'),
         ('dipy.tracking.local.localtrack', [], 'c'),
