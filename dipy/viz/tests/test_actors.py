@@ -21,7 +21,6 @@ else:
 
 run_test = (actor.have_vtk and
             actor.have_vtk_colors and
-            window.have_imread and
             not skip_it)
 
 if actor.have_vtk:
@@ -107,7 +106,7 @@ def test_slicer():
     slicer_lut.display(10, None, None)
     slicer_lut.display(None, 10, None)
     slicer_lut.display(None, None, 10)
-    
+
     slicer_lut.opacity(0.5)
     slicer_lut.tolerance(0.03)
     slicer_lut2 = slicer_lut.copy()
@@ -661,6 +660,16 @@ def test_tensor_slicer(interactive=False):
     if interactive:
         window.show(renderer, reset_camera=False)
 
+    # Test error handling of the method when
+    # incompatible dimension of mevals and evecs are passed.
+    mevals = np.zeros((3, 2, 3))
+    mevecs = np.zeros((3, 2, 4, 3, 3))
+
+    with npt.assert_raises(RuntimeError):
+        tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
+                                           mask=mask, scalar_colors=cfa,
+                                           sphere=sphere, scale=.3)
+
 
 @npt.dec.skipif(not run_test)
 @xvfb_it
@@ -741,6 +750,27 @@ def test_labels(interactive=False):
         window.show(renderer, reset_camera=False)
 
     npt.assert_equal(renderer.GetActors().GetNumberOfItems(), 1)
+
+
+@npt.dec.skipif(not run_test)
+@xvfb_it
+def test_spheres(interactive=False):
+
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 25], [200, 0, 0, 50]])
+    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.99]])
+
+    renderer = window.Renderer()
+    sphere_actor = actor.sphere(centers=xyzr[:, :3], colors=colors[:],
+                                radii=xyzr[:, 3])
+    renderer.add(sphere_actor)
+
+    if interactive:
+        window.show(renderer, order_transparent=True)
+
+    arr = window.snapshot(renderer)
+    report = window.analyze_snapshot(arr,
+                                     colors=colors)
+    npt.assert_equal(report.objects, 3)
 
 
 if __name__ == "__main__":

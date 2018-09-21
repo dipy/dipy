@@ -6,9 +6,9 @@ import numpy as np
 from os.path import join as pjoin
 import numpy.testing as npt
 
-from dipy.data import read_viz_icons, fetch_viz_icons
+from dipy.data import read_viz_icons, fetch_viz_icons, get_sphere
 from dipy.viz import ui
-from dipy.viz import window
+from dipy.viz import window, actor
 from dipy.data import DATA_DIR
 from nibabel.tmpdirs import InTemporaryDirectory
 
@@ -539,6 +539,163 @@ def test_ui_range_slider(interactive=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
+def test_ui_option(interactive=False):
+    option_test = ui.Option(label="option 1", position=(10, 10))
+
+    npt.assert_equal(option_test.checked, False)
+
+    if interactive:
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(option_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_checkbox(interactive=False):
+    filename = "test_ui_checkbox"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    checkbox_test = ui.Checkbox(labels=["option 1", "option 2\nOption 2",
+                                        "option 3", "option 4"],
+                                position=(10, 10))
+
+    old_positions = []
+    for option in checkbox_test.options:
+        old_positions.append(option.position)
+    old_positions = np.asarray(old_positions)
+    checkbox_test.position = (100, 100)
+    new_positions = []
+    for option in checkbox_test.options:
+        new_positions.append(option.position)
+    new_positions = np.asarray(new_positions)
+    npt.assert_allclose(new_positions - old_positions,
+                        90.0 * np.ones((4, 2)))
+
+    # Collect the sequence of options that have been checked in this list.
+    selected_options = []
+
+    def _on_change(checkbox):
+        selected_options.append(list(checkbox.checked))
+
+    # Set up a callback when selection changes
+    checkbox_test.on_change = _on_change
+
+    event_counter = EventCounter()
+    event_counter.monitor(checkbox_test)
+
+    # Create a show manager and record/play events.
+    show_manager = window.ShowManager(size=(600, 600),
+                                      title="DIPY Checkbox")
+    show_manager.ren.add(checkbox_test)
+
+    # Recorded events:
+    #  1. Click on button of option 1.
+    #  2. Click on button of option 2.
+    #  3. Click on button of option 1.
+    #  4. Click on text of option 3.
+    #  5. Click on text of option 1.
+    #  6. Click on button of option 4.
+    #  7. Click on text of option 1.
+    #  8. Click on text of option 2.
+    #  9. Click on text of option 4.
+    #  10. Click on button of option 3.
+    show_manager.play_events_from_file(recording_filename)
+    expected = EventCounter.load(expected_events_counts_filename)
+    event_counter.check_counts(expected)
+
+    # Check if the right options were selected.
+    expected = [['option 1'], ['option 1', 'option 2\nOption 2'],
+                ['option 2\nOption 2'], ['option 2\nOption 2', 'option 3'],
+                ['option 2\nOption 2', 'option 3', 'option 1'],
+                ['option 2\nOption 2', 'option 3', 'option 1', 'option 4'],
+                ['option 2\nOption 2', 'option 3', 'option 4'],
+                ['option 3', 'option 4'], ['option 3'], []]
+    assert len(selected_options) == len(expected)
+    assert_arrays_equal(selected_options, expected)
+    del show_manager
+
+    if interactive:
+        checkbox_test = ui.Checkbox(labels=["option 1", "option 2\nOption 2",
+                                            "option 3", "option 4"],
+                                    position=(100, 100))
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(checkbox_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_radio_button(interactive=False):
+    filename = "test_ui_radio_button"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    radio_button_test = ui.RadioButton(
+        labels=["option 1", "option 2\nOption 2", "option 3", "option 4"],
+        position=(10, 10))
+
+    old_positions = []
+    for option in radio_button_test.options:
+        old_positions.append(option.position)
+    old_positions = np.asarray(old_positions)
+    radio_button_test.position = (100, 100)
+    new_positions = []
+    for option in radio_button_test.options:
+        new_positions.append(option.position)
+    new_positions = np.asarray(new_positions)
+    npt.assert_allclose(new_positions - old_positions,
+                        90 * np.ones((4, 2)))
+
+    selected_option = []
+
+    def _on_change(radio_button):
+        selected_option.append(radio_button.checked)
+
+    # Set up a callback when selection changes
+    radio_button_test.on_change = _on_change
+
+    event_counter = EventCounter()
+    event_counter.monitor(radio_button_test)
+
+    # Create a show manager and record/play events.
+    show_manager = window.ShowManager(size=(600, 600),
+                                      title="DIPY Checkbox")
+    show_manager.ren.add(radio_button_test)
+
+    # Recorded events:
+    #  1. Click on button of option 1.
+    #  2. Click on button of option 2.
+    #  3. Click on button of option 2.
+    #  4. Click on text of option 2.
+    #  5. Click on button of option 1.
+    #  6. Click on text of option 3.
+    #  7. Click on button of option 4.
+    #  8. Click on text of option 4.
+    show_manager.play_events_from_file(recording_filename)
+    expected = EventCounter.load(expected_events_counts_filename)
+    event_counter.check_counts(expected)
+
+    # Check if the right options were selected.
+    expected = [['option 1'], ['option 2\nOption 2'], ['option 2\nOption 2'],
+                ['option 2\nOption 2'], ['option 1'], ['option 3'],
+                ['option 4'], ['option 4']]
+    assert len(selected_option) == len(expected)
+    assert_arrays_equal(selected_option, expected)
+    del show_manager
+
+    if interactive:
+        radio_button_test = ui.RadioButton(
+            labels=["option 1", "option 2\nOption 2", "option 3", "option 4"],
+            position=(100, 100))
+        showm = window.ShowManager(size=(600, 600))
+        showm.ren.add(radio_button_test)
+        showm.start()
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
 def test_ui_listbox_2d(recording=False):
     filename = "test_ui_listbox_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
@@ -627,7 +784,135 @@ def test_ui_image_container_2d(interactive=False):
         show_manager.start()
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_timer():
+    """ Testing add a timer and exit window and app from inside timer.
+    """
+
+    xyzr = np.array([[0, 0, 0, 10], [100, 0, 0, 50], [300, 0, 0, 100]])
+    xyzr2 = np.array([[0, 200, 0, 30], [100, 200, 0, 50], [300, 200, 0, 100]])
+    colors = np.array([[1, 0, 0, 0.3], [0, 1, 0, 0.4], [0, 0, 1., 0.45]])
+
+    renderer = window.Renderer()
+    global sphere_actor, tb, cnt
+    sphere_actor = actor.sphere(centers=xyzr[:, :3], colors=colors[:],
+                                radii=xyzr[:, 3])
+
+    sphere = get_sphere('repulsion724')
+
+    sphere_actor2 = actor.sphere(centers=xyzr2[:, :3], colors=colors[:],
+                                 radii=xyzr2[:, 3], vertices=sphere.vertices,
+                                 faces=sphere.faces.astype('i8'))
+
+    renderer.add(sphere_actor)
+    renderer.add(sphere_actor2)
+
+    tb = ui.TextBlock2D()
+
+    cnt = 0
+    global showm
+    showm = window.ShowManager(renderer,
+                               size=(1024, 768), reset_camera=False,
+                               order_transparent=True)
+
+    showm.initialize()
+
+    def timer_callback(obj, event):
+        global cnt, sphere_actor, showm, tb
+
+        cnt += 1
+        tb.message = "Let's count to 10 and exit :" + str(cnt)
+        showm.render()
+        if cnt > 9:
+            showm.exit()
+
+    renderer.add(tb)
+
+    # Run every 200 milliseconds
+    showm.add_timer_callback(True, 200, timer_callback)
+    showm.start()
+
+    arr = window.snapshot(renderer)
+
+    npt.assert_(np.sum(arr) > 0)
+
+
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_file_menu_2d(interactive=False):
+    filename = "test_ui_file_menu_2d"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    # Create temporary directory and files
+    os.mkdir(os.path.join(os.getcwd(), "testdir"))
+    os.chdir("testdir")
+    os.mkdir(os.path.join(os.getcwd(), "tempdir"))
+    for i in range(10):
+        open(os.path.join(os.getcwd(), "tempdir", "test" + str(i) + ".txt"),
+             'wt').close()
+    open("testfile.txt", 'wt').close()
+
+    filemenu = ui.FileMenu2D(size=(500, 500), extensions=["txt"],
+                             directory_path=os.getcwd())
+
+    # We will collect the sequence of files that have been selected.
+    selected_files = []
+
+    def _on_change():
+        selected_files.append(list(filemenu.listbox.selected))
+
+    # Set up a callback when selection changes.
+    filemenu.listbox.on_change = _on_change
+
+    # Assign the counter callback to every possible event.
+    event_counter = EventCounter()
+    event_counter.monitor(filemenu)
+
+    # Create a show manager and record/play events.
+    show_manager = window.ShowManager(size=(600, 600),
+                                      title="DIPY FileMenu")
+    show_manager.ren.add(filemenu)
+
+    # Recorded events:
+    #  1. Click on 'testfile.txt'
+    #  2. Click on 'tempdir/'
+    #  3. Click on 'test0.txt'.
+    #  4. Shift + Click on 'test6.txt'.
+    #  5. Click on '../'.
+    #  2. Click on 'testfile.txt'.
+    show_manager.play_events_from_file(recording_filename)
+    expected = EventCounter.load(expected_events_counts_filename)
+    event_counter.check_counts(expected)
+
+    # Check if the right files were selected.
+    expected = [["testfile.txt"], ["tempdir"], ["test0.txt"],
+                ["test0.txt", "test1.txt", "test2.txt", "test3.txt",
+                 "test4.txt", "test5.txt", "test6.txt"],
+                ["../"], ["testfile.txt"]]
+    assert len(selected_files) == len(expected)
+    assert_arrays_equal(selected_files, expected)
+
+    # Remove temporary directory and files
+    os.remove("testfile.txt")
+    for i in range(10):
+        os.remove(os.path.join(os.getcwd(), "tempdir",
+                               "test" + str(i) + ".txt"))
+    os.rmdir(os.path.join(os.getcwd(), "tempdir"))
+    os.chdir("..")
+    os.rmdir("testdir")
+
+    if interactive:
+        filemenu = ui.FileMenu2D(size=(500, 500), directory_path=os.getcwd())
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY FileMenu")
+        show_manager.ren.add(filemenu)
+        show_manager.start()
+
+
 if __name__ == "__main__":
+
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
         test_ui_button_panel(recording=True)
 
@@ -646,8 +931,23 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_range_slider":
         test_ui_range_slider(interactive=False)
 
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_option":
+        test_ui_option(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_checkbox":
+        test_ui_checkbox(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_radio_button":
+        test_ui_radio_button(interactive=False)
+
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
         test_ui_listbox_2d(recording=True)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
         test_ui_image_container_2d(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_timer":
+        test_timer()
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_menu_2d":
+        test_ui_file_menu_2d(interactive=False)

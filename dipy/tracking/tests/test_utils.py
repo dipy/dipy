@@ -537,6 +537,24 @@ def test_random_seeds_from_mask():
     assert_equal(100, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
+    mask = np.zeros((15, 15, 15))
+    mask[2:14, 2:14, 2:14] = 1
+    seeds_npv_2 = random_seeds_from_mask(mask, seeds_count=2,
+                                         seed_count_per_voxel=True,
+                                         random_seed=0)[:150]
+    seeds_npv_3 = random_seeds_from_mask(mask, seeds_count=3,
+                                         seed_count_per_voxel=True,
+                                         random_seed=0)[:150]
+    assert_true(np.all(seeds_npv_2 == seeds_npv_3))
+
+    seeds_nt_150 = random_seeds_from_mask(mask, seeds_count=150,
+                                          seed_count_per_voxel=False,
+                                          random_seed=0)[:150]
+    seeds_nt_500 = random_seeds_from_mask(mask, seeds_count=500,
+                                          seed_count_per_voxel=False,
+                                          random_seed=0)[:150]
+    assert_true(np.all(seeds_nt_150 == seeds_nt_500))
+
 
 def test_connectivity_matrix_shape():
     # Labels: z-planes have labels 0,1,2
