@@ -125,7 +125,7 @@ class RecoBundles(object):
 
         self.orig_indices = np.array(list(range(0, len(streamlines))))
         self.filtered_indices = np.array(self.orig_indices[map_ind])
-        self.streamlines = streamlines[map_ind]
+        self.streamlines = Streamlines(streamlines[map_ind])
         print("target brain streamlines length = ", len(streamlines))
         print("After refining target brain streamlines length = ",
               len(self.streamlines))

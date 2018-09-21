@@ -6,7 +6,7 @@ from dipy.io.image import save_nifti, load_nifti
 import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
-from dipy.workflows.align import load_trk, save_trk
+from dipy.io.streamline import load_trk, save_trk
 from dipy.segment.bundles import RecoBundles
 
 
@@ -214,7 +214,9 @@ class RecoBundlesFlow(Workflow):
             logging.info(mb)
             model_bundle, _ = load_trk(mb)
             logging.info(' Loading time %0.3f sec' % (time() - t,))
-            print("model file = ", mb)
+            logging.info("model file = ")
+            logging.info(mb)
+
             recognized_bundle, labels = \
                 rb.recognize(
                     model_bundle,
@@ -257,8 +259,8 @@ class RecoBundlesFlow(Workflow):
                          model_bundle, recognized_bundle,
                          slr_select)
 
-            print("Bundle adjacency Metric = ", ba)
-            print("Bundle Min Distance Metric = ", bmd)
+            logging.info("Bundle adjacency Metric {0}".format(ba))
+            logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
 

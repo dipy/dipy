@@ -67,7 +67,7 @@ class SlrWithQbxFlow(Workflow):
 
     @classmethod
     def get_short_name(cls):
-        return 'slrwithqb'
+        return 'slrwithqbx'
 
     def run(self, static_files, moving_files,
             x0='affine',
@@ -121,7 +121,7 @@ class SlrWithQbxFlow(Workflow):
         out_stat_centroids : string, optional
             Filename of static centroids (default 'static_centroids.trk')
         out_moving_centroids : string, optional
-            Filename of moving centroids (default 'moved_centroids.trk')
+            Filename of moving centroids (default 'moving_centroids.trk')
         out_moved_centroids : string, optional
             Filename of moved centroids (default 'moved_centroids.trk')
 
