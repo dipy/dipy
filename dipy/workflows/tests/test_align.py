@@ -70,5 +70,4 @@ def test_slr_flow():
 
 
 if __name__ == '__main__':
-    for i in range(15):
-        npt.run_module_suite()
+    npt.run_module_suite()
