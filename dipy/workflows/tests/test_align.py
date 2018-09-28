@@ -68,6 +68,11 @@ def test_slr_flow():
 
         # npt.assert_equal(bmd_value < 1, True)
 
+        from dipy.viz import window, actor
+        ren = window.Renderer()
+        ren.add(actor.line(f1))
+        #window.record(ren, n_frames=10, out_path='masked_after.png', size=(600, 600))
+        window.show(ren)
 
 if __name__ == '__main__':
     npt.run_module_suite()

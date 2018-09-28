@@ -1,5 +1,4 @@
 from __future__ import division, print_function, absolute_import
-#fetcher
 import os
 import sys
 import contextlib
@@ -31,6 +30,7 @@ else:
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
   "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
+
 
 class FetcherError(Exception):
     pass

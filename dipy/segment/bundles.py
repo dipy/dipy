@@ -40,14 +40,11 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     d01 = bundles_distances_mdf(dtracks0, dtracks1)
 
     pair12 = []
-    # solo1 = []
 
     for i in range(len(dtracks0)):
         if np.min(d01[i, :]) < threshold:
             j = np.argmin(d01[i, :])
             pair12.append((i, j))
-        # else:
-        #    solo1.append(dtracks0[i])
 
     pair12 = np.array(pair12)
     pair21 = []
@@ -57,8 +54,6 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
         if np.min(d01[:, i]) < threshold:
             j = np.argmin(d01[:, i])
             pair21.append((i, j))
-        # else:
-        #    solo2.append(dtracks1[i])
 
     pair21 = np.array(pair21)
     A = len(pair12) / np.float(len(dtracks0))
