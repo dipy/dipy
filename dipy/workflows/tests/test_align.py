@@ -66,13 +66,7 @@ def test_slr_flow():
         x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
         bmd_value = BMD.distance(x0.tolist())
 
-        # npt.assert_equal(bmd_value < 1, True)
-
-        from dipy.viz import window, actor
-        ren = window.Renderer()
-        ren.add(actor.line(f1))
-        #window.record(ren, n_frames=10, out_path='masked_after.png', size=(600, 600))
-        window.show(ren)
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    for i in range(20):
+        npt.run_module_suite()
