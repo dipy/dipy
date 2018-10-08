@@ -955,9 +955,7 @@ def slr_with_qbx(static, moving,
     rstreamlines1._data.astype('f4')
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
-    clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-
-    qb_centroids1 = clusters1
+    qb_centroids1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
@@ -971,8 +969,7 @@ def slr_with_qbx(static, moving,
 
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
-    clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = clusters2
+    qb_centroids2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
 
     if verbose:
         t = time()

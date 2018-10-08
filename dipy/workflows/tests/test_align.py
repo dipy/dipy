@@ -8,7 +8,7 @@ from dipy.data import get_data
 from dipy.workflows.align import ResliceFlow, SlrWithQbxFlow
 from os.path import join as pjoin
 from dipy.io.streamline import save_trk
-from pathlib import Path
+import os.path
 
 
 def test_reslice():
@@ -54,8 +54,7 @@ def test_slr_flow():
 
         out_path = slr_flow.last_generated_outputs['out_moved']
 
-        file = Path(out_path)
-        npt.assert_equal(file.is_file(), True)
+        npt.assert_equal(os.path.isfile(out_path), True)
 
 
 if __name__ == '__main__':
