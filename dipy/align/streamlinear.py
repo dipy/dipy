@@ -12,16 +12,12 @@ from dipy.tracking.streamline import (transform_streamlines,
                                       select_random_set_of_streamlines,
                                       length,
                                       Streamlines)
-from dipy.segment.clustering import QuickBundles, qbx_and_merge
+from dipy.segment.clustering import qbx_and_merge
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
 from dipy.utils.six import string_types
 from time import time
-from dipy.tracking.streamline import Streamlines
-
-MAX_DIST = 1e10
-LOG_MAX_DIST = np.log(MAX_DIST)
 
 DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-45, 45), (-45, 45), (-45, 45),
@@ -171,10 +167,20 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
 class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
     """ Asymmetric Bundle-based Minimum distance
+
+    This is a cost function that can be used by the
+    StreamlineLinearRegistration class.
+
     """
 
     def distance(self, xopt):
+        """ Distance calculated from this Metric
 
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector
+        """
         return bundle_min_distance_asymmetric_fast(xopt,
                                                    self.static_centered_pts,
                                                    self.moving_centered_pts,
@@ -837,6 +843,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
 
     return slm
 
+
 def slr_with_qbx(static, moving,
                  x0='affine',
                  rm_small_clusters=50,
@@ -857,21 +864,35 @@ def slr_with_qbx(static, moving,
     ----------
     static : Streamlines
     moving : Streamlines
+
     x0 : str
         rigid, similarity or affine transformation model (default affine)
 
     rm_small_clusters : int
         Remove clusters that have less than `rm_small_clusters` (default 50)
 
-    verbose : bool,
-        If True then information about the optimization is shown.
-
     select_random : int
         If not None select a random number of streamlines to apply clustering
         Default None.
 
-    options : None or dict,
-        Extra options to be used with the selected method.
+    verbose : bool,
+        If True then information about the optimization is shown.
+
+    greater_than : int, optional
+            Keep streamlines that have length greater than
+            this value (default 50)
+
+    less_than : int, optional
+            Keep streamlines have length less than this value (default 250)
+
+    qbx_thr : variable int
+            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+
+    np_pts : int, optional
+            Number of points for discretizing each streamline (default 20)
+
+    progressive : boolean, optional
+            (default True)
 
     rng : RandomState
         If None creates RandomState in function.
@@ -911,7 +932,7 @@ def slr_with_qbx(static, moving,
         else:
             return False
 
-    # TODO change this to the new Streamlines API
+
     streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
     streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
 
@@ -931,10 +952,7 @@ def slr_with_qbx(static, moving,
 
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
 
-    # qb1 = QuickBundles(threshold=qb_thr)
     rstreamlines1._data.astype('f4')
-    '''#rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
-    # cluster_map1 = qb1.cluster(rstreamlines1)'''
 
     cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
     clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
@@ -950,9 +968,7 @@ def slr_with_qbx(static, moving,
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
     rstreamlines2._data.astype('f4')
-    '''# qb2 = QuickBundles(threshold=qb_thr)
-    #rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
-    # cluster_map2 = qb2.cluster(rstreamlines2)'''
+
     cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
 
     clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
@@ -1028,6 +1044,7 @@ def compose_matrix44(t, dtype=np.double):
     if size not in [3, 6, 7, 9, 12]:
         raise ValueError('Accepted number of parameters is 3, 6, 7, 9 and 12')
 
+    MAX_DIST = 1e10
     scale, shear, angles, translate = (None, ) * 4
     translate = _threshold(t[0:3], MAX_DIST)
     if size in [6, 7, 9, 12]:

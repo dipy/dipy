@@ -93,14 +93,14 @@ class SlrWithQbxFlow(Workflow):
         ----------
         static_files : string
         moving_files : string
-        x0 : string
+        x0 : string, optional
             rigid, similarity or affine transformation model (default affine)
-        rm_small_clusters : int
+        rm_small_clusters : int, optional
             Remove clusters that have less than `rm_small_clusters`
             (default 50)
-        qbx_thr : variable int
-            Thresholds for QuickBundlesX (default 15)
-        num_threads : int
+        qbx_thr : variable int, optional
+            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+        num_threads : int, optional
             Number of threads. If None (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
         greater_than : int, optional

@@ -36,7 +36,7 @@ target, target_header = load_trk(target_file)
 let's visualize atlas tractogram and target tractogram before registration
 """
 
-interactive = True
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
@@ -66,7 +66,7 @@ moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
 let's visualize atlas tractogram and target tractogram after registration
 """
 
-interactive = True
+interactive = false
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
@@ -112,7 +112,7 @@ let's visualize extracted Arcuate Fasciculus Left bundle and model bundle
 together
 """
 
-interactive = True
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
@@ -144,7 +144,7 @@ let's visualize extracted Corticospinal Tract (CST) Left bundle and model
 bundle together
 """
 
-interactive = True
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
