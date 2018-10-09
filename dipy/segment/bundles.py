@@ -348,6 +348,9 @@ class RecoBundles(object):
             reduction_thr=reduction_thr,
             reduction_distance=reduction_distance)
 
+        if len(neighb_streamlines) == 0:  # if no streamlines recognized
+            return Streamlines([]), []
+
         if self.verbose:
             print("2nd local Slr")
 
