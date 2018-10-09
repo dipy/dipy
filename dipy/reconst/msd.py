@@ -91,8 +91,8 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     c = G[0]
     a, b = G.shape
 
-    c = cvx.Variable(-c)
-    G = cvx.Variable(-G)
+    c = cvx.Variable(-c.shape[0])
+    G = cvx.Variable(-G.shape[0])
     h = cvx.Variable(sh_const**2, (a, 1))
 
     # n == 0 is set to sh_const to ensure a normalized delta function.
