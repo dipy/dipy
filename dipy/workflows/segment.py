@@ -255,12 +255,13 @@ class RecoBundlesFlow(Workflow):
                         slr_select=slr_select,
                         slr_method='L-BFGS-B')
 
-            ba, bmd = rb.evaluate_results(
-                         model_bundle, recognized_bundle,
-                         slr_select)
+            if len(labels) > 0:
+                ba, bmd = rb.evaluate_results(
+                             model_bundle, recognized_bundle,
+                             slr_select)
 
-            logging.info("Bundle adjacency Metric {0}".format(ba))
-            logging.info("Bundle Min Distance Metric {0}".format(bmd))
+                logging.info("Bundle adjacency Metric {0}".format(ba))
+                logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
             save_trk(out_rec, recognized_bundle, np.eye(4))
 
