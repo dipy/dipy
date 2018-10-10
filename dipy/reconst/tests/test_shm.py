@@ -107,7 +107,7 @@ def test_real_sym_sh_mrtrix():
 def test_real_sym_sh_basis():
     # This test should do for now
     # The mrtrix basis should be the same as re-ordering and re-scaling the
-    # fibernav basis
+    # descoteaux basis
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
     sphere = hemi_icosahedron.subdivide(2)
     basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
@@ -364,8 +364,8 @@ def test_sf_to_sh():
     odf2 = sh_to_sf(odf_sh, sphere, 8, "mrtrix")
     assert_array_almost_equal(odf, odf2, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "fibernav")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "fibernav")
+    odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux")
     assert_array_almost_equal(odf, odf2, 2)
 
     # 2D case

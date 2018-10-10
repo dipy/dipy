@@ -423,10 +423,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
-    sh_basis_type : {None, 'mrtrix', 'fibernav'}
-        ``None`` for the default dipy basis which is the fibernav basis,
+    sh_basis_type : {None, 'mrtrix', 'fibernav', 'descoteaux'}
+        ``None`` for the default dipy basis which is the descoteaux basis,
         ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
+        ``descoteaux`` for the Descoteaux basis
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
     npeaks : int

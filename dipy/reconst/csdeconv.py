@@ -702,8 +702,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix
-    basis : {None, 'mrtrix', 'fibernav'}
-        different spherical harmonic basis. None is the fibernav basis as well.
+    basis : {None, 'mrtrix', 'fibernav', 'descoteaux'}
+        different spherical harmonic basis. None is the descoteaux basis as well.
     ratio : float,
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)

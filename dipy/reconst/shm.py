@@ -25,6 +25,7 @@ where data is Y.T and sh_coef is x.T.
 """
 
 import numpy as np
+import warnings
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
@@ -330,7 +331,8 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
 sph_harm_lookup = {None: real_sym_sh_basis,
                    "mrtrix": real_sym_sh_mrtrix,
-                   "fibernav": real_sym_sh_basis}
+                   "fibernav": real_sym_sh_basis,
+                   "descoteaux": real_sym_sh_basis}
 
 
 def sph_harm_ind_list(sh_order):
@@ -861,10 +863,11 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
+    basis_type : {None, 'mrtrix', 'fibernav', 'descoteaux'}
         ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
+        ``mrtrix`` for the MRtrix basis,
+        ``fibernav`` (deprecated), and
+        ``descoteaux`` for the Descoteaux basis
         (default ``None``).
     smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
@@ -876,6 +879,11 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
 
     """
     sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if basis_type == 'fibernav':
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of Dipy and will be removed in a future " +
+                      "version. Please use `descoteaux` instead",
+                      DeprecationWarning)
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
@@ -900,10 +908,11 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
+    basis_type : {None, 'mrtrix', 'fibernav', 'descoteaux'}
         ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
+        ``mrtrix`` for the MRtrix basis,
+        ``fibernav`` (deprecated), and
+        ``descoteaux`` for the Descoteaux basis
         (default ``None``).
 
     Returns
@@ -913,6 +922,11 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
 
     """
     sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if basis_type == 'fibernav':
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of Dipy and will be removed in a future " +
+                      "version. Please use `descoteaux` instead",
+                      DeprecationWarning)
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
@@ -935,10 +949,11 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
+    basis_type : {None, 'mrtrix', 'fibernav', 'descoteaux'}
         ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
+        ``mrtrix`` for the MRtrix basis,
+        ``fibernav`` (deprecated), and
+        ``descoteaux`` for the Descoteaux basis
         (default ``None``).
     return_inv : bool
         If True then the inverse of the matrix is also returned
@@ -955,6 +970,11 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
 
     """
     sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if basis_type == 'fibernav':
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of Dipy and will be removed in a future " +
+                      "version. Please use `descoteaux` instead",
+                      DeprecationWarning)
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
