@@ -10,9 +10,7 @@ For example, after installing DIPY_, you can call anywhere from your command
 line::
 
     dipy_nlmeans t1.nii.gz t1_denoised.nii.gz
-"""
 
-"""
 First create your workflow (let's name this workflow file as my_workflow.py). Usually this is a python file in
 the ``<../dipy/workflows>`` directory.
 """
@@ -28,7 +26,6 @@ from dipy.workflows.workflow import Workflow
 """
 ``Workflow`` is the base class that will be extended to create our workflow.
 """
-
 
 class AppendTextFlow(Workflow):
 
@@ -57,8 +54,8 @@ class AppendTextFlow(Workflow):
         text to a file.
 
         It is mandatory to have out_dir as a parameter. It is also mandatory
-        to put 'out_' in front of every parameter that is going to be an
-        output. Lastly, all out_ params needs to be at the end of the params
+        to put `out_` in front of every parameter that is going to be an
+        output. Lastly, all `out_` params needs to be at the end of the params
         list.
 
         The ``run`` docstring is very important, you need to document every
@@ -87,23 +84,24 @@ found when globbing the input parameters.
 
 The code in the loop is the actual workflow processing code. It can be anything.
 For the example, it just appends text to an input file.
-"""
-
-"""
 
 This is it for the workflow! Now to be able to call it easily via command
 line, you need to add this bit of code. Usually this is in a separate
 executable file located in ``bin``.
-"""
 
-"""
-
-The first line imports the run_flow method from the flow_runner class and the second
-line imports the AppendTextFlow class from the newly created my_workflow.py file.
+The first line imports the run_flow method from the flow_runner class.
 """
 
 from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.my_workflow import AppendTextFlow
+
+"""
+The second line imports the ``AppendTextFlow`` class from the newly created
+``my_workflow.py`` file. In this specific case, we comment this import
+since ``AppendTextFlow`` class is not on an external file but in the current file.
+"""
+
+# from dipy.workflows.my_workflow import AppendTextFlow
+
 """
 This is the method that will wrap everything that is needed to make a flow
 command line ready then run it.
@@ -111,6 +109,7 @@ command line ready then run it.
 
 if __name__ == "__main__":
     run_flow(AppendTextFlow())
+
 """
 This is the only thing needed to make your workflow available through command
 line.

@@ -21,7 +21,6 @@ if sys.version_info[0] < 3:
 else:
     from urllib.request import urlopen
 
-
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
     dipy_home = os.environ['DIPY_HOME']
@@ -31,6 +30,7 @@ else:
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
   "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
+
 
 class FetcherError(Exception):
     pass
@@ -123,15 +123,11 @@ def check_md5(filename, stored_md5=None):
 
 def _get_file_data(fname, url):
     with contextlib.closing(urlopen(url)) as opener:
-        if sys.version_info[0] < 3:
-            try:
-                response_size = opener.headers['content-length']
-            except KeyError:
-                response_size = None
-        else:
-            # python3.x
-            # returns none if header not found
-            response_size = opener.getheader("Content-Length")
+        try:
+            response_size = opener.headers['content-length']
+        except KeyError:
+            response_size = None
+
         with open(fname, 'wb') as data:
             if(response_size is None):
                 copyfileobj(opener, data)
@@ -331,8 +327,8 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets please visit : \
-         http://dsi-studio.labsolver.org",
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets" + \
+        " please visit http://dsi-studio.labsolver.org",
     data_size="91MB")
 
 fetch_syn_data = _make_fetcher(
@@ -371,9 +367,9 @@ fetch_scil_b0 = _make_fetcher(
     UW_RW_URL + "1773/38479/",
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
-    None,
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) \
-         and different magnetic fields (1.5T and 3T)",
+    ["e9810fa5bf21b99da786647994d7d5b7"],
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, " + \
+        "Siemens) and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
     unzip=True)
 
@@ -722,9 +718,9 @@ def read_mni_template(version="a", contrast="T2"):
     Examples
     --------
     Get only the T1 file for version c:
-    >>> T1_nifti = read_mni_template("c", contrast = "T1") # doctest: +SKIP
+    >>> T1 = read_mni_template("c", contrast = "T1") # doctest: +SKIP
     Get both files in this order for version a:
-    >>> T1_nifti, T2_nifti = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
+    >>> T1, T2 = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
     """
     files, folder = fetch_mni_template()
     file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
@@ -881,7 +877,9 @@ CENIR_notes = \
     Notes
     -----
     Details of the acquisition and processing, and additional meta-data are
-    available through `UW researchworks <https://digital.lib.washington.edu/researchworks/handle/1773/33311>`_
+    available through UW researchworks:
+    
+    https://digital.lib.washington.edu/researchworks/handle/1773/33311
     """
 
 fetch_cenir_multib.__doc__ += CENIR_notes
