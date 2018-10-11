@@ -86,19 +86,30 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     _, t, p = geo.cart2sphere(*new_vertices.T)
 
     B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
-    G = B[:, n != 0]
-    # c samples the delta function at the delta orientation.
-    c = G[0]
-    a, b = G.shape
+    G_ = np.ascontiguousarray(B[:, n != 0])
+    # c_ samples the delta function at the delta orientation.
+    c_ = G_[0][:, None]
+    print("G", G_.shape)
+    print("c", c_.shape)
+    a_, b_ = G_.shape
 
-    c = cvx.Variable(-c.shape[0])
-    G = cvx.Variable(-G.shape[0])
-    h = cvx.Variable(sh_const**2, (a, 1))
-
+    c_int = cvx.Parameter((c_.shape[0], 1))
+    c_int.value = -c_
+    G = cvx.Parameter((G_.shape[0], 4))
+    G.value = -G_
+    h_ = cvx.Parameter((a_, 1))
+    h_int = np.full((a_, 1), sh_const ** 2)
+    h_.value = h_int
+    print("h", h_int.shape)
+    
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-    r = cvx.solvers.lp(c, G, h)
+#    r = cvx.solvers.lp(c, G, h_)
+    lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_)), [G, h_])
+    r = lp_prob.solve(solver = cvx.GLPK) # (solver = cvx.GLPK_MI)
+    
+    
     x = np.asarray(r['x'])[:, 0]
     out = np.zeros(B.shape[1])
     out[n == 0] = sh_const
