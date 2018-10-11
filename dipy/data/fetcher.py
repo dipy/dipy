@@ -1,5 +1,4 @@
 from __future__ import division, print_function, absolute_import
-
 import os
 import sys
 import contextlib
@@ -239,6 +238,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
                         raise ValueError('File extension is not recognized')
                 elif split_ext[-1] == '.zip':
                     z = zipfile.ZipFile(pjoin(folder, f), 'r')
+                    files[f] += (tuple(z.namelist()), )
                     z.extractall(folder)
                     z.close()
                 else:
@@ -425,6 +425,28 @@ fetch_cfin_multib = _make_fetcher(
     msg=("This data was provided by Brian Hansen and Sune Jespersen" +
          " More details about the data are available in their paper: " +
          " https://www.nature.com/articles/sdata201672"))
+
+fetch_bundle_atlas_hcp842 = _make_fetcher(
+    "fetch_bundle_atlas_hcp842",
+    pjoin(dipy_home, 'bundle_atlas_hcp842'),
+    'https://ndownloader.figshare.com/files/',
+    ['11921522'],
+    ['Atlas_in_MNI_Space_16_bundles.zip'],
+    ['b071f3e851f21ba1749c02fc6beb3118'],
+    doc="Download atlas tractogram from the hcp842 dataset with its bundles",
+    data_size="200MB",
+    unzip=True)
+
+fetch_target_tractogram_hcp = _make_fetcher(
+    "fetch_target_tractogram_hcp",
+    pjoin(dipy_home, 'target_tractogram_hcp'),
+    'https://ndownloader.figshare.com/files/',
+    ['12871127'],
+    ['hcp_tractogram.zip'],
+    ['fa25ef19c9d3748929b6423397963b6a'],
+    doc="Download tractogram of one of the hcp dataset subjects",
+    data_size="541MB",
+    unzip=True)
 
 
 def read_scil_b0():
@@ -1029,4 +1051,62 @@ def read_cfin_t1():
     """
     files, folder = fetch_cfin_multib()
     img = nib.load(pjoin(folder, 'T1.nii'))
-    return img, gtab
+    return img  # , gtab
+
+
+def get_bundle_atlas_hcp842():
+    """
+    Returns
+    -------
+    file1 : string
+    file2 : string
+    """
+    file1 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'whole_brain',
+                  'whole_brain_MNI.trk')
+
+    file2 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  '*.trk')
+
+    return file1, file2
+
+
+def get_two_hcp842_bundle():
+    """
+    Returns
+    -------
+    file1 : string
+    file2 : string
+    """
+    file1 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  'AF_L.trk')
+
+    file2 = pjoin(dipy_home,
+                  'bundle_atlas_hcp842',
+                  'Atlas_in_MNI_Space_16_bundles',
+                  'bundles',
+                  'CST_L.trk')
+
+    return file1, file2
+
+
+def get_target_tractogram_hcp():
+    """
+    Returns
+    -------
+    file1 : string
+    """
+    file1 = pjoin(dipy_home,
+                  'target_tractogram_hcp',
+                  'hcp_tractogram',
+                  'streamlines.trk')
+
+    return file1

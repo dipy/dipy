@@ -278,35 +278,50 @@ def deform_streamlines(streamlines,
     return new_streamlines
 
 
-def transform_streamlines(streamlines, mat):
+def transform_streamlines(streamlines, mat, in_place=False):
     """ Apply affine transformation to streamlines
 
     Parameters
     ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
+    streamlines : Streamlines
+        Streamlines object
     mat : array, (4, 4)
         transformation matrix
+    in_place : bool
+        If True then change data in place.
+        Be careful changes input streamlines.
 
     Returns
     -------
-    new_streamlines : list
-        List of the transformed 2D ndarrays of shape[-1]==3
+    new_streamlines : Streamlines
+        Sequence transformed 2D ndarrays of shape[-1]==3
     """
+    # using new Streamlines API
+    if isinstance(streamlines, Streamlines):
+        if in_place:
+            streamlines._data = apply_affine(mat, streamlines._data)
+            return streamlines
+        new_streamlines = streamlines.copy()
+        new_streamlines._data = apply_affine(mat, new_streamlines._data)
+        return new_streamlines
+    # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def select_random_set_of_streamlines(streamlines, select):
+def select_random_set_of_streamlines(streamlines, select, rng=None):
     """ Select a random set of streamlines
 
     Parameters
     ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
+    streamlines : Steamlines
+        Object of 2D ndarrays of shape[-1]==3
 
     select : int
         Number of streamlines to select. If there are less streamlines
         than ``select`` then ``select=len(streamlines)``.
+
+    rng : RandomState
+        Default None.
 
     Returns
     -------
@@ -317,7 +332,11 @@ def select_random_set_of_streamlines(streamlines, select):
     The same streamline will not be selected twice.
     """
     len_s = len(streamlines)
-    index = np.random.choice(len_s, min(select, len_s), replace=False)
+    if rng is None:
+        rng = np.random.RandomState()
+    index = rng.choice(len_s, min(select, len_s), replace=False)
+    if isinstance(streamlines, Streamlines):
+        return streamlines[index]
     return [streamlines[i] for i in index]
 
 

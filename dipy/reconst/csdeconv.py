@@ -811,9 +811,9 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     fa_thr : float
         FA threshold
     fa_callable : callable
-        A callable that defines an operation that compares FA with the fa_thr. The operator
-        should have two positional arguments (e.g., `fa_operator(FA, fa_thr)`) and it should
-        return a bool array.
+        A callable that defines an operation that compares FA with the fa_thr.
+        The operator should have two positional arguments
+        (e.g., `fa_operator(FA, fa_thr)`) and it should return a bool array.
     return_number_of_voxels : bool
         If True, returns the number of voxels used for estimating the response
         function.
