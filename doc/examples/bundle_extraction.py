@@ -21,13 +21,14 @@ Download and read data for this tutorial
 
 from dipy.data.fetcher import (fetch_target_tractogram_hcp,
                                fetch_bundle_atlas_hcp842,
-                               read_bundle_atlas_hcp842,
-                               read_target_tractogram_hcp)
+                               get_bundle_atlas_hcp842,
+                               get_target_tractogram_hcp)
 
-fetch_target_tractogram_hcp()
-fetch_bundle_atlas_hcp842()
-atlas_file, all_bundles_files = read_bundle_atlas_hcp842()
-target_file = read_target_tractogram_hcp()
+target_file, target_folder = fetch_target_tractogram_hcp()
+atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
+
+target_file, target_folder = get_target_tractogram_hcp()
+atlas_file, atlas_folder = get_bundle_atlas_hcp842()
 
 atlas, atlas_header = load_trk(atlas_file)
 target, target_header = load_trk(target_file)
@@ -66,7 +67,7 @@ moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
 let's visualize atlas tractogram and target tractogram after registration
 """
 
-interactive = false
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
@@ -90,8 +91,8 @@ Read AF left and CST left bundles from already fetched atlas data to use them
 as model bundles
 """
 
-from dipy.data.fetcher import read_two_hcp842_bundle
-bundle1, bundle2 = read_two_hcp842_bundle()
+from dipy.data.fetcher import get_two_hcp842_bundle
+bundle1, bundle2 = get_two_hcp842_bundle()
 
 """
 Extracting bundles using recobundles [Garyfallidis17]_

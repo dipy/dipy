@@ -243,6 +243,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
                         raise ValueError('File extension is not recognized')
                 elif split_ext[-1] == '.zip':
                     z = zipfile.ZipFile(pjoin(folder, f), 'r')
+                    files[f] += (tuple(z.namelist()), )
                     z.extractall(folder)
                     z.close()
                 else:
@@ -1056,7 +1057,7 @@ def read_cfin_t1():
     return img  # , gtab
 
 
-def read_bundle_atlas_hcp842():
+def get_bundle_atlas_hcp842():
     """
     Returns
     -------
@@ -1078,7 +1079,7 @@ def read_bundle_atlas_hcp842():
     return file1, file2
 
 
-def read_two_hcp842_bundle():
+def get_two_hcp842_bundle():
     """
     Returns
     -------
@@ -1100,7 +1101,7 @@ def read_two_hcp842_bundle():
     return file1, file2
 
 
-def read_target_tractogram_hcp():
+def get_target_tractogram_hcp():
     """
     Returns
     -------
