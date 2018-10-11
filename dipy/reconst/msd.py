@@ -14,6 +14,7 @@ have_cvxpy = optional_package("cvxpy")
 
 sh_const = .5 / np.sqrt(np.pi)
 
+
 def multi_tissue_basis(gtab, sh_order, iso_comp):
     """Builds a basis for multi-shell CSD model"""
     if iso_comp < 1:
@@ -101,15 +102,13 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     h_int = np.full((a_, 1), sh_const ** 2)
     h_.value = h_int
     print("h", h_int.shape)
-    
+
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
 #    r = cvx.solvers.lp(c, G, h_)
     lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_)), [G, h_])
-    r = lp_prob.solve(solver = cvx.GLPK) # (solver = cvx.GLPK_MI)
-    
-    
+    r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI)
     x = np.asarray(r['x'])[:, 0]
     out = np.zeros(B.shape[1])
     out[n == 0] = sh_const
@@ -118,8 +117,9 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     iso_d = [sh_const] * iso
     return np.concatenate([iso_d, out])
 
-delta_functions = {"basic":_basic_delta,
-                   "positivity_constrained":_pos_constrained_delta}
+
+delta_functions = {"basic": _basic_delta,
+                   "positivity_constrained": _pos_constrained_delta}
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
@@ -200,8 +200,8 @@ class QpFitter(object):
     def _lstsq_initial(self, z):
         fodf_sh = csd._solve_cholesky(self._P, z)
         s = np.dot(self._reg, fodf_sh)
-        init = {'x':cvx.Variable(fodf_sh),
-                's':cvx.Variable(s.clip(1e-10))}
+        init = {'x': cvx.Variable(fodf_sh),
+                's': cvx.Variable(s.clip(1e-10))}  # needs change
         return init
 
     def __init__(self, X, reg):
@@ -215,8 +215,8 @@ class QpFitter(object):
         # self._P_init = np.dot(X[:, :N].T, X[:, :N])
 
         # Make cvxopt matrix types for later re-use.
-        self._P_mat = cvx.Variable(P)
-        self._reg_mat = cvx.Variable(-reg)
+        self._P_mat = cvx.Variable(P)  # needs change
+        self._reg_mat = cvx.Variable(-reg)  # needs change
         self._h_mat = cvx.Variable(0., (reg.shape[0], 1))
 
     def __call__(self, signal):
@@ -227,9 +227,9 @@ class QpFitter(object):
         # qp = cvx.solvers.qp
         # r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
         x = cvx.Variable()
-        qp_obj = cvx.quad_form(self._P_mat, z_mat)
+        qp_obj = cvx.quad_form(self._P_mat, z_mat)  # needs change
         objMin = cvx.Minimize(qp_obj)
-        constraints = [self._reg_mat*x>=0]
+        constraints = [self._reg_mat * x >= 0]
         prob = cvx.Problem(objMin, constraints)
         r = prob.solve(solver=cvx.OSQP, initvals=init)
         fodf_sh = r['x']
