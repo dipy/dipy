@@ -27,8 +27,8 @@ from dipy.data.fetcher import (fetch_target_tractogram_hcp,
 target_file, target_folder = fetch_target_tractogram_hcp()
 atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
 
-target_file, target_folder = get_target_tractogram_hcp()
-atlas_file, atlas_folder = get_bundle_atlas_hcp842()
+atlas_file, all_bundles_files = get_bundle_atlas_hcp842()
+target_file = get_target_tractogram_hcp()
 
 atlas, atlas_header = load_trk(atlas_file)
 target, target_header = load_trk(target_file)
@@ -98,9 +98,11 @@ bundle1, bundle2 = get_two_hcp842_bundle()
 Extracting bundles using recobundles [Garyfallidis17]_
 """
 
+model_bundle, _ = load_trk(bundle1)
+
 rb = RecoBundles(moved, verbose=True)
 
-recognized_bundle, rec_labels = rb.recognize(model_bundle=bundle1,
+recognized_bundle, rec_labels = rb.recognize(model_bundle=model_bundle,
                                              model_clust_thr=5.,
                                              reduction_thr=10,
                                              reduction_distance='mam',
@@ -132,7 +134,9 @@ if interactive:
 
 """
 
-recognized_bundle, rec_labels = rb.recognize(model_bundle=bundle1,
+model_bundle, _ = load_trk(bundle2)
+
+recognized_bundle, rec_labels = rb.recognize(model_bundle=model_bundle,
                                              model_clust_thr=5.,
                                              reduction_thr=10,
                                              reduction_distance='mam',

@@ -1107,8 +1107,9 @@ def get_target_tractogram_hcp():
     -------
     file1 : string
     """
-    file1 = pjoin(dipy_home, 'target_tractogram_hcp',
-                              'hcp_tractogram',
-                              'streamlines.trk')
+    file1 = pjoin(dipy_home,
+                  'target_tractogram_hcp',
+                  'hcp_tractogram',
+                  'streamlines.trk')
 
     return file1
