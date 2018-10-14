@@ -624,7 +624,7 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     return triangles_idx, trilin_coord
 
 
-def seeds_from_surface_coordinates(triangles, vertices,
+def seeds_from_surface_coordinates(triangles, vts_values,
                                    triangles_idx, trilinear_coord):
     """Compute points from triangles_indices and trilinear_coord
 
@@ -632,7 +632,7 @@ def seeds_from_surface_coordinates(triangles, vertices,
     ----------
     triangles : [n, 3] -> m array
         A list of triangles from a mesh
-    vertices : [m, ...] array
+    vts_values : [m, .] array
         List of values to interpolates from coordinates along vertices,
         (vertices, vertices_normal, vertices_colors ...)
     triangles_idx : [s] array
@@ -658,13 +658,14 @@ def seeds_from_surface_coordinates(triangles, vertices,
     ... triangles_idx, triangles_coord)
     >>> seeds_normal /= np.linalg.norm(seeds_normal, axis=-1, keepdims=True)
     """
-    # Compute the vertices for each chosen triangle
-    triangles_vts = vertices[triangles[triangles_idx]]
+    if vts_values.ndim == 1:
+        vts_values = np.reshape(vts_values, (-1,1))
 
-    # Compute the position for each trilinear coordinates
-    # equivalent to: seed_pts = (a * b[..., np.newaxis]).sum(axis=1)
-    pts = np.einsum('ijk,ij...->ik', triangles_vts, trilinear_coord)
-    return pts
+    # Compute the vertices for each chosen triangle
+    tris_vals = vts_values[triangles[triangles_idx]]
+
+    # Interpolate values for each trilinear coordinates
+    return np.squeeze(np.einsum('ijk,ij...->ik', tris_vals, trilinear_coord))
 
 
 def _with_initialize(generator):
