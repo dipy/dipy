@@ -17,7 +17,7 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
 
 def test_particule_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
-        dwi_path, bval_path, bvec_path = get_data('small_64D')
+        dwi_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(dwi_path)
         volume = vol_img.get_data()
 
@@ -85,38 +85,10 @@ def test_particule_filtering_traking_workflows():
         mask_flow.run(gfa_path, 0.8, out_dir=out_dir)
         seeds_path = mask_flow.last_generated_outputs['out_mask']
 
-        # Test tracking with pam no sh
+        # Test tracking 
         pf_track_pam = PFTrackingPAMFlow()
         assert_equal(pf_track_pam.get_short_name(), 'pf_track')
         pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
-        tractogram_path = \
-            pf_track_pam.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-        # Test tracking with pam with sh
-        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
-                         use_sh=True)
-        tractogram_path = \
-            pf_track_pam.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-        # Test tracking with pam with sh and deterministic getter
-        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
-                         use_sh=True, sh_strategy="deterministic")
-        tractogram_path = \
-            pf_track_pam.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-        # Test tracking with pam with sh and probabilistic getter
-        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
-                         use_sh=True, sh_strategy="probabilistic")
-        tractogram_path = \
-            pf_track_pam.last_generated_outputs['out_tractogram']
-        assert_false(is_tractogram_empty(tractogram_path))
-
-        # Test tracking with pam with sh and closestpeaks getter
-        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path,
-                         use_sh=True, sh_strategy="closestpeaks")
         tractogram_path = \
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
