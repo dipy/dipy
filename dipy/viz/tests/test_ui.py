@@ -918,6 +918,70 @@ def test_ui_file_menu_2d(interactive=False):
         show_manager.start()
 
 
+@npt.dec.skipif(not have_vtk or skip_it)
+@xvfb_it
+def test_ui_preloader(interactive=False):
+    filename = "test_ui_preloader"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+
+    preloader_test = ui.Preloader(outer_radius=100, center=(300, 300))
+
+    npt.assert_equal(preloader_test._arc1.GetPolarVector(), [100, 0, 0])
+    npt.assert_equal(preloader_test._arc2.GetPolarVector(),
+                     [(100-preloader_test.width) * np.cos(np.deg2rad(30)),
+                      (100-preloader_test.width) * np.sin(np.deg2rad(30)),
+                      0])
+    npt.assert_equal(preloader_test._arc3.GetPolarVector(),
+                     [(100-2*preloader_test.width) * np.cos(np.deg2rad(60)),
+                      (100-2*preloader_test.width) * np.sin(np.deg2rad(60)),
+                      0])
+
+    show_manager = window.ShowManager(size=(600, 600), title="DIPY Preloader")
+    show_manager.initialize()
+    show_manager.iren.CreateRepeatingTimer(10)
+
+    def _on_tick():
+        preloader_test.ticks += 1
+        if preloader_test.ticks == 50:
+            show_manager.iren.DestroyTimer()
+
+    preloader_test.on_tick = _on_tick
+
+    preloader_test.add_callback(show_manager.iren, 'TimerEvent',
+                                preloader_test.rotation_callback)
+    show_manager.ren.add(preloader_test)
+    show_manager.play_events_from_file(recording_filename)
+
+    npt.assert_allclose(
+        preloader_test._arc1.GetPolarVector(),
+        [100 * np.cos(np.deg2rad(100)),
+         100 * np.sin(np.deg2rad(100)),
+         0])
+    npt.assert_allclose(
+        preloader_test._arc2.GetPolarVector(),
+        [(100-preloader_test.width) * np.cos(np.deg2rad(130)),
+         (100-preloader_test.width) * np.sin(np.deg2rad(130)),
+         0])
+    npt.assert_allclose(
+        preloader_test._arc3.GetPolarVector(),
+        [(100-2*preloader_test.width) * np.cos(np.deg2rad(160)),
+         (100-2*preloader_test.width) * np.sin(np.deg2rad(160)),
+         0])
+
+    show_manager.window.Finalize()
+    show_manager.iren.TerminateApp()
+
+    if interactive:
+        preloader_test = ui.Preloader(outer_radius=100, center=(300, 300))
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY Preloader")
+        show_manager.initialize()
+        show_manager.iren.CreateRepeatingTimer(10)
+        preloader_test.add_callback(show_manager.iren, 'TimerEvent',
+                                    preloader_test.rotation_callback)
+        show_manager.ren.add(preloader_test)
+        show_manager.start()
+
 if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_button_panel":
@@ -958,3 +1022,6 @@ if __name__ == "__main__":
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_file_menu_2d":
         test_ui_file_menu_2d(interactive=False)
+
+    if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_preloader":
+        test_ui_preloader(interactive=False)

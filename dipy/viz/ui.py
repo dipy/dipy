@@ -3959,3 +3959,174 @@ class FileMenu2D(UI):
                 self.set_slot_colors()
         i_ren.force_render()
         i_ren.event.abort()
+
+
+class Preloader(UI):
+    """ An animated component to give the effect of loading.
+    Uses three concentric arcs rotating about their centres.
+    """
+
+    def __init__(self, outer_radius, width=10, center=(0, 0)):
+        """ Initializes a Preloader.
+
+        Parameters
+        ----------
+        outer_radius : int
+            Radius of the outermost arc.
+        width: int, optional
+            Distance between two consecutive arcs in pixels.
+        center : (float, float), optional
+            Coordinates (x, y) of the center of the concentric arcs.
+        """
+        super(Preloader, self).__init__()
+        self.outer_radius = outer_radius
+        self.width = width
+        self.position = center
+        self.outer_arc.GetProperty().SetColor(0, 0, 1)
+        self.middle_arc.GetProperty().SetColor(1, 0, 0)
+        self.rotate(self._arc2, 30)
+        self.inner_arc.GetProperty().SetColor(1, 1, 0)
+        self.rotate(self._arc3, 60)
+
+        self.ticks = 0
+        self.on_tick = lambda: None
+
+    def _setup(self):
+        """ Setup this UI component.
+        """
+        # Setting up arc actors.
+        self._arc1 = vtk.vtkArcSource()
+        self._arc1.UseNormalAndAngleOn()
+        self._arc1.SetResolution(50)
+        self._arc1.SetAngle(90)
+
+        self._arc2 = vtk.vtkArcSource()
+        self._arc2.UseNormalAndAngleOn()
+        self._arc2.SetResolution(50)
+        self._arc2.SetAngle(80)
+
+        self._arc3 = vtk.vtkArcSource()
+        self._arc3.UseNormalAndAngleOn()
+        self._arc3.SetResolution(50)
+        self._arc3.SetAngle(70)
+
+        # Mappers
+
+        mapper1 = vtk.vtkPolyDataMapper2D()
+        mapper1 = set_input(mapper1, self._arc1.GetOutputPort())
+        mapper2 = vtk.vtkPolyDataMapper2D()
+        mapper2 = set_input(mapper2, self._arc2.GetOutputPort())
+        mapper3 = vtk.vtkPolyDataMapper2D()
+        mapper3 = set_input(mapper3, self._arc3.GetOutputPort())
+
+        # Actors
+        self.outer_arc = vtk.vtkActor2D()
+        self.outer_arc.SetMapper(mapper1)
+        self.middle_arc = vtk.vtkActor2D()
+        self.middle_arc.SetMapper(mapper2)
+        self.inner_arc = vtk.vtkActor2D()
+        self.inner_arc.SetMapper(mapper3)
+
+    def _get_actors(self):
+        """ Get the actors composing this UI component.
+        """
+        return [self.inner_arc, self.middle_arc, self.outer_arc]
+
+    def _add_to_renderer(self, ren):
+        """ Add all subcomponents or VTK props that compose this UI component.
+
+        Parameters
+        ----------
+        ren : renderer
+        """
+        ren.add(self.inner_arc)
+        ren.add(self.middle_arc)
+        ren.add(self.outer_arc)
+
+    def _get_size(self):
+        diameter = 2 * self.outer_radius
+        size = (diameter, diameter)
+        return size
+
+    def _set_position(self, coords):
+        """ Position the center of the arcs.
+
+        Parameters
+        ----------
+        coords: (float, float)
+            Absolute pixel coordinates (x, y).
+        """
+        self._arc1.SetCenter(coords[0], coords[1], 0)
+        self._arc2.SetCenter(coords[0], coords[1], 0)
+        self._arc3.SetCenter(coords[0], coords[1], 0)
+
+    def rotate(self, arc_source, angle):
+        """ Rotate the given arc
+
+        Parameters
+        ----------
+        arc_source : :class:`vtkArcSource`
+            The arc to rotate.
+        angle : float
+            Angle(in degrees) by which the arc is to be rotated.
+        """
+        [x, y, z] = arc_source.GetPolarVector()
+        angle = np.deg2rad(angle)
+        x_new = x * np.cos(angle) - y * np.sin(angle)
+        y_new = x * np.sin(angle) + y * np.cos(angle)
+        arc_source.SetPolarVector(x_new, y_new, z)
+
+    @property
+    def width(self):
+        [x_outer, y_outer, z] = self._arc1.GetPolarVector()
+        [x_middle, y_middle, z] = self._arc2.GetPolarVector()
+        r_outer = (x_outer ** 2 + y_outer ** 2) ** (1/2)
+        r_middle = (x_middle ** 2 + y_middle ** 2) ** (1/2)
+        return r_outer - r_middle
+
+    @width.setter
+    def width(self, width):
+        [x, y, z] = self._arc1.GetPolarVector()
+        [cos, sin] = [x / self.outer_radius, y / self.outer_radius]
+        self._arc1.SetPolarVector(self.outer_radius * cos,
+                                  self.outer_radius * sin,
+                                  0)
+        self._arc2.SetPolarVector((self.outer_radius - width) * cos,
+                                  (self.outer_radius - width) * sin,
+                                  0)
+        self._arc3.SetPolarVector((self.outer_radius - 2 * width) * cos,
+                                  (self.outer_radius - 2 * width) * sin,
+                                  0)
+
+    @property
+    def outer_radius(self):
+        [x, y, z] = self._arc1.GetPolarVector()
+        return (x ** 2 + y ** 2) ** (1/2)
+
+    @outer_radius.setter
+    def outer_radius(self, radius):
+        [x, y, z] = self._arc1.GetPolarVector()
+        [cos, sin] = [x / self.outer_radius, y / self.outer_radius]
+        self._arc1.SetPolarVector(radius * cos, radius * sin, 0)
+        self._arc2.SetPolarVector((radius - self.width) * cos,
+                                  (radius - self.width) * sin,
+                                  0)
+        self._arc3.SetPolarVector((radius - 2 * self.width) * cos,
+                                  (radius - 2 * self.width) * sin,
+                                  0)
+
+    def rotation_callback(self, style, iren, preloader):
+        """ Rotation of the arcs invoked by timer event.
+
+        Parameters
+        ----------
+        style : :class:`CustomInteractorStyle`
+        iren : :class:`vtkRenderWindowInteractor`
+        slider : :class:`Preloader`
+
+        """
+        self.rotate(self._arc1, 2)
+        self.rotate(self._arc2, 2)
+        self.rotate(self._arc3, 2)
+        self.on_tick()
+        style.force_render()
