@@ -1,16 +1,16 @@
 """
 ==================================
 Calculate Path Length Map
-(e.g. For Anisotropic Radiation Therapy Contours)
 ==================================
 
-We show how to calculate a Path Length Map given a set of streamlines and a
-region of interest (ROI). The Path Length Map is a volume in which each voxel's
-value is the shortest distance along a streamline to a given
-region of interest (ROI). This map can be used to anisotropically modify
-radiation therapy treatment contours based on a tractography model of the local
-white matter anatomy, as described in [Jordan_2018_plm]_, by
-executing this tutorial with the gross tumor volume (GTV) as the ROI.
+We show how to calculate a Path Length Map for Anisotropic Radiation Therapy
+Contours given a set of streamlines and a region of interest (ROI).
+The Path Length Map is a volume in which each voxel's value is the shortest
+distance along a streamline to a given region of interest (ROI). This map can
+be used to anisotropically modify radiation therapy treatment contours based
+on a tractography model of the local white matter anatomy, as described in
+[Jordan_2018_plm]_, by executing this tutorial with the gross tumor volume
+(GTV) as the ROI.
 
 NOTE: The background value is set to -1 by default
 """
@@ -33,8 +33,8 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 
 """
 First, we need to generate some streamlines and visualize. For a more complete
-description of these steps, please refer to the CSA Probabilistic Tracking and
-the Visualization of ROI Surface Rendered with Streamlines Tutorials.
+description of these steps, please refer to the :ref:`example_probabilistic_fiber_tracking`
+and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 
 """
 
