@@ -145,50 +145,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
                            out_tract)
 
 
-class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
+class PFTrackingPAMFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'pf_track'
-
-    def _core_run(self, wm_path, gm_path, csf_path, seeding_path, step_size,
-                  d_back, d_front, max_trial, particle_count, seed_density,
-                  use_sh, dg, pam, out_tract):
-
-        wm, affine, voxel_size = load_nifti(wm_path, return_voxsize=True)
-        gm, _ = load_nifti(gm_path)
-        csf, _ = load_nifti(csf_path)
-        avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
-        classifier = CmcTissueClassifier.from_pve(wm, gm, csf,
-                                                  step_size=step_size,
-                                                  average_voxel_size=avs)
-        logging.info('classifier done')
-        seed_mask, _ = load_nifti(seeding_path)
-        seeds = \
-            utils.seeds_from_mask(
-                seed_mask,
-                density=[seed_density, seed_density, seed_density],
-                affine=affine)
-        logging.info('seeds done')
-        direction_getter = pam
-
-        if use_sh:
-            direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                               max_angle=30.,
-                                               sphere=pam.sphere)
-
-        streamlines = ParticleFilteringTracking(direction_getter, classifier,
-                                                seeds, affine,
-                                                step_size=step_size,
-                                                pft_back_tracking_dist=d_back,
-                                                pft_front_tracking_dist=d_front,
-                                                pft_max_trial=max_trial,
-                                                particle_count=particle_count)
-        logging.info('ParticleFilteringTracking initiated')
-
-        tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-        save(tractogram, out_tract)
-
-        logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, wm_files, gm_files, csf_files, seeding_files,
             step_size=0.2,
@@ -197,8 +157,6 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
             max_trial=20,
             particle_count=15,
             seed_density=1,
-            use_sh=False,
-            sh_strategy="deterministic",
             out_dir='',
             out_tractogram='tractogram.trk'):
         """Workflow for Particle Filtering Tracking.
@@ -240,14 +198,6 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
-        use_sh : bool, optional
-            Use spherical harmonics saved in peaks to find the
-             maximum peak cone. (default False)
-        sh_strategy : string, optional
-            Select direction getter strategy:
-             - "deterministic" or "det" for a deterministic tracking (default)
-             - "probabilistic" or "prob" for a Probabilistic tracking
-             - "closestpeaks" or "cp" for a ClosestPeaks tracking
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
@@ -268,9 +218,40 @@ class PFTrackingPAMFlow(LocalFiberTrackingPAMFlow):
                          .format(pams_path))
 
             pam = load_peaks(pams_path, verbose=False)
-            dg = self._get_direction_getter(sh_strategy)
 
-            self._core_run(wm_path, gm_path, csf_path, seeding_path, step_size,
-                           back_tracking_dist, front_tracking_dist, max_trial,
-                           particle_count, seed_density, use_sh, dg, pam,
-                           out_tract)
+            wm, affine, voxel_size = load_nifti(wm_path, return_voxsize=True)
+            gm, _ = load_nifti(gm_path)
+            csf, _ = load_nifti(csf_path)
+            avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
+            classifier = CmcTissueClassifier.from_pve(wm, gm, csf,
+                                                      step_size=step_size,
+                                                      average_voxel_size=avs)
+            logging.info('classifier done')
+            seed_mask, _ = load_nifti(seeding_path)
+            seeds = utils.seeds_from_mask(seed_mask,
+                                          density=[seed_density, seed_density,
+                                                   seed_density],
+                                          affine=affine)
+            logging.info('seeds done')
+            dg = ProbabilisticDirectionGetter
+
+            direction_getter = dg.from_shcoeff(pam.shm_coeff,
+                                               max_angle=30.,
+                                               sphere=pam.sphere)
+
+            streamlines = ParticleFilteringTracking(
+                direction_getter,
+                classifier,
+                seeds, affine,
+                step_size=step_size,
+                pft_back_tracking_dist=back_tracking_dist,
+                pft_front_tracking_dist=front_tracking_dist,
+                pft_max_trial=max_trial,
+                particle_count=particle_count)
+
+            logging.info('ParticleFilteringTracking initiated')
+
+            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+            save(tractogram, out_tract)
+
+            logging.info('Saved {0}'.format(out_tract))
