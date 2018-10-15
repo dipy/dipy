@@ -55,7 +55,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
         return direction_getter
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, use_sh, dg, pam, out_tract):
+                  seed_density, use_sh, dg, pmf_threshold, max_angle, pam,
+                  out_tract):
 
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
@@ -71,8 +72,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         if use_sh:
             direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                               max_angle=30.,
-                                               sphere=pam.sphere)
+                                               max_angle=max_angle,
+                                               sphere=pam.sphere,
+                                               pmf_threshold=pmf_threshold)
 
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
@@ -88,6 +90,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             seed_density=1,
             use_sh=False,
             sh_strategy="deterministic",
+            pmf_threshold=0.1,
+            max_angle=30.,
             out_dir='',
             out_tractogram='tractogram.trk'):
         """Workflow for Local Fiber Tracking.
@@ -119,6 +123,12 @@ class LocalFiberTrackingPAMFlow(Workflow):
              - "deterministic" or "det" for a deterministic tracking (default)
              - "probabilistic" or "prob" for a Probabilistic tracking
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
+        pmf_threshold : float, optional
+            Threshold for ODF functions. (default 0.1)
+        max_angle : float, optional
+            Maximum angle between tract segments. This angle can be more
+            generous (larger) than values typically used with probabilistic
+            direction getters. The angle range is (0, 90)
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
@@ -141,8 +151,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             dg = self._get_direction_getter(sh_strategy)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, use_sh, dg, pam,
-                           out_tract)
+                           seed_density, use_sh, dg, pmf_threshold, max_angle,
+                           pam, out_tract)
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -157,6 +167,8 @@ class PFTrackingPAMFlow(Workflow):
             max_trial=20,
             particle_count=15,
             seed_density=1,
+            pmf_threshold=0.1,
+            max_angle=30.,
             out_dir='',
             out_tractogram='tractogram.trk'):
         """Workflow for Particle Filtering Tracking.
@@ -198,6 +210,12 @@ class PFTrackingPAMFlow(Workflow):
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
+        pmf_threshold : float, optional
+            Threshold for ODF functions. (default 0.1)
+        max_angle : float, optional
+            Maximum angle between tract segments. This angle can be more
+            generous (larger) than values typically used with probabilistic
+            direction getters. The angle range is (0, 90)
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
@@ -236,8 +254,9 @@ class PFTrackingPAMFlow(Workflow):
             dg = ProbabilisticDirectionGetter
 
             direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                               max_angle=30.,
-                                               sphere=pam.sphere)
+                                               max_angle=max_angle,
+                                               sphere=pam.sphere,
+                                               pmf_threshold=pmf_threshold)
 
             streamlines = ParticleFilteringTracking(
                 direction_getter,
