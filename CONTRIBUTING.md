@@ -39,7 +39,7 @@ branch points. To check how much coverage the tests have, you will need.
 
 When running:
 
-    coverage run -m pytest --with-doctests --verbose dipy
+    coverage run -m pytest -s --doctest-modules --verbose dipy
 
 You will get the usual output of pytest, but also a table that indicates the test
 coverage in each module: the percentage of coverage and also the lines of code
