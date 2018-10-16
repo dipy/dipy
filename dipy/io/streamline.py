@@ -1,10 +1,13 @@
+from functools import partial
 import nibabel as nib
-from nibabel.streamlines import Field
+from nibabel.streamlines import (Field, TrkFile, TckFile,
+                                 Tractogram, LazyTractogram)
 from nibabel.orientations import aff2axcodes
 
 
-def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None):
-    """ Saves tractogram files (*.trk)
+def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
+                    header=None, lazy_save=False, tractogram_obj=TrkFile):
+    """ Saves tractogram files (*.trk or *.tck)
 
     Parameters
     ----------
@@ -20,6 +23,11 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
         The shape of the reference image (default: None)
     header : dict, optional
         Metadata associated to the tractogram file(*.trk). (default: None)
+    lazy_save : {False, True}, optional
+        If True, save streamlines in a lazy manner i.e. they will not be kept
+        in memory. Otherwise, load all streamlines in memory.
+    tractogram_obj : class TractogramFile, optional
+        Define tractogram class type (TrkFile vs TckFile). Default is TrkFile
     """
     if vox_size is not None and shape is not None:
         if not isinstance(header, dict):
@@ -29,19 +37,24 @@ def save_trk(fname, streamlines, affine, vox_size=None, shape=None, header=None)
         header[Field.DIMENSIONS] = shape
         header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
 
-    tractogram = nib.streamlines.Tractogram(streamlines)
+    tractogram_loader = LazyTractogram if lazy_save else Tractogram
+    tractogram = tractogram_loader(streamlines) 
     tractogram.affine_to_rasmm = affine
-    trk_file = nib.streamlines.TrkFile(tractogram, header=header)
+    trk_file = tractogram_obj(tractogram, header=header)
     nib.streamlines.save(trk_file, fname)
 
 
-def load_trk(filename):
-    """ Loads tractogram files(*.trk)
+def load_tractogram(filename, lazy_load=False):
+    """ Loads tractogram files (*.trk or *.tck)
 
     Parameters
     ----------
     filename : str
         input trk filename
+    lazy_load : {False, True}, optional
+        If True, load streamlines in a lazy manner i.e. they will not be kept
+        in memory and only be loaded when needed.
+        Otherwise, load all streamlines in memory.
 
     Returns
     -------
@@ -50,5 +63,20 @@ def load_trk(filename):
     hdr : dict
         header from a trk file
     """
-    trk_file = nib.streamlines.load(filename)
+    trk_file = nib.streamlines.load(filename, lazy_load)
     return trk_file.streamlines, trk_file.header
+
+
+load_tck = load_tractogram
+load_tck.__doc__ = load_tractogram.__doc__.replace("(*.trk or ", "")
+
+
+load_trk = load_tractogram
+load_trk.__doc__ = load_tractogram.__doc__.replace(" or *.tck)", "")
+
+save_tck = partial(save_tractogram, tractogram_obj=TckFile)
+save_tck.__doc__ = save_tractogram.__doc__.replace("(*.trk or ", "")
+
+
+save_trk = partial(save_tractogram, tractogram_obj=TrkFile)
+save_trk.__doc__ = save_tractogram.__doc__.replace(" or *.tck)", "")
