@@ -1,4 +1,4 @@
-from dipy.reconst.msd import MultiShellDeconvModel, MultiShellResponse
+from dipy.reconst.opt_msd import MultiShellDeconvModel, MultiShellResponse
 from dipy.reconst import msd
 import numpy as np
 import numpy.testing as npt
@@ -9,9 +9,10 @@ from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
 
 
-csf_md=3e-3
-gm_md=.76e-3
+csf_md = 3e-3
+gm_md = .76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
+
 
 def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
     bvals = np.array(bvals, copy=True)
@@ -54,7 +55,7 @@ def test_msd_model_delta():
     gtab = get_3shell_gtab()
     shells = np.unique(gtab.bvals // 100.) * 100.
     response = sim_response(sh_order, shells, evals_d)
-    model = MultiShellDeconvModel(gtab, response, 
+    model = MultiShellDeconvModel(gtab, response,
                                   delta_form='positivity_constrained')
     iso = response.iso
 
@@ -79,7 +80,10 @@ def test_msd_model_delta():
 
     expected = model.delta[2:]
     npt.assert_array_almost_equal(fit.shm_coeff[m == 0], expected, 2)
+
+
 test_msd_model_delta()
+
 
 @npt.dec.skipif(not msd.have_cvxpy)
 def test_MultiShellDeconvModel():

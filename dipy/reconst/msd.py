@@ -200,8 +200,8 @@ class QpFitter(object):
     def _lstsq_initial(self, z):
         fodf_sh = csd._solve_cholesky(self._P, z)
         s = np.dot(self._reg, fodf_sh)
-        init = {'x': cvx.Variable(fodf_sh),
-                's': cvx.Variable(s.clip(1e-10))}  # needs change
+        init = {'x': cvx.matrix(fodf_sh),
+                's': cvx.matrix(s.clip(1e-10))}  # needs change
         return init
 
     def __init__(self, X, reg):

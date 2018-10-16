@@ -6,8 +6,7 @@ from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst import csdeconv as csd
 from dipy.reconst.multi_voxel import multi_voxel_fit
-
-from ..utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package
 
 cvx, have_cvxopt, _ = optional_package("cvxopt")
 if have_cvxopt:
