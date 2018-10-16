@@ -1,12 +1,13 @@
 from functools import partial
 import nibabel as nib
 from nibabel.streamlines import (Field, TrkFile, TckFile,
-                                 Tractogram, LazyTractogram)
+                                 Tractogram, LazyTractogram,
+                                 detect_format)
 from nibabel.orientations import aff2axcodes
 
 
 def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
-                    header=None, lazy_save=False, tractogram_obj=TrkFile):
+                    header=None, lazy_save=False, tractogram_obj=None):
     """ Saves tractogram files (*.trk or *.tck)
 
     Parameters
@@ -37,8 +38,12 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         header[Field.DIMENSIONS] = shape
         header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
 
+    tractogram_obj = tractogram_obj or detect_format(fname)
+    if tractogram_obj is None:
+        raise ValueError("Unknown format for 'fileobj': {}".format(fname))
+
     tractogram_loader = LazyTractogram if lazy_save else Tractogram
-    tractogram = tractogram_loader(streamlines) 
+    tractogram = tractogram_loader(streamlines)
     tractogram.affine_to_rasmm = affine
     trk_file = tractogram_obj(tractogram, header=header)
     nib.streamlines.save(trk_file, fname)
