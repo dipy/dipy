@@ -76,9 +76,8 @@ def test_LSCv2():
     try:
         from dipy.viz import window, actor
     except ImportError as e:
-        raise nose.plugins.skip.SkipTest(
-            'Fails to import dipy.viz due to %s' % str(e))
-        
+        raise pytest.skip('Fails to import dipy.viz due to %s' % str(e))
+
     r = window.Renderer()
     colors = np.zeros((len(C), 3))
     for c in C:
