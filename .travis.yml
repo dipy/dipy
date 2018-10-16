@@ -134,6 +134,7 @@ script:
     - 'echo "backend : agg" > matplotlibrc'
     - if [ "${COVERAGE}" == "1" ]; then
       cp ../.coveragerc .;
+      cp ../.codecov.yml .;
       COVER_ARGS="--with-coverage --cover-package dipy";
       fi
     - nosetests --with-doctest --verbose $COVER_ARGS dipy
