@@ -126,6 +126,7 @@ def test_local_fiber_tracking_workflow():
 
         # Test tracking with pam no sh
         lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
         assert_equal(lf_track_pam.get_short_name(), 'lf_track')
         lf_track_pam.run(pam_path, gfa_path, seeds_path)
         tractogram_path = \
@@ -133,12 +134,16 @@ def test_local_fiber_tracking_workflow():
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True)
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh and deterministic getter
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
                          sh_strategy="deterministic")
         tractogram_path = \
@@ -146,6 +151,8 @@ def test_local_fiber_tracking_workflow():
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh and probabilistic getter
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
                          sh_strategy="probabilistic")
         tractogram_path = \
@@ -153,18 +160,13 @@ def test_local_fiber_tracking_workflow():
         assert_false(is_tractogram_empty(tractogram_path))
 
         # Test tracking with pam with sh and closestpeaks getter
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
                          sh_strategy="closestpeaks")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
-
-        assert isinstance(lf_track_pam._get_direction_getter("det"),
-                          DeterministicMaximumDirectionGetter)
-        assert isinstance(lf_track_pam._get_direction_getter("prob"),
-                          ProbabilisticDirectionGetter)
-        assert isinstance(lf_track_pam._get_direction_getter("cp"),
-                          ClosestPeakDirectionGetter)
 
 
 def is_tractogram_empty(tractogram_path):
@@ -175,5 +177,5 @@ def is_tractogram_empty(tractogram_path):
 
 
 if __name__ == '__main__':
-    # test_local_fiber_track()
-    test_particule_filtering_traking_workflows()
+    test_local_fiber_tracking_workflow()
+    # test_particule_filtering_traking_workflows()
