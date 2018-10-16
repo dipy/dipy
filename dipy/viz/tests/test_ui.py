@@ -696,13 +696,39 @@ def test_ui_radio_button(interactive=False):
 
 @npt.dec.skipif(not have_vtk or skip_it)
 @xvfb_it
-def test_ui_listbox_2d(recording=False):
+def test_ui_listbox_2d(interactive=False):
+
     filename = "test_ui_listbox_2d"
     recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
     expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
 
     # Values that will be displayed by the listbox.
     values = list(range(1, 42 + 1))
+
+    if interactive:
+        listbox = ui.ListBox2D(values=values,
+                               size=(500, 500),
+                               multiselection=True,
+                               reverse_scrolling=False)
+        listbox.center = (300, 300)
+
+        show_manager = window.ShowManager(size=(600, 600),
+                                          title="DIPY ListBox")
+        show_manager.ren.add(listbox)
+        show_manager.start()
+
+    # Recorded events:
+    #  1. Click on 1
+    #  2. Ctrl + click on 2,
+    #  3. Ctrl + click on 2.
+    #  4. Use scroll bar to scroll to the bottom.
+    #  5. Click on 42.
+    #  6. Use scroll bar to scroll to the top.
+    #  7. Click on 1
+    #  8. Use mouse wheel to scroll down.
+    #  9. Shift + click on 42.
+    # 10. Use mouse wheel to scroll back up.
+
     listbox = ui.ListBox2D(values=values,
                            size=(500, 500),
                            multiselection=True,
@@ -722,34 +748,15 @@ def test_ui_listbox_2d(recording=False):
     event_counter = EventCounter()
     event_counter.monitor(listbox)
 
-    # Create a show manager and record/play events.
     show_manager = window.ShowManager(size=(600, 600),
                                       title="DIPY ListBox")
     show_manager.ren.add(listbox)
-
-    if recording:
-        # Record the following events:
-        #  1. Click on 1
-        #  2. Ctrl + click on 2,
-        #  3. Ctrl + click on 2.
-        #  4. Click on down arrow (4 times).
-        #  5. Click on 21.
-        #  6. Click on up arrow (5 times).
-        #  7. Click on 1
-        #  8. Use mouse wheel to scroll down.
-        #  9. Shift + click on 42.
-        # 10. Use mouse wheel to scroll back up.
-        show_manager.record_events_to_file(recording_filename)
-        print(list(event_counter.events_counts.items()))
-        event_counter.save(expected_events_counts_filename)
-
-    else:
-        show_manager.play_events_from_file(recording_filename)
-        expected = EventCounter.load(expected_events_counts_filename)
-        event_counter.check_counts(expected)
+    show_manager.play_events_from_file(recording_filename)
+    expected = EventCounter.load(expected_events_counts_filename)
+    event_counter.check_counts(expected)
 
     # Check if the right values were selected.
-    expected = [[1], [1, 2], [1], [21], [1], values]
+    expected = [[1], [1, 2], [1], [42], [1], values]
     assert len(selected_values) == len(expected)
     assert_arrays_equal(selected_values, expected)
 
@@ -759,7 +766,7 @@ def test_ui_listbox_2d(recording=False):
     show_manager.play_events_from_file(recording_filename)
 
     # Check if the right values were selected.
-    expected = [[1], [2], [2], [21], [1], [42]]
+    expected = [[1], [2], [2], [42], [1], [42]]
     assert len(selected_values) == len(expected)
     assert_arrays_equal(selected_values, expected)
 
@@ -941,7 +948,7 @@ if __name__ == "__main__":
         test_ui_radio_button(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_listbox_2d":
-        test_ui_listbox_2d(recording=True)
+        test_ui_listbox_2d(interactive=False)
 
     if len(sys.argv) <= 1 or sys.argv[1] == "test_ui_image_container_2d":
         test_ui_image_container_2d(interactive=False)

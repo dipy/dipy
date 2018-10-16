@@ -451,67 +451,70 @@ def test_degenerative_cases():
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
-    # Test basic case
-    model = SimpleOdfModel(_gtab)
-    odf_argmax = _odf.argmax()
-    pam = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True)
+    for sphere in [_sphere, get_sphere('symmetric642')]:
+        # Test basic case
+        model = SimpleOdfModel(_gtab)
+        _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
+        odf_argmax = _odf.argmax()
+        pam = peaks_from_model(model, data, sphere, .5, 45,
+                               normalize_peaks=True)
 
-    assert_array_equal(pam.gfa, gfa(_odf))
-    assert_array_equal(pam.peak_values[:, 0], 1.)
-    assert_array_equal(pam.peak_values[:, 1:], 0.)
-    mn, mx = _odf.min(), _odf.max()
-    assert_array_equal(pam.qa[:, 0], (mx - mn) / mx)
-    assert_array_equal(pam.qa[:, 1:], 0.)
-    assert_array_equal(pam.peak_indices[:, 0], odf_argmax)
-    assert_array_equal(pam.peak_indices[:, 1:], -1)
+        assert_array_equal(pam.gfa, gfa(_odf))
+        assert_array_equal(pam.peak_values[:, 0], 1.)
+        assert_array_equal(pam.peak_values[:, 1:], 0.)
+        mn, mx = _odf.min(), _odf.max()
+        assert_array_equal(pam.qa[:, 0], (mx - mn) / mx)
+        assert_array_equal(pam.qa[:, 1:], 0.)
+        assert_array_equal(pam.peak_indices[:, 0], odf_argmax)
+        assert_array_equal(pam.peak_indices[:, 1:], -1)
 
-    # Test that odf array matches and is right shape
-    pam = peaks_from_model(model, data, _sphere, .5, 45, return_odf=True)
-    expected_shape = (len(data), len(_odf))
-    assert_equal(pam.odf.shape, expected_shape)
-    assert_((_odf == pam.odf).all())
-    assert_array_equal(pam.peak_values[:, 0], _odf.max())
+        # Test that odf array matches and is right shape
+        pam = peaks_from_model(model, data, sphere, .5, 45, return_odf=True)
+        expected_shape = (len(data), len(_odf))
+        assert_equal(pam.odf.shape, expected_shape)
+        assert_((_odf == pam.odf).all())
+        assert_array_equal(pam.peak_values[:, 0], _odf.max())
 
-    # Test mask
-    mask = (np.arange(10) % 2) == 1
+        # Test mask
+        mask = (np.arange(10) % 2) == 1
 
-    pam = peaks_from_model(model, data, _sphere, .5, 45, mask=mask,
-                           normalize_peaks=True)
-    assert_array_equal(pam.gfa[~mask], 0)
-    assert_array_equal(pam.qa[~mask], 0)
-    assert_array_equal(pam.peak_values[~mask], 0)
-    assert_array_equal(pam.peak_indices[~mask], -1)
+        pam = peaks_from_model(model, data, sphere, .5, 45, mask=mask,
+                            normalize_peaks=True)
+        assert_array_equal(pam.gfa[~mask], 0)
+        assert_array_equal(pam.qa[~mask], 0)
+        assert_array_equal(pam.peak_values[~mask], 0)
+        assert_array_equal(pam.peak_indices[~mask], -1)
 
-    assert_array_equal(pam.gfa[mask], gfa(_odf))
-    assert_array_equal(pam.peak_values[mask, 0], 1.)
-    assert_array_equal(pam.peak_values[mask, 1:], 0.)
-    mn, mx = _odf.min(), _odf.max()
-    assert_array_equal(pam.qa[mask, 0], (mx - mn) / mx)
-    assert_array_equal(pam.qa[mask, 1:], 0.)
-    assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
-    assert_array_equal(pam.peak_indices[mask, 1:], -1)
+        assert_array_equal(pam.gfa[mask], gfa(_odf))
+        assert_array_equal(pam.peak_values[mask, 0], 1.)
+        assert_array_equal(pam.peak_values[mask, 1:], 0.)
+        mn, mx = _odf.min(), _odf.max()
+        assert_array_equal(pam.qa[mask, 0], (mx - mn) / mx)
+        assert_array_equal(pam.qa[mask, 1:], 0.)
+        assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
+        assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
-    # Test serialization and deserialization:
-    for normalize_peaks in [True, False]:
-        for return_odf in [True, False]:
-            for return_sh in [True, False]:
-                pam = peaks_from_model(model, data, _sphere, .5, 45,
-                                       normalize_peaks=normalize_peaks,
-                                       return_odf=return_odf,
-                                       return_sh=return_sh)
+        # Test serialization and deserialization:
+        for normalize_peaks in [True, False]:
+            for return_odf in [True, False]:
+                for return_sh in [True, False]:
+                    pam = peaks_from_model(model, data, sphere, .5, 45,
+                                        normalize_peaks=normalize_peaks,
+                                        return_odf=return_odf,
+                                        return_sh=return_sh)
 
-                b = BytesIO()
-                pickle.dump(pam, b)
-                b.seek(0)
-                new_pam = pickle.load(b)
-                b.close()
+                    b = BytesIO()
+                    pickle.dump(pam, b)
+                    b.seek(0)
+                    new_pam = pickle.load(b)
+                    b.close()
 
-                for attr in ['peak_dirs', 'peak_values', 'peak_indices',
-                             'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
-                    assert_array_equal(getattr(pam, attr),
-                                       getattr(new_pam, attr))
-                    assert_array_equal(pam.sphere.vertices,
-                                       new_pam.sphere.vertices)
+                    for attr in ['peak_dirs', 'peak_values', 'peak_indices',
+                                'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
+                        assert_array_equal(getattr(pam, attr),
+                                        getattr(new_pam, attr))
+                        assert_array_equal(pam.sphere.vertices,
+                                        new_pam.sphere.vertices)
 
 
 def test_peaksFromModelParallel():
@@ -530,54 +533,56 @@ def test_peaksFromModelParallel():
     data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
                            fractions=[50, 50], snr=SNR)
 
-    # test equality with/without multiprocessing
-    model = SimpleOdfModel(gtab)
-    pam_multi = peaks_from_model(model, data, _sphere, .5, 45,
-                                 normalize_peaks=True, return_odf=True,
-                                 return_sh=True, parallel=True)
+    for sphere in [_sphere, get_sphere('symmetric724')]:
 
-    pam_single = peaks_from_model(model, data, _sphere, .5, 45,
-                                  normalize_peaks=True, return_odf=True,
-                                  return_sh=True, parallel=False)
+        # test equality with/without multiprocessing
+        model = SimpleOdfModel(gtab)
+        pam_multi = peaks_from_model(model, data, sphere, .5, 45,
+                                    normalize_peaks=True, return_odf=True,
+                                    return_sh=True, parallel=True)
 
-    pam_multi_inv1 = peaks_from_model(model, data, _sphere, .5, 45,
-                                      normalize_peaks=True, return_odf=True,
-                                      return_sh=True, parallel=True,
-                                      nbr_processes=0)
+        pam_single = peaks_from_model(model, data, sphere, .5, 45,
+                                    normalize_peaks=True, return_odf=True,
+                                    return_sh=True, parallel=False)
 
-    pam_multi_inv2 = peaks_from_model(model, data, _sphere, .5, 45,
-                                      normalize_peaks=True, return_odf=True,
-                                      return_sh=True, parallel=True,
-                                      nbr_processes=-2)
+        pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
+                                        normalize_peaks=True, return_odf=True,
+                                        return_sh=True, parallel=True,
+                                        nbr_processes=0)
 
-    for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
-        assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
-        assert_equal(pam.gfa.shape, pam_single.gfa.shape)
-        assert_array_almost_equal(pam.gfa, pam_single.gfa)
+        pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
+                                        normalize_peaks=True, return_odf=True,
+                                        return_sh=True, parallel=True,
+                                        nbr_processes=-2)
 
-        assert_equal(pam.qa.dtype, pam_single.qa.dtype)
-        assert_equal(pam.qa.shape, pam_single.qa.shape)
-        assert_array_almost_equal(pam.qa, pam_single.qa)
+        for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
+            assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
+            assert_equal(pam.gfa.shape, pam_single.gfa.shape)
+            assert_array_almost_equal(pam.gfa, pam_single.gfa)
 
-        assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
-        assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
-        assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
+            assert_equal(pam.qa.dtype, pam_single.qa.dtype)
+            assert_equal(pam.qa.shape, pam_single.qa.shape)
+            assert_array_almost_equal(pam.qa, pam_single.qa)
 
-        assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
-        assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
-        assert_array_equal(pam.peak_indices, pam_single.peak_indices)
+            assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
+            assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
+            assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
 
-        assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
-        assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
-        assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
+            assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
+            assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
+            assert_array_equal(pam.peak_indices, pam_single.peak_indices)
 
-        assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
-        assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
-        assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
+            assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
+            assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
+            assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
 
-        assert_equal(pam.odf.dtype, pam_single.odf.dtype)
-        assert_equal(pam.odf.shape, pam_single.odf.shape)
-        assert_array_almost_equal(pam.odf, pam_single.odf)
+            assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
+            assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
+            assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
+
+            assert_equal(pam.odf.dtype, pam_single.odf.dtype)
+            assert_equal(pam.odf.shape, pam_single.odf.shape)
+            assert_array_almost_equal(pam.odf, pam_single.odf)
 
 
 def test_peaks_shm_coeff():

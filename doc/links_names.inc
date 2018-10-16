@@ -24,7 +24,7 @@
 .. _`dipy gitter`: https://gitter.im/nipy/dipy
 .. _neurostars: https://neurostars.org/
 .. _h5py: https://www.h5py.org/
-.. _cvxpy: http://www.cvxpy.org/en/latest/
+.. _cvxpy: http://www.cvxpy.org/
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net
