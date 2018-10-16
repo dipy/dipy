@@ -13,6 +13,9 @@ from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
+from dipy.direction import (DeterministicMaximumDirectionGetter,
+                            ProbabilisticDirectionGetter,
+                            ClosestPeakDirectionGetter)
 
 
 def test_particule_filtering_traking_workflows():
@@ -155,6 +158,13 @@ def test_local_fiber_tracking_workflow():
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
+
+        assert isinstance(lf_track_pam._get_direction_getter("det"),
+                          DeterministicMaximumDirectionGetter)
+        assert isinstance(lf_track_pam._get_direction_getter("prob"),
+                          ProbabilisticDirectionGetter)
+        assert isinstance(lf_track_pam._get_direction_getter("cp"),
+                          ClosestPeakDirectionGetter)
 
 
 def is_tractogram_empty(tractogram_path):
