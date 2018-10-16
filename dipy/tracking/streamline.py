@@ -518,7 +518,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
 
     for i, sl in enumerate(subsamp_sls):
         mdf_mx = bundles_distances_mdf([subsamp_sls[i]], subsamp_sls)
-        if (1 * mdf_mx == 0).sum() > 1:
+        if (mdf_mx == 0).sum() > 1:
             raise ValueError('Identical streamlines. CCI calculation invalid')
         mdf_mx_oi = (mdf_mx > 0) & (mdf_mx < max_mdf) & ~ np.isnan(mdf_mx)
         mdf_mx_oi_only = mdf_mx[mdf_mx_oi]

@@ -67,7 +67,7 @@ streamlines shorter than 40mm prior to calculating the CCI.
 """
 
 lengths = list(length(streamlines))
-long_streamlines = []
+long_streamlines = Streamlines()
 for i, sl in enumerate(streamlines):
     if lengths[i] > 40:
         long_streamlines.append(sl)
@@ -82,7 +82,7 @@ streamline bundle and visualize them.
 cci = cluster_confidence(long_streamlines)
 
 # Visualize the streamlines, colored by cci
-ren = window.renderer()
+ren = window.Renderer()
 
 hue = [0.5, 1]
 saturation = [0.0, 1.0]
@@ -149,13 +149,13 @@ Now we threshold the CCI, defining outliers as streamlines that score below 1.
 
 """
 
-keep_streamlines = []
+keep_streamlines = Streamlines()
 for i, sl in enumerate(long_streamlines):
     if cci[i] >= 1:
         keep_streamlines.append(sl)
 
 # Visualize the streamlines we kept
-ren = window.renderer()
+ren = window.Renderer()
 
 keep_streamlines_actor = actor.line(keep_streamlines, linewidth=0.1)
 
