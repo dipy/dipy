@@ -7,7 +7,7 @@ from nibabel.orientations import aff2axcodes
 
 
 def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
-                    header=None, lazy_save=False, tractogram_obj=None):
+                    header=None, lazy_save=False, tractogram_file=None):
     """ Saves tractogram files (*.trk or *.tck)
 
     Parameters
@@ -26,9 +26,10 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         Metadata associated to the tractogram file(*.trk). (default: None)
     lazy_save : {False, True}, optional
         If True, save streamlines in a lazy manner i.e. they will not be kept
-        in memory. Otherwise, load all streamlines in memory.
-    tractogram_obj : class TractogramFile, optional
-        Define tractogram class type (TrkFile vs TckFile). Default is TrkFile
+        in memory. Otherwise, keep all streamlines in memory until saving.
+    tractogram_file : class TractogramFile, optional
+        Define tractogram class type (TrkFile vs TckFile)
+        Default is None which means auto detect format
     """
     if vox_size is not None and shape is not None:
         if not isinstance(header, dict):
@@ -38,15 +39,20 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         header[Field.DIMENSIONS] = shape
         header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
 
-    tractogram_obj = tractogram_obj or detect_format(fname)
-    if tractogram_obj is None:
+    tractogram_file = tractogram_file or detect_format(fname)
+    if tractogram_file is None:
         raise ValueError("Unknown format for 'fileobj': {}".format(fname))
 
+    if lazy_save and not callable(streamlines):
+        sg = lambda: (s for s in streamlines)
+    else:
+        sg = streamlines
+
     tractogram_loader = LazyTractogram if lazy_save else Tractogram
-    tractogram = tractogram_loader(streamlines)
+    tractogram = tractogram_loader(sg)
     tractogram.affine_to_rasmm = affine
-    trk_file = tractogram_obj(tractogram, header=header)
-    nib.streamlines.save(trk_file, fname)
+    track_file = tractogram_file(tractogram, header=header)
+    nib.streamlines.save(track_file, fname)
 
 
 def load_tractogram(filename, lazy_load=False):
@@ -79,9 +85,9 @@ load_tck.__doc__ = load_tractogram.__doc__.replace("(*.trk or ", "")
 load_trk = load_tractogram
 load_trk.__doc__ = load_tractogram.__doc__.replace(" or *.tck)", "")
 
-save_tck = partial(save_tractogram, tractogram_obj=TckFile)
+save_tck = partial(save_tractogram, tractogram_file=TckFile)
 save_tck.__doc__ = save_tractogram.__doc__.replace("(*.trk or ", "")
 
 
-save_trk = partial(save_tractogram, tractogram_obj=TrkFile)
+save_trk = partial(save_tractogram, tractogram_file=TrkFile)
 save_trk.__doc__ = save_tractogram.__doc__.replace(" or *.tck)", "")
