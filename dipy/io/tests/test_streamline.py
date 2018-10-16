@@ -178,12 +178,16 @@ def io_tractogram(load_fn, save_fn, extension):
                 shape=np.array([50, 50, 50]))
         tfile = nib.streamlines.load(fname)
         npt.assert_array_equal(affine, tfile.affine)
-        expected = [2, 1.5, 1.5] if extension in "trk" else "[2.  1.5 1.5]"
-        npt.assert_array_equal(np.array(expected),
-                               tfile.header.get('voxel_sizes'))
-        expected = [50, 50, 50] if extension in "trk" else "[50 50 50]"
-        npt.assert_array_equal(np.array(expected),
-                               tfile.header.get('dimensions'))
+        vox_size = tfile.header.get('voxel_sizes')
+        dims = tfile.header.get('dimensions')
+        if isinstance(vox_size, str):
+                vox_size = vox_size.replace('[', '').replace(']', '')
+                vox_size = np.fromstring(vox_size, sep=" ", dtype=np.float)
+        if isinstance(dims, str):
+                dims = dims.replace('[', '').replace(']', '')
+                dims = np.fromstring(dims, sep=" ", dtype=np.int)
+        npt.assert_array_equal(np.array([2, 1.5, 1.5]), vox_size)
+        npt.assert_array_equal(np.array([50, 50, 50]), dims)
         npt.assert_equal(len(tfile.streamlines), len(streamlines))
         npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
                                       decimal=4)

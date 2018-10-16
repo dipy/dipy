@@ -79,15 +79,15 @@ def load_tractogram(filename, lazy_load=False):
 
 
 load_tck = load_tractogram
-load_tck.__doc__ = load_tractogram.__doc__.replace("(*.trk or ", "")
+load_tck.__doc__ = load_tractogram.__doc__.replace("*.trk or ", "")
 
 
 load_trk = load_tractogram
-load_trk.__doc__ = load_tractogram.__doc__.replace(" or *.tck)", "")
+load_trk.__doc__ = load_tractogram.__doc__.replace(" or *.tck", "")
 
 save_tck = partial(save_tractogram, tractogram_file=TckFile)
-save_tck.__doc__ = save_tractogram.__doc__.replace("(*.trk or ", "")
+save_tck.__doc__ = save_tractogram.__doc__.replace("*.trk or ", "")
 
 
 save_trk = partial(save_tractogram, tractogram_file=TrkFile)
-save_trk.__doc__ = save_tractogram.__doc__.replace(" or *.tck)", "")
+save_trk.__doc__ = save_tractogram.__doc__.replace(" or *.tck", "")
