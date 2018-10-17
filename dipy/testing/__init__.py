@@ -15,6 +15,8 @@ IO_DATA_PATH = abspath(pjoin(dirname(__file__),
 def assert_operator(value1, value2, msg="", op=operator.eq):
     """Check Boolean statement."""
     try:
+        if op == operator.is_:
+                value1 = bool(value1)
         assert op(value1, value2)
     except AssertionError:
         raise AssertionError(msg.format(str(value2), str(value1)))
@@ -28,9 +30,9 @@ assert_less_equal = partial(assert_operator, op=operator.le,
                             msg="{0} =< {1}")
 assert_less = partial(assert_operator, op=operator.lt,
                       msg="{0} < {1}")
-assert_true = partial(assert_operator, value2=True, op=operator.eq,
+assert_true = partial(assert_operator, value2=True, op=operator.is_,
                       msg="False is not true")
-assert_false = partial(assert_operator, value2=False, op=operator.eq,
+assert_false = partial(assert_operator, value2=False, op=operator.is_,
                        msg="True is not false")
 assert_not_equal = partial(assert_operator, op=operator.ne)
 
