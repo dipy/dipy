@@ -7,8 +7,16 @@ from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.io.image import load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.mask import median_otsu
+from dipy.sims.voxel import (single_tensor)
+from dipy.reconst import shm
+from dipy.data import default_sphere
+from dipy.core.gradients import GradientTable
+from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.noise_estimate import estimate_sigma
+import dipy.reconst.dti as dti
+
 
 # static file paths for experiments
 fbvals = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fd0.neuro-dwi/dwi.bvals'
@@ -19,9 +27,9 @@ ft1 = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fcf.neu
 t1, t1_affine = load_nifti(ft1)
 
 dwi, dwi_affine = load_nifti(fdwi)
-b0_mask, mask = median_otsu(dwi)
+# b0_mask, mask = median_otsu(dwi)
 
-t1[mask == 0] = 0
+# t1[mask == 0] = 0
 
 print("Data Loaded!")
 
@@ -37,47 +45,56 @@ with values between 0 and 0.5.
 """
 beta = 0.1
 
-hmrf = TissueClassifierHMRF()
-initial_segmentation, final_segmentation, PVE = hmrf.classify(t1, nclass,
-                                                              beta)
+# denoising
+sigma = estimate_sigma(t1, True, N=4)
+t1_den = nlmeans(t1, sigma=sigma)
 
-
-# segmentation using the HMRF
-def plot_HMRF():
-    fig = plt.figure()
-    a = fig.add_subplot(1, 2, 1)
-    img_ax = np.rot90(final_segmentation[..., 89])
-    imgplot = plt.imshow(img_ax)
-    a.axis('off')
-    a.set_title('Axial')
-    a = fig.add_subplot(1, 2, 2)
-    img_cor = np.rot90(final_segmentation[:, 128, :])
-    imgplot = plt.imshow(img_cor)
-    a.axis('off')
-    a.set_title('Coronal')
-    plt.savefig('final_seg.png', bbox_inches='tight', pad_inches=0)
-    # maps for each tissue class
-    fig = plt.figure()
-    a = fig.add_subplot(1, 3, 1)
-    img_ax = np.rot90(PVE[..., 89, 0])
-    imgplot = plt.imshow(img_ax, cmap="gray")
-    a.axis('off')
-    a.set_title('CSF')
-    a = fig.add_subplot(1, 3, 2)
-    img_cor = np.rot90(PVE[:, :, 89, 1])
-    imgplot = plt.imshow(img_cor, cmap="gray")
-    a.axis('off')
-    a.set_title('Gray Matter')
-    a = fig.add_subplot(1, 3, 3)
-    img_cor = np.rot90(PVE[:, :, 89, 2])
-    imgplot = plt.imshow(img_cor, cmap="gray")
-    a.axis('off')
-    a.set_title('White Matter')
-    plt.savefig('probabilities.png', bbox_inches='tight', pad_inches=0)
-    plt.show()
+# save_nifti('t1_masked.nii.gz', t1, t1_affine)
+# save_nifti('t1_class_masked.nii.gz', PVE, t1_affine)
 
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 gtab = gradient_table(bvals, bvecs)
 
-response, ratio = auto_response(gtab, t1, roi_radius=10, fa_thr=0.7)
-msd_model = MultiShellDeconvModel(gtab, response)
+# fitting the model with DTI
+tenmodel = dti.TensorModel(gtab)
+tenfit = tenmodel.fit(dwi)
+
+# save_nifti('t1_denoised.nii.gz', t1_den, t1_affine)
+
+# getting the mean diffusivities and FAs from DTI
+FA = tenfit.fa
+MD = tenfit.md
+
+hmrf = TissueClassifierHMRF()
+initial_segmentation, final_segmentation, PVE = hmrf.classify(t1_den, nclass,
+                                                              beta)
+
+def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
+    bvals = np.array(bvals, copy=True)
+    evecs = np.zeros((3, 3))
+    z = np.array([0, 0, 1.])
+    evecs[:, 0] = z
+    evecs[:2, 1:] = np.eye(2)
+
+    n = np.arange(0, sh_order + 1, 2)
+    m = np.zeros_like(n)
+
+    big_sphere = default_sphere.subdivide()
+    theta, phi = big_sphere.theta, big_sphere.phi
+
+    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+    A = shm.real_sph_harm(0, 0, 0, 0)
+
+    response = np.empty([len(bvals), len(n) + 2])
+    for i, bvalue in enumerate(bvals):
+        gtab = GradientTable(big_sphere.vertices * bvalue)
+        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
+        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+
+        response[i, 0] = np.exp(-bvalue * csf_md) / A
+        response[i, 1] = np.exp(-bvalue * gm_md) / A
+
+    return MultiShellResponse(response, sh_order, bvals)
+
+
+
