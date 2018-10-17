@@ -5,7 +5,6 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
-from dipy.testing import setup_test
 
 class DiffusionSpectrumModel(OdfModel, Cache):
 
