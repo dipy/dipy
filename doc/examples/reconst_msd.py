@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 # import nibabel as nib
-from dipy.reconst.opt_msd import (MultiShellDeconvModel, MultiShellResponse, 
-                                  MSDeconvFit)
+from dipy.reconst.opt_msd import MultiShellResponse
 from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -18,6 +16,72 @@ from dipy.denoise.noise_estimate import estimate_sigma
 import dipy.reconst.dti as dti
 
 
+def show_slicer_and_pick(data, affine):
+    from dipy.viz import window, actor, ui
+
+    im_actor = actor.slicer(data, affine)
+    shape = data.shape
+
+    renderer = window.Renderer()
+    renderer.projection('parallel')
+    show_m = window.ShowManager(renderer, size=(1200, 900))
+    show_m.initialize()
+    line_slider_z = ui.LineSlider2D(min_value=0,
+                                    max_value=shape[2] - 1,
+                                    initial_value=shape[2] / 2,
+                                    text_template="{value:.0f}",
+                                    length=140)
+
+    def change_slice_z(slider):
+        z = int(np.round(slider.value))
+        im_actor.display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
+        show_m.ren.reset_camera()
+        show_m.ren.reset_clipping_range()
+        show_m.render()
+
+    line_slider_z.on_change = change_slice_z
+
+    label_position = ui.TextBlock2D(text='Position:')
+    label_value = ui.TextBlock2D(text='Value:')
+    result_position = ui.TextBlock2D(text='')
+    result_value = ui.TextBlock2D(text='')
+
+    panel_picking = ui.Panel2D(size=(250, 225),
+                               position=(20, 20),
+                               color=(0, 0, 0),
+                               opacity=0.75,
+                               align="left")
+
+    panel_picking.add_element(label_position, (0.1, 0.55))
+    panel_picking.add_element(label_value, (0.1, 0.25))
+    panel_picking.add_element(result_position, (0.45, 0.55))
+    panel_picking.add_element(result_value, (0.45, 0.25))
+    panel_picking.add_element(line_slider_z, (0.1, 0.75))
+    show_m.ren.add(panel_picking)
+
+    def left_click_callback(obj, ev):
+        """Get the value of the clicked voxel and show it in the panel."""
+        event_pos = show_m.iren.GetEventPosition()
+
+        obj.picker.Pick(event_pos[0],
+                        event_pos[1],
+                        0,
+                        show_m.ren)
+
+        i, j, k = obj.picker.GetPointIJK()
+        result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
+        result_value.message = '%.8f' % data[i, j, k]
+
+    im_actor.SetInterpolate(False)
+    im_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
+
+    show_m.ren.add(im_actor)
+    show_m.ren.reset_camera()
+    show_m.ren.reset_clipping_range()
+    show_m.render()
+    show_m.start()
+
+
 # static file paths for experiments
 fbvals = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fd0.neuro-dwi/dwi.bvals'
 fbvecs = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fd0.neuro-dwi/dwi.bvecs'
@@ -27,7 +91,7 @@ ft1 = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fcf.neu
 t1, t1_affine = load_nifti(ft1)
 
 dwi, dwi_affine = load_nifti(fdwi)
-# b0_mask, mask = median_otsu(dwi)
+b0_mask, mask = median_otsu(dwi)
 
 # t1[mask == 0] = 0
 
@@ -47,6 +111,9 @@ beta = 0.1
 
 # denoising
 sigma = estimate_sigma(t1, True, N=4)
+
+t1[mask == 0] = 0
+
 t1_den = nlmeans(t1, sigma=sigma)
 
 # save_nifti('t1_masked.nii.gz', t1, t1_affine)
@@ -57,7 +124,7 @@ gtab = gradient_table(bvals, bvecs)
 
 # fitting the model with DTI
 tenmodel = dti.TensorModel(gtab)
-tenfit = tenmodel.fit(dwi)
+tenfit = tenmodel.fit(dwi, mask)
 
 # save_nifti('t1_denoised.nii.gz', t1_den, t1_affine)
 
@@ -69,7 +136,41 @@ hmrf = TissueClassifierHMRF()
 initial_segmentation, final_segmentation, PVE = hmrf.classify(t1_den, nclass,
                                                               beta)
 
-def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
+csf = PVE[..., 0]
+cgm = PVE[..., 1]
+
+save_nifti('pve.nii.gz', PVE, dwi_affine)
+
+indices_csf = np.where(((FA < 0.2) & (csf > 0.95)))
+indices_cgm = np.where(((FA < 0.2) & (cgm > 0.95)))
+
+selected_csf = np.zeros(FA.shape, dtype='bool')
+selected_cgm = np.zeros(FA.shape, dtype='bool')
+
+selected_csf[indices_csf] = True
+selected_cgm[indices_cgm] = True
+
+csf_md = np.mean(tenfit.md[selected_csf])
+cgm_md = np.mean(tenfit.md[selected_cgm])
+
+# save_nifti('selected_csf.nii.gz', selected_csf, dwi_affine)
+# save_nifti('selected_cgm.nii.gz', selected_cgm, dwi_affine)
+
+save_nifti('md.nii.gz', MD, dwi_affine)
+save_nifti('fa.nii.gz', FA, dwi_affine)
+
+# center = np.zeros(FA.shape)
+# center[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75 - 10: 75 + 10] = 1
+# save_nifti('center.nii.gz', center, dwi_affine)
+
+# generating the autoresponse
+dwi[mask == 0] = 0
+response, ratio = auto_response(gtab, dwi, roi_radius=10, fa_thr=0.7)
+evals_d = response[0]
+
+
+def sim_response(sh_order=8, bvals=bvals, evals=evals_d, csf_md=csf_md,
+                 gm_md=cgm_md):
     bvals = np.array(bvals, copy=True)
     evecs = np.zeros((3, 3))
     z = np.array([0, 0, 1.])
@@ -95,6 +196,3 @@ def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
         response[i, 1] = np.exp(-bvalue * gm_md) / A
 
     return MultiShellResponse(response, sh_order, bvals)
-
-
-

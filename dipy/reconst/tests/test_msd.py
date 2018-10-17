@@ -14,6 +14,10 @@ gm_md = .76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
 
 
+
+
+
+
 def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
     bvals = np.array(bvals, copy=True)
     evecs = np.zeros((3, 3))
