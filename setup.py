@@ -52,6 +52,7 @@ if using_setuptools:
     # Set setuptools extra arguments
     # We need nosetests for numpy.testing<=1.15
     extra_setuptools_args = dict(
+        setup_requires=["pytest-runner"],
         tests_require=['pytest', 'nose'],
         test_suite='nose.collector',
         zip_safe=False,
