@@ -14,6 +14,10 @@ from dipy.core.gradients import GradientTable
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 import dipy.reconst.dti as dti
+from dipy.reconst.opt_msd import MultiShellDeconvModel
+from dipy.viz import window, actor
+from dipy.data import get_sphere
+sphere = get_sphere('symmetric724')
 
 
 def show_slicer_and_pick(data, affine):
@@ -196,3 +200,29 @@ def sim_response(sh_order=8, bvals=bvals, evals=evals_d, csf_md=csf_md,
         response[i, 1] = np.exp(-bvalue * gm_md) / A
 
     return MultiShellResponse(response, sh_order, bvals)
+
+
+response_msd = sim_response(sh_order=4, bvals=bvals, evals=evals_d,
+                            csf_md=csf_md, gm_md=cgm_md)
+
+msd_model = MultiShellDeconvModel(gtab, response_msd)
+
+# data = dwi[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75: 75 + 10]
+# data = dwi[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75: 75 + 10]
+
+data = dwi[:, :, 68: 68 + 1]
+
+# odf_mask[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75: 75 + 1] = 1
+
+msd_fit = msd_model.fit(data)
+msd_odf = msd_fit.odf(sphere)
+fodf_spheres = actor.odf_slicer(msd_odf, sphere=sphere, scale=0.9, norm=True,
+                                colormap='plasma')
+interactive = True
+ren = window.Renderer()
+ren.add(fodf_spheres)
+
+print('Saving illustration as msd_odfs.png')
+window.record(ren, out_path='msd_odfs.png', size=(600, 600))
+if interactive:
+    window.show(ren)
