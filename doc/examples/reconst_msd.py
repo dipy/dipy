@@ -1,5 +1,4 @@
 import numpy as np
-# import nibabel as nib
 from dipy.reconst.opt_msd import MultiShellResponse
 from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
@@ -211,18 +210,20 @@ msd_model = MultiShellDeconvModel(gtab, response_msd)
 # data = dwi[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75: 75 + 10]
 
 data = dwi[:, :, 68: 68 + 1]
+mask_tmp = mask[:, :, 68: 68 + 1]
 
 # odf_mask[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75: 75 + 1] = 1
 
-msd_fit = msd_model.fit(data)
+msd_fit = msd_model.fit(data, mask_tmp)
 msd_odf = msd_fit.odf(sphere)
-fodf_spheres = actor.odf_slicer(msd_odf, sphere=sphere, scale=0.9, norm=True,
+fodf_spheres = actor.odf_slicer(msd_odf, mask=mask_tmp,
+                                sphere=sphere, scale=0.7, norm=True,
                                 colormap='plasma')
 interactive = True
 ren = window.Renderer()
 ren.add(fodf_spheres)
 
 print('Saving illustration as msd_odfs.png')
-window.record(ren, out_path='msd_odfs.png', size=(600, 600))
+window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=4)
 if interactive:
     window.show(ren)
