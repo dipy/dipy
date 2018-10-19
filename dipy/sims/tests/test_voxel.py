@@ -14,7 +14,10 @@ from dipy.io.gradients import read_bvals_bvecs
 
 
 def setup_module():
-    fimg, fbvals, fbvecs = get_data('small_64D')
+    """Module-level setup"""
+    global gtab, gtab_2s
+
+    _, fbvals, fbvecs = get_data('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 

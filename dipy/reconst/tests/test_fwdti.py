@@ -20,9 +20,11 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 
 
-def setup():
+def setup_module():
     """Module-level setup"""
-    fimg, fbvals, fbvecs = get_data('small_64D')
+    global gtab, gtab_2s, mevals, model_params_mv
+    global DWI, FAref, GTF, MDref, FAdti, MDdti
+    _, fbvals, fbvecs = get_data('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
