@@ -256,7 +256,7 @@ class ForecastModel(OdfModel, Cache):
                 constraints = [c[0] == c0, self.fod * c >= 0]
                 prob = cvxpy.Problem(objective, constraints)
                 try:
-                    prob.solve()
+                    prob.solve(solver=cvxpy.OSQP, eps_abs=1e-05, eps_rel=1e-05)
                     coef = np.asarray(c.value).squeeze()
                 except Exception:
                     warn('Optimization did not find a solution')
@@ -304,7 +304,6 @@ class ForecastFit(OdfFit):
         clip_negative : boolean, optional
             if True clip the negative odf values to 0, default True
         """
-
         if self.rho is None:
             self.rho = rho_matrix(self.sh_order, sphere.vertices)
 
