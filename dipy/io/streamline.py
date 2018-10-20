@@ -31,17 +31,19 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         Define tractogram class type (TrkFile vs TckFile)
         Default is None which means auto detect format
     """
-    if vox_size is not None and shape is not None:
+    tractogram_file = tractogram_file or detect_format(fname)
+    if tractogram_file is None:
+        raise ValueError("Unknown format for 'fileobj': {}".format(fname))
+
+    if vox_size is not None and shape is not None and \
+       isinstance(tractogram_file, TrkFile):
+
         if not isinstance(header, dict):
             header = {}
         header[Field.VOXEL_TO_RASMM] = affine.copy()
         header[Field.VOXEL_SIZES] = vox_size
         header[Field.DIMENSIONS] = shape
         header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
-
-    tractogram_file = tractogram_file or detect_format(fname)
-    if tractogram_file is None:
-        raise ValueError("Unknown format for 'fileobj': {}".format(fname))
 
     if lazy_save and not callable(streamlines):
         sg = lambda: (s for s in streamlines)
