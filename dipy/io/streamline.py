@@ -9,7 +9,8 @@ from dipy.io.dpy import Dpy, Streamlines
 
 
 def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
-                    header=None, lazy_save=False, tractogram_file=None):
+                    header=None, reduce_memory_usage=False,
+                    tractogram_file=None):
     """ Saves tractogram files (*.trk or *.tck or *.dpy)
 
     Parameters
@@ -26,7 +27,7 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         The shape of the reference image (default: None)
     header : dict, optional
         Metadata associated to the tractogram file(*.trk). (default: None)
-    lazy_save : {False, True}, optional
+    reduce_memory_usage : {False, True}, optional
         If True, save streamlines in a lazy manner i.e. they will not be kept
         in memory. Otherwise, keep all streamlines in memory until saving.
     tractogram_file : class TractogramFile, optional
@@ -51,12 +52,12 @@ def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
         header[Field.DIMENSIONS] = shape
         header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
 
-    if lazy_save and not callable(streamlines):
+    if reduce_memory_usage and not callable(streamlines):
         sg = lambda: (s for s in streamlines)
     else:
         sg = streamlines
 
-    tractogram_loader = LazyTractogram if lazy_save else Tractogram
+    tractogram_loader = LazyTractogram if reduce_memory_usage else Tractogram
     tractogram = tractogram_loader(sg)
     tractogram.affine_to_rasmm = affine
     track_file = tractogram_file(tractogram, header=header)
