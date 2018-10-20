@@ -203,7 +203,7 @@ def io_tractogram(load_fn, save_fn, extension):
 
         # Test lazy save
         save_fn(fname, streamlines, affine, vox_size=np.array([2, 1.5, 1.5]),
-                shape=np.array([50, 50, 50]), lazy_save=True)
+                shape=np.array([50, 50, 50]), reduce_memory_usage=True)
         tfile = nib.streamlines.load(fname)
         npt.assert_array_equal(affine, tfile.affine)
         npt.assert_equal(len(tfile.streamlines), len(streamlines))
