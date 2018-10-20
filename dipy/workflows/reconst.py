@@ -857,9 +857,7 @@ class ReconstDkiFlow(Workflow):
                 save_nifti(oak, dkfit.ak().astype(np.float32), affine)
 
             if 'rk' in save_metrics:
-                rk_img = nib.Nifti1Image(dkfit.rk().astype(np.float32),
-                                         affine)
-                nib.save(rk_img, ork)
+                save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
