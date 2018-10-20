@@ -5,7 +5,8 @@ import numpy.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import (save_trk, load_trk, save_tractogram,
-                                save_tck, load_tck, load_tractogram)
+                                save_tck, load_tck, load_tractogram,
+                                save_dpy, load_dpy)
 from dipy.io.trackvis import save_trk as trackvis_save_trk
 from dipy.tracking.streamline import Streamlines
 
@@ -227,6 +228,18 @@ def test_io_trk():
 
 def test_io_tck():
     io_tractogram(load_tck, save_tck, "tck")
+
+
+def test_io_dpy():
+    with InTemporaryDirectory():
+        fname = 'test.dpy'
+
+        # Test save
+        save_dpy(fname, streamlines)
+        tracks, _ = load_dpy(fname)
+        npt.assert_equal(len(tracks), len(streamlines))
+        npt.assert_array_almost_equal(tracks[1], streamline,
+                                      decimal=4)
 
 
 def test_trackvis():
