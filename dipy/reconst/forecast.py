@@ -480,8 +480,8 @@ def lb_forecast(sh_order):
     diag_lb = np.zeros(n_c)
     counter = 0
     for l in range(0, sh_order + 1, 2):
-        for _ in range(-l, l + 1):
-            diag_lb[counter] = (l * (l + 1)) ** 2
-            counter += 1
+        stop = 2 * l + 1 + counter
+        diag_lb[counter:stop] = (l * (l + 1)) ** 2
+        counter = stop
 
     return np.diag(diag_lb)
