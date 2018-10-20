@@ -328,7 +328,7 @@ class ReconstDtiFlow(Workflow):
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
-                
+
                 save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
                            affine)
 
@@ -353,7 +353,7 @@ class ReconstDtiFlow(Workflow):
 
             if 'rd' in save_metrics:
                 RD = radial_diffusivity(tenfit.evals)
-                save_nifti(ord, RD.astype(np.float32), affine)
+                save_nifti(orad, RD.astype(np.float32), affine)
 
             if 'mode' in save_metrics:
                 MODE = get_mode(tenfit.quadratic_form)
@@ -528,9 +528,8 @@ class ReconstCSDFlow(Workflow):
                 ratio = l01[1] / l01[0]
                 response = (response, ratio)
 
-            logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
-                    .format(response[0]))
+            logging.info("Eigenvalues for the frf of the input"
+                         " data are :{0}".format(response[0]))
             logging.info('Ratio for smallest to largest eigen value is {0}'
                          .format(ratio))
 
@@ -629,7 +628,6 @@ class ReconstCSAFlow(Workflow):
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
-
 
         References
         ----------
