@@ -2019,7 +2019,7 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         counter = 1
         cv_old = errorlist[i, 0]
         cv_new = errorlist[i, 0]
-        alpha = cvxpy.Parameter(sign="positive")
+        alpha = cvxpy.Parameter()
         c = cvxpy.Variable(M.shape[1])
         design_matrix = cvxpy.Constant(M[test])
         design_matrix_to_recover = cvxpy.Constant(M[sub])
