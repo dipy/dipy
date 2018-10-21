@@ -2019,20 +2019,19 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         counter = 1
         cv_old = errorlist[i, 0]
         cv_new = errorlist[i, 0]
-        alpha = cvxpy.Parameter()
         c = cvxpy.Variable(M.shape[1])
         design_matrix = cvxpy.Constant(M[test])
         design_matrix_to_recover = cvxpy.Constant(M[sub])
         data = cvxpy.Constant(E[test])
-        objective = cvxpy.Minimize(
-            cvxpy.sum_squares(design_matrix * c - data) +
-            alpha * cvxpy.norm1(c) +
-            lopt * cvxpy.quad_form(c, L)
-        )
         constraints = []
-        prob = cvxpy.Problem(objective, constraints)
         while cv_old >= cv_new and counter < weight_array.shape[0]:
-            alpha.value = weight_array[counter]
+            alpha = weight_array[counter]
+            objective = cvxpy.Minimize(
+                cvxpy.sum_squares(design_matrix * c - data) +
+                alpha * cvxpy.norm1(c) +
+                lopt * cvxpy.quad_form(c, L)
+            )
+            prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="ECOS", verbose=False)
             recovered_signal = design_matrix_to_recover * c
             errorlist[i, counter] = np.mean(
