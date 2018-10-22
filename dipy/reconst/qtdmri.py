@@ -519,25 +519,25 @@ class QtdmriFit():
             2017.
         """
         if self.model.cartesian:
-            I = self.model.cache_get('qtdmri_to_mapmri_matrix',
-                                     key=(tau))
-            if I is None:
-                I = qtdmri_to_mapmri_matrix(self.model.radial_order,
-                                            self.model.time_order, self.ut,
-                                            self.tau_scaling * tau)
+            II = self.model.cache_get('qtdmri_to_mapmri_matrix',
+                                      key=(tau))
+            if II is None:
+                II = qtdmri_to_mapmri_matrix(self.model.radial_order,
+                                             self.model.time_order, self.ut,
+                                             self.tau_scaling * tau)
                 self.model.cache_set('qtdmri_to_mapmri_matrix',
-                                     (tau), I)
+                                     (tau), II)
         else:
-            I = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
-                                     key=(tau))
-            if I is None:
-                I = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
-                                                      self.model.time_order,
-                                                      self.ut,
-                                                      self.tau_scaling * tau)
+            II = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
+                                      key=(tau))
+            if II is None:
+                II = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
+                                                       self.model.time_order,
+                                                       self.ut,
+                                                       self.tau_scaling * tau)
                 self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
-                                     (tau), I)
-        mapmri_coef = np.dot(I, self._qtdmri_coef)
+                                     (tau), II)
+        mapmri_coef = np.dot(II, self._qtdmri_coef)
         return mapmri_coef
 
     def sparsity_abs(self, threshold=0.99):
@@ -606,13 +606,13 @@ class QtdmriFit():
                                            s, v)
             odf = np.dot(I_s, mapmri_coef)
         else:
-            I = self.model.cache_get('ODF_matrix', key=(sphere, s))
-            if I is None:
-                I = mapmri.mapmri_isotropic_odf_matrix(self.model.radial_order,
-                                                       1, s, sphere.vertices)
-                self.model.cache_set('ODF_matrix', (sphere, s), I)
+            II = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            if II is None:
+                II = mapmri.mapmri_isotropic_odf_matrix(
+                    self.model.radial_order, 1, s, sphere.vertices)
+                self.model.cache_set('ODF_matrix', (sphere, s), II)
 
-            odf = self.us[0] ** s * np.dot(I, mapmri_coef)
+            odf = self.us[0] ** s * np.dot(II, mapmri_coef)
         return odf
 
     def odf_sh(self, tau, s=2):
@@ -647,16 +647,16 @@ class QtdmriFit():
             msg = 'odf in spherical harmonics not yet implemented for '
             msg += 'cartesian implementation'
             raise ValueError(msg)
-        I = self.model.cache_get('ODF_sh_matrix',
-                                 key=(self.model.radial_order, s))
+        II = self.model.cache_get('ODF_sh_matrix',
+                                  key=(self.model.radial_order, s))
 
-        if I is None:
-            I = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order,
-                                                      1, s)
+        if II is None:
+            II = mapmri.mapmri_isotropic_odf_sh_matrix(self.model.radial_order,
+                                                       1, s)
             self.model.cache_set('ODF_sh_matrix', (self.model.radial_order, s),
-                                 I)
+                                 II)
 
-        odf = self.us[0] ** s * np.dot(I, mapmri_coef)
+        odf = self.us[0] ** s * np.dot(II, mapmri_coef)
         return odf
 
     def rtpp(self, tau):
@@ -702,15 +702,16 @@ class QtdmriFit():
             count = 0
             for n in range(0, self.model.radial_order + 1, 2):
                     for j in range(1, 2 + n // 2):
-                        l = n + 2 - 2 * j
-                        const = (-1 / 2.0) ** (l / 2) / np.sqrt(np.pi)
+                        ll = n + 2 - 2 * j
+                        const = (-1 / 2.0) ** (ll / 2) / np.sqrt(np.pi)
                         matsum = 0
                         for k in range(0, j):
-                            matsum += (-1) ** k * \
-                                mapmri.binomialfloat(j + l - 0.5, j - k - 1) *\
-                                gamma(l / 2 + k + 1 / 2.0) /\
-                                (factorial(k) * 0.5 ** (l / 2 + 1 / 2.0 + k))
-                        for m in range(-l, l + 1):
+                            matsum += (
+                                (-1) ** k *
+                                mapmri.binomialfloat(j + ll - 0.5, j - k - 1) *
+                                gamma(ll / 2 + k + 1 / 2.0) /
+                                (factorial(k) * 0.5 ** (ll / 2 + 1 / 2.0 + k)))
+                        for m in range(-ll, ll + 1):
                             rtpp_vec[count] = const * matsum
                             count += 1
             direction = np.array(self.R[:, 0], ndmin=2)
@@ -765,16 +766,16 @@ class QtdmriFit():
 
             for n in range(0, self.model.radial_order + 1, 2):
                 for j in range(1, 2 + n // 2):
-                    l = n + 2 - 2 * j
-                    kappa = ((-1) ** (j - 1) * 2. ** (-(l + 3) / 2.0)) / np.pi
+                    ll = n + 2 - 2 * j
+                    kappa = ((-1) ** (j - 1) * 2. ** (-(ll + 3) / 2.0)) / np.pi
                     matsum = 0
                     for k in range(0, j):
                         matsum += ((-1) ** k *
-                                   mapmri.binomialfloat(j + l - 0.5,
+                                   mapmri.binomialfloat(j + ll - 0.5,
                                                         j - k - 1) *
-                                   gamma((l + 1) / 2.0 + k)) /\
-                            (factorial(k) * 0.5 ** ((l + 1) / 2.0 + k))
-                    for m in range(-l, l + 1):
+                                   gamma((ll + 1) / 2.0 + k)) /\
+                            (factorial(k) * 0.5 ** ((ll + 1) / 2.0 + k))
+                    for m in range(-ll, ll + 1):
                         rtap_vec[count] = kappa * matsum
                         count += 1
             rtap_vec *= 2
@@ -1131,9 +1132,9 @@ def qtdmri_isotropic_to_mapmri_matrix(radial_order, time_order, ut, tau):
 
     counter = 0
     mapmri_isotropic_mat = np.zeros((n_elem_mapmri, n_elem_qtdmri))
-    for j, l, m, o in qtdmri_ind_mat:
+    for j, ll, m, o in qtdmri_ind_mat:
         index_overlap = np.all([j == mapmri_ind_mat[:, 0],
-                                l == mapmri_ind_mat[:, 1],
+                                ll == mapmri_ind_mat[:, 1],
                                 m == mapmri_ind_mat[:, 2]], 0)
         mapmri_isotropic_mat[:, counter] = temporal_storage[o] * index_overlap
         counter += 1
@@ -1260,9 +1261,9 @@ def qtdmri_isotropic_signal_matrix_(radial_order, time_order, us, ut, q, tau,
     )
     if normalization:
         ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
-        j, l = ind_mat[:, :2].T
+        j, ll = ind_mat[:, :2].T
         sqrtut = qtdmri_temporal_normalization(ut)
-        sqrtC = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        sqrtC = qtdmri_mapmri_isotropic_normalization(j, ll, us)
         sqrtCut = sqrtC * sqrtut
         M = M * sqrtCut[None, :]
     return M
@@ -1283,15 +1284,16 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
-        for l in range(0, radial_order + 1, 2):
-            radial_storage[j - 1, l // 2, :] = radial_basis_opt(j, l, us, qvals)
+        for ll in range(0, radial_order + 1, 2):
+            radial_storage[j - 1, ll // 2, :] = radial_basis_opt(
+                j, ll, us, qvals)
 
     # Angular Basis
     angular_storage = np.zeros([num_l, num_m, n_dat])
-    for l in range(0, radial_order + 1, 2):
-        for m in range(-l, l + 1):
-            angular_storage[l // 2, m + l, :] = (
-                angular_basis_opt(l, m, qvals, theta, phi)
+    for ll in range(0, radial_order + 1, 2):
+        for m in range(-ll, ll + 1):
+            angular_storage[ll // 2, m + ll, :] = (
+                angular_basis_opt(ll, m, qvals, theta, phi)
             )
 
     # Temporal Basis
@@ -1302,9 +1304,9 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
     counter = 0
-    for j, l, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j-1, l // 2, :] *
-                         angular_storage[l // 2, m + l, :] *
+    for j, ll, m, o in ind_mat:
+        M[:, counter] = (radial_storage[j - 1, ll // 2, :] *
+                         angular_storage[ll // 2, m + ll, :] *
                          temporal_storage[o, :])
         counter += 1
     return M
@@ -1332,9 +1334,9 @@ def qtdmri_isotropic_eap_matrix_(radial_order, time_order, us, ut, grid,
     )
     if normalization:
         ind_mat = qtdmri_isotropic_index_matrix(radial_order, time_order)
-        j, l = ind_mat[:, :2].T
+        j, ll = ind_mat[:, :2].T
         sqrtut = qtdmri_temporal_normalization(ut)
-        sqrtC = qtdmri_mapmri_isotropic_normalization(j, l, us)
+        sqrtC = qtdmri_mapmri_isotropic_normalization(j, ll, us)
         sqrtCut = sqrtC * sqrtut
         K = K * sqrtCut[None, :]
     return K
@@ -1363,16 +1365,17 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
-        for l in range(0, radial_order + 1, 2):
-            radial_storage[j-1, l//2, :] = radial_basis_EAP_opt(j, l, us, R)
+        for ll in range(0, radial_order + 1, 2):
+            radial_storage[j - 1, ll // 2, :] = radial_basis_EAP_opt(
+                j, ll, us, R)
 
     # Angular Basis
     angular_storage = np.zeros([num_j, num_l, num_m, n_dat])
     for j in range(1, num_j + 1):
-        for l in range(0, radial_order + 1, 2):
-            for m in range(-l, l + 1):
-                angular_storage[j-1, l//2, m+l, :] = (
-                    angular_basis_EAP_opt(j, l, m, R, theta, phi)
+        for ll in range(0, radial_order + 1, 2):
+            for m in range(-ll, ll + 1):
+                angular_storage[j - 1, ll // 2, m + ll, :] = (
+                    angular_basis_EAP_opt(j, ll, m, R, theta, phi)
                 )
 
     # Temporal Basis
@@ -1383,9 +1386,9 @@ def qtdmri_isotropic_eap_matrix(radial_order, time_order, us, ut, grid):
     # Construct full design matrix
     M = np.zeros((n_dat, n_elem))
     counter = 0
-    for j, l, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j-1, l//2, :] *
-                         angular_storage[j-1, l//2, m+l, :] *
+    for j, ll, m, o in ind_mat:
+        M[:, counter] = (radial_storage[j - 1, ll // 2, :] *
+                         angular_storage[j - 1, ll // 2, m + ll, :] *
                          temporal_storage[o, :])
         counter += 1
     return M
@@ -1456,10 +1459,10 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
         for j in range(1, 2 + n // 2):
-            l = n + 2 - 2 * j
-            for m in range(-l, l + 1):
+            ll = n + 2 - 2 * j
+            for m in range(-ll, ll + 1):
                 for o in range(0, time_order + 1):
-                    index_matrix.append([j, l, m, o])
+                    index_matrix.append([j, ll, m, o])
     return np.array(index_matrix)
 
 
@@ -1564,8 +1567,8 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
     if normalization:
         temporal_normalization = qtdmri_temporal_normalization(ut) ** 2
         spatial_normalization = np.zeros_like(regularization_matrix)
-        j, l = ind_mat[:, :2].T
-        pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, l, us[0])
+        j, ll = ind_mat[:, :2].T
+        pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, ll, us[0])
         spatial_normalization = np.outer(pre_spatial_norm, pre_spatial_norm)
         regularization_matrix *= temporal_normalization * spatial_normalization
     return regularization_matrix
@@ -1627,18 +1630,18 @@ def part23_iso_reg_matrix_q(ind_mat, us):
                ind_mat[i, 2] == ind_mat[k, 2]:
                 ji = ind_mat[i, 0]
                 jk = ind_mat[k, 0]
-                l = ind_mat[i, 1]
+                ll = ind_mat[i, 1]
                 if ji == (jk + 1):
                     LR[i, k] = LR[k, i] = (
-                        2. ** (-l) * -gamma(3 / 2.0 + jk + l) / gamma(jk)
+                        2. ** (-ll) * -gamma(3 / 2.0 + jk + ll) / gamma(jk)
                     )
                 elif ji == jk:
-                    LR[i, k] = LR[k, i] = 2. ** (-(l + 1)) *\
-                        (1 - 4 * ji - 2 * l) *\
-                        gamma(1 / 2.0 + ji + l) / gamma(ji)
+                    LR[i, k] = LR[k, i] = 2. ** (-(ll + 1)) *\
+                        (1 - 4 * ji - 2 * ll) *\
+                        gamma(1 / 2.0 + ji + ll) / gamma(ji)
                 elif ji == (jk - 1):
-                    LR[i, k] = LR[k, i] = 2. ** (-l) *\
-                        -gamma(3 / 2.0 + ji + l) / gamma(ji)
+                    LR[i, k] = LR[k, i] = 2. ** (-ll) *\
+                        -gamma(3 / 2.0 + ji + ll) / gamma(ji)
     return LR / us
 
 
@@ -1684,9 +1687,9 @@ def part4_iso_reg_matrix_q(ind_mat, us):
                ind_mat[i, 1] == ind_mat[k, 1] and \
                ind_mat[i, 2] == ind_mat[k, 2]:
                 ji = ind_mat[i, 0]
-                l = ind_mat[i, 1]
+                ll = ind_mat[i, 1]
                 LR[i, k] = LR[k, i] = (
-                    2. ** (-(l + 2)) * gamma(1 / 2.0 + ji + l) /
+                    2. ** (-(ll + 2)) * gamma(1 / 2.0 + ji + ll) /
                     (np.pi ** 2 * gamma(ji))
                 )
 
