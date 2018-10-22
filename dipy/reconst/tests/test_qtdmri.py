@@ -45,103 +45,103 @@ def test_input_parameters():
         qtdmri.QtdmriModel(gtab_4d, radial_order=3)
         assert_equal(True, False)
     except ValueError:
-        print ('uneven radial_order is caught')
+        print('uneven radial_order is caught')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, radial_order=-1)
         assert_equal(True, False)
     except ValueError:
-        print ('negative radial_order is caught')
+        print('negative radial_order is caught')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, time_order=-1)
         assert_equal(True, False)
     except ValueError:
-        print ('negative time_order is caught')
+        print('negative time_order is caught')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, laplacian_regularization='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-bool laplacian_regularization is caught.')
+        print('non-bool laplacian_regularization is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
                            laplacian_weighting='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-"GCV" string for laplacian_weighting is caught.')
+        print('non-"GCV" string for laplacian_weighting is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
                            laplacian_weighting=-1.)
         assert_equal(True, False)
     except ValueError:
-        print ('negative laplacian_weighting is caught.')
+        print('negative laplacian_weighting is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, l1_regularization='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-bool for l1_weighting is caught.')
+        print('non-bool for l1_weighting is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, l1_regularization=True,
                            l1_weighting='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-"CV" string for laplacian_weighting is caught.')
+        print('non-"CV" string for laplacian_weighting is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, l1_regularization=True,
                            l1_weighting=-1.)
         assert_equal(True, False)
     except ValueError:
-        print ('negative l1_weighting is caught.')
+        print('negative l1_weighting is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, cartesian='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-bool cartesian is caught.')
+        print('non-bool cartesian is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, anisotropic_scaling='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-bool anisotropic_scaling is caught.')
+        print('non-bool anisotropic_scaling is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, constrain_q0='test')
         assert_equal(True, False)
     except ValueError:
-        print ('non-bool constrain_q0 is caught.')
+        print('non-bool constrain_q0 is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, bval_threshold=-1)
         assert_equal(True, False)
     except ValueError:
-        print ('negative bval_threshold is caught.')
+        print('negative bval_threshold is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, eigenvalue_threshold=-1)
         assert_equal(True, False)
     except ValueError:
-        print ('negative eigenvalue_threshold is caught.')
+        print('negative eigenvalue_threshold is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, laplacian_regularization=True,
                            cvxpy_solver='test')
         assert_equal(True, False)
     except ValueError:
-        print ('unavailable cvxpy solver is caught.')
+        print('unavailable cvxpy solver is caught.')
 
     try:
         qtdmri.QtdmriModel(gtab_4d, l1_regularization=True, cartesian=False,
                            normalization=False)
         assert_equal(True, False)
     except ValueError:
-        print ('non-normalized non-cartesian l1-regularization is caught.')
+        print('non-normalized non-cartesian l1-regularization is caught.')
 
 
 def test_orthogonality_temporal_basis_functions():
@@ -364,8 +364,8 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
     part1_uq_iso_precomp = (
         mapmri.mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
             ind_mat[:, :3], 1.
-            )
         )
+    )
     laplacian_matrix_precomp = qtdmri.qtdmri_isotropic_laplacian_reg_matrix(
         ind_mat, us, ut,
         part1_uq_iso_precomp=part1_uq_iso_precomp,
@@ -418,7 +418,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
         qtdmri_fit_lap.odf_sh(tau=tau.max())
         assert_equal(True, False)
     except ValueError:
-        print ('missing spherical harmonics cartesian ODF caught.')
+        print('missing spherical harmonics cartesian ODF caught.')
 
     # now with cvxpy regularization spherical
     qtdmri_mod_lap = qtdmri.QtdmriModel(
@@ -578,6 +578,6 @@ def test_visualise_gradient_table_G_Delta_rainbow():
     assert_raises(ValueError,
                   qtdmri.visualise_gradient_table_G_Delta_rainbow, gtab_4d)
 
-    
+
 if __name__ == '__main__':
     run_module_suite()

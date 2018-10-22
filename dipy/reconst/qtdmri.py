@@ -342,7 +342,7 @@ class QtdmriModel(Cache):
                 try:
                     lopt = generalized_crossvalidation(data_norm, M,
                                                        laplacian_matrix)
-                except:
+                except:  # noqa: E722
                     msg = "Laplacian GCV failed. lopt defaulted to 2e-4."
                     warn(msg)
                     lopt = 2e-4
@@ -365,7 +365,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:
+            except:  # noqa: E722
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif self.l1_regularization and not self.laplacian_regularization:
@@ -390,7 +390,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:
+            except:  # noqa: E722
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif self.l1_regularization and self.laplacian_regularization:
@@ -437,7 +437,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:
+            except:  # noqa: E722
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif not self.l1_regularization and not self.laplacian_regularization:
@@ -703,7 +703,7 @@ class QtdmriFit():
             for n in range(0, self.model.radial_order + 1, 2):
                     for j in range(1, 2 + n // 2):
                         l = n + 2 - 2 * j
-                        const = (-1/2.0) ** (l/2) / np.sqrt(np.pi)
+                        const = (-1 / 2.0) ** (l / 2) / np.sqrt(np.pi)
                         matsum = 0
                         for k in range(0, j):
                             matsum += (-1) ** k * \
@@ -1283,14 +1283,14 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     # Radial Basis
     radial_storage = np.zeros([num_j, num_l, n_dat])
     for j in range(1, num_j + 1):
-        for l in range(0, radial_order+1, 2):
-            radial_storage[j-1, l//2, :] = radial_basis_opt(j, l, us, qvals)
+        for l in range(0, radial_order + 1, 2):
+            radial_storage[j - 1, l // 2, :] = radial_basis_opt(j, l, us, qvals)
 
     # Angular Basis
     angular_storage = np.zeros([num_l, num_m, n_dat])
-    for l in range(0, radial_order+1, 2):
-        for m in range(-l, l+1):
-            angular_storage[l//2, m+l, :] = (
+    for l in range(0, radial_order + 1, 2):
+        for m in range(-l, l + 1):
+            angular_storage[l // 2, m + l, :] = (
                 angular_basis_opt(l, m, qvals, theta, phi)
             )
 
@@ -1303,8 +1303,8 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
     M = np.zeros((n_dat, n_elem))
     counter = 0
     for j, l, m, o in ind_mat:
-        M[:, counter] = (radial_storage[j-1, l//2, :] *
-                         angular_storage[l//2, m+l, :] *
+        M[:, counter] = (radial_storage[j-1, l // 2, :] *
+                         angular_storage[l // 2, m + l, :] *
                          temporal_storage[o, :])
         counter += 1
     return M
@@ -1458,7 +1458,7 @@ def qtdmri_isotropic_index_matrix(radial_order, time_order):
         for j in range(1, 2 + n // 2):
             l = n + 2 - 2 * j
             for m in range(-l, l + 1):
-                for o in range(0, time_order+1):
+                for o in range(0, time_order + 1):
                     index_matrix.append([j, l, m, o])
     return np.array(index_matrix)
 
@@ -1633,7 +1633,7 @@ def part23_iso_reg_matrix_q(ind_mat, us):
                         2. ** (-l) * -gamma(3 / 2.0 + jk + l) / gamma(jk)
                     )
                 elif ji == jk:
-                    LR[i, k] = LR[k, i] = 2. ** (-(l+1)) *\
+                    LR[i, k] = LR[k, i] = 2. ** (-(l + 1)) *\
                         (1 - 4 * ji - 2 * l) *\
                         gamma(1 / 2.0 + ji + l) / gamma(ji)
                 elif ji == (jk - 1):
@@ -1731,9 +1731,9 @@ def part23_reg_matrix_tau(ind_mat, ut):
             oi = ind_mat[i, 3]
             ok = ind_mat[k, 3]
             if oi == ok:
-                LD[i, k] = LD[k, i] = 1/2.
+                LD[i, k] = LD[k, i] = 1 / 2.
             else:
-                LD[i, k] = LD[k, i] = np.abs(oi-ok)
+                LD[i, k] = LD[k, i] = np.abs(oi - ok)
     return ut * LD
 
 
@@ -2048,8 +2048,7 @@ def visualise_gradient_table_G_Delta_rainbow(
         gtab,
         big_delta_start=None, big_delta_end=None, G_start=None, G_end=None,
         bval_isolines=np.r_[0, 250, 1000, 2500, 5000, 7500, 10000, 14000],
-        alpha_shading=0.6
-        ):
+        alpha_shading=0.6):
     """This function visualizes a q-tau acquisition scheme as a function of
     gradient strength and pulse separation (big_delta). It represents every
     measurements at its G and big_delta position regardless of b-vector, with a
@@ -2113,3 +2112,4 @@ def visualise_gradient_table_G_Delta_rainbow(
     cb.set_label('b-value ($s$/$mm^2$)', fontsize=18)
     plt.xlabel('Pulse Separation $\Delta$ [sec]', fontsize=18)
     plt.ylabel('Gradient Strength [T/m]', fontsize=18)
+    return None

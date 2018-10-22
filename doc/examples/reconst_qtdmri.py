@@ -192,6 +192,7 @@ def plot_mean_with_std(ax, time, ind1, plotcolor, ls='-', std_mult=1,
     ax.plot(time, means + std_mult * stds, alpha=0.25, color=plotcolor)
     ax.plot(time, means - std_mult * stds, alpha=0.25, color=plotcolor)
 
+
 """
 We start by showing the test-retest MSD of both subjects over time. We plot the
 q$\tau$-indices together with q$\tau$-index trends of free diffusion with
@@ -272,9 +273,9 @@ ax = plt.subplot(1, 2, 1)
 plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
              alpha=.5)
 
-plot_mean_with_std(ax, taus * 1e3, rtops[0] ** (1/3.), 'r', '--',
+plot_mean_with_std(ax, taus * 1e3, rtops[0] ** (1 / 3.), 'r', '--',
                    label='RTOP$^{1/3}$ Test')
-plot_mean_with_std(ax, taus * 1e3, rtops[1] ** (1/3.), 'g', '--',
+plot_mean_with_std(ax, taus * 1e3, rtops[1] ** (1 / 3.), 'g', '--',
                    label='RTOP$^{1/3}$ Retest')
 ax.legend(fontsize=13)
 ax.text(.0091 * 1e3, 162, 'D=3e-4', fontsize=12, rotation=-22)
@@ -292,8 +293,8 @@ plt.contourf(Delta_ * 1e3, RTXP_, D_grid, colors=D_colors, levels=D_levels,
 cb = plt.colorbar()
 cb.set_label('Free Diffusivity ($mm^2/s$)', fontsize=18)
 
-plot_mean_with_std(ax, taus * 1e3, rtops[2] ** (1/3.), 'r', '--')
-plot_mean_with_std(ax, taus * 1e3, rtops[3] ** (1/3.), 'g', '--')
+plot_mean_with_std(ax, taus * 1e3, rtops[2] ** (1 / 3.), 'r', '--')
+plot_mean_with_std(ax, taus * 1e3, rtops[3] ** (1 / 3.), 'g', '--')
 ax.set_ylim(54, 170)
 ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
 ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
