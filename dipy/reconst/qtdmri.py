@@ -342,7 +342,7 @@ class QtdmriModel(Cache):
                 try:
                     lopt = generalized_crossvalidation(data_norm, M,
                                                        laplacian_matrix)
-                except:  # noqa: E722
+                except BaseException:
                     msg = "Laplacian GCV failed. lopt defaulted to 2e-4."
                     warn(msg)
                     lopt = 2e-4
@@ -365,7 +365,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:  # noqa: E722
+            except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif self.l1_regularization and not self.laplacian_regularization:
@@ -390,7 +390,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:  # noqa: E722
+            except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif self.l1_regularization and self.laplacian_regularization:
@@ -437,7 +437,7 @@ class QtdmriModel(Cache):
                 prob.solve(solver=self.cvxpy_solver, verbose=False)
                 cvxpy_solution_optimal = prob.status == 'optimal'
                 qtdmri_coef = np.asarray(c.value).squeeze()
-            except:  # noqa: E722
+            except BaseException:
                 qtdmri_coef = np.zeros(M.shape[1])
                 cvxpy_solution_optimal = False
         elif not self.l1_regularization and not self.laplacian_regularization:
