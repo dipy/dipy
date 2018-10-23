@@ -513,8 +513,8 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
 
     References
     ----------
-    [Jordan17] Jordan K. Et al., Cluster Confidence Index: A Streamline‐Wise
-    Pathway Reproducibility Metric for Diffusion‐Weighted MRI Tractography,
+    [Jordan17] Jordan K. Et al., Cluster Confidence Index: A Streamline-Wise
+    Pathway Reproducibility Metric for Diffusion-Weighted MRI Tractography,
     Journal of Neuroimaging, vol 28, no 1, 2017.
 
     [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
