@@ -533,6 +533,36 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_(sparsity_density_no_reg > sparsity_density_reg)
 
 
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+def test_l1_CV(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    S_noise = add_noise(S, S0=1., snr=10)
+    qtdmri_mod_l1_cv = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting="CV"
+    )
+    qtdmri_fit_noise = qtdmri_mod_l1_cv.fit(S_noise)
+    assert_(qtdmri_fit_noise.alpha >= 0)
+
+
+@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+def test_elastic_GCV_CV(radial_order=4, time_order=2):
+    gtab_4d = generate_gtab4D()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S = generate_signal_crossing(gtab_4d, l1, l2, l3)
+    S_noise = add_noise(S, S0=1., snr=10)
+    qtdmri_mod_elastic = qtdmri.QtdmriModel(
+        gtab_4d, radial_order=radial_order, time_order=time_order,
+        l1_regularization=True, l1_weighting="CV",
+        laplacian_regularization=True, laplacian_weighting="GCV"
+    )
+    qtdmri_fit_noise = qtdmri_mod_elastic.fit(S_noise)
+    assert_(qtdmri_fit_noise.lopt >= 0)
+    assert_(qtdmri_fit_noise.alpha >= 0)
+
+
 @np.testing.dec.skipif(not qtdmri.have_plt)
 def test_visualise_gradient_table_G_Delta_rainbow():
     gtab_4d = generate_gtab4D()
