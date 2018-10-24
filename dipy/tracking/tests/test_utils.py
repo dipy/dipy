@@ -63,12 +63,12 @@ def test_density_map():
 
     # Test passing affine
     affine = np.diag([2, 2, 2, 1.])
-    affine[:3, 3] = 1.
+    affine[: 3, 3] = 1.
     dm = density_map(streamlines, shape, affine=affine)
     assert_array_equal(dm, expected)
 
     # Shift the image by 2 voxels, ie 4mm
-    affine[:3, 3] -= 4.
+    affine[: 3, 3] -= 4.
     expected_old = expected
     new_shape = [i + 2 for i in shape]
     expected = np.zeros(new_shape)
@@ -644,8 +644,6 @@ def test_get_flexi_tvis_affine():
     assert_array_almost_equal(origin[:3],
                               np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
 
-
-    # grid_affine =
     tvis_hdr['voxel_order'] = 'ASL'
     vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
     affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
