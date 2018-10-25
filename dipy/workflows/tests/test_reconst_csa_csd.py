@@ -1,11 +1,14 @@
+
 import logging
 import numpy as np
 from nose.tools import assert_equal
-from os.path import join
+from os.path import join as pjoin
 import numpy.testing as npt
 
 import nibabel as nib
 from dipy.io.peaks import load_peaks
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import generate_bvecs
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
@@ -28,7 +31,7 @@ def reconst_flow_core(flow):
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])
         mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
-        mask_path = join(out_dir, 'tmp_mask.nii.gz')
+        mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
         reconst_flow = flow()
@@ -69,6 +72,20 @@ def reconst_flow_core(flow):
         npt.assert_allclose(pam.peak_indices, peaks_idx_data)
         npt.assert_allclose(pam.shm_coeff, shm_data)
         npt.assert_allclose(pam.gfa, gfa_data)
+
+        bvals, bvecs = read_bvals_bvecs(bval_path, bvec_path)
+        bvals[0] = 5.
+        bvecs = generate_bvecs(len(bvals))
+
+        tmp_bval_path = pjoin(out_dir, "tmp.bval")
+        tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
+        np.savetxt(tmp_bval_path, bvals)
+        np.savetxt(tmp_bvec_path, bvecs.T)
+        reconst_flow._force_overwrite = True
+        with npt.assert_raises(BaseException):
+            npt.assert_warns(UserWarning, reconst_flow.run, data_path,
+                             tmp_bval_path, tmp_bvec_path, mask_path,
+                             out_dir=out_dir, extract_pam_values=True)
 
         if flow.get_short_name() == 'csd':
 
