@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import os.path
 from ast import literal_eval
+from warnings import warn
 
 import nibabel as nib
 
@@ -119,10 +120,9 @@ class ReconstMAPMRIFlow(Workflow):
             affine = img.affine
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
-                logging.warning("b0_threshold (value: {0}) is too low,"
-                                "increase your b0_threshold. It should higher "
-                                "than the first b0 value ({1})."
-                                .format(b0_threshold, bvals.min()))
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should higher than the first b0 value "
+                     "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
                                   big_delta=big_delta,
@@ -511,11 +511,11 @@ class ReconstCSDFlow(Workflow):
             affine = img.affine
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            print(b0_threshold, bvals.min())
             if b0_threshold < bvals.min():
-                logging.warning("b0_threshold (value: {0}) is too low,"
-                                "increase your b0_threshold. It should higher "
-                                "than the first b0 value ({1})."
-                                .format(b0_threshold, bvals.min()))
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should higher than the first b0 value "
+                     "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
@@ -676,10 +676,9 @@ class ReconstCSAFlow(Workflow):
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
-                logging.warning("b0_threshold (value: {0}) is too low,"
-                                "increase your b0_threshold. It should higher "
-                                "than the first b0 value ({1})."
-                                .format(b0_threshold, bvals.min()))
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should higher than the first b0 value "
+                     "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
@@ -917,10 +916,10 @@ class ReconstDkiFlow(Workflow):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
-            logging.warning("b0_threshold (value: {0}) is too low,"
-                            "increase your b0_threshold. It should higher "
-                            "than the first b0 value ({1})."
-                            .format(b0_threshold, bvals.min()))
+            warn("b0_threshold (value: {0}) is too low, increase your "
+                 "b0_threshold. It should higher than the first b0 value "
+                 "({1}).".format(b0_threshold, bvals.min()))
+
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         dkmodel = self.get_dki_model(gtab)
         dkfit = dkmodel.fit(data, mask)
