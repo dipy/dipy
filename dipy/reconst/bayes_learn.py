@@ -36,9 +36,46 @@ def baydiff(data, varargin):
     if sum(b0idx) < 6 and not noise.isnumeric():
         print("not enough b=0 images ofr noise estimation (10)")
         noise = 10
+
+    data_dwi = data_dwi
+    gau = makeGau(sigma_snrestimation, sz)
+    sm = lambda x: np.real(sc.ifft(sc.fft(x) * gau))
+    b0 = np.mean(data_dwi[:, :, :, b0idx], 4)
+    if isinstance(noise, str):
+            if noise == 'estlocal':
+                err = np.std(data.dwi[:, :, :, b0idx], [], 4)
+                SNR = b0 / (eps + err)
+            elif noise == 'estglobal':
+                _, idx = np.sort(mb0[:])
+                idx = idx[round(len(idx) * 0.6):end]
+                err = np.std(data.dwi[:, :, :, b0idx], [], 4)
+                err = np.mean(err(idx))
+                SNR = b0 / (eps + err)
+    else:
+        if len(np.size(noise)) == 3:
+            SNR = noise
+        else:
+            SNR = b0 / noise
     
+    SNR[SNR > 100] = 100
+    SNR = sm[SNR]
+
+def fgaussian(size, sigma):
+    m, n = size
+    h, k = m // 2, n // 2
+    x, y = np.mgrid[-h:h, -k:k]
+    return x, y
+
 
 def makeGau(sigma, sz):
-    ng = np.ceil(sigma * 5) 
+    ng = np.ceil(sigma * 5)
     ng = ng + np.mod(ng, 2) + 1
-    gau = 
+    gau = fgaussian([ng, 1], sigma)
+    gx, gy, gz = np.meshgrid(gau)
+    gau = gx * gy * gz
+    sz = sz[0:2]
+    gau = np.pad(gau, (np.floor((sz - ng) / 2), np.floor((sz - ng) / 2) -
+                       np.mod(sz, 2) + 1), 'constant')
+    gau = sc.fft(sc.ifft(gau))
+    gau = gau/ gau[0]
+    
