@@ -43,7 +43,7 @@ Please see the developers' list at
 https://mail.python.org/mailman/listinfo/neuroimaging
 
 Please see the users' forum at
-https://neurostars.org
+https://neurostars.org/tags/dipy
 
 Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
 
