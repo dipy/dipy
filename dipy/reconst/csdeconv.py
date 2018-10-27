@@ -702,8 +702,12 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix
-    basis : {None, 'mrtrix', 'fibernav'}
-        different spherical harmonic basis. None is the fibernav basis as well.
+    basis : {None, 'tournier07', 'descoteaux07'}
+        different spherical harmonic basis:
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [4]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [3]_ basis
+        (``None`` defaults to ``descoteaux07``).
     ratio : float,
         ratio of the smallest vs the largest eigenvalue of the single prolate
         tensor response function (:math:`\frac{\lambda_2}{\lambda_1}`)
@@ -737,8 +741,14 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
            Probabilistic Tractography Based on Complex Fibre Orientation
            Distributions
-    .. [3] Descoteaux, M, et al. MRM 2007. Fast, Regularized and Analytical
-           Q-Ball Imaging
+    .. [3] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [4] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
     """
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
     real_sym_sh = sph_harm_lookup[basis]

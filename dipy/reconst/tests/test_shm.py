@@ -106,16 +106,16 @@ def test_real_sym_sh_mrtrix():
 
 def test_real_sym_sh_basis():
     # This test should do for now
-    # The mrtrix basis should be the same as re-ordering and re-scaling the
-    # fibernav basis
+    # The tournier07 basis should be the same as re-ordering and re-scaling the
+    # descoteaux07 basis
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
     sphere = hemi_icosahedron.subdivide(2)
     basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
     expected = basis[:, new_order]
     expected *= np.where(m == 0, 1., np.sqrt(2))
 
-    fibernav_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
-    assert_array_almost_equal(fibernav_basis, expected)
+    descoteaux07_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
+    assert_array_almost_equal(descoteaux07_basis, expected)
 
 
 def test_smooth_pinv():
@@ -360,13 +360,29 @@ def test_sf_to_sh():
     odf2 = sh_to_sf(odf_sh, sphere, 8)
     assert_array_almost_equal(odf, odf2, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "mrtrix")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "mrtrix")
+    odf_sh = sf_to_sh(odf, sphere, 8, "tournier07")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "tournier07")
     assert_array_almost_equal(odf, odf2, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "fibernav")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "fibernav")
+    # Test the basis naming deprecation
+    with warnings.catch_warnings(record=True) as w:
+        odf_sh_mrtrix = sf_to_sh(odf, sphere, 8, "mrtrix")
+        odf2_mrtrix = sh_to_sf(odf_sh, sphere, 8, "mrtrix")
+        assert_array_almost_equal(odf, odf2_mrtrix, 2)
+        assert len(w) != 0
+        assert issubclass(w[-1].category, DeprecationWarning)
+
+    odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux07")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux07")
     assert_array_almost_equal(odf, odf2, 2)
+
+    # Test the basis naming deprecation
+    with warnings.catch_warnings(record=True) as w:
+        odf_sh_fibernav = sf_to_sh(odf, sphere, 8, "fibernav")
+        odf2_fibernav = sh_to_sf(odf_sh_fibernav, sphere, 8, "fibernav")
+        assert_array_almost_equal(odf, odf2_fibernav, 2)
+        assert len(w) != 0
+        assert issubclass(w[-1].category, DeprecationWarning)
 
     # 2D case
     odf2d = np.vstack((odf2, odf))
