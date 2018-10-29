@@ -375,16 +375,6 @@ fetch_scil_b0 = _make_fetcher(
     data_size="9.2MB",
     unzip=True)
 
-fetch_viz_icons = _make_fetcher("fetch_viz_icons",
-                                pjoin(dipy_home, "icons"),
-                                UW_RW_URL + "1773/38478/",
-                                ['icomoon.tar.gz'],
-                                ['icomoon.tar.gz'],
-                                ['94a07cba06b4136b6687396426f1e380'],
-                                data_size="12KB",
-                                doc="Download icons for dipy.viz",
-                                unzip=True)
-
 fetch_bundles_2_subjects = _make_fetcher(
     "fetch_bundles_2_subjects",
     pjoin(dipy_home, 'exp_bundles_and_maps'),
@@ -1017,28 +1007,6 @@ CENIR_notes = \
 
 fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
-
-
-def read_viz_icons(style='icomoon', fname='infinity.png'):
-    """ Read specific icon from specific style
-
-    Parameters
-    ----------
-    style : str
-        Current icon style. Default is icomoon.
-    fname : str
-        Filename of icon. This should be found in folder HOME/.dipy/style/.
-        Default is infinity.png.
-
-    Returns
-    --------
-    path : str
-        Complete path of icon.
-
-    """
-
-    folder = pjoin(dipy_home, 'icons', style)
-    return pjoin(folder, fname)
 
 
 def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
