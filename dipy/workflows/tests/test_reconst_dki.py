@@ -100,10 +100,9 @@ def test_reconst_dki():
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         dki_flow._force_overwrite = True
-        with npt.assert_raises(BaseException):
-            npt.assert_warns(UserWarning, dki_flow.run, data_path,
-                             tmp_bval_path, tmp_bvec_path, mask_path,
-                             out_dir=out_dir)
+        npt.assert_warns(UserWarning, dki_flow.run, data_path,
+                         tmp_bval_path, tmp_bvec_path, mask_path,
+                         out_dir=out_dir)
 
 
 if __name__ == '__main__':
