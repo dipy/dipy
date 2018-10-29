@@ -108,7 +108,7 @@ Practical
   
 3. **What do you use for visualization?**
 
-  For 3D visualization we use ``dipy.viz`` which depends in turn on ``python-vtk``::
+  For 3D visualization we use ``dipy.viz`` which depends in turn on ``FURY``::
 
     from dipy.viz import window, actor
 
