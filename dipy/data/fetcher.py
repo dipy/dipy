@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division, print_function, absolute_import
 import os
 import sys
@@ -12,7 +13,8 @@ import nibabel as nib
 
 import tarfile
 import zipfile
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import (gradient_table,
+                                 gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
 if sys.version_info[0] < 3:
@@ -28,7 +30,7 @@ else:
 
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
-  "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
+    "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
 
 
 class FetcherError(Exception):
@@ -327,7 +329,7 @@ fetch_taiwan_ntu_dsi = _make_fetcher(
      'a95eb1be44748c20214dc7aa654f9e6b',
      '7fa1d5e272533e832cc7453eeba23f44'],
     doc="Download a DSI dataset with 203 gradient directions",
-    msg="See DSI203_license.txt for LICENSE. For the complete datasets" + \
+    msg="See DSI203_license.txt for LICENSE. For the complete datasets" +
         " please visit http://dsi-studio.labsolver.org",
     data_size="91MB")
 
@@ -368,7 +370,7 @@ fetch_scil_b0 = _make_fetcher(
     ['datasets_multi-site_all_companies.zip'],
     ['datasets_multi-site_all_companies.zip'],
     ["e9810fa5bf21b99da786647994d7d5b7"],
-    doc="Download b=0 datasets from multiple MR systems (GE, Philips, " + \
+    doc="Download b=0 datasets from multiple MR systems (GE, Philips, " +
         "Siemens) and different magnetic fields (1.5T and 3T)",
     data_size="9.2MB",
     unzip=True)
@@ -447,6 +449,115 @@ fetch_target_tractogram_hcp = _make_fetcher(
     doc="Download tractogram of one of the hcp dataset subjects",
     data_size="541MB",
     unzip=True)
+
+
+fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
+    "fetch_qtdMRI_test_retest_2subjects",
+    pjoin(dipy_home, 'qtdMRI_test_retest_2subjects'),
+    'https://zenodo.org/record/996889/files/',
+    ['subject1_dwis_test.nii.gz', 'subject2_dwis_test.nii.gz',
+     'subject1_dwis_retest.nii.gz', 'subject2_dwis_retest.nii.gz',
+     'subject1_ccmask_test.nii.gz', 'subject2_ccmask_test.nii.gz',
+     'subject1_ccmask_retest.nii.gz', 'subject2_ccmask_retest.nii.gz',
+     'subject1_scheme_test.txt', 'subject2_scheme_test.txt',
+     'subject1_scheme_retest.txt', 'subject2_scheme_retest.txt'],
+    ['subject1_dwis_test.nii.gz', 'subject2_dwis_test.nii.gz',
+     'subject1_dwis_retest.nii.gz', 'subject2_dwis_retest.nii.gz',
+     'subject1_ccmask_test.nii.gz', 'subject2_ccmask_test.nii.gz',
+     'subject1_ccmask_retest.nii.gz', 'subject2_ccmask_retest.nii.gz',
+     'subject1_scheme_test.txt', 'subject2_scheme_test.txt',
+     'subject1_scheme_retest.txt', 'subject2_scheme_retest.txt'],
+    ['ebd7441f32c40e25c28b9e069bd81981',
+     'dd6a64dd68c8b321c75b9d5fb42c275a',
+     '830a7a028a66d1b9812f93309a3f9eae',
+     'd7f1951e726c35842f7ea0a15d990814',
+     'ddb8dfae908165d5e82c846bcc317cab',
+     '5630c06c267a0f9f388b07b3e563403c',
+     '02e9f92b31e8980f658da99e532e14b5',
+     '6e7ce416e7cfda21cecce3731f81712b',
+     '957cb969f97d89e06edd7a04ffd61db0',
+     '5540c0c9bd635c29fc88dd599cbbf5e6',
+     '5540c0c9bd635c29fc88dd599cbbf5e6',
+     '5540c0c9bd635c29fc88dd599cbbf5e6'],
+    doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 mice.",
+    data_size="298.2MB")
+
+
+def read_qtdMRI_test_retest_2subjects():
+    """ Load test-retest qt-dMRI acquisitions of two C57Bl6 mice. These
+    datasets were used to study test-retest reproducibility of time-dependent
+    q-space indices (q$\tau$-indices) in the corpus callosum of two mice [1].
+    The data itself and its details are publicly available and can be cited at
+    [2].
+
+    The test-retest diffusion MRI spin echo sequences were acquired from two
+    C57Bl6 wild-type mice on an 11.7 Tesla Bruker scanner. The test and retest
+    acquisition were taken 48 hours from each other. The (processed) data
+    consists of 80x160x5 voxels of size 110x110x500μm. Each data set consists
+    of 515 Diffusion-Weighted Images (DWIs) spread over 35 acquisition shells.
+    The shells are spread over 7 gradient strength shells with a maximum
+    gradient strength of 491 mT/m, 5 pulse separation shells between
+    [10.8 - 20.0]ms, and a pulse length of 5ms. We manually created a brain
+    mask and corrected the data from eddy currents and motion artifacts using
+    FSL's eddy. A region of interest was then drawn in the middle slice in the
+    corpus callosum, where the tissue is reasonably coherent.
+
+    Returns
+    -------
+    data : list of length 4
+        contains the dwi datasets ordered as
+        (subject1_test, subject1_retest, subject2_test, subject2_retest)
+    cc_masks : list of length 4
+        contains the corpus callosum masks ordered in the same order as data.
+    gtabs : list of length 4
+        contains the qt-dMRI gradient tables of the data sets.
+
+    References
+    ----------
+    .. [1] Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
+        Representation of dMRI in Space and Time", Medical Image Analysis,
+        2017.
+    .. [2] Wassermann, Demian, et al., "Test-Retest qt-dMRI datasets for
+        `Non-Parametric GraphNet-Regularized Representation of dMRI in Space
+        and Time'". doi:10.5281/zenodo.996889, 2017.
+    """
+    data = []
+    data_names = [
+        'subject1_dwis_test.nii.gz', 'subject1_dwis_retest.nii.gz',
+        'subject2_dwis_test.nii.gz', 'subject2_dwis_retest.nii.gz'
+    ]
+    for data_name in data_names:
+        data_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', data_name)
+        data.append(nib.load(data_loc).get_data())
+
+    cc_masks = []
+    mask_names = [
+        'subject1_ccmask_test.nii.gz', 'subject1_ccmask_retest.nii.gz',
+        'subject2_ccmask_test.nii.gz', 'subject2_ccmask_retest.nii.gz'
+    ]
+    for mask_name in mask_names:
+        mask_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', mask_name)
+        cc_masks.append(nib.load(mask_loc).get_data())
+
+    gtabs = []
+    gtab_txt_names = [
+        'subject1_scheme_test.txt', 'subject1_scheme_retest.txt',
+        'subject2_scheme_test.txt', 'subject2_scheme_retest.txt'
+    ]
+    for gtab_txt_name in gtab_txt_names:
+        txt_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects',
+                        gtab_txt_name)
+        qtdmri_scheme = np.loadtxt(txt_loc, skiprows=1)
+        bvecs = qtdmri_scheme[:, 1:4]
+        G = qtdmri_scheme[:, 4] / 1e3  # because dipy takes T/mm not T/m
+        small_delta = qtdmri_scheme[:, 5]
+        big_delta = qtdmri_scheme[:, 6]
+        gtab = gradient_table_from_gradient_strength_bvecs(
+            G, bvecs, big_delta, small_delta
+        )
+        gtabs.append(gtab)
+
+    return data, cc_masks, gtabs
 
 
 def read_scil_b0():
@@ -900,7 +1011,7 @@ CENIR_notes = \
     -----
     Details of the acquisition and processing, and additional meta-data are
     available through UW researchworks:
-    
+
     https://digital.lib.washington.edu/researchworks/handle/1773/33311
     """
 
