@@ -8,7 +8,7 @@ fury, have_fury, _ = optional_package('fury')
 
 
 if have_fury:
-    from fury import actor, window, widgets, colormap, interator, ui, utils
+    from fury import actor, window, widget, colormap, interator, ui, utils
     from fury.data import (fetch_viz_icons, read_viz_icons,
                            DATA_DIR as FURY_DATA_DIR)
 
