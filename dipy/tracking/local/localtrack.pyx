@@ -185,10 +185,8 @@ cdef int _local_tracker(DirectionGetter dg,
         if tissue_class[0] == TRACKPOINT:
             continue
         elif (tissue_class[0] == ENDPOINT or
-              tissue_class[0] == INVALIDPOINT):
-            i += 1
-            break
-        elif tissue_class[0] == OUTSIDEIMAGE:
+              tissue_class[0] == INVALIDPOINT or
+              tissue_class[0] == OUTSIDEIMAGE):
             break
     else:
         # maximum length of streamline has been reached, return everything

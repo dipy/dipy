@@ -75,26 +75,26 @@ def test_stop_conditions():
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
     y = 0
     sl = next(streamlines_not_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     # Check that the first streamline stops at 0 and 4 (ENDPOINT)
     y = 1
     sl = next(streamlines_not_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     # This streamline should be the same as above. This row does not have
     # ENDPOINTs, but the streamline should stop at the edge and not include
@@ -128,16 +128,16 @@ def test_stop_conditions():
     # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
     y = 4
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
     y = 5
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     # The last streamline should contain only one point, the seed point,
     # because no valid inital direction was returned.
@@ -184,8 +184,7 @@ def test_probabilistic_odf_weighted_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]]),
+                          [2., 4., 0.]]),
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
@@ -227,7 +226,7 @@ def test_probabilistic_odf_weighted_tracker():
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
                                 return_all=True)
     streamlines = Streamlines(streamlines)
-    npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
+    npt.assert_(len(streamlines[0]) == 1)  # INVALIDPOINT
     npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
 
     # Test that all points are within the image volume
@@ -431,8 +430,7 @@ def test_maximum_deterministic_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]]),
+                          [2., 4., 0.]]),
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
@@ -518,8 +516,7 @@ def test_bootstap_peak_tracker():
                           [2., 1., 0.],
                           [3., 1., 0.],
                           [4., 1., 0.]]),
-                np.array([[2., 5., 0.],
-                          [2., 4., 0.],
+                np.array([[2., 4., 0.],
                           [2., 3., 0.],
                           [2., 2., 0.],
                           [2., 1., 0.],
@@ -575,8 +572,7 @@ def test_closest_peak_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]])]
+                          [2., 4., 0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
@@ -674,17 +670,13 @@ def test_affine_transformations():
     seeds = [np.array([1., 1., 0.]),
              np.array([2., 4., 0.])]
 
-    expected = [np.array([[0., 1., 0.],
-                          [1., 1., 0.],
+    expected = [np.array([[1., 1., 0.],
                           [2., 1., 0.],
-                          [3., 1., 0.],
-                          [4., 1., 0.]]),
-                np.array([[2., 0., 0.],
-                          [2., 1., 0.],
+                          [3., 1., 0.]]),
+                np.array([[2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]])]
+                          [2., 4., 0.]])]
 
     mask = (simple_image > 0).astype(float)
     tc = BinaryTissueClassifier(mask)
