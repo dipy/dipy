@@ -459,7 +459,6 @@ def test_particle_filtering_tractography():
                                     initial_directions=inital_directions,
                                     min_wm_pve_before_stopping=1)
     pft_streamlines = Streamlines(pft_streamlines_generator)
-    print pft_streamlines[0]
     npt.assert_(np.allclose(pft_streamlines[0], expected[1]))
 
     # Test invalid min_wm_pve_before_stopping parameters
