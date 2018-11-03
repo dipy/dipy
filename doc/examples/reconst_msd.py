@@ -113,7 +113,7 @@ with values between 0 and 0.5.
 beta = 0.1
 
 # denoising
-sigma = estimate_sigma(t1, True, N=4)
+sigma = estimate_sigma(t1, True, N=6)
 
 t1[mask == 0] = 0
 
@@ -201,7 +201,7 @@ def sim_response(sh_order=8, bvals=bvals, evals=evals_d, csf_md=csf_md,
     return MultiShellResponse(response, sh_order, bvals)
 
 
-response_msd = sim_response(sh_order=4, bvals=bvals, evals=evals_d,
+response_msd = sim_response(sh_order=8, bvals=bvals, evals=evals_d,
                             csf_md=csf_md, gm_md=cgm_md)
 
 msd_model = MultiShellDeconvModel(gtab, response_msd)
@@ -217,13 +217,13 @@ mask_tmp = mask[:, :, 68: 68 + 1]
 msd_fit = msd_model.fit(data, mask_tmp)
 msd_odf = msd_fit.odf(sphere)
 fodf_spheres = actor.odf_slicer(msd_odf, mask=mask_tmp,
-                                sphere=sphere, scale=0.7, norm=True,
+                                sphere=sphere, scale=0.0005, norm=False,
                                 colormap='plasma')
 interactive = True
 ren = window.Renderer()
 ren.add(fodf_spheres)
 
 print('Saving illustration as msd_odfs.png')
-window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=4)
+window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=8)
 if interactive:
     window.show(ren)
