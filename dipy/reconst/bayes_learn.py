@@ -39,13 +39,27 @@ def fspecial_gauss(shape=(3, 3), sigma=0.5):
     return h
 
 
+def iso_gaussian_3d(mu=5, sigma=0.2, dim=11):
+    out = np.zeros((dim, dim, dim))
+    cov = np.eye(3) * sigma
+    icov = np.linalg.inv(cov)
+    det = np.linalg.det(cov)
+
+    for i in range(dim):
+        for j in range(dim):
+            for k in range(dim):
+                x = np.array([i, j, k])
+                numer = (-1/2) * ((x - mu).T.dot(icov)).dot((x - mu))
+                denom = 1 / ((2 * np.pi) * (det**(1/2)))
+                out[i, j, k] = (denom * np.exp(numer))
+    return out
+
 def makeGau(sigma, sz):
     ng = np.ceil(sigma * 5)
     ng = ng + np.mod(ng, 2) + 1
     gau = fspecial_gauss([ng, 1], sigma)
-    g = np.tile(gau, (11, 11, 11))
-    gx = g[]
-    gau = gx * gy * gz
+    gx, gy, gz = np.meshgrid(gau, gau, gau)
+    gau = iso_gaussian_3d(mu=5, sigma=1.75, dim=11)
     sz = sz[0:2]
     gau = np.pad(gau, (np.floor((sz - ng) / 2), np.floor((sz - ng) / 2) -
                        np.mod(sz, 2) + 1), 'constant')
