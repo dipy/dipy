@@ -114,3 +114,30 @@ else:
         SNR = b0 / noise
 SNR[SNR > 100] = 100
 SNR = sm[SNR]
+
+
+def shMatrix(n, lmax):
+    n = n / np.tile(sum(pow(n, 2)), (3, 1))
+    M = []
+    for i in range(0, lmax, 2):
+        m = sc.special.lpn(i, n[2, :])
+        n2 = n[0, :] + i * n[1, :] + np.spacing(1)
+        n2 = n2 / abs(n2)
+        m = np.flipud(m) * np.tile(n2, (np.size(m), 1)) ** \
+            np.tile((np.matrix([j for j in range(i)])).T, (1, np.size(n2)))
+
+        idx1 = np.size(M)
+        M = np.transpose([M, m[0: -1] * np.sqrt(2), m[-1, :]])
+        idx2 = np.size(M)
+        idx[i/2 + 1] = idx[idx1+1:idx2]
+    M = M / np.sqrt(np.size(n))
+    return M, idx
+
+
+def compPowerSpec(b, scheme, lmax, S, pp, qspace, nmax, D0):
+    M = []
+    buni = np.unique(round(b * 10)) / 10
+    S[S > 2] = 0
+    dirs = bvals
+    proj_tmp, idx_sh = shMatrix(dirs+np.spacing(1), lmax)    
+    
