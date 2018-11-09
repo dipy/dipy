@@ -99,7 +99,7 @@ class SNRinCCFlow(Workflow):
             CC_box[bounds_min[0]:bounds_max[0],
                    bounds_min[1]:bounds_max[1],
                    bounds_min[2]:bounds_max[2]] = 1
-
+                   
             mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
                                                  return_cfa=True)
                                                  
@@ -113,7 +113,6 @@ class SNRinCCFlow(Workflow):
             mask_noise = ~mask_noise
             mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
             nib.save(mask_noise_img, 'mask_noise.nii.gz')
-            
             noise_std = np.std(data[mask_noise, :])
             logging.info('Noise standard deviation sigma= ' + str(noise_std))
 
