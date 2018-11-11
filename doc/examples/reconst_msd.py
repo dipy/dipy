@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.reconst.opt_msd import MultiShellResponse
+from dipy.reconst.msd import MultiShellResponse
 from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -13,7 +13,7 @@ from dipy.core.gradients import GradientTable
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 import dipy.reconst.dti as dti
-from dipy.reconst.opt_msd import MultiShellDeconvModel
+from dipy.reconst.msd import MultiShellDeconvModel
 from dipy.viz import window, actor
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
@@ -217,13 +217,13 @@ mask_tmp = mask[:, :, 68: 68 + 1]
 msd_fit = msd_model.fit(data, mask_tmp)
 msd_odf = msd_fit.odf(sphere)
 fodf_spheres = actor.odf_slicer(msd_odf, mask=mask_tmp,
-                                sphere=sphere, scale=0.0005, norm=False,
+                                sphere=sphere, scale=0.001, norm=False,
                                 colormap='plasma')
 interactive = True
 ren = window.Renderer()
 ren.add(fodf_spheres)
 
 print('Saving illustration as msd_odfs.png')
-window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=8)
+window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=16)
 if interactive:
     window.show(ren)

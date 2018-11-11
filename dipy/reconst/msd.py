@@ -108,7 +108,7 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     # and delta(theta, phi) is maximized.
 #    r = cvx.solvers.lp(c, G, h_)
     lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_)), [G, h_])
-    r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI)
+    r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI
     x = np.asarray(r['x'])[:, 0]
     out = np.zeros(B.shape[1])
     out[n == 0] = sh_const
@@ -200,8 +200,12 @@ class QpFitter(object):
     def _lstsq_initial(self, z):
         fodf_sh = csd._solve_cholesky(self._P, z)
         s = np.dot(self._reg, fodf_sh)
-        init = {'x': cvx.matrix(fodf_sh),
-                's': cvx.matrix(s.clip(1e-10))}  # needs change
+        fodf_sh_ = cvx.Variable(fodf_sh.shape)
+        fodf_sh_.value = fodf_sh
+        s_ = cvx.Variable(s.shape)
+        s_.value = np.clip(s, 1e-10, None)
+        init = {'x': fodf_sh_,
+                's': s_}
         return init
 
     def __init__(self, X, reg):
@@ -214,24 +218,28 @@ class QpFitter(object):
         self._reg = reg
         # self._P_init = np.dot(X[:, :N].T, X[:, :N])
 
-        # Make cvxopt matrix types for later re-use.
-        self._P_mat = cvx.Variable(P)  # needs change
-        self._reg_mat = cvx.Variable(-reg)  # needs change
-        self._h_mat = cvx.Variable(0., (reg.shape[0], 1))
+        # Make cvxpy matrix types for later re-use.
+        self._P_mat = cvx.Parameter(P.shape)
+        self._P_mat.value = P
+        self._x_mat = cvx.Variable(P.shape[0])
+        self._reg_mat = cvx.Parameter(reg.shape)
+        self._reg_mat.value = -reg
+        self._h_mat = cvx.Parameter(reg.shape)
+        self._h_mat.value = np.zeros(reg.shape)
 
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
         init = self._lstsq_initial(z)
+        z_mat = cvx.Variable(z.shape)
+#        qp_obj = cvx.quad_form(self._x_mat, self._P_mat)  # needs change
+#        objMin = cvx.Minimize(qp_obj + (z_mat.T * self._x_mat))
 
-        z_mat = cvx.Variable(-z)
-        # qp = cvx.solvers.qp
-        # r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
-        x = cvx.Variable()
-        qp_obj = cvx.quad_form(self._P_mat, z_mat)  # needs change
-        objMin = cvx.Minimize(qp_obj)
-        constraints = [self._reg_mat * x >= 0]
-        prob = cvx.Problem(objMin, constraints)
-        r = prob.solve(solver=cvx.OSQP, initvals=init)
+        objMin = cvx.quad_form(self._x_mat, self._P_mat) + \
+                              (z_mat.T * self._x_mat)
+
+        constraints = [self._reg_mat * self._x_mat >= 0]
+        prob = cvx.Problem(cvx.Minimize(objMin, constraints))
+        r = prob.solve(solver=cvx.GUROBI, initvals=init)
         fodf_sh = r['x']
         fodf_sh = np.array(fodf_sh)[:, 0]
         return fodf_sh
