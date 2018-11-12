@@ -101,7 +101,7 @@ lightweight `dipy.viz` module.
 try:
     from dipy.viz import window, actor
 except ImportError:
-    raise ImportError('Python vtk module is not installed')
+    raise ImportError('Python fury module is not installed')
     import sys
     sys.exit()
 

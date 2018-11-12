@@ -99,6 +99,7 @@
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
 .. _pypi: https://pypi.python.org/pypi
+.. _FURY: https://fury.gl
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
