@@ -19,15 +19,16 @@ from dipy.segment.mask import bounding_box
 
 from dipy.workflows.workflow import Workflow
 
-
 class SNRinCCFlow(Workflow):
     
     @classmethod
     def get_short_name(cls):
         return 'snrincc'
     
-    def run(self, data_file, data_bvals, data_bvecs, mask=None, bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1), out_dir = '', out_file='product.json'):
-        """
+    def run(self, data_file, data_bvals, data_bvecs, mask=None, bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1), out_dir='', out_file='product.json', out_mask_cc='cc.nii.gz', out_mask_noise='mask_noise.nii.gz'):
+
+        """ Workflow for computing the signal-to-noise ratio in the corpus callosum
+            
         Parameters
         ----------
         data_file : string
@@ -45,6 +46,10 @@ class SNRinCCFlow(Workflow):
             Where the resulting file will be saved. (default '')
         out_file : string, optional
             Name of the result file to be saved. (default 'product.json')
+        out_mask_cc : string, optional
+            Name of the CC mask volume to be saved (default 'cc.nii.gz')
+        out_mask_noise : string, optional
+            Name of the mask noise volume to be saved (default 'mask_noise.nii.gz')
         """
         
         if not isinstance(bbox_threshold, tuple):
@@ -60,20 +65,22 @@ class SNRinCCFlow(Workflow):
 
         io_it = self.get_io_iterator()
         
-        for data_path, data_bvals_path, data_bvecs_path, out_path in io_it:
-           
+        for data_path, data_bvals_path, data_bvecs_path, out_path, cc_mask_path, mask_noise_path in io_it:
             img = nib.load('{0}'.format(data_path))
             bvals, bvecs = read_bvals_bvecs('{0}'.format(data_bvals_path), '{0}'.format(data_bvecs_path))
             gtab = gradient_table(bvals, bvecs)
             
             data = img.get_data()
             affine = img.affine
+            
+            logging.info('Computing brain mask...')
+            b0_mask, calc_mask = median_otsu(data)
 
-            if mask == None:
-                logging.info('Computing brain mask...')
-                b0_mask, mask = median_otsu(data)
+            if mask is None:
+                mask = calc_mask
             else:
-                mask = nib.load(mask).get_data().astype(np.bool)
+                mask = nib.load(mask).get_data().astype(bool)
+                mask = np.array(calc_mask == mask).astype(int)
 
             logging.info('Computing tensors...')
             tenmodel = TensorModel(gtab)
@@ -105,22 +112,25 @@ class SNRinCCFlow(Workflow):
                                                  
             cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
             mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
-            nib.save(mask_cc_part_img, 'cc.nii.gz')
+            nib.save(mask_cc_part_img, cc_mask_path)
+            logging.info('CC mask saved as {0}'.format(cc_mask_path))
 
             mean_signal = np.mean(data[mask_cc_part], axis=0)
             mask_noise = binary_dilation(mask, iterations=10)
             mask_noise[..., :mask_noise.shape[-1]//2] = 1
             mask_noise = ~mask_noise
             mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
-            nib.save(mask_noise_img, 'mask_noise.nii.gz')
+            nib.save(mask_noise_img, mask_noise_path)
+            logging.info('Mask noise saved as {0}'.format(mask_noise_path))
+            
             noise_std = np.std(data[mask_noise, :])
             logging.info('Noise standard deviation sigma= ' + str(noise_std))
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
             gtab.bvecs[idx] = np.inf
-            axis_X = np.argmin(np.sum((gtab.bvecs-np.array([1, 0, 0])) **2, axis=-1))
-            axis_Y = np.argmin(np.sum((gtab.bvecs-np.array([0, 1, 0])) **2, axis=-1))
-            axis_Z = np.argmin(np.sum((gtab.bvecs-np.array([0, 0, 1])) **2, axis=-1))
+            axis_X = np.argmin(np.sum((gtab.bvecs-np.array([1, 0, 0])) ** 2, axis=-1))
+            axis_Y = np.argmin(np.sum((gtab.bvecs-np.array([0, 1, 0])) ** 2, axis=-1))
+            axis_Z = np.argmin(np.sum((gtab.bvecs-np.array([0, 0, 1])) ** 2, axis=-1))
 
             SNR_output = []
             SNR_directions = []
@@ -128,7 +138,7 @@ class SNRinCCFlow(Workflow):
                 if direction == 'b0':
                     SNR = mean_signal[0]/noise_std
                     logging.info("SNR for the b=0 image is :" + str(SNR))
-                else :
+                else:
                     logging.info("SNR for direction " + str(direction) + " " + str(gtab.bvecs[direction]) + "is :" + str(SNR))
                     SNR_directions.append(direction)
                     SNR = mean_signal[direction]/noise_std
@@ -140,5 +150,5 @@ class SNRinCCFlow(Workflow):
                         'directions': 'b0' + ' ' + str(SNR_directions[0]) + ' ' + str(SNR_directions[1]) + ' ' + str(SNR_directions[2])
                         })
             
-            with open(os.path.join(out_dir,out_file), 'w') as myfile:
+            with open(os.path.join(out_dir, out_file), 'w') as myfile:
                 json.dump(data, myfile)
