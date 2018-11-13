@@ -7,8 +7,7 @@ from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
 
 if have_fury:
-    from dipy.viz.utils import set_input
-    from dipy.viz import vtk
+    from dipy.viz import utils, vtk
 
 
 def load_polydata(file_name):
@@ -78,10 +77,10 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
         writer = vtk.vtkXMLPolyDataWriter()
     elif file_extension == "obj":
         raise Exception("mni obj or Wavefront obj ?")
-    #    writer = set_input(vtk.vtkMNIObjectWriter(), polydata)
+    #    writer = utils.set_input(vtk.vtkMNIObjectWriter(), polydata)
 
     writer.SetFileName(file_name)
-    writer = set_input(writer, polydata)
+    writer = utils.set_input(writer, polydata)
     if color_array_name is not None:
         writer.SetArrayName(color_array_name)
 
