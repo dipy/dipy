@@ -6,7 +6,8 @@ from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst import csdeconv as csd
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.utils.optpkg import optional_package
+
+from ..utils.optpkg import optional_package
 
 cvx, have_cvxopt, _ = optional_package("cvxopt")
 if have_cvxopt:
@@ -108,9 +109,8 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     iso_d = [sh_const] * iso
     return np.concatenate([iso_d, out])
 
-
-delta_functions = {"basic": _basic_delta,
-                   "positivity_constrained": _pos_constrained_delta}
+delta_functions = {"basic":_basic_delta,
+                   "positivity_constrained":_pos_constrained_delta}
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):

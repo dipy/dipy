@@ -221,23 +221,23 @@ class QpFitter(object):
         # Make cvxpy matrix types for later re-use.
         self._P_mat = cvx.Parameter(P.shape)
         self._P_mat.value = P
-        self._x_mat = cvx.Parameter(P.shape[0])
-        self._x_mat.value = X
-        self._reg_mat = cvx.Parameter(reg.shape)
+        self._x_mat = cvx.Variable(P.shape[0])
+        self._reg_mat = cvx.Variable(reg.shape)
         self._reg_mat.value = -reg
-        self._h_mat = cvx.Parameter(reg.shape)
-        self._h_mat.value = np.zeros(reg.shape)
+        self._h_mat = cvx.Variable(reg.shape[0], 1)
+        h_ = np.zeros((reg.shape[0]))
+        self._h_mat.value = h_
 
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
-        init = self._lstsq_initial(z)
-        z_mat = cvx.Variable(z.shape)
+#        init = self._lstsq_initial(z)
+        z_mat = cvx.Variable(z.shape[0], 1)
+        z_mat.value = z
         objMin = 0.5 * cvx.quad_form(self._x_mat, self._P_mat) + \
                                     (z_mat.T * self._x_mat)
-
-        constraints = [self._reg_mat * self._x_mat >= 0]
+        constraints = [self._reg_mat * self._x_mat >= self._h_mat]
         prob = cvx.Problem(cvx.Minimize(objMin), constraints)
-        r = prob.solve(solver=cvx.OSQP, initvals=init)
+        r = prob.solve(solver=cvx.OSQP)
         fodf_sh = r['x']
         fodf_sh = np.array(fodf_sh)[:, 0]
         return fodf_sh
