@@ -58,7 +58,7 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
-        - DEPENDS="$DEPENDS scikit_learn"
+        - DEPENDS="$DEPENDS scikit_learn fury"
 
     - python: 2.7
       env:

@@ -1,22 +1,17 @@
 from __future__ import division, print_function, absolute_import
 
-from dipy.viz.utils import set_input
-
-# Conditional import machinery for vtk
+# Conditional import machinery for fury
 from dipy.utils.optpkg import optional_package
 
-# Allow import, but disable doctests if we don't have vtk
-vtk, have_vtk, setup_module = optional_package('vtk')
-colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
-ns, have_numpy_support, _ = optional_package('vtk.util.numpy_support')
+# Allow import, but disable doctests if we don't have fury
+fury, have_fury, setup_module = optional_package('fury')
 
-if have_vtk:
-    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
-    major_version = vtk.vtkVersion.GetVTKMajorVersion()
+if have_fury:
+    from dipy.viz import utils, vtk
 
 
 def load_polydata(file_name):
-    """ Load a vtk polydata to a supported format file
+    """Load a vtk polydata to a supported format file.
 
     Supported file formats are OBJ, VTK, FIB, PLY, STL and XML
 
@@ -27,6 +22,7 @@ def load_polydata(file_name):
     Returns
     -------
     output : vtkPolyData
+
     """
     # get file extension (type) lower case
     file_extension = file_name.split(".")[-1].lower()
@@ -56,7 +52,7 @@ def load_polydata(file_name):
 
 
 def save_polydata(polydata, file_name, binary=False, color_array_name=None):
-    """ Save a vtk polydata to a supported format file
+    """Save a vtk polydata to a supported format file.
 
     Save formats can be VTK, FIB, PLY, STL and XML.
 
@@ -64,6 +60,7 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     ----------
     polydata : vtkPolyData
     file_name : string
+
     """
     # get file extension (type)
     file_extension = file_name.split(".")[-1].lower()
@@ -80,10 +77,10 @@ def save_polydata(polydata, file_name, binary=False, color_array_name=None):
         writer = vtk.vtkXMLPolyDataWriter()
     elif file_extension == "obj":
         raise Exception("mni obj or Wavefront obj ?")
-    #    writer = set_input(vtk.vtkMNIObjectWriter(), polydata)
+    #    writer = utils.set_input(vtk.vtkMNIObjectWriter(), polydata)
 
     writer.SetFileName(file_name)
-    writer = set_input(writer, polydata)
+    writer = utils.set_input(writer, polydata)
     if color_array_name is not None:
         writer.SetArrayName(color_array_name)
 

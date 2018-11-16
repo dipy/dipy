@@ -1513,15 +1513,15 @@ def local_skeleton_clustering(tracks, d_thr=10):
     Visualization:
 
     It is possible to visualize the clustering C from the example
-    above using the fvtk module::
+    above using the dipy.viz module::
 
-        from dipy.viz import fvtk
-        r=fvtk.ren()
+        from dipy.viz import window, actor
+        r=window.Renderer()
         for c in C:
             color=np.random.rand(3)
             for i in C[c]['indices']:
-                fvtk.add(r,fvtk.line(tracks[i],color))
-        fvtk.show(r)
+                r.add(actor.line(tracks[i],color))
+        window.show(r)
 
     See Also
     --------
@@ -1816,18 +1816,18 @@ def larch_3split(tracks, indices=None, thr=10.):
 
     Here is an example of how to visualize the clustering above::
 
-        from dipy.viz import fvtk
-        r=fvtk.ren()
-        fvtk.add(r,fvtk.line(tracks,fvtk.red))
-        fvtk.show(r)
+        from dipy.viz import window, actor
+        r=window.Renderer()
+        r.add(actor.line(tracks,fvtk.red))
+        window.show(r)
         for c in C:
             color=np.random.rand(3)
             for i in C[c]['indices']:
-                fos.add(r,fvtk.line(tracks[i],color))
-        fvtk.show(r)
+                r.add(actor.line(tracks[i],color))
+        window.show(r)
         for c in C:
-            fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
-        fvtk.show(r)
+            r.add(actor.line(C[c]['rep3']/C[c]['N'],fos.white))
+        window.show(r)
     '''
 
     cdef:

@@ -1,16 +1,23 @@
 # Init file for visualization package
 from __future__ import division, print_function, absolute_import
 
-# We make the visualization requirements optional imports:
 
-try:
-    import matplotlib
-    has_mpl = True
-except ImportError:
-    e_s = "You do not have Matplotlib installed. Some visualization functions"
-    e_s += " might not work for you."
-    print(e_s)
-    has_mpl = False
+from dipy.utils.optpkg import optional_package
+# Allow import, but disable doctests if we don't have fury
+fury, have_fury, _ = optional_package('fury')
+
+
+if have_fury:
+    from fury import actor, window, widget, colormap, interactor, ui, utils
+    from fury.window import vtk
+    from fury.data import (fetch_viz_icons, read_viz_icons,
+                           DATA_DIR as FURY_DATA_DIR)
+
+# We make the visualization requirements optional imports:
+_, has_mpl, _ = optional_package('matplotlib',
+                                 "You do not have Matplotlib installed. Some"
+                                 " visualization functions might not work for"
+                                 " you")
 
 if has_mpl:
     from . import projections

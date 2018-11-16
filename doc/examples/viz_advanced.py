@@ -6,9 +6,8 @@ Advanced interactive visualization
 In DIPY_ we created a thin interface to access many of the capabilities
 available in the Visualization Toolkit framework (VTK) but tailored to the
 needs of structural and diffusion imaging. Initially the 3D visualization
-module was named ``fvtk``, meaning functions using vtk. This is still available
-for backwards compatibility but now there is a more comprehensive way to access
-the main functions using the following modules.
+module was named ``fvtk``, meaning functions using vtk. This is not available
+anymore.
 """
 
 import numpy as np

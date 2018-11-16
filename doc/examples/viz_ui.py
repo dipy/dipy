@@ -12,7 +12,7 @@ First, a bunch of imports.
 
 import os
 
-from dipy.data import read_viz_icons, fetch_viz_icons
+from dipy.viz import read_viz_icons, fetch_viz_icons
 
 from dipy.viz import ui, window
 
