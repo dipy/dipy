@@ -9,7 +9,7 @@ from nose.tools import eq_
 import numpy.testing as npt
 from dipy.reconst import mapmri
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
 from dipy.workflows.reconst import ReconstMAPMRIFlow
@@ -35,7 +35,7 @@ def test_reconst_mmri_positivity():
 
 def reconst_mmri_core(flow, lap, pos):
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_25')
+        data_path, bval_path, bvec_path = get_fnames('small_25')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
 

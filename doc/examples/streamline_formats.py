@@ -23,7 +23,7 @@ from dipy.tracking.streamline import Streamlines
 1. Read/write streamline files with DIPY.
 """
 
-fname = get_data('fornix')
+fname = get_fnames('fornix')
 print(fname)
 
 # Read Streamlines

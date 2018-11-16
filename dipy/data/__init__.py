@@ -204,7 +204,7 @@ default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
 small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
-def get_data(name='small_64D'):
+def get_fnames(name='small_64D'):
     """ provides filenames of some test datasets or other useful parametrisations
 
     Parameters
@@ -232,8 +232,8 @@ def get_data(name='small_64D'):
     Examples
     ----------
     >>> import numpy as np
-    >>> from dipy.data import get_data
-    >>> fimg,fbvals,fbvecs=get_data('small_101D')
+    >>> from dipy.data import get_fnames
+    >>> fimg,fbvals,fbvecs=get_fnames('small_101D')
     >>> bvals=np.loadtxt(fbvals)
     >>> bvecs=np.loadtxt(fbvecs).T
     >>> import nibabel as nib
@@ -294,6 +294,16 @@ def get_data(name='small_64D'):
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
 
 
+def get_data(name='small_64D'):
+    """Deprecate function."""
+    warnings.warn("The `dipy.data.get_data` function is deprecated as of" +
+                  " version 0.15 of Dipy and will be removed in a future" +
+                  " version. Please use `dipy.data.get_fnames` function" +
+                  " instead",
+                  DeprecationWarning)
+    return get_fnames(name)
+
+
 def _gradient_from_file(filename):
     """Reads a gradient file saved as a text file compatible with np.loadtxt
     and saved in the dipy data directory"""
@@ -311,7 +321,7 @@ get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")
 
 
 def dsi_voxels():
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
     img = load(fimg)
@@ -321,7 +331,7 @@ def dsi_voxels():
 
 
 def dsi_deconv_voxels():
-    gtab = gradient_table(np.loadtxt(get_data('dsi515btable')))
+    gtab = gradient_table(np.loadtxt(get_fnames('dsi515btable')))
     data = np.zeros((2, 2, 2, 515))
     for ix in range(2):
         for iy in range(2):
@@ -402,7 +412,7 @@ def get_cmap(name):
 
 
 def two_cingulum_bundles():
-    fname = get_data('cb_2')
+    fname = get_fnames('cb_2')
     res = np.load(fname)
     cb1 = relist_streamlines(res['points'], res['offsets'])
     cb2 = relist_streamlines(res['points2'], res['offsets2'])

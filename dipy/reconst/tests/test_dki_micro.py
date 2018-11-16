@@ -10,12 +10,12 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.reconst.dti import (eig_from_lo_tri)
 
 from dipy.data import get_sphere
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 gtab = gradient_table(bvals, bvecs)
 

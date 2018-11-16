@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as npt
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.sims.voxel import add_noise
 from dipy.segment.mrf import (ConstantObservationModel,
                               IteratedConditionalModes)
@@ -8,7 +8,7 @@ from dipy.segment.tissue import (TissueClassifierHMRF)
 
 
 # Load a coronal slice from a T1-weighted MRI
-fname = get_data('t1_coronal_slice')
+fname = get_fnames('t1_coronal_slice')
 single_slice = np.load(fname)
 
 # Stack a few copies to form a 3D volume

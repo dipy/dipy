@@ -11,7 +11,7 @@ from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite)
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 
 def test_mask():
@@ -83,7 +83,7 @@ def test_bounding_box():
 
 
 def test_median_otsu():
-    fname = get_data('S0_10')
+    fname = get_fnames('S0_10')
     img = nib.load(fname)
     data = img.get_data()
     data = np.squeeze(data.astype('f8'))

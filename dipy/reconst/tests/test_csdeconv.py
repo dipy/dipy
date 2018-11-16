@@ -5,7 +5,7 @@ import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
                            assert_array_equal, assert_warns)
-from dipy.data import get_sphere, get_data, default_sphere, small_sphere
+from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
                              multi_tensor_odf,
@@ -41,7 +41,7 @@ def test_recursive_response_calibration():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     sphere = get_sphere('symmetric724')
@@ -109,7 +109,7 @@ def test_recursive_response_calibration():
 
 
 def test_auto_response():
-    fdata, fbvals, fbvecs = get_data('small_64D')
+    fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
     data = nib.load(fdata).get_data()
@@ -153,7 +153,7 @@ def test_auto_response():
 
 
 def test_response_from_mask():
-    fdata, fbvals, fbvecs = get_data('small_64D')
+    fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = nib.load(fdata).get_data()
 
@@ -192,7 +192,7 @@ def test_csdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
@@ -258,7 +258,7 @@ def test_odfdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -315,7 +315,7 @@ def test_odfdeconv():
 def test_odf_sh_to_sharp():
     SNR = None
     S0 = 1
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -374,7 +374,7 @@ def test_r2_term_odf_sharp():
     S0 = 1
     angle = 45  # 45 degrees is a very tight angle to disentangle
 
-    _, fbvals, fbvecs = get_data('small_64D')  # get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')  # get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
@@ -419,7 +419,7 @@ def test_csd_predict():
     """
     SNR = 100
     S0 = 1
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -470,7 +470,7 @@ def test_csd_predict_multi():
 
     """
     S0 = 123.
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
@@ -488,7 +488,7 @@ def test_csd_predict_multi():
 def test_sphere_scaling_csdmodel():
     """Check that mirroring regularization sphere does not change the result of
     the model"""
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
@@ -525,7 +525,7 @@ def test_default_lambda_csdmodel():
     sphere = default_sphere
 
     # Create gradient table
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
@@ -542,7 +542,7 @@ def test_default_lambda_csdmodel():
 
 def test_csd_superres():
     """ Check the quality of csdfit with high SH order. """
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 

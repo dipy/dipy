@@ -66,7 +66,7 @@ def test_streamline_tensors():
 
 
 def test_streamline_signal():
-    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     gtab = dpg.gradient_table(bval_file, bvec_file)
     evals = [0.0015, 0.0005, 0.0005]
     streamline1 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
@@ -103,7 +103,7 @@ def test_voxel2streamline():
 
 def test_FiberModel_init():
     # Get some small amount of data:
-    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     data_ni = nib.load(data_file)
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = dpg.gradient_table(bvals, bvecs)
@@ -125,7 +125,7 @@ def test_FiberModel_init():
 
 
 def test_FiberFit():
-    data_file, bval_file, bvec_file = dpd.get_data('small_64D')
+    data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
     data_aff = data_ni.affine
@@ -163,7 +163,7 @@ def test_FiberFit():
         fit.data)
 
 def test_fit_data():
-    fdata, fbval, fbvec = dpd.get_data('small_25')
+    fdata, fbval, fbvec = dpd.get_fnames('small_25')
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()

@@ -16,7 +16,7 @@ from dipy.direction.peaks import (peaks_from_model,
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
@@ -152,7 +152,7 @@ def test_peak_directions():
 
 def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
@@ -521,7 +521,7 @@ def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
@@ -589,7 +589,7 @@ def test_peaks_shm_coeff():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     from dipy.data import get_sphere
 

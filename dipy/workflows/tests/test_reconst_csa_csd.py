@@ -11,7 +11,7 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
 logging.getLogger().setLevel(logging.INFO)
 
@@ -26,7 +26,7 @@ def test_reconst_csd():
 
 def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_64D')
+        data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])

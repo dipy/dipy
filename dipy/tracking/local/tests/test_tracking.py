@@ -5,7 +5,7 @@ import numpy.testing as npt
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.direction import (BootDirectionGetter,
                             ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
@@ -720,7 +720,7 @@ def test_affine_transformations():
     # TST - in vivo affine exemple
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
-    fdata, _, _ = get_data('small_101D')
+    fdata, _, _ = get_fnames('small_101D')
     a6 = nib.load(fdata).affine
 
     for affine in [a0, a1, a2, a3, a4, a5, a6]:
