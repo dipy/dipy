@@ -110,8 +110,7 @@ def test_recursive_response_calibration():
 
 def test_auto_response():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = nib.load(fdata).get_data()
 
     gtab = gradient_table(bvals, bvecs)
