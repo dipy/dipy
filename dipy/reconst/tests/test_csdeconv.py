@@ -31,6 +31,7 @@ from dipy.core.geometry import cart2sphere
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from dipy.core.sphere import Sphere
+from dipy.io.gradients import read_bvals_bvecs
 
 
 def test_recursive_response_calibration():
@@ -42,8 +43,7 @@ def test_recursive_response_calibration():
 
     _, fbvals, fbvecs = get_data('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     sphere = get_sphere('symmetric724')
 
     gtab = gradient_table(bvals, bvecs)
@@ -154,8 +154,7 @@ def test_auto_response():
 
 def test_response_from_mask():
     fdata, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = nib.load(fdata).get_data()
 
     gtab = gradient_table(bvals, bvecs)
@@ -195,8 +194,7 @@ def test_csdeconv():
 
     _, fbvals, fbvecs = get_data('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -261,8 +259,7 @@ def test_odfdeconv():
     S0 = 1
 
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -319,8 +316,7 @@ def test_odf_sh_to_sharp():
     SNR = None
     S0 = 1
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -380,8 +376,7 @@ def test_r2_term_odf_sharp():
 
     _, fbvals, fbvecs = get_data('small_64D')  # get_data('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     sphere = get_sphere('symmetric724')
     gtab = gradient_table(bvals, bvecs)
@@ -425,8 +420,7 @@ def test_csd_predict():
     SNR = 100
     S0 = 1
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -477,8 +471,7 @@ def test_csd_predict_multi():
     """
     S0 = 123.
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
     csd = ConstrainedSphericalDeconvModel(gtab, response)
@@ -497,8 +490,7 @@ def test_sphere_scaling_csdmodel():
     the model"""
     _, fbvals, fbvecs = get_data('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -534,8 +526,7 @@ def test_default_lambda_csdmodel():
 
     # Create gradient table
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
     # Some response function
@@ -552,8 +543,7 @@ def test_default_lambda_csdmodel():
 def test_csd_superres():
     """ Check the quality of csdfit with high SH order. """
     _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
     # img, gtab = read_stanford_hardi()

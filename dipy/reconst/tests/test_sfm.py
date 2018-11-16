@@ -7,6 +7,7 @@ import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
+from dipy.io.gradients import read_bvals_bvecs
 
 
 def test_design_matrix():
@@ -52,8 +53,7 @@ def test_predict():
     SNR = 1000
     S0 = 100
     _, fbvals, fbvecs = dpd.get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))

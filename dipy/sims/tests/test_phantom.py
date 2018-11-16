@@ -8,11 +8,11 @@ from dipy.data import get_data
 from dipy.reconst.dti import TensorModel
 from dipy.sims.phantom import orbital_phantom
 from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_bvals_bvecs
 
 
 fimg, fbvals, fbvecs = get_data('small_64D')
-bvals = np.load(fbvals)
-bvecs = np.load(fbvecs)
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 bvecs[np.isnan(bvecs)] = 0
 
 gtab = gradient_table(bvals, bvecs)

@@ -18,6 +18,7 @@ import dipy.core.optimize as opt
 import dipy.core.ndindex as nd
 import dipy.core.gradients as grad
 import dipy.reconst.dti as dti
+from dipy.io.gradients import read_bvals_bvecs
 
 THIS_DIR = op.dirname(__file__)
 
@@ -104,7 +105,7 @@ def test_FiberModel_init():
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
-    bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
+    bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
 
@@ -127,7 +128,8 @@ def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_data('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
-    bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
+    data_aff = data_ni.affine
+    bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = dpg.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
     evals = [0.0015, 0.0005, 0.0005]
