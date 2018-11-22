@@ -59,7 +59,7 @@ class GradientTable(object):
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=0):
+                 b0_threshold=50):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
@@ -114,7 +114,7 @@ class GradientTable(object):
         print('         max %f ' % self.bvecs.max())
 
 
-def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
+def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
                                     **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
@@ -177,7 +177,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
 
 def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
-                                    b0_threshold=0, atol=1e-2):
+                                    b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -253,7 +253,7 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
 
 def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
                                                 big_delta, small_delta,
-                                                b0_threshold=0, atol=1e-2):
+                                                b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -331,7 +331,7 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
 
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=0, atol=1e-2):
+                   b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
