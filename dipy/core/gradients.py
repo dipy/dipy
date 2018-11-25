@@ -157,7 +157,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
                          "respectively, where N is the number of diffusion "
                          "gradients")
     # checking for negative bvals
-    if min(bvals) < 0:
+    if b0_threshold < 0:
         raise ValueError("Negative bvals in the data are not feasible")
 
     # Upper bound for the b0_threshold
@@ -432,7 +432,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     bvals = np.asarray(bvals)
 
     # checking for negative bvals
-    if min(bvals) < 0:
+    if b0_threshold < 0:
         raise ValueError("Negative bvals in the data are not feasible")
 
     # Upper bound for the b0_threshold
