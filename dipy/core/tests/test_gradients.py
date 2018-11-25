@@ -1,6 +1,6 @@
 import warnings
 
-from nose.tools import assert_true, assert_raises
+from nose.tools import assert_raises
 import numpy as np
 import numpy.testing as npt
 
@@ -61,13 +61,13 @@ def test_GradientTable():
     expected_b0s_mask = expected_bvals == 0
     expected_bvecs = gradients / (expected_bvals + expected_b0s_mask)[:, None]
 
-    gt = GradientTable(gradients, b0_threshold=50)
+    gt = GradientTable(gradients, b0_threshold=0)
     npt.assert_array_almost_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
     npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
     npt.assert_array_almost_equal(gt.gradients, gradients)
 
-    gt = GradientTable(gradients, b0_threshold=50)
+    gt = GradientTable(gradients, b0_threshold=1)
     npt.assert_array_equal(gt.b0s_mask, [1, 1, 1, 0, 0])
     npt.assert_array_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.bvecs, expected_bvecs)
@@ -135,7 +135,7 @@ def test_gradient_table_from_bvals_bvecs():
                       [0, sq2, sq2],
                       [0, 0, 0]])
 
-    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50)
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
     npt.assert_array_equal(gt.bvals, bvals)
     npt.assert_array_equal(gt.gradients, np.reshape(bvals, (-1, 1)) * bvecs)
@@ -144,36 +144,40 @@ def test_gradient_table_from_bvals_bvecs():
     # Test nans are replaced by 0
     new_bvecs = bvecs.copy()
     new_bvecs[[0, -1]] = np.nan
-    gt = gradient_table_from_bvals_bvecs(bvals, new_bvecs, b0_threshold=50)
+    gt = gradient_table_from_bvals_bvecs(bvals, new_bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
 
     # Bvalue > 0 for non-unit vector
     bad_bvals = [2, 1, 2, 3, 4, 5, 6, 0]
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=50.)
+                      bvecs, b0_threshold=0.)
     # num_gard inconsistent bvals, bvecs
     bad_bvals = np.ones(7)
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=50.)
+                      bvecs, b0_threshold=0.)
+    # negative bvals
+    bad_bvals = [-1, -1, -1, -5, -6, -10]
+    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
+                      bvecs, b0_threshold=0.)
     # bvals not 1d
     bad_bvals = np.ones((1, 8))
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
-                      bvecs, b0_threshold=50.)
+                      bvecs, b0_threshold=0.)
     # bvec not 2d
     bad_bvecs = np.ones((1, 8, 3))
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=50.)
+                      bad_bvecs, b0_threshold=0.)
     # bvec not (N, 3)
     bad_bvecs = np.ones((8, 2))
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=50.)
+                      bad_bvecs, b0_threshold=0.)
     # bvecs not unit vectors
     bad_bvecs = bvecs * 2
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
-                      bad_bvecs, b0_threshold=50.)
+                      bad_bvecs, b0_threshold=0.)
 
     # Test **kargs get passed along
-    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50,
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0,
                                          big_delta=5, small_delta=2)
     npt.assert_equal(gt.big_delta, 5)
     npt.assert_equal(gt.small_delta, 2)
@@ -249,7 +253,7 @@ def test_reorient_bvecs():
                       [sq2, 0, sq2],
                       [0, sq2, sq2]])
 
-    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50)
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0)
     # The simple case: all affines are identity
     affs = np.zeros((6, 4, 4))
     for i in range(4):
@@ -284,7 +288,7 @@ def test_reorient_bvecs():
                                            [0, 0, 0, 1]]))
 
     gt_rot = gradient_table_from_bvals_bvecs(bvals,
-                                             rotated_bvecs, b0_threshold=50)
+                                             rotated_bvecs, b0_threshold=0)
     new_gt = reorient_bvecs(gt_rot, full_affines)
     # At the end of all this, we should be able to recover the original
     # vectors
