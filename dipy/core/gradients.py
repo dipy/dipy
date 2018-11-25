@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+import logging
 
 from dipy.utils.six import string_types
 
@@ -155,6 +156,13 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
         raise ValueError("bvals and bvecs should be (N,) and (N, 3) arrays "
                          "respectively, where N is the number of diffusion "
                          "gradients")
+    # checking for negative bvals
+    if min(bvals) < 0:
+        raise ValueError("Negative bvals in the data are not feasible")
+
+    # Upper bound for the b0_threshold
+    if b0_threshold >= 200:
+        logging.warning('b0_threshold has a value > 199')
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
@@ -242,6 +250,11 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
     """
     qvals = np.asarray(qvals)
     bvecs = np.asarray(bvecs)
+
+    # Upper bound for the b0_threshold
+    if b0_threshold >= 200:
+        logging.warning('b0_threshold has a value > 199')
+
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
     bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
@@ -411,6 +424,15 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
         _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
+
+    # checking for negative bvals
+    if min(bvals) < 0:
+        raise ValueError("Negative bvals in the data are not feasible")
+
+    # Upper bound for the b0_threshold
+    if b0_threshold >= 200:
+        logging.warning('b0_threshold has a value > 199')
+
     # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
     if bvecs is None:
         if bvals.shape[-1] == 4:
