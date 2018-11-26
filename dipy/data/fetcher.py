@@ -435,10 +435,10 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_bundle_atlas_hcp842",
     pjoin(dipy_home, 'bundle_atlas_hcp842'),
     'https://ndownloader.figshare.com/files/',
-    ['11921522'],
-    ['Atlas_in_MNI_Space_16_bundles.zip'],
-    ['b071f3e851f21ba1749c02fc6beb3118'],
-    doc="Download atlas tractogram from the hcp842 dataset with its bundles",
+    ['13638644'],
+    ['Atlas_80_Bundles.zip'],
+    ['78331d527a10ec000d4f33bac472e099'],
+    doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
     data_size="200MB",
     unzip=True)
 
@@ -1066,13 +1066,13 @@ def get_bundle_atlas_hcp842():
     """
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   '*.trk')
 
@@ -1088,13 +1088,13 @@ def get_two_hcp842_bundle():
     """
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   'AF_L.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   'CST_L.trk')
 

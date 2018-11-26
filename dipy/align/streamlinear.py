@@ -910,13 +910,13 @@ def slr_with_qbx(static, moving,
     References
     ----------
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-            registration of white-matter fascicles in the space of streamlines"
-            , NeuroImage, 117, 124--140, 2015
+    registration of white-matter fascicles in the space of streamlines",
+    NeuroImage, 117, 124--140, 2015
     .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
             bundle alignment for group comparisons", ISMRM, 2014.
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+    bundles using local and global streamline-based registration and
+    clustering, Neuroimage, 2017.
     """
     if rng is None:
         rng = np.random.RandomState()
