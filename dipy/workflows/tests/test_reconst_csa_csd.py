@@ -37,9 +37,18 @@ def reconst_flow_core(flow):
 
         reconst_flow = flow()
         for sh_order in [4, 6, 8]:
-            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                            sh_order=sh_order,
-                            out_dir=out_dir, extract_pam_values=True)
+            if flow.get_short_name() == 'csd':
+
+                reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                                sh_order=sh_order,
+                                out_dir=out_dir, extract_pam_values=True)
+
+            elif flow.get_short_name() == 'csa':
+
+                reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                                sh_order=sh_order,
+                                odf_to_sh_order=sh_order,
+                                out_dir=out_dir, extract_pam_values=True)
 
             gfa_path = reconst_flow.last_generated_outputs['out_gfa']
             gfa_data = nib.load(gfa_path).get_data()
@@ -68,7 +77,7 @@ def reconst_flow_core(flow):
             # Test that the number of coefficients is what you would expect
             # given the order of the sh basis:
             assert_equal(shm_data.shape[-1],
-                            sph_harm_ind_list(sh_order)[0].shape[0])
+                         sph_harm_ind_list(sh_order)[0].shape[0])
             assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
             pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])

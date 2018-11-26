@@ -521,7 +521,7 @@ class ReconstCSDFlow(Workflow):
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
             n_params = ((sh_order + 1) * (sh_order + 2)) / 2
-            if data.shape[-1] < no_params:
+            if data.shape[-1] < n_params:
                 raise ValueError(
                     'You need at least {0} unique DWI volumes to '
                     'compute fiber odfs. You currently have: {1}'
