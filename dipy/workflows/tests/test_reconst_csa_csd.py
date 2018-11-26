@@ -13,6 +13,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_data
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
+from dipy.reconst.shm import sph_harm_ind_list
 logging.getLogger().setLevel(logging.INFO)
 
 
@@ -35,9 +36,10 @@ def reconst_flow_core(flow):
         nib.save(mask_img, mask_path)
 
         reconst_flow = flow()
-
+        sh_order = 8
         reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                         out_dir=out_dir, extract_pam_values=True)
+                        sh_order=sh_order,
+                        out_dir=out_dir, extract_pam_values=True)
 
         gfa_path = reconst_flow.last_generated_outputs['out_gfa']
         gfa_data = nib.load(gfa_path).get_data()
@@ -62,7 +64,10 @@ def reconst_flow_core(flow):
 
         shm_path = reconst_flow.last_generated_outputs['out_shm']
         shm_data = nib.load(shm_path).get_data()
-        assert_equal(shm_data.shape[-1], 45)
+        # Test that the number of coefficients is what you would expect
+        # given the order of the sh basis:
+        assert_equal(shm_data.shape[-1],
+                        sph_harm_ind_list(sh_order)[0].shape[0])
         assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
         pam = load_peaks(reconst_flow.last_generated_outputs['out_pam'])
