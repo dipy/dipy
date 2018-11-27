@@ -78,7 +78,7 @@ def test_GradientTable():
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
 
     with warnings.catch_warnings(record=True) as w:
-        bad_gt = gradient_table(expected_bvals, expected_bvecs, \
+        bad_gt = gradient_table(expected_bvals, expected_bvecs,
                                 b0_threshold=200)
         assert len(w) == 1
 
