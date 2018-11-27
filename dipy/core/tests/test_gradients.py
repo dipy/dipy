@@ -72,8 +72,15 @@ def test_GradientTable():
     npt.assert_array_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.bvecs, expected_bvecs)
 
+    # checks negative values in gtab
+    npt.assert_raises(ValueError, GradientTable, -1)
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
+
+    with warnings.catch_warnings(record=True) as w:
+        bad_gt = gradient_table(expected_bvals, expected_bvecs, \
+                                b0_threshold=200)
+        assert len(w) == 1
 
 
 def test_gradient_table_from_qvals_bvecs():

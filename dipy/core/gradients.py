@@ -166,9 +166,9 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
 
     # checking for the correctness of bvals
     if b0_threshold < bvals.min():
-        warn("b0_threshold (value: {0}) is too low, increase your "
-             "b0_threshold. It should higher than the first b0 value "
-             "({1}).".format(b0_threshold, bvals.min()))
+        warn("b0_threshold (value: {0}) is too low, increase your \
+             b0_threshold. It should higher than the first b0 value \
+             ({1}).".format(b0_threshold, bvals.min()))
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
@@ -256,10 +256,6 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
     """
     qvals = np.asarray(qvals)
     bvecs = np.asarray(bvecs)
-
-    # Upper bound for the b0_threshold
-    if b0_threshold >= 200:
-        warn('b0_threshold has a value > 199')
 
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
@@ -430,20 +426,6 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
         _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
-
-    # checking for negative bvals
-    if b0_threshold < 0:
-        raise ValueError("Negative bvals in the data are not feasible")
-
-    # Upper bound for the b0_threshold
-    if b0_threshold >= 200:
-        warn('b0_threshold has a value > 199')
-
-    # checking for the correctness of bvals
-    if b0_threshold < bvals.min():
-        warn("b0_threshold (value: {0}) is too low, increase your "
-             "b0_threshold. It should higher than the first b0 value "
-             "({1}).".format(b0_threshold, bvals.min()))
 
     # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
     if bvecs is None:
