@@ -520,14 +520,12 @@ class ReconstCSDFlow(Workflow):
                                   atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            sh_order = 8
-            if data.shape[-1] < 15:
+            n_params = ((sh_order + 1) * (sh_order + 2)) / 2
+            if data.shape[-1] < n_params:
                 raise ValueError(
-                    'You need at least 15 unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {0}'
-                    ' DWI volumes.'.format(data.shape[-1]))
-            elif data.shape[-1] < 30:
-                sh_order = 6
+                    'You need at least {0} unique DWI volumes to '
+                    'compute fiber odfs. You currently have: {1}'
+                    ' DWI volumes.'.format(n_params, data.shape[-1]))
 
             if frf is None:
                 logging.info('Computing response function')
