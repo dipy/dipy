@@ -1079,7 +1079,7 @@ def get_bundle_atlas_hcp842():
     return file1, file2
 
 
-def get_two_hcp842_bundle():
+def get_two_hcp842_bundles():
     """
     Returns
     -------
