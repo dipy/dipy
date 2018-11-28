@@ -91,8 +91,8 @@ Read AF left and CST left bundles from already fetched atlas data to use them
 as model bundles
 """
 
-from dipy.data.fetcher import get_two_hcp842_bundle
-bundle1, bundle2 = get_two_hcp842_bundle()
+from dipy.data.fetcher import get_two_hcp842_bundles
+bundle1, bundle2 = get_two_hcp842_bundles()
 
 """
 Extracting bundles using recobundles [Garyfallidis17]_
