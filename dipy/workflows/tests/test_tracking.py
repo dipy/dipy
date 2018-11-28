@@ -5,7 +5,7 @@ from os.path import join
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
@@ -14,7 +14,7 @@ from dipy.workflows.tracking import DetTrackPAMFlow
 
 def test_det_track():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_64D')
+        data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])

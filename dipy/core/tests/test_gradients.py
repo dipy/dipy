@@ -4,7 +4,7 @@ from nose.tools import assert_true, assert_raises
 import numpy as np
 import numpy.testing as npt
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
@@ -30,9 +30,8 @@ def test_btable_prepare():
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
     # bt.info
-    fimg, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
@@ -199,7 +198,7 @@ def test_b0s():
 
 
 def test_gtable_from_files():
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     gt = gradient_table(fbvals, fbvecs)
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     npt.assert_array_equal(gt.bvals, bvals)
@@ -308,7 +307,7 @@ def test_nan_bvecs():
     indicate a 0 b-value, but also raised a warning when testing for the length
     of these vectors. This checks that it doesn't happen.
     """
-    fdata, fbvals, fbvecs = get_data()
+    fdata, fbvals, fbvecs = get_fnames()
     with warnings.catch_warnings(record=True) as w:
         gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)

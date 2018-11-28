@@ -101,8 +101,8 @@ def test_sharpness():
 
 
 def test_ascm_accuracy():
-    test_ascm_data_ref = nib.load(dpd.get_data("ascm_test")).get_data()
-    test_data = nib.load(dpd.get_data("aniso_vox")).get_data()
+    test_ascm_data_ref = nib.load(dpd.get_fnames("ascm_test")).get_data()
+    test_data = nib.load(dpd.get_fnames("aniso_vox")).get_data()
 
     # the test data was constructed in this manner
     mask = test_data > 50

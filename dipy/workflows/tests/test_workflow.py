@@ -6,7 +6,7 @@ from os.path import join as pjoin
 
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
 import numpy.testing as npt
@@ -14,7 +14,7 @@ import numpy.testing as npt
 
 def test_force_overwrite():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_data('small_25')
+        data_path, _, _ = get_fnames('small_25')
         mo_flow = MedianOtsuFlow(output_strategy='absolute')
 
         # Generate the first results

@@ -14,7 +14,7 @@ against standard DSI ODF and a ground truth multi tensor ODF.
 
 import numpy as np
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dsi import (DiffusionSpectrumDeconvModel,
                               DiffusionSpectrumModel)
@@ -24,7 +24,7 @@ For the simulation we will use a standard DSI acqusition scheme with 514
 gradient directions and 1 S0.
 """
 
-btable = np.loadtxt(get_data('dsi515btable'))
+btable = np.loadtxt(get_fnames('dsi515btable'))
 
 gtab = gradient_table(btable[:, 0], btable[:, 1:])
 

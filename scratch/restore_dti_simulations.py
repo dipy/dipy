@@ -6,7 +6,7 @@ import dipy.data as dpd
 import dipy.core.gradients as grad
 
 b0 = 1000.
-bvecs, bval = dpd.read_bvec_file(dpd.get_data('55dir_grad.bvec'))
+bvecs, bval = dpd.read_bvec_file(dpd.get_fnames('55dir_grad.bvec'))
 gtab = grad.gradient_table(bval, bvecs)
 B = bval[1]
 

@@ -16,7 +16,7 @@ Run this benchmark with:
 import numpy as np
 import nibabel as nib
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 import dipy.tracking.streamline as streamline_utils
 from dipy.segment.metric import Metric
@@ -43,7 +43,7 @@ def bench_quickbundles():
     repeat = 10
     nb_points = 12
 
-    streams, hdr = nib.trackvis.read(get_data('fornix'))
+    streams, hdr = nib.trackvis.read(get_fnames('fornix'))
     fornix = [s[0].astype(dtype) for s in streams]
     fornix = streamline_utils.set_number_of_points(fornix, nb_points)
 
