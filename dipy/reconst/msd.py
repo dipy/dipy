@@ -235,8 +235,9 @@ class QpFitter(object):
         z_mat = cvx.Variable(z.shape[0], 1)
         z_mat.value = z
         constraints = [self._reg_mat * self._x_mat >= self._h_mat]
-        objMin = cvx.Problem(cvx.Minimize(0.5 * cvx.quad_form(self._x_mat, self._P_mat.value) + \
-                                         (z_mat.value.T * self._x_mat)), constraints, init)
+        objMin = cvx.Problem(cvx.Minimize(0.5 * cvx.quad_form(self._x_mat,
+                                          self._P_mat.value) + (z_mat.value.T
+                                          * self._x_mat)), constraints, init)
         r = objMin.solve(solver=cvx.OSQP)
         fodf_sh = r
         fodf_sh = np.array(fodf_sh)[:, 0]
