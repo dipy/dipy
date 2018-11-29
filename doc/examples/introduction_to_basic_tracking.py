@@ -95,7 +95,7 @@ display the resulting streamlines using the ``dipy.viz`` package.
 """
 
 from dipy.tracking.local import LocalTracking
-from dipy.viz import window, actor, colormap as cmap
+from dipy.viz import window, actor, colormap as cmap, have_fury
 from dipy.tracking.streamline import Streamlines
 
 # Enables/disables interactive visualization
@@ -111,7 +111,7 @@ streamlines = Streamlines(streamlines_generator)
 # Prepare the display objects.
 color = cmap.line_colors(streamlines)
 
-if window.have_vtk:
+if have_fury:
     streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 
     # Create the 3D display.
@@ -201,7 +201,7 @@ streamlines_generator = LocalTracking(prob_dg, classifier, seeds,
 # Generate streamlines object.
 streamlines = Streamlines(streamlines_generator)
 
-if window.have_vtk:
+if have_fury:
     streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 
     # Create the 3D display.

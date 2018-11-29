@@ -197,7 +197,7 @@ save_trk("deterministic_binary_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_binary_classifier)
 
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
     ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_binary_classifier.png',
