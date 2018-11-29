@@ -312,7 +312,7 @@ class LabelsBundlesFlow(Workflow):
             logging.info(sf)
             streamlines, header = load_trk(sf)
             logging.info(lb)
-            location = np.load(lb)
+            location = np.load(lb).astype(int)
             logging.info('Saving output files ...')
             save_trk(out_bundle, streamlines[location], np.eye(4))
             logging.info(out_bundle)
