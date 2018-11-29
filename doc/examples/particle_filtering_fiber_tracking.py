@@ -42,7 +42,7 @@ hardi_img, gtab, labels_img = read_stanford_labels()
 
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 shape = labels.shape
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
