@@ -3,7 +3,8 @@ from warnings import warn
 import types
 
 from distutils.version import LooseVersion
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist, mahalanobis
+
 import numpy as np
 import nibabel as nib
 from nibabel.affines import apply_affine
@@ -801,5 +802,104 @@ def values_from_volume(data, streamlines, affine=None):
         raise ValueError("Data needs to have 3 or 4 dimensions")
 
 
+def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
+                     stat=np.mean):
+    """
+    Calculate weights for each streamline/node in a bundle, based on a
+    Mahalanobis distance from the core the bundle, at that node (mean, per
+    default).
+
+    Parameters
+    ----------
+    bundle : array or list
+        If this is a list, assume that it is a list of streamline coordinates
+        (each entry is a 2D array, of shape n by 3). If this is an array, this
+        is a resampled version of the streamlines, with equal number of points
+        in each streamline.
+    n_points : int, optional
+        The number of points to resample to. *If the `bundle` is an array, this
+        input is ignored*. Default: 100.
+
+    Returns
+    -------
+    w : array of shape (n_streamlines, n_points)
+        Weights for each node in each streamline, calculated as its relative
+        inverse of the Mahalanobis distance, relative to the distribution of
+        coordinates at that node position across streamlines.
+    """
+    if isinstance(bundle, np.ndarray):
+        # It's an array, go with it:
+        n_points = bundle.shape[1]
+    else:
+        # It's something else, assume that it needs to be resampled:
+        bundle = np.array(set_number_of_points(bundle, n_points))
+    w = np.zeros((bundle.shape[0], n_points))
+
+    # If there's only one fiber here, it gets the entire weighting:
+    if bundle.shape[0] == 1:
+        if return_mahalnobis:
+            return np.array([np.nan])
+        else:
+            return np.array([1])
+
+    for node in range(bundle.shape[1]):
+        # This should come back as a 3D covariance matrix with the spatial
+        # variance covariance of this node across the different streamlines
+        # This is a 3-by-3 array:
+        node_coords = bundle[:, node]
+        c = np.cov(node_coords.T, ddof=0)
+        c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
+                      [0, c[1, 1], c[1, 2]],
+                      [0, 0, c[2, 2]]])
+        # Calculate the mean or median of this node as well
+        # delta = node_coords - np.mean(node_coords, 0)
+        m = stat(node_coords, 0)
+        # Weights are the inverse of the Mahalanobis distance
+        for fn in range(bundle.shape[0]):
+            # calculate Mahalanobis for node on fiber[fn]
+            w[fn, node] = mahalanobis(node_coords[fn], m, np.linalg.inv(c))
+    if return_mahalnobis:
+        return w
+    # weighting is inverse to the distance (the further you are, the less you
+    # should be weighted)
+    w = 1 / w
+    # Normalize before returning, so that the weights in each node sum to 1:
+    return w / np.sum(w, 0)
+
+
+def bundle_profile(data, bundle, affine=None, n_points=100,
+                   weights=None):
+    """
+    Calculates a summarized profile of data for a bundle along its length
+
+    Parameters
+    ----------
+    data : 3D volume
+    bundle : StreamLines class instance, list of arrays, or array
+    weights : 1D array or 2D array (optional)
+        Weight each streamline (1D) or each node (2D) when calculating the
+        tract-profiles. Must sum to 1 across streamlines (in each node if
+        relevant).
+    """
+    # It's already an array
+    if isinstance(bundle, np.ndarray):
+        fgarray = bundle
+    else:
+        # It's some other kind of thing (list, Streamlines, etc.).
+        # Resample each streamline to the same number of points
+        # list => np.array
+        fgarray = np.array(set_number_of_points(bundle, n_points))
+
+    values = values_from_volume(data, fgarray, affine=affine)
+
+    # We assume that weights *always sum to 1 across streamlines*:
+    if weights is None:
+        weights = np.ones(values.shape) / values.shape[0]
+
+    return np.sum(weights * values, 0)
+
+
 def nbytes(streamlines):
     return streamlines._data.nbytes / 1024. ** 2
+
+

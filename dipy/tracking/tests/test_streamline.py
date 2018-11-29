@@ -27,7 +27,9 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       orient_by_rois,
                                       values_from_volume,
                                       deform_streamlines,
-                                      cluster_confidence)
+                                      cluster_confidence,
+                                      gaussian_weights,
+                                      bundle_profile)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
@@ -1182,6 +1184,30 @@ def test_cluster_confidence():
                                   max_mdf=5, override=True)
     expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
     assert_array_equal(cci_dist, expected_cci_dist)
+
+
+def test_gaussian_weights():
+    # Some bogus x,y,z coordinates
+    x = np.arange(10)
+    y = np.arange(10)
+    z = np.arange(10)
+    # Create a distribution for which we can predict the weights we would
+    # expect to get:
+    bundle = np.array([np.array([x, y, z]).T + 1,
+                       np.array([x, y, z]).T - 1])
+    # In this case, all nodes receives an equal weight of 0.5:
+    w = gaussian_weights(bundle)
+    npt.assert_equal(w, np.ones(bundle.shape[:-1]) * 0.5)
+
+    # Here, some nodes are twice as far from the mean as others
+    bundle = np.array([np.array([x, y, z]).T + 2,
+                       np.array([x, y, z]).T + 1,
+                       np.array([x, y, z]).T - 1,
+                       np.array([x, y, z]).T - 2])
+    w = gaussian_weights(bundle)
+
+    # And their weights should be halved
+    npt.assert_almost_equal(w[0], w[1] / 2)
 
 
 if __name__ == '__main__':
