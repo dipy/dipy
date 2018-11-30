@@ -155,7 +155,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs['type'] = str
 
             if isnarg:
-                _kwargs['nargs'] = '*'
+                _kwargs['nargs'] = '*' if is_optionnal else '+'
 
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)
