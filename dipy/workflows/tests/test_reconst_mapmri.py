@@ -4,7 +4,7 @@ import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_raises, assert_warns
 from dipy.reconst import mapmri
 
 from dipy.data import get_fnames
@@ -87,11 +87,12 @@ def reconst_mmri_core(flow, lap, pos):
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True
-        with npt.assert_raises(BaseException):
-            npt.assert_warns(UserWarning, mmri_flow.run, data_path,
-                             tmp_bval_path, tmp_bvec_path, small_delta=0.0129,
-                             big_delta=0.0218, laplacian=lap,
-                             positivity=pos, out_dir=out_dir)
+        with assert_raises(BaseException):
+            assert_warns(UserWarning, mmri_flow.run, data_path,
+                         tmp_bval_path, tmp_bvec_path, small_delta=0.0129,
+                         big_delta=0.0218, laplacian=lap,
+                         positivity=pos, out_dir=out_dir)
+
 
 
 if __name__ == '__main__':
