@@ -3,9 +3,9 @@ import numpy as np
 import dipy.segment.metric as dipymetric
 from dipy.segment.featurespeed import extract
 
-from nose.tools import assert_true, assert_false, assert_equal
+from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite)
+                           assert_raises, assert_equal, run_module_suite)
 
 
 dtype = "float32"
