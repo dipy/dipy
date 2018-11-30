@@ -25,7 +25,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, assert_almost_equal,
                            run_module_suite)
 
-from dipy.testing import sphere_points
+from dipy.testing.spherepoints import sphere_points
 from itertools import permutations
 
 

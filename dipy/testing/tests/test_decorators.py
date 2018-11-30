@@ -1,11 +1,7 @@
-""" Testing decorators module
-"""
+"""Testing decorators module."""
 
-import numpy as np
-
-from numpy.testing import (assert_almost_equal, assert_raises,
-                           assert_array_equal, assert_equal)
-from dipy.testing import assert_true, assert_false, assert_not_equal
+from numpy.testing import assert_raises, assert_equal
+from dipy.testing import assert_true
 from dipy.testing.decorators import doctest_skip_parser
 
 
