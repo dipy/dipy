@@ -30,7 +30,6 @@ def run_flow(flow):
     """
     parser = IntrospectiveArgumentParser()
     sub_flows_dicts = parser.add_workflow(flow)
-    # print(sub_flows_dicts)
 
     # Common workflow arguments
     parser.add_argument('--force', dest='force',
@@ -60,7 +59,6 @@ def run_flow(flow):
                         help='Log file to be saved.')
 
     args = parser.get_flow_args()
-    # print(args)
 
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
