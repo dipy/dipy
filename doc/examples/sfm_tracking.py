@@ -107,15 +107,14 @@ Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.viz import window, actor, colormap as cmap
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
 from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
 t1_aff = t1.affine
-color = line_colors(streamlines)
+color = cmap.line_colors(streamlines)
 
 # Enables/disables interactive visualization
 interactive = False
@@ -132,7 +131,7 @@ plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 streamlines_actor = actor.streamtube(
     list(move_streamlines(plot_streamlines, inv(t1_aff))),
-    line_colors(streamlines), linewidth=0.1)
+         cmap.line_colors(streamlines), linewidth=0.1)
 
 vol_actor = actor.slicer(t1_data)
 

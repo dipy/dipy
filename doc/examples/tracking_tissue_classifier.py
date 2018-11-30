@@ -35,8 +35,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.viz import window, actor, colormap as cmap, have_fury
 
 # Enables/disables interactive visualization
 interactive = False
@@ -127,9 +126,9 @@ save_trk("deterministic_threshold_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_threshold_classifier)
 
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_threshold_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -172,8 +171,9 @@ fig = plt.figure()
 plt.xticks([])
 plt.yticks([])
 fig.tight_layout()
-plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 fig.savefig('white_matter_mask.png')
 
 """
@@ -197,9 +197,9 @@ save_trk("deterministic_binary_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_binary_classifier)
 
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_binary_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -218,9 +218,9 @@ ACT Tissue Classifier
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
 anatomical images to determine when the tractography stops. The ``include_map``
 defines when the streamline reached a 'valid' stopping region (e.g. gray
-matter partial volume estimation (PVE) map) and the ``exclude_map`` defines when
-the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
-PVE map). The background of the anatomical image should be added to the
+matter partial volume estimation (PVE) map) and the ``exclude_map`` defines
+when the streamline reached an 'invalid' stopping region (e.g. corticospinal
+fluid PVE map). The background of the anatomical image should be added to the
 ``include_map`` to keep streamlines exiting the brain (e.g. through the
 brain stem). The ACT tissue classifier uses a trilinear interpolation
 at the tracking position.
@@ -257,13 +257,15 @@ fig = plt.figure()
 plt.subplot(121)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 plt.subplot(122)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 fig.tight_layout()
 fig.savefig('act_maps.png')
 
@@ -288,9 +290,9 @@ save_trk("deterministic_act_classifier_all.trk",
 
 streamlines = Streamlines(all_streamlines_act_classifier)
 
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_act_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -317,9 +319,9 @@ save_trk("deterministic_act_classifier_valid.trk",
 
 streamlines = Streamlines(valid_streamlines_act_classifier)
 
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='valid_streamlines_act_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -336,10 +338,10 @@ if window.have_vtk:
 """
 The threshold and binary tissue classifiers use respectively a scalar map and a
 binary mask to stop the tracking. The ACT tissue classifier use partial volume
-fraction (PVE) maps from an anatomical image to stop the tracking. Additionally,
-the ACT tissue classifier determines if the tracking stopped in expected regions
-(e.g. gray matter) and allows the user to get only streamlines stopping in those
-regions.
+fraction (PVE) maps from an anatomical image to stop the tracking.
+Additionally, the ACT tissue classifier determines if the tracking stopped in
+expected regions (e.g. gray matter) and allows the user to get only
+streamlines stopping in those regions.
 
 Notes
 ------

@@ -17,8 +17,7 @@ from dipy.tracking.local import ThresholdTissueClassifier
 from dipy.tracking import utils
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import actor, window
-from dipy.viz.colormap import line_colors
+from dipy.viz import actor, window, colormap as cmap
 
 """
 First, we need to generate some streamlines. For a more complete
@@ -55,7 +54,7 @@ streamlines = Streamlines(streamlines)
 We will create a streamline actor from the streamlines.
 """
 
-streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 
 """
 Next, we create a surface actor from the corpus callosum seed ROI. We

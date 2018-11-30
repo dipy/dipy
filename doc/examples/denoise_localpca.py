@@ -39,7 +39,7 @@ non-diffusion (b=0) image.
 img, gtab = read_isbi2013_2shell()
 
 data = img.get_data()
-affine = img.get_affine()
+affine = img.affine
 
 print("Input Volume", data.shape)
 
