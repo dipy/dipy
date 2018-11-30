@@ -323,7 +323,7 @@ Instead of specifying the full covariance matrix, popular
 approximations include:
 
   - Spherical covariance (`cov` is a multiple of the identity matrix)
-  - Diagonal covariance (`cov` has non-negative elements only on the diagonal)
+  - Diagonal covariance(`cov` has non-negative elements only on the diagonal)
 
 This geometrical property can be seen in two dimensions by plotting
 generated data-points:
