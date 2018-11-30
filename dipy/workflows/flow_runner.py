@@ -7,6 +7,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import logging
 
+from dipy import __version__ as dipy_version
 from dipy.utils.six import iteritems
 from dipy.workflows.base import IntrospectiveArgumentParser
 
@@ -29,11 +30,15 @@ def run_flow(flow):
     """
     parser = IntrospectiveArgumentParser()
     sub_flows_dicts = parser.add_workflow(flow)
+    # print(sub_flows_dicts)
 
     # Common workflow arguments
     parser.add_argument('--force', dest='force',
                         action='store_true', default=False,
                         help='Force overwriting output files.')
+
+    parser.add_argument('--version', action='version',
+                        version='DIPY {}'.format(dipy_version))
 
     parser.add_argument('--out_strat', action='store', dest='out_strat',
                         metavar='string', required=False, default='absolute',
@@ -55,6 +60,7 @@ def run_flow(flow):
                         help='Log file to be saved.')
 
     args = parser.get_flow_args()
+    # print(args)
 
     logging.basicConfig(filename=args['log_file'],
                         format='%(levelname)s:%(message)s',
@@ -85,4 +91,3 @@ def run_flow(flow):
         flow.set_sub_flows_optionals(sub_flows_dicts)
 
     return flow.run(**args)
-
