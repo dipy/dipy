@@ -40,22 +40,22 @@ def reconst_flow_core(flow):
             if flow.get_short_name() == 'csd':
 
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                sh_order=sh_order,
-                                out_dir=out_dir, extract_pam_values=True)
+                                 sh_order=sh_order,
+                                 out_dir=out_dir, extract_pam_values=True)
 
             elif flow.get_short_name() == 'csa':
 
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                sh_order=sh_order,
-                                odf_to_sh_order=sh_order,
-                                out_dir=out_dir, extract_pam_values=True)
+                                 sh_order=sh_order,
+                                 odf_to_sh_order=sh_order,
+                                 out_dir=out_dir, extract_pam_values=True)
 
             gfa_path = reconst_flow.last_generated_outputs['out_gfa']
             gfa_data = nib.load(gfa_path).get_data()
             assert_equal(gfa_data.shape, volume.shape[:-1])
 
             peaks_dir_path =\
-                 reconst_flow.last_generated_outputs['out_peaks_dir']
+                reconst_flow.last_generated_outputs['out_peaks_dir']
             peaks_dir_data = nib.load(peaks_dir_path).get_data()
             assert_equal(peaks_dir_data.shape[-1], 15)
             assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
@@ -99,28 +99,28 @@ def reconst_flow_core(flow):
             reconst_flow._force_overwrite = True
             with npt.assert_raises(BaseException):
                 npt.assert_warns(UserWarning, reconst_flow.run, data_path,
-                                tmp_bval_path, tmp_bvec_path, mask_path,
-                                out_dir=out_dir, extract_pam_values=True)
+                                 tmp_bval_path, tmp_bvec_path, mask_path,
+                                 out_dir=out_dir, extract_pam_values=True)
 
             if flow.get_short_name() == 'csd':
 
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                out_dir=out_dir, frf=[15, 5, 5])
+                                 out_dir=out_dir, frf=[15, 5, 5])
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                out_dir=out_dir, frf='15, 5, 5')
+                                 out_dir=out_dir, frf='15, 5, 5')
                 reconst_flow = flow()
                 reconst_flow._force_overwrite = True
                 reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
-                                out_dir=out_dir, frf=None)
+                                 out_dir=out_dir, frf=None)
                 reconst_flow2 = flow()
                 reconst_flow2._force_overwrite = True
                 reconst_flow2.run(data_path, bval_path, bvec_path, mask_path,
-                                out_dir=out_dir, frf=None,
-                                roi_center=[10, 10, 10])
+                                  out_dir=out_dir, frf=None,
+                                  roi_center=[10, 10, 10])
 
 
 if __name__ == '__main__':
