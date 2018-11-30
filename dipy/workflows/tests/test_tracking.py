@@ -1,5 +1,6 @@
 import numpy as np
-from nose.tools import assert_false, assert_equal
+from numpy.testing import assert_equal
+from dipy.testing import assert_false
 from os.path import join
 
 import nibabel as nib
