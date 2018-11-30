@@ -13,14 +13,15 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
-fimg, fbvals, fbvecs = get_fnames('small_64D')
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
+def setup_module():
+    fimg, fbvals, fbvecs = get_data('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
 
-# 2 shells for techniques that requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    # 2 shells for techniques that requires multishell data
+    bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
 # Unused with missing refernces to basis
