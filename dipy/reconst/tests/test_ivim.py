@@ -65,7 +65,7 @@ bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
                         500., 600., 700., 800., 900., 1000.])
 
 bvecs_no_b0 = generate_bvecs(N)
-gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=bvals.min())
 
 bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
                                    120., 140., 160., 180., 200., 300., 400.,

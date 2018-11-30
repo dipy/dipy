@@ -381,7 +381,7 @@ class IvimModel(ReconstModel):
                 warningMsg += " as initial guess for leastsq. Parameters are"
                 warningMsg += " returned only from the linear fit."
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D
+                f, D_star = params_f_D_star
                 return f, D_star
         else:
             try:
