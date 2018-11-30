@@ -25,7 +25,7 @@ class MaskFlow(Workflow):
            Path to image to be masked.
         lb : float
             Lower bound value.
-        ub : float
+        ub : float, optional
             Upper bound value (default Inf)
         out_dir : string, optional
            Output directory (default input file directory)
