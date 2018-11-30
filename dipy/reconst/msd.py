@@ -232,13 +232,14 @@ class QpFitter(object):
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
         init = self._lstsq_initial(z)
+        self._x_mat.value = np.asarray(init['x'].value)
         z_mat = cvx.Variable(z.shape[0], 1)
         z_mat.value = z
-        constraints = [self._reg_mat * self._x_mat >= self._h_mat]
-        objMin = cvx.Problem(cvx.Minimize(0.5 * cvx.quad_form(self._x_mat,
-                                          self._P_mat.value) + (z_mat.value.T
-                                          * self._x_mat)), constraints, init)
-        r = objMin.solve(solver=cvx.OSQP)
+        constraints = [self._reg_mat * self._x_mat.value >= self._h_mat]
+        objMin = cvx.Problem(cvx.Minimize(0.5*cvx.quad_form(self._x_mat.value,
+                                          self._P_mat) + (z_mat.T
+                                          * self._x_mat.value)), constraints)
+        r = objMin.solve(solver=cvx.GUROBI)
         fodf_sh = r
         fodf_sh = np.array(fodf_sh)[:, 0]
         return fodf_sh
