@@ -1,7 +1,7 @@
 import sys
 import inspect
 
-import argparse as arg
+import argparse
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
@@ -20,10 +20,10 @@ def get_args_default(func):
     return names, defaults
 
 
-class IntrospectiveArgumentParser(arg.ArgumentParser):
+class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
-                 parents=[], formatter_class=arg.RawTextHelpFormatter,
+                 parents=[], formatter_class=argparse.RawTextHelpFormatter,
                  prefix_chars='-', fromfile_prefix_chars=None,
                  argument_default=None, conflict_handler='resolve',
                  add_help=True):
@@ -125,8 +125,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         for i, arg in enumerate(args):
             prefix = ''
-            is_optionnal = i >= len_args - len_defaults
-            if is_optionnal:
+            is_optional = i >= len_args - len_defaults
+            if is_optional:
                 prefix = '--'
 
             typestr = self.doc[i][1]
@@ -138,7 +138,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                        'type': dtype,
                        'action': 'store'}
 
-            if is_optionnal:
+            if is_optional:
                 _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
@@ -155,7 +155,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs['type'] = str
 
             if isnarg:
-                _kwargs['nargs'] = '*' if is_optionnal else '+'
+                _kwargs['nargs'] = '*' if is_optional else '+'
 
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)
