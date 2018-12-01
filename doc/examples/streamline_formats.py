@@ -36,8 +36,8 @@ save_trk("my_streamlines.trk", streamlines=streamlines, affine=np.eye(4))
 
 
 """
-2. We also work on our HDF5 based file format which can read/write massive 
-   datasets (as big as the size of you free disk space). With `Dpy` we can
+2. We also work on our HDF5 based file format which can read/write massive
+   datasets (as big as the size of your free disk space). With `Dpy` we can
    support
 
   * direct indexing from the disk
