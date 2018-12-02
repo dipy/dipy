@@ -2011,7 +2011,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
         gcvold = gcvnew
         i = i + 1
         S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
-        trS = np.matrix.trace(S)
+        trS = np.trace(S)
         normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
         gcvnew = normyytilde / (K - trS)
     lopt = lrange[i - 1]
@@ -2060,7 +2060,7 @@ def gcv_cost_function(weight, args):
     """
     data, M, MMt, K, LR = args
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
-    trS = np.matrix.trace(S)
+    trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
     return gcv_value
