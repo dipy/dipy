@@ -6,10 +6,11 @@ from glob import glob
 
 from dipy.utils.six import string_types
 from dipy.workflows.base import get_args_default
+from dipy.workflows.docstring_parser import NumpyDocString
 
 
 def common_start(sa, sb):
-    """ Returns the longest common substring from the beginning of sa and sb """
+    """Return the longest common substring from the beginning of sa and sb."""
     def _iter():
         for a, b in zip(sa, sb):
             if a == b:
@@ -24,8 +25,8 @@ def slash_to_under(dir_str):
     return ''.join(dir_str.replace('/', '_'))
 
 
-def connect_output_paths(inputs, out_dir, out_files, output_strategy='absolute',
-                         mix_names=True):
+def connect_output_paths(inputs, out_dir, out_files,
+                         output_strategy='absolute', mix_names=True):
     """ Generates a list of output files paths based on input files and
     output strategies.
 
@@ -43,8 +44,8 @@ def connect_output_paths(inputs, out_dir, out_files, output_strategy='absolute',
                 'prepend': Add the input path directory tree to out_dir.
                 'absolute': Put directly in out_dir.
         mix_names : bool
-            Whether or not prepend a string composed of a mix of the input names
-            to the final output name.
+            Whether or not prepend a string composed of a mix of the input
+            names to the final output name.
 
     Returns
     -------
@@ -172,6 +173,8 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     del values['self']
 
     spargs, defaults = get_args_default(fnc)
+    doc = inspect.getdoc(fnc)
+    doc = NumpyDocString(doc)['Parameters']
 
     len_args = len(spargs)
     len_defaults = len(defaults)
@@ -182,8 +185,11 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     out_dir = ''
 
     # inputs
-    for arv in args[:split_at]:
-        inputs.append(values[arv])
+    for i, arv in enumerate(args[:split_at]):
+        if 'variable' in doc[i][1].lower():
+            inputs += values[arv]
+        else:
+            inputs.append(values[arv])
 
     # defaults
     out_keys = []
@@ -202,8 +208,9 @@ class IOIterator(object):
     """ Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
 
-    Use information from input files, out_dir and out_fnames to generate correct
-    outputs which can come from long lists of multiple or single inputs.
+    Use information from input files, out_dir and out_fnames to generate
+    correct outputs which can come from long lists of multiple or single
+    inputs.
     """
 
     def __init__(self, output_strategy='absolute', mix_names=False):
@@ -215,7 +222,8 @@ class IOIterator(object):
     def set_inputs(self, *args):
         self.file_existence_check(args)
         self.input_args = list(args)
-        self.inputs = [sorted(glob(inp)) for inp in self.input_args if type(inp) == str]
+        self.inputs = [sorted(glob(inp)) for inp in self.input_args
+                       if type(inp) == str]
 
     def set_out_dir(self, out_dir):
         self.out_dir = out_dir
@@ -258,4 +266,4 @@ class IOIterator(object):
         input_args = [fname for fname in list(args) if isinstance(fname, str)]
         for path in input_args:
             if len(glob(path)) == 0:
-                raise IOError('File not found: '+path)
+                raise IOError('File not found: ' + path)

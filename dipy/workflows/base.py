@@ -106,8 +106,13 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                                                ''.join(ref_text),
                                                self.epilog[ref_idx:])
 
-        self.outputs = [param for param in npds['Parameters'] if
-                        'out_' in param[0]]
+        self._output_params = [param for param in npds['Parameters']
+                               if 'out_' in param[0]]
+        self._positional_params = [param for param in npds['Parameters']
+                                   if 'optional' not in param[1] and
+                                      'out_' not in param[0]]
+        self._optional_params = [param for param in npds['Parameters']
+                                 if 'optional' in param[1]]
 
         args, defaults = get_args_default(workflow.run)
 
@@ -115,6 +120,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         len_args = len(args)
         len_defaults = len(defaults)
+        nb_positional_variable = 0
 
         if len_args != len(self.doc):
             raise ValueError(
@@ -155,12 +161,25 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 _kwargs['type'] = str
 
             if isnarg:
-                _kwargs['nargs'] = '*' if is_optional else '+'
+                if is_optional:
+                    _kwargs['nargs'] = '*'
+                else:
+                    _kwargs['nargs'] = '+'
+                    nb_positional_variable += 1
 
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)
             else:
                 self.add_argument(*_args, **_kwargs)
+
+        if nb_positional_variable > 1:
+            raise ValueError(self.prog + " : All positional arguments present"
+                             " are gathered into a list. It doesn’t make much"
+                             " sense to have more than one positional"
+                             " argument with 'variable string' as dtype."
+                             " Please, ensure that 'variable (type)'"
+                             " appears only once as a positional argument."
+                             )
 
         return self.add_sub_flow_args(workflow.get_sub_runs())
 
@@ -292,5 +311,14 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
     def add_description(self):
         pass
 
-    def get_outputs(self):
-        return self.outputs
+    @property
+    def output_parameters(self):
+        return self._output_params
+
+    @property
+    def positional_parameters(self):
+        return self._positional_params
+
+    @property
+    def optional_parameters(self):
+        return self._optional_params

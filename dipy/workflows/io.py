@@ -36,7 +36,9 @@ class IoInfoFlow(Workflow):
 
         np.set_printoptions(3, suppress=True)
 
-        for input_path in input_files:
+        io_it = self.get_io_iterator()
+
+        for input_path in io_it:
             logging.info('------------------------------------------')
             logging.info('Looking at {0}'.format(input_path))
             logging.info('------------------------------------------')
