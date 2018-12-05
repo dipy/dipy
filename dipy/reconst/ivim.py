@@ -210,11 +210,13 @@ class IvimModel(ReconstModel):
                perfusion with intravoxel incoherent motion MR imaging."
                Radiology 265.3 (2012): 874-881.
         """
-        
         if not np.any(gtab.b0s_mask):
             e_s = "No measured signal at bvalue == 0."
             e_s += "The IVIM model requires signal measured at 0 bvalue"
             raise ValueError(e_s)
+
+        if gtab.b0_threshold > 0:
+            warnings.warn('The default b0_threshold > 0 and is now set to 50')
 
         ReconstModel.__init__(self, gtab)
         self.split_b_D = split_b_D
