@@ -31,8 +31,13 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
+<<<<<<< HEAD
     def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
             b0_threshold=50.0, laplacian=True, positivity=True,
+=======
+    def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
+            b0_threshold=0.0, laplacian=True, positivity=True,
+>>>>>>> nipy-dipy-master
             bval_threshold=2000, save_metrics=[],
             laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
@@ -44,8 +49,8 @@ class ReconstMAPMRIFlow(Workflow):
         """ Workflow for fitting the MAPMRI model (with optional Laplacian
         regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
         non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
-        format in input files provided by `data_file` and saves the nifti files
-        to an output directory specified by `out_dir`.
+        format in input files provided by `data_files` and saves the nifti
+        files to an output directory specified by `out_dir`.
 
         In order for the MAPMRI workflow to work in the way
         intended either the laplacian or positivity or both must
@@ -53,11 +58,11 @@ class ReconstMAPMRIFlow(Workflow):
 
         Parameters
         ----------
-        data_file : string
+        data_files : string
             Path to the input volume.
-        data_bvals : string
+        bvals_files : string
             Path to the bval files.
-        data_bvecs : string
+        bvecs_files : string
             Path to the bvec files.
         small_delta : float
             Small delta value used in generation of gradient table of provided
@@ -67,26 +72,26 @@ class ReconstMAPMRIFlow(Workflow):
             bval and bvec.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
-        laplacian : bool
+        laplacian : bool, optional
             Regularize using the Laplacian of the MAP-MRI basis (default True)
-        positivity : bool
+        positivity : bool, optional
             Constrain the propagator to be positive. (default True)
-        bval_threshold : float
+        bval_threshold : float, optional
             Sets the b-value threshold to be used in the scale factor
             estimation. In order for the estimated non-Gaussianity to have
             meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
             (default: 2000)
-        save_metrics : list of strings
+        save_metrics : variable string, optional
             List of metrics to save.
             Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
             ng, perng, parng
             (default: [] (all))
-        laplacian_weighting : float
+        laplacian_weighting : float, optional
             Weighting value used in fitting the MAPMRI model in the laplacian
             and both model types. (default: 0.05)
-        radial_order : unsigned int
+        radial_order : unsigned int, optional
             Even value used to set the order of the basis
             (default: 6)
         out_dir : string, optional
@@ -243,10 +248,10 @@ class ReconstDtiFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues : string
+        bvalues_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors : string
+        bvectors_files : string
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         mask_files : string
@@ -441,10 +446,10 @@ class ReconstCSDFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues : string
+        bvalues_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors : string
+        bvectors_files : string
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         mask_files : string
@@ -520,14 +525,12 @@ class ReconstCSDFlow(Workflow):
                                   atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            sh_order = 8
-            if data.shape[-1] < 15:
+            n_params = ((sh_order + 1) * (sh_order + 2)) / 2
+            if data.shape[-1] < n_params:
                 raise ValueError(
-                    'You need at least 15 unique DWI volumes to '
-                    'compute fiber odfs. You currently have: {0}'
-                    ' DWI volumes.'.format(data.shape[-1]))
-            elif data.shape[-1] < 30:
-                sh_order = 6
+                    'You need at least {0} unique DWI volumes to '
+                    'compute fiber odfs. You currently have: {1}'
+                    ' DWI volumes.'.format(n_params, data.shape[-1]))
 
             if frf is None:
                 logging.info('Computing response function')
@@ -619,10 +622,10 @@ class ReconstCSAFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues : string
+        bvalues_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors : string
+        bvectors_files : string
             Path to the bvectors files. This path may contain wildcards to use
             multiple bvectors files at once.
         mask_files : string
@@ -743,10 +746,10 @@ class ReconstDkiFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        bvalues : string
+        bvalues_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        bvectors : string
+        bvectors_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
         mask_files : string

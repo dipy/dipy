@@ -23,8 +23,7 @@ from dipy.tracking.local import ThresholdTissueClassifier
 from dipy.tracking import utils
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import actor, window
-from dipy.viz.colormap import line_colors
+from dipy.viz import actor, window, colormap as cmap
 from dipy.tracking.utils import path_length
 import nibabel as nib
 import numpy as np
@@ -73,7 +72,7 @@ streamlines = Streamlines(streamlines)
 # Visualize the streamlines and the Path Length Map base ROI
 # (in this case also the seed ROI)
 
-streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(seed_mask, affine,

@@ -50,8 +50,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     --------
     >>> import nibabel as nib
     >>> from dipy.align.reslice import reslice
-    >>> from dipy.data import get_data
-    >>> fimg = get_data('aniso_vox')
+    >>> from dipy.data import get_fnames
+    >>> fimg = get_fnames('aniso_vox')
     >>> img = nib.load(fimg)
     >>> data = img.get_data()
     >>> data.shape == (58, 58, 24)

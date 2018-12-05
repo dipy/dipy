@@ -10,15 +10,15 @@ We will perform the classic Circle-To-C experiment for diffeomorphic registratio
 """
 
 import numpy as np
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
 from dipy.viz import regtools
 
 
-fname_moving = get_data('reg_o')
-fname_static = get_data('reg_c')
+fname_moving = get_fnames('reg_o')
+fname_static = get_fnames('reg_c')
 
 moving = np.load(fname_moving)
 static = np.load(fname_static)
@@ -143,7 +143,7 @@ from dipy.segment.mask import median_otsu
 fetch_syn_data()
 
 t1, b0 = read_syn_data()
-data = np.array(b0.get_data(), dtype = np.float64)
+data = np.array(b0.get_data(), dtype=np.float64)
 
 """
 We first remove the skull from the b0 volume

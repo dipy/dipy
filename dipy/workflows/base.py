@@ -1,7 +1,7 @@
 import sys
 import inspect
 
-from dipy.fixes import argparse as arg
+import argparse
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
@@ -20,11 +20,10 @@ def get_args_default(func):
     return names, defaults
 
 
-class IntrospectiveArgumentParser(arg.ArgumentParser):
+class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
-                 version=None, parents=[],
-                 formatter_class=arg.RawTextHelpFormatter,
+                 parents=[], formatter_class=argparse.RawTextHelpFormatter,
                  prefix_chars='-', fromfile_prefix_chars=None,
                  argument_default=None, conflict_handler='resolve',
                  add_help=True):
@@ -41,8 +40,6 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
             A description of what the program does
         epilog : str
             Text following the argument descriptions
-        version : None
-            Add a -v/--version option with the given version string
         parents : list
             Parsers whose arguments should be copied into this one
         formatter_class : obj
@@ -68,10 +65,15 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                  " library for the analysis of diffusion MRI data. Frontiers"
                  " in Neuroinformatics, 1-18, 2014.")
 
-        super(iap, self).__init__(prog, usage, description, epilog, version,
-                                  parents, formatter_class, prefix_chars,
-                                  fromfile_prefix_chars, argument_default,
-                                  conflict_handler, add_help)
+        super(iap, self).__init__(prog=prog, usage=usage,
+                                  description=description,
+                                  epilog=epilog, parents=parents,
+                                  formatter_class=formatter_class,
+                                  prefix_chars=prefix_chars,
+                                  fromfile_prefix_chars=fromfile_prefix_chars,
+                                  argument_default=argument_default,
+                                  conflict_handler=conflict_handler,
+                                  add_help=add_help)
 
         self.doc = None
 
@@ -123,8 +125,8 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
 
         for i, arg in enumerate(args):
             prefix = ''
-            is_optionnal = i >= len_args - len_defaults
-            if is_optionnal:
+            is_optional = i >= len_args - len_defaults
+            if is_optional:
                 prefix = '--'
 
             typestr = self.doc[i][1]
@@ -136,7 +138,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                        'type': dtype,
                        'action': 'store'}
 
-            if is_optionnal:
+            if is_optional:
                 _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
@@ -153,7 +155,7 @@ class IntrospectiveArgumentParser(arg.ArgumentParser):
                 _kwargs['type'] = str
 
             if isnarg:
-                _kwargs['nargs'] = '*'
+                _kwargs['nargs'] = '*' if is_optional else '+'
 
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)

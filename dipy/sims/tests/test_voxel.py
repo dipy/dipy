@@ -9,12 +9,12 @@ from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              sticks_and_ball, multi_tensor_dki,
                              kurtosis_element, dki_signal)
 # from dipy.core.geometry import vec2vec_rotmat
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 gtab = gradient_table(bvals, bvecs)
 
@@ -114,7 +114,7 @@ def test_multi_tensor():
     # assert_(odf.shape == (len(vertices),))
     # assert_(np.all(odf <= 1) & np.all(odf >= 0))
 
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 

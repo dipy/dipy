@@ -1,14 +1,14 @@
 import numpy as np
 import nibabel as nib
 from numpy.testing import assert_equal, run_module_suite
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
 
 
-streams, hdr = nib.trackvis.read(get_data('fornix'))
+streams, hdr = nib.trackvis.read(get_fnames('fornix'))
 fornix = [s[0] for s in streams]
 
 f = Streamlines(fornix)
