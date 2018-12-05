@@ -216,7 +216,14 @@ class IvimModel(ReconstModel):
             raise ValueError(e_s)
 
         if gtab.b0_threshold > 0:
-            warnings.warn('The default b0_threshold > 0 and is now set to 50')
+            b0_s = "The IVIM model requires a measurement at b==0. As of "
+            b0_s += "version 0.15, the default b0_threshold for the "
+            b0_s += "GradientTable object is set to 50, so if you used the "
+            b0_s += "default settings to initialize the gtab input to the "
+            b0_s += "IVIM model, you may have provided a gtab with "
+            b0_s += "b0_threshold larger than 0. Please initialize the gtab "
+            b0_s += "input with b0_threshold=0"
+            raise ValueError(b0_s)
 
         ReconstModel.__init__(self, gtab)
         self.split_b_D = split_b_D
