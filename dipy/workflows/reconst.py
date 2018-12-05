@@ -31,13 +31,8 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-<<<<<<< HEAD
     def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
             b0_threshold=50.0, laplacian=True, positivity=True,
-=======
-    def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
-            b0_threshold=0.0, laplacian=True, positivity=True,
->>>>>>> nipy-dipy-master
             bval_threshold=2000, save_metrics=[],
             laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
