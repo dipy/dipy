@@ -210,6 +210,7 @@ class IvimModel(ReconstModel):
                perfusion with intravoxel incoherent motion MR imaging."
                Radiology 265.3 (2012): 874-881.
         """
+        
         if not np.any(gtab.b0s_mask):
             e_s = "No measured signal at bvalue == 0."
             e_s += "The IVIM model requires signal measured at 0 bvalue"
