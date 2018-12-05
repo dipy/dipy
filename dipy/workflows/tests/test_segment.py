@@ -3,7 +3,7 @@ from os.path import join
 import nibabel as nib
 import numpy as np
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.segment import MedianOtsuFlow
@@ -17,7 +17,7 @@ from dipy.align.streamlinear import BundleMinDistanceMetric
 
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_data('small_25')
+        data_path, _, _ = get_fnames('small_25')
         volume = nib.load(data_path).get_data()
         save_masked = True
         median_radius = 3
@@ -28,8 +28,8 @@ def test_median_otsu_flow():
 
         mo_flow = MedianOtsuFlow()
         mo_flow.run(data_path, out_dir=out_dir, save_masked=save_masked,
-                             median_radius=median_radius, numpass=numpass,
-                             autocrop=autocrop, vol_idx=vol_idx, dilate=dilate)
+                    median_radius=median_radius, numpass=numpass,
+                    autocrop=autocrop, vol_idx=vol_idx, dilate=dilate)
 
         mask_name = mo_flow.last_generated_outputs['out_mask']
         masked_name = mo_flow.last_generated_outputs['out_masked']
@@ -47,7 +47,7 @@ def test_median_otsu_flow():
 
 def test_recobundles_flow():
     with TemporaryDirectory() as out_dir:
-        data_path = get_data('fornix')
+        data_path = get_fnames('fornix')
         streams, hdr = nib.trackvis.read(data_path)
         fornix = [s[0] for s in streams]
 

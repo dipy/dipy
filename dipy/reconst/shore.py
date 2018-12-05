@@ -152,9 +152,9 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        from dipy.data import get_data,get_sphere
+        from dipy.data import get_fnames,get_sphere
         sphere = get_sphere('symmetric724')
-        fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
+        fimg, fbvals, fbvecs = get_fnames('ISBI_testing_2shells_table')
         bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
         gtab = gradient_table(bvals, bvecs)
         from dipy.sims.voxel import SticksAndBall

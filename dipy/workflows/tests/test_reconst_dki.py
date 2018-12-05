@@ -8,7 +8,7 @@ import numpy as np
 from nose.tools import assert_true, assert_equal
 import numpy.testing as npt
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
 from dipy.workflows.reconst import ReconstDkiFlow
@@ -16,7 +16,7 @@ from dipy.workflows.reconst import ReconstDkiFlow
 
 def test_reconst_dki():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_101D')
+        data_path, bval_path, bvec_path = get_fnames('small_101D')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])

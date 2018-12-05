@@ -2,7 +2,7 @@ import os
 import numpy as np
 import numpy.testing
 
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.dti import TensorModel, quantize_evecs
@@ -68,7 +68,7 @@ def test_eudx_further():
     """ Cause we love testin.. ;-)
     """
 
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
 
     img = ni.load(fimg)
     data = img.get_data()
@@ -123,7 +123,7 @@ def test_eudx_further():
 
 def test_eudx_bad_seed():
     """Test passing a bad seed to eudx"""
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
 
     img = ni.load(fimg)
     data = img.get_data()

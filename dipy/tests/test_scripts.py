@@ -19,7 +19,7 @@ import numpy.testing as nt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 # Quickbundles command-line requires matplotlib:
 try:
@@ -68,7 +68,7 @@ def assert_image_shape_affine(filename, shape, affine):
 
 def test_dipy_fit_tensor_again():
     with InTemporaryDirectory():
-        dwi, bval, bvec = get_data("small_25")
+        dwi, bval, bvec = get_fnames("small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
@@ -90,7 +90,7 @@ def test_dipy_fit_tensor_again():
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
 
     with InTemporaryDirectory():
-        dwi, bval, bvec = get_data("small_25")
+        dwi, bval, bvec = get_fnames("small_25")
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
@@ -121,7 +121,7 @@ def test_dipy_fit_tensor_again():
 @nt.dec.skipif(no_mpl)
 def test_qb_commandline():
     with InTemporaryDirectory():
-        tracks_file = get_data('fornix')
+        tracks_file = get_fnames('fornix')
         cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
                '--out_file', 'tracks300.trk']
         out = run_command(cmd)
@@ -135,7 +135,7 @@ def test_qb_commandline_output_path_handling():
         os.mkdir('output')
 
         os.chdir('work')
-        tracks_file = get_data('fornix')
+        tracks_file = get_fnames('fornix')
 
         # Need to specify an output directory with a "../" style path
         # to trigger old bug.

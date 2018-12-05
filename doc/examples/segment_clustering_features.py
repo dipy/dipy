@@ -22,9 +22,9 @@ streamline bundle.
 
 def get_streamlines():
     from nibabel import trackvis as tv
-    from dipy.data import get_data
+    from dipy.data import get_fnames
 
-    fname = get_data('fornix')
+    fname = get_fnames('fornix')
     streams, hdr = tv.read(fname)
     streamlines = [i[0] for i in streams]
     return streamlines

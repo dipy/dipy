@@ -61,7 +61,7 @@ def test_LSCv2():
     print(t2-t1)
     print(len(C5))
 
-    from dipy.data import get_data
+    from dipy.data import get_fnames
     from nibabel import trackvis as tv
     try:
         from dipy.viz import window, actor
@@ -69,7 +69,7 @@ def test_LSCv2():
         raise nose.plugins.skip.SkipTest(
             'Fails to import dipy.viz due to %s' % str(e))
 
-    streams, hdr = tv.read(get_data('fornix'))
+    streams, hdr = tv.read(get_fnames('fornix'))
     T3 = [tm.downsample(s[0], 6) for s in streams]
 
     print('lenT3', len(T3))

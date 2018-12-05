@@ -20,7 +20,7 @@ We first import all relevant modules.
 import numpy as np
 import matplotlib.pyplot as plt
 from dipy.sims.voxel import (multi_tensor_dki, single_tensor)
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import (decompose_tensor, from_lower_triangular)
@@ -31,7 +31,7 @@ b-vectors. Here we use the GradientTable of the sample DIPY_ dataset
 ``small_64D``.
 """
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
 """

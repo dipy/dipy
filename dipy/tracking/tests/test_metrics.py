@@ -145,10 +145,10 @@ def test_downsample():
     assert_equal(np.sum(res), 0)
 
     """
-    from dipy.data import get_data
+    from dipy.data import get_fnames
     from nibabel import trackvis as tv
 
-    streams, hdr = tv.read(get_data('fornix'))
+    streams, hdr = tv.read(get_fnames('fornix'))
     Td = [tm.downsample(s[0], pts) for s in streams]
     T = [s[0] for s in streams]
 

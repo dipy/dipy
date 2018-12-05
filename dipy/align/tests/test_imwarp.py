@@ -5,7 +5,7 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.align import floating
 from dipy.align import imwarp as imwarp
 from dipy.align import metrics as metrics
@@ -375,8 +375,8 @@ def test_ssd_2d_demons():
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
     '''
-    fname_moving = get_data('reg_o')
-    fname_static = get_data('reg_c')
+    fname_moving = get_fnames('reg_o')
+    fname_static = get_fnames('reg_c')
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -444,8 +444,8 @@ def test_ssd_2d_gauss_newton():
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
     '''
-    fname_moving = get_data('reg_o')
-    fname_static = get_data('reg_c')
+    fname_moving = get_fnames('reg_o')
+    fname_static = get_fnames('reg_c')
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -563,7 +563,7 @@ def get_warped_stacked_image(image, nslices, b, m):
 
 def get_synthetic_warped_circle(nslices):
     # get a subsampled circle
-    fname_cicle = get_data('reg_o')
+    fname_cicle = get_fnames('reg_o')
     circle = np.load(fname_cicle)[::4, ::4].astype(floating)
 
     # create a synthetic invertible map and warp the circle
@@ -695,7 +695,7 @@ def test_cc_2d():
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
     '''
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4
@@ -732,7 +732,7 @@ def test_cc_3d():
     invertible map. We verify that the final registration is of good
     quality.
     '''
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -782,7 +782,7 @@ def test_em_3d_gauss_newton():
     invertible map. We verify that the final registration is of good
     quality.
     '''
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -835,7 +835,7 @@ def test_em_2d_gauss_newton():
     registration is of good quality.
     '''
 
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4
@@ -876,7 +876,7 @@ def test_em_3d_demons():
     invertible map. We verify that the final registration is of good
     quality.
     '''
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -928,7 +928,7 @@ def test_em_2d_demons():
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
     '''
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4

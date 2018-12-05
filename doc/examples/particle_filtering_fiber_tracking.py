@@ -32,8 +32,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
 from dipy.tracking import utils
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.viz import window, actor, colormap as cmap
 
 
 renderer = window.Renderer()
@@ -43,7 +42,7 @@ hardi_img, gtab, labels_img = read_stanford_labels()
 
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 shape = labels.shape
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
@@ -98,13 +97,13 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
                                                      particle_count=15,
                                                      return_all=False)
 
-#streamlines = list(pft_streamline_generator)                                                     
+# streamlines = list(pft_streamline_generator)                                                     
 streamlines = Streamlines(pft_streamline_generator)
 save_trk("pft_streamline.trk", streamlines, affine, shape)
 
 
 renderer.clear()
-renderer.add(actor.line(streamlines, line_colors(streamlines)))
+renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
 window.record(renderer, out_path='pft_streamlines.png', size=(600, 600))
 
 """
@@ -123,12 +122,12 @@ prob_streamline_generator = LocalTracking(dg,
                                           step_size=step_size,
                                           maxlen=1000,
                                           return_all=False)
-#streamlines = list(pro)
+# streamlines = list(pro)
 streamlines = Streamlines(prob_streamline_generator)
 save_trk("probabilistic_streamlines.trk", streamlines, affine, shape)
 
 renderer.clear()
-renderer.add(actor.line(streamlines, line_colors(streamlines)))
+renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
 window.record(renderer, out_path='probabilistic_streamlines.png',
               size=(600, 600))
 
