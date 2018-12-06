@@ -1,12 +1,11 @@
 import inspect
+import itertools
 import numpy as np
 import os
-import os.path as path
 from glob import glob
 
 from dipy.utils.six import string_types
 from dipy.workflows.base import get_args_default
-from dipy.workflows.docstring_parser import NumpyDocString
 
 
 def common_start(sa, sb):
@@ -75,23 +74,23 @@ def connect_output_paths(inputs, out_dir, out_files,
         mixing_prefixes = [''] * len(inputs[0])
 
     for (mix_pref, inp) in zip(mixing_prefixes, inputs[0]):
-        inp_dirname = path.dirname(inp)
+        inp_dirname = os.path.dirname(inp)
         if output_strategy == 'prepend':
-            if path.isabs(out_dir):
+            if os.path.isabs(out_dir):
                 dname = out_dir + inp_dirname
-            if not path.isabs(out_dir):
-                dname = path.join(
+            if not os.path.isabs(out_dir):
+                dname = os.path.join(
                     os.getcwd(), out_dir + inp_dirname)
 
         elif output_strategy == 'append':
-            dname = path.join(inp_dirname, out_dir)
+            dname = os.path.join(inp_dirname, out_dir)
 
         else:
             dname = out_dir
 
         updated_out_files = []
         for out_file in out_files:
-            updated_out_files.append(path.join(dname, mix_pref + out_file))
+            updated_out_files.append(os.path.join(dname, mix_pref + out_file))
 
         outputs.append(updated_out_files)
 
@@ -112,7 +111,7 @@ def concatenate_inputs(multi_inputs):
 
 
 def basename_without_extension(fname):
-    base = path.basename(fname)
+    base = os.path.basename(fname)
     result = base.split('.')[0]
     if result[-4:] == '.nii':
         result = result.split('.')[0]
@@ -173,8 +172,6 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     del values['self']
 
     spargs, defaults = get_args_default(fnc)
-    doc = inspect.getdoc(fnc)
-    doc = NumpyDocString(doc)['Parameters']
 
     len_args = len(spargs)
     len_defaults = len(defaults)
@@ -185,10 +182,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
     out_dir = ''
 
     # inputs
-    for i, arv in enumerate(args[:split_at]):
-        if 'variable' in doc[i][1].lower():
-            inputs += values[arv]
-        else:
+    for arv in args[:split_at]:
             inputs.append(values[arv])
 
     # defaults
@@ -222,8 +216,12 @@ class IOIterator(object):
     def set_inputs(self, *args):
         self.file_existence_check(args)
         self.input_args = list(args)
-        self.inputs = [sorted(glob(inp)) for inp in self.input_args
-                       if type(inp) == str]
+        for inp in self.input_args:
+            if type(inp) == str:
+                self.inputs.append(sorted(glob(inp)))
+            if type(inp) == list:
+                nested = [sorted(glob(i)) for i in inp if isinstance(i, str)]
+                self.inputs.append(list(itertools.chain.from_iterable(nested)))
 
     def set_out_dir(self, out_dir):
         self.out_dir = out_dir
@@ -251,16 +249,19 @@ class IOIterator(object):
     def create_directories(self):
         for outputs in self.outputs:
             for output in outputs:
-                directory = path.dirname(output)
+                directory = os.path.dirname(output)
                 if not (directory == '' or os.path.exists(directory)):
                     os.makedirs(directory)
 
     def __iter__(self):
-        I = np.array(self.inputs).T
-        O = np.array(self.outputs)
-        IO = np.concatenate([I, O], axis=1)
+        ins = np.array(self.inputs).T
+        out = np.array(self.outputs)
+        IO = np.concatenate([ins, out], axis=1)
         for i_o in IO:
-            yield i_o
+            if len(i_o) == 1:
+                yield str(*i_o)
+            else:
+                yield i_o
 
     def file_existence_check(self, args):
         input_args = [fname for fname in list(args) if isinstance(fname, str)]
