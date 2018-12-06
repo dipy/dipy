@@ -1,6 +1,6 @@
 import warnings
 
-from nose.tools import assert_true, assert_raises
+from nose.tools import assert_raises
 import numpy as np
 import numpy.testing as npt
 
@@ -71,8 +71,15 @@ def test_GradientTable():
     npt.assert_array_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.bvecs, expected_bvecs)
 
+    # checks negative values in gtab
+    npt.assert_raises(ValueError, GradientTable, -1)
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
+
+    with warnings.catch_warnings(record=True) as w:
+        bad_gt = gradient_table(expected_bvals, expected_bvecs,
+                                b0_threshold=200)
+        assert len(w) == 1
 
 
 def test_gradient_table_from_qvals_bvecs():
@@ -152,6 +159,10 @@ def test_gradient_table_from_bvals_bvecs():
                       bvecs, b0_threshold=0.)
     # num_gard inconsistent bvals, bvecs
     bad_bvals = np.ones(7)
+    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
+                      bvecs, b0_threshold=0.)
+    # negative bvals
+    bad_bvals = [-1, -1, -1, -5, -6, -10]
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
                       bvecs, b0_threshold=0.)
     # bvals not 1d

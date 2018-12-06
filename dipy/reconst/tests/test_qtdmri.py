@@ -26,7 +26,8 @@ def generate_gtab4D(number_of_tau_shells=4, delta=0.01):
     pulse_duration = np.tile(delta, qvals.shape[0])
     gtab_4d = gradient_table_from_qvals_bvecs(qvals=qvals, bvecs=bvecs,
                                               big_delta=pulse_separation,
-                                              small_delta=pulse_duration)
+                                              small_delta=pulse_duration,
+                                              b0_threshold=0)
     return gtab_4d
 
 

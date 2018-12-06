@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+from warnings import warn
 
 from dipy.utils.six import string_types
 
@@ -59,7 +60,7 @@ class GradientTable(object):
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=0):
+                 b0_threshold=50):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
@@ -114,7 +115,7 @@ class GradientTable(object):
         print('         max %f ' % self.bvecs.max())
 
 
-def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
+def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
                                     **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
@@ -155,6 +156,19 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
         raise ValueError("bvals and bvecs should be (N,) and (N, 3) arrays "
                          "respectively, where N is the number of diffusion "
                          "gradients")
+    # checking for negative bvals
+    if b0_threshold < 0:
+        raise ValueError("Negative bvals in the data are not feasible")
+
+    # Upper bound for the b0_threshold
+    if b0_threshold >= 200:
+        warn("b0_threshold has a value > 199")
+
+    # checking for the correctness of bvals
+    if b0_threshold < bvals.min():
+        warn("b0_threshold (value: {0}) is too low, increase your \
+             b0_threshold. It should higher than the first b0 value \
+             ({1}).".format(b0_threshold, bvals.min()))
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
@@ -177,7 +191,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
 
 
 def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
-                                    b0_threshold=0, atol=1e-2):
+                                    b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -242,6 +256,7 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
     """
     qvals = np.asarray(qvals)
     bvecs = np.asarray(bvecs)
+
     if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
         bvecs = bvecs.T
     bvals = (qvals * 2 * np.pi) ** 2 * (big_delta - small_delta / 3.)
@@ -253,7 +268,7 @@ def gradient_table_from_qvals_bvecs(qvals, bvecs, big_delta, small_delta,
 
 def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
                                                 big_delta, small_delta,
-                                                b0_threshold=0, atol=1e-2):
+                                                b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -331,7 +346,7 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
 
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=0, atol=1e-2):
+                   b0_threshold=50, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -411,6 +426,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
         _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
+
     # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
     if bvecs is None:
         if bvals.shape[-1] == 4:

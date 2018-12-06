@@ -31,8 +31,8 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
-            b0_threshold=0.0, laplacian=True, positivity=True,
+    def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
+            b0_threshold=50.0, laplacian=True, positivity=True,
             bval_threshold=2000, save_metrics=[],
             laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
@@ -225,8 +225,9 @@ class ReconstDtiFlow(Workflow):
     def get_short_name(cls):
         return 'dti'
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=0.0, bvecs_tol=0.01, save_metrics=[],
+    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=50,
+            bvecs_tol=0.01,
+            save_metrics=[],
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -401,7 +402,7 @@ class ReconstDtiFlow(Workflow):
         return TensorModel(gtab, fit_method="WLS")
 
     def get_fitted_tensor(self, data, mask, bval, bvec,
-                          b0_threshold=0, bvecs_tol=0.01):
+                          b0_threshold=50, bvecs_tol=0.01):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -419,8 +420,8 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return 'csd'
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=0.0,
+    def run(self, input_files, bvalues, bvectors, mask_files,
+            b0_threshold=50.0,
             bvecs_tol=0.01,
             roi_center=None,
             roi_radius=10,
@@ -600,8 +601,8 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            sh_order=6, odf_to_sh_order=8, b0_threshold=0.0, bvecs_tol=0.01,
+    def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
+            odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
             extract_pam_values=False,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
@@ -722,8 +723,8 @@ class ReconstDkiFlow(Workflow):
     def get_short_name(cls):
         return 'dki'
 
-    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=0.0, save_metrics=[],
+    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=50.0,
+            save_metrics=[],
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -909,7 +910,7 @@ class ReconstDkiFlow(Workflow):
     def get_dki_model(self, gtab):
         return DiffusionKurtosisModel(gtab)
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=0):
+    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():

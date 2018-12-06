@@ -215,6 +215,16 @@ class IvimModel(ReconstModel):
             e_s += "The IVIM model requires signal measured at 0 bvalue"
             raise ValueError(e_s)
 
+        if gtab.b0_threshold > 0:
+            b0_s = "The IVIM model requires a measurement at b==0. As of "
+            b0_s += "version 0.15, the default b0_threshold for the "
+            b0_s += "GradientTable object is set to 50, so if you used the "
+            b0_s += "default settings to initialize the gtab input to the "
+            b0_s += "IVIM model, you may have provided a gtab with "
+            b0_s += "b0_threshold larger than 0. Please initialize the gtab "
+            b0_s += "input with b0_threshold=0"
+            raise ValueError(b0_s)
+
         ReconstModel.__init__(self, gtab)
         self.split_b_D = split_b_D
         self.split_b_S0 = split_b_S0
@@ -381,7 +391,7 @@ class IvimModel(ReconstModel):
                 warningMsg += " as initial guess for leastsq. Parameters are"
                 warningMsg += " returned only from the linear fit."
                 warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D
+                f, D_star = params_f_D_star
                 return f, D_star
         else:
             try:
