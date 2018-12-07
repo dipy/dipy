@@ -219,7 +219,7 @@ class IOIterator(object):
         for inp in self.input_args:
             if type(inp) == str:
                 self.inputs.append(sorted(glob(inp)))
-            if type(inp) == list:
+            if type(inp) == list and all(isinstance(s, str) for s in inp):
                 nested = [sorted(glob(i)) for i in inp if isinstance(i, str)]
                 self.inputs.append(list(itertools.chain.from_iterable(nested)))
 
