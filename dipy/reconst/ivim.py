@@ -135,7 +135,7 @@ class IvimModel(ReconstModel):
                  x_scale=[1000., 0.1, 0.001, 0.0001],
                  options={'gtol': 1e-15, 'ftol': 1e-15,
                           'eps': 1e-15, 'maxiter': 1000}):
-        """
+        r"""
         Initialize an IVIM model.
 
         The IVIM model assumes that biological tissue includes a volume

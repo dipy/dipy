@@ -213,7 +213,10 @@ def test_b0_threshold_greater_than0():
     N = len(bvals_b0t)
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals_b0t, bvecs.T)
-    assert_raises(ValueError, IvimModel, gtab)
+    with assert_raises(ValueError) as vae:
+        _ = IvimModel(gtab)
+        b0_s = "The IVIM model requires a measurement at b==0. As of "
+        assert b0_s in vae.exception
 
 
 def test_bounds_x0():
