@@ -174,8 +174,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         if nb_positional_variable > 1:
             raise ValueError(self.prog + " : All positional arguments present"
-                             " are gathered into a list. It doesn’t make much"
-                             " sense to have more than one positional"
+                             " are gathered into a list. It does not make"
+                             "much sense to have more than one positional"
                              " argument with 'variable string' as dtype."
                              " Please, ensure that 'variable (type)'"
                              " appears only once as a positional argument."
