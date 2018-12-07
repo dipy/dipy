@@ -1092,7 +1092,7 @@ def read_ivim():
     fbval = pjoin(folder, 'ivim.bval')
     fbvec = pjoin(folder, 'ivim.bvec')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
     img = nib.load(fraw)
     return img, gtab
 
