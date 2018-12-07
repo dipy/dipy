@@ -202,6 +202,20 @@ def test_with_higher_S0():
     assert_array_almost_equal(ivim_fit.model_params, params2)
 
 
+def test_b0_threshold_greater_than0():
+    """
+    Added test case for default b0_threshold set to 50.
+    Checks if error is thrown correctly.
+    """
+    bvals_b0t = np.array([50., 10., 20., 30., 40., 60., 80., 100.,
+                          120., 140., 160., 180., 200., 300., 400.,
+                          500., 600., 700., 800., 900., 1000.])
+    N = len(bvals_b0t)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals_b0t, bvecs.T)
+    assert_raises(ValueError, IvimModel, gtab)
+
+
 def test_bounds_x0():
     """
     Test to check if setting bounds for signal where initial value is
