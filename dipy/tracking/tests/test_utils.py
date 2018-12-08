@@ -269,7 +269,11 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
         assert_raises(ValueError, list, new)
 
     # Test smaller voxels
-    affine = np.random.random((4, 4)) - .5
+    random_array = np.array([[0.2862315, 0.44142904, 0.19837613, 0.422711],
+                             [0.7434331, 0.55335599, 0.18633461, 0.427429],
+                             [0.1465992, 0.84593179, 0.79033433, 0.576709],
+                             [0.6525159, 0.96735703, 0.69833409, 0.117800]])
+    affine = random_array - .5
     affine[3] = [0, 0, 0, 1]
     streamlines = list(move_streamlines(streamlines, affine))
     new = list(target_f(streamlines, mask, affine=affine))
