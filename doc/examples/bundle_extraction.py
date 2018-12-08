@@ -115,7 +115,7 @@ let's visualize extracted Arcuate Fasciculus Left bundle and model bundle
 together
 """
 
-interactive = True
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
@@ -151,7 +151,7 @@ let's visualize extracted Corticospinal Tract (CST) Left bundle and model
 bundle together
 """
 
-interactive = True
+interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
