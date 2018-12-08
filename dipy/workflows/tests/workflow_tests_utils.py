@@ -111,6 +111,61 @@ class TestFlow(Workflow):
         out_dir : string
             output directory (default '')
         """
-        return positional_str, positional_bool, positional_int,\
-               positional_float, optional_str, optional_bool,\
-               optional_int, optional_float, optional_float_2
+        return (positional_str, positional_bool, positional_int,
+                positional_float, optional_str, optional_bool,
+                optional_int, optional_float, optional_float_2)
+
+
+class TestVariableTypeWorkflow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'tvtwf'
+
+    def run(self, positional_variable_str, positional_int,
+            out_dir=''):
+        """ Workflow used to test variable string in general.
+
+        Parameters
+        ----------
+        positional_variable_str : variable string
+            fake input string param
+        positional_variable_int : int
+            fake positional param (default 2)
+        out_dir : string
+            fake output directory (default '')
+        """
+        result = []
+        io_it = self.get_io_iterator()
+
+        for variable1 in io_it:
+            result.append(variable1)
+        return result, positional_variable_str, positional_int
+
+
+class TestVariableTypeErrorWorkflow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'tvtwfe'
+
+    def run(self, positional_variable_str, positional_variable_int,
+            out_dir=''):
+        """ Workflow used to test variable string error.
+
+        Parameters
+        ----------
+        positional_variable_str : variable string
+            fake input string param
+        positional_variable_int : variable int
+            fake positional param (default 2)
+        out_dir : string
+            fake output directory (default '')
+        """
+        result = []
+        io_it = self.get_io_iterator()
+
+        for variable1, variable2 in io_it:
+            result.append((variable1, variable2))
+
+        return result
