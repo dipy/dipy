@@ -119,8 +119,10 @@ interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-ren.add(actor.line(model_bundle, colors=(1,0,1)))
-ren.add(actor.line(recognized_bundle, colors=(1,1,0)))
+ren.add(actor.line(model_bundle, colors=(.1,.7,.26)))
+ren.add(actor.line(recognized_bundle, colors=(.1,.1,6)))
+ren.set_camera(focal_point=(320.21296692, 21.28884506,  17.2174015),
+               position=(2.11, 200.46, 250.44) , view_up=(0.1, -1.028, 0.18))
 window.record(ren, out_path='AF_L_recognized_bundle.png',
               size=(600, 600))
 if interactive:
@@ -153,8 +155,11 @@ interactive = False
 
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
-ren.add(actor.line(model_bundle, colors=(1,0,1)))
-ren.add(actor.line(recognized_bundle, colors=(1,1,0)))
+ren.add(actor.line(model_bundle, colors=(.1,.7,.26)))
+ren.add(actor.line(recognized_bundle, colors=(.1,.1,6)))
+ren.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+               position=(-360.11, -340.46, -40.44),
+               view_up=(-0.03, 0.028, 0.89))
 window.record(ren, out_path='CST_L_recognized_bundle.png',
               size=(600, 600))
 if interactive:
