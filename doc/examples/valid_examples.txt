@@ -64,6 +64,6 @@
  viz_ui.py
  register_binary_fuzzy.py
  bundle_extraction.py
- viz_timer.py
+ viz_timers.py
  cluster_confidence.py
  path_length_map.py

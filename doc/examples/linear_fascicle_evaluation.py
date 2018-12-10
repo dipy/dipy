@@ -182,7 +182,7 @@ optimized group of streamlines:
 
 optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
 ren = window.Renderer()
-ren.add(actor.streamtube(optimized_sl, line_colors(optimized_sl)))
+ren.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
 ren.add(cc_ROI_actor)
 ren.add(vol_actor)
 window.record(ren, n_frames=1, out_path='life_optimized.png',
