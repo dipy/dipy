@@ -116,9 +116,8 @@ class ReconstMAPMRIFlow(Workflow):
              out_rtap, out_rtpp, out_ng, out_perng, out_parng) in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
+
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
@@ -305,9 +304,7 @@ class ReconstDtiFlow(Workflow):
                 omode, oevecs, oevals in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
@@ -474,9 +471,7 @@ class ReconstCSDFlow(Workflow):
              opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             print(b0_threshold, bvals.min())
@@ -634,9 +629,7 @@ class ReconstCSAFlow(Workflow):
              opeaks_values, opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
-            vol = nib.load(dwi)
-            data = vol.get_data()
-            affine = vol.affine
+            data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
@@ -779,9 +772,7 @@ class ReconstDkiFlow(Workflow):
              omode, oevecs, oevals, odk_tensor, omk, oak, ork) in io_it:
 
             logging.info('Computing DKI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
