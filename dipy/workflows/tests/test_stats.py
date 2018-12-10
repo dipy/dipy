@@ -8,7 +8,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-from nose.tools import assert_true, assert_equal
+from nose.tools import assert_true
 
 from dipy.data import get_data
 from dipy.workflows.stats import SNRinCCFlow
@@ -25,7 +25,7 @@ def test_stats():
         nib.save(mask_img, mask_path)
 
         snr_flow = SNRinCCFlow(force=True)
-        args = [data_path, bval_path, bvec_path]
+        args = [data_path, bval_path, bvec_path, mask_path]
 
         snr_flow.run(*args, out_dir=out_dir)
         assert_true(os.path.exists(os.path.join(out_dir, 'product.json')))
@@ -38,7 +38,7 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
         snr_flow._force_overwrite = True
-        snr_flow.run(*args, mask=mask_path, out_dir=out_dir)
+        snr_flow.run(*args, out_dir=out_dir)
         assert_true(os.path.exists(os.path.join(out_dir, 'product.json')))
         assert_true(os.stat(os.path.join(
             out_dir, 'product.json')).st_size != 0)
