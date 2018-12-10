@@ -24,7 +24,7 @@ class SNRinCCFlow(Workflow):
     def get_short_name(cls):
         return 'snrincc'
 
-    def run(self, data_files, bvals_files, bvecs_files, mask_files=None,
+    def run(self, data_files, bvals_files, bvecs_files, mask_files,
             bbox_threshold=[0.6, 1, 0, 0.1, 0, 0.1], out_dir='',
             out_file='product.json', out_mask_cc='cc.nii.gz',
             out_mask_noise='mask_noise.nii.gz'):
