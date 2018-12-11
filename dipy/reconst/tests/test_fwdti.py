@@ -6,8 +6,8 @@ import numpy as np
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import fwdti_prediction
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
-from nose.tools import assert_raises
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
+                           assert_raises)
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor,
                               fractional_anisotropy)
 from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
