@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
 
-import inspect
 import logging
 import numpy as np
 

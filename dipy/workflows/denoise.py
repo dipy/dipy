@@ -3,8 +3,7 @@ from __future__ import division, print_function, absolute_import
 import logging
 import shutil
 
-import nibabel as nib
-
+from dipy.io.image import load_nifti, save_nifti
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.workflows.workflow import Workflow
@@ -43,8 +42,7 @@ class NLMeansFlow(Workflow):
                 logging.warning('Denoising skipped for now.')
             else:
                 logging.info('Denoising {0}'.format(fpath))
-                image = nib.load(fpath)
-                data = image.get_data()
+                data, affine, image = load_nifti(fpath, return_img=True)
 
                 if sigma == 0:
                     logging.info('Estimating sigma')
@@ -52,8 +50,6 @@ class NLMeansFlow(Workflow):
                     logging.debug('Found sigma {0}'.format(sigma))
 
                 denoised_data = nlmeans(data, sigma)
-                denoised_image = nib.Nifti1Image(
-                    denoised_data, image.affine, image.header)
+                save_nifti(odenoised, denoised_data, affine, image.header)
 
-                denoised_image.to_filename(odenoised)
                 logging.info('Denoised volume saved as {0}'.format(odenoised))

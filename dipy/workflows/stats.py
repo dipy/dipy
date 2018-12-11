@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
 import logging
-import shutil
 import numpy as np
-import nibabel as nib
-import sys
 import os
 import json
 from scipy.ndimage.morphology import binary_dilation
 
 from dipy.io import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
@@ -26,25 +24,24 @@ class SNRinCCFlow(Workflow):
     def get_short_name(cls):
         return 'snrincc'
 
-    def run(self, data_file, data_bvals, data_bvecs, mask=None,
-            bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1), out_dir='',
+    def run(self, data_files, bvals_files, bvecs_files, mask_files,
+            bbox_threshold=[0.6, 1, 0, 0.1, 0, 0.1], out_dir='',
             out_file='product.json', out_mask_cc='cc.nii.gz',
             out_mask_noise='mask_noise.nii.gz'):
-        """ Workflow for computing the signal-to-noise ratio in the
-            corpus callosum
+        """Compute the signal-to-noise ratio in the corpus callosum.
 
         Parameters
         ----------
-        data_file : string
+        data_files : string
             Path to the dwi.nii.gz file. This path may contain wildcards to
             process multiple inputs at once.
-        data_bvals : string
+        bvals_files : string
             Path of bvals.
-        data_bvecs : string
+        bvecs_files : string
             Path of bvecs.
-        mask : string, optional
-            Path of mask if desired. (default None)
-        bbox_threshold : string, optional
+        mask_files : string
+            Path of brain mask
+        bbox_threshold : variable float, optional
             Threshold for bounding box, values separated with commas for ex.
             [0.6,1,0,0.1,0,0.1]. (default (0.6, 1, 0, 0.1, 0, 0.1))
         out_dir : string, optional
@@ -56,39 +53,21 @@ class SNRinCCFlow(Workflow):
         out_mask_noise : string, optional
             Name of the mask noise volume to be saved
             (default 'mask_noise.nii.gz')
+
         """
-
-        if not isinstance(bbox_threshold, tuple):
-            b = bbox_threshold.replace("[", "")
-            b = b.replace("]", "")
-            b = b.replace("(", "")
-            b = b.replace(")", "")
-            b = b.replace(" ", "")
-            b = b.split(",")
-            for i in range(len(b)):
-                b[i] = float(b[i])
-            bbox_threshold = tuple(b)
-
         io_it = self.get_io_iterator()
 
-        for data_path, data_bvals_path, data_bvecs_path, out_path, \
+        for dwi_path, bvals_path, bvecs_path, mask_path, out_path, \
                 cc_mask_path, mask_noise_path in io_it:
-            img = nib.load('{0}'.format(data_path))
-            bvals, bvecs = read_bvals_bvecs('{0}'.format(
-                data_bvals_path), '{0}'.format(data_bvecs_path))
-            gtab = gradient_table(bvals, bvecs)
-
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi_path)
+            bvals, bvecs = read_bvals_bvecs(bvals_path, bvecs_path)
+            gtab = gradient_table(bvals=bvals, bvecs=bvecs)
 
             logging.info('Computing brain mask...')
-            b0_mask, calc_mask = median_otsu(data)
+            _, calc_mask = median_otsu(data)
 
-            if mask is None:
-                mask = calc_mask
-            else:
-                mask = nib.load(mask).get_data().astype(bool)
-                mask = np.array(calc_mask == mask).astype(int)
+            mask, affine = load_nifti(mask_path)
+            mask = np.array(calc_mask == mask.astype(bool)).astype(int)
 
             logging.info('Computing tensors...')
             tenmodel = TensorModel(gtab)
@@ -96,7 +75,6 @@ class SNRinCCFlow(Workflow):
 
             logging.info(
                 'Computing worst-case/best-case SNR using the CC...')
-            threshold = bbox_threshold
 
             if np.ndim(data) == 4:
                 CC_box = np.zeros_like(data[..., 0])
@@ -116,22 +94,22 @@ class SNRinCCFlow(Workflow):
                    bounds_min[1]:bounds_max[1],
                    bounds_min[2]:bounds_max[2]] = 1
 
-            mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
+            if len(bbox_threshold) != 6:
+                raise IOError('bbox_threshold should have 6 float values')
+
+            mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box,
+                                                 bbox_threshold,
                                                  return_cfa=True)
 
-            cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-            mask_cc_part_img = nib.Nifti1Image(
-                mask_cc_part.astype(np.uint8), affine)
-            nib.save(mask_cc_part_img, cc_mask_path)
+            save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
             logging.info('CC mask saved as {0}'.format(cc_mask_path))
 
             mean_signal = np.mean(data[mask_cc_part], axis=0)
             mask_noise = binary_dilation(mask, iterations=10)
             mask_noise[..., :mask_noise.shape[-1]//2] = 1
             mask_noise = ~mask_noise
-            mask_noise_img = nib.Nifti1Image(
-                mask_noise.astype(np.uint8), affine)
-            nib.save(mask_noise_img, mask_noise_path)
+
+            save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
             logging.info('Mask noise saved as {0}'.format(mask_noise_path))
 
             noise_std = np.std(data[mask_noise, :])
@@ -169,5 +147,5 @@ class SNRinCCFlow(Workflow):
                         str(SNR_directions[2])
                         })
 
-            with open(os.path.join(out_dir, out_file), 'w') as myfile:
+            with open(os.path.join(out_dir, out_path), 'w') as myfile:
                 json.dump(data, myfile)

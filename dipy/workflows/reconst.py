@@ -12,6 +12,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
+from dipy.io.image import load_nifti, save_nifti
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
@@ -31,7 +32,7 @@ class ReconstMAPMRIFlow(Workflow):
     def get_short_name(cls):
         return 'mapmri'
 
-    def run(self, data_file, data_bvals, data_bvecs, small_delta, big_delta,
+    def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
             b0_threshold=50.0, laplacian=True, positivity=True,
             bval_threshold=2000, save_metrics=[],
             laplacian_weighting=0.05, radial_order=6, out_dir='',
@@ -115,9 +116,8 @@ class ReconstMAPMRIFlow(Workflow):
              out_rtap, out_rtpp, out_ng, out_perng, out_parng) in io_it:
 
             logging.info('Computing MAPMRI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
+
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
@@ -173,48 +173,39 @@ class ReconstMAPMRIFlow(Workflow):
 
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()
-                rtop = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
-                nib.save(rtop, out_rtop)
+                save_nifti(out_rtop, r.astype(np.float32), affine)
 
             if 'laplacian_signal' in save_metrics:
                 ll = mapfit_aniso.norm_of_laplacian_signal()
-                lap = nib.nifti1.Nifti1Image(ll.astype(np.float32), affine)
-                nib.save(lap, out_lapnorm)
+                save_nifti(out_lapnorm, ll.astype(np.float32), affine)
 
             if 'msd' in save_metrics:
                 m = mapfit_aniso.msd()
-                msd = nib.nifti1.Nifti1Image(m.astype(np.float32), affine)
-                nib.save(msd, out_msd)
+                save_nifti(out_msd, m.astype(np.float32), affine)
 
             if 'qiv' in save_metrics:
                 q = mapfit_aniso.qiv()
-                qiv = nib.nifti1.Nifti1Image(q.astype(np.float32), affine)
-                nib.save(qiv, out_qiv)
+                save_nifti(out_qiv, q.astype(np.float32), affine)
 
             if 'rtap' in save_metrics:
                 r = mapfit_aniso.rtap()
-                rtap = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
-                nib.save(rtap, out_rtap)
+                save_nifti(out_rtap, r.astype(np.float32), affine)
 
             if 'rtpp' in save_metrics:
                 r = mapfit_aniso.rtpp()
-                rtpp = nib.nifti1.Nifti1Image(r.astype(np.float32), affine)
-                nib.save(rtpp, out_rtpp)
+                save_nifti(out_rtpp, r.astype(np.float32), affine)
 
             if 'ng' in save_metrics:
                 n = mapfit_aniso.ng()
-                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
-                nib.save(ng, out_ng)
+                save_nifti(out_ng, n.astype(np.float32), affine)
 
             if 'perng' in save_metrics:
                 n = mapfit_aniso.ng_perpendicular()
-                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
-                nib.save(ng, out_perng)
+                save_nifti(out_perng, n.astype(np.float32), affine)
 
             if 'parng' in save_metrics:
                 n = mapfit_aniso.ng_parallel()
-                ng = nib.nifti1.Nifti1Image(n.astype(np.float32), affine)
-                nib.save(ng, out_parng)
+                save_nifti(out_parng, n.astype(np.float32), affine)
 
             logging.info('MAPMRI saved in {0}'.
                          format(os.path.dirname(out_dir)))
@@ -225,9 +216,8 @@ class ReconstDtiFlow(Workflow):
     def get_short_name(cls):
         return 'dti'
 
-    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=50,
-            bvecs_tol=0.01,
-            save_metrics=[],
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            b0_threshold=50, bvecs_tol=0.01, save_metrics=[],
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -314,9 +304,7 @@ class ReconstDtiFlow(Workflow):
                 omode, oevecs, oevals in io_it:
 
             logging.info('Computing DTI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
@@ -336,60 +324,42 @@ class ReconstDtiFlow(Workflow):
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
-                fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
-                    np.float32), affine)
-                nib.save(fiber_tensors, otensor)
+
+                save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
+                           affine)
 
             if 'fa' in save_metrics:
-                fa_img = nib.Nifti1Image(FA.astype(np.float32),
-                                         affine)
-                nib.save(fa_img, ofa)
+                save_nifti(ofa, FA.astype(np.float32), affine)
 
             if 'ga' in save_metrics:
                 GA = geodesic_anisotropy(tenfit.evals)
-                ga_img = nib.Nifti1Image(GA.astype(np.float32),
-                                         affine)
-                nib.save(ga_img, oga)
+                save_nifti(oga, GA.astype(np.float32), affine)
 
             if 'rgb' in save_metrics:
                 RGB = color_fa(FA, tenfit.evecs)
-                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'),
-                                          affine)
-                nib.save(rgb_img, orgb)
+                save_nifti(orgb, np.array(255 * RGB, 'uint8'), affine)
 
             if 'md' in save_metrics:
                 MD = mean_diffusivity(tenfit.evals)
-                md_img = nib.Nifti1Image(MD.astype(np.float32),
-                                         affine)
-                nib.save(md_img, omd)
+                save_nifti(omd, MD.astype(np.float32), affine)
 
             if 'ad' in save_metrics:
                 AD = axial_diffusivity(tenfit.evals)
-                ad_img = nib.Nifti1Image(AD.astype(np.float32),
-                                         affine)
-                nib.save(ad_img, oad)
+                save_nifti(oad, AD.astype(np.float32), affine)
 
             if 'rd' in save_metrics:
                 RD = radial_diffusivity(tenfit.evals)
-                rd_img = nib.Nifti1Image(RD.astype(np.float32),
-                                         affine)
-                nib.save(rd_img, orad)
+                save_nifti(orad, RD.astype(np.float32), affine)
 
             if 'mode' in save_metrics:
                 MODE = get_mode(tenfit.quadratic_form)
-                mode_img = nib.Nifti1Image(MODE.astype(np.float32),
-                                           affine)
-                nib.save(mode_img, omode)
+                save_nifti(omode, MODE.astype(np.float32), affine)
 
             if 'evec' in save_metrics:
-                evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32),
-                                            affine)
-                nib.save(evecs_img, oevecs)
+                save_nifti(oevecs, tenfit.evecs.astype(np.float32), affine)
 
             if 'eval' in save_metrics:
-                evals_img = nib.Nifti1Image(tenfit.evals.astype(np.float32),
-                                            affine)
-                nib.save(evals_img, oevals)
+                save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
             dname_ = os.path.dirname(oevals)
             if dname_ == '':
@@ -420,14 +390,9 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return 'csd'
 
-    def run(self, input_files, bvalues, bvectors, mask_files,
-            b0_threshold=50.0,
-            bvecs_tol=0.01,
-            roi_center=None,
-            roi_radius=10,
-            fa_thr=0.7,
-            frf=None, extract_pam_values=False,
-            sh_order=8,
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radius=10,
+            fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
             odf_to_sh_order=8,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
@@ -506,9 +471,7 @@ class ReconstCSDFlow(Workflow):
              opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             print(b0_threshold, bvals.min())
@@ -554,9 +517,8 @@ class ReconstCSDFlow(Workflow):
                 ratio = l01[1] / l01[0]
                 response = (response, ratio)
 
-            logging.info(
-                'Eigenvalues for the frf of the input data are :{0}'
-                    .format(response[0]))
+            logging.info("Eigenvalues for the frf of the input"
+                         " data are :{0}".format(response[0]))
             logging.info('Ratio for smallest to largest eigen value is {0}'
                          .format(ratio))
 
@@ -601,8 +563,8 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
-    def run(self, input_files, bvalues, bvectors, mask_files, sh_order=6,
-            odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
             extract_pam_values=False,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
@@ -656,7 +618,6 @@ class ReconstCSAFlow(Workflow):
         out_gfa : string, optional
             Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
 
-
         References
         ----------
         .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
@@ -668,9 +629,7 @@ class ReconstCSAFlow(Workflow):
              opeaks_values, opeaks_indices, ogfa) in io_it:
 
             logging.info('Loading {0}'.format(dwi))
-            vol = nib.load(dwi)
-            data = vol.get_data()
-            affine = vol.affine
+            data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
@@ -723,8 +682,8 @@ class ReconstDkiFlow(Workflow):
     def get_short_name(cls):
         return 'dki'
 
-    def run(self, input_files, bvalues, bvectors, mask_files, b0_threshold=50.0,
-            save_metrics=[],
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            b0_threshold=50.0, save_metrics=[],
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -813,9 +772,7 @@ class ReconstDkiFlow(Workflow):
              omode, oevecs, oevals, odk_tensor, omk, oak, ork) in io_it:
 
             logging.info('Computing DKI metrics for {0}'.format(dwi))
-            img = nib.load(dwi)
-            data = img.get_data()
-            affine = img.affine
+            data, affine = load_nifti(dwi)
 
             if mask is not None:
                 mask = nib.load(mask).get_data().astype(np.bool)
@@ -837,72 +794,53 @@ class ReconstDkiFlow(Workflow):
                 tensor_vals = lower_triangular(dkfit.quadratic_form)
                 correct_order = [0, 1, 3, 2, 4, 5]
                 tensor_vals_reordered = tensor_vals[..., correct_order]
-                fiber_tensors = nib.Nifti1Image(tensor_vals_reordered.astype(
-                    np.float32), affine)
-                nib.save(fiber_tensors, otensor)
+                save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
+                           affine)
 
             if 'dk_tensor' in save_metrics:
-                kt_img = nib.Nifti1Image(dkfit.kt.astype(np.float32), affine)
-                nib.save(kt_img, odk_tensor)
+                save_nifti(odk_tensor, dkfit.kt.astype(np.float32), affine)
 
             if 'fa' in save_metrics:
-                fa_img = nib.Nifti1Image(FA.astype(np.float32), affine)
-                nib.save(fa_img, ofa)
+                save_nifti(ofa, FA.astype(np.float32), affine)
 
             if 'ga' in save_metrics:
                 GA = geodesic_anisotropy(dkfit.evals)
-                ga_img = nib.Nifti1Image(GA.astype(np.float32), affine)
-                nib.save(ga_img, oga)
+                save_nifti(oga, GA.astype(np.float32), affine)
 
             if 'rgb' in save_metrics:
                 RGB = color_fa(FA, dkfit.evecs)
-                rgb_img = nib.Nifti1Image(np.array(255 * RGB, 'uint8'), affine)
-                nib.save(rgb_img, orgb)
+                save_nifti(orgb, np.array(255 * RGB, 'uint8'), affine)
 
             if 'md' in save_metrics:
                 MD = mean_diffusivity(dkfit.evals)
-                md_img = nib.Nifti1Image(MD.astype(np.float32), affine)
-                nib.save(md_img, omd)
+                save_nifti(omd, MD.astype(np.float32), affine)
 
             if 'ad' in save_metrics:
                 AD = axial_diffusivity(dkfit.evals)
-                ad_img = nib.Nifti1Image(AD.astype(np.float32), affine)
-                nib.save(ad_img, oad)
+                save_nifti(oad, AD.astype(np.float32), affine)
 
             if 'rd' in save_metrics:
                 RD = radial_diffusivity(dkfit.evals)
-                rd_img = nib.Nifti1Image(RD.astype(np.float32), affine)
-                nib.save(rd_img, orad)
+                save_nifti(orad, RD.astype(np.float32), affine)
 
             if 'mode' in save_metrics:
                 MODE = get_mode(dkfit.quadratic_form)
-                mode_img = nib.Nifti1Image(MODE.astype(np.float32), affine)
-                nib.save(mode_img, omode)
+                save_nifti(omode, MODE.astype(np.float32), affine)
 
             if 'evec' in save_metrics:
-                evecs_img = nib.Nifti1Image(dkfit.evecs.astype(np.float32),
-                                            affine)
-                nib.save(evecs_img, oevecs)
+                save_nifti(oevecs, dkfit.evecs.astype(np.float32), affine)
 
             if 'eval' in save_metrics:
-                evals_img = nib.Nifti1Image(dkfit.evals.astype(np.float32),
-                                            affine)
-                nib.save(evals_img, oevals)
+                save_nifti(oevals, dkfit.evals.astype(np.float32), affine)
 
             if 'mk' in save_metrics:
-                mk_img = nib.Nifti1Image(dkfit.mk().astype(np.float32),
-                                         affine)
-                nib.save(mk_img, omk)
+                save_nifti(omk, dkfit.mk().astype(np.float32), affine)
 
             if 'ak' in save_metrics:
-                ak_img = nib.Nifti1Image(dkfit.ak().astype(np.float32),
-                                         affine)
-                nib.save(ak_img, oak)
+                save_nifti(oak, dkfit.ak().astype(np.float32), affine)
 
             if 'rk' in save_metrics:
-                rk_img = nib.Nifti1Image(dkfit.rk().astype(np.float32),
-                                         affine)
-                nib.save(rk_img, ork)
+                save_nifti(ork, dkfit.rk().astype(np.float32), affine)
 
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
