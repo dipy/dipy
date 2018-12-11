@@ -82,10 +82,10 @@ test_script:
   - ps: |
         if ($env:COVERAGE)
         {
-          $env:COVER_ARGS = "--with-coverage --cover-package dipy"
+          $env:COVER_CMD = "coverage run -m "
         }
-  - cmd: echo %COVER_ARGS%
-  - nosetests --with-doctest --verbose %COVER_ARGS% dipy
+  - cmd: echo %COVER_CMD%
+  - %COVER_CMD% pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 
 cache:
   # Avoid re-downloading large packages

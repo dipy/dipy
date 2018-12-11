@@ -8,7 +8,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-from nose.tools import assert_true
+from dipy.testing import assert_true
 
 from dipy.data import get_data
 from dipy.workflows.stats import SNRinCCFlow
