@@ -13,18 +13,18 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 0.14.0** is now available. New features include:
+**DIPY 0.15.0** is now available. New features include:
 
-- RecoBundles: anatomically relevant segmentation of bundles
-- New super fast clustering algorithm: QuickBundlesX
-- New tracking algorithm: Particle Filtering Tracking.
-- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
-- Integration of the Streamlines API for reading, saving and processing tractograms.
-- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
-- New command line interfaces.
-- Deprecated fvtk (old visualization framework).
-- A range of new visualization improvements.
+- Updated RecoBundles for automatic anatomical bundle segmentation.
+- New Reconstruction Model: qtau-dMRI.
+- New command line interfaces (e.g. dipy_slr).
+- New continuous integration with AppVeyor CI.
+- Nibabel Streamlines API now used almost everywhere for better memory management.
+- Compatibility with Python 3.7.
+- Many tutorials added or updated (5 New).
 - Large documentation update.
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests. 
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -33,6 +33,7 @@ See :ref:`Older Highlights <old_highlights>`.
 Announcements
 *************
 
+- :ref:`DIPY 0.15 <release0.15>` released December 12, 2018.
 - :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
 - :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.

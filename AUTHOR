@@ -1,33 +1,92 @@
 Eleftherios Garyfallidis <garyfallidis@gmail.com>
-Ian Nimmo-Smith <iannimmosmith@gmail.com>
+Ariel Rokem <arokem@gmail.com>
 Matthew Brett <matthew.brett@gmail.com>
 Bago Amirbekian <mrbago@gmail.com>
-Stefan Van der Walt <sjvdwalt@gmail.com>
-Ariel Rokem <arokem@gmail.com>
-Christopher Nguyen <christopher.t.nguyen@gmail.com>
-Yaroslav Halchenko <debian@onerussian.com>
-Emanuele Olivetti <emanuele@relativita.com>
-Mauro Zucchelli <mauro.zucchelli88@gmail.com>
-Samuel St-Jean <samuel.st-jean@usherbrooke.ca>
-Maxime Descoteaux <m.descoteaux@usherbrooke.ca>
-Gabriel Girard <girard.gabriel@gmail.com>
-Matthieu Dumont <matthieu.dumont@usherbrooke.ca>
-Kimberly Chan <kimberlylchan@gmail.com>
-Erik Ziegler <erik.ziegler@ulg.ac.be>
-Emmanuel Caruyer <caruyer@gmail.com>
-Matthias Ekman <matthias.ekman@gmail.com>
-Jean-Christophe Houde <jean.christophe.houde@gmail.com>
-Michael Paquette <jotha885@gmail.com>
-Sylvain Merlet <merlet.sylvain@gmail.com>
 Omar Ocegueda <jomaroceguedag@gmail.com>
-Marc-Alexandre Cote <marc.cote.19@gmail.com>
-Demian Wassermann <demian.wassermann@inria.fr>
-endolith <endolith@gmail.com>
-Andrew Lawrence <lawrenceajl@gmail.com>
-Gregory R. Lee <gregory.lee@cchmc.org>
-Maria Luisa Mandelli <mmandelli@sampras.radiology.ucsf.edu>
-Kesshi jordan <Kesshi.Jordan@ucsf.edu>
-Chantal Tax <chantaltax88@gmail.com>
-Qiyuan Tian <qytian@stanford.edu>
+Rafael Neto Henriques <rafaelnh21@gmail.com>
+Serge Koudoro <skab12@gmail.com>
+Samuel St-Jean <Samuel.St-Jean@usherbrooke.ca>
+Gabriel Girard <girard.gabriel@gmail.com>
+Marc-Alexandre Côté <marc.cote.19@gmail.com>
+Rutger Fick <rutger.fick@inria.fr>
 Shahnawaz Ahmed <shahnawaz.ahmed95@gmail.com>
+Ian Nimmo-Smith <iannimmosmith@gmail.com>
+Mauro Zucchelli <mauro.zucchelli88@gmail.com>
+Matthieu Dumont <matthieu.dumont@usherbrooke.ca>
+Stefan van der Walt <sjvdwalt@gmail.com>
+Kesshi Jordan <kesshi.jordan@gmail.com>
+Ranveer Aggarwal <ranveeraggarwal@gmail.com>
+Maxime Descoteaux <m.descoteaux@usherbrooke.ca>
+Riddhish Bhalodia <riddhishb@gmail.com>
+Bramsh Qamar <bramshq@gmail.com>
+Karandeep <karan.jkps@gmail.com>
+Bishakh Ghosh <ghoshbishakh@gmail.com>
+Christopher Nguyen <christopher.t.nguyen@gmail.com>
+Stephan Meesters <s.p.l.meesters@tue.nl>
+Ricci Woo <ricciwoo@gmail.com>
 Eric Peterson <globshim@gmail.com>
+Manu Tej Sharma <a.manutej@gmail.com>
+Sourav Singh <souravsingh@users.noreply.github.com>
+Julio Villalon <neurobarranquilla@hotmail.com>
+Jean-Christophe Houde <jean.christophe.houde@gmail.com>
+Jon Haitz Legarreta Gorroño <jhlegarreta@vicomtech.org>
+Kumar Ashutosh <kumarashutosh.ee@gmail.com>
+Shreyas Fadnavis <shreyasfadnavis@gmail.com>
+David Reagan <dmreagan@iu.edu>
+Parichit Sharma <parichitsharma08@gmail.com>
+Guillaume Theaud <guillaume.theaud@gmail.com>
+Aman Arya <aman.arya524@gmail.com>
+Dimitris Rozakis <dimrozakis@gmail.com>
+Gregory R. Lee <gregory.lee@cchmc.org>
+Saber Sheybani <sheybani.saber@gmail.com>
+ChantalTax <chantaltax88@gmail.com>
+Nil Goyette <nil.goyette@imeka.ca>
+Rohan Prinja <rohan.prinja@gmail.com>
+Antonio Ossa <aaossa@uc.cl>
+Demian Wassermann <demian.wassermann@inria.fr>
+Michael Paquette <jotha885@gmail.com>
+Tingyi Wanyan <tiwanyan@iu.edu>
+Jiri Borovec <jiri.borovec@fel.cvut.cz>
+Yaroslav Halchenko <debian@onerussian.com>
+Conor Corbin <ccorbin@usc.edu>
+Kimberly Chan <kimberlylchan@gmail.com>
+ArjitJ <32598699+ArjitJ@users.noreply.github.com>
+Enes Albay <albayenes@gmail.com>
+Etienne St-Onge <etienne.st-onge@usherbrooke.ca>
+Erik Ziegler <erik.ziegler@ulg.ac.be>
+David Qixiang Chen <qixiang.chen@gmail.com>
+Francois Rheault <francois.m.rheault@usherbrooke>
+Emanuele Olivetti <olivetti@fbk.eu>
+David Hunt <davhunt@indiana.edu>
+Alexandre Gauvin <gauvinalexandre@gmail.com>
+Pradeep Reddy Raamana <praamana@research.baycrest.org>
+theaverageguy <yash14123@iiitd.ac.in>
+Julio Villalon <villalonreina@users.noreply.github.com>
+endolith <endolith@gmail.com>
+Matthias Ekman <matthias.ekman@gmail.com>
+Oscar Esteban <code@oscaresteban.es>
+Emmanuel Caruyer <caruyer@gmail.com>
+Tom Wright <tom@maladmin.com>
+Jon Haitz Legarreta Gorroño <jon.haitz.legarreta@gmail.com>
+Andrew Lawrence <lawrenceajl@gmail.com>
+Naveen Kumarmarri <naveenkumarmarri6014@gmail.com>
+Chandan Gangwar <chandan.gangwar0411@gmail.com>
+Pradeep Reddy Raamana <raamana@gmail.com>
+Bennet Fauber <bennet@umich.edu>
+Matt Cieslak <mattcieslak@gmail.com>
+Sylvain Merlet <merlet.sylvain@gmail.com>
+Gonzalo Sanguinetti <gsangui@gmail.com>
+Vatsala Swaroop <smarshy@users.noreply.github.com>
+Vibhatha Abeykoon <Vibhatha Abeykoon>
+Adam Rybinski <adam.rybinski@outlook.com>
+Maria Luisa Mandelli <mmandelli@sampras.radiology.ucsf.edu>
+Sven Dorkenwald <sven.dorkenwald@mpimf-heidelberg.mpg.de>
+Qiyuan Tian <fdqiyuantian@gmail.com>
+Chris Filo Gorgolewski <krzysztof.gorgolewski@gmail.com>
+Bennet Fauber <justbennet@users.noreply.github.com>
+Daniel Enrico Cahall <danielenricocahall@gmail.com>
+Jon Mendoza <mrfox321@gmail.com>
+Sagun Pai <sagung.pai@gmail.com>
+Javier Guaje <guaje@users.noreply.github.com>
+Jacob Wasserthal <j.wasserthal@dkfz.de>
+Himanshu Mishra <himanshu2014iit@gmail.com>
