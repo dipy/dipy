@@ -19,7 +19,7 @@ Highlights
 - New Reconstruction Model: qtau-dMRI.
 - New command line interfaces (e.g. dipy_slr).
 - New continuous integration with AppVeyor CI.
-- Nibabel Streamlines API now used almost everywhere for better memory management
+- Nibabel Streamlines API now used almost everywhere for better memory management.
 - Compatibility with Python 3.7.
 - Many tutorials added or updated (5 New).
 - Large documentation update.
