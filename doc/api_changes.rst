@@ -15,7 +15,7 @@ DIPY 0.15 Changes
 **Gradient Table**
 
 The default value of ``b0_thresold`` has been changed(from 0 to 50). This change can impact your algorithm.
-If you want to go back to your previous result, make sure to set up this optional argument to 0.
+If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument ``b0_threshold`` set to 0.
 
 **Visualization**
 
@@ -25,7 +25,7 @@ If you want to go back to your previous result, make sure to set up this optiona
 - All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
 - UI elements are available in ``dipy.viz.ui``.
 
-``dipy.viz`` depends on FURY package. To get more informations about FURY, got to https://fury.gl
+``dipy.viz`` depends on FURY package. To get more informations about FURY, go to https://fury.gl
 
 
 DIPY 0.14 Changes
