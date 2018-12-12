@@ -22,8 +22,8 @@ Highlights
 - Compatibility with python 3.7.
 - Many tutorials added or updated (5 New).
 - Large documentation update.
-- Split visualization module to a new library: FURY.
-- Number of fixes, issues closed (287), merged 93 pull requests. 
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests. 
 
 See :ref:`Older Highlights <old_highlights>`.
 
