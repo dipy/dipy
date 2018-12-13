@@ -194,7 +194,7 @@ def test_csdeconv():
     _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
@@ -220,7 +220,8 @@ def test_csdeconv():
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
 
-    assert_warns(UserWarning, ConstrainedSphericalDeconvModel, gtab, response, sh_order=10)
+    assert_warns(UserWarning, ConstrainedSphericalDeconvModel, gtab,
+                 response, sh_order=10)
 
     with warnings.catch_warnings(record=True) as w:
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
