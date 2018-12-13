@@ -19,7 +19,7 @@ from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
                               lower_triangular, mode as get_mode)
-from dipy.reconst.peaks import peaks_from_model
+from dipy.direction.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
