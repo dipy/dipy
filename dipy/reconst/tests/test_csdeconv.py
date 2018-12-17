@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
-                           assert_array_equal, assert_warns)
+                           assert_array_equal)
 from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -220,8 +220,9 @@ def test_csdeconv():
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
 
-    assert_warns(UserWarning, ConstrainedSphericalDeconvModel, gtab,
-                 response, sh_order=10)
+    with warnings.catch_warnings(record=True) as w:
+        ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
+        assert_equal(len([local_warn for local_warn in w if issubclass(local_warn.category, UserWarning)]) > 0, True)
 
     with warnings.catch_warnings(record=True) as w:
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
@@ -568,4 +569,5 @@ def test_csd_superres():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    # run_module_suite()
+    test_csdeconv()
