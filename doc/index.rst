@@ -101,7 +101,7 @@ We acknowledge support from the following organizations:
   University of Washington eScience Institute Data Science Environment.
 
 - Google supported DIPY through the Google Summer of Code Program during
-  Summer 2015 and 2016.
+  Summer 2015, 2016 and 2018.
 
 
 
