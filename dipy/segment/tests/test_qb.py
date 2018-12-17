@@ -3,7 +3,7 @@ import nibabel as nib
 from numpy.testing import assert_equal
 from dipy.data import get_fnames
 
-from dipy.segment.clustering import QuickBundles
+from dipy.segment.quickbundles import QuickBundles
 
 
 def test_qbundles():
