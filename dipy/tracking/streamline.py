@@ -547,7 +547,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
     return cci_score_mtrx
 
 
-def _orient_generator(out, roi1, roi2):
+def _orient_by_roi_generator(out, roi1, roi2):
     """
     Helper function to `orient_by_rois`
 
@@ -565,7 +565,7 @@ def _orient_generator(out, roi1, roi2):
             yield sl
 
 
-def _orient_list(out, roi1, roi2):
+def _orient_by_roi_list(out, roi1, roi2):
     """
     Helper function to `orient_by_rois`
 
@@ -649,7 +649,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         if in_place:
             w_s = "Cannot return a generator when in_place is set to True"
             raise ValueError(w_s)
-        return _orient_generator(streamlines, roi1, roi2)
+        return _orient_by_roi_generator(streamlines, roi1, roi2)
 
     # If it's a generator on input, we may as well generate it
     # here and now:
@@ -662,7 +662,82 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         # Make a copy, so you don't change the output in place:
         out = deepcopy(streamlines)
 
-    return _orient_list(out, roi1, roi2)
+    return _orient_by_roi_list(out, roi1, roi2)
+
+
+def _orient_by_sl_generator(out, std_array, fgarray):
+    """Helper function that implements the generator version of this """
+    for idx, sl in enumerate(fgarray):
+        dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
+        dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
+        if dist_direct > dist_flipped:
+            yield out[idx][::-1]
+        else:
+            yield out[idx]
+
+
+def _orient_by_sl_list(out, std_array, fgarray):
+    """Helper function that implements the sequence version of this"""
+    for idx, sl in enumerate(fgarray):
+        dist_direct = np.sum(np.sqrt(np.sum((sl - std_array) ** 2, -1)))
+        dist_flipped = np.sum(np.sqrt(np.sum((sl[::-1] - std_array) ** 2, -1)))
+        if dist_direct > dist_flipped:
+            out[idx][:, 0] = out[idx][::-1][:, 0]
+            out[idx][:, 1] = out[idx][::-1][:, 1]
+            out[idx][:, 2] = out[idx][::-1][:, 2]
+    return out
+
+
+def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
+                         as_generator=False, affine=None):
+    """
+    Orient a bundle of streamlines to a standard streamline.
+
+    Parameters
+    ----------
+    streamlines : Streamlines, list
+        The input streamlines to orient.
+    standard : Streamlines, list, or ndarrray
+        This provides the standard orientation according to which the
+        streamlines in the provided bundle should be reoriented.
+    n_points: int, optional
+        The number of samples to apply to each of the streamlines.
+    in_place : bool
+        Whether to make the change in-place in the original input
+        (and return a reference), or to make a copy of the list
+        and return this copy, with the relevant streamlines reoriented.
+        Default: False.
+    as_generator : bool
+        Whether to return a generator as output. Default: False
+    affine : ndarray
+        Affine transformation from voxels to streamlines. Default: identity.
+
+    Returns
+
+    """
+    # Start by resampling into an array, so that distance calculation is easy:
+    fgarray = np.array(set_number_of_points(streamlines,  n_points))
+    std_array = np.array(set_number_of_points([standard],  n_points))
+
+
+    if as_generator:
+        if in_place:
+            w_s = "Cannot return a generator when in_place is set to True"
+            raise ValueError(w_s)
+        return _orient_by_sl_generator(streamlines, std_array, fgarray)
+
+    # If it's a generator on input, we may as well generate it
+    # here and now:
+    if isinstance(streamlines, types.GeneratorType):
+        out = Streamlines(streamlines)
+
+    elif in_place:
+        out = streamlines
+    else:
+        # Make a copy, so you don't change the output in place:
+        out = deepcopy(streamlines)
+
+    return _orient_by_sl_list(out, std_array, fgarray)
 
 
 def _extract_vals(data, streamlines, affine=None, threedvec=False):
