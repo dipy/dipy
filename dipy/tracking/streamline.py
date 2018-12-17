@@ -955,6 +955,12 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant).
+
+    Note
+    ----
+    Before providing a bundle as input to this function, you will need
+    to make sure that the streamlines in the bundle are all oriented in the
+    same orientation relative to the bundle (use :func:`orient_by_streamline`).
     """
     # It's already an array
     if isinstance(bundle, np.ndarray):
@@ -967,9 +973,13 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
 
     values = values_from_volume(data, fgarray, affine=affine)
 
-    # We assume that weights *always sum to 1 across streamlines*:
     if weights is None:
         weights = np.ones(values.shape) / values.shape[0]
+    else:
+        # We check that weights *always sum to 1 across streamlines*:
+        if not np.all(np.sum(weights, 0) == np.ones(n_points)):
+            raise ValueError("The sum of weights across streamlines must ",
+                             "be equal to 1")
 
     return np.sum(weights * values, 0)
 

@@ -1070,8 +1070,6 @@ def test_orient_by_streamline():
     npt.assert_(new_streamlines is streamlines)
 
 
-
-
 def test_values_from_volume():
     decimal = 4
     data3d = np.arange(2000).reshape(20, 10, 10)
@@ -1280,8 +1278,53 @@ def test_gaussian_weights():
                        np.array([x, y, z]).T - 2])
     w = gaussian_weights(bundle)
 
-    # And their weights should be halved
+    # And their weights should be halved:
     npt.assert_almost_equal(w[0], w[1] / 2)
+    npt.assert_almost_equal(w[-1], w[2] / 2)
+
+
+def test_bundle_profile():
+    data = np.ones((10, 10, 10))
+    bundle = Streamlines([np.array([[0, 0., 0],
+                                    [1, 0., 0.],
+                                    [2, 0., 0.]]),
+                          np.array([[0, 0., 0.],
+                                    [1, 0., 0],
+                                    [2, 0,  0.]])])
+
+    profile = bundle_profile(data, bundle)
+    npt.assert_equal(profile, np.ones(100))
+
+    profile = bundle_profile(data, bundle, affine=None, n_points=10,
+                             weights=None)
+    npt.assert_equal(profile, np.ones(10))
+
+    profile = bundle_profile(data, bundle, affine=None, n_points=10,
+                             weights=None)
+    npt.assert_equal(profile, np.ones(10))
+
+    profile = bundle_profile(data, bundle, affine=None, n_points=10,
+                             weights=np.ones((2, 10)) * 0.5)
+    npt.assert_equal(profile, np.ones(10))
+
+
+    # Disallow setting weights that don't sum to 1 across fibers/nodes:
+    assert_raises(ValueError, bundle_profile,
+                  data, bundle, affine=None,
+                  n_points=10, weights=np.ones((2, 10)) * 0.6)
+
+    # Test using an affine:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_bundle = Streamlines([sl + affine[:3, 3] for sl in bundle])
+    profile = bundle_profile(data,
+                             x_bundle,
+                             affine=affine,
+                             n_points=10,
+                             weights=None)
+
+    npt.assert_equal(profile, np.ones(10))
 
 
 if __name__ == '__main__':
