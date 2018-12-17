@@ -37,7 +37,7 @@ The following 30 authors contributed 676 commits.
 * Daniel Enrico Cahall
 * David Hunt
 * Francois Rheault
-* Jacob Wasserthal
+* Jakob Wasserthal
 
 
 We closed a total of 287 issues, 93 pull requests and 194 regular issues;
