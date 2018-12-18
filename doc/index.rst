@@ -33,10 +33,10 @@ See :ref:`Older Highlights <old_highlights>`.
 Announcements
 *************
 
-- :ref:`DIPY 0.15 <release0.15>` released December 12, 2018.
-- :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
-- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
-- :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
+- :ref:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
+- :ref:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
+- :ref:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.
+- :ref:`DIPY 0.12 <release_notes/release0.12>` released June 26, 2017.
 
 See some of our :ref:`Past Announcements <old_news>`
 
