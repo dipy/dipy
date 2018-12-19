@@ -417,5 +417,5 @@ diffusion process.
 .. [Wassermann2017]_ Wassermann, Demian, et al. "Test-Retest qt-dMRI datasets
             for 'Non-Parametric GraphNet-Regularized Representation of dMRI in
             Space and Time' [Data set]". Zenodo.
-            http://doi.org/10.5281/zenodo.996889, 2017.
+            https://doi.org/10.5281/zenodo.996889, 2017.
 """
