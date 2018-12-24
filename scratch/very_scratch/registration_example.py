@@ -215,10 +215,7 @@ def test_registration():
     # LPS to RAS
 
 
-    
-
 if __name__ == '__main__':
-
 
     """
     print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
@@ -239,10 +236,3 @@ if __name__ == '__main__':
                                [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
 
     """
-
-    
-
-
-
-
-    

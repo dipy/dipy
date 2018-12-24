@@ -66,8 +66,6 @@ print min
 
 #d = sympy.integrate(sympy.exp((k1*sympy.cos(phi)**2+k2*sympy.sin(phi)**2)*sympy.sin(theta)**2)/(4*sympy.pi),(phi,0,2*sympy.pi),(theta,0,sympy.pi))
 
-
-
 """
 def I(n):
     return dblquad(lambda t, x: np.exp(-x*t)/t**n, 0, np.Inf, lambda x: 1, lambda x: np.Inf)

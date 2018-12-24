@@ -34,8 +34,6 @@ print data.shape
 
 #S0 = data[:,:,:,0]
 
-
-
 """
 
 #save the structural volume

@@ -35,7 +35,6 @@ def larch(tracks,
        of approximated tracks the approximation preserves initial shape.
     """
 
-
     """
     t1=time.clock()    
     print 'Reducing to 3-point approximate tracks...'
@@ -175,8 +174,9 @@ def rm_far_ends(ref,tracks,dist=25):
  
 
 def rm_far_tracks(ref,tracks,dist=25,down=False):
-    """ Remove tracks which are far away using as a distance metric the average euclidean distance of the
-    following three points start point, midpoint and end point.
+    """ Remove tracks which are far away using as a distance metric the average
+    euclidean distance of the following three points start point, midpoint and
+    end point.
 
     Parameters
     ----------
@@ -324,7 +324,8 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     return representative
 
 def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atlas=0,use_preselected_tracks=0,ball_radius=5):
-    """ Detect corpus callosum in a mni registered dataset of shape (181,217,181)
+    """ Detect corpus callosum in a mni registered dataset of shape
+    (181,217,181)
     
     Parameters:
     ----------------

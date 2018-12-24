@@ -10,7 +10,8 @@ from dipy.core import geometry as gm
 import pylab
 
 def affine_transform2d(I,M):
-    """ Inspired by the work of Alexis Roche and the independent work of D. Kroon
+    """ Inspired by the work of Alexis Roche and the independent work of
+    D. Kroon
 
     Parameters
     ----------

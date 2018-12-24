@@ -99,9 +99,6 @@ for c in C: print c, C[c]['rep3']/C[c]['N']
 
 show_rep3(C,r,fos.red)
 
-
-
-
 """
 
 #print 'Showing initial dataset.'

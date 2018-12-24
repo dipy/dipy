@@ -122,7 +122,6 @@ def gq_tn_calc_save():
         tnfile = simdir+'tn/'+dataname+'.pkl'
         pkl.save_pickle(tnfile,tn)
 
-
         """
         tn.ADC               tn.__init__          tn._getevals
         tn.B                 tn.__module__        tn._getevecs

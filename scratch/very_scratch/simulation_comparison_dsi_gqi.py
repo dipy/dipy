@@ -24,7 +24,6 @@ gradients=b_vals_dirs[:,1:]
 
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
-#"""
 
 gqfile = '/home/ian/Data/SimData/gq_SNR030_1fibre.pkl'
 pkl.save_pickle(gqfile,gq)
