@@ -1822,7 +1822,7 @@ def map_laplace_u(n, m):
     Returns
     -------
     U : float,
-        Analytical integral of $\phi_n(q) * \phi_m(q)$
+        Analytical integral of :math:`\phi_n(q) * \phi_m(q)`
 
     References
     ----------
@@ -1843,7 +1843,7 @@ def map_laplace_t(n, m):
     Returns
     -------
     T : float
-        Analytical integral of $\phi_n(q) * \phi_m''(q)$
+        Analytical integral of :math:`\phi_n(q) * \phi_m''(q)`
 
     References
     ----------
@@ -1867,7 +1867,7 @@ def map_laplace_s(n, m):
     Returns
     -------
     S : float
-        Analytical integral of $\phi_n''(q) * \phi_m''(q)$
+        Analytical integral of :math:`\phi_n''(q) * \phi_m''(q)`
 
     References
     ----------
