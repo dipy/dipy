@@ -94,7 +94,7 @@ def test_gqiodf():
     summary['faces'] = odf_faces
     f = odf_faces.shape[0]
 
-    '''
+    """
     If e = number_of_edges
     the Euler formula says f-e+v = 2 for a mesh on a sphere
     Here, assuming we have a healthy triangulation
@@ -102,7 +102,7 @@ def test_gqiodf():
     exactly two faces = so 2*e = 3*f
     to avoid division we test whether 2*f - 3*f + 2*v == 4
     or equivalently 2*v - f == 4
-    '''
+    """
 
     assert_equal(2*v-f, 4,'Direct Euler test fails')
     assert_true(meshes.euler_characteristic_check(odf_vertices, odf_faces,chi=2),'euler_characteristic_check fails')
@@ -181,11 +181,11 @@ def test_gqiodf():
 
     width = 0.02#0.3 #0.05
     
-    '''
+    """
     print 'pole_1 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < width])
     print 'pole_2 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < width])
     print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
-    '''
+    """
     
     #print 'pole_1 equator contains:', len(meshes.equatorial_vertices(vertices,pole_1,width))
     #print 'pole_2 equator contains:', len(meshes.equatorial_vertices(vertices,pole_2,width))
@@ -195,7 +195,7 @@ def test_gqiodf():
     #print triple_odf_maxima(vertices,summary['10']['odf'],width)
     #print triple_odf_maxima(vertices,summary['44']['odf'],width)
     #print summary['0']['evals']
-    '''
+    """
 
     pole=np.array([0,0,1])
 
@@ -207,7 +207,7 @@ def test_gqiodf():
             fos.add(r,fos.point(ev,fos.red))
     fos.show(r)
 
-    '''
+    """
 
     triple = triple_odf_maxima(vertices, summary['10']['odf'], width)
     
@@ -215,7 +215,7 @@ def test_gqiodf():
     indmax2, odfmax2 = triple[1]
     indmax3, odfmax3 = triple[2] 
 
-    '''
+    """
     from dipy.viz import fos
     r=fos.ren()
     for v in vertices:
@@ -229,7 +229,7 @@ def test_gqiodf():
     fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,2]),radius=0.025,color=fos.blue,opacity=0.7))
     fos.add(r,fos.sphere([0,0,0],radius=0.01,color=fos.white))
     fos.show(r)
-    '''
+    """
     
     mat = np.vstack([vertices[indmax1],vertices[indmax2],vertices[indmax3]])
 
@@ -240,18 +240,18 @@ def test_gqiodf():
     #return summary
 
 def upper_hemi_map(v):
-    '''
+    """
     maps a 3-vector into the z-upper hemisphere
-    '''
+    """
     return np.sign(v[2])*v
 
 def equatorial_maximum(vertices, odf, pole, width):
 
     eqvert = meshes.equatorial_zone_vertices(vertices, pole, width)
 
-    '''
+    """
     need to test for whether eqvert is empty or not
-    '''
+    """
     if len(eqvert) == 0:
 
         print 'empty equatorial band at pole', pole, 'with width', width
@@ -269,9 +269,9 @@ def equatorial_maximum(vertices, odf, pole, width):
     return eqvertmax, eqvalmax
 
 def patch_vertices(vertices,pole, width):
-    '''
+    """
     find 'vertices' within the cone of 'width' around 'pole'
-    '''
+    """
     
     return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1- width]
 
@@ -280,9 +280,9 @@ def patch_maximum(vertices, odf, pole, width):
 
     eqvert = patch_vertices(vertices, pole, width)
 
-    '''
+    """
     need to test for whether eqvert is empty or not
-    '''
+    """
     if len(eqvert) == 0:
 
         print 'empty cone around pole', pole, 'with width', width

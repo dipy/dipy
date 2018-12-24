@@ -186,10 +186,10 @@ mapping = sdr.optimize(static, moving)
 
 warped = mapping.transform(moving)
 
-'''
+"""
 We can see the effect of the warping by switching between the images before and
 after registration
-'''
+"""
 
 regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
                't1_slices_input.png')
@@ -211,9 +211,9 @@ regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
    Moving image transformed under the (direct) transformation in green on top of the static image (in red).
 """
 
-'''
+"""
 And we can apply the inverse warping too
-'''
+"""
 
 inv_warped = mapping.transform_inverse(static)
 regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving',
@@ -226,9 +226,9 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving'
    Static image transformed under the (inverse) transformation in red on top of the moving image (in green).
 """
 
-'''
+"""
 Finally, let's see the deformation
-'''
+"""
 
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 

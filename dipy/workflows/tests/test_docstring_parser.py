@@ -43,7 +43,7 @@ else:
     def sixu(s): return unicode(s, 'unicode_escape')
 
 
-doc_txt = '''\
+doc_txt = """\
   numpy.multivariate_normal(mean, cov, shape=None, spam=None)
 
   Draw values from a multivariate normal distribution with specified
@@ -149,7 +149,7 @@ doc_txt = '''\
   .. index:: random
      :refguide: random;distributions, random;gauss
 
-  '''
+  """
 doc = NumpyDocString(doc_txt)
 
 doc_yields_txt = """

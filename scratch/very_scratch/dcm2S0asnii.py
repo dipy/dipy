@@ -36,7 +36,7 @@ print data.shape
 
 
 
-'''
+"""
 
 #save the structural volume
 
@@ -63,4 +63,4 @@ np.save(smallname_grad,gradients)
 
 np.save(smallname_bvals,bvals)
 
-'''
+"""

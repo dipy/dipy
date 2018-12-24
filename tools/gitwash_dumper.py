@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-''' Checkout gitwash repo into directory and do search replace on name '''
+""" Checkout gitwash repo into directory and do search replace on name """
 
 import os
 from os.path import join as pjoin
@@ -51,9 +51,9 @@ def cp_files(in_path, globs, out_path):
 
 
 def filename_search_replace(sr_pairs, filename, backup=False):
-    ''' Search and replace for expressions in files
+    """ Search and replace for expressions in files
 
-    '''
+    """
     in_txt = open(filename, 'rt').read(-1)
     out_txt = in_txt[:]
     for in_exp, out_exp in sr_pairs:
@@ -152,13 +152,13 @@ def make_link_targets(proj_name,
     out_links.close()
 
 
-USAGE = ''' <output_directory> <project_name>
+USAGE = """ <output_directory> <project_name>
 
 If not set with options, the repository name is the same as the <project
 name>
 
 If not set with options, the main github user is the same as the
-repository name.'''
+repository name."""
 
 
 GITWASH_CENTRAL = 'git://github.com/matthew-brett/gitwash.git'

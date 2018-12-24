@@ -156,7 +156,7 @@ def get_skeleton(name='C1'):
 
 
 def get_sphere(name='symmetric362'):
-    ''' provide triangulated spheres
+    """ provide triangulated spheres
 
     Parameters
     ------------
@@ -187,7 +187,7 @@ def get_sphere(name='symmetric362'):
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"
-    '''
+    """
     fname = SPHERE_FILES.get(name)
     if fname is None:
         raise DataError('No sphere called "%s"' % name)

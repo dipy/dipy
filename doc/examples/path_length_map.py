@@ -140,10 +140,10 @@ ax = AxesGrid(fig, 111,
               cbar_size="10%",
               cbar_pad="5%")
 
-'''
+"""
 We will mask our WMPL to ignore values less than zero because negative numbers
 indicate no path back to the ROI was found in the provided streamlines
-'''
+"""
 
 wmpl_show = np.ma.masked_where(wmpl < 0, wmpl)
 

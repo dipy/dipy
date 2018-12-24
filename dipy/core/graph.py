@@ -3,12 +3,12 @@ from __future__ import division, print_function, absolute_import
 
 
 class Graph(object):
-    ''' A simple graph class
+    """ A simple graph class
 
-    '''
+    """
 
     def __init__(self):
-        ''' A graph class with nodes and edges :-)
+        """ A graph class with nodes and edges :-)
 
         This class allows us to:
 
@@ -32,7 +32,7 @@ class Graph(object):
         >>> g.up_short('d')
         ['d', 'b', 'a']
 
-        '''
+        """
 
         self.node = {}
         self.pred = {}

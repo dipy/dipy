@@ -1,4 +1,4 @@
-''' Utilities for testing '''
+""" Utilities for testing """
 from os.path import dirname, abspath, join as pjoin
 from dipy.testing.spherepoints import sphere_points
 from dipy.testing.decorators import doctest_skip_parser
