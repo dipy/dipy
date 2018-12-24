@@ -29,7 +29,7 @@ from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
 from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking
