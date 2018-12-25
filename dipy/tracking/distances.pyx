@@ -243,10 +243,19 @@ def cut_plane(tracks, ref):
     cdef:
         size_t N_ref = ref32.shape[0]
         size_t p_no, q_no
-        float *this_ref_p, *next_ref_p, *this_trk_p, *next_trk_p
-        float along[3], normal[3]
-        float qMp[3], rMp[3], rMq[3], pMq[3]
-        float hit[3], hitMp[3], *delta
+        float *this_ref_p
+        float *next_ref_p
+        float *this_trk_p
+        float *next_trk_p
+        float along[3]
+        float normal[3]
+        float qMp[3]
+        float rMp[3]
+        float rMq[3]
+        float pMq[3]
+        float hit[3]
+        float hitMp[3]
+        float *delta
     # List used for storage of hits.  We will fill this with lots of
     # small numpy arrays, and reuse them over the reference track point
     # loops.
@@ -413,7 +422,10 @@ def most_similar_track_mam(tracks,metric='avg'):
     # preallocate buffer array for track distance calculations
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
-        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer, distance
+        cnp.float32_t *t1_ptr
+        cnp.float32_t *t2_ptr
+        cnp.float32_t *min_buffer
+        cnp.float32_t distance
     distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float32)
     min_buffer = <cnp.float32_t *> distances_buffer.data
     # cycle over tracks
@@ -509,7 +521,9 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     # preallocate buffer array for track distance calculations
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
-        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer
+        cnp.float32_t *t1_ptr
+        cnp.float32_t *t2_ptr
+        cnp.float32_t *min_buffer
     distances_buffer = np.zeros((longest_track_lenA*2,), dtype=np.float32)
     min_buffer = <cnp.float32_t *> distances_buffer.data
     # cycle over tracks
@@ -574,7 +588,9 @@ def bundles_distances_mdf(tracksA, tracksB):
         tracksB32[i] = np.ascontiguousarray(tracksB[i], dtype=f32_dt)
     # preallocate buffer array for track distance calculations
     cdef:
-        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer
+        cnp.float32_t *t1_ptr
+        cnp.float32_t *t2_ptr
+        cnp.float32_t *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
@@ -612,7 +628,8 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
                                  int metric_type) nogil:
     """ Note ``nogil`` - no python calls allowed in this function """
     cdef:
-        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.float32_t *min_t2t1
+        cnp.float32_t *min_t1t2
     min_t2t1 = min_buffer
     min_t1t2 = min_buffer + t2_len
     min_distances(t1_len, track1_ptr,
@@ -650,7 +667,9 @@ cdef inline void min_distances(size_t t1_len,
                                cnp.float32_t *min_t2t1,
                                cnp.float32_t *min_t1t2) nogil:
     cdef:
-        cnp.float32_t *t1_pt, *t2_pt, d0, d1, d2
+        cnp.float32_t *t1_pt
+        cnp.float32_t *t2_pt
+        cnp.float32_t d0, d1, d2
         cnp.float32_t delta2
         int t1_pi, t2_pi
     for t2_pi from 0<= t2_pi < t2_len:
@@ -738,7 +757,8 @@ def mam_distances(xyz1,xyz2,metric='all'):
     t2_len = track2.shape[0]
     # preallocate buffer array for track distance calculations
     cdef:
-        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.float32_t *min_t2t1
+        cnp.float32_t *min_t1t2
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
     distances_buffer = np.zeros((t1_len + t2_len,), dtype=np.float32)
     min_t2t1 = <cnp.float32_t *> distances_buffer.data
@@ -806,7 +826,8 @@ def minimum_closest_distance(xyz1,xyz2):
     t2_len = track2.shape[0]
     # preallocate buffer array for track distance calculations
     cdef:
-        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.float32_t *min_t2t1
+        cnp.float32_t *min_t1t2
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
     distances_buffer = np.zeros((t1_len + t2_len,), dtype=np.float32)
     min_t2t1 = <cnp.float32_t *> distances_buffer.data
@@ -891,7 +912,14 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
 
     cdef:
         float l0,l1,ltmp,u1,u2,lperp1,lperp2
-        float *s_tmp,*e_tmp,k0[3],ps[3],pe[3],ps1[3],pe1[3],tmp[3]
+        float *s_tmp
+        float *e_tmp
+        float k0[3]
+        float ps[3]
+        float pe[3]
+        float ps1[3]
+        float pe1[3]
+        float tmp[3]
 
     csub_3vecs(end0,start0,k0)
     l0 = cinner_3vecs(k0,k0)
@@ -980,7 +1008,11 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
 
     cdef:
         float l0,l1,ltmp,cos_theta_squared
-        float *s_tmp,*e_tmp,k0[3],k1[3],tmp[3]
+        float *s_tmp
+        float *e_tmp
+        float k0[3]
+        float k1[3]
+        float tmp[3]
 
     csub_3vecs(end0,start0,k0)
     l0 = cinner_3vecs(k0,k0)
@@ -1045,11 +1077,14 @@ def approx_polygon_track(xyz,alpha=0.392):
     cdef :
         int mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track
-        float *fvec0,*fvec1,*fvec2
+        float *fvec0
+        float *fvec1
+        float *fvec2
         object characteristic_points
         size_t t_len
         double angle,tmp
-        float vec0[3],vec1[3]
+        float vec0[3]
+        float vec1[3]
 
     angle=alpha
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
@@ -1172,7 +1207,10 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     (1.0, 0.25, 0.75)
     """
     cdef:
-        float *csa,*csb,*cp,*cq
+        float *csa
+        float *csb
+        float *cp
+        float *cq
         float cr
         float ct[2]
 
@@ -1200,7 +1238,9 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
         1 intersection
     """
     cdef:
-        float d[3],m[3],n[3]
+        float d[3]
+        float m[3]
+        float n[3]
         float md,nd,dd, nn, mn, a, k, c,b, discr
 
         float epsilon_float=5.96e-08
@@ -1279,7 +1319,9 @@ def point_segment_sq_distance(a, b, c):
     2.0
     """
     cdef:
-        float *ca,*cb,*cc
+        float *ca
+        float *cb
+        float *cc
         float cr
         float ct[2]
 
@@ -1296,7 +1338,9 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
 
     """
     cdef:
-        float ab[3],ac[3],bc[3]
+        float ab[3]
+        float ac[3]
+        float bc[3]
         float e,f
 
     csub_3vecs(b,a,ab)
@@ -1532,8 +1576,11 @@ def local_skeleton_clustering(tracks, d_thr=10):
         LSC_Cluster *cluster
         long lent = 0,lenC = 0, dim = 0, points=0
         long i=0, j=0, c=0, i_k=0, rows=0 ,cit=0
-        float *ptr, *hid, *alld
-        float d[2],m_d,cd_thr
+        float *ptr
+        float *hid
+        float *alld
+        float d[2]
+        float m_d, cd_thr
         long *flip
 
     points=len(tracks[0])
@@ -1975,7 +2022,8 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track,
     cdef:
         float *t=<float *>track.data
         float *p=<float *>point.data
-        float a[3],b[3]
+        float a[3]
+        float b[3]
         int tlen = len(track)
         int curr = 0
         float dist = 0
@@ -2027,7 +2075,9 @@ def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[fl
     cdef:
         float *t=<float *>track.data
         float *r=<float *>roi.data
-        float a[3],b[3],p[3]
+        float a[3]
+        float b[3]
+        float p[3]
         int tlen = len(track)
         int rlen = len(roi)
         int curr = 0
