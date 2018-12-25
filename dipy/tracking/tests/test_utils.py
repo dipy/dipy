@@ -482,7 +482,7 @@ def test_length():
 
 
 def test_seeds_from_mask():
-    mask = np.random.random_integers(0, 1, size=(10, 10, 10))
+    mask = np.random.randint(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, density=1)
     assert_equal(mask.sum(), len(seeds))
     assert_array_equal(np.argwhere(mask), seeds)
@@ -504,7 +504,7 @@ def test_seeds_from_mask():
 
 
 def test_random_seeds_from_mask():
-    mask = np.random.random_integers(0, 1, size=(4, 6, 3))
+    mask = np.random.randint(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=24,
                                    seed_count_per_voxel=True)

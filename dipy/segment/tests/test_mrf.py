@@ -45,13 +45,13 @@ square_gauss[99:157, 99:157, :] = square_gauss[99:157, 99:157, :] + noise_3
 
 square_1 = np.zeros((256, 256, 3)) + 0.001
 square_1 = add_noise(square_1, 10000, 1, noise_type='gaussian')
-temp_1 = np.random.random_integers(20, size=(171, 171, 3))
+temp_1 = np.random.randint(1, 21, size=(171, 171, 3))
 temp_1 = np.where(temp_1 < 20, 1, 3)
 square_1[42:213, 42:213, :] = temp_1
-temp_2 = np.random.random_integers(20, size=(114, 114, 3))
+temp_2 = np.random.randint(1, 21, size=(114, 114, 3))
 temp_2 = np.where(temp_2 < 19, 2, 1)
 square_1[71:185, 71:185, :] = temp_2
-temp_3 = np.random.random_integers(20, size=(58, 58, 3))
+temp_3 = np.random.randint(1, 21, size=(58, 58, 3))
 temp_3 = np.where(temp_3 < 20, 3, 1)
 square_1[99:157, 99:157, :] = temp_3
 
