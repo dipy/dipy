@@ -76,7 +76,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     # Rotate the coordinate system so that you are looking from the north pole:
     verts_rot = np.array(
-        np.dot(np.matrix([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
+        np.dot(np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
 
     # To get the orthographic projection, when the first coordinate is
     # positive:

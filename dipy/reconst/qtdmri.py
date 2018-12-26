@@ -1818,7 +1818,7 @@ def GCV_cost_function(weight, arguments):
     """
     data, M, MMt, K, LR = arguments
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
-    trS = np.matrix.trace(S)
+    trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
     return gcv_value
