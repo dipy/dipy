@@ -185,24 +185,24 @@ def apply_mapping(A,T,order=0,map_type='affine2d'):
             sc1,sc2,sch1,sch2=(1,1,0,0)            
         
         #translation
-        TC=np.array([[1,0,tc1],
-                      [0,1,tc2],
-                      [0,0,  1]])
+        TC = np.array([[1, 0, tc1],
+                      [0, 1, tc2],
+                      [0, 0,  1]])
 
         #scaling
-        SC=np.array([[sc1,  0,   0],
+        SC = np.array([[sc1,  0,   0],
                       [0,  sc2,   0],
                       [0,    0,   1]])
 
         #rotation
-        RC=np.array([[cos(rc), sin(rc), 0],
+        RC = np.array([[cos(rc), sin(rc), 0],
                       [-sin(rc), cos(rc), 0],
                       [0      ,       0, 1]])
         
         #shear        
-        SHC=np.array([[1,   sch1,0],
-                       [sch2,   1,0],
-                       [0,      0,1]])            
+        SHC = np.array([[1,   sch1, 0],
+                       [sch2,   1, 0],
+                       [0,      0, 1]])
         
         
         #apply
