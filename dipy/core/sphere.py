@@ -3,6 +3,8 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import warnings
 
+from scipy import optimize
+
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
@@ -494,6 +496,155 @@ def disperse_charges(hemi, iters, const=.2):
             potential[ii] = v_min
 
     return HemiSphere(xyz=charges), potential
+
+
+def _equality_constraints(vects, *args):
+    """Spherical equality constraint. Returns 0 if vects lies on the unit
+    sphere.
+
+    Parameters
+    ----------
+    vects : array-like shape (N * 3)
+        Points on the sphere.
+    Returns
+    -------
+    array-like (N,)
+        Difference between squared vector norms and 1.
+
+    """
+
+    N = vects.shape[0] / 3
+    vects = vects.reshape((N, 3))
+    return (vects ** 2).sum(1) - 1.0
+
+
+def _grad_equality_constraints(vects):
+    """Return normals to the surface constraint (which corresponds to
+    the gradient of the implicit function).
+
+    Parameters
+    ----------
+    vects : array-like (N * 3)
+        Points on the sphere.
+    Returns
+    -------
+    array-like (N, N * 3)
+        grad[i, j] contains :math:`\partial f_i / \partial x_j`.
+
+    """
+
+    N = vects.shape[0] / 3
+    vects = vects.reshape((N, 3))
+    vects = (vects.T / np.sqrt((vects ** 2).sum(1))).T
+    grad = np.zeros((N, N * 3))
+    for i in range(3):
+        grad[:, i * N:(i + 1) * N] = np.diag(vects[:, i])
+    return grad
+
+
+def _get_forces_alt(vects, alpha=2.0, **kwargs):
+    """Electrostatic-repulsion objective function. The alpha parameter
+    controls the power repulsion (energy varies as $1 / r^\alpha$).
+
+    Parameters
+    ----------
+    vects : array-like (N * 3,)
+        Points on the sphere.
+    alpha : float
+        Controls the power of the repulsion. Default is 1.0.
+    weights : array-like (N, N)
+        Weight values to the electrostatic energy.
+
+    Returns
+    -------
+    energy : float
+        Sum of all interactions between any two vectors.
+
+    """
+
+    nb_points = vects.shape[0] / 3
+    # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
+    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    charges = vects.reshape((nb_points, 3))
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        potential = 1 / r_mag ** alpha
+
+    d = np.arange(len(charges))
+    potential[d, d] = 0
+    potential = potential[:nb_points] + potential[nb_points:]
+    potential = weights * potential.sum(-1)
+    potential = potential.sum()
+    return potential
+
+
+def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
+    """1st-order derivative of electrostatic-like repulsion energy.
+
+    Parameters
+    ----------
+    vects : array-like (N * 3,)
+        Points on the sphere.
+    alpha : float
+        Controls the power of the repulsion. Default is 1.0.
+
+    Returns
+    -------
+    grad : array-like (N * 3,)
+        Gradient of the objective function.
+
+    """
+
+    nb_points = vects.shape[0] / 3
+    # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
+    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    charges = vects.reshape((nb_points, 3))
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        forces = -2 * alpha * r / r_mag ** (alpha + 2.)
+
+    d = np.arange(len(charges))
+    forces[d, d] = 0
+    forces = forces[:nb_points] + forces[nb_points:]
+    forces = forces * weights.reshape((nb_points, nb_points, 1))
+    forces = forces.sum(0)
+    return forces.reshape((nb_points * 3))
+
+
+def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
+    """Reimplementation of disperse_charges making use of
+    scipy.optimize.fmin_slsqp.
+
+    Parameters
+    ----------
+    init_pointset : HemiSphere
+        Points on a unit sphere.
+    iters : int
+        Number of iterations to run.
+    tol : float
+        Tolerance for the optimization.
+
+    Returns
+    -------
+    array-like (N * 3,)
+        Distributed points on a unit sphere.
+
+    """
+
+    K = init_pointset.shape[0]
+    vects = optimize.fmin_slsqp(_get_forces_alt, init_pointset.reshape(K * 3),
+                                f_eqcons=_equality_constraints,
+                                fprime=_get_grad_forces_alt, iter=iters, acc=tol,
+                                args=[], iprint=0)
+    return vects
 
 
 def euler_characteristic_check(sphere, chi=2):
