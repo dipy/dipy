@@ -15,7 +15,7 @@ Let's load the necessary modules for executing this tutorial.
 from dipy.data import read_stanford_labels
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
 from dipy.viz import window, actor, colormap as cmap
 
 renderer = window.Renderer()

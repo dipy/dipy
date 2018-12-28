@@ -60,7 +60,7 @@ and/or model failures sometimes it can have negative values.
 
 from dipy.direction import ProbabilisticDirectionGetter
 from dipy.data import small_sphere
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
 
 fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
