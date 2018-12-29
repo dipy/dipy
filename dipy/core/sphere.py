@@ -540,7 +540,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
     from scipy.interpolate import Rbf
 
     def angle(x1, x2):
-        xx = np.arccos(np.clip((x1 * x2).sum(axis=0), 0, 1))
+        xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
         return np.nan_to_num(xx)
 
     def euclidean_norm(x1, x2):
