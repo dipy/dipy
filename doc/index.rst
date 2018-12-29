@@ -69,7 +69,7 @@ text files. Finally, we save our result as a Nifti file ::
     save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
 
 As an exercise, you can try to calculate `color FA` with your datasets. You will need
-to replace the filepaths `fimg`, `fbval` and `fbvec`. Here is what
+to replace the filepaths `fdwi`, `fbval` and `fbvec`. Here is what
 a slice should look like.
 
 .. image:: _static/colorfa.png
