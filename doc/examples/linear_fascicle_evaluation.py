@@ -48,7 +48,7 @@ candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
 """
 
 The streamlines that are entered into the model are termed 'candidate
-streamliness' (or a 'candidate connectome'):
+streamlines' (or a 'candidate connectome'):
 
 """
 
