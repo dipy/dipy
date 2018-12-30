@@ -82,7 +82,7 @@ ren.add(candidate_streamlines_actor)
 ren.add(cc_ROI_actor)
 ren.add(vol_actor)
 ren.add(vol_actor2)
-window.record(n_frames=1,
+window.record(ren, n_frames=1,
               out_path='life_candidates.png',
               size=(800, 800))
 if interactive:
