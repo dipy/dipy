@@ -16,7 +16,7 @@ import dipy.core.geometry as geometry
 import get_vertices as gv
 
 #old SimData files
-'''
+"""
 results_SNR030_1fibre
 results_SNR030_1fibre+iso
 results_SNR030_2fibres_15deg
@@ -28,16 +28,16 @@ results_SNR030_2fibres+iso_30deg
 results_SNR030_2fibres+iso_60deg
 results_SNR030_2fibres+iso_90deg
 results_SNR030_isotropic
-'''
+"""
 #fname='/home/ian/Data/SimData/results_SNR030_1fibre'
-''' file  has one row for every voxel, every voxel is repeating 1000
+""" file  has one row for every voxel, every voxel is repeating 1000
 times with the same noise level , then we have 100 different
 directions. 1000 * 100 is the number of all rows.
 
 The 100 conditions are given by 10 polar angles (in degrees) 0, 20, 40, 60, 80,
 80, 60, 40, 20 and 0, and each of these with longitude angle 0, 40, 80,
 120, 160, 200, 240, 280, 320, 360. 
-'''
+"""
 
 #new complete SimVoxels files
 simdata = ['fibres_2_SNR_80_angle_90_l1_1.4_l2_0.35_l3_0.35_iso_0_diso_00',
@@ -112,18 +112,17 @@ def gq_tn_calc_save():
         gqfile = simdir+'gq/'+dataname+'.pkl'
         pkl.save_pickle(gqfile,gq)
 
-        '''
+        """
         gq.IN               gq.__doc__          gq.glob_norm_param
         gq.QA               gq.__init__         gq.odf              
         gq.__class__        gq.__module__       gq.q2odf_params
-        '''
+        """
 
         tn = ddti.Tensor(sim_data,bvals,gradients)
         tnfile = simdir+'tn/'+dataname+'.pkl'
         pkl.save_pickle(tnfile,tn)
 
-
-        '''
+        """
         tn.ADC               tn.__init__          tn._getevals
         tn.B                 tn.__module__        tn._getevecs
         tn.D                 tn.__new__           tn._getndim
@@ -138,9 +137,9 @@ def gq_tn_calc_save():
         tn.__getattribute__  tn._evals            tn.ndim
         tn.__getitem__       tn._evecs            tn.shape
         tn.__hash__          tn._getD             
-        '''
+        """
 
-        ''' file  has one row for every voxel, every voxel is repeating 1000
+        """ file  has one row for every voxel, every voxel is repeating 1000
         times with the same noise level , then we have 100 different
         directions. 100 * 1000 is the number of all rows.
 
@@ -149,12 +148,12 @@ def gq_tn_calc_save():
         are the antipodal partners of directions 0 to 180. So when counting the
         number of different vertices that occur as maximal directions we wll map
         the indices modulo 181.
-        '''
+        """
 
 def analyze_maxima(indices, max_dirs, subsets):
-    '''This calculates the eigenstats for each of the replicated batches
+    """This calculates the eigenstats for each of the replicated batches
     of the simulation data
-    '''
+    """
 
     results = []
 
@@ -259,13 +258,13 @@ def run_gq_sims(sample_data=[35,23,46,39,40,10,37,27,21,20]):
             
             print >> out, dataname, j, npa, tn.fa()[0]
             
-            '''
+            """
             for (i,o) in enumerate(gqs.odf(s)):
                 print i,o
             
             for (i,o) in enumerate(gqs.odf_vertices):
                 print i,o
-            '''
+            """
         
     out.close()
 
@@ -289,11 +288,11 @@ def run_small_data():
     evals=tnsmall.evals
     evals = evals.reshape(xyz,3)
         
-    '''
+    """
     eds=np.load(opj(os.path.dirname(__file__),\
                         '..','matrices',\
                         'evenly_distributed_sphere_362.npz'))
-    '''
+    """
     from dipy.data import get_sphere
 
     odf_vertices,odf_faces=get_sphere('symmetric362')
@@ -355,11 +354,11 @@ def run_small_data():
         summary[istr]['n_peaks'] = n_peaks
         summary[istr]['peak_heights'] = peak_heights
         summary[istr]['fa'] = FA[i]
-    '''
+    """
     QA/=fwd
     QA=QA.reshape(x,y,z,5)    
     IN=IN.reshape(x,y,z,5)
-    '''
+    """
     
     peaks_1 = [i for i in range(1000) if summary[str(i)]['n_peaks']==1]
     peaks_2 = [i for i in range(1000) if summary[str(i)]['n_peaks']==2]
@@ -370,7 +369,7 @@ def run_small_data():
     return FA, summary
 
 def Q2odf(s,q2odf_params):
-    ''' construct odf for a voxel '''
+    """ construct odf for a voxel """
     odf=np.dot(s,q2odf_params)
     return odf
 

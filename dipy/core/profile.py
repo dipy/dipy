@@ -13,7 +13,7 @@ pstats, _, _ = optional_package('pstats',
 
 
 class Profiler():
-    ''' Profile python/cython files or functions
+    """ Profile python/cython files or functions
 
     If you are profiling cython code you need to add
     # cython: profile=True on the top of your .pyx file
@@ -48,7 +48,7 @@ class Profiler():
     http://docs.python.org/library/profile.html
     http://packages.python.org/line_profiler/
 
-    '''
+    """
 
     def __init__(self, call=None, *args):
         # Delay import until use of class instance.  We were getting some very
@@ -84,7 +84,7 @@ class Profiler():
         self.call(*self.args)
 
     def print_stats(self, N=10):
-        ''' Print stats for profiling
+        """ Print stats for profiling
 
         You can use it in all different ways developed in pstats
         for example
@@ -97,5 +97,5 @@ class Profiler():
         ------------
         N : stats.print_stats argument
 
-        '''
+        """
         self.stats.print_stats(N)

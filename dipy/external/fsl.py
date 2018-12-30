@@ -1,4 +1,4 @@
-''' FSL IO '''
+""" FSL IO """
 
 from __future__ import with_statement
 
@@ -36,7 +36,7 @@ def have_flirt():
 
 
 def write_bvals_bvecs(bvals, bvecs, outpath=None, prefix=''):
-    ''' Write FSL FDT bvals and bvecs files
+    """ Write FSL FDT bvals and bvecs files
 
     Parameters
     -------------
@@ -50,7 +50,7 @@ def write_bvals_bvecs(bvals, bvecs, outpath=None, prefix=''):
        None results in current working directory.
     prefix : str
        prefix for bvals, bvecs files in directory.  Defaults to ''
-    '''
+    """
     if outpath is None:
         outpath = os.getcwd()
     bvals = tuple(bvals)
@@ -174,7 +174,7 @@ def flirt2aff_files(matfile, in_fname, ref_fname):
 
 
 def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
-    ''' Warp an image using fsl displacements
+    """ Warp an image using fsl displacements
 
     Parameters
     ------------
@@ -183,7 +183,7 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
     fdis :  filename of displacements (fnirtfileutils)
     fref : filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
     ffaw : filename for the output warped image
-    '''
+    """
     refaff = nib.load(fref).affine
     disdata = nib.load(fdis).get_data()
     imgfa = nib.load(ffa)
@@ -195,7 +195,7 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
     ires = np.linalg.inv(res)
     # create the 4d volume which has the indices for the reference image
     reftmp = np.zeros(disdata.shape)
-    '''
+    """
     #create the grid indices for the reference
     #refinds = np.ndindex(disdata.shape[:3])
     for ijk_t in refinds:
@@ -203,7 +203,7 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
         reftmp[i,j,k,0]=i
         reftmp[i,j,k,1]=j
         reftmp[i,j,k,2]=k
-    '''
+    """
     # same as commented above but much faster
     reftmp[..., 0] = np.arange(disdata.shape[0])[:, newaxis, newaxis]
     reftmp[..., 1] = np.arange(disdata.shape[1])[newaxis, :, newaxis]

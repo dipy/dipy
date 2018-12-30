@@ -955,7 +955,7 @@ class AffineRegistration(object):
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
                  starting_affine=None):
-        r''' Starts the optimization process
+        r""" Starts the optimization process
 
         Parameters
         ----------
@@ -998,7 +998,7 @@ class AffineRegistration(object):
         -------
         affine_map : instance of AffineMap
             the affine resulting affine transformation
-        '''
+        """
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
                              starting_affine)

@@ -1,4 +1,4 @@
-''' Testing track_metrics module '''
+""" Testing track_metrics module """
 
 import numpy as np
 from nose.tools import (assert_true, assert_false, assert_equal,

@@ -1399,8 +1399,8 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
 
 
 def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
-    '''Computed the mu dependent part of the signal design matrix.
-    '''
+    """Computed the mu dependent part of the signal design matrix.
+    """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
@@ -1491,8 +1491,8 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
 
 
 def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
-    '''Computes mu independent part of K. Same trick as with M.
-    '''
+    """Computes mu independent part of K. Same trick as with M.
+    """
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
                                 rgrad[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1517,8 +1517,8 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
 
 
 def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
-    '''Computes mu dependent part of M. Same trick as with M.
-    '''
+    """Computes mu dependent part of M. Same trick as with M.
+    """
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
                                 rgrad[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1660,7 +1660,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
 
 def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
-    r''' Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    r""" Computes the Laplacian regularization matrix for MAP-MRI's isotropic
     implementation [1]_ eq. (C7).
 
     Parameters
@@ -1680,7 +1680,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
-    '''
+    """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
     return mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
         ind_mat, mu
@@ -1688,7 +1688,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
 
 def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
-    r''' Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    r""" Computes the Laplacian regularization matrix for MAP-MRI's isotropic
     implementation [1]_ eq. (C7).
 
     Parameters
@@ -1708,7 +1708,7 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
-    '''
+    """
     n_elem = ind_mat.shape[0]
     LR = np.zeros((n_elem, n_elem))
 

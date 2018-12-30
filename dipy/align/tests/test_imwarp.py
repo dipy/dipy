@@ -370,11 +370,11 @@ def simple_callback(sdr, status):
 
 
 def test_ssd_2d_demons():
-    r''' Test 2D SyN with SSD metric, demons-like optimizer
+    r""" Test 2D SyN with SSD metric, demons-like optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
-    '''
+    """
     fname_moving = get_fnames('reg_o')
     fname_static = get_fnames('reg_c')
 
@@ -439,11 +439,11 @@ def test_ssd_2d_demons():
 
 
 def test_ssd_2d_gauss_newton():
-    r''' Test 2D SyN with SSD metric, Gauss-Newton optimizer
+    r""" Test 2D SyN with SSD metric, Gauss-Newton optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
-    '''
+    """
     fname_moving = get_fnames('reg_o')
     fname_static = get_fnames('reg_c')
 
@@ -595,12 +595,12 @@ def get_synthetic_warped_circle(nslices):
 
 
 def test_ssd_3d_demons():
-    r''' Test 3D SyN with SSD metric, demons-like optimizer
+    r""" Test 3D SyN with SSD metric, demons-like optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
     is of good quality.
-    '''
+    """
     moving, static = get_synthetic_warped_circle(30)
     moving[..., :8] = 0
     moving[..., -1:-9:-1] = 0
@@ -642,12 +642,12 @@ def test_ssd_3d_demons():
 
 
 def test_ssd_3d_gauss_newton():
-    r''' Test 3D SyN with SSD metric, Gauss-Newton optimizer
+    r""" Test 3D SyN with SSD metric, Gauss-Newton optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
     is of good quality.
-    '''
+    """
     moving, static = get_synthetic_warped_circle(35)
     moving[..., :10] = 0
     moving[..., -1:-11:-1] = 0
@@ -689,12 +689,12 @@ def test_ssd_3d_gauss_newton():
 
 
 def test_cc_2d():
-    r''' Test 2D SyN with CC metric
+    r""" Test 2D SyN with CC metric
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
+    """
     fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
@@ -725,13 +725,13 @@ def test_cc_2d():
 
 
 def test_cc_3d():
-    r''' Test 3D SyN with CC metric
+    r""" Test 3D SyN with CC metric
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
+    """
     fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
@@ -775,13 +775,13 @@ def test_cc_3d():
 
 
 def test_em_3d_gauss_newton():
-    r''' Test 3D SyN with EM metric, Gauss-Newton optimizer
+    r""" Test 3D SyN with EM metric, Gauss-Newton optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
+    """
     fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
@@ -828,12 +828,12 @@ def test_em_3d_gauss_newton():
 
 
 def test_em_2d_gauss_newton():
-    r''' Test 2D SyN with EM metric, Gauss-Newton optimizer
+    r""" Test 2D SyN with EM metric, Gauss-Newton optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
+    """
 
     fname = get_fnames('t1_coronal_slice')
     nslices = 1
@@ -869,13 +869,13 @@ def test_em_2d_gauss_newton():
 
 
 def test_em_3d_demons():
-    r''' Test 3D SyN with EM metric, demons-like optimizer
+    r""" Test 3D SyN with EM metric, demons-like optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
+    """
     fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
@@ -922,12 +922,12 @@ def test_em_3d_demons():
 
 
 def test_em_2d_demons():
-    r''' Test 2D SyN with EM metric, demons-like optimizer
+    r""" Test 2D SyN with EM metric, demons-like optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
+    """
     fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1

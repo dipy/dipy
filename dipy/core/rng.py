@@ -6,7 +6,7 @@ from platform import architecture
 
 
 def WichmannHill2006():
-    '''
+    """
     B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
     Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
     December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
@@ -21,7 +21,7 @@ def WichmannHill2006():
     >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     >>> N = 1000
     >>> a = [rng.WichmannHill2006() for i in range(N)]
-    '''
+    """
 
     global ix, iy, iz, it
 
@@ -58,7 +58,7 @@ def WichmannHill2006():
 
 
 def WichmannHill1982():
-    '''
+    """
     Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2
 
     Returns a pseudo-random number rectangularly distributed
@@ -70,7 +70,7 @@ def WichmannHill1982():
     30000 before the first entry.
 
     Integer arithmetic up to 5212632 is required.
-    '''
+    """
 
     import numpy as np
 
@@ -80,7 +80,7 @@ def WichmannHill1982():
     iy = (172 * iy) % 30307
     iz = (170 * iz) % 30323
 
-    '''
+    """
     If integer arithmetic only up to 30323 (!) is available, the preceding
     3 statements may be replaced by:
 
@@ -94,20 +94,20 @@ def WichmannHill1982():
         iy = iy + 30307
     if iz < 0:
         iz = iz + 30323
-    '''
+    """
     return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307. +
                         np.float(iz) / 30323., 1.0)
 
 
 def LEcuyer():
-    '''
+    """
     Generate uniformly distributed random numbers using the 32-bit
     generator from figure 3 of:
         L'Ecuyer, P. Efficient and portable combined random number
         generators, C.A.C.M., vol. 31, 742-749 & 774-?, June 1988.
 
     The cycle length is claimed to be 2.30584E+18
-    '''
+    """
 
     global s1, s2
 
