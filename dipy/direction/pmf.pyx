@@ -2,8 +2,6 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-from warnings import warn
-
 import numpy as np
 cimport numpy as np
 

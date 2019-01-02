@@ -2,6 +2,7 @@
 import numpy as np
 import scipy
 from distutils.version import LooseVersion
+import warnings
 
 """ Set numpy print options to "legacy" for new versions of numpy
  If imported into a file, pytest will run this before any doctests.
@@ -19,8 +20,8 @@ if LooseVersion(np.__version__) >= LooseVersion('1.14'):
 # (module + line number) where the warning is issued
 if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
         LooseVersion(scipy.version.short_version) <= '1.1.0':
-    import warnings
-    warnings.simplefilter("default")
+    warnings.simplefilter(action="default", category=FutureWarning)
 
+warnings.simplefilter("always", category=UserWarning)
 # List of files that pytest should ignore
 collect_ignore = ["testing/decorators.py", ]
