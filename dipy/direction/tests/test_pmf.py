@@ -69,6 +69,7 @@ def test_boot_pmf():
 
     # test model sherical harminic order different than bootstrap order
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
         assert_greater(len([lw for lw in w if issubclass(lw.category,
                                                          UserWarning)]), 0)

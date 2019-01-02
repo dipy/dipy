@@ -10,7 +10,7 @@ import numpy as np
 
 from dipy.testing import assert_true
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
 
 

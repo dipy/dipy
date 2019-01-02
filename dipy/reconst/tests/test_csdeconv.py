@@ -222,11 +222,13 @@ def test_csdeconv():
     assert_equal(directions2.shape[0], 2)
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         _ = ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
         assert_greater(len([lw for lw in w if issubclass(lw.category,
                                                          UserWarning)]), 0)
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len([lw for lw in w if issubclass(lw.category,
                                                        UserWarning)]), 0)

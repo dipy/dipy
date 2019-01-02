@@ -64,3 +64,5 @@ def setup_test():
             LooseVersion(scipy.version.short_version) <= '1.1.0':
         import warnings
         warnings.simplefilter(action="default", category=FutureWarning)
+
+    warnings.simplefilter("always", category=UserWarning)
