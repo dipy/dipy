@@ -5,9 +5,9 @@ from os.path import join as pjoin
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.workflows.base import IntrospectiveArgumentParser
 from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.tests.workflow_tests_utils import TestFlow, \
-    DummyCombinedWorkflow, DummyWorkflow1, TestVariableTypeWorkflow, \
-    TestVariableTypeErrorWorkflow
+from dipy.workflows.tests.workflow_tests_utils import DummyFlow, \
+    DummyCombinedWorkflow, DummyWorkflow1, DummyVariableTypeWorkflow, \
+    DummyVariableTypeErrorWorkflow
 
 
 def test_variable_type():
@@ -21,14 +21,14 @@ def test_variable_type():
                        pjoin(out_dir, 'test2'), 12]
         inputs = inputs_from_results(pos_results)
         sys.argv.extend(inputs)
-        dcwf = TestVariableTypeWorkflow()
+        dcwf = DummyVariableTypeWorkflow()
         _, positional_res, positional_res2 = run_flow(dcwf)
         npt.assert_equal(positional_res2, 12)
 
         for k, v in zip(positional_res, pos_results[:-1]):
             npt.assert_equal(k, v)
 
-        dcwf = TestVariableTypeErrorWorkflow()
+        dcwf = DummyVariableTypeErrorWorkflow()
         npt.assert_raises(ValueError, run_flow, dcwf)
 
 
@@ -48,7 +48,7 @@ def test_iap():
 
     sys.argv.extend(inputs)
     parser = IntrospectiveArgumentParser()
-    dummy_flow = TestFlow()
+    dummy_flow = DummyFlow()
     parser.add_workflow(dummy_flow)
     args = parser.get_flow_args()
     all_keys = pos_keys + opt_keys

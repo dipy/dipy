@@ -80,7 +80,7 @@ class DummyCombinedWorkflow(CombinedWorkflow):
         return param1, param2, param_combined
 
 
-class TestFlow(Workflow):
+class DummyFlow(Workflow):
 
     def run(self, positional_str, positional_bool, positional_int,
             positional_float, optional_str='default', optional_bool=False,
@@ -116,7 +116,7 @@ class TestFlow(Workflow):
                 optional_int, optional_float, optional_float_2)
 
 
-class TestVariableTypeWorkflow(Workflow):
+class DummyVariableTypeWorkflow(Workflow):
 
     @classmethod
     def get_short_name(cls):
@@ -143,7 +143,7 @@ class TestVariableTypeWorkflow(Workflow):
         return result, positional_variable_str, positional_int
 
 
-class TestVariableTypeErrorWorkflow(Workflow):
+class DummyVariableTypeErrorWorkflow(Workflow):
 
     @classmethod
     def get_short_name(cls):
