@@ -56,8 +56,8 @@ def test_recursive_response_calibration():
 
     where_dwi = lazy_index(~gtab.b0s_mask)
 
-    S_cross, sticks_cross = multi_tensor(gtab, mevals, S0, angles=angles,
-                                         fractions=[50, 50], snr=SNR)
+    S_cross, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                              fractions=[50, 50], snr=SNR)
 
     S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
 
@@ -127,27 +127,29 @@ def test_auto_response():
     defined_functions = [test_fa_superior, test_fa_inferior]
 
     for fa_thr in np.arange(0.1, 1, 0.1):
-        for predefined, defined in zip(predefined_functions, defined_functions):
-            response_predefined, ratio_predefined, nvoxels_predefined = auto_response(
-                gtab,
-                data,
-                roi_center=None,
-                roi_radius=radius,
-                fa_callable=predefined,
-                fa_thr=fa_thr,
-                return_number_of_voxels=True)
+        for predefined, defined in \
+          zip(predefined_functions, defined_functions):
+            response_predefined, ratio_predefined, nvoxels_predefined = \
+                auto_response(gtab,
+                              data,
+                              roi_center=None,
+                              roi_radius=radius,
+                              fa_callable=predefined,
+                              fa_thr=fa_thr,
+                              return_number_of_voxels=True)
 
-            response_defined, ratio_defined, nvoxels_defined = auto_response(
-                gtab,
-                data,
-                roi_center=None,
-                roi_radius=radius,
-                fa_callable=defined,
-                fa_thr=fa_thr,
-                return_number_of_voxels=True)
+            response_defined, ratio_defined, nvoxels_defined = \
+                auto_response(gtab,
+                              data,
+                              roi_center=None,
+                              roi_radius=radius,
+                              fa_callable=defined,
+                              fa_thr=fa_thr,
+                              return_number_of_voxels=True)
 
             assert_equal(nvoxels_predefined, nvoxels_defined)
-            assert_array_almost_equal(response_predefined[0], response_defined[0])
+            assert_array_almost_equal(response_predefined[0],
+                                      response_defined[0])
             assert_almost_equal(response_predefined[1], response_defined[1])
             assert_almost_equal(ratio_predefined, ratio_defined)
 
@@ -271,8 +273,8 @@ def test_odfdeconv():
                        [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (90, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric362')
 
@@ -314,7 +316,7 @@ def test_odfdeconv():
     odf_sh = np.zeros_like(fodf)
     odf_sh[1] = np.nan
 
-    fodf, it = odf_deconv(odf_sh, csd.R, csd.B_reg)
+    fodf, _ = odf_deconv(odf_sh, csd.R, csd.B_reg)
     assert_array_equal(fodf, np.zeros_like(fodf))
 
 
@@ -327,8 +329,8 @@ def test_odf_sh_to_sharp():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
+                        fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric724')
 
@@ -357,7 +359,7 @@ def test_odf_sh_to_sharp():
 
 
 def test_forward_sdeconv_mat():
-    m, n = sph_harm_ind_list(4)
+    _, n = sph_harm_ind_list(4)
     mat = forward_sdeconv_mat(np.array([0, 2, 4]), n)
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
@@ -391,8 +393,8 @@ def test_r2_term_odf_sharp():
 
     angles = [(0, 0), (angle, 0)]
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
@@ -431,8 +433,8 @@ def test_csd_predict():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
     sphere = small_sphere
     multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
@@ -504,8 +506,8 @@ def test_sphere_scaling_csdmodel():
 
     angles = [(0, 0), (60, 0)]
 
-    S, sticks = multi_tensor(gtab, mevals, 100., angles=angles,
-                             fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, 100., angles=angles,
+                        fractions=[50, 50], snr=None)
 
     hemi = small_sphere
     sphere = hemi.mirror()
@@ -541,8 +543,8 @@ def test_default_lambda_csdmodel():
     with warnings.catch_warnings():
         for sh_order, expected in expected_lambda.items():
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                        sh_order=sh_order,
-                                                        reg_sphere=sphere)
+                                                         sh_order=sh_order,
+                                                         reg_sphere=sphere)
             B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta,
                                             sphere.phi)
             npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)

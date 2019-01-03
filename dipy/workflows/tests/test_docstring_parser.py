@@ -178,7 +178,8 @@ def test_summary():
 
 
 def test_extended_summary():
-    npt.assert_(doc['Extended Summary'][0].startswith('The multivariate normal'))
+    npt.assert_(doc['Extended Summary'][0].
+                startswith('The multivariate normal'))
 
 
 def test_parameters():

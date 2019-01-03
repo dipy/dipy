@@ -396,8 +396,6 @@ def test_sf_to_sh():
     assert_array_almost_equal(odf2d, odf2d_sf, 2)
 
 
-test_sf_to_sh()
-
 def test_faster_sph_harm():
 
     sh_order = 8

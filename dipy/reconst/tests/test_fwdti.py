@@ -69,8 +69,8 @@ def setup_module():
             MDref[0, i, j] = MDdti
             R = all_tensor_evecs(p[0])
             R = R.reshape((9))
-            model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
-                                                    R, [gtf]), axis=0)
+            model_params_mv[0, i, j] = \
+                np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
 
 
 def test_fwdti_singlevoxel():

@@ -625,7 +625,7 @@ def test_flexi_tvis_affine():
 
     origin = np.dot(affine, [0, 0, 0, 1])
     npt.assert_array_almost_equal(origin[:3], np.multiply(dim, voxel_size) -
-                                              voxel_size / 2)
+                                  voxel_size / 2)
 
 
 def test_get_flexi_tvis_affine():
