@@ -718,9 +718,9 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
         possible to the standard.
 
     """
-    # Start by resampling into an array, so that distance calculation is easy:
-    fgarray = np.array(set_number_of_points(streamlines,  n_points))
-    std_array = np.array(set_number_of_points([standard],  n_points))
+    # Start by resampling, so that distance calculation is easy:
+    fgarray = set_number_of_points(streamlines,  n_points)
+    std_array =  set_number_of_points([standard],  n_points)
 
 
     if as_generator:
