@@ -713,6 +713,9 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
         Affine transformation from voxels to streamlines. Default: identity.
 
     Returns
+    -------
+    Streamlines : with each individual array oriented to be as similar as
+        possible to the standard.
 
     """
     # Start by resampling into an array, so that distance calculation is easy:
@@ -955,6 +958,11 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant).
+
+    Returns
+    -------
+    ndarray : a 1D array with the profile of `data` along the length of
+        `bundle`
 
     Note
     ----
