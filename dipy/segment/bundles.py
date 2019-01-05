@@ -612,8 +612,7 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
-        pruned_streamlines = transf_streamlines[
-                            np.array(pruned_indices).astype(int)]
+        pruned_streamlines = transf_streamlines[pruned_indices]
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
