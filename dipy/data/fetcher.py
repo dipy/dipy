@@ -427,7 +427,7 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     ['Atlas_80_Bundles.zip'],
     ['78331d527a10ec000d4f33bac472e099'],
     doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
-    data_size="200MB",
+    data_size="300MB",
     unzip=True)
 
 fetch_target_tractogram_hcp = _make_fetcher(
