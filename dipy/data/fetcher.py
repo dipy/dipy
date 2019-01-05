@@ -442,6 +442,17 @@ fetch_target_tractogram_hcp = _make_fetcher(
     unzip=True)
 
 
+fetch_bundle_fa_hcp = _make_fetcher(
+    "fetch_bundle_fa_hcp",
+    pjoin(dipy_home, 'bundle_fa_hcp'),
+    'https://ndownloader.figshare.com/files/',
+    ['14035265'],
+    ['hcp_bundle_fa.nii.gz'],
+    ['2d5c0036b0575597378ddf39191028ea'],
+    doc="Download map of FA within two bundles in one of the hcp dataset subjects",
+    data_size="230kb")
+
+
 fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
     "fetch_qtdMRI_test_retest_2subjects",
     pjoin(dipy_home, 'qtdMRI_test_retest_2subjects'),
