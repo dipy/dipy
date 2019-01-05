@@ -977,7 +977,7 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
         weights = np.ones(values.shape) / values.shape[0]
     else:
         # We check that weights *always sum to 1 across streamlines*:
-        if not np.all(np.sum(weights, 0) == np.ones(n_points)):
+        if not np.allclose(np.sum(weights, 0), np.ones(n_points)):
             raise ValueError("The sum of weights across streamlines must ",
                              "be equal to 1")
 
