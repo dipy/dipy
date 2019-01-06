@@ -1286,6 +1286,22 @@ def test_gaussian_weights():
     npt.assert_almost_equal(w[0], w[1] / 2)
     npt.assert_almost_equal(w[-1], w[2] / 2)
 
+    # Test the situation where all the streamlines have an identical node:
+    bundle_w_id_node = bundle
+    bundle_w_id_node[:, 1] = np.array([1, 1, 1])
+    w = gaussian_weights(bundle_w_id_node)
+    # For this case, the result should be a weight of 1/n_streamlines in that
+    # node for all streamlines:
+    npt.assert_equal(w[:, 1],
+                     np.ones(len(bundle_w_id_node)) * 1/len(bundle_w_id_node))
+
+    # Test the situation where all the streamlines are copies of each other:
+    bundle_w_copies = [bundle[0], bundle[0], bundle[0], bundle[0]]
+    w = gaussian_weights(bundle_w_copies)
+    # In this case, the entire array should be equal to 1/n_streamlines:
+    npt.assert_equal(w,
+                     np.ones(w.shape) * 1/len(bundle_w_id_node))
+
 
 def test_bundle_profile():
     data = np.ones((10, 10, 10))

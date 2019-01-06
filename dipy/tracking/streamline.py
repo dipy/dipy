@@ -889,11 +889,9 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
 
     Parameters
     ----------
-    bundle : array or list
-        If this is a list, assume that it is a list of streamline coordinates
-        (each entry is a 2D array, of shape n by 3). If this is an array, this
-        is a resampled version of the streamlines, with equal number of points
-        in each streamline.
+    bundle : array or Streamlines
+        If this is an array, this is an already resampled version of the
+        streamlines, with equal number of points in each streamline.
     n_points : int, optional
         The number of points to resample to. *If the `bundle` is an array, this
         input is ignored*. Default: 100.
@@ -911,6 +909,8 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     else:
         # It's something else, assume that it needs to be resampled:
         bundle = np.array(set_number_of_points(bundle, n_points))
+
+    # This is the output
     w = np.zeros((bundle.shape[0], n_points))
 
     # If there's only one fiber here, it gets the entire weighting:
@@ -934,7 +934,16 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         m = stat(node_coords, 0)
         # Weights are the inverse of the Mahalanobis distance
         for fn in range(bundle.shape[0]):
-            # calculate Mahalanobis for node on fiber[fn]
+            # In the special case where all the streamlines have the exact same
+            # coordinate in this node, the covariance matrix is all zeros, so we
+            # can't calculate the Mahalnobis distance, we will instead give each
+            # streamline an identical weight, equal to the number of
+            # streamlines:
+            if np.all(c == 0):
+                w[:, node] = bundle.shape[0]
+                break
+            # Otherwise, go ahead and calculate Mahalanobis for node on
+            # fiber[fn]:
             w[fn, node] = mahalanobis(node_coords[fn], m, np.linalg.inv(c))
     if return_mahalnobis:
         return w
