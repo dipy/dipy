@@ -1,5 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
+import warnings
+
 from dipy.utils.six.moves import xrange
 
 import numpy as np
@@ -330,9 +332,12 @@ def test_near_roi():
     mask[0, 2, 2] = True
     # Test for use of the 'all' mode, also testing that setting the tolerance
     # to a very small number gets overridden:
-    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
-                                    tol=0.1, mode='all'),
-                           np.array([False, True, False]))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                    tol=0.1,
+                                    mode='all'),
+                               np.array([False, True, False]))
 
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True

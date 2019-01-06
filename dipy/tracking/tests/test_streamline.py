@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import warnings
 import types
 
 import numpy as np
@@ -818,9 +819,12 @@ def test_select_by_rois():
     assert_arrays_equal(list(selection), [streamlines[1]])
 
     # Setting tolerance too low gets overridden:
-    selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-                               tol=0.1)
-    assert_arrays_equal(list(selection), [streamlines[1]])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
+                                   tol=0.1)
+
+        assert_arrays_equal(list(selection), [streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=0.87)
