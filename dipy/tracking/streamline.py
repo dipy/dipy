@@ -957,16 +957,22 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
 def bundle_profile(data, bundle, affine=None, n_points=100,
                    weights=None):
     """
-    Calculates a summarized profile of data for a bundle along its length
+    Calculates a summarized profile of data for a bundle along its length.
+
+    Follows the approach outlined in [Yeatman2012]_.
 
     Parameters
     ----------
     data : 3D volume
-    bundle : StreamLines class instance, list of arrays, or array
-    weights : 1D array or 2D array (optional)
-        Weight each streamline (1D) or each node (2D) when calculating the
-        tract-profiles. Must sum to 1 across streamlines (in each node if
-        relevant).
+        The statistic to sample with the streamlines.
+    bundle : StreamLines class instance or array
+        The collection of streamlines (possibly already resampled into an array
+         for each to have the same length) with which we are resampling. See
+         Note below about orienting the streamlines.
+    weights : 1D
+        array or 2D array (optional) Weight each streamline (1D) or each
+        node (2D) when calculating the tract-profiles. Must sum to 1 across
+        streamlines (in each node if relevant).
 
     Returns
     -------
@@ -975,9 +981,16 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
 
     Note
     ----
-    Before providing a bundle as input to this function, you will need
-    to make sure that the streamlines in the bundle are all oriented in the
-    same orientation relative to the bundle (use :func:`orient_by_streamline`).
+    Before providing a bundle as input to this function, you will need to make
+    sure that the streamlines in the bundle are all oriented in the same
+    orientation relative to the bundle (use :func:`orient_by_streamline`).
+
+    References
+    ----------
+    .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
+       Brian A. Wandell, and Heidi M. Feldman. 2012. “Tract Profiles of White
+       Matter Properties: Automating Fiber-Tract Quantification.” PloS One 7
+       (11): e49790.
     """
     # It's already an array
     if isinstance(bundle, np.ndarray):
