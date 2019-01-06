@@ -449,7 +449,8 @@ fetch_bundle_fa_hcp = _make_fetcher(
     ['14035265'],
     ['hcp_bundle_fa.nii.gz'],
     ['2d5c0036b0575597378ddf39191028ea'],
-    doc="Download map of FA within two bundles in one of the hcp dataset subjects",
+    doc=("Download map of FA within two bundles in one" +
+        "of the hcp dataset subjects"),
     data_size="230kb")
 
 

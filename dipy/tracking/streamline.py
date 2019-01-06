@@ -722,7 +722,6 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
     fgarray = set_number_of_points(streamlines,  n_points)
     std_array =  set_number_of_points([standard],  n_points)
 
-
     if as_generator:
         if in_place:
             w_s = "Cannot return a generator when in_place is set to True"
@@ -1016,5 +1015,3 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
 
 def nbytes(streamlines):
     return streamlines._data.nbytes / 1024. ** 2
-
-

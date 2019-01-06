@@ -1003,7 +1003,6 @@ def test_orient_by_rois():
     npt.assert_(new_streamlines is streamlines)
 
 
-
 def test_orient_by_streamline():
     streamlines = Streamlines([np.array([[0, 0., 0],
                                          [1, 0., 0.],
