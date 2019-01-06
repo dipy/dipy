@@ -987,8 +987,8 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
     References
     ----------
     .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
-       Brian A. Wandell, and Heidi M. Feldman. 2012. “Tract Profiles of White
-       Matter Properties: Automating Fiber-Tract Quantification.” PloS One 7
+       Brian A. Wandell, and Heidi M. Feldman. 2012. "Tract Profiles of White
+       Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
        (11): e49790.
     """
     # It's already an array
