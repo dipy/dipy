@@ -14,14 +14,8 @@ https://github.com/nipy/nibabel/pull/556
 """
 if LooseVersion(np.__version__) >= LooseVersion('1.14'):
     np.set_printoptions(legacy='1.13')
-# Temporary fix until scipy release in October 2018
-# must be removed after that
-# print the first occurrence of matching warnings for each location
-# (module + line number) where the warning is issued
-if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
-        LooseVersion(scipy.version.short_version) <= '1.1.0':
-    warnings.simplefilter(action="default", category=FutureWarning)
 
+warnings.simplefilter(action="default", category=FutureWarning)
 warnings.simplefilter("always", category=UserWarning)
 # List of files that pytest should ignore
 collect_ignore = ["testing/decorators.py", ]

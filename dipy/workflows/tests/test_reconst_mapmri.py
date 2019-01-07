@@ -4,7 +4,7 @@ import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
-from numpy.testing import assert_equal, assert_raises, assert_warns
+import numpy.testing as npt
 from dipy.reconst import mapmri
 
 from dipy.data import get_fnames
@@ -45,39 +45,39 @@ def reconst_mmri_core(flow, lap, pos):
 
         rtop = mmri_flow.last_generated_outputs['out_rtop']
         rtop_data = nib.load(rtop).get_data()
-        assert_equal(rtop_data.shape, volume.shape[:-1])
+        npt.assert_equal(rtop_data.shape, volume.shape[:-1])
 
         lapnorm = mmri_flow.last_generated_outputs['out_lapnorm']
         lapnorm_data = nib.load(lapnorm).get_data()
-        assert_equal(lapnorm_data.shape, volume.shape[:-1])
+        npt.assert_equal(lapnorm_data.shape, volume.shape[:-1])
 
         msd = mmri_flow.last_generated_outputs['out_msd']
         msd_data = nib.load(msd).get_data()
-        assert_equal(msd_data.shape, volume.shape[:-1])
+        npt.assert_equal(msd_data.shape, volume.shape[:-1])
 
         qiv = mmri_flow.last_generated_outputs['out_qiv']
         qiv_data = nib.load(qiv).get_data()
-        assert_equal(qiv_data.shape, volume.shape[:-1])
+        npt.assert_equal(qiv_data.shape, volume.shape[:-1])
 
         rtap = mmri_flow.last_generated_outputs['out_rtap']
         rtap_data = nib.load(rtap).get_data()
-        assert_equal(rtap_data.shape, volume.shape[:-1])
+        npt.assert_equal(rtap_data.shape, volume.shape[:-1])
 
         rtpp = mmri_flow.last_generated_outputs['out_rtpp']
         rtpp_data = nib.load(rtpp).get_data()
-        assert_equal(rtpp_data.shape, volume.shape[:-1])
+        npt.assert_equal(rtpp_data.shape, volume.shape[:-1])
 
         ng = mmri_flow.last_generated_outputs['out_ng']
         ng_data = nib.load(ng).get_data()
-        assert_equal(ng_data.shape, volume.shape[:-1])
+        npt.assert_equal(ng_data.shape, volume.shape[:-1])
 
         parng = mmri_flow.last_generated_outputs['out_parng']
         parng_data = nib.load(parng).get_data()
-        assert_equal(parng_data.shape, volume.shape[:-1])
+        npt.assert_equal(parng_data.shape, volume.shape[:-1])
 
         perng = mmri_flow.last_generated_outputs['out_perng']
         perng_data = nib.load(perng).get_data()
-        assert_equal(perng_data.shape, volume.shape[:-1])
+        npt.assert_equal(perng_data.shape, volume.shape[:-1])
 
         bvals, bvecs = read_bvals_bvecs(bval_path, bvec_path)
         bvals[0] = 5.
@@ -87,12 +87,11 @@ def reconst_mmri_core(flow, lap, pos):
         np.savetxt(tmp_bval_path, bvals)
         np.savetxt(tmp_bvec_path, bvecs.T)
         mmri_flow._force_overwrite = True
-        with assert_raises(BaseException):
-            assert_warns(UserWarning, mmri_flow.run, data_path,
-                         tmp_bval_path, tmp_bvec_path, small_delta=0.0129,
-                         big_delta=0.0218, laplacian=lap,
-                         positivity=pos, out_dir=out_dir)
-
+        with npt.assert_raises(BaseException):
+            npt.assert_warns(UserWarning, mmri_flow.run, data_path,
+                             tmp_bval_path, tmp_bvec_path, small_delta=0.0129,
+                             big_delta=0.0218, laplacian=lap,
+                             positivity=pos, out_dir=out_dir)
 
 
 if __name__ == '__main__':
