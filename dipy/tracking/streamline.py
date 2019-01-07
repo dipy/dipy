@@ -987,9 +987,13 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
        Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
        (11): e49790.
     """
+    if len(bundle) == 0:
+        raise ValueError("The bundle contains no streamlines")
+
     # Resample each streamline to the same number of points:
     fgarray = set_number_of_points(bundle, n_points)
 
+    # Extract the values
     values = np.array(values_from_volume(data, fgarray, affine=affine))
 
     if weights is None:

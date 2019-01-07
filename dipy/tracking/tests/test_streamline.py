@@ -1357,6 +1357,9 @@ def test_bundle_profile():
 
     npt.assert_equal(profile, np.ones(10))
 
+    # Test for error-handling:
+    empty_bundle = Streamlines([])
+    npt.assert_raises(ValueError, bundle_profile, data, empty_bundle)
 
 if __name__ == '__main__':
     npt.run_module_suite()
