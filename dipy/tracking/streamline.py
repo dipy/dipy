@@ -960,7 +960,7 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
     ----------
     data : 3D volume
         The statistic to sample with the streamlines.
-    bundle : StreamLines class instance or array
+    bundle : StreamLines class instance
         The collection of streamlines (possibly already resampled into an array
          for each to have the same length) with which we are resampling. See
          Note below about orienting the streamlines.
@@ -987,16 +987,10 @@ def bundle_profile(data, bundle, affine=None, n_points=100,
        Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
        (11): e49790.
     """
-    # It's already an array
-    if isinstance(bundle, np.ndarray):
-        fgarray = bundle
-    else:
-        # It's some other kind of thing (list, Streamlines, etc.).
-        # Resample each streamline to the same number of points
-        # list => np.array
-        fgarray = np.array(set_number_of_points(bundle, n_points))
+    # Resample each streamline to the same number of points:
+    fgarray = set_number_of_points(bundle, n_points)
 
-    values = values_from_volume(data, fgarray, affine=affine)
+    values = np.array(values_from_volume(data, fgarray, affine=affine))
 
     if weights is None:
         weights = np.ones(values.shape) / values.shape[0]
