@@ -113,12 +113,12 @@ model_af_l, hdr = load_trk(model_af_l_file)
 rb = RecoBundles(moved, verbose=True)
 
 recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
-                                           model_clust_thr=5.,
-                                           reduction_thr=10,
-                                           reduction_distance='mam',
-                                           slr=True,
-                                           slr_metric='asymmetric',
-                                           pruning_distance='mam')
+                                            model_clust_thr=5.,
+                                            reduction_thr=10,
+                                            reduction_distance='mam',
+                                            slr=True,
+                                            slr_metric='asymmetric',
+                                            pruning_distance='mam')
 
 """
 let's visualize extracted Arcuate Fasciculus Left bundle and model bundle
@@ -159,12 +159,12 @@ save_trk( "AF_L.trk", target[af_l_labels], hdr['voxel_to_rasmm'])
 model_cst_l, hdr = load_trk(model_cst_l_file)
 
 recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
-                                            model_clust_thr=5.,
-                                            reduction_thr=10,
-                                            reduction_distance='mam',
-                                            slr=True,
-                                            slr_metric='asymmetric',
-                                            pruning_distance='mam')
+                                              model_clust_thr=5.,
+                                              reduction_thr=10,
+                                              reduction_distance='mam',
+                                              slr=True,
+                                              slr_metric='asymmetric',
+                                              pruning_distance='mam')
 
 """
 let's visualize extracted Corticospinal Tract (CST) Left bundle and model
