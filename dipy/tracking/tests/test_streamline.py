@@ -1262,41 +1262,53 @@ def test_cluster_confidence():
 
 
 def test_gaussian_weights():
+
     # Some bogus x,y,z coordinates
-    x = np.arange(10)
-    y = np.arange(10)
-    z = np.arange(10)
+    x = np.arange(10).astype(float)
+    y = np.arange(10).astype(float)
+    z = np.arange(10).astype(float)
+
     # Create a distribution for which we can predict the weights we would
     # expect to get:
-    bundle = np.array([np.array([x, y, z]).T + 1,
-                       np.array([x, y, z]).T - 1])
+    bundle = Streamlines([np.array([x, y, z]).T + 1,
+                          np.array([x, y, z]).T - 1])
     # In this case, all nodes receives an equal weight of 0.5:
-    w = gaussian_weights(bundle)
-    npt.assert_equal(w, np.ones(bundle.shape[:-1]) * 0.5)
+    w = gaussian_weights(bundle, n_points=10)
+    npt.assert_almost_equal(w, np.ones((len(bundle), 10)) * 0.5)
 
     # Here, some nodes are twice as far from the mean as others
-    bundle = np.array([np.array([x, y, z]).T + 2,
-                       np.array([x, y, z]).T + 1,
-                       np.array([x, y, z]).T - 1,
-                       np.array([x, y, z]).T - 2])
-    w = gaussian_weights(bundle)
+    bundle = Streamlines([np.array([x, y, z]).T + 2,
+                          np.array([x, y, z]).T + 1,
+                          np.array([x, y, z]).T - 1,
+                          np.array([x, y, z]).T - 2])
+    w = gaussian_weights(bundle, n_points=10)
 
     # And their weights should be halved:
     npt.assert_almost_equal(w[0], w[1] / 2)
     npt.assert_almost_equal(w[-1], w[2] / 2)
 
     # Test the situation where all the streamlines have an identical node:
-    bundle_w_id_node = bundle
-    bundle_w_id_node[:, 1] = np.array([1, 1, 1])
-    w = gaussian_weights(bundle_w_id_node)
+    arr1 = np.array([x, y, z]).T + 2
+    arr2 = np.array([x, y, z]).T + 1
+    arr3 = np.array([x, y, z]).T - 1
+    arr4 = np.array([x, y, z]).T - 2
+
+    arr1[0] = np.array([1, 1, 1])
+    arr2[0] = np.array([1, 1, 1])
+    arr3[0] = np.array([1, 1, 1])
+    arr4[0] = np.array([1, 1, 1])
+
+    bundle_w_id_node = Streamlines([arr1, arr2, arr3, arr4])
+    w = gaussian_weights(Streamlines(bundle_w_id_node), n_points=10)
     # For this case, the result should be a weight of 1/n_streamlines in that
     # node for all streamlines:
-    npt.assert_equal(w[:, 1],
+    npt.assert_equal(w[:, 0],
                      np.ones(len(bundle_w_id_node)) * 1/len(bundle_w_id_node))
 
+
     # Test the situation where all the streamlines are copies of each other:
-    bundle_w_copies = [bundle[0], bundle[0], bundle[0], bundle[0]]
-    w = gaussian_weights(bundle_w_copies)
+    bundle_w_copies = Streamlines([bundle[0], bundle[0], bundle[0], bundle[0]])
+    w = gaussian_weights(bundle_w_copies, n_points=10)
     # In this case, the entire array should be equal to 1/n_streamlines:
     npt.assert_equal(w,
                      np.ones(w.shape) * 1/len(bundle_w_id_node))

@@ -888,9 +888,8 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
 
     Parameters
     ----------
-    bundle : array or Streamlines
-        If this is an array, this is an already resampled version of the
-        streamlines, with equal number of points in each streamline.
+    bundle : Streamlines
+        The streamlines to weight.
     n_points : int, optional
         The number of points to resample to. *If the `bundle` is an array, this
         input is ignored*. Default: 100.
@@ -902,29 +901,26 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         inverse of the Mahalanobis distance, relative to the distribution of
         coordinates at that node position across streamlines.
     """
-    if isinstance(bundle, np.ndarray):
-        # It's an array, go with it:
-        n_points = bundle.shape[1]
-    else:
-        # It's something else, assume that it needs to be resampled:
-        bundle = np.array(set_number_of_points(bundle, n_points))
+    # Resample to same length for each streamline:
+    bundle = set_number_of_points(bundle, n_points)
 
     # This is the output
-    w = np.zeros((bundle.shape[0], n_points))
+    w = np.zeros((len(bundle), n_points))
 
     # If there's only one fiber here, it gets the entire weighting:
-    if bundle.shape[0] == 1:
+    if len(bundle) == 1:
         if return_mahalnobis:
             return np.array([np.nan])
         else:
             return np.array([1])
 
-    for node in range(bundle.shape[1]):
+    for node in range(n_points):
         # This should come back as a 3D covariance matrix with the spatial
         # variance covariance of this node across the different streamlines
         # This is a 3-by-3 array:
-        node_coords = bundle[:, node]
+        node_coords = bundle.data[node::n_points]
         c = np.cov(node_coords.T, ddof=0)
+        # Reorganize as an upper diagonal matrix for expected Mahalnobis input:
         c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
                       [0, c[1, 1], c[1, 2]],
                       [0, 0, c[2, 2]]])
@@ -932,14 +928,14 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         # delta = node_coords - np.mean(node_coords, 0)
         m = stat(node_coords, 0)
         # Weights are the inverse of the Mahalanobis distance
-        for fn in range(bundle.shape[0]):
+        for fn in range(len(bundle)):
             # In the special case where all the streamlines have the exact same
             # coordinate in this node, the covariance matrix is all zeros, so we
             # can't calculate the Mahalnobis distance, we will instead give each
             # streamline an identical weight, equal to the number of
             # streamlines:
-            if np.all(c == 0):
-                w[:, node] = bundle.shape[0]
+            if np.allclose(c, 0):
+                w[:, node] = len(bundle)
                 break
             # Otherwise, go ahead and calculate Mahalanobis for node on
             # fiber[fn]:
