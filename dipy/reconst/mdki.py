@@ -36,7 +36,7 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     ng : ndarray(nub)
         Number of gradient directions used to compute the mean signal for
         all unique b-values
-    
+
     Notes
     -----
     This function assumes that directions are evenly sampled on the sphere or
@@ -123,7 +123,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
         return_S0_hat : bool
-            Boolean to return (True) or not (False) the S0 values for the fit.
+            If True, also return S0 values for the fit.
 
         args, kwargs : arguments and keyword arguments passed to the
         fit_method. See mdti.wls_fit_mdki for details
@@ -246,7 +246,8 @@ class MeanDiffusionKurtosisFit(object):
         index = index + (slice(None),) * (N - len(index))
         if model_S0 is not None:
             model_S0 = model_S0[index[:-1]]
-        return type(self)(self.model, model_params[index], model_S0=model_S0)
+        return MeanDiffusionKurtosisFit(self.model, model_params[index],
+                                        model_S0=model_S0)
 
     @property
     def S0_hat(self):
@@ -341,7 +342,7 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
         coefficients of the mean signal diffusion kurtosis model. Note that
         nub is the number of unique b-values
     msignal : ndarray ([X, Y, Z, ..., nub])
-        Mean signal along all gradient direction for each unique b-value
+        Mean signal along all gradient directions for each unique b-value
         Note that the last dimension should contain the signal means and nub
         is the number of unique b-values.
     ng : ndarray(nub)
@@ -354,7 +355,7 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
         Voxel with mean signal intensities lower than the min positive signal
         are not processed. Default: 0.0001
     return_S0_hat : bool
-        Boolean to return (True) or not (False) the S0 values for the fit.
+        If True, also return S0 values for the fit.
 
     Returns
     -------
@@ -386,7 +387,7 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
         # Skip if no signal is present
         if np.mean(msignal[v]) <= min_signal:
             continue
-        # Define weights as diag(sqrt(ng) * yn**2)
+        # Define weights as diag(ng * yn**2)
         W = np.diag(ng * msignal[v]**2)
 
         # WLS fitting
