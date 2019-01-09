@@ -569,12 +569,12 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
 
     bmag : int
         The order of magnitude that the bvalues have to differ to be
-        considered an unique b-value. B-values are also rounded to relative
-        to this order of magnitude. Default: derive this value from the
+        considered an unique b-value. B-values are also rounded up to
+        this order of magnitude. Default: derive this value from the
         maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
 
     rbvals : bool, optional
-        If True function also returns the all individual rounded b-values.
+        If True function also returns all individual rounded b-values.
         Default: False
 
     Returns
