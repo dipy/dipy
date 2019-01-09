@@ -376,7 +376,7 @@ def test_unique_bvals():
     b = unique_bvals(bvals, bmag=0)
     npt.assert_array_almost_equal(b, np.array([0, 995, 2005]))
 
-    # Case that b-valuea are in ms/um2
+    # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
     b = unique_bvals(bvals)
@@ -410,7 +410,7 @@ def test_check_multi_b():
     # Or if you consider zero to be one of your b-values:
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
-    # Case that b-valuea are in ms/um2 (this should successfully pass)
+    # Case that b-values are in ms/um2 (this should successfully pass)
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
     bvecs = generate_bvecs(bvals.shape[-1])
