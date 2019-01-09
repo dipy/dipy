@@ -1,5 +1,5 @@
 #!/usr/bin/python
-""" Classes and functions for fitting the mean spherical diffusion kurtosis
+""" Classes and functions for fitting the mean signal diffusion kurtosis
 model """
 from __future__ import division, print_function, absolute_import
 
@@ -14,8 +14,8 @@ from dipy.core.onetime import auto_attr
 
 def mean_signal_bvalue(data, gtab, bmag=None):
     """
-    Computes the average signal for each unique b-values of the data's gradient
-    table
+    Computes the average signal across different diffusion directions
+    for each unique b-value
 
     Parameters
     ----------
@@ -30,12 +30,17 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     Returns
     -------
     msignal : ndarray ([X, Y, Z, ..., nub])
-        Mean signal along all gradient direction for each unique b-value
-        Note that the last dimension should contain the signal means and nub
-        is the number of unique b-values.
+        Mean signal along all gradient directions for each unique b-value
+        Note that the last dimension contains the signal means and nub is the
+        number of unique b-values.
     ng : ndarray(nub)
         Number of gradient directions used to compute the mean signal for
         all unique b-values
+    
+    Notes
+    -----
+    This function assumes that directions are evenly sampled on the sphere or
+    on the hemisphere
     """
     bvals = gtab.bvals.copy()
 
@@ -45,23 +50,23 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     # Initialize msignal and ng
     nub = ub.size
     ng = np.zeros(nub)
-    msigma = np.zeros(data.shape[:-1] + (nub,))
+    msignal = np.zeros(data.shape[:-1] + (nub,))
     for bi in range(ub.size):
-        msigma[..., bi] = np.mean(data[..., rb == ub[bi]], axis=-1)
+        msignal[..., bi] = np.mean(data[..., rb == ub[bi]], axis=-1)
         ng[bi] = np.sum(rb == ub[bi])
-    return msigma, ng
+    return msignal, ng
 
 
 def mdki_prediction(mdki_params, gtab, S0=1.0):
     """
-    Predict the mean signal given the parameters of the mean spherical DKI, an
-    GradientTable Object and S0 signal.
+    Predict the mean signal given the parameters of the mean signal DKI, an
+    GradientTable object and S0 signal.
 
     Parameters
     ----------
     params : ndarray ([X, Y, Z, ...], 2)
-        Array containing in the last axis the mean spherical diffusivity and
-        mean spherical kurtosis
+        Array containing the mean signal diffusivity and mean signal kurtosis
+        in its last axis
     gtab : a GradientTable class instance
         The gradient table for this prediction
     S0 : float or ndarray (optional)
@@ -71,14 +76,15 @@ def mdki_prediction(mdki_params, gtab, S0=1.0):
     Notes
     -----
     The predicted signal is given by:
-        $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
-        mean spherical diffusivity and mean spherical kurtosis.
+        $MS(b) = S_0 * exp(-bD + 1/6 b^{2} D^{2} K)$, where $D$ and $K$ are the
+        mean signal diffusivity and mean signal kurtosis.
 
     References
     ----------
-    .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-           changes based on the mean signal diffusion kurtosis. 25th Annual
-           Meeting of the ISMRM; Honolulu. April 22-28
+    .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+           Analysis and their Application to the Healthy Ageing Brain (Doctoral
+           thesis). Downing College, University of Cambridge.
+           https://doi.org/10.17863/CAM.29356
     """
     # Define MDKI design matrix given gtab.bvals
     A = design_matrix(round_bvals(gtab.bvals))
@@ -101,11 +107,11 @@ def mdki_prediction(mdki_params, gtab, S0=1.0):
 
 
 class MeanDiffusionKurtosisModel(ReconstModel):
-    """ Mean spherical Diffusion Kurtosis Model
+    """ Mean signal Diffusion Kurtosis Model
     """
 
     def __init__(self, gtab, bmag=None, return_S0_hat=False, *args, **kwargs):
-        """ Mean Spherical Diffusion Kurtosis Model [1]_.
+        """ Mean Signal Diffusion Kurtosis Model [1]_.
 
         Parameters
         ----------
@@ -119,8 +125,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         return_S0_hat : bool
             Boolean to return (True) or not (False) the S0 values for the fit.
 
-        args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See mdti.wls_fit_mdki for details
+        args, kwargs : arguments and keyword arguments passed to the
+        fit_method. See mdti.wls_fit_mdki for details
 
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
@@ -128,9 +134,10 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         References
         ----------
-        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-               changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28
+        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+               Analysis and their Application to the Healthy Ageing Brain
+               (Doctoral thesis). Downing College, University of Cambridge.
+               https://doi.org/10.17863/CAM.29356
         """
         ReconstModel.__init__(self, gtab)
 
@@ -153,7 +160,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             raise ValueError(mes)
 
     def fit(self, data, mask=None):
-        """ Fit method of the DTI model class
+        """ Fit method of the MDKI model class
 
         Parameters
         ----------
@@ -192,7 +199,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         Parameters
         ----------
         mdki_params : ndarray
-            The parameters of the mean spherical diffusion kurtosis model
+            The parameters of the mean signal diffusion kurtosis model
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
@@ -200,19 +207,21 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         Returns
         --------
         S : (..., N) ndarray
-            Simulated mean signal based on the mean spherical kurtosis model
+            Simulated mean signal based on the mean signal diffusion kurtosis
+            model
 
         Notes
         -----
         The predicted signal is given by:
-            $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
-            mean spherical diffusivity and mean spherical kurtosis.
+            $MS(b) = S_0 * exp(-bD + 1/6 b^{2} D^{2} K)$, where $D$ and $K$ are
+            the mean signal diffusivity and mean signal kurtosis.
 
         References
         ----------
-        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-               changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28
+        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+               Analysis and their Application to the Healthy Ageing Brain
+               (Doctoral thesis). Downing College, University of Cambridge.
+               https://doi.org/10.17863/CAM.29356
         """
         return mdki_prediction(mdki_params, self.gtab, S0)
 
@@ -244,46 +253,48 @@ class MeanDiffusionKurtosisFit(object):
         return self.model_S0
 
     @auto_attr
-    def md(self):
+    def msd(self):
         r"""
-        Spherical Mean diffusitivity (MD) calculated from the mean spherical
+        Mean signal diffusitivity (MSD) calculated from the mean signal
         Diffusion Kurtosis Model.
 
         Returns
         ---------
-        md : ndarray
-            Calculated Spherical Mean diffusitivity.
+        msd : ndarray
+            Calculated signal mean diffusitivity.
 
         References
         ----------
-        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-               changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28
+        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+               Analysis and their Application to the Healthy Ageing Brain
+               (Doctoral thesis). Downing College, University of Cambridge.
+               https://doi.org/10.17863/CAM.29356
         """
         return self.model_params[..., 0]
 
     @auto_attr
-    def mk(self):
+    def msk(self):
         r"""
-        Spherical Mean Kurtosis (MK) calculated from the mean spherical
+        Mean signal kurtosis (MSK) calculated from the mean signal
         Diffusion Kurtosis Model.
 
         Returns
         ---------
-        mk : ndarray
-            Calculated Spherical Mean diffusitivity.
+        msk : ndarray
+            Calculated signal mean kurtosis.
 
         References
         ----------
-        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-               changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28
+        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+               Analysis and their Application to the Healthy Ageing Brain
+               (Doctoral thesis). Downing College, University of Cambridge.
+               https://doi.org/10.17863/CAM.29356
         """
         return self.model_params[..., 1]
 
     def predict(self, gtab, S0=1.):
         r"""
-        Given a mean spherical diffusion kurtosis model fit, predict the signal
+        Given a mean signal diffusion kurtosis model fit, predict the signal
         on the vertices of a sphere
 
         Parameters
@@ -299,19 +310,20 @@ class MeanDiffusionKurtosisFit(object):
         Returns
         --------
         S : (..., N) ndarray
-            Simulated mean signal based on the mean spherical kurtosis model
+            Simulated mean signal based on the mean signal kurtosis model
 
         Notes
         -----
         The predicted signal is given by:
-        $MS(b) = S_0 * exp(-bMD + 1/6 b^{2} MD^{2} MK)$, where MD is the
-        mean spherical diffusivity and mean spherical kurtosis.
+        $MS(b) = S_0 * exp(-bD + 1/6 b^{2} D^{2} K)$, where $D$ and $k$ are the
+        mean signal diffusivity and mean signal kurtosis.
 
         References
         ----------
-        .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-               changes based on the mean signal diffusion kurtosis. 25th Annual
-               Meeting of the ISMRM; Honolulu. April 22-28
+        .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+               Analysis and their Application to the Healthy Ageing Brain
+               (Doctoral thesis). Downing College, University of Cambridge.
+               https://doi.org/10.17863/CAM.29356
         """
         return mdki_prediction(self.model_params, gtab, S0=S0)
 
@@ -319,14 +331,14 @@ class MeanDiffusionKurtosisFit(object):
 def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
                  min_signal=MIN_POSITIVE_SIGNAL, return_S0_hat=False):
     r"""
-    Fits the mean spherical diffusion kurtosis imaging based on a weighted
+    Fits the mean signal diffusion kurtosis imaging based on a weighted
     least square solution [1]_.
 
     Parameters
     ----------
     design_matrix : array (nub, 3)
         Design matrix holding the covariants used to solve for the regression
-        coefficients of the mean spherical diffusion kurtosis model. Note that
+        coefficients of the mean signal diffusion kurtosis model. Note that
         nub is the number of unique b-values
     msignal : ndarray ([X, Y, Z, ..., nub])
         Mean signal along all gradient direction for each unique b-value
@@ -347,13 +359,14 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
     Returns
     -------
     params : array (..., 2)
-        Containing the mean spherical diffusivity and mean spherical kurtosis
+        Containing the mean signal diffusivity and mean signal kurtosis
 
     References
     ----------
-    .. [1] Henriques, R.N., Correia, M.M., 2017. Interpreting age-related
-           changes based on the mean signal diffusion kurtosis. 25th Annual
-           Meeting of the ISMRM; Honolulu. April 22-28
+    .. [1] Henriques, R.N., 2018. Advanced Methods for Diffusion MRI Data
+           Analysis and their Application to the Healthy Ageing Brain
+           (Doctoral thesis). Downing College, University of Cambridge.
+           https://doi.org/10.17863/CAM.29356
     """
     params = np.zeros(msignal.shape[:-1] + (3,))
 
@@ -394,8 +407,7 @@ def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
 
 
 def design_matrix(ubvals):
-    """  Constructs design matrix for the mean spherical diffusion kurtosis
-    model
+    """  Constructs design matrix for the mean signal diffusion kurtosis model
 
     Parameters
     ----------
@@ -405,9 +417,9 @@ def design_matrix(ubvals):
     Returns
     -------
     design_matrix : array (nb, 3)
-        Design matrix or B matrix for the mean spherical diffusion kurtosis
+        Design matrix or B matrix for the mean signal diffusion kurtosis
         model assuming that parameters are in the following order:
-        design_matrix[j, :] = (MD, MK, S0)
+        design_matrix[j, :] = (msd, msk, S0)
     """
     nb = ubvals.shape
     B = np.zeros(nb + (3,))

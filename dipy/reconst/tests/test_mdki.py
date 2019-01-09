@@ -1,4 +1,4 @@
-""" Testing Mean Spherical DKI (MDKI) """
+""" Testing Mean Signal DKI (MDKI) """
 
 from __future__ import division, print_function, absolute_import
 
@@ -24,7 +24,7 @@ bvals_3s = np.concatenate((bvals, bvals*1.5, bvals * 2), axis=0)
 bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
 gtab_3s = gradient_table(bvals_3s, bvecs_3s)
 
-# Simulation 1. Spherical kurtosis tensor - MK and MD from the MDKI model
+# Simulation 1. Spherical kurtosis tensor - MSK and MSD from the MDKI model
 # should be equa to the MK and MD of the DKI tensor for cases of
 # spherical kurtosis tensors
 Di = 0.00099
@@ -36,7 +36,7 @@ signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals_sph, S0=100,
                                               fractions=frac_sph,
                                               snr=None)
 # Compute ground truth values
-MDgt = f*Di + (1-f)*De
+MDgt = f * Di + (1 - f) * De
 MKgt = 3 * f * (1-f) * ((Di-De) / MDgt) ** 2
 params_single = np.array([MDgt, MKgt])
 msignal_sph = np.zeros(4)
@@ -159,21 +159,21 @@ def test_mdki_statistics():
 
     mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
-    mk = mdkiF.mk
-    md = mdkiF.md
+    mk = mdkiF.msk
+    md = mdkiF.msd
     assert_array_almost_equal(MKgt_multi, mk)
     assert_array_almost_equal(MDgt_multi, md)
 
     # Single-tensors
     mdkiF = mdkiM.fit(signal_sph)
-    mk = mdkiF.mk
-    md = mdkiF.md
+    mk = mdkiF.msk
+    md = mdkiF.msd
     assert_array_almost_equal(MKgt, mk)
     assert_array_almost_equal(MDgt, md)
 
     # Test with given mask
     mdkiF = mdkiM.fit(DWI, mask=np.ones(DWI.shape[:-1]))
-    mk = mdkiF.mk
-    md = mdkiF.md
+    mk = mdkiF.msk
+    md = mdkiF.msd
     assert_array_almost_equal(MKgt_multi, mk)
     assert_array_almost_equal(MDgt_multi, md)
