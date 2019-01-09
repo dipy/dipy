@@ -147,7 +147,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         self.bmag = bmag
         self.args = args
         self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
+        self.min_signal = self.kwargs.pop('min_signal', MIN_POSITIVE_SIGNAL)
         if self.min_signal is not None and self.min_signal <= 0:
             e_s = "The `min_signal` key-word argument needs to be strictly"
             e_s += " positive."
@@ -177,12 +177,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         mdata, ng = mean_signal_bvalue(data, self.gtab, bmag=self.bmag)
 
         # Remove mdata zeros
-        if self.min_signal is None:
-            min_signal = MIN_POSITIVE_SIGNAL
-        else:
-            min_signal = self.min_signal
-
-        mdata = np.maximum(mdata, min_signal)
+        mdata = np.maximum(mdata, self.min_signal)
 
         params = wls_fit_mdki(self.design_matrix, mdata, ng, mask=mask,
                               *self.args, **self.kwargs)
