@@ -180,7 +180,8 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         mdata = np.maximum(mdata, self.min_signal)
 
         params = wls_fit_mdki(self.design_matrix, mdata, ng, mask=mask,
-                              *self.args, **self.kwargs)
+                              return_S0_hat=self.return_S0_hat, *self.args,
+                              **self.kwargs)
         if self.return_S0_hat:
             params, S0_params = params
 

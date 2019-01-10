@@ -4,9 +4,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import random
-import dipy.reconst.dki as dki
-from numpy.testing import (assert_array_almost_equal, assert_array_equal,
-                           assert_almost_equal)
+from numpy.testing import assert_array_almost_equal
 from nose.tools import assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
@@ -66,7 +64,7 @@ for i in range(2):
             mk_i = 3 * f * (1-f) * ((Di-De) / md_i) ** 2
             MDgt_multi[i, j, k] = md_i
             MKgt_multi[i, j, k] = mk_i
-            S0gt_multi = 100
+            S0gt_multi[i, j, k] = 100
             params_multi[i, j, k, 0] = md_i
             params_multi[i, j, k, 1] = mk_i
             MDWI[i, j, k, 0] = signal_i[0]
@@ -108,20 +106,34 @@ def test_dki_predict():
     assert_array_almost_equal(pred_multi[:, :, 0, :], DWI[:, :, 0, :])
 
 
-def test_dki_errors():
+def test_errors():
     # first error raises if MeanDiffusionKurtosisModel is called for
     # data will only one non-zero b-value
-    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+    assert_raises(ValueError, mdki.MeanDiffusionKurtosisModel, gtab)
 
     # second error raises if negative signal is given to MeanDiffusionKurtosis
     # model
-    assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab_3s,
+    assert_raises(ValueError, mdki.MeanDiffusionKurtosisModel, gtab_3s,
                   min_signal=-1)
 
     # third error raises if wrong mask is given to fit
     mask_wrong = np.ones((2, 3, 1))
     mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_3s)
     assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
+
+    # fourth error raises if an given index point to more dimensions that data
+    # does not contain
+
+    # define auxiliar function for the assert raises
+    def aux_test_fun(ob, ind):
+        met = ob[ind].msk
+        return met
+
+    mdkiF = mdki_model.fit(DWI)
+    assert_raises(IndexError, aux_test_fun, mdkiF, (0, 0, 0, 0))
+    # checking if aux_test_fun runs fine
+    met = aux_test_fun(mdkiF, (0, 0, 0))
+    assert_array_almost_equal(MKgt_multi[0, 0, 0], met)
 
 
 def test_design_matrix():
@@ -172,8 +184,21 @@ def test_mdki_statistics():
     assert_array_almost_equal(MDgt, md)
 
     # Test with given mask
-    mdkiF = mdkiM.fit(DWI, mask=np.ones(DWI.shape[:-1]))
+    mask = np.ones(DWI.shape[:-1])
+    v = (0, 0, 0)
+    mask[1, 1, 1] = 0
+    mdkiF = mdkiM.fit(DWI, mask=mask)
     mk = mdkiF.msk
     md = mdkiF.msd
     assert_array_almost_equal(MKgt_multi, mk)
     assert_array_almost_equal(MDgt_multi, md)
+    assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)  # tuple case
+    assert_array_almost_equal(MDgt_multi[v], mdkiF[v].msd)  # tuple case
+    assert_array_almost_equal(MKgt_multi[0], mdkiF[0].msk)  # not tuple case
+    assert_array_almost_equal(MDgt_multi[0], mdkiF[0].msd)  # not tuple case
+
+    # Test returned S0
+    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s, return_S0_hat=True)
+    mdkiF = mdkiM.fit(DWI)
+    assert_array_almost_equal(S0gt_multi, mdkiF.S0_hat)
+    assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
