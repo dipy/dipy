@@ -79,7 +79,7 @@ Mean Apparent Propagator (MAP)-MRI
 Studying diffusion time-dependence using qt-dMRI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`example_reconst_qtdmri` 
+- :ref:`example_reconst_qtdmri`
 
 Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,7 +166,7 @@ Streamline analysis and connectivity
 - :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
 - :ref:`example_cluster_confidence`
-- :ref: `example_path_length_map`
+- :ref:`example_path_length_map`
 
 
 ------------------
