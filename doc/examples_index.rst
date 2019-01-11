@@ -60,7 +60,7 @@ Constrained Spherical Deconvolution
 
 - :ref:`example_reconst_csd`
 
-Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
+Fiber Orientation Estimated using Continuous Axially Symmetric Tensors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_forecast`
