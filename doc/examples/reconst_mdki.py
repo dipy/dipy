@@ -3,21 +3,21 @@
 Characterizing diffusion signal with the mean signal diffusion kurtosis imaging
 ===============================================================================
 
-Several microstrutural models have been proposed to increase the specificity
-of diffusion-weighted data; however improrper model assumptions are known to
+Several microstructural models have been proposed to increase the specificity
+of diffusion-weighted data; however, improper model assumptions are known to
 compromise the validity of the model's estimates [Henriques2019]_. To avoid
-misleading interpretation, it might be useful and enought to characterize
+misleading interpretation, it might be enough to characterize
 diffusion-weighted data using signal representation techniques. For example,
 assuming that the degree the non-Gaussian diffusion decreases with tissue
-degeneration, quantifying this diffusion property can provides usefull
-information about the tissue degeneration degree at a microscopic level of the
-tissue. Although this cannot be use to distinguish different mechanisms of
+degeneration, this can be sensitive to general microstructural alterations.
+Although this cannot be use to distinguish different mechanisms of
 microstructural changes (e.g. axonal loss vs demyelination), the degree of
-non-Gaussian diffusion can provide a usefull sensitive measure that can be
-used for example to study the relationship between brain microstructure and
-behaviour changes (e.g. [Price2017]_).
+non-Gaussian diffusion can provide insights on the general condition of tissue
+microstructure and provide useful markers to understanding, for instance, the
+relationship between brain microstructure and behaviour changes
+(e.g. [Price2017]_).
 
-Diffusion Kurtosis Imaging is one of the conventional way to estimate the
+Diffusion Kurtosis Imaging is one of the conventional ways to estimate the
 degree of non-Gaussian diffusion (see :ref:`example_reconst_dki`). However,
 as previously pointed [NetoHe2015]_, standard kurtosis measures do not only
 depend on microstructural properties but also on mesoscopic properties such as
