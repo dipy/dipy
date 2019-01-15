@@ -1,11 +1,11 @@
 """
 ===============================================================================
-Characterizing diffusion signal with the mean signal diffusion kurtosis imaging
+Mean signal diffusion kurtosis imaging (MSDKI)
 ===============================================================================
 
 Several microstructural models have been proposed to increase the specificity
 of diffusion-weighted data; however, improper model assumptions are known to
-compromise the validity of the model's estimates [Henriques2019]_. To avoid
+compromise the validity of the model's estimates [NetoHe2019]_. To avoid
 misleading interpretation, it might be enough to characterize
 diffusion-weighted data using signal representation techniques. For example,
 assuming that the degree the non-Gaussian diffusion decreases with tissue
@@ -23,8 +23,8 @@ as previously pointed [NetoHe2015]_, standard kurtosis measures do not only
 depend on microstructural properties but also on mesoscopic properties such as
 fiber dispersion or the intersection angle of crossing fibers.
 
-In the following example, we show how one can process the diffusion kurtosis of
-mean signals (also known as powder-averaged signals) and obtain a
+In the following example, we show how one can process the diffusion kurtosis
+from mean signals (also known as powder-averaged signals) and obtain a
 characterization of non-Gaussian diffusion independently to the degree of fiber
 organization [NetoHe2018]_. In the first part of this example, the properties
 of the measures obtained from the mean signal diffusion kurtosis imaging
@@ -36,21 +36,88 @@ Let's import all relevant modules:
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Reconstriuction modules
 import dipy.reconst.dki as dki
-import dipy.reconst.dti as dti
 import dipy.reconst.mdki as mdki
+
+# For simulations
+from dipy.data import get_fnames
+from dipy.sims.voxel import multi_tensor
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import (gradient_table, round_bvals)
+
+# For in-vivo data
 from dipy.data import fetch_cfin_multib
 from dipy.data import read_cfin_dwi
 from dipy.segment.mask import median_otsu
-from scipy.ndimage.filters import gaussian_filter
-
-""" Simulations (WIP)
-
-Note as the standard DKI, MSDKI requires multi-shell
-data (i.e. data acquired from more than one non-zero b-value).
-"""
 
 """
+===============================================================================
+Testing MSDKI in synthetic data
+===============================================================================
+
+We simulate representative diffusion-weighted signals using a MultiTensor
+simulations (for more information on this simulations see
+:ref:`example_simulate_multi_tensor`). For this example, simulations are
+produced based on the sum of four diffusion tensors representing the intra- and
+extra-cellular spaces of two fiber populations. The parameters of theses
+tensors are adjusted according to [NetoHe2015]_ (see also
+:ref:`example_simulate_dki`).
+"""
+
+mevals = np.array([[0.00099, 0, 0],
+                   [0.00226, 0.00087, 0.00087],
+                   [0.00099, 0, 0],
+                   [0.00226, 0.00087, 0.00087]])
+
+"""
+For the acquisition parameters, we use 64 pre-defined gradient directions for
+two b-values (1000 and 2000 $s/mm^{2}$). Note a zero-bvalue is also included
+on the pre-defined gradient direction file `small_64D`.
+"""
+
+fimg, fbvals, fbvecs = get_fnames('small_64D')
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+
+bvals = round_bvals(np.concatenate((bvals, bvals * 2), axis=0))
+bvecs = np.concatenate((bvecs, bvecs), axis=0)
+
+gtab = gradient_table(bvals, bvecs)
+
+
+""" Simulations are now produced for different volume fraction of water in both
+intra- and extra-cellular components and different intersection angles between
+the two-fiber populations.
+"""
+
+# Array containing the intra-cellular volume fractions tested
+f = np.linspace(0, 100.0, num=11)
+
+# Array containing the intersection angle
+ang = np.linspace(0, 90, num=91)
+
+# Matrix where synthetic signals will be stored
+dwi = np.empty((f.size, ang.size, bvals.size))
+
+for f_i in range(f.size):
+    # estimating volume fractions for individual tensors
+    fractions = np.array([100 - f[f_i], f[f_i], 100 - f[f_i], f[f_i]]) * 0.5
+
+    for a_i in range(ang.size):
+        # defining the directions for individual tensors
+        angles = [(ang[a_i], 0), (ang[a_i], 0), (0, 0), (0, 0)]
+
+        # producing signals using Dipy's function multi_tensor
+        signal, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
+                                      fractions=fractions)
+        dwi[f_i, a_i, :] = signal
+
+"""
+===============================================================================
+Reconstructing diffusion data using MSDKI
+===============================================================================
+
 Now that the properties of MSDKI we illustrated, let's apply MSDKI to in-vivo
 diffusion-weighted data. As the example for the standard DKI
 (see :ref:`example_reconst_dki`), we use fetch to download a multi-shell
@@ -79,9 +146,9 @@ maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
 
 """
 Now that we have loaded and pre-processed the data we can go forward
-with DKI fitting. For this, the DKI model is first defined for the data's
-GradientTable object by instantiating the DiffusionKurtosisModel object in the
-following way:
+with DKI fitting. For this, the MSDKI model is first defined for the data's
+GradientTable object by instantiating the MeanDiffusionKurtosisModel object
+in the following way:
 """
 
 mdki_model = mdki.MeanDiffusionKurtosisModel(gtab)
