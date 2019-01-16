@@ -33,6 +33,7 @@ See :ref:`Older Highlights <old_highlights>`.
 Announcements
 *************
 
+- DIPY Workshop - Titanium Edition (March 11-15, 2019) is now open for registration: http://workshop.dipy.org
 - :ref:`DIPY 0.15 <release0.15>` released December 12, 2018.
 - :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
