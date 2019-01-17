@@ -1276,6 +1276,10 @@ def test_gaussian_weights():
     w = gaussian_weights(bundle, n_points=10)
     npt.assert_almost_equal(w, np.ones((len(bundle), 10)) * 0.5)
 
+    # Test when asked to return Mahalnobis, instead of weights
+    w = gaussian_weights(bundle, n_points=10, return_mahalnobis=True)
+    npt.assert_almost_equal(w, np.ones((len(bundle), 10)))
+
     # Here, some nodes are twice as far from the mean as others
     bundle = Streamlines([np.array([x, y, z]).T + 2,
                           np.array([x, y, z]).T + 1,
