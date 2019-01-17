@@ -1317,6 +1317,15 @@ def test_gaussian_weights():
     npt.assert_equal(w,
                      np.ones(w.shape) * 1/len(bundle_w_id_node))
 
+    # Test with bundle of length 1:
+    bundle_len_1 = Streamlines([bundle[0]])
+    w = gaussian_weights(bundle_len_1, n_points=10)
+    npt.assert_equal(w, np.ones(w.shape))
+
+    bundle_len_1 = Streamlines([bundle[0]])
+    w = gaussian_weights(bundle_len_1, n_points=10, return_mahalnobis=True)
+    npt.assert_equal(w, np.ones(w.shape) * np.nan)
+
 
 def test_bundle_profile():
     data = np.ones((10, 10, 10))
