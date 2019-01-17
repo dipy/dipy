@@ -266,7 +266,6 @@ def pft_tracker(
         Minimum white matter pve (1 - tc.include_map - tc.exclude_map) to
         reach before allowing the tractography to stop.
 
-
     Returns
     -------
     end : int
