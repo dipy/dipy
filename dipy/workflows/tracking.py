@@ -230,7 +230,8 @@ class PFTrackingPAMFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract in io_it:
+        for pams_path, wm_path, gm_path, csf_path, seeding_path, out_tract \
+                in io_it:
 
             logging.info('Particle Filtering tracking on {0}'
                          .format(pams_path))
