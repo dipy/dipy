@@ -136,7 +136,8 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True)
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="eudx")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -144,8 +145,8 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and deterministic getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
-                         sh_strategy="deterministic")
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="deterministic")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -153,8 +154,8 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and probabilistic getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
-                         sh_strategy="probabilistic")
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="probabilistic")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -162,8 +163,8 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and closestpeaks getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path, use_sh=True,
-                         sh_strategy="closestpeaks")
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="closestpeaks")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))

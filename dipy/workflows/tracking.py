@@ -23,7 +23,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return 'lf_track'
 
-    def _get_direction_getter(self, strategy_name):
+    def _get_direction_getter(self, strategy_name, **kwargs):
         """Get Tracking Direction Getter object.
 
         Parameters
@@ -48,6 +48,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
         elif strategy_name.lower() in ["closestpeaks", "cp"]:
             msg = "ClosestPeaks"
             direction_getter = ClosestPeakDirectionGetter
+        elif strategy_name.lower() in ["eudx", ""] and 'pam' in kwargs.keys():
+            msg = "Eudx"
+            direction_getter = kwargs.get('pam')
         else:
             msg = "No direction getter defined. Deterministic"
 
@@ -55,7 +58,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         return direction_getter
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, use_sh, dg, pmf_threshold, max_angle, pam,
+                  seed_density, dg, pmf_threshold, max_angle, pam,
                   out_tract):
 
         stop, affine = load_nifti(stopping_path)
@@ -68,13 +71,11 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 density=[seed_density, seed_density, seed_density],
                 affine=affine)
         logging.info('seeds done')
-        direction_getter = pam
 
-        if use_sh:
-            direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                               max_angle=max_angle,
-                                               sphere=pam.sphere,
-                                               pmf_threshold=pmf_threshold)
+        direction_getter = dg.from_shcoeff(pam.shm_coeff,
+                                           max_angle=max_angle,
+                                           sphere=pam.sphere,
+                                           pmf_threshold=pmf_threshold)
 
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
@@ -88,8 +89,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def run(self, pam_files, stopping_files, seeding_files,
             stopping_thr=0.2,
             seed_density=1,
-            use_sh=False,
-            sh_strategy="deterministic",
+            tracking_method="deterministic",
             pmf_threshold=0.1,
             max_angle=30.,
             out_dir='',
@@ -115,11 +115,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
-        use_sh : bool, optional
-            Use spherical harmonics saved in peaks to find the
-             maximum peak cone. (default False)
-        sh_strategy : string, optional
+        tracking_method : string, optional
             Select direction getter strategy:
+             - "eudx" (Use spherical harmonics saved in peaks)
              - "deterministic" or "det" for a deterministic tracking (default)
              - "probabilistic" or "prob" for a Probabilistic tracking
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
@@ -148,10 +146,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
                          .format(pams_path))
 
             pam = load_peaks(pams_path, verbose=False)
-            dg = self._get_direction_getter(sh_strategy)
+            dg = self._get_direction_getter(tracking_method, pam=pam)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, use_sh, dg, pmf_threshold, max_angle,
+                           seed_density, dg, pmf_threshold, max_angle,
                            pam, out_tract)
 
 
