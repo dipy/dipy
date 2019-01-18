@@ -23,7 +23,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return 'track_local'
 
-    def _get_direction_getter(self, strategy_name, **kwargs):
+    def _get_direction_getter(self, strategy_name, pam, pmf_threshold=0.1,
+                              max_angle=30.):
         """Get Tracking Direction Getter object.
 
         Parameters
@@ -37,29 +38,44 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Used to get directions for fiber tracking.
 
         """
-        direction_getter = DeterministicMaximumDirectionGetter
-        msg = ''
+        dg, msg = None, ''
         if strategy_name.lower() in ["deterministic", "det"]:
             msg = "Deterministic"
-            direction_getter = DeterministicMaximumDirectionGetter
+            dg = DeterministicMaximumDirectionGetter.from_shcoeff(
+                pam.shm_coeff,
+                sphere=pam.sphere,
+                max_angle=max_angle,
+                pmf_threshold=pmf_threshold)
         elif strategy_name.lower() in ["probabilistic", "prob"]:
             msg = "Probabilistic"
-            direction_getter = ProbabilisticDirectionGetter
+            dg = ProbabilisticDirectionGetter.from_shcoeff(
+                pam.shm_coeff,
+                sphere=pam.sphere,
+                max_angle=max_angle,
+                pmf_threshold=pmf_threshold)
         elif strategy_name.lower() in ["closestpeaks", "cp"]:
             msg = "ClosestPeaks"
-            direction_getter = ClosestPeakDirectionGetter
-        elif strategy_name.lower() in ["eudx", ] and 'pam' in kwargs.keys():
+            dg = ClosestPeakDirectionGetter.from_shcoeff(
+                pam.shm_coeff,
+                sphere=pam.sphere,
+                max_angle=max_angle,
+                pmf_threshold=pmf_threshold)
+        elif strategy_name.lower() in ["eudx", ]:
             msg = "Eudx"
-            direction_getter = kwargs.get('pam')
+            dg = pam
         else:
             msg = "No direction getter defined. Deterministic"
+            dg = DeterministicMaximumDirectionGetter.from_shcoeff(
+                pam.shm_coeff,
+                sphere=pam.sphere,
+                max_angle=max_angle,
+                pmf_threshold=pmf_threshold)
 
         logging.info('{0} direction getter strategy selected'.format(msg))
-        return direction_getter
+        return dg
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, dg, pmf_threshold, max_angle, pam,
-                  out_tract):
+                  seed_density, direction_getter, out_tract):
 
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
@@ -71,11 +87,6 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 density=[seed_density, seed_density, seed_density],
                 affine=affine)
         logging.info('seeds done')
-
-        direction_getter = dg.from_shcoeff(pam.shm_coeff,
-                                           max_angle=max_angle,
-                                           sphere=pam.sphere,
-                                           pmf_threshold=pmf_threshold)
 
         streamlines = LocalTracking(direction_getter, classifier,
                                     seeds, affine, step_size=.5)
@@ -149,11 +160,12 @@ class LocalFiberTrackingPAMFlow(Workflow):
                          .format(pams_path))
 
             pam = load_peaks(pams_path, verbose=False)
-            dg = self._get_direction_getter(tracking_method, pam=pam)
+            dg = self._get_direction_getter(tracking_method, pam,
+                                            pmf_threshold=pmf_threshold,
+                                            max_angle=max_angle)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, dg, pmf_threshold, max_angle,
-                           pam, out_tract)
+                           seed_density, dg, out_tract)
 
 
 class PFTrackingPAMFlow(Workflow):
