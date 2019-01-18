@@ -21,7 +21,7 @@ from dipy.workflows.workflow import Workflow
 class LocalFiberTrackingPAMFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'lf_track'
+        return 'track_local'
 
     def _get_direction_getter(self, strategy_name, **kwargs):
         """Get Tracking Direction Getter object.
@@ -48,7 +48,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         elif strategy_name.lower() in ["closestpeaks", "cp"]:
             msg = "ClosestPeaks"
             direction_getter = ClosestPeakDirectionGetter
-        elif strategy_name.lower() in ["eudx", ""] and 'pam' in kwargs.keys():
+        elif strategy_name.lower() in ["eudx", ] and 'pam' in kwargs.keys():
             msg = "Eudx"
             direction_getter = kwargs.get('pam')
         else:
@@ -117,10 +117,13 @@ class LocalFiberTrackingPAMFlow(Workflow):
              center of the voxel.
         tracking_method : string, optional
             Select direction getter strategy:
-             - "eudx" (Use spherical harmonics saved in peaks)
-             - "deterministic" or "det" for a deterministic tracking (default)
+             - "eudx" (Uses the peaks saved in the pam_files)
+             - "deterministic" or "det" for a deterministic tracking
+               (Uses the sh saved in the pam_files, default)
              - "probabilistic" or "prob" for a Probabilistic tracking
+               (Uses the sh saved in the pam_files)
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
+               (Uses the sh saved in the pam_files)
         pmf_threshold : float, optional
             Threshold for ODF functions. (default 0.1)
         max_angle : float, optional
@@ -156,7 +159,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
 class PFTrackingPAMFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'pf_track'
+        return 'track_pft'
 
     def run(self, pam_files, wm_files, gm_files, csf_files, seeding_files,
             step_size=0.2,
