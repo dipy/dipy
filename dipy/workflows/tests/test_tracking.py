@@ -90,7 +90,7 @@ def test_particule_filtering_traking_workflows():
 
         # Test tracking
         pf_track_pam = PFTrackingPAMFlow()
-        assert_equal(pf_track_pam.get_short_name(), 'pf_track')
+        assert_equal(pf_track_pam.get_short_name(), 'track_pft')
         pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
         tractogram_path = \
             pf_track_pam.last_generated_outputs['out_tractogram']
@@ -127,7 +127,7 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam no sh
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        assert_equal(lf_track_pam.get_short_name(), 'lf_track')
+        assert_equal(lf_track_pam.get_short_name(), 'track_local')
         lf_track_pam.run(pam_path, gfa_path, seeds_path)
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
