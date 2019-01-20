@@ -7,7 +7,7 @@ import numpy as np
 
 from dipy.core.gradients import (check_multi_b, unique_bvals, round_bvals)
 from dipy.reconst.base import ReconstModel
-from dipy.reconst.dti import (MIN_POSITIVE_SIGNAL)
+from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
 from dipy.core.ndindex import ndindex
 from dipy.core.onetime import auto_attr
 
@@ -127,10 +127,6 @@ class MeanDiffusionKurtosisModel(ReconstModel):
 
         args, kwargs : arguments and keyword arguments passed to the
         fit_method. See msdki.wls_fit_msdki for details
-
-        min_signal : float
-            The minimum signal value. Needs to be a strictly positive
-            number. Default: 0.0001.
 
         References
         ----------
