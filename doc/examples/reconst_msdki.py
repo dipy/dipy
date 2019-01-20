@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 ===============================================================================
 Mean signal diffusion kurtosis imaging (MSDKI)
@@ -37,7 +38,7 @@ Let's import all relevant modules:
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Reconstriuction modules
+# Reconstruction modules
 import dipy.reconst.dki as dki
 import dipy.reconst.msdki as msdki
 
@@ -77,7 +78,7 @@ zero-bvalue (note that, such as the standard DKI, MSDKI requires at least
 three different b-values).
 """
 
-# Sample the spherical cordinates of 60 random diffusion-weighted directions.
+# Sample the spherical coordinates of 60 random diffusion-weighted directions.
 n_pts = 60
 theta = np.pi * np.random.rand(n_pts)
 phi = 2 * np.pi * np.random.rand(n_pts)
@@ -247,7 +248,7 @@ with MSDKI fitting. As for the synthetic data, the MSDKI model has to be first
 defined for the data's GradientTable object:
 """
 
-mdki_model = msdki.MeanDiffusionKurtosisModel(gtab)
+msdki_model = msdki.MeanDiffusionKurtosisModel(gtab)
 
 """
 The data can then be fitted by calling the ``fit`` function of this object:
@@ -256,7 +257,7 @@ The data can then be fitted by calling the ``fit`` function of this object:
 msdki_fit = msdki_model.fit(data, mask=mask)
 
 """
-Let's then extract the two main MDKI's parameters: 1) mean signal diffusion
+Let's then extract the two main MSDKI's parameters: 1) mean signal diffusion
 (MSD); and 2) mean signal kurtosis (MSK).
 """
 
