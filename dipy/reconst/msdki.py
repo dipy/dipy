@@ -57,7 +57,7 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     return msignal, ng
 
 
-def mdki_prediction(mdki_params, gtab, S0=1.0):
+def msdki_prediction(msdki_params, gtab, S0=1.0):
     """
     Predict the mean signal given the parameters of the mean signal DKI, an
     GradientTable object and S0 signal.
@@ -86,16 +86,16 @@ def mdki_prediction(mdki_params, gtab, S0=1.0):
            thesis). Downing College, University of Cambridge.
            https://doi.org/10.17863/CAM.29356
     """
-    # Define MDKI design matrix given gtab.bvals
+    # Define MSDKI design matrix given gtab.bvals
     A = design_matrix(round_bvals(gtab.bvals))
 
     # Initialize pred_sig
-    pred_sig = np.zeros(mdki_params.shape[:-1] + gtab.bvals.shape)
+    pred_sig = np.zeros(msdki_params.shape[:-1] + gtab.bvals.shape)
 
     # looping for all voxels
-    index = ndindex(mdki_params.shape[:-1])
+    index = ndindex(msdki_params.shape[:-1])
     for v in index:
-        params = mdki_params[v].copy()
+        params = msdki_params[v].copy()
         params[1] = params[1] * params[0] ** 2
         if isinstance(S0, np.ndarray):
             S0v = S0[v]
@@ -126,7 +126,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             If True, also return S0 values for the fit.
 
         args, kwargs : arguments and keyword arguments passed to the
-        fit_method. See mdti.wls_fit_mdki for details
+        fit_method. See msdki.wls_fit_msdki for details
 
         min_signal : float
             The minimum signal value. Needs to be a strictly positive
@@ -156,11 +156,11 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         # Check if at least three b-values are given
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b:
-            mes = "MDKI requires at least 3 b-values (which can include b=0)"
+            mes = "MSDKI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
 
     def fit(self, data, mask=None):
-        """ Fit method of the MDKI model class
+        """ Fit method of the MSDKI model class
 
         Parameters
         ----------
@@ -179,22 +179,22 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         # Remove mdata zeros
         mdata = np.maximum(mdata, self.min_signal)
 
-        params = wls_fit_mdki(self.design_matrix, mdata, ng, mask=mask,
-                              return_S0_hat=self.return_S0_hat, *self.args,
-                              **self.kwargs)
+        params = wls_fit_msdki(self.design_matrix, mdata, ng, mask=mask,
+                               return_S0_hat=self.return_S0_hat, *self.args,
+                               **self.kwargs)
         if self.return_S0_hat:
             params, S0_params = params
 
         return MeanDiffusionKurtosisFit(self, params, model_S0=S0_params)
 
-    def predict(self, mdki_params, S0=1.):
+    def predict(self, msdki_params, S0=1.):
         """
         Predict a signal for this MeanDiffusionKurtosisModel class instance
         given parameters.
 
         Parameters
         ----------
-        mdki_params : ndarray
+        msdki_params : ndarray
             The parameters of the mean signal diffusion kurtosis model
         S0 : float or ndarray
             The non diffusion-weighted signal in every voxel, or across all
@@ -219,7 +219,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
                (Doctoral thesis). Downing College, University of Cambridge.
                https://doi.org/10.17863/CAM.29356
         """
-        return mdki_prediction(mdki_params, self.gtab, S0)
+        return msdki_prediction(msdki_params, self.gtab, S0)
 
 
 class MeanDiffusionKurtosisFit(object):
@@ -322,11 +322,11 @@ class MeanDiffusionKurtosisFit(object):
                (Doctoral thesis). Downing College, University of Cambridge.
                https://doi.org/10.17863/CAM.29356
         """
-        return mdki_prediction(self.model_params, gtab, S0=S0)
+        return msdki_prediction(self.model_params, gtab, S0=S0)
 
 
-def wls_fit_mdki(design_matrix, msignal, ng, mask=None,
-                 min_signal=MIN_POSITIVE_SIGNAL, return_S0_hat=False):
+def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
+                  min_signal=MIN_POSITIVE_SIGNAL, return_S0_hat=False):
     r"""
     Fits the mean signal diffusion kurtosis imaging based on a weighted
     least square solution [1]_.
