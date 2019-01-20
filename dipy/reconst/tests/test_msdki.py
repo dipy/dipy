@@ -1,4 +1,4 @@
-""" Testing Mean Signal DKI (MDKI) """
+""" Testing Mean Signal DKI (MSDKI) """
 
 from __future__ import division, print_function, absolute_import
 
@@ -10,7 +10,7 @@ from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
 from dipy.data import get_data
-import dipy.reconst.mdki as mdki
+import dipy.reconst.msdki as msdki
 
 fimg, fbvals, fbvecs = get_data('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -22,7 +22,7 @@ bvals_3s = np.concatenate((bvals, bvals*1.5, bvals * 2), axis=0)
 bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
 gtab_3s = gradient_table(bvals_3s, bvecs_3s)
 
-# Simulation 1. Spherical kurtosis tensor - MSK and MSD from the MDKI model
+# Simulation 1. Spherical kurtosis tensor - MSK and MSD from the MSDKI model
 # should be equa to the MK and MD of the DKI tensor for cases of
 # spherical kurtosis tensors
 Di = 0.00099
@@ -73,8 +73,8 @@ for i in range(2):
             MDWI[i, j, k, 3] = signal_i[180]
 
 
-def test_dki_predict():
-    dkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
+def test_msdki_predict():
+    dkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
 
     # single voxel
     pred = dkiM.predict(params_single, S0=100)
@@ -109,17 +109,17 @@ def test_dki_predict():
 def test_errors():
     # first error raises if MeanDiffusionKurtosisModel is called for
     # data will only one non-zero b-value
-    assert_raises(ValueError, mdki.MeanDiffusionKurtosisModel, gtab)
+    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab)
 
     # second error raises if negative signal is given to MeanDiffusionKurtosis
     # model
-    assert_raises(ValueError, mdki.MeanDiffusionKurtosisModel, gtab_3s,
+    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab_3s,
                   min_signal=-1)
 
     # third error raises if wrong mask is given to fit
     mask_wrong = np.ones((2, 3, 1))
-    mdki_model = mdki.MeanDiffusionKurtosisModel(gtab_3s)
-    assert_raises(ValueError, mdki_model.fit, DWI, mask=mask_wrong)
+    msdki_model = msdki.MeanDiffusionKurtosisModel(gtab_3s)
+    assert_raises(ValueError, msdki_model.fit, DWI, mask=mask_wrong)
 
     # fourth error raises if an given index point to more dimensions that data
     # does not contain
@@ -129,7 +129,7 @@ def test_errors():
         met = ob[ind].msk
         return met
 
-    mdkiF = mdki_model.fit(DWI)
+    mdkiF = msdki_model.fit(DWI)
     assert_raises(IndexError, aux_test_fun, mdkiF, (0, 0, 0, 0))
     # checking if aux_test_fun runs fine
     met = aux_test_fun(mdkiF, (0, 0, 0))
@@ -138,7 +138,7 @@ def test_errors():
 
 def test_design_matrix():
     ub = unique_bvals(bvals_3s)
-    D = mdki.design_matrix(ub)
+    D = msdki.design_matrix(ub)
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
     Dgt[:, 1] = 1.0/6 * ub ** 2
@@ -147,29 +147,29 @@ def test_design_matrix():
 
 def test_msignal():
     # Multi-voxel case
-    ms, ng = mdki.mean_signal_bvalue(DWI, gtab_3s)
+    ms, ng = msdki.mean_signal_bvalue(DWI, gtab_3s)
     assert_array_almost_equal(ms, MDWI)
     assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
 
     # Single-voxel case
-    ms, ng = mdki.mean_signal_bvalue(signal_sph, gtab_3s)
+    ms, ng = msdki.mean_signal_bvalue(signal_sph, gtab_3s)
     assert_array_almost_equal(ng, np.array([3, 64, 64, 64]))
     assert_array_almost_equal(ms, msignal_sph)
 
 
-def test_mdki_statistics():
+def test_msdki_statistics():
     # tests if MD and MK are equal to expected values of a spherical
     # tensors
 
     # Multi-tensors
     ub = unique_bvals(bvals_3s)
-    design_matrix = mdki.design_matrix(ub)
-    msignal, ng = mdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
-    params = mdki.wls_fit_mdki(design_matrix, msignal, ng)
+    design_matrix = msdki.design_matrix(ub)
+    msignal, ng = msdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
+    params = msdki.wls_fit_msdki(design_matrix, msignal, ng)
     assert_array_almost_equal(params[..., 1], MKgt_multi)
     assert_array_almost_equal(params[..., 0], MDgt_multi)
 
-    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s)
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     mk = mdkiF.msk
     md = mdkiF.msd
@@ -198,7 +198,7 @@ def test_mdki_statistics():
     assert_array_almost_equal(MDgt_multi[0], mdkiF[0].msd)  # not tuple case
 
     # Test returned S0
-    mdkiM = mdki.MeanDiffusionKurtosisModel(gtab_3s, return_S0_hat=True)
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s, return_S0_hat=True)
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(S0gt_multi, mdkiF.S0_hat)
     assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)

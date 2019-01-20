@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 
 # Reconstriuction modules
 import dipy.reconst.dki as dki
-import dipy.reconst.mdki as mdki
+import dipy.reconst.msdki as msdki
 
 # For simulations
 from dipy.sims.voxel import multi_tensor
@@ -130,22 +130,22 @@ data. For MSDKI, this is done by instantiating the MeanDiffusionKurtosisModel
 object in the following way:
 """
 
-mdki_model = mdki.MeanDiffusionKurtosisModel(gtab)
+msdki_model = msdki.MeanDiffusionKurtosisModel(gtab)
 
 """
 MSDKI can then be fitted to the synthetic data by calling the ``fit`` function
 of this object:
 """
 
-mdki_fit = mdki_model.fit(dwi)
+msdki_fit = msdki_model.fit(dwi)
 
 """
 From the above fit object we can extract the two main parameters of the MSDKI,
 i.e.: 1) the mean signal diffusion (MSD); and 2) the mean signal kurtosis (MSK)
 """
 
-MSD = mdki_fit.msd
-MSK = mdki_fit.msk
+MSD = msdki_fit.msd
+MSK = msdki_fit.msk
 
 """ For a reference, we also calculate the mean diffusivity (MD) and mean
 kurtosis (MK) from the standard DKI.
@@ -247,21 +247,21 @@ with MSDKI fitting. As for the synthetic data, the MSDKI model has to be first
 defined for the data's GradientTable object:
 """
 
-mdki_model = mdki.MeanDiffusionKurtosisModel(gtab)
+mdki_model = msdki.MeanDiffusionKurtosisModel(gtab)
 
 """
 The data can then be fitted by calling the ``fit`` function of this object:
 """
 
-mdki_fit = mdki_model.fit(data, mask=mask)
+msdki_fit = msdki_model.fit(data, mask=mask)
 
 """
 Let's then extract the two main MDKI's parameters: 1) mean signal diffusion
 (MSD); and 2) mean signal kurtosis (MSK).
 """
 
-MSD = mdki_fit.msd
-MSK = mdki_fit.msk
+MSD = msdki_fit.msd
+MSK = msdki_fit.msk
 
 """
 For comparison, we calculate also the mean diffusivity (MD) and mean kurtosis
