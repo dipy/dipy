@@ -9,10 +9,10 @@ from nose.tools import assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
-from dipy.data import get_data
+from dipy.data import get_fnames
 import dipy.reconst.msdki as msdki
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 bvals = round_bvals(bvals)
 gtab = gradient_table(bvals, bvecs)
