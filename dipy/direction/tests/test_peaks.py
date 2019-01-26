@@ -621,7 +621,7 @@ def test_peaks_shm_coeff():
 
     pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=True,
-                           sh_basis_type='mrtrix')
+                           sh_basis_type='tournier07')
 
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)

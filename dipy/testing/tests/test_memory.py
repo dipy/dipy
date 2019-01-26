@@ -1,4 +1,4 @@
-from nose.tools import assert_equal
+from numpy.testing import assert_equal
 
 from dipy.testing.memory import get_type_refcount
 

@@ -392,7 +392,7 @@ D=disdata[n0,n1,n2]
 
 def test_flirt2aff():
     from os.path import join as pjoin
-    from nose.tools import assert_true
+    from dipy.testing import assert_true
     import scipy.ndimage as ndi
     import nibabel as nib
     

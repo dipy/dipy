@@ -4,8 +4,7 @@ import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
-
-from nose.tools import assert_equal
+from numpy.testing import assert_equal
 
 from dipy.data import get_fnames
 from dipy.workflows.reconst import ReconstDtiFlow

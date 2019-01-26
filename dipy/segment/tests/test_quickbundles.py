@@ -1,9 +1,8 @@
 import numpy as np
 import itertools
 
-
-from nose.tools import assert_equal, assert_raises
-from numpy.testing import assert_array_equal, run_module_suite
+from numpy.testing import (assert_array_equal, run_module_suite,
+                           assert_equal, assert_raises)
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 

@@ -1,6 +1,5 @@
 import warnings
 
-from nose.tools import assert_raises
 import numpy as np
 import numpy.testing as npt
 
@@ -45,7 +44,7 @@ def test_btable_prepare():
     npt.assert_array_equal(bt4.bvecs, bvecs)
     npt.assert_array_equal(bt4.bvals, bvals)
     # Test for proper inputs (expects either bvals/bvecs or 4 by n):
-    assert_raises(ValueError, gradient_table, bvecs)
+    npt.assert_raises(ValueError, gradient_table, bvecs)
 
 
 def test_GradientTable():
@@ -307,7 +306,7 @@ def test_reorient_bvecs():
 
     # Verify that giving the wrong number of affines raises an error:
     full_affines.append(np.zeros((4, 4)))
-    assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
+    npt.assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
 
 
 def test_nan_bvecs():

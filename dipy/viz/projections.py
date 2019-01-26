@@ -9,7 +9,7 @@ import numpy as np
 import scipy.interpolate as interp
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
-from dipy.testing import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")

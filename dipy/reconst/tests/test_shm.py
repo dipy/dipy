@@ -1,11 +1,12 @@
-"""Test spherical harmonic models and the tools associated with those models"""
+"""Test spherical harmonic models and the tools associated with those models.
+"""
 import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from nose.tools import assert_equal, assert_raises, assert_true
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-import numpy.testing as npt
+from dipy.testing import assert_true
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_equal, assert_raises, run_module_suite)
 from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
@@ -38,7 +39,7 @@ def test_order_from_ncoeff():
     for sh_order in [2, 4, 6, 8, 12, 24]:
         m, n = sph_harm_ind_list(sh_order)
         n_coef = m.shape[0]
-        npt.assert_equal(order_from_ncoef(n_coef), sh_order)
+        assert_equal(order_from_ncoef(n_coef), sh_order)
 
 
 def test_sph_harm_ind_list():
@@ -395,8 +396,6 @@ def test_sf_to_sh():
     assert_array_almost_equal(odf2d, odf2d_sf, 2)
 
 
-test_sf_to_sh()
-
 def test_faster_sph_harm():
 
     sh_order = 8
@@ -481,6 +480,5 @@ def test_calculate_max_order():
 
     assert_raises(ValueError, calculate_max_order, 29)
 
-#if __name__ == "__main__":
-#    import nose
-#    nose.runmodule()
+if __name__ == "__main__":
+    run_module_suite()
