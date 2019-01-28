@@ -290,6 +290,13 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == 'ivim_mix':
+        fimg = pjoin(DATA_DIR, 'ep2d_advdiff_IVIM_topup.nii')
+        fbvals = pjoin(DATA_DIR, 'ep2d_advdiff_IVIM_avg.bval')
+        return fimg, fbvals
+    if name == 'mask_ivim':
+        fimg = pjoin(DATA_DIR, 'brain_mask.nii')
+        return fimg
 
 
 def get_data(name='small_64D'):
