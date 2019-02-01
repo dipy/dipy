@@ -167,10 +167,7 @@ Streamline analysis and connectivity
 - :ref:`example_streamline_length`
 - :ref:`example_cluster_confidence`
 - :ref:`example_path_length_map`
-<<<<<<< HEAD
-=======
 - :ref:`example_bundle_profiles`
->>>>>>> Adds an example of bundle profile extraction (tractometry)
 
 
 ------------------
