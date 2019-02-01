@@ -264,10 +264,10 @@ def test_csdeconv():
                                       return_number_of_voxels=True)
         npt.assert_equal(len(w), 1)
         npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in str(w[0].message))
+        npt.assert_("No voxel with a FA higher than 1 were found" in 
+                    str(w[0].message))
 
     assert_equal(nvoxels, 0)
-
 
 
 def test_odfdeconv():
@@ -558,7 +558,8 @@ def test_default_lambda_csdmodel():
             npt.assert_equal(len(w), e_warn)
             if e_warn:
                 npt.assert_(issubclass(w[0].category, UserWarning))
-                npt.assert_("Number of parameters required " in str(w[0].message))
+                npt.assert_("Number of parameters required " in str(w[0].
+                                                                    message))
 
         B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
         npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)

@@ -328,7 +328,8 @@ def test_noisy_fit():
         for l_w in w:
             assert_(issubclass(l_w.category, UserWarning))
         assert_("" in str(w[0].message))
-        assert_("x0 obtained from linear fitting is not feasibile" in str(w[0].message))
+        assert_("x0 obtained from linear fitting is not feasibile" in
+                str(w[0].message))
         assert_("x0 is unfeasible" in str(w[1].message))
         assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
 
@@ -434,7 +435,8 @@ def test_leastsq_failing():
         for l_w in w:
             assert_(issubclass(l_w.category, UserWarning))
         assert_("" in str(w[0].message))
-        assert_("x0 obtained from linear fitting is not feasibile" in str(w[0].message))
+        assert_("x0 obtained from linear fitting is not feasibile" in
+                str(w[0].message))
         assert_("x0 is unfeasible" in str(w[1].message))
         assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
 
