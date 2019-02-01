@@ -447,7 +447,6 @@ def test_degenerative_cases():
     assert_equal(len(values), 1)
 
 
-
 def test_peaksFromModel():
     data = np.zeros((10, 2))
 
@@ -479,7 +478,7 @@ def test_peaksFromModel():
         mask = (np.arange(10) % 2) == 1
 
         pam = peaks_from_model(model, data, sphere, .5, 45, mask=mask,
-                            normalize_peaks=True)
+                               normalize_peaks=True)
         assert_array_equal(pam.gfa[~mask], 0)
         assert_array_equal(pam.qa[~mask], 0)
         assert_array_equal(pam.peak_values[~mask], 0)
@@ -499,9 +498,9 @@ def test_peaksFromModel():
             for return_odf in [True, False]:
                 for return_sh in [True, False]:
                     pam = peaks_from_model(model, data, sphere, .5, 45,
-                                        normalize_peaks=normalize_peaks,
-                                        return_odf=return_odf,
-                                        return_sh=return_sh)
+                                           normalize_peaks=normalize_peaks,
+                                           return_odf=return_odf,
+                                           return_sh=return_sh)
 
                     b = BytesIO()
                     pickle.dump(pam, b)
@@ -510,11 +509,11 @@ def test_peaksFromModel():
                     b.close()
 
                     for attr in ['peak_dirs', 'peak_values', 'peak_indices',
-                                'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
+                                 'gfa', 'qa', 'shm_coeff', 'B', 'odf']:
                         assert_array_equal(getattr(pam, attr),
-                                        getattr(new_pam, attr))
+                                           getattr(new_pam, attr))
                         assert_array_equal(pam.sphere.vertices,
-                                        new_pam.sphere.vertices)
+                                           new_pam.sphere.vertices)
 
 
 def test_peaksFromModelParallel():
@@ -537,60 +536,64 @@ def test_peaksFromModelParallel():
         # test equality with/without multiprocessing
         model = SimpleOdfModel(gtab)
         pam_multi = peaks_from_model(model, data, sphere, .5, 45,
-                                    normalize_peaks=True, return_odf=True,
-                                    return_sh=True, parallel=True)
+                                     normalize_peaks=True, return_odf=True,
+                                     return_sh=True, parallel=True)
 
         pam_single = peaks_from_model(model, data, sphere, .5, 45,
-                                    normalize_peaks=True, return_odf=True,
-                                    return_sh=True, parallel=False)
+                                      normalize_peaks=True, return_odf=True,
+                                      return_sh=True, parallel=False)
 
-    with warnings.catch_warnings(record=True) as w:
-        pam_multi_inv1 = peaks_from_model(model, data, _sphere, .5, 45,
-                                          normalize_peaks=True,
-                                          return_odf=True,
-                                          return_sh=True, parallel=True,
-                                          nbr_processes=0)
+        with warnings.catch_warnings(record=True) as w:
+            pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
+                                              normalize_peaks=True,
+                                              return_odf=True,
+                                              return_sh=True, parallel=True,
+                                              nbr_processes=0)
 
-        pam_multi_inv2 = peaks_from_model(model, data, _sphere, .5, 45,
-                                          normalize_peaks=True,
-                                          return_odf=True,
-                                          return_sh=True, parallel=True,
-                                          nbr_processes=-2)
-        assert_(len(w) == 2)
-        assert_(issubclass(w[0].category, UserWarning))
-        assert_(issubclass(w[1].category, UserWarning))
-        assert_("Invalid number of processes " in str(w[0].message))
-        assert_("Invalid number of processes " in str(w[1].message))
+            pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
+                                              normalize_peaks=True,
+                                              return_odf=True,
+                                              return_sh=True, parallel=True,
+                                              nbr_processes=-2)
+            assert_(len(w) == 2)
+            assert_(issubclass(w[0].category, UserWarning))
+            assert_(issubclass(w[1].category, UserWarning))
+            assert_("Invalid number of processes " in str(w[0].message))
+            assert_("Invalid number of processes " in str(w[1].message))
 
+            for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
+                assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
+                assert_equal(pam.gfa.shape, pam_single.gfa.shape)
+                assert_array_almost_equal(pam.gfa, pam_single.gfa)
 
-        for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
-            assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
-            assert_equal(pam.gfa.shape, pam_single.gfa.shape)
-            assert_array_almost_equal(pam.gfa, pam_single.gfa)
+                assert_equal(pam.qa.dtype, pam_single.qa.dtype)
+                assert_equal(pam.qa.shape, pam_single.qa.shape)
+                assert_array_almost_equal(pam.qa, pam_single.qa)
 
-            assert_equal(pam.qa.dtype, pam_single.qa.dtype)
-            assert_equal(pam.qa.shape, pam_single.qa.shape)
-            assert_array_almost_equal(pam.qa, pam_single.qa)
+                assert_equal(pam.peak_values.dtype,
+                             pam_single.peak_values.dtype)
+                assert_equal(pam.peak_values.shape,
+                             pam_single.peak_values.shape)
+                assert_array_almost_equal(pam.peak_values,
+                                          pam_single.peak_values)
 
-            assert_equal(pam.peak_values.dtype, pam_single.peak_values.dtype)
-            assert_equal(pam.peak_values.shape, pam_single.peak_values.shape)
-            assert_array_almost_equal(pam.peak_values, pam_single.peak_values)
+                assert_equal(pam.peak_indices.dtype,
+                             pam_single.peak_indices.dtype)
+                assert_equal(pam.peak_indices.shape,
+                             pam_single.peak_indices.shape)
+                assert_array_equal(pam.peak_indices, pam_single.peak_indices)
 
-            assert_equal(pam.peak_indices.dtype, pam_single.peak_indices.dtype)
-            assert_equal(pam.peak_indices.shape, pam_single.peak_indices.shape)
-            assert_array_equal(pam.peak_indices, pam_single.peak_indices)
+                assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
+                assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
+                assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
 
-            assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
-            assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
-            assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
+                assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
+                assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
+                assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
 
-            assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
-            assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
-            assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
-
-            assert_equal(pam.odf.dtype, pam_single.odf.dtype)
-            assert_equal(pam.odf.shape, pam_single.odf.shape)
-            assert_array_almost_equal(pam.odf, pam_single.odf)
+                assert_equal(pam.odf.dtype, pam_single.odf.dtype)
+                assert_equal(pam.odf.shape, pam_single.odf.shape)
+                assert_array_almost_equal(pam.odf, pam_single.odf)
 
 
 def test_peaks_shm_coeff():
