@@ -35,6 +35,20 @@ compliance of your code with PEP8. Beyond the aspects checked, as a
 contributor to DIPY, you should try to ensure that your code, including
 comments, conform to the above principles.
 
+Imports
+-------
+DIPY recommends using the following package shorthands to increase consistency
+and readability across the library::
+
+  import nibabel as nib
+  import numpy as np
+  import numpy.testing as npt
+  import scipy as sp
+
+No alias should be used for `h5py`::
+
+  import h5py
+
 -------------
 Documentation
 -------------
