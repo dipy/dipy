@@ -16,6 +16,7 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
                            assert_, assert_equal, dec)
+from dipy.testing import assert_greater_equal
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -430,15 +431,17 @@ def test_leastsq_failing():
     fit_single = ivim_model_LM.fit(noisy_single)
 =======
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         fit_single = ivim_model.fit(noisy_single)
-        assert_equal(len(w), 3)
+        assert_greater_equal(len(w), 3)
         for l_w in w:
             assert_(issubclass(l_w.category, UserWarning))
-        assert_("" in str(w[0].message))
+        assert_("" in str(w[-3].message))
         assert_("x0 obtained from linear fitting is not feasibile" in
-                str(w[0].message))
-        assert_("x0 is unfeasible" in str(w[1].message))
-        assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
+                str(w[-3].message))
+        assert_("x0 is unfeasible" in str(w[-2].message))
+        assert_("Bounds are violated for leastsq fitting" in
+                str(w[-1].message))
 
 >>>>>>> check ivim warning
     # Test for the S0 and D values
@@ -458,7 +461,7 @@ def test_leastsq_error():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
         fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
-        assert_equal(len(w), 1)
+        assert_greater_equal(len(w), 1)
         assert_(issubclass(w[0].category, UserWarning))
         assert_("" in str(w[0].message))
         assert_("x0 is unfeasible" in str(w[0].message))
