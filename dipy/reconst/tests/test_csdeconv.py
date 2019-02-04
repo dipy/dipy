@@ -264,7 +264,7 @@ def test_csdeconv():
                                       return_number_of_voxels=True)
         npt.assert_equal(len(w), 1)
         npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in 
+        npt.assert_("No voxel with a FA higher than 1 were found" in
                     str(w[0].message))
 
     assert_equal(nvoxels, 0)
@@ -576,7 +576,7 @@ def test_csd_superres():
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
     with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
+        warnings.simplefilter("always", category=UserWarning)
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
                                                   sh_order=16)
         npt.assert_equal(len(w), 1)

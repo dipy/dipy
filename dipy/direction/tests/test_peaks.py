@@ -544,6 +544,7 @@ def test_peaksFromModelParallel():
                                       return_sh=True, parallel=False)
 
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=UserWarning)
             pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
                                               normalize_peaks=True,
                                               return_odf=True,

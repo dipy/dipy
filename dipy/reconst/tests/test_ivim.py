@@ -456,6 +456,7 @@ def test_leastsq_error():
     fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
 =======
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
         assert_equal(len(w), 1)
         assert_(issubclass(w[0].category, UserWarning))
