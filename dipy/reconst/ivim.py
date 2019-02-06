@@ -139,7 +139,7 @@ class IvimModel(ReconstModel):
         Initialize an IVIM model.
 
         The IVIM model assumes that biological tissue includes a volume
-        fraction 'f' of water flowing with a pseudo-perfusion coefficient
+        fraction 'f' of water flowing with a pseudo-diffusion coefficient
         D* and a fraction (1-f) of static (diffusion only), intra and
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
