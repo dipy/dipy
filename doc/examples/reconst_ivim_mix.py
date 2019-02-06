@@ -65,7 +65,7 @@ the gradients e.g. b-values and b-vectors). We get the
 data from img using ``read_data``.
 """
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+# print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
 The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
@@ -76,7 +76,7 @@ by taking a slice midway(z=33) at $\mathbf{b} = 0$.
 z = 8
 b = 0
 
-plt.imshow(data[:, :, z, b].T * mask[:,:,z].T, origin='lower', cmap='gray',
+plt.imshow(data[:, :, z, b].T * mask[:, :, z].T, origin='lower', cmap='gray',
            interpolation='nearest')
 plt.axhline(y=100)
 plt.axvline(x=170)
@@ -133,31 +133,14 @@ creating the ``IvimModel``. If you are using Scipy 0.17, you can also set bounds
 the IvimModel. It is recommeded that you upgrade to Scipy 0.17 since
 the fitting results might at times return values which do not make sense
 physically. (For example a negative $\mathbf{f}$)
+
 """
-
-
-def norm_meas_ivim(ydatam, b):
-
-    """
-    calculates std of the b0 measurements and normalizes all ydatam
-    """
-    b1 = np.where(b > 5)
-    b2 = range(b.shape[0])
-    C = np.setdiff1d(b2, b1)
-    b_zero_all = ydatam[C]
-#    %sigma = std(b_zero_all, 1)
-    b_zero_norm = sum(b_zero_all) / C.shape[0]
-    y = ydatam / b_zero_norm
-#    b_zero_all1 = y[C]
-#    sigma = np.std(b_zero_all1)
-#    y[C] = 1
-    return y
 
 fit_method = 'MIX'
 ivim_model = ivim_MIX.IVIMModel(bvals, fit_method=fit_method)
 
-data_slice = data[:,:,11,:]
-#maskdata, mask = median_otsu(data, 3, 1, False, vol_idx=range(10, 16),
+data_slice = data[:, :, 11, :]
+# maskdata, mask = median_otsu(data, 3, 1, False, vol_idx=range(10, 16),
 #                             dilate=2)
 """
 To fit the model, call the `fit` method and pass the data for fitting.
@@ -169,16 +152,13 @@ t1 = time()
 for i in range(data_slice.shape[0]):
     for j in range(data_slice.shape[1]):
         signal = np.squeeze(data_slice[i, j])
-#        if mask[i,j,11] > 0 and signal[0] > signal[1]:
-        if mask[i,j,11] > 0:
+        if mask[i, j, 11] > 0:
             signal = signal/max(signal)
-#            signal = norm_meas_ivim(signal, bvals)
             mask2[i, j] = 1
             signal = np.float64(signal)
             signal[signal > 1] = 1
-#        signal_n = add_noise(signal, snr=20, noise_type='rician')
             ivim_fit[i, j, :] = ivim_model.fit(signal)
-            print(i)
+#            print(i)
 t2 = time()
 fast_time = t2 - t1
 print(fast_time)
@@ -187,10 +167,11 @@ affine = img.affine.copy()
 nib.save(nib.Nifti1Image(ivim_fit[:, :, 0], affine), 'f_ivim005.nii.gz')
 nib.save(nib.Nifti1Image(ivim_fit[:, :, 1], affine), 'D_star_ivim005.nii.gz')
 nib.save(nib.Nifti1Image(ivim_fit[:, :, 2], affine), 'D_ivim005.nii.gz')
-nib.save(nib.Nifti1Image(ivim_fit[:, :, 0]*ivim_fit[:, :, 1], affine), 'fD_star_ivim005.nii.gz')
-#nib.save(nib.Nifti1Image(mask2, affine), 'mask2_ivim.nii.gz')
+nib.save(nib.Nifti1Image(ivim_fit[:, :, 0]*ivim_fit[:, :, 1], affine),
+         'fD_star_ivim005.nii.gz')
+# nib.save(nib.Nifti1Image(mask2, affine), 'mask2_ivim.nii.gz')
 
-#ivimfit = ivimmodel.fit(data_slice)
+# ivimfit = ivimmodel.fit(data_slice)
 
 """
 The fit method creates a IvimFit object which contains the
@@ -202,8 +183,8 @@ corresponding to the model parameters according to the following
 order : $\mathbf{S_{0}, f, D^*, D}$.
 """
 
-#ivimparams = ivimfit.model_params
-#print("ivimparams.shape : {}".format(ivimparams.shape))
+# ivimparams = ivimfit.model_params
+# print("ivimparams.shape : {}".format(ivimparams.shape))
 
 """
 As we see, we have a 20x20 slice at the height z = 33. Thus we
@@ -225,8 +206,8 @@ Next, we plot the results relative to the model fit.
 For this we will use the `predict` method of the IvimFit object
 to get the estimated signal.
 """
-#
-#estimated_signal = ivimfit.predict(gtab)[i, j, :]
+
+#estimated_signal = ivim_fit.predict(gtab)[i, j, :]
 #
 #plt.scatter(gtab.bvals, data_slice[i, j, :],
 #            color="green", label="Actual signal")

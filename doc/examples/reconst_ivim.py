@@ -34,7 +34,7 @@ diffusion coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt
-
+import time
 from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
@@ -133,8 +133,10 @@ ivimmodel = IvimModel(gtab)
 """
 To fit the model, call the `fit` method and pass the data for fitting.
 """
-
+t1 = time.time()
 ivimfit = ivimmodel.fit(data_slice)
+t2 = time.time()
+total = t2 - t1
 
 """
 The fit method creates a IvimFit object which contains the

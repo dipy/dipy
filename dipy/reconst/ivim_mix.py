@@ -38,7 +38,7 @@ class IVIMModel(ReconstModel):
 
         """
 
-        self.maxiter = 1000  # maximum no. of iter for differential evolution
+        self.maxiter = 10  # maximum no. of iter for differential evolution
         self.xtol = 1e-8  # Tolerance for termination: nonlinear least square
         self.bvals = bvals
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
@@ -56,14 +56,20 @@ class IVIMModel(ReconstModel):
             D*<0.05 mm^2/s
 
         """
-        bounds = np.array([(0.0051, 0.019), (2 * 10 ** (-6), 0.0029)])
+#        bounds = np.array([(0.0051, 0.019), (2 * 10 ** (-6), 0.0029)])
+        bounds = np.array([(0.0051, 0.019), (10**-4, 0.0029)])
+
+#        res_one = differential_evolution(self.stoc_search_cost, bounds,
+#                                         maxiter=self.maxiter, args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
-                                         maxiter=self.maxiter, args=(data,))
+                                         maxiter=self.maxiter, args=(data,),
+                                         disp=False, polish=True, popsize=5)
         x = res_one.x
         phi = self.Phi(x)
         fe = self.cvx_fit(data, phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
-        bounds = ([0.01, 0.005, 1 * 10 ** (-6)], [0.3, 0.02,  0.003])
+#        bounds = ([0.01, 0.005, 1 * 10 ** (-6)], [0.3, 0.02,  0.003])
+        bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
         res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
@@ -153,14 +159,14 @@ class IVIMModel(ReconstModel):
         # Create four scalar optimization variables.
         fe = cvx.Variable(2)
         # Create four constraints.
-        constraints = [cvx.sum_entries(fe) == 1,
+        constraints = [cvx.sum(fe) == 1,
                        fe[0] >= 0.011,
                        fe[1] >= 0.011,
                        fe[0] <= 0.29,
                        fe[1] <= 0.89]
 
         # Form objective.
-        obj = cvx.Minimize(cvx.sum_entries(cvx.square(phi * fe - signal)))
+        obj = cvx.Minimize(cvx.sum(cvx.square(phi * fe - signal)))
 
         # Form and solve problem.
         prob = cvx.Problem(obj, constraints)
