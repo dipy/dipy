@@ -11,7 +11,7 @@ from dipy.io.streamline import save_trk
 import os.path
 
 from dipy.align.tests.test_parzenhist import setup_random_transform
-from dipy.align.transforms import Transform, regtransforms
+from dipy.align.transforms import regtransforms
 from dipy.io.image import save_nifti
 from dipy.workflows.align import ImageRegistrationFlow
 
@@ -91,19 +91,21 @@ def test_image_registration():
             out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "com_affine.txt")
 
+            image_registeration_flow._force_overwrite = True
             image_registeration_flow.run(static_image_file,
                                          moving_image_file,
                                          transform='com',
                                          out_dir=temp_out_dir,
                                          out_moved=out_moved,
                                          out_affine=out_affine)
-            check_existense(out_moved, out_affine)
+            check_existence(out_moved, out_affine)
 
         def test_translation():
 
             out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "trans_affine.txt")
 
+            image_registeration_flow._force_overwrite = True
             image_registeration_flow.run(static_image_file,
                                          moving_image_file,
                                          transform='trans',
@@ -116,13 +118,14 @@ def test_image_registration():
 
             dist = read_distance('trans_q.txt')
             npt.assert_almost_equal(float(dist), -0.3953547764454917, 1)
-            check_existense(out_moved, out_affine)
+            check_existence(out_moved, out_affine)
 
         def test_rigid():
 
             out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
 
+            image_registeration_flow._force_overwrite = True
             image_registeration_flow.run(static_image_file,
                                          moving_image_file,
                                          transform='rigid',
@@ -135,13 +138,14 @@ def test_image_registration():
 
             dist = read_distance('rigid_q.txt')
             npt.assert_almost_equal(dist, -0.6900534794005155, 1)
-            check_existense(out_moved, out_affine)
+            check_existence(out_moved, out_affine)
 
         def test_affine():
 
             out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "affine_affine.txt")
 
+            image_registeration_flow._force_overwrite = True
             image_registeration_flow.run(static_image_file,
                                          moving_image_file,
                                          transform='affine',
@@ -154,23 +158,23 @@ def test_image_registration():
 
             dist = read_distance('affine_q.txt')
             npt.assert_almost_equal(dist, -0.7670650775914811, 1)
-            check_existense(out_moved, out_affine)
+            check_existence(out_moved, out_affine)
 
         # Creating the erroneous behavior
         def test_err():
-
+            image_registeration_flow._force_overwrite = True
             npt.assert_raises(ValueError, image_registeration_flow.run,
                               static_image_file,
                               moving_image_file,
                               transform='notransform')
 
+            image_registeration_flow._force_overwrite = True
             npt.assert_raises(ValueError, image_registeration_flow.run,
                               static_image_file,
                               moving_image_file,
                               metric='wrong_metric')
 
-
-        def check_existense(movedfile, affine_mat_file):
+        def check_existence(movedfile, affine_mat_file):
             assert os.path.exists(movedfile)
             assert os.path.exists(affine_mat_file)
             return True
