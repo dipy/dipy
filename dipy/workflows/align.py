@@ -14,7 +14,7 @@ from dipy.align.imaffine import transform_centers_of_mass, \
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_quality_assur_metric
+    save_qa_metric
 
 
 class ResliceFlow(Workflow):
@@ -480,6 +480,10 @@ class ImageRegistrationFlow(Workflow):
             raise ValueError('Dimension mismatch: The input images must '
                              'have same number of dimensions.')
 
+        if len(static.shape) > 3 and len(moving.shape) > 3:
+            raise ValueError('Dimension mismatch: One of the input should '
+                             'be 2D or 3D dimensions.')
+
     @staticmethod
     def check_metric(metric):
         """
@@ -646,7 +650,7 @@ class ImageRegistrationFlow(Workflow):
                 logging.info("Similarity metric: {0}".format(str(fopt)))
 
                 if save_metric:
-                    save_quality_assur_metric(qual_val_file, xopt, fopt)
+                    save_qa_metric(qual_val_file, xopt, fopt)
 
             save_nifti(moved_file, moved_image, static_grid2world)
             save_affine_matrix(affine_matrix_file, affine)
