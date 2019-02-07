@@ -28,21 +28,24 @@ def save_nifti(fname, data, affine, hdr=None):
 
 
 def save_affine_matrix(fname, affine):
-    """
+    """Save Affive matrix.
+
     Parameters
-    ---------
+    ----------
     fname : string
         File name to save the affine matrix.
     affine : numpy array
         The object containing the affine matrix.
+
     """
     np.savetxt(fname, affine)
 
 
-def save_quality_assur_metric(fname, xopt, fopt):
-    """
+def save_qa_metric(fname, xopt, fopt):
+    """Save Quality Assurance metrics.
+
     Parameters
-    __________
+    ----------
     fname: string
         File name to save the metric values.
     xopt: numpy array
@@ -51,6 +54,7 @@ def save_quality_assur_metric(fname, xopt, fopt):
         image registration.
     fopt: int
         The distance between the registered images.
+
     """
     np.savetxt(fname, xopt, header="Optimal Parameter metric")
     with open(fname, 'a') as f:

@@ -955,13 +955,13 @@ class AffineRegistration(object):
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
                  starting_affine=None, ret_metric=False):
-        r''' Starts the optimization process
+        r""" Starts the optimization process
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -1007,7 +1007,7 @@ class AffineRegistration(object):
             the optimal parameters (translation, rotation shear etc.)
         fopt : Similarity metric
             the value of the function at the optimal parameters.
-        '''
+        """
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
                              starting_affine)

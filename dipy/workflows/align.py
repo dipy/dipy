@@ -11,8 +11,8 @@ import nibabel as nib
 from dipy.align.reslice import reslice
 from dipy.align.imaffine import transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
-from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
-    AffineTransform3D
+from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
+                                   AffineTransform3D)
 from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
     save_quality_assur_metric
 
@@ -271,7 +271,7 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
         static_grid2world : array, shape (dim+1, dim+1), optional
@@ -279,7 +279,7 @@ class ImageRegistrationFlow(Workflow):
             image. The default is None, implying the transform is the
             identity.
 
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -309,7 +309,7 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
         static_grid2world : array, shape (dim+1, dim+1), optional
@@ -317,7 +317,7 @@ class ImageRegistrationFlow(Workflow):
             image. The default is None, implying the transform is the
             identity.
 
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D  array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -354,7 +354,7 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
         static_grid2world : array, shape (dim+1, dim+1), optional
@@ -362,7 +362,7 @@ class ImageRegistrationFlow(Workflow):
             image. The default is None, implying the transform is the
             identity.
 
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -410,7 +410,7 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
         static_grid2world : array, shape (dim+1, dim+1), optional
@@ -418,7 +418,7 @@ class ImageRegistrationFlow(Workflow):
             image. The default is None, implying the transform is the
             identity.
 
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -465,10 +465,10 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
-        moving: array, shape (S', R', C') or (R', C')
+        moving: 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -642,8 +642,8 @@ class ImageRegistrationFlow(Workflow):
                 Saving the moved image file and the affine matrix.
                 """
 
-                logging.info("Optimal parameters:"+str(xopt))
-                logging.info("Similarity metric:"+str(fopt))
+                logging.info("Optimal parameters: {0}".format(str(xopt)))
+                logging.info("Similarity metric: {0}".format(str(fopt)))
 
                 if save_metric:
                     save_quality_assur_metric(qual_val_file, xopt, fopt)
