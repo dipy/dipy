@@ -5,10 +5,11 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-from nose.tools import assert_true, assert_equal
 import numpy.testing as npt
+from numpy.testing import assert_equal
+from dipy.testing import assert_true
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
 from dipy.workflows.reconst import ReconstDkiFlow
@@ -16,7 +17,7 @@ from dipy.workflows.reconst import ReconstDkiFlow
 
 def test_reconst_dki():
     with TemporaryDirectory() as out_dir:
-        data_path, bval_path, bvec_path = get_data('small_101D')
+        data_path, bval_path, bvec_path = get_fnames('small_101D')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
         mask = np.ones_like(volume[:, :, :, 0])
@@ -102,7 +103,7 @@ def test_reconst_dki():
         dki_flow._force_overwrite = True
         npt.assert_warns(UserWarning, dki_flow.run, data_path,
                          tmp_bval_path, tmp_bvec_path, mask_path,
-                         out_dir=out_dir)
+                         out_dir=out_dir, b0_threshold=0)
 
 
 if __name__ == '__main__':

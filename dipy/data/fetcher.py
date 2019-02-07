@@ -52,10 +52,11 @@ def update_progressbar(progress, total_length):
     """
     # Try to set the bar_length according to the console size
     try:
-        columns = os.popen('tput cols', 'r').read()
-        bar_length = int(columns) - 46
-        if(not (bar_length > 1)):
-            bar_length = 20
+        with os.popen('tput cols', 'r') as f:
+            columns = f.read()
+            bar_length = int(columns) - 46
+            if(not (bar_length > 1)):
+                bar_length = 20
     except Exception:
         # Default value if determination of console size fails
         bar_length = 20
@@ -422,10 +423,10 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_bundle_atlas_hcp842",
     pjoin(dipy_home, 'bundle_atlas_hcp842'),
     'https://ndownloader.figshare.com/files/',
-    ['11921522'],
-    ['Atlas_in_MNI_Space_16_bundles.zip'],
-    ['b071f3e851f21ba1749c02fc6beb3118'],
-    doc="Download atlas tractogram from the hcp842 dataset with its bundles",
+    ['13638644'],
+    ['Atlas_80_Bundles.zip'],
+    ['78331d527a10ec000d4f33bac472e099'],
+    doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
     data_size="200MB",
     unzip=True)
 
@@ -802,7 +803,7 @@ mni_notes = \
             Unbiased nonlinear average age-appropriate brain templates from
             birth to adulthood, NeuroImage, 47:S102
             Organization for Human Brain Mapping 2009 Annual Meeting,
-            DOI: http://dx.doi.org/10.1016/S1053-8119(09)70884-5
+            DOI: https://doi.org/10.1016/S1053-8119(09)70884-5
 
     License for the MNI templates:
     -----------------------------
@@ -1092,7 +1093,7 @@ def read_ivim():
     fbval = pjoin(folder, 'ivim.bval')
     fbvec = pjoin(folder, 'ivim.bvec')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
     img = nib.load(fraw)
     return img, gtab
 
@@ -1142,20 +1143,20 @@ def get_bundle_atlas_hcp842():
     """
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   '*.trk')
 
     return file1, file2
 
 
-def get_two_hcp842_bundle():
+def get_two_hcp842_bundles():
     """
     Returns
     -------
@@ -1164,13 +1165,13 @@ def get_two_hcp842_bundle():
     """
     file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   'AF_L.trk')
 
     file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
-                  'Atlas_in_MNI_Space_16_bundles',
+                  'Atlas_80_Bundles',
                   'bundles',
                   'CST_L.trk')
 

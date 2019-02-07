@@ -44,7 +44,7 @@ matrix:
     - python: 2.7
       env:
         - DEPENDS="$DEPENDS scikit_learn"
-    - python: 3.5
+    - python: 3.6
       env:
         - COVERAGE=1
         - DEPENDS="$DEPENDS scikit_learn"
@@ -75,12 +75,12 @@ matrix:
       env:
         - INSTALL_TYPE=requirements
         - DEPENDS=""
-    - python: 3.5
+    - python: 3.6
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
   allow_failures:
-    - python: 3.5
+    - python: 3.6
       env:
         - USE_PRE=1
 
@@ -95,7 +95,8 @@ before_install:
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
     - $PIPI --upgrade pip setuptools
-    - $PIPI nose;
+    # We need nose for numpy.testing<=1.15
+    - $PIPI pytest nose;
     - $PIPI numpy;
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
@@ -130,13 +131,15 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_testing
     - cd for_testing
+    # We need the setup.cfg for the pytest settings
+    - cp ../setup.cfg .
     # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
     - 'echo "backend : agg" > matplotlibrc'
     - if [ "${COVERAGE}" == "1" ]; then
       cp ../.coveragerc .;
       cp ../.codecov.yml .;
-      COVER_ARGS="--with-coverage --cover-package dipy";
+      COVER_CMD="coverage run -m ";
       fi
-    - nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi

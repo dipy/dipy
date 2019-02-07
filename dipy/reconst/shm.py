@@ -902,12 +902,12 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
 
     """
 
-    if basis_type == 'fibernav':
+    if basis_type == "fibernav":
         warnings.warn("sh basis type `fibernav` is deprecated as of version" +
                       " 0.15 of DIPY and will be removed in a future " +
                       "version. Please use `descoteaux07` instead",
                       DeprecationWarning)
-    elif basis_type == 'mrtrix':
+    if basis_type == "mrtrix":
         warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
                       " 0.15 of DIPY and will be removed in a future " +
                       "version. Please use `tournier07` instead",

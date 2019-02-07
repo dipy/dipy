@@ -4,8 +4,9 @@ import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
-                           assert_array_equal, assert_warns)
-from dipy.data import get_sphere, get_data, default_sphere, small_sphere
+                           assert_array_equal)
+from dipy.testing import assert_greater
+from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
                              multi_tensor_odf,
@@ -31,6 +32,7 @@ from dipy.core.geometry import cart2sphere
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import fractional_anisotropy
 from dipy.core.sphere import Sphere
+from dipy.io.gradients import read_bvals_bvecs
 
 
 def test_recursive_response_calibration():
@@ -40,10 +42,9 @@ def test_recursive_response_calibration():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     sphere = get_sphere('symmetric724')
 
     gtab = gradient_table(bvals, bvecs)
@@ -55,8 +56,8 @@ def test_recursive_response_calibration():
 
     where_dwi = lazy_index(~gtab.b0s_mask)
 
-    S_cross, sticks_cross = multi_tensor(gtab, mevals, S0, angles=angles,
-                                         fractions=[50, 50], snr=SNR)
+    S_cross, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                              fractions=[50, 50], snr=SNR)
 
     S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
 
@@ -109,9 +110,8 @@ def test_recursive_response_calibration():
 
 
 def test_auto_response():
-    fdata, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    fdata, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = nib.load(fdata).get_data()
 
     gtab = gradient_table(bvals, bvecs)
@@ -127,35 +127,36 @@ def test_auto_response():
     defined_functions = [test_fa_superior, test_fa_inferior]
 
     for fa_thr in np.arange(0.1, 1, 0.1):
-        for predefined, defined in zip(predefined_functions, defined_functions):
-            response_predefined, ratio_predefined, nvoxels_predefined = auto_response(
-                gtab,
-                data,
-                roi_center=None,
-                roi_radius=radius,
-                fa_callable=predefined,
-                fa_thr=fa_thr,
-                return_number_of_voxels=True)
+        for predefined, defined in \
+          zip(predefined_functions, defined_functions):
+            response_predefined, ratio_predefined, nvoxels_predefined = \
+                auto_response(gtab,
+                              data,
+                              roi_center=None,
+                              roi_radius=radius,
+                              fa_callable=predefined,
+                              fa_thr=fa_thr,
+                              return_number_of_voxels=True)
 
-            response_defined, ratio_defined, nvoxels_defined = auto_response(
-                gtab,
-                data,
-                roi_center=None,
-                roi_radius=radius,
-                fa_callable=defined,
-                fa_thr=fa_thr,
-                return_number_of_voxels=True)
+            response_defined, ratio_defined, nvoxels_defined = \
+                auto_response(gtab,
+                              data,
+                              roi_center=None,
+                              roi_radius=radius,
+                              fa_callable=defined,
+                              fa_thr=fa_thr,
+                              return_number_of_voxels=True)
 
             assert_equal(nvoxels_predefined, nvoxels_defined)
-            assert_array_almost_equal(response_predefined[0], response_defined[0])
+            assert_array_almost_equal(response_predefined[0],
+                                      response_defined[0])
             assert_almost_equal(response_predefined[1], response_defined[1])
             assert_almost_equal(ratio_predefined, ratio_defined)
 
 
 def test_response_from_mask():
-    fdata, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    fdata, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = nib.load(fdata).get_data()
 
     gtab = gradient_table(bvals, bvecs)
@@ -193,11 +194,10 @@ def test_csdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs, b0_threshold=0)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
@@ -223,11 +223,17 @@ def test_csdeconv():
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
 
-    assert_warns(UserWarning, ConstrainedSphericalDeconvModel, gtab, response, sh_order=10)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
+        _ = ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
+        assert_greater(len([lw for lw in w if issubclass(lw.category,
+                                                         UserWarning)]), 0)
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
-        assert_equal(len([local_warn for local_warn in w if issubclass(local_warn.category, UserWarning)]) > 0, False)
+        assert_equal(len([lw for lw in w if issubclass(lw.category,
+                                                       UserWarning)]), 0)
 
     mevecs = []
     for s in sticks:
@@ -260,16 +266,15 @@ def test_odfdeconv():
     SNR = 100
     S0 = 1
 
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
     angles = [(0, 0), (90, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric362')
 
@@ -311,22 +316,21 @@ def test_odfdeconv():
     odf_sh = np.zeros_like(fodf)
     odf_sh[1] = np.nan
 
-    fodf, it = odf_deconv(odf_sh, csd.R, csd.B_reg)
+    fodf, _ = odf_deconv(odf_sh, csd.R, csd.B_reg)
     assert_array_equal(fodf, np.zeros_like(fodf))
 
 
 def test_odf_sh_to_sharp():
     SNR = None
     S0 = 1
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
+                        fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric724')
 
@@ -355,7 +359,7 @@ def test_odf_sh_to_sharp():
 
 
 def test_forward_sdeconv_mat():
-    m, n = sph_harm_ind_list(4)
+    _, n = sph_harm_ind_list(4)
     mat = forward_sdeconv_mat(np.array([0, 2, 4]), n)
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
@@ -378,10 +382,9 @@ def test_r2_term_odf_sharp():
     S0 = 1
     angle = 45  # 45 degrees is a very tight angle to disentangle
 
-    _, fbvals, fbvecs = get_data('small_64D')  # get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')  # get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     sphere = get_sphere('symmetric724')
     gtab = gradient_table(bvals, bvecs)
@@ -390,8 +393,8 @@ def test_r2_term_odf_sharp():
 
     angles = [(0, 0), (angle, 0)]
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
@@ -424,15 +427,14 @@ def test_csd_predict():
     """
     SNR = 100
     S0 = 1
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angles = [(0, 0), (60, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
-                             fractions=[50, 50], snr=SNR)
+    S, _ = multi_tensor(gtab, mevals, S0, angles=angles,
+                        fractions=[50, 50], snr=SNR)
     sphere = small_sphere
     multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
@@ -476,9 +478,8 @@ def test_csd_predict_multi():
 
     """
     S0 = 123.
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
     csd = ConstrainedSphericalDeconvModel(gtab, response)
@@ -495,10 +496,9 @@ def test_csd_predict_multi():
 def test_sphere_scaling_csdmodel():
     """Check that mirroring regularization sphere does not change the result of
     the model"""
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -506,8 +506,8 @@ def test_sphere_scaling_csdmodel():
 
     angles = [(0, 0), (60, 0)]
 
-    S, sticks = multi_tensor(gtab, mevals, 100., angles=angles,
-                             fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, 100., angles=angles,
+                        fractions=[50, 50], snr=None)
 
     hemi = small_sphere
     sphere = hemi.mirror()
@@ -533,27 +533,27 @@ def test_default_lambda_csdmodel():
     sphere = default_sphere
 
     # Create gradient table
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
     # Some response function
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
 
-    for sh_order, expected in expected_lambda.items():
-        model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                     sh_order=sh_order,
-                                                     reg_sphere=sphere)
-        B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
-        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
+    with warnings.catch_warnings():
+        for sh_order, expected in expected_lambda.items():
+            model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                         sh_order=sh_order,
+                                                         reg_sphere=sphere)
+            B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta,
+                                            sphere.phi)
+            npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
 def test_csd_superres():
     """ Check the quality of csdfit with high SH order. """
-    _, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
 
     # img, gtab = read_stanford_hardi()
@@ -578,4 +578,5 @@ def test_csd_superres():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    # run_module_suite()
+    test_csdeconv()

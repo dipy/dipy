@@ -14,7 +14,7 @@ References
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
-                           assert_warns, dec)
+                           dec)
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -31,7 +31,7 @@ bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
                   500., 600., 700., 800., 900., 1000.])
 N = len(bvals)
 bvecs = generate_bvecs(N)
-gtab = gradient_table(bvals, bvecs.T)
+gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
 
 S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
 # params for a single voxel
@@ -65,7 +65,7 @@ bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
                         500., 600., 700., 800., 900., 1000.])
 
 bvecs_no_b0 = generate_bvecs(N)
-gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T)
+gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
 bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
                                    120., 140., 160., 180., 200., 300., 400.,
@@ -73,10 +73,12 @@ bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
 
 bvecs_with_multiple_b0 = generate_bvecs(N)
 gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
-                                       bvecs_with_multiple_b0.T)
+                                       bvecs_with_multiple_b0.T,
+                                       b0_threshold=0)
 
 noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
-                         4439.36816406, 4420.06201172, 4152.30078125, 4114.34912109, 4104.59375, 4151.61914062,
+                         4439.36816406, 4420.06201172, 4152.30078125,
+                         4114.34912109, 4104.59375, 4151.61914062,
                          4003.58374023, 4013.68408203, 3906.39428711,
                          3909.06079102, 3495.27197266, 3402.57006836,
                          3163.10180664, 2896.04003906, 2663.7253418,
@@ -198,6 +200,23 @@ def test_with_higher_S0():
     assert_array_equal(est_signal.shape, data_single2.shape)
     assert_array_almost_equal(est_signal, data_single2)
     assert_array_almost_equal(ivim_fit.model_params, params2)
+
+
+def test_b0_threshold_greater_than0():
+    """
+    Added test case for default b0_threshold set to 50.
+    Checks if error is thrown correctly.
+    """
+    bvals_b0t = np.array([50., 10., 20., 30., 40., 60., 80., 100.,
+                          120., 140., 160., 180., 200., 300., 400.,
+                          500., 600., 700., 800., 900., 1000.])
+    N = len(bvals_b0t)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals_b0t, bvecs.T)
+    with assert_raises(ValueError) as vae:
+        _ = IvimModel(gtab)
+        b0_s = "The IVIM model requires a measurement at b==0. As of "
+        assert b0_s in vae.exception
 
 
 def test_bounds_x0():

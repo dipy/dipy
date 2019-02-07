@@ -199,7 +199,7 @@ class DiffeomorphicMap(object):
         self.backward = None
 
     def interpret_matrix(self, obj):
-        ''' Try to interpret `obj` as a matrix
+        """ Try to interpret `obj` as a matrix
 
         Some operations are performed faster if we know in advance if a matrix
         is the identity (so we can skip the actual matrix-vector
@@ -217,7 +217,7 @@ class DiffeomorphicMap(object):
         obj : object
             the same object given as argument if `obj` is None or a numpy
             array. None if `obj` is the 'identity' string.
-        '''
+        """
         if (obj is None) or isinstance(obj, np.ndarray):
             return obj
         if isinstance(obj, str) and (obj == 'identity'):

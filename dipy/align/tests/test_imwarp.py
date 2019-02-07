@@ -5,7 +5,7 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.align import floating
 from dipy.align import imwarp as imwarp
 from dipy.align import metrics as metrics
@@ -370,13 +370,13 @@ def simple_callback(sdr, status):
 
 
 def test_ssd_2d_demons():
-    r''' Test 2D SyN with SSD metric, demons-like optimizer
+    r""" Test 2D SyN with SSD metric, demons-like optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
-    '''
-    fname_moving = get_data('reg_o')
-    fname_static = get_data('reg_c')
+    """
+    fname_moving = get_fnames('reg_o')
+    fname_static = get_fnames('reg_c')
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -439,13 +439,13 @@ def test_ssd_2d_demons():
 
 
 def test_ssd_2d_gauss_newton():
-    r''' Test 2D SyN with SSD metric, Gauss-Newton optimizer
+    r""" Test 2D SyN with SSD metric, Gauss-Newton optimizer
 
     Classical Circle-To-C experiment for 2D monomodal registration. We
     verify that the final registration is of good quality.
-    '''
-    fname_moving = get_data('reg_o')
-    fname_static = get_data('reg_c')
+    """
+    fname_moving = get_fnames('reg_o')
+    fname_static = get_fnames('reg_c')
 
     moving = np.load(fname_moving)
     static = np.load(fname_static)
@@ -563,7 +563,7 @@ def get_warped_stacked_image(image, nslices, b, m):
 
 def get_synthetic_warped_circle(nslices):
     # get a subsampled circle
-    fname_cicle = get_data('reg_o')
+    fname_cicle = get_fnames('reg_o')
     circle = np.load(fname_cicle)[::4, ::4].astype(floating)
 
     # create a synthetic invertible map and warp the circle
@@ -595,12 +595,12 @@ def get_synthetic_warped_circle(nslices):
 
 
 def test_ssd_3d_demons():
-    r''' Test 3D SyN with SSD metric, demons-like optimizer
+    r""" Test 3D SyN with SSD metric, demons-like optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
     is of good quality.
-    '''
+    """
     moving, static = get_synthetic_warped_circle(30)
     moving[..., :8] = 0
     moving[..., -1:-9:-1] = 0
@@ -642,12 +642,12 @@ def test_ssd_3d_demons():
 
 
 def test_ssd_3d_gauss_newton():
-    r''' Test 3D SyN with SSD metric, Gauss-Newton optimizer
+    r""" Test 3D SyN with SSD metric, Gauss-Newton optimizer
 
     Register a stack of circles ('cylinder') before and after warping them
     with a synthetic diffeomorphism. We verify that the final registration
     is of good quality.
-    '''
+    """
     moving, static = get_synthetic_warped_circle(35)
     moving[..., :10] = 0
     moving[..., -1:-11:-1] = 0
@@ -689,13 +689,13 @@ def test_ssd_3d_gauss_newton():
 
 
 def test_cc_2d():
-    r''' Test 2D SyN with CC metric
+    r""" Test 2D SyN with CC metric
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
-    fname = get_data('t1_coronal_slice')
+    """
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4
@@ -725,14 +725,14 @@ def test_cc_2d():
 
 
 def test_cc_3d():
-    r''' Test 3D SyN with CC metric
+    r""" Test 3D SyN with CC metric
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
-    fname = get_data('t1_coronal_slice')
+    """
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -775,14 +775,14 @@ def test_cc_3d():
 
 
 def test_em_3d_gauss_newton():
-    r''' Test 3D SyN with EM metric, Gauss-Newton optimizer
+    r""" Test 3D SyN with EM metric, Gauss-Newton optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
-    fname = get_data('t1_coronal_slice')
+    """
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -828,14 +828,14 @@ def test_em_3d_gauss_newton():
 
 
 def test_em_2d_gauss_newton():
-    r''' Test 2D SyN with EM metric, Gauss-Newton optimizer
+    r""" Test 2D SyN with EM metric, Gauss-Newton optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
+    """
 
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4
@@ -869,14 +869,14 @@ def test_em_2d_gauss_newton():
 
 
 def test_em_3d_demons():
-    r''' Test 3D SyN with EM metric, demons-like optimizer
+    r""" Test 3D SyN with EM metric, demons-like optimizer
 
     Register a volume created by stacking copies of a coronal slice from
     a T1w brain MRI before and after warping it under a synthetic
     invertible map. We verify that the final registration is of good
     quality.
-    '''
-    fname = get_data('t1_coronal_slice')
+    """
+    fname = get_fnames('t1_coronal_slice')
     nslices = 21
     b = 0.1
     m = 4
@@ -922,13 +922,13 @@ def test_em_3d_demons():
 
 
 def test_em_2d_demons():
-    r''' Test 2D SyN with EM metric, demons-like optimizer
+    r""" Test 2D SyN with EM metric, demons-like optimizer
 
     Register a coronal slice from a T1w brain MRI before and after warping
     it under a synthetic invertible map. We verify that the final
     registration is of good quality.
-    '''
-    fname = get_data('t1_coronal_slice')
+    """
+    fname = get_fnames('t1_coronal_slice')
     nslices = 1
     b = 0.1
     m = 4

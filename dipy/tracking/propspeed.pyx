@@ -30,7 +30,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
                          cnp.npy_intp *strides,
                          int lenind,
                          int typesize) nogil:
-    ''' Access any element of any ndimensional numpy array using cython.
+    """ Access any element of any ndimensional numpy array using cython.
 
     Parameters
     ------------
@@ -45,7 +45,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     ----------
     offset : integer
         Element position in array
-    '''
+    """
     cdef int i
     cdef cnp.npy_intp summ = 0
     for i from 0 <= i < lenind:
@@ -58,7 +58,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
                    cnp.ndarray[cnp.npy_intp, ndim=1] strides,
                    int lenind,
                    int typesize):
-    ''' Find offset in an N-dimensional ndarray using strides
+    """ Find offset in an N-dimensional ndarray using strides
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
     4
     >>> A.ravel()[4]==A[1,1]
     True
-    '''
+    """
     if not cnp.PyArray_CHKFLAGS(indices, cnp.NPY_C_CONTIGUOUS):
         raise ValueError(u"indices is not C contiguous")
     if not cnp.PyArray_CHKFLAGS(strides, cnp.NPY_C_CONTIGUOUS):
@@ -105,7 +105,7 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
                                   cnp.ndarray[cnp.npy_intp, ndim=1] data_strides,
                                   cnp.npy_intp len_points,
                                   cnp.ndarray[double, ndim=1] result):
-    ''' Trilinear interpolation (isotropic voxel size)
+    """ Trilinear interpolation (isotropic voxel size)
 
     Has similar behavior to ``map_coordinates`` from ``scipy.ndimage``
 
@@ -129,10 +129,12 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
     Notes
     -----
     The output array `result` is filled in-place.
-    '''
+    """
     cdef:
-        double w[8], values[24]
-        cnp.npy_intp index[24], off, i, j
+        double w[8]
+        double values[24]
+        cnp.npy_intp index[24]
+        cnp.npy_intp off, i, j
         double *ds=<double *> cnp.PyArray_DATA(data)
         double *ps=<double *> cnp.PyArray_DATA(points)
         cnp.npy_intp *strides = <cnp.npy_intp *> cnp.PyArray_DATA(data_strides)
@@ -163,14 +165,17 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
 cdef void _trilinear_interpolation_iso(double *X,
                                        double *W,
                                        cnp.npy_intp *IN) nogil:
-    ''' Interpolate in 3d volumes given point X
+    """ Interpolate in 3d volumes given point X
 
     Returns
     -------
     W : weights
     IN : indices of the volume
-    '''
-    cdef double Xf[3], d[3], nd[3]
+    """
+
+    cdef double Xf[3]
+    cdef double d[3]
+    cdef double nd[3]
     cdef cnp.npy_intp i
     # define the rectangular box where every corner is a neighboring voxel
     # (assuming center) !!! this needs to change for the affine case
@@ -212,7 +217,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
                                      double *odf_vertices,
                                      double qa_thr, double ang_thr,
                                      double *direction) nogil:
-    ''' Give the nearest direction to a point, checking threshold and angle
+    """ Give the nearest direction to a point, checking threshold and angle
 
     Parameters
     ------------
@@ -238,7 +243,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
     delta : bool
         Delta funtion: if 1 we give it weighting, if it is 0 we don't give any
         weighting.
-    '''
+    """
     cdef:
         double max_dot = 0
         double angl,curr_dot
@@ -303,8 +308,11 @@ cdef cnp.npy_intp _propagation_direction(double *point,
         double total_w = 0 # total weighting useful for interpolation
         double delta = 0 # store delta function (stopping function) result
         double new_direction[3] # new propagation direction
-        double w[8], qa_tmp[PEAK_NO], ind_tmp[PEAK_NO]
-        cnp.npy_intp index[24], xyz[4]
+        double w[8]
+        double qa_tmp[PEAK_NO]
+        double ind_tmp[PEAK_NO]
+        cnp.npy_intp index[24]
+        cnp.npy_intp xyz[4]
         cnp.npy_intp i, j, m
         double normd
         # number of allowed peaks e.g. for fa is 1 for gqi.qa is 5
@@ -364,10 +372,11 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
                                      cnp.npy_intp* strides,
                                      cnp.npy_intp ref,
                                      double* direction) nogil:
-    ''' First direction that we get from a seeding point
-    '''
+    """ First direction that we get from a seeding point
+    """
     cdef:
-        cnp.npy_intp point[4],off
+        cnp.npy_intp point[4]
+        cnp.npy_intp off
         cnp.npy_intp i
         double qa_tmp,ind_tmp
     # Very tricky/cool addition/flooring that helps create a valid neighborhood
@@ -400,7 +409,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
                          double step_sz,
                          double total_weight,
                          cnp.npy_intp max_points):
-    '''
+    """
     Parameters
     ------------
     seed : array, float64 shape (3,)
@@ -424,7 +433,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
     Returns
     -------
     track : array, shape (N,3)
-    '''
+    """
     cdef:
         double *ps = <double *> cnp.PyArray_DATA(seed)
         double *pqa = <double*> cnp.PyArray_DATA(qa)
@@ -434,7 +443,10 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
         cnp.npy_intp *qa_shape = <cnp.npy_intp *> qa.shape
         cnp.npy_intp *pvstr = <cnp.npy_intp *> odf_vertices.strides
         cnp.npy_intp d, i, j, cnt
-        double direction[3], dx[3], idirection[3], ps2[3]
+        double direction[3]
+        double dx[3]
+        double idirection[3]
+        double ps2[3]
         double tmp, ftmp
     if not cnp.PyArray_CHKFLAGS(seed, cnp.NPY_C_CONTIGUOUS):
         raise ValueError(u"seed is not C contiguous")

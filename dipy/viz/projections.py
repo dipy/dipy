@@ -9,7 +9,7 @@ import numpy as np
 import scipy.interpolate as interp
 from dipy.utils.optpkg import optional_package
 import dipy.core.geometry as geo
-from dipy.testing import doctest_skip_parser
+from dipy.testing.decorators import doctest_skip_parser
 
 matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
@@ -76,7 +76,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     # Rotate the coordinate system so that you are looking from the north pole:
     verts_rot = np.array(
-        np.dot(np.matrix([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
+        np.dot(np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
 
     # To get the orthographic projection, when the first coordinate is
     # positive:

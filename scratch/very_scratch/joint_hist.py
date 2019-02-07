@@ -10,7 +10,8 @@ from dipy.core import geometry as gm
 import pylab
 
 def affine_transform2d(I,M):
-    ''' Inspired by the work of Alexis Roche and the independent work of D. Kroon
+    """ Inspired by the work of Alexis Roche and the independent work of
+    D. Kroon
 
     Parameters
     ----------
@@ -23,7 +24,7 @@ def affine_transform2d(I,M):
     -------
     Iout: array, shape(N,M), transformed image
       
-    '''
+    """
     #the transpose is for contiguous C arrays (default)
     #I=I.T
     
@@ -91,7 +92,7 @@ def affine_transform2d(I,M):
 
 
 def joint_histogram(A,B,binA,binB):
-    ''' Calculate joint histogram and individual histograms for A and B
+    """ Calculate joint histogram and individual histograms for A and B
     ndarrays
 
     Parameters
@@ -113,7 +114,7 @@ def joint_histogram(A,B,binA,binB):
     >>> bin_B=np.array([-np.Inf,.1,.35,.75,np.Inf])
     >>> JH,HA,HB=joint_histogram(A,B,bin_A,bin_B)
     
-    '''    
+    """
 
     A=A.ravel()
     B=B.ravel()
@@ -143,8 +144,8 @@ def joint_histogram(A,B,binA,binB):
 
 
 def mutual_information(A,B,binA,binB):
-    ''' Calculate mutual information for A and B
-    '''
+    """ Calculate mutual information for A and B
+    """
     JH,HA,HB=joint_histogram(A,B,binA,binB)
     N=float(len(A.ravel()))    
     MI=np.zeros(JH.shape)
@@ -161,8 +162,8 @@ def mutual_information(A,B,binA,binB):
 
     
 def apply_mapping(A,T,order=0,map_type='affine2d'):
-    ''' Apply mapping
-    '''
+    """ Apply mapping
+    """
     
     if map_type=='affine2d':
 
@@ -185,24 +186,24 @@ def apply_mapping(A,T,order=0,map_type='affine2d'):
             sc1,sc2,sch1,sch2=(1,1,0,0)            
         
         #translation
-        TC=np.matrix([[1,0,tc1],
-                      [0,1,tc2],
-                      [0,0,  1]])
+        TC = np.array([[1, 0, tc1],
+                      [0, 1, tc2],
+                      [0, 0,  1]])
 
         #scaling
-        SC=np.matrix([[sc1,  0,   0],
+        SC = np.array([[sc1,  0,   0],
                       [0,  sc2,   0],
                       [0,    0,   1]])
 
         #rotation
-        RC=np.matrix([[cos(rc), sin(rc), 0],
+        RC = np.array([[cos(rc), sin(rc), 0],
                       [-sin(rc), cos(rc), 0],
                       [0      ,       0, 1]])
         
         #shear        
-        SHC=np.matrix([[1,   sch1,0],
-                       [sch2,   1,0],
-                       [0,      0,1]])            
+        SHC = np.array([[1,   sch1, 0],
+                       [sch2,   1, 0],
+                       [0,      0, 1]])
         
         
         #apply
@@ -225,8 +226,8 @@ def apply_mapping(A,T,order=0,map_type='affine2d'):
 
 
 def objective_mi(T,A,B,binA,binB,order=0,map_type='affine2d'):
-    ''' Objective function for mutual information
-    '''
+    """ Objective function for mutual information
+    """
     AT=apply_mapping(A,T,order=0,map_type=map_type)
     #AT=np.round(AT)
 
@@ -269,10 +270,10 @@ def objective_sd(T,A,B,order=0,map_type='affine2d'):
 
 
 def register(A,B,guess,metric='sd',binA=None,binB=None,xtol=0.1,ftol=0.01,order=0,map_type='affine2d'):
-    ''' Register source A to target B using modified powell's method
+    """ Register source A to target B using modified powell's method
 
     Powell's method tries to minimize the objective function
-    '''
+    """
     if metric=='mi':
         finalT=fmin_powell(objective_mi,x0=guess,args=(A,B,binA,binB,order,map_type),xtol=xtol,ftol=ftol)
         #finalT=leastsq(func=objective_mi,x0=np.array(guess),args=(A,B,binA,binB,order,map_type))
@@ -297,7 +298,7 @@ def evaluate(A,B,guess,metric='sd',binA=None,binB=None,xtol=0.1,ftol=0.01,order=
 
     T_final=[]
 
-    '''
+    """
     for c1 in tc1:
         for c2 in tc2:
             for s1 in sc1:
@@ -308,7 +309,7 @@ def evaluate(A,B,guess,metric='sd',binA=None,binB=None,xtol=0.1,ftol=0.01,order=
                         if f<f_min:
                             f_min=f
                             T_final=T
-    '''
+    """
 
     for c1 in tc1:
         for c2 in tc2:

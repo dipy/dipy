@@ -17,7 +17,6 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.vox2track import _voxel2streamline
 import dipy.data as dpd
 import dipy.core.optimize as opt
-from dipy.testing import setup_test
 
 
 def gradient(f):
@@ -136,7 +135,7 @@ def grad_tensor(grad, evals):
 
     """
     # This is the rotation matrix from [1, 0, 0] to this gradient of the sl:
-    R = la.svd(np.matrix(grad), overwrite_a=True)[2]
+    R = la.svd([grad], overwrite_a=True)[2]
     # This is the 3 by 3 tensor after rotation:
     T = np.dot(np.dot(R, np.diag(evals)), R.T)
     return T

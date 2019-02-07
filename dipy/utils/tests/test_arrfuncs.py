@@ -7,10 +7,9 @@ import numpy as np
 
 from dipy.utils.arrfuncs import as_native_array, pinv, eigh
 
-from numpy.testing import (assert_array_almost_equal,
-                           assert_array_equal)
-
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
+from numpy.testing import (assert_array_almost_equal, assert_equal,
+                           assert_array_equal, assert_raises)
+from dipy.testing import assert_true, assert_false
 
 NATIVE_ORDER = '<' if sys.byteorder == 'little' else '>'
 SWAPPED_ORDER = '>' if sys.byteorder == 'little' else '<'

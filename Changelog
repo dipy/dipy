@@ -24,6 +24,19 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 0.15 (Wednesday, 12 December 2018)
+
+- Updated RecoBundles for automatic anatomical bundle segmentation.
+- New Reconstruction Model: qtau-dMRI.
+- New command line interfaces (e.g. dipy_slr).
+- New continuous integration with AppVeyor CI.
+- Nibabel Streamlines API now used almost everywhere for better memory management.
+- Compatibility with Python 3.7.
+- Many tutorials added or updated (5 New).
+- Large documentation update.
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests.   
+
 * 0.14 (Tuesday, 1 May 2018)
 
 - RecoBundles: anatomically relevant segmentation of bundles

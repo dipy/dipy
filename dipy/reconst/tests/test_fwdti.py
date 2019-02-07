@@ -6,8 +6,8 @@ import numpy as np
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti
 from dipy.reconst.fwdti import fwdti_prediction
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal)
-from nose.tools import assert_raises
+from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
+                           assert_raises)
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor,
                               fractional_anisotropy)
 from dipy.reconst.fwdti import (lower_triangular_to_cholesky,
@@ -17,55 +17,60 @@ from dipy.sims.voxel import (multi_tensor, single_tensor,
                              all_tensor_evecs, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from dipy.data import get_data
+from dipy.data import get_fnames
 
-fimg, fbvals, fbvecs = get_data('small_64D')
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
 
-# FW model requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+def setup_module():
+    """Module-level setup"""
+    global gtab, gtab_2s, mevals, model_params_mv
+    global DWI, FAref, GTF, MDref, FAdti, MDdti
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
 
-# Simulation a typical DT and DW signal for no water contamination
-S0 = np.array(100)
-dt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
-evals, evecs = decompose_tensor(from_lower_triangular(dt))
-S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
-                         snr=None)
-dm = dti.TensorModel(gtab_2s, 'WLS')
-dtifit = dm.fit(S_tissue)
-FAdti = dtifit.fa
-MDdti = dtifit.md
-dtiparams = dtifit.model_params
+    # FW model requires multishell data
+    bvals_2s = np.concatenate((bvals, bvals * 1.5), axis=0)
+    bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
-# Simulation of 8 voxels tested
-DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
-FAref = np.zeros((2, 2, 2))
-MDref = np.zeros((2, 2, 2))
-# Diffusion of tissue and water compartments are constant for all voxel
-mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
-# volume fractions
-GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
-                [[0., 0.], [0., 0.]]])
-# S0 multivoxel
-S0m = 100 * np.ones((2, 2, 2))
-# model_params ground truth (to be fill)
-model_params_mv = np.zeros((2, 2, 2, 13))
-for i in range(2):
-    for j in range(2):
-        gtf = GTF[0, i, j]
-        S, p = multi_tensor(gtab_2s, mevals, S0=100,
-                            angles=[(90, 0), (90, 0)],
-                            fractions=[(1-gtf) * 100, gtf*100], snr=None)
-        DWI[0, i, j] = S
-        FAref[0, i, j] = FAdti
-        MDref[0, i, j] = MDdti
-        R = all_tensor_evecs(p[0])
-        R = R.reshape((9))
-        model_params_mv[0, i, j] = np.concatenate(([0.0017, 0.0003, 0.0003],
-                                                   R, [gtf]), axis=0)
+    # Simulation a typical DT and DW signal for no water contamination
+    S0 = np.array(100)
+    dt = np.array([0.0017, 0, 0.0003, 0, 0, 0.0003])
+    evals, evecs = decompose_tensor(from_lower_triangular(dt))
+    S_tissue = single_tensor(gtab_2s, S0=100, evals=evals, evecs=evecs,
+                             snr=None)
+    dm = dti.TensorModel(gtab_2s, 'WLS')
+    dtifit = dm.fit(S_tissue)
+    FAdti = dtifit.fa
+    MDdti = dtifit.md
+    dtiparams = dtifit.model_params
+
+    # Simulation of 8 voxels tested
+    DWI = np.zeros((2, 2, 2, len(gtab_2s.bvals)))
+    FAref = np.zeros((2, 2, 2))
+    MDref = np.zeros((2, 2, 2))
+    # Diffusion of tissue and water compartments are constant for all voxel
+    mevals = np.array([[0.0017, 0.0003, 0.0003], [0.003, 0.003, 0.003]])
+    # volume fractions
+    GTF = np.array([[[0.06, 0.71], [0.33, 0.91]],
+                    [[0., 0.], [0., 0.]]])
+    # S0 multivoxel
+    S0m = 100 * np.ones((2, 2, 2))
+    # model_params ground truth (to be fill)
+    model_params_mv = np.zeros((2, 2, 2, 13))
+    for i in range(2):
+        for j in range(2):
+            gtf = GTF[0, i, j]
+            S, p = multi_tensor(gtab_2s, mevals, S0=100,
+                                angles=[(90, 0), (90, 0)],
+                                fractions=[(1-gtf) * 100, gtf*100], snr=None)
+            DWI[0, i, j] = S
+            FAref[0, i, j] = FAdti
+            MDref[0, i, j] = MDdti
+            R = all_tensor_evecs(p[0])
+            R = R.reshape((9))
+            model_params_mv[0, i, j] = \
+                np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
 
 
 def test_fwdti_singlevoxel():

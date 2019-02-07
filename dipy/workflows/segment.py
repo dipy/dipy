@@ -29,7 +29,7 @@ class MedianOtsuFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        save_masked : bool
+        save_masked : bool, optional
             Save mask
         median_radius : int, optional
             Radius (in voxels) of the applied median filter (default 2)
@@ -117,7 +117,7 @@ class RecoBundlesFlow(Workflow):
         less_than : int, optional
             Keep streamlines have length less than this value
             (default 1000000) in mm.
-        no_slr : boolean, optional
+        no_slr : bool, optional
             Don't enable local Streamline-based Linear
             Registration (default False).
         clust_thr : float, optional
@@ -141,13 +141,13 @@ class RecoBundlesFlow(Workflow):
         slr_matrix : string, optional
             Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge'
             (default 'small')
-        refine : boolean, optional
+        refine : bool, optional
             Enable refine recognized bunle (default False)
         r_reduction_thr : float, optional
             Refine reduce search space by (mm) (default 12)
         r_pruning_thr : float, optional
             Refine pruning after matching (default 6).
-        no_r_slr : boolean, optional
+        no_r_slr : bool, optional
             Don't enable Refine local Streamline-based Linear
             Registration (default False).
         out_dir : string, optional
@@ -233,27 +233,31 @@ class RecoBundlesFlow(Workflow):
                     slr_method='L-BFGS-B')
 
             if refine:
-                x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])  # affine
-                affine_bounds = [(-30, 30), (-30, 30), (-30, 30),
-                                 (-45, 45), (-45, 45), (-45, 45),
-                                 (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
-                                 (-10, 10), (-10, 10), (-10, 10)]
 
-                recognized_bundle, labels = \
-                    rb.refine(
-                        model_bundle,
-                        recognized_bundle,
-                        model_clust_thr=model_clust_thr,
-                        reduction_thr=r_reduction_thr,
-                        reduction_distance=reduction_distance,
-                        pruning_thr=r_pruning_thr,
-                        pruning_distance=pruning_distance,
-                        slr=r_slr,
-                        slr_metric=slr_metric,
-                        slr_x0=x0,
-                        slr_bounds=affine_bounds,
-                        slr_select=slr_select,
-                        slr_method='L-BFGS-B')
+                if len(recognized_bundle) > 1:
+
+                    # affine
+                    x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
+                    affine_bounds = [(-30, 30), (-30, 30), (-30, 30),
+                                     (-45, 45), (-45, 45), (-45, 45),
+                                     (0.8, 1.2), (0.8, 1.2), (0.8, 1.2),
+                                     (-10, 10), (-10, 10), (-10, 10)]
+
+                    recognized_bundle, labels = \
+                        rb.refine(
+                            model_bundle,
+                            recognized_bundle,
+                            model_clust_thr=model_clust_thr,
+                            reduction_thr=r_reduction_thr,
+                            reduction_distance=reduction_distance,
+                            pruning_thr=r_pruning_thr,
+                            pruning_distance=pruning_distance,
+                            slr=r_slr,
+                            slr_metric=slr_metric,
+                            slr_x0=x0,
+                            slr_bounds=affine_bounds,
+                            slr_select=slr_select,
+                            slr_method='L-BFGS-B')
 
             if len(labels) > 0:
                 ba, bmd = rb.evaluate_results(

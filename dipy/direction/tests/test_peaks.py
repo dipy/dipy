@@ -16,10 +16,11 @@ from dipy.direction.peaks import (peaks_from_model,
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
+from dipy.io.gradients import read_bvals_bvecs
 
 
 def test_peak_directions_nl():
@@ -151,10 +152,9 @@ def test_peak_directions():
 
 def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
 
@@ -521,10 +521,9 @@ def test_peaksFromModelParallel():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -590,14 +589,13 @@ def test_peaks_shm_coeff():
     SNR = 100
     S0 = 100
 
-    _, fbvals, fbvecs = get_data('small_64D')
+    _, fbvals, fbvecs = get_fnames('small_64D')
 
     from dipy.data import get_sphere
 
     sphere = get_sphere('repulsion724')
 
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
@@ -623,7 +621,7 @@ def test_peaks_shm_coeff():
 
     pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=True,
-                           sh_basis_type='mrtrix')
+                           sh_basis_type='tournier07')
 
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)

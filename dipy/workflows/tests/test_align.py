@@ -4,7 +4,7 @@ import numpy.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import Streamlines
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.workflows.align import ResliceFlow, SlrWithQbxFlow
 from os.path import join as pjoin
 from dipy.io.streamline import save_trk
@@ -13,7 +13,7 @@ import os.path
 
 def test_reslice():
     with TemporaryDirectory() as out_dir:
-        data_path, _, _ = get_data('small_25')
+        data_path, _, _ = get_fnames('small_25')
         vol_img = nib.load(data_path)
         volume = vol_img.get_data()
 
@@ -32,7 +32,7 @@ def test_reslice():
 
 def test_slr_flow():
     with TemporaryDirectory() as out_dir:
-        data_path = get_data('fornix')
+        data_path = get_fnames('fornix')
 
         streams, hdr = nib.trackvis.read(data_path)
         fornix = [s[0] for s in streams]

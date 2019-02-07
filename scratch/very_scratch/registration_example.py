@@ -215,12 +215,9 @@ def test_registration():
     # LPS to RAS
 
 
-    
-
 if __name__ == '__main__':
 
-
-    '''
+    """
     print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
 
     print('find filenames for grid and shell data')    
@@ -238,11 +235,4 @@ if __name__ == '__main__':
     save_volumes_as_mosaic('/tmp/mosaic_fa.png',\
                                [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
 
-    '''
-
-    
-
-
-
-
-    
+    """

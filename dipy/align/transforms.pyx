@@ -266,7 +266,7 @@ cdef class RotationTransform2D(Transform):
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
                        double[:, :] J)nogil:
-        r''' Jacobian matrix of a 2D rotation with parameter theta, at x
+        r""" Jacobian matrix of a 2D rotation with parameter theta, at x
 
         The transformation is given by:
 
@@ -291,7 +291,7 @@ cdef class RotationTransform2D(Transform):
         is_constant : int
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
-        '''
+        """
         cdef:
             double st = sin(theta[0])
             double ct = cos(theta[0])
@@ -341,7 +341,7 @@ cdef class RotationTransform3D(Transform):
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
                        double[:, :] J)nogil:
-        r''' Jacobian matrix of a 3D rotation with parameters theta, at x
+        r""" Jacobian matrix of a 3D rotation with parameters theta, at x
 
         Parameters
         ----------
@@ -357,7 +357,7 @@ cdef class RotationTransform3D(Transform):
         is_constant : int
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
-        '''
+        """
         cdef:
             double sa = sin(theta[0])
             double ca = cos(theta[0])
@@ -443,7 +443,7 @@ cdef class RigidTransform2D(Transform):
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
                        double[:, :] J)nogil:
-        r''' Jacobian matrix of a 2D rigid transform (rotation + translation)
+        r""" Jacobian matrix of a 2D rigid transform (rotation + translation)
 
         The transformation is given by:
 
@@ -472,7 +472,7 @@ cdef class RigidTransform2D(Transform):
         is_constant : int
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
-        '''
+        """
         cdef:
             double st = sin(theta[0])
             double ct = cos(theta[0])
@@ -535,7 +535,7 @@ cdef class RigidTransform3D(Transform):
 
     cdef int _jacobian(self, double[:] theta, double[:] x,
                        double[:, :] J)nogil:
-        r''' Jacobian matrix of a 3D rigid transform (rotation + translation)
+        r""" Jacobian matrix of a 3D rigid transform (rotation + translation)
 
         Parameters
         ----------
@@ -557,7 +557,7 @@ cdef class RigidTransform3D(Transform):
         is_constant : int
             always returns 0, indicating that the Jacobian is not
             constant (it depends on the value of x)
-        '''
+        """
         cdef:
             double sa = sin(theta[0])
             double ca = cos(theta[0])

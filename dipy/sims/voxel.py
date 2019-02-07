@@ -399,10 +399,10 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     --------
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor
-    >>> from dipy.data import get_data
+    >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_data('small_101D')
+    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     >>> gtab = gradient_table(bvals, bvecs)
     >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
@@ -471,10 +471,10 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
     --------
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor_dki
-    >>> from dipy.data import get_data
+    >>> from dipy.data import get_fnames
     >>> from dipy.core.gradients import gradient_table
     >>> from dipy.io.gradients import read_bvals_bvecs
-    >>> fimg, fbvals, fbvecs = get_data('small_64D')
+    >>> fimg, fbvals, fbvecs = get_fnames('small_64D')
     >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     >>> bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
     >>> bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)

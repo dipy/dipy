@@ -1818,7 +1818,7 @@ def GCV_cost_function(weight, arguments):
     """
     data, M, MMt, K, LR = arguments
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
-    trS = np.matrix.trace(S)
+    trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
     return gcv_value
@@ -2113,6 +2113,6 @@ def visualise_gradient_table_G_Delta_rainbow(
     plt.xlim(big_delta_start, big_delta_end)
     plt.ylim(G_start, G_end)
     cb.set_label('b-value ($s$/$mm^2$)', fontsize=18)
-    plt.xlabel('Pulse Separation $\Delta$ [sec]', fontsize=18)
+    plt.xlabel(r'Pulse Separation $\Delta$ [sec]', fontsize=18)
     plt.ylabel('Gradient Strength [T/m]', fontsize=18)
     return None

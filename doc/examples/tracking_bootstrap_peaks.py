@@ -15,9 +15,8 @@ Let's load the necessary modules for executing this tutorial.
 from dipy.data import read_stanford_labels
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.io.trackvis import save_trk
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.io.streamline import save_trk
+from dipy.viz import window, actor, colormap as cmap
 
 renderer = window.Renderer()
 
@@ -35,7 +34,7 @@ Tracking tutorial for more background on these steps.
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
-affine = hardi_img.get_affine()
+affine = hardi_img.affine
 
 seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
@@ -78,7 +77,7 @@ boot_streamline_generator = LocalTracking(boot_dg_csd, classifier, seeds,
 streamlines = Streamlines(boot_streamline_generator)
 
 renderer.clear()
-renderer.add(actor.line(streamlines, line_colors(streamlines)))
+renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
 window.record(renderer, out_path='bootstrap_dg_CSD.png', size=(600, 600))
 
 """
@@ -109,7 +108,7 @@ peak_streamline_generator = LocalTracking(peak_dg, classifier, seeds, affine,
 streamlines = Streamlines(peak_streamline_generator)
 
 renderer.clear()
-renderer.add(actor.line(streamlines, line_colors(streamlines)))
+renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
 window.record(renderer, out_path='closest_peak_dg_CSD.png', size=(600, 600))
 
 """

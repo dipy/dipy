@@ -46,9 +46,9 @@ class TripWire(object):
         self._msg = msg
 
     def __getattr__(self, attr_name):
-        ''' Raise informative error accessing attributes '''
+        """ Raise informative error accessing attributes """
         raise TripWireError(self._msg)
 
     def __call__(self, *args, **kwargs):
-        ''' Raise informative error while calling '''
+        """ Raise informative error while calling """
         raise TripWireError(self._msg)

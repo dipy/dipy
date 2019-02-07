@@ -5,24 +5,21 @@ Run all benchmarks with::
     import dipy.segment as dipysegment
     dipysegment.bench()
 
-If you have doctests enabled by default in nose (with a noserc file or
-environment variable), and you have a numpy version <= 1.6.1, this will
-also run the doctests, let's hope they pass.
+With Pytest, Run this benchmark with:
 
-Run this benchmark with:
+    pytest -svv -c bench.ini /path/to/bench_quickbundles.py
 
-    nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' bench_quickbundles.py
 """
 import numpy as np
 import nibabel as nib
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 import dipy.tracking.streamline as streamline_utils
 from dipy.segment.metric import Metric
 from dipy.segment.quickbundles import QuickBundles as QB_Old
 from dipy.segment.clustering import QuickBundles as QB_New
-from nose.tools import assert_equal
+from numpy.testing import assert_equal
 
 from dipy.testing import assert_arrays_equal
 from numpy.testing import assert_array_equal, measure
@@ -43,7 +40,7 @@ def bench_quickbundles():
     repeat = 10
     nb_points = 12
 
-    streams, hdr = nib.trackvis.read(get_data('fornix'))
+    streams, hdr = nib.trackvis.read(get_fnames('fornix'))
     fornix = [s[0].astype(dtype) for s in streams]
     fornix = streamline_utils.set_number_of_points(fornix, nb_points)
 

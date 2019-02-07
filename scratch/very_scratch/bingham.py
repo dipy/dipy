@@ -4,7 +4,7 @@ from scipy.optimize import fmin_powell
 import numpy as np
 import scipy as sc
 
-'''
+"""
 def integrand(t,n,x):
     return np.exp(-x*t) / t**n
 
@@ -15,30 +15,30 @@ vec_expint = np.vectorize(expint)
 
 print vec_expint(3,np.arange(1.0,4.0,0.5))
 
-'''
+"""
 #array([ 0.1097,  0.0567,  0.0301,  0.0163,  0.0089,  0.0049])
-'''
+"""
 
 print sc.special.expn(3,np.arange(1.0,4.0,0.5))
 
-'''
+"""
 #array([ 0.1097,  0.0567,  0.0301,  0.0163,  0.0089,  0.0049])
-'''
+"""
 
 result = quad(lambda x: expint(3, x), 0, np.inf)
 
 print result
 
-'''
+"""
 #(0.33333333324560266, 2.8548934485373678e-09)
-'''
+"""
 
 I3 = 1.0/3.0
 
 print I3
 
 #0.333333333333
-'''
+"""
 
 def bingham_kernel(k1,k2,theta,phi):
     return np.exp(((k1*np.cos(phi)**2+k2*np.sin(phi)**2)*np.sin(theta)**2)/4*np.pi)
@@ -66,9 +66,7 @@ print min
 
 #d = sympy.integrate(sympy.exp((k1*sympy.cos(phi)**2+k2*sympy.sin(phi)**2)*sympy.sin(theta)**2)/(4*sympy.pi),(phi,0,2*sympy.pi),(theta,0,sympy.pi))
 
-
-
-'''
+"""
 def I(n):
     return dblquad(lambda t, x: np.exp(-x*t)/t**n, 0, np.Inf, lambda x: 1, lambda x: np.Inf)
 
@@ -91,9 +89,9 @@ d = sympy.integrate(sympy.exp((k1*sympy.cos(phi)**2+k2*sympy.sin(phi)**2)*sympy.
 from scipy.integrate import quad
 from math import pi
 d = sympy.integrate(sympy.exp((k1*sympy.cos(phi)**2+k2*sympy.sin(phi)**2)*sympy.sin(theta)**2)/(4*sympy.pi),(phi,0,2*sympy.pi),(theta,0,sympy.pi))
-'''
+"""
 
-'''
+"""
 Table C.3: 	Maximum likelihood estimators of k1,k2 in the Bingham
 distribution for given eigenvalues w1,w2. Data from Mardia and Zemroch
 (1977). Upper (lower) number is k1(k2)
@@ -150,4 +148,4 @@ w2
 
 Taken from http://magician.ucsd.edu/Essentials/WebBookse115.html#x136-237000C.2a
         
-'''
+"""

@@ -1,10 +1,9 @@
 import warnings
 
-from nose.tools import assert_true, assert_raises
 import numpy as np
 import numpy.testing as npt
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
@@ -30,9 +29,8 @@ def test_btable_prepare():
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
     # bt.info
-    fimg, fbvals, fbvecs = get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    fimg, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bt.bvecs, bvecs)
@@ -46,7 +44,7 @@ def test_btable_prepare():
     npt.assert_array_equal(bt4.bvecs, bvecs)
     npt.assert_array_equal(bt4.bvals, bvals)
     # Test for proper inputs (expects either bvals/bvecs or 4 by n):
-    assert_raises(ValueError, gradient_table, bvecs)
+    npt.assert_raises(ValueError, gradient_table, bvecs)
 
 
 def test_GradientTable():
@@ -72,8 +70,15 @@ def test_GradientTable():
     npt.assert_array_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.bvecs, expected_bvecs)
 
+    # checks negative values in gtab
+    npt.assert_raises(ValueError, GradientTable, -1)
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
+
+    with warnings.catch_warnings(record=True) as w:
+        bad_gt = gradient_table(expected_bvals, expected_bvecs,
+                                b0_threshold=200)
+        assert len(w) == 1
 
 
 def test_gradient_table_from_qvals_bvecs():
@@ -155,6 +160,10 @@ def test_gradient_table_from_bvals_bvecs():
     bad_bvals = np.ones(7)
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
                       bvecs, b0_threshold=0.)
+    # negative bvals
+    bad_bvals = [-1, -1, -1, -5, -6, -10]
+    npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
+                      bvecs, b0_threshold=0.)
     # bvals not 1d
     bad_bvals = np.ones((1, 8))
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
@@ -199,7 +208,7 @@ def test_b0s():
 
 
 def test_gtable_from_files():
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     gt = gradient_table(fbvals, fbvecs)
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     npt.assert_array_equal(gt.bvals, bvals)
@@ -297,7 +306,7 @@ def test_reorient_bvecs():
 
     # Verify that giving the wrong number of affines raises an error:
     full_affines.append(np.zeros((4, 4)))
-    assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
+    npt.assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
 
 
 def test_nan_bvecs():
@@ -308,7 +317,7 @@ def test_nan_bvecs():
     indicate a 0 b-value, but also raised a warning when testing for the length
     of these vectors. This checks that it doesn't happen.
     """
-    fdata, fbvals, fbvecs = get_data()
+    fdata, fbvals, fbvecs = get_fnames()
     with warnings.catch_warnings(record=True) as w:
         gradient_table(fbvals, fbvecs)
         npt.assert_(len(w) == 0)

@@ -135,7 +135,7 @@ Release checklist
 * Make sure all tests pass on your local machine (from the ``<dipy root>`` directory)::
 
     cd ..
-    nosetests --with-doctest dipy
+    pytest -sv --with-doctest dipy
     cd dipy # back to the root directory
 
 * Check the documentation doctests::
@@ -145,7 +145,7 @@ Release checklist
     cd ..
 
   At the moment this generates lots of errors from the autodoc documentation
-  running the doctests in the code, where the doctests pass when run in nose -
+  running the doctests in the code, where the doctests pass when run in pytest -
   we should find out why this is at some point, but leave it for now.
 
 * Trigger builds of all the binary build testers for DIPY, using the web

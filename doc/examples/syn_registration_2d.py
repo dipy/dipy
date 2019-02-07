@@ -10,15 +10,15 @@ We will perform the classic Circle-To-C experiment for diffeomorphic registratio
 """
 
 import numpy as np
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
 from dipy.viz import regtools
 
 
-fname_moving = get_data('reg_o')
-fname_static = get_data('reg_c')
+fname_moving = get_fnames('reg_o')
+fname_static = get_fnames('reg_c')
 
 moving = np.load(fname_moving)
 static = np.load(fname_static)
@@ -143,7 +143,7 @@ from dipy.segment.mask import median_otsu
 fetch_syn_data()
 
 t1, b0 = read_syn_data()
-data = np.array(b0.get_data(), dtype = np.float64)
+data = np.array(b0.get_data(), dtype=np.float64)
 
 """
 We first remove the skull from the b0 volume
@@ -186,10 +186,10 @@ mapping = sdr.optimize(static, moving)
 
 warped = mapping.transform(moving)
 
-'''
+"""
 We can see the effect of the warping by switching between the images before and
 after registration
-'''
+"""
 
 regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
                't1_slices_input.png')
@@ -211,9 +211,9 @@ regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
    Moving image transformed under the (direct) transformation in green on top of the static image (in red).
 """
 
-'''
+"""
 And we can apply the inverse warping too
-'''
+"""
 
 inv_warped = mapping.transform_inverse(static)
 regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving',
@@ -226,9 +226,9 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving'
    Static image transformed under the (inverse) transformation in red on top of the moving image (in green).
 """
 
-'''
+"""
 Finally, let's see the deformation
-'''
+"""
 
 regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 
