@@ -223,7 +223,7 @@ class ImageRegistrationFlow(Workflow):
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
 
         static_grid2world : array, shape (dim+1, dim+1), optional
@@ -231,7 +231,7 @@ class ImageRegistrationFlow(Workflow):
             image. The default is None, implying the transform is the
             identity.
 
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
