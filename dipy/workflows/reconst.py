@@ -692,7 +692,7 @@ class ReconstDkiFlow(Workflow):
             out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz"):
         """ Workflow for Diffusion Kurtosis reconstruction and for computing
         DKI metrics. Performs a DKI reconstruction on the files by 'globing'
-        ``input_files`` and saves the DTI metrics in a directory specified by
+        ``input_files`` and saves the DKI metrics in a directory specified by
         ``out_dir``.
 
         Parameters
