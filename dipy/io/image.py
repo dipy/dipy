@@ -28,7 +28,7 @@ def save_nifti(fname, data, affine, hdr=None):
 
 
 def save_affine_matrix(fname, affine):
-    """Save Affive matrix.
+    """Save Affine matrix.
 
     Parameters
     ----------

@@ -484,22 +484,6 @@ class ImageRegistrationFlow(Workflow):
             raise ValueError('Dimension mismatch: One of the input should '
                              'be 2D or 3D dimensions.')
 
-    @staticmethod
-    def check_metric(metric):
-        """
-        Check the input metric type.
-
-        Parameters
-        ----------
-        metric: string
-            The similarity metric.
-            (default 'MutualInformation' metric)
-
-        """
-        if metric != 'mi':
-            raise ValueError('Invalid similarity metric: Please provide '
-                             'a valid metric.')
-
     def run(self, static_img_file, moving_img_file, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
@@ -596,7 +580,9 @@ class ImageRegistrationFlow(Workflow):
             else:
 
                 params0 = None
-                self.check_metric(metric)
+                if metric != 'mi':
+                    raise ValueError("Invalid similarity metric: Please"
+                                     " provide a valid metric.")
                 metric = MutualInformationMetric(nbins, sampling_prop)
 
                 """

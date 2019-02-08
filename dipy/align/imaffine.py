@@ -64,11 +64,14 @@ _transform_method[(2, 'linear')] = vf.transform_2d_affine
 _transform_method[(3, 'linear')] = vf.transform_3d_affine
 _number_dim_affine_matrix = 2
 
+
 class AffineInversionError(Exception):
     pass
 
+
 class AffineInvalidValuesError(Exception):
     pass
+
 
 class AffineMap(object):
 
@@ -167,27 +170,32 @@ class AffineMap(object):
 
         try:
             affine = np.array(affine)
-        except:
-            raise TypeError('Input must be type ndarray, or be convertible to one.')
+        except Exception:
+            raise TypeError("Input must be type ndarray, or be convertible"
+                            " to one.")
 
         if len(affine.shape) != _number_dim_affine_matrix:
             raise AffineInversionError('Affine transform must be 2D')
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError('Affine transform must be a square matrix')
+            raise AffineInversionError("Affine transform must be a square "
+                                       "matrix")
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError('Affine transform contains invalid elements')
+            raise AffineInvalidValuesError("Affine transform contains invalid"
+                                           " elements")
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros
         if not np.all(affine[-1, :-1] == 0.0):
-            raise AffineInvalidValuesError('First {n_1} columns in last row in matrix '
-                                           'contain non-zeros!'.format(n_1=affine.shape[0] - 1))
+            raise AffineInvalidValuesError("First {n_1} columns in last row"
+                                           " in matrix contain non-zeros!"
+                                           .format(n_1=affine.shape[0] - 1))
 
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
-            raise AffineInvalidValuesError('Last row, last column in matrix is not 1.0!')
+            raise AffineInvalidValuesError("Last row, last column in matrix"
+                                           " is not 1.0!")
 
         # making a copy to insulate it from changes outside object
         self.affine = affine.copy()
@@ -228,8 +236,10 @@ class AffineMap(object):
                 allowed_formats_print_map = ['full', 'f',
                                              'rotation', 'r',
                                              'translation', 't']
-                raise NotImplementedError('Format {} not recognized or implemented.\n'
-                                          'Try one of {}'.format(format_spec, allowed_formats_print_map))
+                raise NotImplementedError("Format {} not recognized or"
+                                          "implemented.\nTry one of {}"
+                                          .format(format_spec,
+                                                  allowed_formats_print_map))
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -251,7 +261,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
@@ -354,7 +364,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
@@ -401,7 +411,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
