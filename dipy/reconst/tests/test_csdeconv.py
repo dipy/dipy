@@ -5,7 +5,7 @@ import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
                            assert_array_equal)
-from dipy.testing import assert_greater
+from dipy.testing import assert_greater, assert_greater_equal
 from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -31,6 +31,9 @@ from dipy.reconst.shm import lazy_index
 import dipy.reconst.dti as dti
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
+import pytest
+
+pytestmark = pytest.mark.filterwarnings("always", message=".*", category=UserWarning)
 
 
 def test_recursive_response_calibration():
@@ -576,12 +579,13 @@ def test_csd_superres():
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
     with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always", category=UserWarning)
+        warnings.filterwarnings(action="always", message="Number of parameters required.*",
+                                category=UserWarning)
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
                                                   sh_order=16)
-        npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("Number of parameters required " in str(w[0].message))
+        assert_greater_equal(len(w), 1)
+        npt.assert_(issubclass(w[-1].category, UserWarning))
+
 
     fit16 = model16.fit(S)
 

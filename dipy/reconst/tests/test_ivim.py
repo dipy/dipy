@@ -27,6 +27,10 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 needs_cvxpy = dec.skipif(not have_cvxpy)
 
+import scipy
+import pytest
+
+pytestmark = pytest.mark.filterwarnings("always", message=".*", category=UserWarning)
 
 # Let us generate some data for testing.
 bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
@@ -427,23 +431,20 @@ def test_leastsq_failing():
     Test for cases where leastsq fitting fails and the results from a linear
     fit is returned.
     """
-<<<<<<< HEAD
-    fit_single = ivim_model_LM.fit(noisy_single)
-=======
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
         fit_single = ivim_model.fit(noisy_single)
         assert_greater_equal(len(w), 3)
-        for l_w in w:
-            assert_(issubclass(l_w.category, UserWarning))
-        assert_("" in str(w[-3].message))
-        assert_("x0 obtained from linear fitting is not feasibile" in
-                str(w[-3].message))
-        assert_("x0 is unfeasible" in str(w[-2].message))
-        assert_("Bounds are violated for leastsq fitting" in
-                str(w[-1].message))
+        assert_greater_equal(len([l_w for l_w in w if issubclass(l_w.category,
+                                                                 UserWarning
+                                                                 )]), 3)
+        message = ["x0 obtained from linear fitting is not feasibile",
+                   "x0 is unfeasible",
+                   "Bounds are violated for leastsq fitting"]
+        assert_greater_equal(len([lw for lw in w
+                                  if not any(m in lw.message for m in message)
+                                  ]), 3)
 
->>>>>>> check ivim warning
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
@@ -455,18 +456,14 @@ def test_leastsq_error():
     passed. If an unfeasible x0 value is passed using which leastsq fails, the
     x0 value is returned as it is.
     """
-<<<<<<< HEAD
-    fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
-=======
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
         fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
         assert_greater_equal(len(w), 1)
-        assert_(issubclass(w[0].category, UserWarning))
-        assert_("" in str(w[0].message))
-        assert_("x0 is unfeasible" in str(w[0].message))
+        assert_(issubclass(w[-1].category, UserWarning))
+        assert_("" in str(w[-1].message))
+        assert_("x0 is unfeasible" in str(w[-1].message))
 
->>>>>>> check ivim warning
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
 
