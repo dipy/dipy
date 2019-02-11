@@ -435,15 +435,13 @@ def test_leastsq_failing():
         warnings.simplefilter("always", category=UserWarning)
         fit_single = ivim_model.fit(noisy_single)
         assert_greater_equal(len(w), 3)
-        assert_greater_equal(len([l_w for l_w in w if issubclass(l_w.category,
-                                                                 UserWarning
-                                                                 )]), 3)
+        u_warn = [l_w for l_w in w if issubclass(l_w.category, UserWarning)]
+        assert_greater_equal(len(u_warn), 3)
         message = ["x0 obtained from linear fitting is not feasibile",
                    "x0 is unfeasible",
                    "Bounds are violated for leastsq fitting"]
-        assert_greater_equal(len([lw for lw in w
-                                  if not any(m in lw.message for m in message)
-                                  ]), 3)
+        assert_greater_equal(len([lw for lw in u_warn for m in message
+                                  if m in str(lw.message)]), 3)
 
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
