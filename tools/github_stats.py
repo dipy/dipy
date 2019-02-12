@@ -16,9 +16,7 @@ import sys
 
 from datetime import datetime, timedelta
 from subprocess import check_output
-
-# Python 2 and 3 alternative
-from six.moves.urllib.request import urlopen
+from urllib.request import urlopen
 
 
 # -----------------------------------------------------------------------------
