@@ -160,7 +160,9 @@ for script in validated_examples:
         memory_profiler.profile(run_script)()
 
     else:
+        print('*************************************************************')
         print(script)
+        print('*************************************************************')
         run_script()
 
 if use_xvfb:
