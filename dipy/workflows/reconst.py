@@ -962,7 +962,7 @@ class IvimWorkflow(Workflow):
                          format(os.path.dirname(oD_est)))
 
     def get_ivim_model(self, gtab):
-            return IvimModel(gtab)
+        return IvimModel(gtab)
 
     def get_fitted_ivim(self, data, bval, bvec, b0_threshold=50):
         logging.info('Intra-Voxel Incoherent Motion Estimation...')
