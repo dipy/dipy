@@ -214,6 +214,7 @@ def plot_map(raw_data, variable, limits, filename):
     plt.savefig(filename)
     plt.close()
 
+
 """
 Let us get the various plots so that we can visualize them in one page
 """

@@ -864,7 +864,7 @@ class ReconstDkiFlow(Workflow):
         return dkfit, gtab
 
 
-class IvimWorkflow(Workflow):
+class ReconstIvimFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'ivim'
@@ -890,11 +890,11 @@ class IvimWorkflow(Workflow):
         bvectors_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
-        split_b_D : int
+        split_b_D : int, optional
             Value to split the bvals to estimate D for the two-stage process of
             fitting
             (default 400)
-        split_b_S0 : int
+        split_b_S0 : int, optional
             Value to split the bvals to estimate S0 for the two-stage process
             of fitting
             (default 200)
@@ -918,6 +918,7 @@ class IvimWorkflow(Workflow):
             (default 'D_est.nii.gz')
 
         References:
+        ----------
 
         .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                         "Spin Diffusion Measurements: Spin Echoes in the
@@ -961,9 +962,6 @@ class IvimWorkflow(Workflow):
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oD_est)))
 
-    def get_ivim_model(self, gtab):
-        return IvimModel(gtab)
-
     def get_fitted_ivim(self, data, bval, bvec, b0_threshold=50):
         logging.info('Intra-Voxel Incoherent Motion Estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
@@ -973,7 +971,7 @@ class IvimWorkflow(Workflow):
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
-        ivimmodel = self.get_ivim_model(gtab)
+        ivimmodel = IvimModel(gtab)
         ivimfit = ivimmodel.fit(data)
 
         return ivimfit, gtab
