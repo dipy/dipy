@@ -395,13 +395,17 @@ class MapmriModel(ReconstModel, Cache):
 
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             c = cvxpy.Variable(M.shape[1])
-            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
-            lopt = lopt or 10e-20
             design_matrix = cvxpy.Constant(M)
-            objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
-                lopt * cvxpy.quad_form(c, laplacian_matrix)
-            )
+            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
+            # See https://github.com/cvxgrp/cvxpy/issues/672
+            if not lopt:
+                objective = cvxpy.Minimize(
+                    cvxpy.sum_squares(design_matrix * c - data_norm))
+            else:
+                objective = cvxpy.Minimize(
+                    cvxpy.sum_squares(design_matrix * c - data_norm) +
+                    lopt * cvxpy.quad_form(c, laplacian_matrix)
+                )
             M0 = M[self.gtab.b0s_mask, :]
             constraints = [(M0[0] * c) == 1,
                            (K * c) >= -0.1]
