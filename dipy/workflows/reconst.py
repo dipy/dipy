@@ -23,6 +23,7 @@ from dipy.direction.peaks import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
+from dipy.reconst.ivim import IvimModel
 
 from dipy.reconst import mapmri
 
@@ -861,3 +862,117 @@ class ReconstDkiFlow(Workflow):
         dkfit = dkmodel.fit(data, mask)
 
         return dkfit, gtab
+
+
+class ReconstIvimFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'ivim'
+
+    def run(self, input_files, bvalues_files, bvectors_files, split_b_D=400,
+            split_b_S0=200, save_metrics=[],
+            out_dir='', out_S0_est='S0_est.nii.gz', out_f_est='f_est.nii.gz',
+            out_D_star_est='D_star_est.nii.gz', out_D_est='D_est.nii.gz'):
+        """ Workflow for Intra-voxel Incoherent Motion reconstruction and for
+        computing IVIM metrics. Performs a IVIM reconstruction on the files
+        by 'globing' ``input_files`` and saves the IVIM metrics in a directory
+        specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        split_b_D : int, optional
+            Value to split the bvals to estimate D for the two-stage process of
+            fitting
+            (default 400)
+        split_b_S0 : int, optional
+            Value to split the bvals to estimate S0 for the two-stage process
+            of fitting
+            (default 200)
+        save_metrics : variable string, optional
+            List of metrics to save.
+            Possible values: S0_est, f_est, D_star_est, D_est
+            (default [] (all))
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_S0_est : string, optional
+            Name of the S0 signal estimated to be saved
+            (default: 'S0_est.nii.gz')
+        out_f_est : string, optional
+            Name of the estimated volume fractions to be saved
+            (default 'f_est.nii.gz')
+        out_D_star_est : string, optional
+            Name of the estimated pseudo-diffusion parameter to be saved
+            (default 'D_star_est.nii.gz')
+        out_D_est : string, optional
+            Name of the estimated diffusion parameter to be saved
+            (default 'D_est.nii.gz')
+
+        References
+        ----------
+
+        .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
+                        "Spin Diffusion Measurements: Spin Echoes in the
+                        Presence of a Time-Dependent Field Gradient". The
+                        Journal of Chemical Physics 42 (1): 288.
+                        Bibcode: 1965JChPh..42..288S. doi:10.1063/1.1695690.
+
+        .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
+                       and perfusion in intravoxel incoherent motion MR
+                       imaging." Radiology 168.2 (1988): 497-505.
+        """
+
+        io_it = self.get_io_iterator()
+
+        for (dwi, bval, bvec, oS0_est, of_est, oD_star_est, oD_est) in io_it:
+
+            logging.info('Computing IVIM metrics for {0}'.format(dwi))
+            data, affine = load_nifti(dwi)
+
+            ivimfit, _ = self.get_fitted_ivim(data, bval, bvec,
+                                              b0_threshold=0)
+
+            if not save_metrics:
+                save_metrics = ['S0_est', 'f_est', 'D_star_est', 'D_est']
+
+            S0_est = ivimfit.model_params[:, :, 0]
+            f_est = ivimfit.model_params[:, :, 1]
+            D_star_est = ivimfit.model_params[:, :, 2]
+            D_est = ivimfit.model_params[:, :, 3]
+
+            if 'S0_est' in save_metrics:
+                save_nifti(oS0_est, S0_est.astype(np.float32), affine)
+
+            if 'f_est' in save_metrics:
+                save_nifti(of_est, f_est.astype(np.float32), affine)
+
+            if 'D_star_est' in save_metrics:
+                save_nifti(oD_star_est, D_star_est.astype(np.float32), affine)
+
+            if 'D_est' in save_metrics:
+                save_nifti(oD_est, D_est.astype(np.float32), affine)
+
+            logging.info('IVIM metrics saved in {0}'.
+                         format(os.path.dirname(oD_est)))
+
+    def get_fitted_ivim(self, data, bval, bvec, b0_threshold=50):
+        logging.info('Intra-Voxel Incoherent Motion Estimation...')
+        bvals, bvecs = read_bvals_bvecs(bval, bvec)
+        if b0_threshold < bvals.min():
+            warn("b0_threshold (value: {0}) is too low, increase your "
+                 "b0_threshold. It should higher than the first b0 value "
+                 "({1}).".format(b0_threshold, bvals.min()))
+
+        gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
+        ivimmodel = IvimModel(gtab)
+        ivimfit = ivimmodel.fit(data)
+
+        return ivimfit, gtab
