@@ -960,7 +960,7 @@ class ReconstIvimFlow(Workflow):
             if 'D_est' in save_metrics:
                 save_nifti(oD_est, D_est.astype(np.float32), affine)
 
-            logging.info('DKI metrics saved in {0}'.
+            logging.info('IVIM metrics saved in {0}'.
                          format(os.path.dirname(oD_est)))
 
     def get_fitted_ivim(self, data, bval, bvec, b0_threshold=50):
