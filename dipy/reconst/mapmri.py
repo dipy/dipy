@@ -395,6 +395,8 @@ class MapmriModel(ReconstModel, Cache):
 
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             c = cvxpy.Variable(M.shape[1])
+            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
+            lopt = lopt or 10e-20
             design_matrix = cvxpy.Constant(M)
             objective = cvxpy.Minimize(
                 cvxpy.sum_squares(design_matrix * c - data_norm) +
@@ -457,7 +459,6 @@ class MapmriFit(ReconstFit):
             that after positivity constraint failed, also matrix inversion
             failed.
         """
-
         self.model = model
         self._mapmri_coef = mapmri_coef
         self.gtab = model.gtab
