@@ -16,6 +16,7 @@ import os
 import os.path as op
 import sys
 import shutil
+import io
 from subprocess import check_call
 from glob import glob
 from time import time
@@ -40,6 +41,7 @@ import dipy
 # files with a known name (derived from the script name) plus a counter
 figure_basename = None
 
+
 # We must change the show command to save instead
 def show():
     allfm = Gcf.get_all_fig_managers()
@@ -60,13 +62,14 @@ EG_INDEX_FNAME = op.join(DOC_PATH, 'examples_index.rst')
 EG_SRC_DIR = op.join(DOC_PATH, 'examples')
 
 # Work in examples directory
-#os.chdir(op.join(DOC_PATH, 'examples_built'))
+# os.chdir(op.join(DOC_PATH, 'examples_built'))
 
 if not os.getcwd().endswith(op.join('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
-eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
+with io.open(EG_INDEX_FNAME, 'rt', encoding="utf8") as f:
+    eg_index_contents = f.read()
 
 # Here I am adding an extra step. The list of examples to be executed need
 # also to be added in the following file (valid_examples.txt). This helps
@@ -74,9 +77,9 @@ eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
 # the time.
 flist_name = op.join(op.dirname(os.getcwd()), 'examples',
                      'valid_examples.txt')
-flist = open(flist_name, "r")
-validated_examples = flist.readlines()
-flist.close()
+
+with io.open(flist_name, "r", encoding="utf8") as flist:
+    validated_examples = flist.readlines()
 
 # Parse "#" in lines
 validated_examples = [line.split("#", 1)[0] for line in validated_examples]
@@ -141,7 +144,8 @@ name = ''
 def run_script():
     namespace = {}
     t1 = time()
-    exec(open(script).read(), namespace)
+    with io.open(script, encoding="utf8") as f:
+        exec(f.read(), namespace)
     t2 = time()
     print("That took %.2f seconds to run" % (t2 - t1))
     plt.close('all')
@@ -156,7 +160,9 @@ for script in validated_examples:
         memory_profiler.profile(run_script)()
 
     else:
+        print('*************************************************************')
         print(script)
+        print('*************************************************************')
         run_script()
 
 if use_xvfb:
