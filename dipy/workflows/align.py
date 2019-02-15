@@ -25,7 +25,7 @@ from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
 from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
     AffineTransform3D
 from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_qa_metric
+    load_affine_matrix, save_qa_metric
 
 
 class ResliceFlow(Workflow):
@@ -679,24 +679,21 @@ class ApplyAffineFlow(Workflow):
             Name of the transformed file (default 'transformed.nii.gz').
              It is recommended to use the flag --mix-names to
               prevent the output files from being overwritten.
-        """
 
+        """
         io = self.get_io_iterator()
-        img_register = ImageRegistrationFlow()
 
         for static_image_file, moving_image_file, affine_matrix_file, \
                 out_file in io:
 
             # Loading the image data from the input files into object.
-            static_image = nib.load(static_image_file)
-            static_grid2world = static_image.affine
+            static_image, static_grid2world = load_nifti(static_image_file)
 
-            moving_image = nib.load(moving_image_file)
-            image_data = moving_image.get_data()
+            moving_image, moving_grid2world = load_nifti(moving_image_file)
 
             # Doing a sanity check for validating the dimensions of the input
             # images.
-            img_register.check_dimensions(static_image, moving_image)
+            ImageRegistrationFlow.check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
             affine_matrix = load_affine_matrix(affine_matrix_file)
