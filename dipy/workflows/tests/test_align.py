@@ -216,11 +216,15 @@ def test_apply_affine_transform():
             save_nifti(pjoin(temp_out_dir, mov_file), data=moving,
                        affine=moving_g2w)
 
-            static_image_file = pjoin(temp_out_dir, str(i[0])+'_static.nii.gz')
-            moving_image_file = pjoin(temp_out_dir, str(i[0])+'_moving.nii.gz')
+            static_image_file = pjoin(temp_out_dir,
+                                      str(i[0]) + '_static.nii.gz')
+            moving_image_file = pjoin(temp_out_dir,
+                                      str(i[0]) + '_moving.nii.gz')
 
-            out_moved = pjoin(temp_out_dir, str(i[0])+"_moved.nii.gz")
-            out_affine = pjoin(temp_out_dir, str(i[0])+"_affine.txt")
+            out_moved = pjoin(temp_out_dir,
+                              str(i[0]) + "_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir,
+                               str(i[0]) + "_affine.txt")
 
             if str(i[0]) == "TRANSLATION":
                 transform_type = "trans"
