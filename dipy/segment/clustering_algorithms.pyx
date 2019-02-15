@@ -5,9 +5,9 @@ from dipy.utils.six.moves import xrange
 import itertools
 import numpy as np
 
-from cythonutils cimport Data2D, shape2tuple
-from metricspeed cimport Metric
-from clusteringspeed cimport ClustersCentroid, Centroid, QuickBundles, QuickBundlesX
+from dipy.segment.cythonutils cimport Data2D, shape2tuple
+from dipy.segment.metricspeed cimport Metric
+from dipy.segment.clusteringspeed cimport ClustersCentroid, Centroid, QuickBundles, QuickBundlesX
 from dipy.segment.clustering import ClusterMapCentroid, ClusterCentroid
 
 cdef extern from "stdlib.h" nogil:
