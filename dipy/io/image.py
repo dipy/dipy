@@ -27,20 +27,6 @@ def save_nifti(fname, data, affine, hdr=None):
     result_img.to_filename(fname)
 
 
-def save_affine_matrix(fname, affine):
-    """Save Affine matrix.
-
-    Parameters
-    ----------
-    fname : string
-        File name to save the affine matrix.
-    affine : numpy array
-        The object containing the affine matrix.
-
-    """
-    np.savetxt(fname, affine)
-
-
 def save_qa_metric(fname, xopt, fopt):
     """Save Quality Assurance metrics.
 

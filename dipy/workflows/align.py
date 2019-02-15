@@ -1,31 +1,19 @@
 from __future__ import division, print_function, absolute_import
+
 import logging
-from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qbx
-from dipy.io.streamline import load_trk, save_trk
-from dipy.tracking.streamline import transform_streamlines
-
 import numpy as np
 import nibabel as nib
 
-from dipy.align.reslice import reslice
-from dipy.align.imaffine import transform_centers_of_mass, \
-    MutualInformationMetric, AffineRegistration
-from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
-                                   AffineTransform3D)
-from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_qa_metric
-
-import numpy as np
-import nibabel as nib
-
-from dipy.align.reslice import reslice
 from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
-from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
-    AffineTransform3D
-from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_qa_metric
+from dipy.align.reslice import reslice
+from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
+                                   AffineTransform3D)
+from dipy.align.streamlinear import slr_with_qbx
+from dipy.io.image import save_nifti, load_nifti, save_qa_metric
+from dipy.io.streamline import load_trk, save_trk
+from dipy.tracking.streamline import transform_streamlines
+from dipy.workflows.workflow import Workflow
 
 
 class ResliceFlow(Workflow):
@@ -651,7 +639,7 @@ class ImageRegistrationFlow(Workflow):
                     save_qa_metric(qual_val_file, xopt, fopt)
 
             save_nifti(moved_file, moved_image, static_grid2world)
-            save_affine_matrix(affine_matrix_file, affine)
+            np.savetxt(affine_matrix_file, affine)
 
 
 class ApplyAffineFlow(Workflow):
