@@ -943,10 +943,10 @@ class ReconstIvimFlow(Workflow):
             if not save_metrics:
                 save_metrics = ['S0_est', 'f_est', 'D_star_est', 'D_est']
 
-            S0_est = ivimfit.model_params[:, :, 0]
-            f_est = ivimfit.model_params[:, :, 1]
-            D_star_est = ivimfit.model_params[:, :, 2]
-            D_est = ivimfit.model_params[:, :, 3]
+            S0_est = ivimfit.model_params[..., 0]
+            f_est = ivimfit.model_params[..., 1]
+            D_star_est = ivimfit.model_params[..., 2]
+            D_est = ivimfit.model_params[..., 3]
 
             if 'S0_est' in save_metrics:
                 save_nifti(oS0_est, S0_est.astype(np.float32), affine)
