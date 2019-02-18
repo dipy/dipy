@@ -5,7 +5,6 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-import numpy.testing as npt
 from numpy.testing import assert_equal
 
 from dipy.io.gradients import read_bvals_bvecs
@@ -52,19 +51,19 @@ def test_reconst_ivim():
 
         ivim_flow.run(*args, out_dir=out_dir)
 
-        S0_path = ivim_flow.last_generated_outputs['out_S0_est']
+        S0_path = ivim_flow.last_generated_outputs['out_S0_predicted']
         S0_data = nib.load(S0_path).get_data()
         assert_equal(S0_data.shape, data_img.shape[:-1])
 
-        f_path = ivim_flow.last_generated_outputs['out_f_est']
+        f_path = ivim_flow.last_generated_outputs['out_perfusion_fraction']
         f_data = nib.load(f_path).get_data()
         assert_equal(f_data.shape, data_img.shape[:-1])
 
-        D_star_path = ivim_flow.last_generated_outputs['out_D_star_est']
+        D_star_path = ivim_flow.last_generated_outputs['out_D_star']
         D_star_data = nib.load(D_star_path).get_data()
         assert_equal(D_star_data.shape, data_img.shape[:-1])
 
-        D_path = ivim_flow.last_generated_outputs['out_D_est']
+        D_path = ivim_flow.last_generated_outputs['out_D']
         D_data = nib.load(D_path).get_data()
         assert_equal(D_data.shape, data_img.shape[:-1])
 
@@ -79,9 +78,6 @@ def test_reconst_ivim():
         np.savetxt(tmp_bvec_path, bvecs.T)
 
         ivim_flow._force_overwrite = True
-# TODO
-#        npt.assert_warns(UserWarning, ivim_flow.run, data_path, tmp_bval_path,
-#                         tmp_bvec_path, out_dir=out_dir)
 
 
 if __name__ == '__main__':
