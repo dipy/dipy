@@ -1,7 +1,7 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
 from dipy.viz import actor, window, ui
-from dipy.viz.window import vtk
+from dipy.viz import vtk
 from dipy.viz.panel import slicer_panel, build_label
 from dipy.tracking.streamline import transform_streamlines, length, Streamlines
 from dipy.io.streamline import load_trk, save_trk
