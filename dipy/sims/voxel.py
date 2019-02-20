@@ -997,44 +997,6 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
         msd += f * single_tensor_msd(mevals[j], tau=tau)
     return msd
 
-def ivim_signal(gtab, S0, f, D_star, D):
-    r""" Simulated signal based on the diffusion and pseudo-diffusion 
-    (perfusion) of a single voxel. Simulations are preformed assuming the IVIM
-    model.
-
-    Parameters
-    -----------
-    gtab : GradientTable
-        Measurement directions.
-    S0 : float
-        The measured signal for the IVIM Model.
-    f : float
-        Volume fraction for the Pseudo-Diffusion component.
-    D_star : float
-        Coefficient for Pseudo-Diffusion.
-    D : float
-        Coefficient for Diffusion.
-
-    Returns
-    --------
-    S : (N,) ndarray
-        Simulated signal based on the IVIM model:
-
-    .. math::
-
-        S(b) = S_0[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
-
-    References
-    ----------
-    .. [1] Federau, Christian, et al. "Quantitative measurement
-       of brain perfusion with intravoxel incoherent motion
-       MR imaging." Radiology 265.3 (2012): 874-881.
-    """
-    b = gtab.bvals
-    S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
-    return S
-    
-
 # Use standard naming convention, but keep old names
 # for backward compatibility
 SticksAndBall = sticks_and_ball

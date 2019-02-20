@@ -946,24 +946,20 @@ class ReconstIvimFlow(Workflow):
                 save_metrics = ['S0_predicted', 'perfusion_fraction', 'D_star',
                                 'D']
 
-            S0_predicted = ivimfit.S0_predicted
-            perfusion_fraction = ivimfit.perfusion_fraction
-            D_star = ivimfit.D_star
-            D = ivimfit.D
-
             if 'S0_predicted' in save_metrics:
-                save_nifti(oS0_predicted, S0_predicted.astype(np.float32),
-                           affine)
+                save_nifti(oS0_predicted,
+                           ivimfit.S0_predicted.astype(np.float32), affine)
 
             if 'perfusion_fraction' in save_metrics:
                 save_nifti(operfusion_fraction,
-                           perfusion_fraction.astype(np.float32), affine)
+                           ivimfit.perfusion_fraction.astype(np.float32),
+                           affine)
 
             if 'D_star' in save_metrics:
-                save_nifti(oD_star, D_star.astype(np.float32), affine)
+                save_nifti(oD_star, ivimfit.D_star.astype(np.float32), affine)
 
             if 'D' in save_metrics:
-                save_nifti(oD, D.astype(np.float32), affine)
+                save_nifti(oD, ivimfit.D.astype(np.float32), affine)
 
             logging.info('IVIM metrics saved in {0}'.
                          format(os.path.dirname(oD)))
