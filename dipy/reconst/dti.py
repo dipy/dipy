@@ -99,6 +99,11 @@ def fa_from_lo_tri(dti_params):
     return fractional_anisotropy(evals)
 
 
+def md_from_lo_tri(dti_params):
+    evals = eig_from_lo_tri(dti_params)[..., :3]
+    return mean_diffusivity(evals)
+
+
 def geodesic_anisotropy(evals, axis=-1):
     r"""
     Geodesic anisotropy (GA) of a diffusion tensor.
@@ -758,7 +763,7 @@ class TensorModel(ReconstModel):
                 raise ValueError(e_s)
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
-        self.least_squares_quantities = None
+        #self.least_squares_quantities = None
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
