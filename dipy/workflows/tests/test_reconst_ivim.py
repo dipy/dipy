@@ -7,7 +7,6 @@ import numpy as np
 
 from numpy.testing import assert_equal
 
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import generate_bvecs, gradient_table
 from dipy.workflows.reconst import ReconstIvimFlow
@@ -45,9 +44,14 @@ def test_reconst_ivim():
         data_path = pjoin(out_dir, 'tmp_data.nii.gz')
         nib.save(data_img, data_path)
 
+        mask = np.ones_like(data_multi[..., 0])
+        mask_img = nib.Nifti1Image(mask.astype(np.uint8), data_img.affine)
+        mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
+        nib.save(mask_img, mask_path)
+
         ivim_flow = ReconstIvimFlow()
 
-        args = [data_path, temp_bval_path, temp_bvec_path]
+        args = [data_path, temp_bval_path, temp_bvec_path, mask_path]
 
         ivim_flow.run(*args, out_dir=out_dir)
 
@@ -66,19 +70,6 @@ def test_reconst_ivim():
         D_path = ivim_flow.last_generated_outputs['out_D']
         D_data = nib.load(D_path).get_data()
         assert_equal(D_data.shape, data_img.shape[:-1])
-
-        tmp_bval_path = pjoin(out_dir, "tmp.bval")
-        tmp_bvec_path = pjoin(out_dir, "tmp.bvec")
-
-        bvals, bvecs = read_bvals_bvecs(temp_bval_path, temp_bvec_path)
-        bvals[0] = 0.
-        bvecs = generate_bvecs(len(bvals))
-
-        np.savetxt(tmp_bval_path, bvals)
-        np.savetxt(tmp_bvec_path, bvecs.T)
-
-        ivim_flow._force_overwrite = True
-
 
 if __name__ == '__main__':
     test_reconst_ivim()

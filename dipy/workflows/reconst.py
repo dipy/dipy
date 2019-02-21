@@ -869,8 +869,8 @@ class ReconstIvimFlow(Workflow):
     def get_short_name(cls):
         return 'ivim'
 
-    def run(self, input_files, bvalues_files, bvectors_files, split_b_D=400,
-            split_b_S0=200, save_metrics=[],
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            split_b_D=400, split_b_S0=200, save_metrics=[],
             out_dir='', out_S0_predicted='S0_predicted.nii.gz',
             out_perfusion_fraction='perfusion_fraction.nii.gz',
             out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
@@ -890,6 +890,9 @@ class ReconstIvimFlow(Workflow):
         bvectors_files : string
             Path to the bvalues files. This path may contain wildcards to use
             multiple bvalues files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once. (default: No mask used)
         split_b_D : int, optional
             Value to split the bvals to estimate D for the two-stage process of
             fitting
@@ -933,13 +936,16 @@ class ReconstIvimFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for (dwi, bval, bvec, oS0_predicted, operfusion_fraction,
+        for (dwi, bval, bvec, mask, oS0_predicted, operfusion_fraction,
              oD_star, oD) in io_it:
 
             logging.info('Computing IVIM metrics for {0}'.format(dwi))
             data, affine = load_nifti(dwi)
 
-            ivimfit, _ = self.get_fitted_ivim(data, bval, bvec,
+            if mask is not None:
+                mask = nib.load(mask).get_data().astype(np.bool)
+
+            ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec,
                                               b0_threshold=0)
 
             if not save_metrics:
@@ -964,7 +970,7 @@ class ReconstIvimFlow(Workflow):
             logging.info('IVIM metrics saved in {0}'.
                          format(os.path.dirname(oD)))
 
-    def get_fitted_ivim(self, data, bval, bvec, b0_threshold=50):
+    def get_fitted_ivim(self, data, mask, bval, bvec, b0_threshold=50):
         logging.info('Intra-Voxel Incoherent Motion Estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
@@ -974,6 +980,6 @@ class ReconstIvimFlow(Workflow):
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         ivimmodel = IvimModel(gtab)
-        ivimfit = ivimmodel.fit(data)
+        ivimfit = ivimmodel.fit(data, mask)
 
         return ivimfit, gtab
