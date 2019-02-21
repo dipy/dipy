@@ -126,7 +126,7 @@ class RecoBundles(object):
         if self.verbose:
             print("target brain streamlines length = ", len(streamlines))
             print("After refining target brain streamlines length = ",
-                len(self.streamlines))
+                  len(self.streamlines))
 
         self.start_thr = [40, 25, 20]
         if rng is None:
@@ -236,8 +236,8 @@ class RecoBundles(object):
             print('## Recognize given bundle ## \n')
 
         model_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=model_clust_thr)
+            model_bundle,
+            model_clust_thr=model_clust_thr)
 
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             model_centroids,
@@ -337,12 +337,12 @@ class RecoBundles(object):
             print('## Refine recognize given bundle ## \n')
 
         model_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=model_clust_thr)
+            model_bundle,
+            model_clust_thr=model_clust_thr)
 
         pruned_model_centroids = self._cluster_model_bundle(
-                pruned_streamlines,
-                model_clust_thr=model_clust_thr)
+            pruned_streamlines,
+            model_clust_thr=model_clust_thr)
 
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             pruned_model_centroids,
@@ -405,11 +405,11 @@ class RecoBundles(object):
 
         spruned_streamlines = Streamlines(pruned_streamlines)
         recog_centroids = self._cluster_model_bundle(
-                spruned_streamlines,
-                model_clust_thr=1.25)
+            spruned_streamlines,
+            model_clust_thr=1.25)
         mod_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=1.25)
+            model_bundle,
+            model_clust_thr=1.25)
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
         ba_value = ba_analysis(recog_centroids, model_centroids, threshold=10)
