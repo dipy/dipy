@@ -64,11 +64,14 @@ _transform_method[(2, 'linear')] = vf.transform_2d_affine
 _transform_method[(3, 'linear')] = vf.transform_3d_affine
 _number_dim_affine_matrix = 2
 
+
 class AffineInversionError(Exception):
     pass
 
+
 class AffineInvalidValuesError(Exception):
     pass
+
 
 class AffineMap(object):
 
@@ -167,27 +170,32 @@ class AffineMap(object):
 
         try:
             affine = np.array(affine)
-        except:
-            raise TypeError('Input must be type ndarray, or be convertible to one.')
+        except Exception:
+            raise TypeError("Input must be type ndarray, or be convertible"
+                            " to one.")
 
         if len(affine.shape) != _number_dim_affine_matrix:
             raise AffineInversionError('Affine transform must be 2D')
 
         if not affine.shape[0] == affine.shape[1]:
-            raise AffineInversionError('Affine transform must be a square matrix')
+            raise AffineInversionError("Affine transform must be a square "
+                                       "matrix")
 
         if not np.all(np.isfinite(affine)):
-            raise AffineInvalidValuesError('Affine transform contains invalid elements')
+            raise AffineInvalidValuesError("Affine transform contains invalid"
+                                           " elements")
 
         # checking on proper augmentation
         # First n-1 columns in last row in matrix contain non-zeros
         if not np.all(affine[-1, :-1] == 0.0):
-            raise AffineInvalidValuesError('First {n_1} columns in last row in matrix '
-                                           'contain non-zeros!'.format(n_1=affine.shape[0] - 1))
+            raise AffineInvalidValuesError("First {n_1} columns in last row"
+                                           " in matrix contain non-zeros!"
+                                           .format(n_1=affine.shape[0] - 1))
 
         # Last row, last column in matrix must be 1.0!
         if affine[-1, -1] != 1.0:
-            raise AffineInvalidValuesError('Last row, last column in matrix is not 1.0!')
+            raise AffineInvalidValuesError("Last row, last column in matrix"
+                                           " is not 1.0!")
 
         # making a copy to insulate it from changes outside object
         self.affine = affine.copy()
@@ -228,8 +236,10 @@ class AffineMap(object):
                 allowed_formats_print_map = ['full', 'f',
                                              'rotation', 'r',
                                              'translation', 't']
-                raise NotImplementedError('Format {} not recognized or implemented.\n'
-                                          'Try one of {}'.format(format_spec, allowed_formats_print_map))
+                raise NotImplementedError("Format {} not recognized or"
+                                          "implemented.\nTry one of {}"
+                                          .format(format_spec,
+                                                  allowed_formats_print_map))
 
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
@@ -251,7 +261,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
@@ -354,7 +364,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
@@ -401,7 +411,7 @@ class AffineMap(object):
 
         Parameters
         ----------
-        image : array, shape (X, Y) or (X, Y, Z)
+        image :  2D or 3D array
             the image to be transformed
         interp : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
@@ -954,14 +964,14 @@ class AffineRegistration(object):
 
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
-                 starting_affine=None):
+                 starting_affine=None, ret_metric=False):
         r""" Starts the optimization process
 
         Parameters
         ----------
-        static : array, shape (S, R, C) or (R, C)
+        static : 2D or 3D array
             the image to be used as reference during optimization.
-        moving : array, shape (S', R', C') or (R', C')
+        moving : 2D or 3D array
             the image to be used as "moving" during optimization. It is
             necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed
@@ -993,11 +1003,20 @@ class AffineRegistration(object):
             If None:
                 Start from identity.
             The default is None.
+        ret_metric : boolean, optional
+            if True, it returns the parameters for measuring the
+            similarity between the images (default 'False').
+            The metric containing optimal parameters and
+            the distance between the images.
 
         Returns
         -------
         affine_map : instance of AffineMap
             the affine resulting affine transformation
+        xopt : optimal parameters
+            the optimal parameters (translation, rotation shear etc.)
+        fopt : Similarity metric
+            the value of the function at the optimal parameters.
         """
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
@@ -1074,6 +1093,8 @@ class AffineRegistration(object):
             self.params0 = self.transform.get_identity_parameters()
 
         affine_map.set_affine(self.starting_affine)
+        if ret_metric:
+            return affine_map, opt.xopt, opt.fopt
         return affine_map
 
 
