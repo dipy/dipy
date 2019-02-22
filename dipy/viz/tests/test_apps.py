@@ -13,10 +13,10 @@ streamlines = Streamlines([s1, s2])
 tractograms = [streamlines]
 images = None
 
-horizon(tractograms, images=None, cluster=True, cluster_thr=5,
+horizon(tractograms, images=images, cluster=True, cluster_thr=5,
         random_colors=False, length_lt=np.inf, length_gt=0,
         clusters_lt=np.inf, clusters_gt=0,
-        world_coords=False, interactive=True)
+        world_coords=False, interactive=False)
 
 
 

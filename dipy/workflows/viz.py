@@ -11,9 +11,10 @@ class HorizonFlow(Workflow):
         return 'horizon'
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
-            random_colors=False,
-            length_lt=1000, length_gt=0,
-            clusters_lt=10**8, clusters_gt=0):
+            random_colors=False, length_lt=1000, length_gt=0,
+            clusters_lt=10**8, clusters_gt=0, world_coords=True,
+            interactive=True):
+
         """ Advanced visualization application
 
         Parameters
@@ -26,6 +27,8 @@ class HorizonFlow(Workflow):
         length_gt : float
         clusters_lt : int
         clusters_gt : int
+        world_coords : bool
+        interactive : bool
         """
         verbose = True
         tractograms = []
@@ -52,4 +55,4 @@ class HorizonFlow(Workflow):
 
         horizon(tractograms, images, cluster, cluster_thr,
                 random_colors, length_lt, length_gt, clusters_lt,
-                clusters_gt)
+                clusters_gt, world_coords=True, interactive=True)

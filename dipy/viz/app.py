@@ -3,17 +3,8 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.viz import actor, window, ui
 from dipy.viz import vtk
 from dipy.viz.panel import slicer_panel, build_label
-from dipy.tracking.streamline import transform_streamlines, length, Streamlines
-from dipy.io.streamline import load_trk, save_trk
-from dipy.io.image import load_nifti, save_nifti
-
-
-def check_range(streamline, lt, gt):
-    length_s = length(streamline)
-    if (length_s < lt) & (length_s > gt):
-        return True
-    else:
-        return False
+from dipy.tracking.streamline import length, Streamlines
+from dipy.io.streamline import save_trk
 
 
 def apply_shader(hz, actor):
@@ -94,7 +85,10 @@ class Horizon(object):
         self.interactive = interactive
         self.prng = np.random.RandomState(27)
         self.tractograms = tractograms
-        self.images = images
+        if images is None:
+            self.images = []
+        else:
+            self.images = images
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
         self.tractogram_clusters = {}
@@ -187,10 +181,10 @@ class Horizon(object):
 
             # global self.panel2, slider_length, slider_size
             self.panel2 = ui.Panel2D(size=(300, 200),
-                                position=(850, 320),
-                                color=(1, 1, 1),
-                                opacity=0.1,
-                                align="right")
+                                     position=(850, 320),
+                                     color=(1, 1, 1),
+                                     opacity=0.1,
+                                     align="right")
 
             slider_label_length = build_label(text="Length")
             slider_length = ui.LineSlider2D(
