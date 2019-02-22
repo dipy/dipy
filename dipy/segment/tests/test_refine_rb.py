@@ -1,6 +1,8 @@
 import numpy as np
 import nibabel as nib
-from numpy.testing import assert_equal, run_module_suite
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
+                           run_module_suite)
 from dipy.data import get_fnames
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
@@ -77,6 +79,30 @@ def test_rb_disable_slr():
     # check if the bundle is recognized correctly
     for row in D:
         assert_equal(row.min(), 0)
+
+
+def test_rb_slr_threads():
+
+    rb = RecoBundles(f, greater_than=0, clust_thr=10)
+
+    rec_trans_multi_threads, _ = rb.recognize(model_bundle=f2,
+                                              model_clust_thr=5.,
+                                              reduction_thr=10,
+                                              slr=True,
+                                              slr_num_threads=None)
+
+    rec_trans_single_thread, _ = rb.recognize(model_bundle=f2,
+                                              model_clust_thr=5.,
+                                              reduction_thr=10,
+                                              slr=True,
+                                              slr_num_threads=1)
+
+    D = bundles_distances_mam(rec_trans_multi_threads, rec_trans_single_thread)
+
+    # check if the bundle is recognized correctly
+    # multi-threading prevent an exact match
+    for row in D:
+        assert_almost_equal(row.min(), 0, decimal=5)
 
 
 def test_rb_no_verbose_and_mam():
