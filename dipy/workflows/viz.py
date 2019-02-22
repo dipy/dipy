@@ -1,5 +1,5 @@
 from dipy.workflows.workflow import Workflow
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.io.image import load_nifti
 from dipy.viz.app import horizon
 
@@ -12,8 +12,8 @@ class HorizonFlow(Workflow):
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=False, length_lt=1000, length_gt=0,
-            clusters_lt=10**8, clusters_gt=0, world_coords=True,
-            interactive=True):
+            clusters_lt=10**8, clusters_gt=0, native_coords=False,
+            stealth=False, out_dir='', out_stealth_png='tmp.png'):
 
         """ Advanced visualization application
 
@@ -27,23 +27,31 @@ class HorizonFlow(Workflow):
         length_gt : float
         clusters_lt : int
         clusters_gt : int
-        world_coords : bool
-        interactive : bool
+        native_coords : bool
+        stealth : bool
+        out_dir : string
+        out_stealth_png : string
         """
         verbose = True
         tractograms = []
         images = []
+        world_coords = not native_coords
+        interactive = not stealth
 
-        for f in input_files:
+        io_it = self.get_io_iterator()
+
+        for input_output in io_it:
+
+            f = input_output[0]
 
             if verbose:
                 print('Loading file ...')
                 print(f)
                 print('\n')
 
-            if f.endswith('.trk'):
+            if f.endswith('.trk') or f.endswith('.tck') or f.endswith('.dpy'):
 
-                streamlines, hdr = load_trk(f)
+                streamlines, hdr = load_tractogram(f, lazy_load=False)
                 tractograms.append(streamlines)
 
             if f.endswith('.nii.gz') or f.endswith('.nii'):
@@ -55,4 +63,6 @@ class HorizonFlow(Workflow):
 
         horizon(tractograms, images, cluster, cluster_thr,
                 random_colors, length_lt, length_gt, clusters_lt,
-                clusters_gt, world_coords=True, interactive=True)
+                clusters_gt,
+                world_coords=world_coords,
+                interactive=interactive)

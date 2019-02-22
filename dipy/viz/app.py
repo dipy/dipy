@@ -157,6 +157,7 @@ class Horizon(object):
                     apply_shader(self, centroid_actor)
 
             else:
+
                 streamline_actor = actor.line(streamlines, colors=colors)
                 streamline_actor.GetProperty().SetEdgeVisibility(1)
                 streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
@@ -444,10 +445,10 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
             world_coords=True, interactive=True):
 
-        hz = Horizon(tractograms, images, cluster, cluster_thr, random_colors,
-                     length_lt, length_gt, clusters_lt, clusters_gt,
-                     world_coords, interactive)
+    hz = Horizon(tractograms, images, cluster, cluster_thr, random_colors,
+                 length_lt, length_gt, clusters_lt, clusters_gt,
+                 world_coords, interactive)
 
-        renderer = hz.build_renderer()
+    renderer = hz.build_renderer()
 
-        hz.build_show(renderer)
+    hz.build_show(renderer)
