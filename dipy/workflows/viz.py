@@ -49,12 +49,14 @@ class HorizonFlow(Workflow):
                 print(f)
                 print('\n')
 
-            if f.endswith('.trk') or f.endswith('.tck') or f.endswith('.dpy'):
+            fl = f.lower()
+
+            if fl.endswith('.trk') or fl.endswith('.tck') or fl.endswith('.dpy'):
 
                 streamlines, hdr = load_tractogram(f, lazy_load=False)
                 tractograms.append(streamlines)
 
-            if f.endswith('.nii.gz') or f.endswith('.nii'):
+            if fl.endswith('.nii.gz') or fl.endswith('.nii'):
 
                 data, affine = load_nifti(f)
                 images.append((data, affine))
