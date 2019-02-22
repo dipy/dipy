@@ -71,5 +71,6 @@ def test_reconst_ivim():
         D_data = nib.load(D_path).get_data()
         assert_equal(D_data.shape, data_img.shape[:-1])
 
+
 if __name__ == '__main__':
     test_reconst_ivim()

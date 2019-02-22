@@ -870,7 +870,7 @@ class ReconstIvimFlow(Workflow):
         return 'ivim'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            split_b_D=400, split_b_S0=200, save_metrics=[],
+            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=[],
             out_dir='', out_S0_predicted='S0_predicted.nii.gz',
             out_perfusion_fraction='perfusion_fraction.nii.gz',
             out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
@@ -899,8 +899,11 @@ class ReconstIvimFlow(Workflow):
             (default 400)
         split_b_S0 : int, optional
             Value to split the bvals to estimate S0 for the two-stage process
-            of fitting
+            of fitting.
             (default 200)
+        b0_threshold : int, optional
+            Threshold value for the b0 bval.
+            (default 0)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: S0_predicted, perfusion_fraction, D_star, D
@@ -946,7 +949,7 @@ class ReconstIvimFlow(Workflow):
                 mask = nib.load(mask).get_data().astype(np.bool)
 
             ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec,
-                                              b0_threshold=0)
+                                              b0_threshold)
 
             if not save_metrics:
                 save_metrics = ['S0_predicted', 'perfusion_fraction', 'D_star',
