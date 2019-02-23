@@ -102,7 +102,7 @@ def test_rb_slr_threads():
     # check if the bundle is recognized correctly
     # multi-threading prevent an exact match
     for row in D:
-        assert_almost_equal(row.min(), 0, decimal=5)
+        assert_almost_equal(row.min(), 0, decimal=4)
 
 
 def test_rb_no_verbose_and_mam():
