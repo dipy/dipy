@@ -77,7 +77,7 @@ def decfa(img_orig):
         val = data_orig[ii]
         out_data[ii] = (val[0], val[1], val[2])
 
-    new_hdr = img_orig.get_header()
+    new_hdr = img_orig.header
     new_hdr['dim'][4] = 1
     new_hdr.set_intent(1001, name='Color FA')
     new_hdr.set_data_dtype(dest_dtype)

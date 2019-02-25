@@ -2,12 +2,13 @@ from __future__ import division, print_function, absolute_import
 
 from dipy.utils.six.moves import xrange
 
-from nose.tools import assert_equal, assert_raises, assert_true, assert_false
+from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal)
+                           assert_equal, assert_raises)
 
 import numpy as np
-from dipy.reconst.interpolate import (NearestNeighborInterpolator, TriLinearInterpolator,
+from dipy.reconst.interpolate import (NearestNeighborInterpolator,
+                                      TriLinearInterpolator,
                                       OutsideImage)
 
 

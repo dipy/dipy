@@ -26,6 +26,7 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell,
                                read_stanford_labels,
+                               fetch_stanford_labels,
                                fetch_syn_data,
                                read_syn_data,
                                fetch_stanford_t1,
@@ -290,13 +291,11 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
-    if name == 'ivim_mix':
-        fimg = pjoin(DATA_DIR, 'ep2d_advdiff_IVIM_topup.nii')
-        fbvals = pjoin(DATA_DIR, 'ep2d_advdiff_IVIM_avg.bval')
-        return fimg, fbvals
-    if name == 'mask_ivim':
-        fimg = pjoin(DATA_DIR, 'brain_mask.nii')
-        return fimg
+    if name == 'ivim_small':
+        fbvals = pjoin(DATA_DIR, 'ivim.bval')
+        fbvecs = pjoin(DATA_DIR, 'ivim.bvec')
+        fimg = pjoin(DATA_DIR, 'ivim_small.nii.gz')
+        return fimg, fbvals, fbvecs
 
 
 def get_data(name='small_64D'):

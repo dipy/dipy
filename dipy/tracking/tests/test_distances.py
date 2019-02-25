@@ -1,10 +1,9 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
-import nose
-from nose.tools import (assert_true, assert_false, assert_equal,
-                        assert_almost_equal)
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.testing import assert_true, assert_false
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_equal, assert_almost_equal)
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
 
@@ -63,11 +62,6 @@ def test_LSCv2():
 
     from dipy.data import get_fnames
     from nibabel import trackvis as tv
-    try:
-        from dipy.viz import window, actor
-    except ImportError as e:
-        raise nose.plugins.skip.SkipTest(
-            'Fails to import dipy.viz due to %s' % str(e))
 
     streams, hdr = tv.read(get_fnames('fornix'))
     T3 = [tm.downsample(s[0], 6) for s in streams]
@@ -79,6 +73,10 @@ def test_LSCv2():
     print('lenC', len(C))
 
     """
+    try:
+        from dipy.viz import window, actor
+    except ImportError as e:
+        raise pytest.skip('Fails to import dipy.viz due to %s' % str(e))
 
     r = window.Renderer()
     colors = np.zeros((len(C), 3))

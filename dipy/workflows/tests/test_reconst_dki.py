@@ -5,8 +5,8 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 
-from nose.tools import assert_true, assert_equal
 import numpy.testing as npt
+from numpy.testing import assert_equal
 
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs

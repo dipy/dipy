@@ -1,5 +1,3 @@
-from nose.tools import assert_raises
-
 import os
 import time
 from os.path import join as pjoin
@@ -46,7 +44,7 @@ def test_get_sub_runs():
 
 def test_run():
     wf = Workflow()
-    assert_raises(Exception, wf.run, None)
+    npt.assert_raises(Exception, wf.run, None)
 
 
 def test_missing_file():

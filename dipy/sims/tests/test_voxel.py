@@ -1,8 +1,7 @@
 import numpy as np
 
-from nose.tools import assert_almost_equal
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_)
+                           assert_, assert_almost_equal)
 
 from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
                              all_tensor_evecs, add_noise, single_tensor,
@@ -14,14 +13,18 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
-fimg, fbvals, fbvecs = get_fnames('small_64D')
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
+def setup_module():
+    """Module-level setup"""
+    global gtab, gtab_2s
 
-# 2 shells for techniques that requires multishell data
-bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
-bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
-gtab_2s = gradient_table(bvals_2s, bvecs_2s)
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    # 2 shells for techniques that requires multishell data
+    bvals_2s = np.concatenate((bvals, bvals * 2), axis=0)
+    bvecs_2s = np.concatenate((bvecs, bvecs), axis=0)
+    gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
 # Unused with missing refernces to basis
