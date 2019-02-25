@@ -63,12 +63,11 @@ class IVIMModel(ReconstModel):
 #                                         maxiter=self.maxiter, args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,),
-                                         disp=False, polish=True, popsize=5)
+                                         disp=True, polish=True, popsize=28)
         x = res_one.x
         phi = self.Phi(x)
         fe = self.cvx_fit(data, phi)
         x_fe = self.x_and_fe_to_x_fe(x, fe)
-#        bounds = ([0.01, 0.005, 1 * 10 ** (-6)], [0.3, 0.02,  0.003])
         bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
         res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
