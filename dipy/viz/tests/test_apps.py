@@ -50,7 +50,7 @@ def test_horizon():
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
-            world_coords=False, interactive=True)
+            world_coords=False, interactive=False)
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
 
@@ -61,7 +61,7 @@ def test_horizon():
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
-            world_coords=True, interactive=True)
+            world_coords=True, interactive=False)
 
 
 if __name__ == '__main__':
