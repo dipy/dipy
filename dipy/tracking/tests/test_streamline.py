@@ -1329,12 +1329,13 @@ def test_gaussian_weights():
 
 def test_bundle_profile():
     data = np.ones((10, 10, 10))
-    bundle = Streamlines([np.array([[0, 0., 0],
-                                    [1, 0., 0.],
-                                    [2, 0., 0.]]),
-                          np.array([[0, 0., 0.],
-                                    [1, 0., 0],
-                                    [2, 0,  0.]])])
+    bundle = Streamlines()
+    bundle.extend(np.array([[[0, 0., 0],
+                            [1, 0., 0.],
+                            [2, 0., 0.]]]))
+    bundle.extend(np.array([[[0, 0., 0.],
+                            [1, 0., 0],
+                            [2, 0,  0.]]]))
 
     profile = bundle_profile(data, bundle)
     npt.assert_equal(profile, np.ones(100))
@@ -1361,9 +1362,9 @@ def test_bundle_profile():
     affine = np.eye(4)
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
-    x_bundle = Streamlines([sl + affine[:3, 3] for sl in bundle])
+    bundle._data = bundle._data + affine[:3, 3]
     profile = bundle_profile(data,
-                             x_bundle,
+                             bundle,
                              affine=affine,
                              n_points=10,
                              weights=None)

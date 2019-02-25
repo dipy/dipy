@@ -1,6 +1,6 @@
 """
 ========================================================
-Tractometry: extracting profiles from segmeneted bundles
+Tractometry: extracting profiles from segmented bundles
 ========================================================
 
 In this example, we will we will extract the values of a statistic from a
@@ -169,7 +169,15 @@ References
 
 .. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
     Brian A. Wandell, and Heidi M. Feldman. 2012. "Tract Profiles of White
-    Matter Properties: Automating Fiber-Tract Quantification" PloS One 7
-    (11): e49790.
+    Matter Properties: Automating Fiber-Tract Quantification" PloS One 7 (11):
+    e49790.
+
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles
+   using local and global streamline-based registration and clustering,
+   Neuroimage, 2017.
+
+.. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.
+
 
 """
