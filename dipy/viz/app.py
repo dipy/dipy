@@ -1,8 +1,15 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
-from dipy.viz import actor, window, ui
-from dipy.viz import vtk
-from dipy.viz.panel import slicer_panel, build_label
+
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package('fury')
+
+if have_fury:
+    from dipy.viz import actor, window, ui
+    from dipy.viz import vtk
+    from dipy.viz.panel import slicer_panel, build_label
+
 from dipy.tracking.streamline import length, Streamlines
 from dipy.io.streamline import save_trk
 
@@ -73,6 +80,14 @@ class Horizon(object):
     def __init__(self, tractograms, images, cluster, cluster_thr,
                  random_colors, length_lt, length_gt, clusters_lt, clusters_gt,
                  world_coords=True, interactive=True):
+        """ Highly interactive visualization
+
+        Parameters
+        ----------
+
+        References
+        ----------
+        """
 
         self.cluster = cluster
         self.cluster_thr = cluster_thr
@@ -361,8 +376,7 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             active_streamlines.extend(Streamlines(indices))
 
-
-                    #self.tractograms = [active_streamlines]
+                    # self.tractograms = [active_streamlines]
                     hz2 = horizon([active_streamlines],
                                   self.images, cluster=True, cluster_thr=5,
                                   random_colors=self.random_colors,
