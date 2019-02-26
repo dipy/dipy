@@ -102,6 +102,8 @@ We acknowledge support from the following organizations:
 
 - The department of Intelligent Systems Engineering of Indiana University.
 
+- The National Institute of Biomedical Imaging and Bioengineering, NIH.
+
 - The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the
   University of Washington eScience Institute Data Science Environment.
 
