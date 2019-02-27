@@ -1,18 +1,18 @@
 """
 ========================================================
-Tractometry: extracting profiles from segmented bundles
+Extracting AFQ tract profiles from segmented bundles.
 ========================================================
 
 In this example, we will we will extract the values of a statistic from a
-volume, using the coordinates along the length of a bundle. This is called
-tractometry.
+volume, using the coordinates along the length of a bundle. These are called
+`tract profiles`
 
-One of the challenges of tractometry is that some of the streamlines in a bundle
-may diverge significantly from the bundle in some locations. To overcome this
-challenge, we will use a strategy similar to that described in [Yeatman2012]_:
-We will weight the contribution of each streamline to the bundle profile based
-on how far this streamline is from the mean trajectory of the bundle at that
-location.
+One of the challenges of extracting tract profiles is that some of the
+streamlines in a bundle may diverge significantly from the bundle in some
+locations. To overcome this challenge, we will use a strategy similar to that
+described in [Yeatman2012]_: We will weight the contribution of each streamline
+to the bundle profile based on how far this streamline is from the mean
+trajectory of the bundle at that location.
 
 """
 
@@ -49,7 +49,7 @@ transform = np.load("slr_transform.npy")
 
 """
 
-In the next step, we need to make sure that all the streamlines in each bundles
+In the next step, we need to make sure that all the streamlines in each bundle
 are oriented the same way. For example, for the CST, we want to make sure that
 all the bundles have their cortical termination at one end of the streamline.
 This is that when we later extract values from a volume, we won't have different
@@ -79,8 +79,7 @@ metric = AveragePointwiseEuclideanMetric(feature)
 
 Since we are going to include all of the streamlines in the single cluster
 from the streamlines, we set the threshold to `np.inf`. We pull out the centroid
-as the standard
-
+as the standard.
 """
 
 qb = QuickBundles(np.inf, metric=metric)
@@ -97,7 +96,6 @@ all of the streamlines in each bundle from the individual subject. Here, the
 affine used is the one from the transform between the atlas and individual
 tractogram. This is so that the orienting is done relative to the space of the
 individual, and not relative to the atlas space.
-
 """
 
 import dipy.tracking.streamline as dts
@@ -109,12 +107,10 @@ oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
 
 
 """
-
 Read volumetric data from an image corresponding to this subject.
 
 For the purpose of this, we've extracted only the FA within the bundles in question,
 but in real use, this is where you would add the FA map of your subject.
-
 """
 
 files, folder = dpd.fetch_bundle_fa_hcp()
@@ -136,20 +132,20 @@ w_af_l = dts.gaussian_weights(oriented_af_l)
 And then use the weights to calculate the bundle profiles for each bundle
 """
 
-profile_cst_l = dts.bundle_profile(fa, oriented_cst_l, affine=img.affine)#,
-#                                   weights=w_cst_l)
+profile_cst_l = dts.bundle_profile(fa, oriented_cst_l, affine=img.affine,
+                                   weights=w_cst_l)
 
-profile_af_l = dts.bundle_profile(fa, oriented_af_l, affine=img.affine)#,
-#                                  weights=w_af_l)
+profile_af_l = dts.bundle_profile(fa, oriented_af_l, affine=img.affine),
+                                  weights=w_af_l)
 
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
 ax1.plot(profile_cst_l)
 ax1.set_ylabel("Fractional anisotropy")
-ax1.set_xlabel("Node")
+ax1.set_xlabel("Node along CST")
 ax2.plot(profile_af_l)
-ax2.set_xlabel("Node")
+ax2.set_xlabel("Node along AF")
 fig.savefig("bundle_profiles")
 
 
@@ -159,11 +155,9 @@ fig.savefig("bundle_profiles")
 
    Bundle profiles for the fractional anisotropy in left CST (left) and left
    AF (right).
-
 """
 
 """
-
 References
 ----------
 
