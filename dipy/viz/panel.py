@@ -1,5 +1,10 @@
 import numpy as np
-from dipy.viz import actor, window, ui
+from dipy.utils.optpkg import optional_package
+
+fury, have_fury, setup_module = optional_package('fury')
+
+if have_fury:
+    from dipy.viz import actor, ui
 
 
 def build_label(text, font_size=18, bold=False):

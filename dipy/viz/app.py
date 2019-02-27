@@ -1,6 +1,7 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
-
+from dipy.tracking.streamline import length, Streamlines
+from dipy.io.streamline import save_trk
 from dipy.utils.optpkg import optional_package
 
 fury, have_fury, setup_module = optional_package('fury')
@@ -9,9 +10,6 @@ if have_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label
-
-from dipy.tracking.streamline import length, Streamlines
-from dipy.io.streamline import save_trk
 
 
 def apply_shader(hz, actor):
@@ -416,8 +414,10 @@ class Horizon(object):
                     for c in self.cea:
                         if self.cea[c]['selected']:
                             if not self.cea[c]['expanded']:
-                                if (self.cea[c]['length'] >= self.length_min and
-                                        self.cea[c]['size'] >= self.size_min):
+                                len_ = self.cea[c]['length']
+                                sz_ = self.cea[c]['size']
+                                if (len_ >= self.length_min and
+                                        sz_ >= self.size_min):
                                     self.cea[c]['cluster_actor']. \
                                         VisibilityOn()
                                     c.VisibilityOff()
