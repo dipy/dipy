@@ -63,7 +63,7 @@ class IVIMModel(ReconstModel):
 #                                         maxiter=self.maxiter, args=(data,))
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,),
-                                         disp=True, polish=True, popsize=28)
+                                         disp=False, polish=True, popsize=28)
         x = res_one.x
         phi = self.Phi(x)
         fe = self.cvx_fit(data, phi)
