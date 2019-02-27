@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 from dipy.tracking.streamline import Streamlines
-from dipy.segment.bundles import gaussian_weights, afq_tract_profile
+from dipy.segment.bundles import gaussian_weights, afq_profile
 
 
 def test_gaussian_weights():
@@ -68,7 +68,7 @@ def test_gaussian_weights():
     npt.assert_equal(w, np.ones(w.shape) * np.nan)
 
 
-def test_afq_tract_profile():
+def test_afq_profile():
     data = np.ones((10, 10, 10))
     bundle = Streamlines()
     bundle.extend(np.array([[[0, 0., 0],
@@ -78,33 +78,33 @@ def test_afq_tract_profile():
                             [1, 0., 0],
                             [2, 0,  0.]]]))
 
-    profile = afq_tract_profile(data, bundle)
+    profile = afq_profile(data, bundle)
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_tract_profile(data, bundle, affine=None, n_points=10,
-                                weights=None)
+    profile = afq_profile(data, bundle, affine=None, n_points=10,
+                          weights=None)
     npt.assert_equal(profile, np.ones(10))
 
-    profile = afq_tract_profile(data, bundle, affine=None,
-                                weights=gaussian_weights, stat=np.median)
+    profile = afq_profile(data, bundle, affine=None,
+                          weights=gaussian_weights, stat=np.median)
 
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_tract_profile(data, bundle, affine=None, orient_by=bundle[0],
-                                weights=gaussian_weights, stat=np.median)
+    profile = afq_profile(data, bundle, affine=None, orient_by=bundle[0],
+                          weights=gaussian_weights, stat=np.median)
 
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_tract_profile(data, bundle, affine=None, n_points=10,
-                                weights=None)
+    profile = afq_profile(data, bundle, affine=None, n_points=10,
+                          weights=None)
     npt.assert_equal(profile, np.ones(10))
 
-    profile = afq_tract_profile(data, bundle, affine=None, n_points=10,
-                                weights=np.ones((2, 10)) * 0.5)
+    profile = afq_profile(data, bundle, affine=None, n_points=10,
+                          weights=np.ones((2, 10)) * 0.5)
     npt.assert_equal(profile, np.ones(10))
 
     # Disallow setting weights that don't sum to 1 across fibers/nodes:
-    npt.assert_raises(ValueError, afq_tract_profile,
+    npt.assert_raises(ValueError, afq_profile,
                       data, bundle, affine=None,
                       n_points=10, weights=np.ones((2, 10)) * 0.6)
 
@@ -113,14 +113,14 @@ def test_afq_tract_profile():
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
     bundle._data = bundle._data + affine[:3, 3]
-    profile = afq_tract_profile(data,
-                                bundle,
-                                affine=affine,
-                                n_points=10,
-                                weights=None)
+    profile = afq_profile(data,
+                          bundle,
+                          affine=affine,
+                          n_points=10,
+                          weights=None)
 
     npt.assert_equal(profile, np.ones(10))
 
     # Test for error-handling:
     empty_bundle = Streamlines([])
-    npt.assert_raises(ValueError, afq_tract_profile, data, empty_bundle)
+    npt.assert_raises(ValueError, afq_profile, data, empty_bundle)

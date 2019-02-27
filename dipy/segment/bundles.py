@@ -707,8 +707,8 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     return w / np.sum(w, 0)
 
 
-def afq_tract_profile(data, bundle, affine=None, n_points=100,
-                      orient_by=None, weights=None, **weights_kwarg):
+def afq_profile(data, bundle, affine=None, n_points=100,
+                orient_by=None, weights=None, **weights_kwarg):
     """
     Calculates a summarized profile of data for a bundle or tract
     along its length.
