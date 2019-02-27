@@ -14,8 +14,8 @@ def x_manifold(D, mask, out):
     Parameters
     ----------
     D : (..., 6) ndarray
-        The diffusion tensor components, in the following order:
-        Dxx, Dyy, Dzz, Dxy, Dxz, Dyz
+        The lower triangular components of the diffusion tensor,
+        in the following order: Dxx, Dxy, Dyy, Dxz, Dyz, Dzz
     mask : boolean array
         boolean mask that marks indices of the data that
         should be converted, with shape X.shape[:-1]
@@ -40,11 +40,11 @@ def x_manifold(D, mask, out):
 
     """
     Dxx = D[..., 0]
-    Dyy = D[..., 1]
-    Dzz = D[..., 2]
-    Dxy = D[..., 3]
-    Dxz = D[..., 4]
-    Dyz = D[..., 5]
+    Dxy = D[..., 1]
+    Dyy = D[..., 2]
+    Dxz = D[..., 3]
+    Dyz = D[..., 4]
+    Dzz = D[..., 5]
 
     out[mask, 0] = Dxx[mask]  # X1
     out[mask, 3] = Dxy[mask] / Dxx[mask]  # X4
@@ -87,9 +87,9 @@ def d_manifold(X, mask, out):
     X5 = X[..., 4]
     X6 = X[..., 5]
 
-    out[mask, 0] = X1[mask]
-    out[mask, 1] = X2[mask] + X1[mask] * X4[mask]**2
-    out[mask, 2] = X3[mask] + X1[mask] * X5[mask]**2 + X2[mask] * X6[mask]**2
-    out[mask, 3] = X1[mask] * X4[mask]
-    out[mask, 4] = X1[mask] * X5[mask]
-    out[mask, 5] = X1[mask] * X4[mask] * X5[mask] + X2[mask] * X6[mask]
+    out[mask, 0] = X1[mask] # Dxx
+    out[mask, 1] = X1[mask] * X4[mask] # Dxy
+    out[mask, 2] = X2[mask] + X1[mask] * X4[mask]**2 # Dyy
+    out[mask, 3] = X1[mask] * X5[mask] # Dxz
+    out[mask, 4] = X1[mask] * X4[mask] * X5[mask] + X2[mask] * X6[mask] # Dyz
+    out[mask, 5] = X3[mask] + X1[mask] * X5[mask]**2 + X2[mask] * X6[mask]**2 # Dzz
