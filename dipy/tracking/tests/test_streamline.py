@@ -29,9 +29,7 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       orient_by_streamline,
                                       values_from_volume,
                                       deform_streamlines,
-                                      cluster_confidence,
-                                      gaussian_weights,
-                                      bundle_profile)
+                                      cluster_confidence)
 
 
 streamline = np.array([[82.20181274,  91.36505890,  43.15737152],
