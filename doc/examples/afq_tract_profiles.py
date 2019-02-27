@@ -40,7 +40,6 @@ Either way, we can use the `dipy.io` API to read in the bundles from file.
 
 """
 
-
 from dipy.io.streamline import load_trk
 cst_l, hdr = load_trk("CST_L.trk")
 af_l, hdr = load_trk("AF_L.trk")
@@ -69,17 +68,17 @@ model_af_l, hdr = load_trk(model_af_l_file)
 model_cst_l, hdr = load_trk(model_cst_l_file)
 
 
-from dipy.segment.metric import AveragePointwiseEuclideanMetric, ResampleFeature
+from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
+                                 ResampleFeature)
 from dipy.segment.clustering import QuickBundles
 
 feature = ResampleFeature(nb_points=100)
 metric = AveragePointwiseEuclideanMetric(feature)
 
 """
-
 Since we are going to include all of the streamlines in the single cluster
-from the streamlines, we set the threshold to `np.inf`. We pull out the centroid
-as the standard.
+from the streamlines, we set the threshold to `np.inf`. We pull out the
+centroid as the standard.
 """
 
 qb = QuickBundles(np.inf, metric=metric)
@@ -124,20 +123,20 @@ fa = img.get_fdata()
 Calculate weights for each bundle:
 """
 
-w_cst_l = dts.gaussian_weights(oriented_cst_l)
-w_af_l = dts.gaussian_weights(oriented_af_l)
+import dipy.segment.bundles as dsb
 
+w_cst_l = dsb.gaussian_weights(oriented_cst_l)
+w_af_l = dsb.gaussian_weights(oriented_af_l)
 
 """
-And then use the weights to calculate the bundle profiles for each bundle
+And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dts.bundle_profile(fa, oriented_cst_l, affine=img.affine,
+profile_cst_l = dsb.afq_tract_profile(fa, oriented_cst_l, affine=img.affine,
                                    weights=w_cst_l)
 
-profile_af_l = dts.bundle_profile(fa, oriented_af_l, affine=img.affine),
+profile_af_l = dsb.afq_tract_profile(fa, oriented_af_l, affine=img.affine,
                                   weights=w_af_l)
-
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 
@@ -146,11 +145,10 @@ ax1.set_ylabel("Fractional anisotropy")
 ax1.set_xlabel("Node along CST")
 ax2.plot(profile_af_l)
 ax2.set_xlabel("Node along AF")
-fig.savefig("bundle_profiles")
-
+fig.savefig("tract_profiles")
 
 """
-.. figure:: bundle_profiles.png
+.. figure:: tract_profiles.png
    :align: center
 
    Bundle profiles for the fractional anisotropy in left CST (left) and left
@@ -172,6 +170,4 @@ References
 
 .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
    tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.
-
-
 """
