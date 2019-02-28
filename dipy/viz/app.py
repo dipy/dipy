@@ -100,7 +100,7 @@ class Horizon(object):
 
         References
         ----------
-        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Côté, B.Q. Chandio,
+        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
             S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
             S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
             adaptive visualization, Proceedings of: International Society of
