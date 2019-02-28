@@ -1,6 +1,7 @@
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import load_tractogram
 from dipy.io.image import load_nifti
+from dipy.io.peaks import load_peaks
 from dipy.viz.app import horizon
 
 
@@ -35,8 +36,8 @@ class HorizonFlow(Workflow):
         verbose = True
         tractograms = []
         images = []
-        world_coords = not native_coords
         interactive = not stealth
+        world_coords = not native_coords
 
         io_it = self.get_io_iterator()
 
@@ -64,6 +65,13 @@ class HorizonFlow(Workflow):
                 if verbose:
                     print(affine)
 
+            """ TODO: add support for peaks
+            if ends('.pam5'):
+
+                peaks = load_peaks(f)
+                if verbose:
+                    print(peaks.peak_dirs.shape)
+            """
         horizon(tractograms, images, cluster, cluster_thr,
                 random_colors, length_lt, length_gt, clusters_lt,
                 clusters_gt,

@@ -78,13 +78,33 @@ class Horizon(object):
     def __init__(self, tractograms, images, cluster, cluster_thr,
                  random_colors, length_lt, length_gt, clusters_lt, clusters_gt,
                  world_coords=True, interactive=True):
-        """ Highly interactive visualization
+        """ Highly interactive visualization - inverting the Horizon!
 
         Parameters
         ----------
+        tractograms : sequence
+            Sequence of Streamlines objects
+        images : sequence of tuples
+            Each tuple contains data and affine
+        cluster : bool
+            Enable QuickBundlesX clustering
+        cluster_thr : float
+            Distance threshold used for clustering
+        random_colors : bool
+        length_lt : float
+        length_gt : float
+        clusters_lt : int
+        clusters_gt : int
+        world_coords : bool
+        interactive : bool
 
         References
         ----------
+        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Côté, B.Q. Chandio,
+            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
+            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
+            adaptive visualization, Proceedings of: International Society of
+            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
 
         self.cluster = cluster
@@ -458,7 +478,34 @@ class Horizon(object):
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
             world_coords=True, interactive=True):
+    """Highly interactive visualization - inverting the Horizon!
 
+    Parameters
+    ----------
+    tractograms : sequence
+        Sequence of Streamlines objects
+    images : sequence of tuples
+        Each tuple contains data and affine
+    cluster : bool
+        Enable QuickBundlesX clustering
+    cluster_thr : float
+        Distance threshold used for clustering
+    random_colors : bool
+    length_lt : float
+    length_gt : float
+    clusters_lt : int
+    clusters_gt : int
+    world_coords : bool
+    interactive : bool
+
+    References
+    ----------
+    .. [Horizon_ISMRM19] Garyfallidis E., M-A. Côté, B.Q. Chandio,
+        S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
+        S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
+        adaptive visualization, Proceedings of: International Society of
+        Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+    """
     hz = Horizon(tractograms, images, cluster, cluster_thr, random_colors,
                  length_lt, length_gt, clusters_lt, clusters_gt,
                  world_coords, interactive)
