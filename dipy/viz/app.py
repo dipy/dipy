@@ -126,9 +126,9 @@ class Horizon(object):
         self.cla = {}  # holds cluster actors
         self.tractogram_clusters = {}
 
-    def build_renderer(self):
+    def build_scene(self):
 
-        ren = window.Renderer()
+        scene = window.Scene()
         for (t, streamlines) in enumerate(self.tractograms):
             if self.random_colors:
                 colors = self.prng.random_sample(3)
@@ -161,7 +161,7 @@ class Horizon(object):
                     centroid_actor = actor.streamtube([c], colors,
                                                       linewidth=linewidths[i],
                                                       lod=False)
-                    ren.add(centroid_actor)
+                    scene.add(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -170,7 +170,7 @@ class Horizon(object):
                     cluster_actor.GetProperty().SetOpacity(1)
                     cluster_actor.VisibilityOff()
 
-                    ren.add(cluster_actor)
+                    scene.add(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -196,12 +196,12 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
-                ren.add(streamline_actor)
-        return ren
+                scene.add(streamline_actor)
+        return scene
 
-    def build_show(self, ren):
+    def build_show(self, scene):
 
-        show_m = window.ShowManager(ren, size=(1200, 900),
+        show_m = window.ShowManager(scene, size=(1200, 900),
                                     order_transparent=True,
                                     reset_camera=False)
         show_m.initialize()
@@ -276,7 +276,7 @@ class Horizon(object):
             self.panel2.add_element(slider_label_size, coords=(0.1, 0.6666))
             self.panel2.add_element(slider_size, coords=(0.4, 0.6666))
 
-            ren.add(self.panel2)
+            scene.add(self.panel2)
 
             text_block = build_label(HELP_MESSAGE, 16)  # ui.TextBlock2D()
             text_block.message = HELP_MESSAGE
@@ -287,17 +287,17 @@ class Horizon(object):
                                     align="left")
 
             help_panel.add_element(text_block, coords=(0.05, 0.1))
-            ren.add(help_panel)
+            scene.add(help_panel)
 
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
             data, affine = self.images[0]
-            self.panel = slicer_panel(ren, data, affine, self.world_coords)
+            self.panel = slicer_panel(scene, data, affine, self.world_coords)
         else:
             data = None
             affine = None
 
-        self.win_size = ren.GetSize()
+        self.win_size = scene.GetSize()
 
         def win_callback(obj, event):
             if self.win_size != obj.GetSize():
@@ -403,7 +403,7 @@ class Horizon(object):
                                   clusters_gt=0,
                                   world_coords=True,
                                   interactive=True)
-                    ren2 = hz2.build_renderer()
+                    ren2 = hz2.build_scene()
                     hz2.build_show(ren2)
 
                 if key == 'a' or key == 'A':
@@ -457,9 +457,9 @@ class Horizon(object):
 
                 show_m.render()
 
-        ren.reset_camera()
-        ren.zoom(1.5)
-        ren.reset_clipping_range()
+        scene.reset_camera()
+        scene.zoom(1.5)
+        scene.reset_clipping_range()
 
         if self.interactive:
 
@@ -470,7 +470,7 @@ class Horizon(object):
 
         else:
 
-            window.record(ren, out_path='tmp.png',
+            window.record(scene, out_path='tmp.png',
                           size=(1200, 900),
                           reset_camera=False)
 
@@ -510,6 +510,6 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
                  length_lt, length_gt, clusters_lt, clusters_gt,
                  world_coords, interactive)
 
-    renderer = hz.build_renderer()
+    scene = hz.build_scene()
 
-    hz.build_show(renderer)
+    hz.build_show(scene)
