@@ -50,6 +50,7 @@ matrix:
         - DEPENDS="$DEPENDS scikit_learn"
     # To test vtk functionality
     - python: 2.7
+      dist: xenial
       sudo: true   # This is set to true for apt-get
       env:
         - COVERAGE=1

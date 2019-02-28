@@ -478,7 +478,7 @@ class Horizon(object):
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
             world_coords=True, interactive=True):
-    """Highly interactive visualization - inverting the Horizon!
+    """Highly interactive visualization - invert the Horizon!
 
     Parameters
     ----------
