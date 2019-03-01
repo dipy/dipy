@@ -57,11 +57,11 @@ def test_horizon_flow():
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=False, interactive=False)
-
+#
     affine = np.diag([2., 1, 1, 1]).astype('f8')
-
+#
     data = 255 * np.random.rand(150, 150, 150)
-
+#
     images = [(data, affine)]
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
@@ -69,10 +69,7 @@ def test_horizon_flow():
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
-
     with TemporaryDirectory() as out_dir:
-
-        out_dir = "/tmp"
 
         fimg = os.path.join(out_dir, 'test.nii.gz')
         ftrk = os.path.join(out_dir, 'test.trk')
@@ -82,14 +79,15 @@ def test_horizon_flow():
 
         input_files = [ftrk, fimg]
 
-        print(input_files)
+        npt.assert_equal(len(input_files), 2)
 
         hz_flow = HorizonFlow()
 
-#        import pdb
-#        pdb.set_trace()
+        hz_flow.run(input_files=input_files, stealth=True,
+                    out_dir=out_dir, out_stealth_png='tmp_x.png')
 
-        hz_flow.run(input_files=input_files)
+        npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
+                         True)
 
 
 if __name__ == '__main__':

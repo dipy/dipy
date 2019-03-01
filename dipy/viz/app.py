@@ -77,8 +77,8 @@ class Horizon(object):
 
     def __init__(self, tractograms, images, cluster, cluster_thr,
                  random_colors, length_lt, length_gt, clusters_lt, clusters_gt,
-                 world_coords=True, interactive=True):
-        """ Highly interactive visualization - inverting the Horizon!
+                 world_coords=True, interactive=True, out_png='tmp.png'):
+        """ Highly interactive visualization - invert the Horizon!
 
         Parameters
         ----------
@@ -97,6 +97,7 @@ class Horizon(object):
         clusters_gt : int
         world_coords : bool
         interactive : bool
+        out_png : string
 
         References
         ----------
@@ -118,6 +119,8 @@ class Horizon(object):
         self.interactive = interactive
         self.prng = np.random.RandomState(27)
         self.tractograms = tractograms
+        self.out_png = out_png
+
         if images is None:
             self.images = []
         else:
@@ -470,15 +473,15 @@ class Horizon(object):
 
         else:
 
-            window.record(scene, out_path='tmp.png',
+            window.record(scene, out_path=self.out_png,
                           size=(1200, 900),
                           reset_camera=False)
 
 
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
-            world_coords=True, interactive=True):
-    """Highly interactive visualization - invert the Horizon!
+            world_coords=True, interactive=True, out_png='tmp.png'):
+    """Highly interactive visualization
 
     Parameters
     ----------
@@ -497,6 +500,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     clusters_gt : int
     world_coords : bool
     interactive : bool
+    out_png : string
 
     References
     ----------
@@ -508,7 +512,7 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
     """
     hz = Horizon(tractograms, images, cluster, cluster_thr, random_colors,
                  length_lt, length_gt, clusters_lt, clusters_gt,
-                 world_coords, interactive)
+                 world_coords, interactive, out_png)
 
     scene = hz.build_scene()
 

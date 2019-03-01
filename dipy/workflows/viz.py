@@ -1,6 +1,8 @@
+from os.path import join as pjoin
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import load_tractogram
 from dipy.io.image import load_nifti
+# TODO: add support for peaks
 # from dipy.io.peaks import load_peaks
 from dipy.viz.app import horizon
 
@@ -16,7 +18,7 @@ class HorizonFlow(Workflow):
             clusters_lt=10**8, clusters_gt=0, native_coords=False,
             stealth=False, out_dir='', out_stealth_png='tmp.png'):
 
-        """ Advanced visualization application
+        """ Highly interactive visualization - invert the Horizon!
 
         Parameters
         ----------
@@ -76,4 +78,5 @@ class HorizonFlow(Workflow):
                 random_colors, length_lt, length_gt, clusters_lt,
                 clusters_gt,
                 world_coords=world_coords,
-                interactive=interactive)
+                interactive=interactive,
+                out_png=pjoin(out_dir, out_stealth_png))
