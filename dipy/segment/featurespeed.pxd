@@ -1,4 +1,4 @@
-from cythonutils cimport Data2D, Shape
+from dipy.segment.cythonutils cimport Data2D, Shape
 cimport numpy as cnp
 
 cdef class Feature(object):

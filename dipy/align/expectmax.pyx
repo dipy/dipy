@@ -7,7 +7,7 @@
 import numpy as np
 cimport cython
 cimport numpy as cnp
-from .fused_types cimport floating, number
+from dipy.align.fused_types cimport floating, number
 cdef extern from "dpy_math.h" nogil:
     int dpy_isinf(double)
     double floor(double)
