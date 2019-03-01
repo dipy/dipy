@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import warnings
 import types
 
 import numpy as np
@@ -25,6 +26,7 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       compress_streamlines,
                                       select_by_rois,
                                       orient_by_rois,
+                                      orient_by_streamline,
                                       values_from_volume,
                                       deform_streamlines,
                                       cluster_confidence)
@@ -815,9 +817,12 @@ def test_select_by_rois():
     assert_arrays_equal(list(selection), [streamlines[1]])
 
     # Setting tolerance too low gets overridden:
-    selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-                               tol=0.1)
-    assert_arrays_equal(list(selection), [streamlines[1]])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
+                                   tol=0.1)
+
+        assert_arrays_equal(list(selection), [streamlines[1]])
 
     selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
                                tol=0.87)
@@ -990,6 +995,76 @@ def test_orient_by_rois():
                                      in_place=True,
                                      affine=None,
                                      as_generator=False)
+
+    npt.assert_array_equal(new_streamlines, flipped_sl)
+    # The two objects are one and the same:
+    npt.assert_(new_streamlines is streamlines)
+
+
+def test_orient_by_streamline():
+    streamlines = Streamlines([np.array([[0, 0., 0],
+                                         [1, 0., 0.],
+                                         [2, 0., 0.]]),
+                               np.array([[2, 0., 0.],
+                                         [1, 0., 0],
+                                         [0, 0,  0.]])])
+
+    # If there is an affine, we'll use it:
+    affine = np.eye(4)
+    affine[:, 3] = [-1, 100, -20, 1]
+    # Transform the streamlines:
+    x_streamlines = Streamlines([sl + affine[:3, 3] for sl in streamlines])
+
+    standard_streamline = streamlines[0]
+
+    # After reorientation, this should be the answer:
+    flipped_sl = Streamlines([streamlines[0], streamlines[1][::-1]])
+
+    new_streamlines = orient_by_streamline(streamlines,
+                                           standard_streamline,
+                                           n_points=12,
+                                           in_place=False,
+                                           affine=None)
+
+    npt.assert_array_equal(new_streamlines, flipped_sl)
+    npt.assert_(new_streamlines is not streamlines)
+
+    # Test with affine:
+    x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
+    new_streamlines = orient_by_streamline(x_streamlines,
+                                           standard_streamline,
+                                           in_place=False,
+                                           affine=affine)
+    npt.assert_array_equal(new_streamlines, x_flipped_sl)
+    npt.assert_(new_streamlines is not x_streamlines)
+
+    # Test with as_generator set to True
+    new_streamlines = orient_by_streamline(streamlines,
+                                           standard_streamline,
+                                           in_place=False,
+                                           affine=None,
+                                           as_generator=True)
+
+    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    ll = Streamlines(new_streamlines)
+    npt.assert_array_equal(ll, flipped_sl)
+
+    # Test with as_generator set to True and with the affine
+    new_streamlines = orient_by_streamline(x_streamlines,
+                                           standard_streamline,
+                                           in_place=False,
+                                           affine=affine,
+                                           as_generator=True)
+
+    npt.assert_(isinstance(new_streamlines, types.GeneratorType))
+    ll = Streamlines(new_streamlines)
+    npt.assert_array_equal(ll, x_flipped_sl)
+
+    # Modify in-place:
+    new_streamlines = orient_by_streamline(streamlines,
+                                           standard_streamline,
+                                           in_place=True,
+                                           affine=None)
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
     # The two objects are one and the same:

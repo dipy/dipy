@@ -427,7 +427,7 @@ fetch_bundle_atlas_hcp842 = _make_fetcher(
     ['Atlas_80_Bundles.zip'],
     ['78331d527a10ec000d4f33bac472e099'],
     doc="Download atlas tractogram from the hcp842 dataset with 80 bundles",
-    data_size="200MB",
+    data_size="300MB",
     unzip=True)
 
 fetch_target_tractogram_hcp = _make_fetcher(
@@ -440,6 +440,18 @@ fetch_target_tractogram_hcp = _make_fetcher(
     doc="Download tractogram of one of the hcp dataset subjects",
     data_size="541MB",
     unzip=True)
+
+
+fetch_bundle_fa_hcp = _make_fetcher(
+    "fetch_bundle_fa_hcp",
+    pjoin(dipy_home, 'bundle_fa_hcp'),
+    'https://ndownloader.figshare.com/files/',
+    ['14035265'],
+    ['hcp_bundle_fa.nii.gz'],
+    ['2d5c0036b0575597378ddf39191028ea'],
+    doc=("Download map of FA within two bundles in one" +
+        "of the hcp dataset subjects"),
+    data_size="230kb")
 
 
 fetch_qtdMRI_test_retest_2subjects = _make_fetcher(

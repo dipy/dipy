@@ -290,14 +290,15 @@ class StreamlineLinearRegistration(object):
         References
         ----------
         .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-            registration of white-matter fascicles in the space of
-            streamlines", NeuroImage, 117, 124--140, 2015
+           registration of white-matter fascicles in the space of streamlines",
+           NeuroImage, 117, 124--140, 2015
+
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-                            bundle alignment for group comparisons", ISMRM,
-                            2014.
+           bundle alignment for group comparisons", ISMRM, 2014.
+
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+           bundles using local and global streamline-based
+           registration and clustering, Neuroimage, 2017.
         """
 
         self.x0 = self._set_x0(x0)
@@ -701,9 +702,7 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
 
 
 def remove_clusters_by_size(clusters, min_size=0):
-
-    by_size = lambda c: len(c) >= min_size
-    ob = filter(by_size, clusters)
+    ob = filter(lambda c: len(c) >= min_size, clusters)
 
     centroids = Streamlines()
     for cluster in ob:
@@ -932,9 +931,10 @@ def slr_with_qbx(static, moving,
         else:
             return False
 
-
-    streamlines1 = Streamlines(static[np.array([check_range(s) for s in static])])
-    streamlines2 = Streamlines(moving[np.array([check_range(s) for s in moving])])
+    streamlines1 = Streamlines(static[np.array([check_range(s)
+                                                for s in static])])
+    streamlines2 = Streamlines(moving[np.array([check_range(s)
+                                                for s in moving])])
 
     if verbose:
 

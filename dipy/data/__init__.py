@@ -49,7 +49,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_target_tractogram_hcp,
                                fetch_bundle_atlas_hcp842,
                                get_bundle_atlas_hcp842,
-                               get_target_tractogram_hcp)
+                               get_target_tractogram_hcp,
+                               fetch_bundle_fa_hcp)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
