@@ -121,11 +121,12 @@ class RecoBundles(object):
         self.orig_indices = np.array(list(range(0, len(streamlines))))
         self.filtered_indices = np.array(self.orig_indices[map_ind])
         self.streamlines = Streamlines(streamlines[map_ind])
-        print("target brain streamlines length = ", len(streamlines))
-        print("After refining target brain streamlines length = ",
-              len(self.streamlines))
         self.nb_streamlines = len(self.streamlines)
         self.verbose = verbose
+        if self.verbose:
+            print("target brain streamlines length = ", len(streamlines))
+            print("After refining target brain streamlines length = ",
+                  len(self.streamlines))
 
         self.start_thr = [40, 25, 20]
         if rng is None:
@@ -182,6 +183,7 @@ class RecoBundles(object):
                   reduction_thr=10,
                   reduction_distance='mdf',
                   slr=True,
+                  slr_num_threads=None,
                   slr_metric=None,
                   slr_x0=None,
                   slr_bounds=None,
@@ -234,8 +236,8 @@ class RecoBundles(object):
             print('## Recognize given bundle ## \n')
 
         model_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=model_clust_thr)
+            model_bundle,
+            model_clust_thr=model_clust_thr)
 
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             model_centroids,
@@ -246,7 +248,6 @@ class RecoBundles(object):
             return Streamlines([]), []
 
         if slr:
-
             transf_streamlines, slr1_bmd = self._register_neighb_to_model(
                 model_bundle,
                 neighb_streamlines,
@@ -255,8 +256,8 @@ class RecoBundles(object):
                 bounds=slr_bounds,
                 select_model=slr_select[0],
                 select_target=slr_select[1],
-                method=slr_method)
-
+                method=slr_method,
+                num_threads=slr_num_threads)
         else:
             transf_streamlines = neighb_streamlines
 
@@ -336,12 +337,12 @@ class RecoBundles(object):
             print('## Refine recognize given bundle ## \n')
 
         model_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=model_clust_thr)
+            model_bundle,
+            model_clust_thr=model_clust_thr)
 
         pruned_model_centroids = self._cluster_model_bundle(
-                pruned_streamlines,
-                model_clust_thr=model_clust_thr)
+            pruned_streamlines,
+            model_clust_thr=model_clust_thr)
 
         neighb_streamlines, neighb_indices = self._reduce_search_space(
             pruned_model_centroids,
@@ -404,11 +405,11 @@ class RecoBundles(object):
 
         spruned_streamlines = Streamlines(pruned_streamlines)
         recog_centroids = self._cluster_model_bundle(
-                spruned_streamlines,
-                model_clust_thr=1.25)
+            spruned_streamlines,
+            model_clust_thr=1.25)
         mod_centroids = self._cluster_model_bundle(
-                model_bundle,
-                model_clust_thr=1.25)
+            model_bundle,
+            model_clust_thr=1.25)
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
         ba_value = ba_analysis(recog_centroids, model_centroids, threshold=10)
@@ -502,14 +503,14 @@ class RecoBundles(object):
                                   metric=None, x0=None, bounds=None,
                                   select_model=400, select_target=600,
                                   method='L-BFGS-B',
-                                  nb_pts=20):
+                                  nb_pts=20, num_threads=None):
 
         if self.verbose:
             print('# Local SLR of neighb_streamlines to model')
             t = time()
 
         if metric is None or metric == 'symmetric':
-            metric = BundleMinDistanceMetric()
+            metric = BundleMinDistanceMetric(num_threads=num_threads)
         if metric == 'asymmetric':
             metric = BundleMinDistanceAsymmetricMetric()
         if metric == 'diagonal':
