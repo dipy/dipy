@@ -1,20 +1,19 @@
 from __future__ import division, print_function, absolute_import
-import logging
-from dipy.workflows.workflow import Workflow
-from dipy.align.streamlinear import slr_with_qbx
-from dipy.io.streamline import load_trk, save_trk
-from dipy.tracking.streamline import transform_streamlines
 
+import logging
 import numpy as np
 import nibabel as nib
 
-from dipy.align.reslice import reslice
-from dipy.align.imaffine import transform_centers_of_mass, \
+from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
+from dipy.align.reslice import reslice
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
-from dipy.io.image import save_nifti, load_nifti, save_affine_matrix, \
-    save_qa_metric
+from dipy.align.streamlinear import slr_with_qbx
+from dipy.io.image import save_nifti, load_nifti, save_qa_metric
+from dipy.io.streamline import load_trk, save_trk
+from dipy.tracking.streamline import transform_streamlines
+from dipy.workflows.workflow import Workflow
 
 
 class ResliceFlow(Workflow):
@@ -545,14 +544,16 @@ class ImageRegistrationFlow(Workflow):
              (default '').
 
         out_moved : string, optional
-            The saved transformed image file (default 'moved.nii.gz').
+            Name for the saved transformed image
+             (default 'moved.nii.gz').
 
         out_affine : string, optional
-            The saved affine matrix file (default 'affine.txt').
+            Name for the saved affine matrix
+             (default 'affine.txt').
 
         out_quality : string, optional
-            The file containing the saved quality metric
-             (default 'quality_metric.txt').
+            Name of the file containing the saved quality
+             metric (default 'quality_metric.txt').
         """
 
         io_it = self.get_io_iterator()
@@ -631,7 +632,6 @@ class ImageRegistrationFlow(Workflow):
                 """
                 Saving the moved image file and the affine matrix.
                 """
-
                 logging.info("Optimal parameters: {0}".format(str(xopt)))
                 logging.info("Similarity metric: {0}".format(str(fopt)))
 
@@ -639,4 +639,62 @@ class ImageRegistrationFlow(Workflow):
                     save_qa_metric(qual_val_file, xopt, fopt)
 
             save_nifti(moved_file, moved_image, static_grid2world)
-            save_affine_matrix(affine_matrix_file, affine)
+            np.savetxt(affine_matrix_file, affine)
+
+
+class ApplyAffineFlow(Workflow):
+
+    def run(self, static_image_file, moving_image_files, affine_matrix_file,
+            out_dir='', out_file='transformed.nii.gz'):
+
+        """
+        Parameters
+        ----------
+        static_image_file : string
+            Path of the static image file.
+
+        moving_image_files : string
+            Path of the moving image(s). It can be a single image or a
+            folder containing multiple images.
+
+        affine_matrix_file : string
+            The text file containing the affine matrix for transformation.
+
+        out_dir : string, optional
+            Directory to save the transformed files (default '').
+
+        out_file : string, optional
+            Name of the transformed file (default 'transformed.nii.gz').
+             It is recommended to use the flag --mix-names to
+              prevent the output files from being overwritten.
+
+        """
+        io = self.get_io_iterator()
+
+        for static_image_file, moving_image_file, affine_matrix_file, \
+                out_file in io:
+
+            # Loading the image data from the input files into object.
+            static_image, static_grid2world = load_nifti(static_image_file)
+
+            moving_image, moving_grid2world = load_nifti(moving_image_file)
+
+            # Doing a sanity check for validating the dimensions of the input
+            # images.
+            ImageRegistrationFlow.check_dimensions(static_image, moving_image)
+
+            # Loading the affine matrix.
+            affine_matrix = np.loadtxt(affine_matrix_file)
+
+            # Setting up the affine transformation object.
+            img_transformation = AffineMap(
+                affine=affine_matrix,
+                domain_grid_shape=static_image.shape,
+                domain_grid2world=static_grid2world,
+                codomain_grid_shape=moving_image.shape,
+                codomain_grid2world=moving_grid2world)
+
+            # Transforming the image/
+            transformed = img_transformation.transform(moving_image)
+
+            save_nifti(out_file, transformed, affine=static_grid2world)

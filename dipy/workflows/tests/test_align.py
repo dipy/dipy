@@ -1,6 +1,7 @@
 import numpy.testing as npt
 import numpy as np
 
+import numpy as np
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import Streamlines
@@ -14,6 +15,7 @@ from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.io.image import save_nifti
 from dipy.workflows.align import ImageRegistrationFlow
+from dipy.workflows.align import ApplyAffineFlow
 
 
 def test_reslice():
@@ -184,6 +186,70 @@ def test_image_registration():
         test_rigid()
         test_affine()
         test_err()
+
+
+def test_apply_affine_transform():
+    with TemporaryDirectory() as temp_out_dir:
+
+        factors = {
+            ('TRANSLATION', 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
+            ('RIGID', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5,
+                                                1.7])),
+            ('AFFINE', 3): (0.1, None, np.array([0.99, -0.05, 0.03, 1.3,
+                                                 0.05, 0.99, -0.10, 2.5,
+                                                 -0.07, 0.10, 0.99, -1.4]))}
+
+        image_registeration_flow = ImageRegistrationFlow()
+        apply_trans = ApplyAffineFlow()
+
+        for i in factors.keys():
+            static, moving, static_g2w, moving_g2w, smask, mmask, M = \
+                setup_random_transform(transform=regtransforms[i],
+                                       rfactor=factors[i][0])
+
+            stat_file = str(i[0]) + '_static.nii.gz'
+            mov_file = str(i[0]) + '_moving.nii.gz'
+
+            save_nifti(pjoin(temp_out_dir, stat_file), data=static,
+                       affine=static_g2w)
+
+            save_nifti(pjoin(temp_out_dir, mov_file), data=moving,
+                       affine=moving_g2w)
+
+            static_image_file = pjoin(temp_out_dir,
+                                      str(i[0]) + '_static.nii.gz')
+            moving_image_file = pjoin(temp_out_dir,
+                                      str(i[0]) + '_moving.nii.gz')
+
+            out_moved = pjoin(temp_out_dir,
+                              str(i[0]) + "_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir,
+                               str(i[0]) + "_affine.txt")
+
+            if str(i[0]) == "TRANSLATION":
+                transform_type = "trans"
+            else:
+                transform_type = str(i[0]).lower()
+
+            image_registeration_flow.run(static_image_file, moving_image_file,
+                                         transform=transform_type,
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         level_iters=[1, 1, 1],
+                                         save_metric=False)
+
+            # Checking for the created moved file.
+            assert os.path.exists(out_moved)
+            assert os.path.exists(out_affine)
+
+        images = pjoin(temp_out_dir, '*moving*')
+        apply_trans.run(static_image_file, images,
+                        out_dir=temp_out_dir,
+                        affine_matrix_file=out_affine)
+
+        # Checking for the transformed file.
+        assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
 
 
 if __name__ == "__main__":
