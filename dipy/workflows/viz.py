@@ -1,7 +1,7 @@
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import load_tractogram
 from dipy.io.image import load_nifti
-from dipy.io.peaks import load_peaks
+# from dipy.io.peaks import load_peaks
 from dipy.viz.app import horizon
 
 
