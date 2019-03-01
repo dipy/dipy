@@ -131,7 +131,7 @@ class Horizon(object):
 
     def build_scene(self):
 
-        scene = window.Scene()
+        scene = window.Renderer()
         for (t, streamlines) in enumerate(self.tractograms):
             if self.random_colors:
                 colors = self.prng.random_sample(3)
@@ -481,7 +481,7 @@ class Horizon(object):
 def horizon(tractograms, images, cluster, cluster_thr, random_colors,
             length_lt, length_gt, clusters_lt, clusters_gt,
             world_coords=True, interactive=True, out_png='tmp.png'):
-    """Highly interactive visualization
+    """Highly interactive visualization - invert the Horizon!
 
     Parameters
     ----------
