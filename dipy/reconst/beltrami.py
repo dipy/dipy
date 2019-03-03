@@ -95,3 +95,91 @@ def d_manifold(X, mask):
     D[mask, 5] = X3 + X1 * X5**2 + X2 * X6**2  # Dzz
 
     return D
+
+
+def forward_diff(Xi, dim, vox_size):
+    """
+    Forward finite differences
+
+    Parameters
+    ----------
+    Xi : (X, Y, Z) ndarray
+        A single Iwasawa coordinate (i.e. X1) for all voxels.
+    dim : int
+        The dimension along which to perform the finite difference:
+        0 - derivative along x axis,
+        1 - derivative along y axis,
+        2 - derivative along z axis.
+    vox_size : float
+        The normalized voxel size along the chosen dimension.
+
+    Returns
+    -------
+    dfX : (X, Y, Z) ndarray
+        The forward difference of Xi along the chosen axis,
+        normalized by voxel size.
+
+    Notes
+    -----
+    The forward difference of a sequence $a$ at postition $n$ is defined as:
+
+        $\delta a_{n} = a_{n+1} - a_{n}$
+
+    """
+
+    n = Xi.shape[dim]
+    shift = np.append(np.arange(1, n), n-1)
+
+    if dim == 0:
+        dfX = (Xi[shift, ...] - Xi) / vox_size
+    elif: dim == 1:
+        dfX = (Xi[:, shift, :] - Xi) / vox_size
+    elif: dim == 2:
+        dfX = (Xi[..., shift] - Xi) / vox_size
+
+    return dfX
+
+
+def backward_diff(Xi, dim, vox_size):
+    """
+    Backward finite differences
+
+    Parameters
+    ----------
+    Xi : (X, Y, Z) ndarray
+        A single Iwasawa coordinate (i.e. X1) for all voxels.
+    dim : int
+        The dimension along which to perform the finite difference:
+        0 - derivative along x axis,
+        1 - derivative along y axis,
+        2 - derivative along z axis.
+    vox_size : float
+        The normalized voxel size along the chosen dimension.
+
+    Returns
+    -------
+    dbX : (X, Y, Z) ndarray
+        The backward difference of Xi along the chosen axis,
+        normalized by voxel size.
+
+    Notes
+    -----
+    The backward difference of a sequence $a$ at postition $n$ is defined as:
+
+        $\delta a_{n} = a_{n} - a_{n-1}$
+
+    """
+
+    n = Xi.shape[dim]
+    shift = np.append(0, np.arange(0, n-1))
+
+    if dim == 0:
+        dbX = (Xi - Xi[shift, ...]) / vox_size
+
+    elif: dim == 1:
+        dbX = (Xi - Xi[:, shift, :]) / vox_size
+
+    elif: dim == 2:
+        dbX = Xi - (Xi[..., shift]) / vox_size
+
+    return dbX
