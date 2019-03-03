@@ -678,35 +678,6 @@ class IVIMModel(ReconstModel):
         phi = self.Phi(x)
         return self.ivim_mix_cost_one(phi, signal)
 
-    def ivim_mix_prediction(params, gtab, S0=1):
-
-        """
-        The Intravoxel incoherent motion (IVIM) model function.
-
-        Parameters
-        ----------
-        params : array
-            An array of IVIM parameters - [S0, f, D_star, D].
-
-        gtab : GradientTable class instance
-            Gradient directions and bvalues.
-
-        S0 : float, optional
-            This has been added just for consistency with the existing
-            API. Unlike other models, IVIM predicts S0 and this is over written
-            by the S0 value in params.
-
-        Returns
-        -------
-        S : array
-        An array containing the IVIM signal estimated using given parameters.
-        """
-        f, D_star, D = params
-        b = gtab.bvals
-        S0 = 1
-        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
-        return S
-
     def ivim_mix_cost_one(self, phi, signal):  # sigma
 
         """
