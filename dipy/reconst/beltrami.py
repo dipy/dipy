@@ -2,11 +2,9 @@
 fit the Free Water elimination model for single shell datasets """
 from __future__ import division
 import numpy as np
-import dipy.reconst.dti as dti
-from dipy.core.gradients import gradient_table
 
 
-def x_manifold(D, mask, out):
+def x_manifold(D, mask):
     """
     Converts the diffusion tensor components
     into Iwasawa coordinates, according to [1], [2]
@@ -19,12 +17,10 @@ def x_manifold(D, mask, out):
     mask : boolean array
         boolean mask that marks indices of the data that
         should be converted, with shape X.shape[:-1]
-    out : (..., 6)
-        Pre-allocated array to store the output
-    
+
     Returns
     -------
-    out : (..., 6) ndarray
+    X : (..., 6) ndarray
         The six independent Iwasawa coordinates
     
     References
@@ -39,23 +35,26 @@ def x_manifold(D, mask, out):
         In 2007 IEEE 11th International Conference on Computer Vision (pp. 1-7). IEEE.
 
     """
-    Dxx = D[..., 0]
-    Dxy = D[..., 1]
-    Dyy = D[..., 2]
-    Dxz = D[..., 3]
-    Dyz = D[..., 4]
-    Dzz = D[..., 5]
 
-    out[mask, 0] = Dxx[mask]  # X1
-    out[mask, 3] = Dxy[mask] / Dxx[mask]  # X4
-    out[mask, 4] = Dxz[mask] / Dxx[mask]  # X5
-    out[mask, 1] = Dyy[mask] - out[mask, 0] * out[mask, 3]**2  # X2
-    out[mask, 5] = (Dyz[mask] - out[mask, 0] * out[mask, 3] * out[mask, 4]) / out[mask, 1]  # X6
-    out[mask, 2] = Dzz[mask] - out[mask, 0] * out[mask, 4]**2 - out[mask, 1] * out[mask, 5]**2  # X3
+    Dxx = D[mask, 0]
+    Dxy = D[mask, 1]
+    Dyy = D[mask, 2]
+    Dxz = D[mask, 3]
+    Dyz = D[mask, 4]
+    Dzz = D[mask, 5]
+
+    X = np.zeros(D.shape)
+    X[mask, 0] = Dxx  # X1
+    X[mask, 3] = Dxy / Dxx  # X4
+    X[mask, 4] = Dxz / Dxx  # X5
+    X[mask, 1] = Dyy - X[mask, 0] * X[mask, 3]**2  # X2
+    X[mask, 5] = (Dyz - X[mask, 0] * X[mask, 3] * X[mask, 4]) / X[mask, 1]  # X6
+    X[mask, 2] = Dzz - X[mask, 0] * X[mask, 4]**2 - X[mask, 1] * X[mask, 5]**2  # X3
+
+    return X
 
 
-
-def d_manifold(X, mask, out):
+def d_manifold(X, mask):
     """
     Converts Iwasawa coordinates back to
     tensor components
@@ -67,29 +66,32 @@ def d_manifold(X, mask, out):
     mask : boolean array
         boolean mask that marks indices of the data that
         should be converted, with shape X.shape[:-1]
-    out : (..., 6)
-        Pre-allocated array to store the output
-    
+
     Returns
     -------
-    out : (..., 6) ndarray
-        The six diffuion tensor components
-    
+    D : (..., 6) ndarray
+        The lower triangular components of the diffusion tensor,
+        in the following order: Dxx, Dxy, Dyy, Dxz, Dyz, Dzz
+
     References
     ----------
     See referneces section of the fucntion "x_manifold"
 
     """
-    X1 = X[..., 0]
-    X2 = X[..., 1]
-    X3 = X[..., 2]
-    X4 = X[..., 3]
-    X5 = X[..., 4]
-    X6 = X[..., 5]
 
-    out[mask, 0] = X1[mask] # Dxx
-    out[mask, 1] = X1[mask] * X4[mask] # Dxy
-    out[mask, 2] = X2[mask] + X1[mask] * X4[mask]**2 # Dyy
-    out[mask, 3] = X1[mask] * X5[mask] # Dxz
-    out[mask, 4] = X1[mask] * X4[mask] * X5[mask] + X2[mask] * X6[mask] # Dyz
-    out[mask, 5] = X3[mask] + X1[mask] * X5[mask]**2 + X2[mask] * X6[mask]**2 # Dzz
+    X1 = X[mask, 0]
+    X2 = X[mask, 1]
+    X3 = X[mask, 2]
+    X4 = X[mask, 3]
+    X5 = X[mask, 4]
+    X6 = X[mask, 5]
+
+    D = np.zeros(X.shape)
+    D[mask, 0] = X1  # Dxx
+    D[mask, 1] = X1 * X4  # Dxy
+    D[mask, 2] = X2 + X1 * X4**2  # Dyy
+    D[mask, 3] = X1 * X5  # Dxz
+    D[mask, 4] = X1 * X4 * X5 + X2 * X6  # Dyz
+    D[mask, 5] = X3 + X1 * X5**2 + X2 * X6**2  # Dzz
+
+    return D
