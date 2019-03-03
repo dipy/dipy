@@ -777,7 +777,7 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
 
 def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
-    """Simulate a Single-Tensor rtop.
+    """Simulate a Multi-Tensor rtop.
 
     Parameters
     ----------
