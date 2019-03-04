@@ -6,6 +6,8 @@ import nibabel as nib
 
 from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
+from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
@@ -17,59 +19,6 @@ from dipy.workflows.workflow import Workflow
 
 import numpy as np
 import nibabel as nib
-
-from dipy.align.reslice import reslice
-from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
-    MutualInformationMetric, AffineRegistration
-from dipy.align.transforms import TranslationTransform3D, RigidTransform3D, \
-    AffineTransform3D
-from dipy.io.image import save_nifti, load_nifti, load_affine_matrix, \
-    save_affine_matrix, save_quality_assur_metric
-from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import CCMetric
-
-
-class UtilMethods(object):
-
-    @staticmethod
-    def check_dimensions(static, moving):
-
-        """
-        Check the dimensions of the input images.
-
-        Parameters
-        ----------
-        static : array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization.
-
-        moving: array, shape (S', R', C') or (R', C')
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-        """
-        if len(static.shape) != len(moving.shape):
-            raise ValueError('Dimension mismatch: The'
-                             ' input images must have same number of '
-                             'dimensions.')
-
-    @staticmethod
-    def check_metric(metric):
-        """
-        Check the input metric type.
-
-        Parameters
-        ----------
-        metric: string
-            The similarity metric.
-            (default 'MutualInformation' metric)
-
-        """
-        if metric not in ['mi', 'cc']:
-            raise ValueError('Invalid similarity metric: Please provide'
-                             ' a valid metric.')
 
 
 class ResliceFlow(Workflow):
@@ -627,7 +576,7 @@ class ImageRegistrationFlow(Workflow):
             moving = np.array(image.get_data())
             moving_grid2world = image.affine
 
-            util = UtilMethods()
+            self.check_dimensions(static, moving)
 
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
@@ -732,7 +681,6 @@ class ApplyAffineFlow(Workflow):
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_image_file)
-
             moving_image, moving_grid2world = load_nifti(moving_image_file)
 
             # Doing a sanity check for validating the dimensions of the input
@@ -759,8 +707,10 @@ class ApplyAffineFlow(Workflow):
 class SynRegistrationFlow(Workflow):
 
     def run(self, static_image_file, moving_image_file, affine_matrix_file,
-            inv_static=False,
-            level_iters=[10, 10, 5], metric="cc", step_length=0.25,
+            inv_static=False, level_iters=[10, 10, 5], metric="cc",
+            mopt_sigma_diff=2.0, mopt_radius=4, mopt_smooth=0.0,
+            mopt_inner_iter=0.0, mopt_q_levels=256, mopt_double_gradient=True,
+            mopt_step_type='', step_length=0.25,
             ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
             inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
             out_inv_static='inc_static.nii.gz',
@@ -790,25 +740,70 @@ class SynRegistrationFlow(Workflow):
 
         metric : string, optional
             The metric to be used (Default cc, 'Cross Correlation metric').
+            metric available: cc (Cross Correlation), ssd (Sum Squared
+            Difference), em (Expectation-Maximization).
 
-        step_length : float
+        mopt_sigma_diff : float, optional
+            Metric option applied on Cross correlation (CC).
+            The standard deviation of the Gaussian smoothing kernel to be
+            applied to the update field at each iteration (default 2.0)
+
+        mopt_radius : int, optional
+            Metric option applied on Cross correlation (CC).
+            the radius of the squared (cubic) neighborhood at each voxel to
+            be considered to compute the cross correlation. (default 4)
+
+        mopt_smooth : float, optional
+            Metric option applied on Sum Squared Difference (SSD) and
+            Expectation Maximization (EM). Smoothness parameter, the
+            larger the value the smoother the deformation field.
+            (default 1.0 for EM, 4.0 for SSD)
+
+        mopt_inner_iter : int, optional
+            Metric option applied on Sum Squared Difference (SSD) and
+            Expectation Maximization (EM). This is number of iterations to be
+            performed at each level of the multi-resolution Gauss-Seidel
+            optimization algorithm (this is not the number of steps per
+            Gaussian Pyramid level, that parameter must be set for the
+            optimizer, not the metric). Default 5 for EM, 10 for SSD.
+
+        mopt_q_levels : int, optional
+            Metric option applied on Expectation Maximization (EM).
+            Number of quantization levels (Default: 256 for EM)
+
+        mopt_double_gradient : bool, optional
+            Metric option applied on Expectation Maximization (EM).
+            if True, the gradient of the expected static image under the moving
+            modality will be added to the gradient of the moving image,
+            similarly, the gradient of the expected moving image under the
+            static modality will be added to the gradient of the static image.
+
+        mopt_step_type : string, optional
+            Metric option applied on Sum Squared Difference (SSD) and
+            Expectation Maximization (EM). The optimization schedule to be
+            used in the multi-resolution Gauss-Seidel optimization algorithm
+            (not used if Demons Step is selected). Possible value:
+            ('gauss_newton', 'demons'). default: 'gauss_newton' for EM,
+            'demons' for SSD.
+
+        step_length : float, optional
             the length of the maximum displacement vector of the update
              displacement field at each iteration.
 
-        ss_sigma_factor : float
+        ss_sigma_factor : float, optional
             parameter of the scale-space smoothing kernel. For example, the
              std. dev. of the kernel will be factor*(2^i) in the isotropic case
              where i = 0, 1, ..., n_scales is the scale.
 
-        opt_tol : float
+        opt_tol : float, optional
             the optimization will stop when the estimated derivative of the
              energy profile w.r.t. time falls below this threshold.
 
-        inv_iter : int
+        inv_iter : int, optional
             the number of iterations to be performed by the displacement field
              inversion algorithm.
 
-        inv_tol : float
+        inv_tol : float, optional
             the displacement field inversion algorithm will stop iterating
              when the inversion error falls below this threshold.
 
@@ -828,33 +823,61 @@ class SynRegistrationFlow(Workflow):
             Name of the file to save the diffeomorphic field.
 
         """
+        io_it = self.get_io_iterator()
+        metric = metric.lower()
+        if metric not in ['ssd', 'cc', 'em']:
+            raise ValueError("Invalid similarity metric: Please"
+                             " provide a valid metric.")
 
-        io = self.get_io_iterator()
-        util = UtilMethods()
-        util.check_metric(metric)
+        # Init parameter if they are not setup
+        init_param = {'ssd': {'mopt_smooth': 4.0,
+                              'mopt_inner_iter': 10,
+                              'mopt_step_type': 'demons'
+                              },
+                      'em': {'mopt_smooth': 1.0,
+                             'mopt_inner_iter': 5,
+                             'mopt_step_type': 'gauss_newton'
+                             }
+                      }
+        mopt_smooth = mopt_smooth or init_param[metric]['mopt_smooth']
+        mopt_inner_iter = mopt_inner_iter or  \
+            init_param[metric]['mopt_inner_iter']
+        mopt_step_type = mopt_step_type or \
+            init_param[metric]['mopt_step_type']
 
         for static_file, moving_file, in_affine, \
-                warped_file, inv_static_file, displ_file in io:
-
-            print(static_file, moving_file, in_affine, warped_file)
+                warped_file, inv_static_file, displ_file in io_it:
 
             # Loading the image data from the input files into object.
-            static_img_data = nib.load(static_file)
-            static_image = static_img_data.get_data()
-            static_grid2world = static_img_data.affine
-
-            moving_img_data = nib.load(moving_file)
-            moving_image = moving_img_data.get_data()
-            moving_grid2world = moving_img_data.affine
+            static_image, static_grid2world = load_nifti(static_file)
+            moving_image, moving_grid2world = load_nifti(moving_file)
 
             # Sanity check for the input image dimensions.
-            util.check_dimensions(static_image, moving_image)
+            ImageRegistrationFlow.check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
-            affine_matrix = load_affine_matrix(in_affine)
+            affine_matrix = np.loadtxt(in_affine)
 
-            metric = CCMetric(3)
-            sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
+            l_metric = {"ssd": SSDMetric(static_image.ndim,
+                                         smooth=mopt_smooth,
+                                         inner_iter=mopt_inner_iter,
+                                         step_type=mopt_step_type
+                                         ),
+                        "cc": CCMetric(static_image.ndim,
+                                       sigma_diff=mopt_sigma_diff,
+                                       radius=mopt_radius),
+                        "em": EMMetric(static_image.ndim,
+                                       smooth=mopt_smooth,
+                                       inner_iter=mopt_inner_iter,
+                                       step_type=mopt_step_type,
+                                       q_levels=mopt_q_levels,
+                                       double_gradient=mopt_double_gradient)
+                        }
+
+            current_metric = l_metric.get(metric.lower())
+
+            sdr = SymmetricDiffeomorphicRegistration(current_metric,
+                                                     level_iters)
 
             mapping = sdr.optimize(static_image, moving_image,
                                    static_grid2world, moving_grid2world,
