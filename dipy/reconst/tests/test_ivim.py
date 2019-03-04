@@ -321,8 +321,9 @@ def test_noisy_fit():
     Test fitting for noisy signals. This tests whether the threshold condition
     applies correctly and returns the linear fitting parameters.
 
-    For older scipy versions, the returned value of `f` from a linear fit is around 135
-    and D and D_star values are equal. Hence doing a test based on Scipy version.
+    For older scipy versions, the returned value of `f` from a linear fit is
+    around 135 and D and D_star values are equal. Hence doing a test based on
+    Scipy version.
     """
     model_one_stage = IvimModel(gtab)
     fit_one_stage = model_one_stage.fit(noisy_single)
