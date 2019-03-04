@@ -182,7 +182,6 @@ Image-based Registration
 Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_bundle_registration`
-- :ref:`example_tractogram_registration`
 
 ------------
 Segmentation
