@@ -21,22 +21,13 @@ plt.close()
 
 x1, x2 = 90, 155
 y1, y2 = 90, 170
-data_slice = data[x1:x2, y1:y2, z, :]
+data_slice = data[x1:x2, y1:y2, z:z + 1, :]
 
-ivim_model = ivim.IVIMModel(gtab, fit_method='VarPro')
-
-ivim_fit = np.zeros((data_slice.shape[0], data_slice.shape[1], 3))
-
+ivim_model = ivim.IvimModel(gtab, fit_method='VarPro')
 bvals = ivim_model.bvals
 t1 = time()
-for i in range(data_slice.shape[0]):
-    for j in range(data_slice.shape[1]):
-        signal = np.squeeze(data_slice[i, j])
-        if data[i, j, z, 1] > 0:
-            signal = signal/max(signal)
-            signal = np.float64(signal)
-            signal[signal > 1] = 1
-            ivim_fit[i, j, :] = ivim_model.fit(signal)
+
+ivim_fit = ivim_model.fit(data_slice)
 
 t2 = time()
 fast_time = t2 - t1
@@ -74,7 +65,7 @@ def ivim_mix_prediction(params, gtab, S0=1):
 
 
 i, j = 10, 10
-ivimx_predict = ivim_mix_prediction(ivim_fit[i, j, :], gtab)
+ivimx_predict = ivim_mix_prediction(ivim_fit.model_params[i, j, :][0], gtab)
 plt.scatter(gtab.bvals, data_slice[i, j, :],
             color="green", label="Actual signal")
 plt.plot(gtab.bvals, ivimx_predict*4000, color="red",
@@ -82,9 +73,9 @@ plt.plot(gtab.bvals, ivimx_predict*4000, color="red",
 plt.xlabel("bvalues")
 plt.ylabel("Signals")
 
-f_est = ivim_fit[i, j, 0]
-D_star_est = ivim_fit[i, j, 1]
-D_est = ivim_fit[i, j, 2]
+f_est = ivim_fit.model_params[i, j, :][0][0]
+D_star_est = ivim_fit.model_params[i, j, :][0][1]
+D_est = ivim_fit.model_params[i, j, :][0][2]
 
 text_fit = """Estimated \n f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(f_est, D_star_est, D_est)

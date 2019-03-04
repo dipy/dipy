@@ -128,7 +128,18 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-class IvimModel(ReconstModel):
+def ivim_model_selector(gtab, fit_method='LM', *args, **kwargs):
+
+        if fit_method == 'LM':
+            return IvimModelLM(gtab, fit_method='LM', *args, **kwargs)
+        if fit_method == 'VarPro':
+            return IvimModelVP(gtab, fit_method='LM', *args, **kwargs)
+
+
+IvimModel = ivim_model_selector
+
+
+class IvimModelLM(ReconstModel):
     """Ivim model
     """
     def __init__(self, gtab, fit_method='LM', *args, **kwargs):
@@ -507,7 +518,7 @@ class IvimModel(ReconstModel):
                 return x0
 
 
-class IVIMModel(ReconstModel):
+class IvimModelVP(ReconstModel):
 
     def __init__(self, gtab, fit_method='VarPro', *args, **kwargs):
         r""" MIX framework (MIX) [1]_.
@@ -559,6 +570,10 @@ class IVIMModel(ReconstModel):
             D*<0.05 mm^2/s
 
         """
+        data = data / data.max()
+        data[data > 1] = 1
+        # np.clip(data, 0, 1)
+
         bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         res_one = differential_evolution(self.stoc_search_cost, bounds,
@@ -572,8 +587,8 @@ class IVIMModel(ReconstModel):
         res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
-        return result
-#        return IvimVarProFit(self, result)
+#        return result
+        return IvimVarProFit(self, result)
 
     def stoc_search_cost(self, x, signal):
         """
