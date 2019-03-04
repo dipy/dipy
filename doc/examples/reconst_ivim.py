@@ -128,7 +128,7 @@ times return values which do not make sense physically (for example, a negative
 $\mathbf{f}$).
 """
 
-ivimmodel = IvimModel(gtab)
+ivimmodel = IvimModel(gtab, fit_method='LM')
 
 """
 To fit the model, call the `fit` method and pass the data for fitting.

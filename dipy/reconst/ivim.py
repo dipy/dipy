@@ -131,12 +131,7 @@ def f_D_star_error(params, gtab, signal, S0, D):
 class IvimModel(ReconstModel):
     """Ivim model
     """
-
-    def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
-                 two_stage=True, tol=1e-15,
-                 x_scale=[1000., 0.1, 0.001, 0.0001],
-                 options={'gtol': 1e-15, 'ftol': 1e-15,
-                          'eps': 1e-15, 'maxiter': 1000}):
+    def __init__(self, gtab, fit_method='LM', *args, **kwargs):
         r"""
         Initialize an IVIM model.
 
@@ -228,13 +223,17 @@ class IvimModel(ReconstModel):
             raise ValueError(b0_s)
 
         ReconstModel.__init__(self, gtab)
-        self.split_b_D = split_b_D
-        self.split_b_S0 = split_b_S0
-        self.bounds = bounds
-        self.two_stage = two_stage
-        self.tol = tol
-        self.options = options
-        self.x_scale = x_scale
+        self.args = args
+        self.kwargs = kwargs
+        self.fit_method = fit_method
+        self.split_b_D = kwargs.get('split_b_D', 400.0)
+        self.split_b_S0 = kwargs.get('split_b_S0', 200.)
+        self.bounds = kwargs.get('bounds', None)
+        self.two_stage = kwargs.get('two_stage', True)
+        self.tol = kwargs.get('tol', 1e-15)
+        self.options = kwargs.get('options', {'gtol': 1e-15, 'ftol': 1e-15,
+                                  'eps': 1e-15, 'maxiter': 1000})
+        self.x_scale = kwargs.get('x_scale', [1000., 0.1, 0.001, 0.0001])
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
@@ -243,10 +242,10 @@ class IvimModel(ReconstModel):
         elif self.bounds is None:
             self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
         else:
-            self.bounds = bounds
+            self.bounds = kwargs.get('bounds', None)
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    def fit(self, data):
         """ Fit method of the Ivim model class.
 
         The fitting takes place in the following steps: Linear fitting for D
@@ -269,9 +268,6 @@ class IvimModel(ReconstModel):
             will be applied to this fit method to scale it and apply it
             to multiple voxels.
 
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[:-1]
 
         Returns
         -------
@@ -511,79 +507,9 @@ class IvimModel(ReconstModel):
                 return x0
 
 
-class IvimFit(object):
-
-    def __init__(self, model, model_params):
-        """ Initialize a IvimFit class instance.
-            Parameters
-            ----------
-            model : Model class
-            model_params : array
-                The parameters of the model. In this case it is an
-                array of ivim parameters. If the fitting is done
-                for multi_voxel data, the multi_voxel decorator will
-                run the fitting on all the voxels and model_params
-                will be an array of the dimensions (data[:-1], 4),
-                i.e., there will be 4 parameters for each of the voxels.
-        """
-        self.model = model
-        self.model_params = model_params
-
-    def __getitem__(self, index):
-        model_params = self.model_params
-        N = model_params.ndim
-        if type(index) is not tuple:
-            index = (index,)
-        elif len(index) >= model_params.ndim:
-            raise IndexError("IndexError: invalid index")
-        index = index + (slice(None),) * (N - len(index))
-        return type(self)(self.model, model_params[index])
-
-    @property
-    def S0_predicted(self):
-        return self.model_params[..., 0]
-
-    @property
-    def perfusion_fraction(self):
-        return self.model_params[..., 1]
-
-    @property
-    def D_star(self):
-        return self.model_params[..., 2]
-
-    @property
-    def D(self):
-        return self.model_params[..., 3]
-
-    @property
-    def shape(self):
-        return self.model_params.shape[:-1]
-
-    def predict(self, gtab, S0=1.):
-        """Given a model fit, predict the signal.
-
-        Parameters
-        ----------
-        gtab : GradientTable class instance
-               Gradient directions and bvalues
-
-        S0 : float
-            S0 value here is not necessary and will not be used to predict the
-            signal. It has been added to conform to the structure of the
-            predict method in multi_voxel which requires a keyword argument S0.
-
-        Returns
-        -------
-        signal : array
-            The signal values predicted for this model using its parameters.
-
-        """
-        return ivim_prediction(self.model_params, gtab)
-
-
 class IVIMModel(ReconstModel):
 
-    def __init__(self, bvals, fit_method='MIX'):
+    def __init__(self, gtab, fit_method='VarPro', *args, **kwargs):
         r""" MIX framework (MIX) [1]_.
 
         The MIX computes the IVIM parameters.
@@ -614,13 +540,14 @@ class IVIMModel(ReconstModel):
 
         """
 
-        self.maxiter = 10  # maximum no. of iter for differential evolution
-        self.xtol = 1e-8  # Tolerance for termination: nonlinear least square
-        self.bvals = bvals
+        self.maxiter = kwargs.get('maxiter', 10)
+        self.xtol = kwargs.get('xtol', 1e-8)
+        self.bvals = gtab.bvals
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
 
+    @multi_voxel_fit
     def fit(self, data):
         """ Fit method of the IVIMModel model class
 
@@ -646,6 +573,7 @@ class IVIMModel(ReconstModel):
                             xtol=self.xtol, args=(data,))
         result = res.x
         return result
+#        return IvimVarProFit(self, result)
 
     def stoc_search_cost(self, x, signal):
         """
@@ -791,3 +719,118 @@ class IVIMModel(ReconstModel):
         self.exp_phi1[:, 0] = np.exp(-self.yhat_perfusion)
         self.exp_phi1[:, 1] = np.exp(-self.yhat_diffusion)
         return self.exp_phi1
+
+
+class IvimFit(object):
+
+    def __init__(self, model, model_params):
+        """ Initialize a IvimFit class instance.
+            Parameters
+            ----------
+            model : Model class
+            model_params : array
+                The parameters of the model. In this case it is an
+                array of ivim parameters. If the fitting is done
+                for multi_voxel data, the multi_voxel decorator will
+                run the fitting on all the voxels and model_params
+                will be an array of the dimensions (data[:-1], 4),
+                i.e., there will be 4 parameters for each of the voxels.
+        """
+        self.model = model
+        self.model_params = model_params
+
+    def __getitem__(self, index):
+        model_params = self.model_params
+        N = model_params.ndim
+        if type(index) is not tuple:
+            index = (index,)
+        elif len(index) >= model_params.ndim:
+            raise IndexError("IndexError: invalid index")
+        index = index + (slice(None),) * (N - len(index))
+        return type(self)(self.model, model_params[index])
+
+    @property
+    def S0_predicted(self):
+        return self.model_params[..., 0]
+
+    @property
+    def perfusion_fraction(self):
+        return self.model_params[..., 1]
+
+    @property
+    def D_star(self):
+        return self.model_params[..., 2]
+
+    @property
+    def D(self):
+        return self.model_params[..., 3]
+
+    @property
+    def shape(self):
+        return self.model_params.shape[:-1]
+
+    def predict(self, gtab, S0=1.):
+        """Given a model fit, predict the signal.
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
+               Gradient directions and bvalues
+
+        S0 : float
+            S0 value here is not necessary and will not be used to predict the
+            signal. It has been added to conform to the structure of the
+            predict method in multi_voxel which requires a keyword argument S0.
+
+        Returns
+        -------
+        signal : array
+            The signal values predicted for this model using its parameters.
+
+        """
+        return ivim_prediction(self.model_params, gtab)
+
+
+class IvimVarProFit(object):
+
+    def __init__(self, model, model_params):
+        """ Initialize a IvimFit class instance.
+            Parameters
+            ----------
+            model : Model class
+            model_params : array
+                The parameters of the model. In this case it is an
+                array of ivim parameters. If the fitting is done
+                for multi_voxel data, the multi_voxel decorator will
+                run the fitting on all the voxels and model_params
+                will be an array of the dimensions (data[:-1], 4),
+                i.e., there will be 4 parameters for each of the voxels.
+        """
+        self.model = model
+        self.model_params = model_params
+
+    def __getitem__(self, index):
+        model_params = self.model_params
+        N = model_params.ndim
+        if type(index) is not tuple:
+            index = (index,)
+        elif len(index) >= model_params.ndim:
+            raise IndexError("IndexError: invalid index")
+        index = index + (slice(None),) * (N - len(index))
+        return type(self)(self.model, model_params[index])
+
+    @property
+    def perfusion_fraction(self):
+        return self.model_params[..., 0]
+
+    @property
+    def D_star(self):
+        return self.model_params[..., 1]
+
+    @property
+    def D(self):
+        return self.model_params[..., 2]
+
+    @property
+    def shape(self):
+        return self.model_params.shape[:-1]
