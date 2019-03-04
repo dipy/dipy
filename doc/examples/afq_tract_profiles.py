@@ -60,6 +60,7 @@ streamlines, by finding the centroids of the left AF and CST bundle models.
 The advantage of using the model bundles is that we can use the same standard
 for different subjects, which means that we'll get roughly the same orientation
 """
+
 import dipy.data as dpd
 from dipy.data.fetcher import get_two_hcp842_bundles
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()

@@ -8,17 +8,18 @@ varying over three-dimensional q-space and diffusion time -- is a sought-after
 and still unsolved challenge in diffusion MRI (dMRI). We propose a functional
 basis approach that is specifically designed to represent the dMRI signal in
 this qtau-space [Fick2017]_.  Following recent terminology, we refer to our
-qtau-functional basis as ``q$\tau$-dMRI''. We use GraphNet regularization --
+qtau-functional basis as :math:`q\tau`-dMRI. We use GraphNet regularization --
 imposing both signal smoothness and sparsity -- to drastically reduce the
 number of diffusion-weighted images (DWIs) that is needed to represent the dMRI
-signal in the qtau-space. As the main contribution, q$\tau$-dMRI provides the
-framework to -- without making biophysical assumptions -- represent the
-q$\tau$-space signal and estimate time-dependent q-space indices
-(q$\tau$-indices), providing a new means for studying diffusion in nervous
-tissue. qtau-dMRI is the first of its kind in being specifically designed to
-provide open interpretation of the qtau-diffusion signal.
+signal in the qtau-space. As the main contribution, :math:`q\tau`-dMRI provides
+the framework to -- without making biophysical assumptions -- represent the
+:math:`q\tau`-space signal and estimate time-dependent q-space indices
+(:math:`q\tau`-indices), providing a new means for studying diffusion in
+nervous tissue. :math:`q\tau`-dMRI is the first of its kind in being
+specifically designed to provide open interpretation of the
+:math:`q\tau`-diffusion signal.
 
-q$\tau$-dMRI can be seen as a time-dependent extension of the MAP-MRI
+:math:`q\tau`-dMRI can be seen as a time-dependent extension of the MAP-MRI
 functional basis [Ozarslan2013]_, and all the previously proposed q-space
 can be estimated for any diffusion time. These include rotationally
 invariant quantities such as the Mean Squared Displacement (MSD), Q-space
@@ -27,8 +28,8 @@ directional indices such as the Return To the Axis Probability (RTAP) and
 Return To the Plane Probability (RTPP) are available, as well as the
 Orientation Distribution Function (ODF).
 
-In this example we illustrate how to use the qtau-dMRI to estimate
-time-dependent q-space indices from a qtau-acquisition of a mouse.
+In this example we illustrate how to use the :math:`q\tau`-dMRI to estimate
+time-dependent q-space indices from a :math:`q\tau`-acquisition of a mouse.
 
 First import the necessary modules:
 """
@@ -42,10 +43,10 @@ import numpy as np
 """
 Download and read the data for this tutorial.
 
-qt-dMRI requires data with multiple gradient directions, gradient strength and
-diffusion times. We will use the test-retest acquisitions of two mice that were
-used in the test-retest study by [Fick2017]_. The data itself is freely
-available and citeable at [Wassermann2017]_.
+:math:`q\tau`-dMRI requires data with multiple gradient directions, gradient
+strength and diffusion times. We will use the test-retest acquisitions of two
+mice that were used in the test-retest study by [Fick2017]_. The data itself
+is freely available and citeable at [Wassermann2017]_.
 """
 
 fetch_qtdMRI_test_retest_2subjects()
@@ -114,7 +115,7 @@ plt.savefig('qt-dMRI_datasets_fa_with_ccmasks.png')
 
 """
 .. figure:: qt-dMRI_datasets_fa_with_ccmasks.png
-   : align: center
+   :align: center
 
 Next, we use qt-dMRI to estimate of time-dependent q-space indices
 (q$\tau$-indices) for the masked voxels in the corpus callosum of each dataset.
@@ -123,13 +124,14 @@ Return-to-Plane Probability (RTOP, RTAP and RTPP), as well as the Mean Squared
 Displacement (MSD).
 
 In this example we don't extrapolate the data beyond the maximum diffusion
-time, so we estimate q$\tau$ indices between the minimum and maximum diffusion
-times of the data at 5 equally spaced points. However, it should the noted that
-qt-dMRI's combined smoothness and sparsity regularization allows for smooth
-interpolation at any q$\tau$ position. In other words, once the basis is
-fitted to the data, its coefficients describe the the entire q$\tau$-space, and
-any q$\tau$-position can be freely recovered. This including points beyond the
-dataset's maximum q/$\tau$ value (although this should be done with caution).
+time, so we estimate :math:`q\tau` indices between the minimum and maximum
+diffusion times of the data at 5 equally spaced points. However, it should the
+noted that qt-dMRI's combined smoothness and sparsity regularization allows
+for smooth interpolation at any :math:`q\tau` position. In other words, once
+the basis is fitted to the data, its coefficients describe the the entire
+:math:`q\tau`-space, and any :math:`q\tau`-position can be freely recovered.
+This including points beyond the dataset's maximum :math:`q\tau` value
+(although this should be done with caution).
 """
 
 tau_min = gtabs[0].tau.min()
@@ -167,16 +169,16 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
     rtpps.append(np.array(list(map(qtdmri_fit.rtpp, taus))))
 
 """
-The estimated q$\tau$-indices, for the chosen diffusion times, are now stored
-in msds, rtops, rtaps and rtpps. The trends of these q$\tau$-indices over time
-say something about the restriction of diffusing particles over time, which
-is currently a hot topic in the dMRI community. We evaluate the test-retest
-reproducibility for the two subjects by plotting the q$\tau$-indices for each
-subject together. This example will produce similar results as Fig. 10 in
-[Fick2017]_.
+The estimated :math:`q\tau`-indices, for the chosen diffusion times, are now
+stored in msds, rtops, rtaps and rtpps. The trends of these
+:math:`q\tau`-indices over time say something about the restriction of
+diffusing particles over time, which is currently a hot topic in the dMRI
+community. We evaluate the test-retest reproducibility for the two subjects by
+plotting the :math:`q\tau`-indices for each subject together. This example
+will produce similar results as Fig. 10 in [Fick2017]_.
 
 We first define a small function to plot the mean and standard deviation of the
-q$\tau$-index trends in a subject.
+:math:`q\tau`-index trends in a subject.
 """
 
 
@@ -195,8 +197,8 @@ def plot_mean_with_std(ax, time, ind1, plotcolor, ls='-', std_mult=1,
 
 """
 We start by showing the test-retest MSD of both subjects over time. We plot the
-q$\tau$-indices together with q$\tau$-index trends of free diffusion with
-different diffusivities as background.
+:math:`q\tau`-indices together with :math:`q\tau`-index trends of free
+diffusion with different diffusivities as background.
 """
 
 # we first generate the data to produce the background index isolines.
@@ -245,7 +247,7 @@ plt.savefig('qt_indices_msd.png')
 
 """
 .. figure:: qt_indices_msd.png
-   : align: center
+   :align: center
 
 You can see that the MSD in both subjects increases over time, but also slowly
 levels off as time progresses. This makes sense as diffusing particles are
@@ -300,9 +302,10 @@ ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
 ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
 ax.set_title(r'Test-Retest RTOP($\tau$) Subject 2', fontsize=15)
 plt.savefig('qt_indices_rtop.png')
+
 """
 .. figure:: qt_indices_rtop.png
-   : align: center
+   :align: center
 
 Similarly as MSD, the RTOP is related to the restriction that particles are
 experiencing and is also rotationally invariant. RTOP is defined as the
@@ -313,10 +316,10 @@ trends in the figure. Notice that the estimated RTOP trends decrease less fast
 than free diffusion, meaning that particles experience restriction over time.
 Also notice that the RTOP trends in both subjects nearly perfectly overlap.
 
-Next, we estimate two directional q$\tau$-indices, RTAP and RTPP, describing
-particle restriction perpendicular and parallel to the orientation of the
-principal diffusivity in that voxel. If the voxel describes coherent white
-matter (which it does in our corpus callosum example), then they describe
+Next, we estimate two directional :math:`q\tau`-indices, RTAP and RTPP,
+describing particle restriction perpendicular and parallel to the orientation
+of the principal diffusivity in that voxel. If the voxel describes coherent
+white matter (which it does in our corpus callosum example), then they describe
 properties related to restriction perpendicular and parallel to the axon
 bundles.
 """
@@ -387,11 +390,12 @@ ax.set_xlim(.009 * 1e3, 0.0185 * 1e3)
 ax.set_xlabel('Diffusion Time (ms)', fontsize=17)
 ax.set_title(r'Test-Retest RTPP($\tau$) Subject 2', fontsize=15)
 plt.savefig('qt_indices_rtpp.png')
+
 """
 .. figure:: qt_indices_rtap.png
-   : align: center
+   :align: center
 .. figure:: qt_indices_rtpp.png
-   : align: center
+   :align: center
 
 As those of RTOP, the trends in RTAP and RTPP also decrease over time. It can
 be seen that RTAP$^{1/2}$ is always bigger than RTPP, which makes sense as
@@ -399,17 +403,17 @@ particles in coherent white matter experience more restriction perpendicular to
 the white matter orientation than parallel to it. Again, in both subjects the
 test-retest RTAP and RTPP is nearly perfectly consistent.
 
-Aside from the estimation of q$\tau$-space indices, q$\tau$-dMRI also allows
-for the estimation of time-dependent ODFs. Once the Qtdmri model is fitted
-it can be simply called by qtdmri_fit.odf(sphere, s=sharpening_factor). This
-is identical to how the mapmri module functions, and allows to study the
-time-dependence of ODF directionallity.
+Aside from the estimation of :math:`q\tau`-space indices, :math:`q\tau`-dMRI
+also allows for the estimation of time-dependent ODFs. Once the Qtdmri model
+is fitted it can be simply called by qtdmri_fit.odf(sphere,
+s=sharpening_factor). This is identical to how the mapmri module functions,
+and allows to study the time-dependence of ODF directionallity.
 
 This concludes the example on qt-dMRI. As we showed, approaches such as qt-dMRI
-can help in studying the (finite-$\tau$) temporal properties of diffusion in
-biological tissues. Differences in q$\tau$-index trends could be indicative
-of underlying structural differences that affect the time-dependence of the
-diffusion process.
+can help in studying the (finite-:math:`\tau`) temporal properties of diffusion
+in biological tissues. Differences in :math:`q\tau`-index trends could be
+indicative of underlying structural differences that affect the time-dependence
+of the diffusion process.
 
 .. [Fick2017]_ Fick, Rutger HJ, et al. "Non-Parametric GraphNet-Regularized
             Representation of dMRI in Space and Time", Medical Image Analysis,
