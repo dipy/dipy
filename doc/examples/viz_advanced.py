@@ -241,7 +241,7 @@ panel.add_element(line_slider_z, (0.38, 0.35))
 panel.add_element(opacity_slider_label, (0.1, 0.15))
 panel.add_element(opacity_slider, (0.38, 0.15))
 
-show_m.ren.add(panel)
+ren.add(panel)
 
 """
 Then, we can render all the widgets and everything else in the screen and
@@ -265,6 +265,7 @@ def win_callback(obj, event):
         size = obj.GetSize()
         size_change = [size[0] - size_old[0], 0]
         panel.re_align(size_change)
+
 
 show_m.initialize()
 
