@@ -17,9 +17,6 @@ from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 from dipy.workflows.workflow import Workflow
 
-import numpy as np
-import nibabel as nib
-
 
 class ResliceFlow(Workflow):
 

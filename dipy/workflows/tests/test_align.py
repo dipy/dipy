@@ -1,7 +1,6 @@
 import numpy.testing as npt
 import numpy as np
 
-import numpy as np
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.tracking.streamline import Streamlines
@@ -14,16 +13,7 @@ import os.path
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.io.image import save_nifti
-from dipy.workflows.align import ImageRegistrationFlow
-from dipy.workflows.align import ApplyAffineFlow
-
-import os.path
-from os.path import join as pjoin
-
-from dipy.align.tests.test_parzenhist import setup_random_transform
-from dipy.align.transforms import Transform, regtransforms
-from dipy.io.image import save_nifti
-from dipy.workflows.align import ImageRegistrationFlow
+from dipy.workflows.align import ImageRegistrationFlow, SynRegistrationFlow
 from dipy.workflows.align import ApplyAffineFlow
 
 
