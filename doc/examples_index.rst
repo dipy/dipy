@@ -158,7 +158,6 @@ Fiber tracking evaluation
 
 - :ref:`example_linear_fascicle_evaluation`
 
-
 ------------------------------------
 Streamline analysis and connectivity
 ------------------------------------
@@ -167,8 +166,7 @@ Streamline analysis and connectivity
 - :ref:`example_streamline_length`
 - :ref:`example_cluster_confidence`
 - :ref:`example_path_length_map`
-- :ref:`example_bundle_profiles`
-
+- :ref:`example_afq_tract_profiles`
 
 ------------------
 Registration
@@ -179,12 +177,13 @@ Image-based Registration
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
-- :ref:`register_binary_fuzzy`
+- :ref:`example_register_binary_fuzzy`
 
 Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_bundle_registration`
 - :ref:`example_tractogram_registration`
+
 ------------
 Segmentation
 ------------
@@ -244,7 +243,6 @@ Visualization
 - :ref:`example_viz_roi_contour`
 - :ref:`example_viz_ui`
 - :ref:`example_viz_timers`
-
 
 ---------------
 Workflows
