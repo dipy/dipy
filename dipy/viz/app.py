@@ -137,7 +137,6 @@ class Horizon(object):
 
             if self.cluster:
 
-                # _cluster(streamlines, cluster_thr, )
                 print(' Clustering threshold {} \n'.format(self.cluster_thr))
                 clusters = qbx_and_merge(streamlines,
                                          [40, 30, 25, 20, self.cluster_thr])

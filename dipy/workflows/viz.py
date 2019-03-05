@@ -2,8 +2,6 @@ from os.path import join as pjoin
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import load_tractogram
 from dipy.io.image import load_nifti
-# TODO: add support for peaks
-# from dipy.io.peaks import load_peaks
 from dipy.viz.app import horizon
 
 
@@ -20,6 +18,9 @@ class HorizonFlow(Workflow):
 
         """ Highly interactive visualization - invert the Horizon!
 
+        Interact with any number of .trk, .tck or .dpy tractograms and anatomy
+        files .nii or .nii.gz. Cluster streamlines on loading.
+
         Parameters
         ----------
         input_files : variable string
@@ -34,6 +35,17 @@ class HorizonFlow(Workflow):
         stealth : bool
         out_dir : string
         out_stealth_png : string
+
+
+        References
+        ----------
+        .. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,
+            S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
+            S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
+            adaptive visualization, Proceedings of: International Society of
+            Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+
+
         """
         verbose = True
         tractograms = []
@@ -45,35 +57,28 @@ class HorizonFlow(Workflow):
 
         for input_output in io_it:
 
-            f = input_output[0]
+            fname = input_output[0]
 
             if verbose:
                 print('Loading file ...')
-                print(f)
+                print(fname)
                 print('\n')
 
-            fl = f.lower()
+            fl = fname.lower()
             ends = fl.endswith
 
             if ends('.trk') or ends('.tck') or ends('.dpy'):
 
-                streamlines, hdr = load_tractogram(f, lazy_load=False)
+                streamlines, hdr = load_tractogram(fname, lazy_load=False)
                 tractograms.append(streamlines)
 
             if ends('.nii.gz') or ends('.nii'):
 
-                data, affine = load_nifti(f)
+                data, affine = load_nifti(fname)
                 images.append((data, affine))
                 if verbose:
                     print(affine)
 
-            """ TODO: add support for peaks
-            if ends('.pam5'):
-
-                peaks = load_peaks(f)
-                if verbose:
-                    print(peaks.peak_dirs.shape)
-            """
         horizon(tractograms, images, cluster, cluster_thr,
                 random_colors, length_lt, length_gt, clusters_lt,
                 clusters_gt,
