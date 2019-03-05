@@ -485,7 +485,7 @@ class ImageRegistrationFlow(Workflow):
             raise ValueError('Dimension mismatch: One of the input should '
                              'be 2D or 3D dimensions.')
 
-    def run(self, static_img_file, moving_img_file, transform='affine',
+    def run(self, static_img_files, moving_img_files, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
             factors=[4, 2, 1], progressive=True, save_metric=False,
@@ -495,10 +495,10 @@ class ImageRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_img_file : string
+        static_img_files : string
             Path to the static image file.
 
-        moving_img_file : string
+        moving_img_files : string
             Path to the moving image file.
 
         transform : string, optional
@@ -646,13 +646,13 @@ class ImageRegistrationFlow(Workflow):
 
 class ApplyAffineFlow(Workflow):
 
-    def run(self, static_image_file, moving_image_files, affine_matrix_file,
+    def run(self, static_image_files, moving_image_files, affine_matrix_file,
             out_dir='', out_file='transformed.nii.gz'):
 
         """
         Parameters
         ----------
-        static_image_file : string
+        static_image_files : string
             Path of the static image file.
 
         moving_image_files : string
@@ -703,7 +703,7 @@ class ApplyAffineFlow(Workflow):
 
 class SynRegistrationFlow(Workflow):
 
-    def run(self, static_image_file, moving_image_file, affine_matrix_file,
+    def run(self, static_image_files, moving_image_files, prealign_file='',
             inv_static=False, level_iters=[10, 10, 5], metric="cc",
             mopt_sigma_diff=2.0, mopt_radius=4, mopt_smooth=0.0,
             mopt_inner_iter=0.0, mopt_q_levels=256, mopt_double_gradient=True,
@@ -716,14 +716,14 @@ class SynRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_image_file : string
+        static_image_files : string
             Path of the static image file.
 
-        moving_image_file : string
+        moving_image_files : string
             Path to the moving image file.
 
-        affine_matrix_file : string
-            The text file containing pre alignment information or the
+        prealign_file : string, optional
+            The text file containing pre alignment information via an
              affine matrix.
 
         inv_static : boolean, optional
@@ -826,6 +826,9 @@ class SynRegistrationFlow(Workflow):
             raise ValueError("Invalid similarity metric: Please"
                              " provide a valid metric.")
 
+        logging.info("Starting Diffeormorphic Registration")
+        logging.info('Using {0} Metric'.format(metric.upper()))
+
         # Init parameter if they are not setup
         init_param = {'ssd': {'mopt_smooth': 4.0,
                               'mopt_inner_iter': 10,
@@ -842,8 +845,11 @@ class SynRegistrationFlow(Workflow):
         mopt_step_type = mopt_step_type or \
             init_param[metric]['mopt_step_type']
 
-        for static_file, moving_file, in_affine, \
-                warped_file, inv_static_file, displ_file in io_it:
+        for (static_file, moving_file, owarped_file, oinv_static_file,
+             odispl_file) in io_it:
+
+            logging.info('Loading static file {0}'.format(static_file))
+            logging.info('Loading moving file {0}'.format(moving_file))
 
             # Loading the image data from the input files into object.
             static_image, static_grid2world = load_nifti(static_file)
@@ -853,7 +859,7 @@ class SynRegistrationFlow(Workflow):
             ImageRegistrationFlow.check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
-            affine_matrix = np.loadtxt(in_affine)
+            prealign = np.loadtxt(prealign_file) if prealign_file else None
 
             l_metric = {"ssd": SSDMetric(static_image.ndim,
                                          smooth=mopt_smooth,
@@ -873,14 +879,22 @@ class SynRegistrationFlow(Workflow):
 
             current_metric = l_metric.get(metric.lower())
 
-            sdr = SymmetricDiffeomorphicRegistration(current_metric,
-                                                     level_iters)
+            sdr = SymmetricDiffeomorphicRegistration(
+                metric=current_metric,
+                level_iters=level_iters,
+                step_length=step_length,
+                ss_sigma_factor=ss_sigma_factor,
+                opt_tol=opt_tol,
+                inv_iter=inv_iter,
+                inv_tol=inv_tol
+                )
 
             mapping = sdr.optimize(static_image, moving_image,
                                    static_grid2world, moving_grid2world,
-                                   affine_matrix)
+                                   prealign)
 
             warped_moving = mapping.transform(moving_image)
 
+            logging.info('Saving warped {0}'.format(owarped_file))
             # Saving the warped moving file and the alignment matrix.
-            save_nifti(warped_file, warped_moving, static_grid2world)
+            save_nifti(owarped_file, warped_moving, static_grid2world)
