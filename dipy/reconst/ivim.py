@@ -8,8 +8,9 @@ import scipy
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
-import cvxpy as cvx
 from scipy.optimize import differential_evolution
+from dipy.utils.optpkg import optional_package
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
                    LooseVersion('0.17'))
@@ -20,7 +21,7 @@ else:
     from scipy.optimize import least_squares
 
 
-def ivim_prediction(params, gtab, S0=1.):
+def ivim_prediction(params, gtab, S0=1., *args, **kwargs):
     """The Intravoxel incoherent motion (IVIM) model function.
 
     Parameters
@@ -41,10 +42,48 @@ def ivim_prediction(params, gtab, S0=1.):
     S : array
         An array containing the IVIM signal estimated using given parameters.
     """
-    S0, f, D_star, D = params
+    fit_method = kwargs.get('fit_method', 'LM')
     b = gtab.bvals
-    S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+
+    if fit_method == 'LM':
+        S0, f, D_star, D = params
+        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+
+    elif fit_method == 'VP':
+        f, D_star, D = params
+        S0 = 1.
+        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
     return S
+
+
+def ivim_mix_prediction(params, gtab, S0=1):
+
+        """
+        The Intravoxel incoherent motion (IVIM) model function.
+
+        Parameters
+        ----------
+        params : array
+            An array of IVIM parameters - [S0, f, D_star, D].
+
+        gtab : GradientTable class instance
+            Gradient directions and bvalues.
+
+        S0 : float, optional
+            This has been added just for consistency with the existing
+            API. Unlike other models, IVIM predicts S0 and this is over written
+            by the S0 value in params.
+
+        Returns
+        -------
+        S : array
+        An array containing the IVIM signal estimated using given parameters.
+        """
+        f, D_star, D = params
+        b = gtab.bvals
+        S0 = 1
+        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+        return S
 
 
 def _ivim_error(params, gtab, signal):
@@ -257,7 +296,7 @@ class IvimModelLM(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the Ivim model class.
+        """ Fit method of the IvimModelLM class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
@@ -521,34 +560,57 @@ class IvimModelLM(ReconstModel):
 class IvimModelVP(ReconstModel):
 
     def __init__(self, gtab, fit_method='VarPro', *args, **kwargs):
-        r""" MIX framework (MIX) [1]_.
+        r""" Initialize an IvimModelVP class.
 
-        The MIX computes the IVIM parameters.
-        This algorithm uses three different optimizers. It starts with a
-        differential evolutionary algorithm and fits the parameters in the
-        power of exponentials. Then the fitted parameters in the first step are
-        utilized to make a linear convex problem. Using a convex optimization,
-        the volume fractions are determined. Then the last step is non linear
-        least square fitting on all the parameters. The results of the first
-        and second step are utilized as the initial values for the last step
-        of the algorithm. (see [1]_ for a comparison and a through discussion).
+        The IVIM model assumes that biological tissue includes a volume
+        fraction 'f' of water flowing with a pseudo-diffusion coefficient
+        D* and a fraction (1-f) of static (diffusion only), intra and
+        extracellular water, with a diffusion coefficient D. In this model
+        the echo attenuation of a signal in a single voxel can be written as
+
+            .. math::
+
+            S(b) = [f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
+
+            Where:
+            .. math::
+
+            S_0, f, D\* and D are the IVIM parameters.
 
         Parameters
         ----------
-        gtab : GradientTable
+        gtab : GradientTable class instance
+            Gradient directions and bvalues
 
         fit_method : str or callable
+            str can be one of the following:
 
-        Returns
-        -------
-        IVIM_MIX parameters
+            'LM' For Levenber-Marquardt fitting with 2-stage option
+                :func:`ivim.IvimModel(gtab, fit_method='LM')`
+            'VP' For the Variable Projections based multi-stage fitting option
+                :func:`ivim.IvimModel(gtab, fit_method='VP')`
+
+        tol : float, optional
+            Tolerance for convergence of minimization.
+            default : 1e-15
+
+        maxiter: int, optional
+            Maximum number of iterations for the Differential Evolution in
+            SciPy.
+            default : 10
 
         References
         ----------
-        .. [1] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
-               White Matter Fibers from diffusion MRI." Scientific reports 6
-               (2016).
-
+        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
+               in intravoxel incoherent motion MR imaging." Radiology 168.2
+               (1988): 497-505.
+        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
+               perfusion with intravoxel incoherent motion MR imaging."
+               Radiology 265.3 (2012): 874-881.
+        .. [3] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
 
         self.maxiter = kwargs.get('maxiter', 10)
@@ -560,19 +622,30 @@ class IvimModelVP(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the IVIMModel model class
+        r""" Fit method of the IvimModelVP model class
 
-        Parameters
+        MicroLearn framework (VarPro)[1]_.
+
+        The VarPro computes the IVIM parameters.
+        This algorithm uses three different optimizers. It starts with a
+        differential evolution algorithm and fits the parameters in the
+        power of exponentials. Then the fitted parameters in the first step are
+        utilized to make a linear convex problem. Using a convex optimization,
+        the volume fractions are determined. Then the last step is non linear
+        least square fitting on all the parameters. The results of the first
+        and second step are utilized as the initial values for the last step
+        of the algorithm. (see [1]_ for a comparison and a through discussion).
+
+        References
         ----------
-        data : array
-            The measured signal from one voxel.
-            f<0.3
-            D*<0.05 mm^2/s
+        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
 
         """
         data = data / data.max()
         data[data > 1] = 1
-        # np.clip(data, 0, 1)
 
         bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
@@ -587,7 +660,6 @@ class IvimModelVP(ReconstModel):
         res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
-#        return result
         return IvimVarProFit(self, result)
 
     def stoc_search_cost(self, x, signal):
@@ -597,15 +669,7 @@ class IvimModelVP(ReconstModel):
         Parameters
         ----------
         x : array
-        bvals
-        bvecs
-        G: gradient strength
-        small_delta
-        big_delta
-        gamma: gyromagnetic ratio (2.675987 * 10 ** 8 )
-        D_intra= intrinsic free diffusivity (0.6 * 10 ** 3 mircometer^2/sec)
-        D_iso= isotropic diffusivity, (2 * 10 ** 3 mircometer^2/sec)
-
+        signal : array
         Returns
         -------
         (signal -  S)^T(signal -  S)
@@ -672,19 +736,19 @@ class IvimModelVP(ReconstModel):
         """
 
         # Create four scalar optimization variables.
-        fe = cvx.Variable(2)
+        fe = cvxpy.Variable(2)
         # Create four constraints.
-        constraints = [cvx.sum(fe) == 1,
+        constraints = [cvxpy.sum(fe) == 1,
                        fe[0] >= 0.011,
                        fe[1] >= 0.011,
                        fe[0] <= 0.29,
                        fe[1] <= 0.89]
 
         # Form objective.
-        obj = cvx.Minimize(cvx.sum(cvx.square(phi * fe - signal)))
+        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * fe - signal)))
 
         # Form and solve problem.
-        prob = cvx.Problem(obj, constraints)
+        prob = cvxpy.Problem(obj, constraints)
         prob.solve()  # Returns the optimal value.
         return np.array(fe.value)
 
