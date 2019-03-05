@@ -48,9 +48,9 @@ data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
 data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
     1, 0, 0] = data_multi[1, 1, 0] = data_single
 
-ivim_params = np.zeros((2, 2, 1, 4))
-ivim_params[0, 0, 0] = ivim_params[0, 1, 0] = params_LM
-ivim_params[1, 0, 0] = ivim_params[1, 1, 0] = params_LM
+ivim_params_LM = np.zeros((2, 2, 1, 4))
+ivim_params_LM[0, 0, 0] = ivim_params_LM[0, 1, 0] = params_LM
+ivim_params_LM[1, 0, 0] = ivim_params_LM[1, 1, 0] = params_LM
 
 ivim_model_LM = IvimModel(gtab, fit_method='LM')
 ivim_model_one_stage = IvimModel(gtab, fit_method='LM')
@@ -138,7 +138,7 @@ def test_multivoxel():
 
     est_signal = ivim_fit_multi.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params)
+    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params_LM)
     assert_array_almost_equal(est_signal, data_multi)
 
 
@@ -162,7 +162,7 @@ def test_ivim_errors():
         ivim_fit = ivim_model_LM.fit(data_multi)
         est_signal = ivim_fit.predict(gtab, S0=1.)
         assert_array_equal(est_signal.shape, data_multi.shape)
-        assert_array_almost_equal(ivim_fit.model_params, ivim_params)
+        assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
         assert_array_almost_equal(est_signal, data_multi)
 
 
@@ -177,7 +177,7 @@ def test_mask():
     est_signal = ivim_fit.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
     assert_array_almost_equal(est_signal, data_multi)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params)
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
     assert_raises(ValueError, ivim_model_LM.fit, data_multi,
                   mask=mask_not_correct)
 
@@ -337,7 +337,8 @@ def test_S0():
     Test if the `IvimFit` class returns the correct S0
     """
     assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
-    assert_array_almost_equal(ivim_fit_multi.S0_predicted, ivim_params[..., 0])
+    assert_array_almost_equal(ivim_fit_multi.S0_predicted,
+                              ivim_params_LM[..., 0])
 
 
 def test_perfusion_fraction():
@@ -346,7 +347,7 @@ def test_perfusion_fraction():
     """
     assert_array_almost_equal(ivim_fit_single.perfusion_fraction, f)
     assert_array_almost_equal(
-        ivim_fit_multi.perfusion_fraction, ivim_params[..., 1])
+        ivim_fit_multi.perfusion_fraction, ivim_params_LM[..., 1])
 
 
 def test_D_star():
@@ -354,7 +355,7 @@ def test_D_star():
     Test if the `IvimFit` class returns the correct D_star
     """
     assert_array_almost_equal(ivim_fit_single.D_star, D_star)
-    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params[..., 2])
+    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params_LM[..., 2])
 
 
 def test_D():
@@ -362,7 +363,7 @@ def test_D():
     Test if the `IvimFit` class returns the correct D
     """
     assert_array_almost_equal(ivim_fit_single.D, D)
-    assert_array_almost_equal(ivim_fit_multi.D, ivim_params[..., 3])
+    assert_array_almost_equal(ivim_fit_multi.D, ivim_params_LM[..., 3])
 
 
 def test_estimate_linear_fit():
@@ -435,6 +436,39 @@ def test_leastsq_error():
     """
     fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
+
+
+ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
+f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
+# params for a single voxel
+params_VP = np.array([f, D_star, D])
+
+ivim_params_VP = np.zeros((2, 2, 1, 3))
+ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
+ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
+
+ivim_fit_VP = ivim_model_VP.fit(data_single)
+
+
+def test_perfusion_fraction_vp():
+    """
+    Test if the `IvimFit` class returns the correct f
+    """
+    assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP, decimal=2)
+
+
+def test_D_star_vp():
+    """
+    Test if the `IvimFit` class returns the correct D_star
+    """
+    assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
+
+
+def test_D_vp():
+    """
+    Test if the `IvimFit` class returns the correct D
+    """
+    assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
 
 
 if __name__ == '__main__':
