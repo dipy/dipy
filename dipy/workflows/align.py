@@ -18,6 +18,32 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.workflows.workflow import Workflow
 
 
+def check_dimensions(static, moving):
+    """Check the dimensions of the input images.
+
+    Parameters
+    ----------
+    static : 2D or 3D array
+        the image to be used as reference during optimization.
+
+    moving: 2D or 3D array
+        the image to be used as "moving" during optimization. It is
+        necessary to pre-align the moving image to ensure its domain
+        lies inside the domain of the deformation fields. This is assumed
+        to be accomplished by "pre-aligning" the moving image towards the
+        static using an affine transformation given by the
+        'starting_affine' matrix
+
+    """
+    if len(static.shape) != len(moving.shape):
+        raise ValueError('Dimension mismatch: The input images must '
+                         'have same number of dimensions.')
+
+    if len(static.shape) > 3 and len(moving.shape) > 3:
+        raise ValueError('Dimension mismatch: One of the input should '
+                         'be 2D or 3D dimensions.')
+
+
 class ResliceFlow(Workflow):
 
     @classmethod
@@ -458,33 +484,6 @@ class ImageRegistrationFlow(Workflow):
                                            affreg, params0, transform,
                                            affine)
 
-    @staticmethod
-    def check_dimensions(static, moving):
-
-        """
-        Check the dimensions of the input images.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        moving: 2D or 3D array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix
-        """
-        if len(static.shape) != len(moving.shape):
-            raise ValueError('Dimension mismatch: The input images must '
-                             'have same number of dimensions.')
-
-        if len(static.shape) > 3 and len(moving.shape) > 3:
-            raise ValueError('Dimension mismatch: One of the input should '
-                             'be 2D or 3D dimensions.')
-
     def run(self, static_img_files, moving_img_files, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
@@ -573,7 +572,7 @@ class ImageRegistrationFlow(Workflow):
             moving = np.array(image.get_data())
             moving_grid2world = image.affine
 
-            self.check_dimensions(static, moving)
+            check_dimensions(static, moving)
 
             if transform == 'com':
                 moved_image, affine = self.center_of_mass(static,
@@ -682,7 +681,7 @@ class ApplyAffineFlow(Workflow):
 
             # Doing a sanity check for validating the dimensions of the input
             # images.
-            ImageRegistrationFlow.check_dimensions(static_image, moving_image)
+            check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
             affine_matrix = np.loadtxt(affine_matrix_file)
@@ -711,7 +710,7 @@ class SynRegistrationFlow(Workflow):
             ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
             inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
             out_inv_static='inc_static.nii.gz',
-            out_field='displacefield.txt'):
+            out_field='displacement_field.nii.gz'):
 
         """
         Parameters
@@ -808,23 +807,22 @@ class SynRegistrationFlow(Workflow):
             Directory to save the transformed files (default '').
 
         out_warped : string, optional
-            Name of the warped file. If no name is given then a
-             suffix 'transformed' will be appended to the name of the
-             original input file (default 'warped_moved.nii.gz').
+            Name of the warped file. (default 'warped_moved.nii.gz').
 
         out_inv_static : string, optional
             Name of the file to save the static image after applying the
              inverse mapping (default 'inv_static.nii.gz').
 
         out_field : string, optional
-            Name of the file to save the diffeomorphic field.
+            Name of the file to save the diffeomorphic map.
+            (default 'displacement_field.nii.gz')
 
         """
         io_it = self.get_io_iterator()
         metric = metric.lower()
         if metric not in ['ssd', 'cc', 'em']:
             raise ValueError("Invalid similarity metric: Please"
-                             " provide a valid metric.")
+                             " provide a valid metric like 'ssd', 'cc', 'em'")
 
         logging.info("Starting Diffeormorphic Registration")
         logging.info('Using {0} Metric'.format(metric.upper()))
@@ -846,7 +844,7 @@ class SynRegistrationFlow(Workflow):
             init_param[metric]['mopt_step_type']
 
         for (static_file, moving_file, owarped_file, oinv_static_file,
-             odispl_file) in io_it:
+             omap_file) in io_it:
 
             logging.info('Loading static file {0}'.format(static_file))
             logging.info('Loading moving file {0}'.format(moving_file))
@@ -856,7 +854,7 @@ class SynRegistrationFlow(Workflow):
             moving_image, moving_grid2world = load_nifti(moving_file)
 
             # Sanity check for the input image dimensions.
-            ImageRegistrationFlow.check_dimensions(static_image, moving_image)
+            check_dimensions(static_image, moving_image)
 
             # Loading the affine matrix.
             prealign = np.loadtxt(prealign_file) if prealign_file else None
@@ -893,8 +891,11 @@ class SynRegistrationFlow(Workflow):
                                    static_grid2world, moving_grid2world,
                                    prealign)
 
+            mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
             warped_moving = mapping.transform(moving_image)
 
+            # Saving
             logging.info('Saving warped {0}'.format(owarped_file))
-            # Saving the warped moving file and the alignment matrix.
             save_nifti(owarped_file, warped_moving, static_grid2world)
+            logging.info('Saving Diffeormorphic map {0}'.format(omap_file))
+            save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
