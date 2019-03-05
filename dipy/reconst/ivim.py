@@ -8,12 +8,14 @@ import scipy
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from scipy.optimize import differential_evolution
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
                    LooseVersion('0.17'))
+
+SCIPY_LESS_0_15 = (LooseVersion(scipy.version.short_version) <
+                   LooseVersion('0.15.1'))
 
 if SCIPY_LESS_0_17:
     from scipy.optimize import leastsq
@@ -644,6 +646,12 @@ class IvimModelVP(ReconstModel):
                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
 
         """
+        if SCIPY_LESS_0_15:
+            raise ValueError("Using the Variable Projection Method for " +
+                             "fitting needs SciPy >= 0.15.1")
+        else:
+            from scipy.optimize import differential_evolution
+
         data = data / data.max()
         data[data > 1] = 1
 
