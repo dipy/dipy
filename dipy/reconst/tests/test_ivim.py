@@ -19,9 +19,12 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
+import scipy
 
 from distutils.version import LooseVersion
-import scipy
+from dipy.utils.optpkg import optional_package
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
 
@@ -153,7 +156,8 @@ def test_ivim_errors():
     # Run the test for Scipy versions less than 0.17
     if SCIPY_VERSION < LooseVersion('0.17'):
         assert_raises(ValueError, IvimModel, gtab,
-                      bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]))
+                      bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
+                      fit_method='LM')
     else:
         ivim_model_LM = IvimModel(gtab,
                                   bounds=([0., 0., 0., 0.],
@@ -448,27 +452,39 @@ ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
 ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
 
 ivim_fit_VP = ivim_model_VP.fit(data_single)
+test_vae = "Using the Variable Projection Method for " + \
+                             "fitting needs SciPy >= 0.15.1"
 
 
 def test_perfusion_fraction_vp():
     """
     Test if the `IvimFit` class returns the correct f
     """
-    assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP, decimal=2)
+    if SCIPY_VERSION < LooseVersion('0.15.1'):
+        assert_array_equal(ValueError, test_vae)
+    else:
+        assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP,
+                                  decimal=2)
 
 
 def test_D_star_vp():
     """
     Test if the `IvimFit` class returns the correct D_star
     """
-    assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
+    if SCIPY_VERSION < LooseVersion('0.15.1'):
+        assert_array_equal(ValueError, test_vae)
+    else:
+        assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
 
 
 def test_D_vp():
     """
     Test if the `IvimFit` class returns the correct D
     """
-    assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
+    if SCIPY_VERSION < LooseVersion('0.15.1'):
+        assert_array_equal(ValueError, test_vae)
+    else:
+        assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
 
 
 if __name__ == '__main__':

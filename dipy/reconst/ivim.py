@@ -49,43 +49,14 @@ def ivim_prediction(params, gtab, S0=1., *args, **kwargs):
 
     if fit_method == 'LM':
         S0, f, D_star, D = params
-        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
 
-    elif fit_method == 'VP':
+    elif fit_method == 'VarPro':
         f, D_star, D = params
         S0 = 1.
-        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+
+    S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+
     return S
-
-
-def ivim_mix_prediction(params, gtab, S0=1):
-
-        """
-        The Intravoxel incoherent motion (IVIM) model function.
-
-        Parameters
-        ----------
-        params : array
-            An array of IVIM parameters - [S0, f, D_star, D].
-
-        gtab : GradientTable class instance
-            Gradient directions and bvalues.
-
-        S0 : float, optional
-            This has been added just for consistency with the existing
-            API. Unlike other models, IVIM predicts S0 and this is over written
-            by the S0 value in params.
-
-        Returns
-        -------
-        S : array
-        An array containing the IVIM signal estimated using given parameters.
-        """
-        f, D_star, D = params
-        b = gtab.bvals
-        S0 = 1
-        S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
-        return S
 
 
 def _ivim_error(params, gtab, signal):
@@ -170,11 +141,24 @@ def f_D_star_error(params, gtab, signal, S0, D):
 
 
 def ivim_model_selector(gtab, fit_method='LM', *args, **kwargs):
+    """
+    Selector function to switch between the 2-stage Levenberg-Marquardt based
+    NLLS fitting method (also containing the linear fit): `LM` and the Variable
+    Projections based fitting method: `VarPro`.
 
-        if fit_method == 'LM':
-            return IvimModelLM(gtab, fit_method='LM', *args, **kwargs)
-        if fit_method == 'VarPro':
-            return IvimModelVP(gtab, fit_method='LM', *args, **kwargs)
+    Parameters
+    ----------
+    fit_method : string, optional
+        The value fit_method can either be 'LM' or 'VarPro'.
+        default : LM
+
+    """
+
+    if fit_method == 'LM':
+        return IvimModelLM(gtab, fit_method='LM', *args, **kwargs)
+
+    elif fit_method == 'VarPro':
+        return IvimModelVP(gtab, fit_method='LM', *args, **kwargs)
 
 
 IvimModel = ivim_model_selector
@@ -588,9 +572,13 @@ class IvimModelVP(ReconstModel):
             str can be one of the following:
 
             'LM' For Levenber-Marquardt fitting with 2-stage option
-                :func:`ivim.IvimModel(gtab, fit_method='LM')`
+                This method does the same as :func:`ivim.IvimModel(gtab,
+                                                                   fit_method=
+                                                                   'LM')`
             'VP' For the Variable Projections based multi-stage fitting option
-                :func:`ivim.IvimModel(gtab, fit_method='VP')`
+                This method does the same as :func:`ivim.IvimModel(gtab,
+                                                                   fit_method=
+                                                                   'VP')`
 
         tol : float, optional
             Tolerance for convergence of minimization.
@@ -662,10 +650,10 @@ class IvimModelVP(ReconstModel):
                                          disp=False, polish=True, popsize=28)
         x = res_one.x
         phi = self.Phi(x)
-        fe = self.cvx_fit(data, phi)
-        x_fe = self.x_and_fe_to_x_fe(x, fe)
+        f = self.cvx_fit(data, phi)
+        x_f = self.x_and_f_to_x_f(x, f)
         bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
-        res = least_squares(self.nlls_cost, x_fe, bounds=(bounds),
+        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
         return IvimVarProFit(self, result)
@@ -744,23 +732,23 @@ class IvimModelVP(ReconstModel):
         """
 
         # Create four scalar optimization variables.
-        fe = cvxpy.Variable(2)
+        f = cvxpy.Variable(2)
         # Create four constraints.
-        constraints = [cvxpy.sum(fe) == 1,
-                       fe[0] >= 0.011,
-                       fe[1] >= 0.011,
-                       fe[0] <= 0.29,
-                       fe[1] <= 0.89]
+        constraints = [cvxpy.sum(f) == 1,
+                       f[0] >= 0.011,
+                       f[1] >= 0.011,
+                       f[0] <= 0.29,
+                       f[1] <= 0.89]
 
         # Form objective.
-        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * fe - signal)))
+        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
 
         # Form and solve problem.
         prob = cvxpy.Problem(obj, constraints)
         prob.solve()  # Returns the optimal value.
-        return np.array(fe.value)
+        return np.array(f.value)
 
-    def nlls_cost(self, x_fe, signal):
+    def nlls_cost(self, x_f, signal):
         """
         cost function for the least square problem
 
@@ -783,22 +771,22 @@ class IvimModelVP(ReconstModel):
             sum{(signal -  phi*fe)^2}
         """
 
-        x, fe = self.x_fe_to_x_and_fe(x_fe)
-        fe1 = np.array([fe, 1 - fe])
+        x, f = self.x_f_to_x_and_f(x_f)
+        f1 = np.array([f, 1 - f])
         phi = self.Phi(x)
-        return np.sum((np.dot(phi, fe1) - signal) ** 2)
+        return np.sum((np.dot(phi, f1) - signal) ** 2)
 
-    def x_fe_to_x_and_fe(self, x_fe):
+    def x_f_to_x_and_f(self, x_f):
         x = np.zeros(2)
-        fe = x_fe[0]
-        x = x_fe[1:3]
-        return x, fe
+        f = x_f[0]
+        x = x_f[1:3]
+        return x, f
 
-    def x_and_fe_to_x_fe(self, x, fe):
-        x_fe = np.zeros(3)
-        x_fe[0] = fe[0]
-        x_fe[1:3] = x
-        return x_fe
+    def x_and_f_to_x_f(self, x, f):
+        x_f = np.zeros(3)
+        x_f[0] = f[0]
+        x_f[1:3] = x
+        return x_f
 
     def Phi(self, x):
         self.yhat_perfusion = self.bvals * x[0]
@@ -921,3 +909,24 @@ class IvimVarProFit(object):
     @property
     def shape(self):
         return self.model_params.shape[:-1]
+
+    def predict(self, gtab, S0=1.):
+        """Given a model fit, predict the signal.
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
+               Gradient directions and bvalues
+
+        S0 : float
+            S0 value here is not necessary and will not be used to predict the
+            signal. It has been added to conform to the structure of the
+            predict method in multi_voxel which requires a keyword argument S0.
+
+        Returns
+        -------
+        signal : array
+            The signal values predicted for this model using its parameters.
+
+        """
+        return ivim_prediction(self.model_params, gtab)
