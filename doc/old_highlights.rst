@@ -4,6 +4,19 @@
 Older Highlights
 ****************
 
+**DIPY 0.15.0** is now available. New features include:
+
+- Updated RecoBundles for automatic anatomical bundle segmentation.
+- New Reconstruction Model: qtau-dMRI.
+- New command line interfaces (e.g. dipy_slr).
+- New continuous integration with AppVeyor CI.
+- Nibabel Streamlines API now used almost everywhere for better memory management.
+- Compatibility with Python 3.7.
+- Many tutorials added or updated (5 New).
+- Large documentation update.
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests. 
+
 **DIPY 0.13.0** is now available. New features include:
 
 - Faster local PCA implementation.
