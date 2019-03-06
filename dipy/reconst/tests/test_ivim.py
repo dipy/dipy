@@ -455,7 +455,6 @@ ivim_params_VP = np.zeros((2, 2, 1, 3))
 ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
 ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
 
-ivim_fit_VP = ivim_model_VP.fit(data_single)
 test_vae = "Using the Variable Projection Method for " + \
                              "fitting needs SciPy >= 0.15.1"
 
@@ -466,8 +465,9 @@ def test_perfusion_fraction_vp():
     Test if the `IvimFit` class returns the correct f
     """
     if SCIPY_LESS_0_15:
-        assert_array_equal(ValueError, test_vae)
+        assert_raises(ValueError, ivim_model_VP.fit(data_single))
     else:
+        ivim_fit_VP = ivim_model_VP.fit(data_single)
         assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP,
                                   decimal=2)
 
@@ -478,8 +478,9 @@ def test_D_star_vp():
     Test if the `IvimFit` class returns the correct D_star
     """
     if SCIPY_LESS_0_15:
-        assert_array_equal(ValueError, test_vae)
+        assert_raises(ValueError, ivim_model_VP.fit(data_single))
     else:
+        ivim_fit_VP = ivim_model_VP.fit(data_single)
         assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
 
 
@@ -489,8 +490,9 @@ def test_D_vp():
     Test if the `IvimFit` class returns the correct D
     """
     if SCIPY_LESS_0_15:
-        assert_array_equal(ValueError, test_vae)
+        assert_array_equal(ValueError, ivim_model_VP.fit(data_single))
     else:
+        ivim_fit_VP = ivim_model_VP.fit(data_single)
         assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
 
 

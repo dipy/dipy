@@ -549,7 +549,7 @@ class IvimModelVP(ReconstModel):
 
             .. math::
 
-            S(b) = [f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
+            S(b) = S_0*[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
 
             Where:
             .. math::
@@ -801,7 +801,7 @@ class IvimModelVP(ReconstModel):
 
 class IvimFit(object):
 
-    def __init__(self, model, model_params, fit_method='LM'):
+    def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
             Parameters
             ----------
