@@ -46,7 +46,7 @@ def make5d(input):
     return input.reshape(shape)
 
 
-def decfa(img_orig):
+def decfa(img_orig, scale=False):
     """
     Create a nifti-compliant directional-encoded color FA file.
 
@@ -56,9 +56,14 @@ def decfa(img_orig):
         Contains encoding of the DEC FA image with a 4D volume of data, where
         the elements on the last dimension represent R, G and B components.
 
+    scale: bool.
+        Whether to scale the incoming data from the 0-1 to the 0-255 range
+        expected in the output.
+
     Returns
     -------
-    img : Nifti1Image class instance.
+    img : Nifti1Image class instance with dtype set to store tuples of
+        uint8 in (R, G, B) order.
 
 
     Notes
@@ -72,6 +77,9 @@ def decfa(img_orig):
     out_data = np.zeros(img_orig.shape[:3], dtype=dest_dtype)
 
     data_orig = img_orig.get_data()
+
+    if scale:
+        data_orig = (data_orig * 255).astype('uint8')
 
     for ii in np.ndindex(img_orig.shape[:3]):
         val = data_orig[ii]
