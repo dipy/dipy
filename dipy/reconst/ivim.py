@@ -23,7 +23,7 @@ else:
     from scipy.optimize import least_squares
 
 
-def ivim_prediction(params, gtab, S0=1., *args, **kwargs):
+def ivim_prediction(params, gtab, S0=1.):
     """The Intravoxel incoherent motion (IVIM) model function.
 
     Parameters
@@ -44,15 +44,8 @@ def ivim_prediction(params, gtab, S0=1., *args, **kwargs):
     S : array
         An array containing the IVIM signal estimated using given parameters.
     """
-    fit_method = kwargs.get('fit_method', 'LM')
     b = gtab.bvals
-
-    if fit_method == 'LM':
-        S0, f, D_star, D = params
-
-    elif fit_method == 'VarPro':
-        f, D_star, D = params
-        S0 = 1.
+    S0, f, D_star, D = params
 
     S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
 
@@ -640,8 +633,10 @@ class IvimModelVP(ReconstModel):
         else:
             from scipy.optimize import differential_evolution
 
-        data = data / data.max()
+        data_max = data.max()
+        data = data / data_max
         data[data > 1] = 1
+        b = self.bvals
 
         bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
@@ -656,7 +651,15 @@ class IvimModelVP(ReconstModel):
         res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
-        return IvimVarProFit(self, result)
+        f_est = result[0]
+        D_star_est = result[1]
+        D_est = result[2]
+
+        S0 = data / (f_est * np.exp(-b * D_star_est) + (1 - f_est) *
+                     np.exp(-b * D_est))
+        S0_est = S0 * data_max
+        result = np.insert(result, 0, np.mean(S0_est), axis=0)
+        return IvimFit(self, result)
 
     def stoc_search_cost(self, x, signal):
         """
@@ -798,7 +801,7 @@ class IvimModelVP(ReconstModel):
 
 class IvimFit(object):
 
-    def __init__(self, model, model_params):
+    def __init__(self, model, model_params, fit_method='LM'):
         """ Initialize a IvimFit class instance.
             Parameters
             ----------
@@ -839,72 +842,6 @@ class IvimFit(object):
     @property
     def D(self):
         return self.model_params[..., 3]
-
-    @property
-    def shape(self):
-        return self.model_params.shape[:-1]
-
-    def predict(self, gtab, S0=1.):
-        """Given a model fit, predict the signal.
-
-        Parameters
-        ----------
-        gtab : GradientTable class instance
-               Gradient directions and bvalues
-
-        S0 : float
-            S0 value here is not necessary and will not be used to predict the
-            signal. It has been added to conform to the structure of the
-            predict method in multi_voxel which requires a keyword argument S0.
-
-        Returns
-        -------
-        signal : array
-            The signal values predicted for this model using its parameters.
-
-        """
-        return ivim_prediction(self.model_params, gtab)
-
-
-class IvimVarProFit(object):
-
-    def __init__(self, model, model_params):
-        """ Initialize a IvimFit class instance.
-            Parameters
-            ----------
-            model : Model class
-            model_params : array
-                The parameters of the model. In this case it is an
-                array of ivim parameters. If the fitting is done
-                for multi_voxel data, the multi_voxel decorator will
-                run the fitting on all the voxels and model_params
-                will be an array of the dimensions (data[:-1], 4),
-                i.e., there will be 4 parameters for each of the voxels.
-        """
-        self.model = model
-        self.model_params = model_params
-
-    def __getitem__(self, index):
-        model_params = self.model_params
-        N = model_params.ndim
-        if type(index) is not tuple:
-            index = (index,)
-        elif len(index) >= model_params.ndim:
-            raise IndexError("IndexError: invalid index")
-        index = index + (slice(None),) * (N - len(index))
-        return type(self)(self.model, model_params[index])
-
-    @property
-    def perfusion_fraction(self):
-        return self.model_params[..., 0]
-
-    @property
-    def D_star(self):
-        return self.model_params[..., 1]
-
-    @property
-    def D(self):
-        return self.model_params[..., 2]
 
     @property
     def shape(self):
