@@ -22,7 +22,7 @@ def test_io_info():
     io_info_flow.run([fimg, fbvals, fvecs])
 
     io_info_flow = IoInfoFlow()
-    io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001) 
+    io_info_flow.run([fimg, fbvals, fvecs], b0_threshold=20, bvecs_tol=0.001)
 
     file = open(fname_log, 'r')
     lines = file.readlines()

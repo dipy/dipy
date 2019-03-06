@@ -50,6 +50,7 @@ matrix:
         - DEPENDS="$DEPENDS scikit_learn"
     # To test vtk functionality
     - python: 2.7
+      dist: xenial
       sudo: true   # This is set to true for apt-get
       env:
         - COVERAGE=1
@@ -59,6 +60,7 @@ matrix:
         - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
         - DEPENDS="$DEPENDS scikit_learn fury"
+        - MESA_GL_VERSION_OVERRIDE=3.3
 
     - python: 2.7
       env:
