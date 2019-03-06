@@ -213,5 +213,6 @@ def test_multivox_forecast():
     mse3 = np.sum((S_predict[2, 0, 0]-S[2, 0, 0])**2) / len(gtab.bvals)
     assert_almost_equal(mse3, 0.0, 3)
 
+
 if __name__ == '__main__':
     run_module_suite()

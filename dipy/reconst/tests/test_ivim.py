@@ -25,8 +25,12 @@ from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+needs_cvxpy = dec.skipif(not have_cvxpy)
+
 
 SCIPY_VERSION = LooseVersion(scipy.version.short_version)
+SCIPY_LESS_0_15 = (LooseVersion(scipy.version.short_version) <
+                   LooseVersion('0.15.1'))
 
 # Let us generate some data for testing.
 bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
@@ -456,32 +460,35 @@ test_vae = "Using the Variable Projection Method for " + \
                              "fitting needs SciPy >= 0.15.1"
 
 
+@needs_cvxpy
 def test_perfusion_fraction_vp():
     """
     Test if the `IvimFit` class returns the correct f
     """
-    if SCIPY_VERSION < LooseVersion('0.15.1'):
+    if SCIPY_LESS_0_15:
         assert_array_equal(ValueError, test_vae)
     else:
         assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP,
                                   decimal=2)
 
 
+@needs_cvxpy
 def test_D_star_vp():
     """
     Test if the `IvimFit` class returns the correct D_star
     """
-    if SCIPY_VERSION < LooseVersion('0.15.1'):
+    if SCIPY_LESS_0_15:
         assert_array_equal(ValueError, test_vae)
     else:
         assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
 
 
+@needs_cvxpy
 def test_D_vp():
     """
     Test if the `IvimFit` class returns the correct D
     """
-    if SCIPY_VERSION < LooseVersion('0.15.1'):
+    if SCIPY_LESS_0_15:
         assert_array_equal(ValueError, test_vae)
     else:
         assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
