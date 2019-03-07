@@ -59,7 +59,7 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
     dt["subject"] = []
     dt["group"] = []
 
-    point = 0 
+    point = 0
     shape = peaks.peak_dirs.shape
     for st in bundle:
         di = st[1:] - st[0:-1]
@@ -69,21 +69,22 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
         for ip in range(len(st)-1):
             point += 1
             index = st[ip].astype(int)
-            
-            if index[0] < shape[0] and index[1] < shape[1] and index[2] < shape[2] :
+
+            if (index[0] < shape[0] and index[1] < shape[1] and
+               index[2] < shape[2]):
 
                 dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
                 dval = peaks.peak_values[index[0]][index[1]][index[2]]
-    
+
                 res = []
-                
+
                 for i in range(len(dire)):
                     di2 = dire[i]
                     result = spatial.distance.cosine(di[ip], di2)
                     res.append(result)
-    
+
                 d_val = dval[res.index(min(res))]
-                if  d_val != 0.:
+                if d_val != 0.:
                     dt[pname].append(d_val)
                     dt["disk#"].append(ind[point]+1)
                     count += 1
@@ -156,7 +157,7 @@ class BundleAnalysisFlow(Workflow):
 
         References
         ----------
-        Chandio, B.Q., J. Harezlak, E. Garyfallidis, S. Koudoro, D. Reagan,
+        Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak, E. Garyfallidis,
         Bundle Analytics: a computational and statistical analyses framework
         for tractometric studies, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
