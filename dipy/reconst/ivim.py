@@ -153,6 +153,11 @@ def ivim_model_selector(gtab, fit_method='LM', **kwargs):
     elif fit_method == 'VarPro':
         return IvimModelVP(gtab, **kwargs)
 
+    else:
+        print('The fit_method option chosen was not correct. \
+              Using fit_method: LM instead...')
+        return IvimModelLM(gtab, **kwargs)
+
 
 IvimModel = ivim_model_selector
 
