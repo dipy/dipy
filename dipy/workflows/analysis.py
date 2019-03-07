@@ -192,7 +192,7 @@ def BundleAnalysis(model_bundle_files, bundle_files, orig_bundle_files,
             Path to the input dti metric or/and peak files. It will be used as
             metric for statistical analysis of bundles.
         group : string
-            what group subject belongs to eg control or patient
+            what group subject belongs to e.g. control or patient
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks. (Default 100)
         out_dir : string, optional
