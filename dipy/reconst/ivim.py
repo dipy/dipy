@@ -154,8 +154,9 @@ def ivim_model_selector(gtab, fit_method='LM', **kwargs):
         return IvimModelVP(gtab, **kwargs)
 
     else:
-        print('The fit_method option chosen was not correct. \
-              Using fit_method: LM instead...')
+        opt_msg = 'The fit_method option chosen was not correct. '
+        opt_msg += 'Using fit_method: LM instead...'
+        warnings.warn(opt_msg, UserWarning)
         return IvimModelLM(gtab, **kwargs)
 
 
