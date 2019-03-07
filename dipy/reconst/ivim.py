@@ -555,7 +555,7 @@ class IvimModelLM(ReconstModel):
 
 class IvimModelVP(ReconstModel):
 
-    def __init__(self, gtab):
+    def __init__(self, gtab, maxiter=10, xtol=1e-8):
         r""" Initialize an IvimModelVP class.
 
         The IVIM model assumes that biological tissue includes a volume
@@ -597,8 +597,8 @@ class IvimModelVP(ReconstModel):
                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
 
-        self.maxiter = 10
-        self.xtol = 1e-8
+        self.maxiter = maxiter
+        self.xtol = xtol
         self.bvals = gtab.bvals
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
