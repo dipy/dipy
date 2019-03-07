@@ -6,7 +6,8 @@ import nibabel as nib
 
 from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
     MutualInformationMetric, AffineRegistration
-from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
+from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
+                               DiffeomorphicMap)
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
@@ -643,11 +644,11 @@ class ImageRegistrationFlow(Workflow):
             np.savetxt(affine_matrix_file, affine)
 
 
-class ApplyAffineFlow(Workflow):
+class ApplyTransformFlow(Workflow):
 
-    def run(self, static_image_files, moving_image_files, affine_matrix_file,
-            out_dir='', out_file='transformed.nii.gz'):
-
+    def run(self, static_image_files, moving_image_files, transform_map_file,
+            transform_type='affine', out_dir='',
+            out_file='transformed.nii.gz'):
         """
         Parameters
         ----------
@@ -658,8 +659,15 @@ class ApplyAffineFlow(Workflow):
             Path of the moving image(s). It can be a single image or a
             folder containing multiple images.
 
-        affine_matrix_file : string
-            The text file containing the affine matrix for transformation.
+        transform_map_file : string
+            For the affine case, it should be a text(*.txt) file containing
+            the affine matrix. For the diffeomorphic case,
+            it should be a nifti file containing the mapping displacement
+            field in each voxel with this shape (x, y, z, 3, 2)
+
+        transform_type : string, optional
+            Select the transformation type to apply between 'affine' or
+            'diffeomorphic'. (default affine)
 
         out_dir : string, optional
             Directory to save the transformed files (default '').
@@ -670,9 +678,14 @@ class ApplyAffineFlow(Workflow):
               prevent the output files from being overwritten.
 
         """
+        if transform_type.lower() not in ['affine', 'diffeomorphic']:
+            raise ValueError("Invalid transformation type: Please"
+                             " provide a valid transform like 'affine'"
+                             " or 'diffeomorphic'")
+
         io = self.get_io_iterator()
 
-        for static_image_file, moving_image_file, affine_matrix_file, \
+        for static_image_file, moving_image_file, transform_file, \
                 out_file in io:
 
             # Loading the image data from the input files into object.
@@ -683,19 +696,37 @@ class ApplyAffineFlow(Workflow):
             # images.
             check_dimensions(static_image, moving_image)
 
-            # Loading the affine matrix.
-            affine_matrix = np.loadtxt(affine_matrix_file)
+            if transform_type.lower() == 'affine':
+                # Loading the affine matrix.
+                affine_matrix = np.loadtxt(transform_file)
 
-            # Setting up the affine transformation object.
-            img_transformation = AffineMap(
-                affine=affine_matrix,
-                domain_grid_shape=static_image.shape,
-                domain_grid2world=static_grid2world,
-                codomain_grid_shape=moving_image.shape,
-                codomain_grid2world=moving_grid2world)
+                # Setting up the affine transformation object.
+                mapping = AffineMap(
+                    affine=affine_matrix,
+                    domain_grid_shape=static_image.shape,
+                    domain_grid2world=static_grid2world,
+                    codomain_grid_shape=moving_image.shape,
+                    codomain_grid2world=moving_grid2world)
+
+            elif transform_type.lower() == 'diffeomorphic':
+                # Loading the diffeomorphic map.
+                disp = nib.load(transform_file)
+
+                mapping = DiffeomorphicMap(
+                    3, disp.shape[:3],
+                    disp_grid2world=np.linalg.inv(disp.affine),
+                    domain_shape=static_image.shape,
+                    domain_grid2world=static_grid2world,
+                    codomain_shape=moving_image.shape,
+                    codomain_grid2world=moving_grid2world)
+
+                disp_data = disp.get_data()
+                mapping.forward = disp_data[..., 0]
+                mapping.backward = disp_data[..., 1]
+                mapping.is_inverse = True
 
             # Transforming the image/
-            transformed = img_transformation.transform(moving_image)
+            transformed = mapping.transform(moving_image)
 
             save_nifti(out_file, transformed, affine=static_grid2world)
 
