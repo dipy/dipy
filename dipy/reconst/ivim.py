@@ -23,7 +23,7 @@ else:
     from scipy.optimize import least_squares
 
 
-def ivim_prediction(params, gtab, S0=1.):
+def ivim_prediction(params, gtab):
     """The Intravoxel incoherent motion (IVIM) model function.
 
     Parameters
@@ -133,7 +133,7 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method='LM', *args, **kwargs):
+def ivim_model_selector(gtab, fit_method='LM', **kwargs):
     """
     Selector function to switch between the 2-stage Levenberg-Marquardt based
     NLLS fitting method (also containing the linear fit): `LM` and the Variable
@@ -148,10 +148,10 @@ def ivim_model_selector(gtab, fit_method='LM', *args, **kwargs):
     """
 
     if fit_method == 'LM':
-        return IvimModelLM(gtab, fit_method='LM', *args, **kwargs)
+        return IvimModelLM(gtab, **kwargs)
 
     elif fit_method == 'VarPro':
-        return IvimModelVP(gtab, fit_method='LM', *args, **kwargs)
+        return IvimModelVP(gtab, **kwargs)
 
 
 IvimModel = ivim_model_selector
@@ -160,7 +160,11 @@ IvimModel = ivim_model_selector
 class IvimModelLM(ReconstModel):
     """Ivim model
     """
-    def __init__(self, gtab, fit_method='LM', *args, **kwargs):
+    def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
+                 two_stage=True, tol=1e-15,
+                 x_scale=[1000., 0.1, 0.001, 0.0001],
+                 gtol=1e-15, ftol=1e-15, eps=1e-15, maxiter=1000):
+
         r"""
         Initialize an IVIM model.
 
@@ -221,11 +225,21 @@ class IvimModelLM(ReconstModel):
             is only available for Scipy version > 0.17.
             default: [1000, 0.01, 0.001, 0.0001]
 
-        options : dict, optional
-            Dictionary containing gtol, ftol, eps and maxiter. This is passed
-            to leastsq.
-            default : options={'gtol': 1e-15, 'ftol': 1e-15, 'eps': 1e-15,
-                      'maxiter': 1000}
+        gtol : float, optional
+            Tolerance for termination by the norm of the gradient.
+            default : 1e-15
+
+        ftol : float, optional
+            Tolerance for termination by the change of the cost function.
+            default : 1e-15
+
+        eps : float, optional
+            Step size used for numerical approximation of the jacobian.
+            default : 1e-15
+
+        maxiter : int, optional
+            Maximum number of iterations to perform.
+            default : 1000
 
         References
         ----------
@@ -252,17 +266,14 @@ class IvimModelLM(ReconstModel):
             raise ValueError(b0_s)
 
         ReconstModel.__init__(self, gtab)
-        self.args = args
-        self.kwargs = kwargs
-        self.fit_method = fit_method
-        self.split_b_D = kwargs.get('split_b_D', 400.0)
-        self.split_b_S0 = kwargs.get('split_b_S0', 200.)
-        self.bounds = kwargs.get('bounds', None)
-        self.two_stage = kwargs.get('two_stage', True)
-        self.tol = kwargs.get('tol', 1e-15)
-        self.options = kwargs.get('options', {'gtol': 1e-15, 'ftol': 1e-15,
-                                  'eps': 1e-15, 'maxiter': 1000})
-        self.x_scale = kwargs.get('x_scale', [1000., 0.1, 0.001, 0.0001])
+        self.split_b_D = split_b_D
+        self.split_b_S0 = split_b_S0
+        self.bounds = bounds
+        self.two_stage = two_stage
+        self.tol = tol
+        self.options = {'gtol': gtol, 'ftol': ftol,
+                        'eps': eps, 'maxiter': maxiter}
+        self.x_scale = x_scale
 
         if SCIPY_LESS_0_17 and self.bounds is not None:
             e_s = "Scipy versions less than 0.17 do not support "
@@ -271,10 +282,10 @@ class IvimModelLM(ReconstModel):
         elif self.bounds is None:
             self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
         else:
-            self.bounds = kwargs.get('bounds', None)
+            self.bounds = bounds
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    def fit(self, data):
         """ Fit method of the IvimModelLM class.
 
         The fitting takes place in the following steps: Linear fitting for D
@@ -538,12 +549,13 @@ class IvimModelLM(ReconstModel):
 
 class IvimModelVP(ReconstModel):
 
-    def __init__(self, gtab, fit_method='VarPro', *args, **kwargs):
+    def __init__(self, gtab):
         r""" Initialize an IvimModelVP class.
 
         The IVIM model assumes that biological tissue includes a volume
         fraction 'f' of water flowing with a pseudo-diffusion coefficient
-        D* and a fraction (1-f) of static (diffusion only), intra and
+        D* and a fraction (1-f: treated as a separate fraction in the variable
+        projection method) of static (diffusion only), intra and
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
 
@@ -555,23 +567,6 @@ class IvimModelVP(ReconstModel):
             .. math::
 
             S_0, f, D\* and D are the IVIM parameters.
-
-        Parameters
-        ----------
-        gtab : GradientTable class instance
-            Gradient directions and bvalues
-
-        fit_method : str or callable
-            str can be one of the following:
-
-            'LM' For Levenber-Marquardt fitting with 2-stage option
-                This method does the same as :func:`ivim.IvimModel(gtab,
-                                                                   fit_method=
-                                                                   'LM')`
-            'VP' For the Variable Projections based multi-stage fitting option
-                This method does the same as :func:`ivim.IvimModel(gtab,
-                                                                   fit_method=
-                                                                   'VP')`
 
         tol : float, optional
             Tolerance for convergence of minimization.
@@ -596,15 +591,15 @@ class IvimModelVP(ReconstModel):
                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
         """
 
-        self.maxiter = kwargs.get('maxiter', 10)
-        self.xtol = kwargs.get('xtol', 1e-8)
+        self.maxiter = 10
+        self.xtol = 1e-8
         self.bvals = gtab.bvals
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
+    def fit(self, data, bounds_de=None):
         r""" Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro)[1]_.
@@ -642,10 +637,10 @@ class IvimModelVP(ReconstModel):
         b = self.bvals
 
         # Setting up the bounds for differential_evolution
-        bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
+        bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         # Optimizer #1: Differential Evolution
-        res_one = differential_evolution(self.stoc_search_cost, bounds,
+        res_one = differential_evolution(self.stoc_search_cost, bounds_de,
                                          maxiter=self.maxiter, args=(data,),
                                          disp=False, polish=True, popsize=28)
         x = res_one.x
