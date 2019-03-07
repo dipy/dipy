@@ -218,6 +218,7 @@ def main(**extra_args):
                     'dipy.segment.tests',
                     'dipy.sims',
                     'dipy.sims.tests',
+                    'dipy.stats',
                     'dipy.denoise',
                     'dipy.denoise.tests',
                     'dipy.workflows',
