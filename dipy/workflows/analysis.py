@@ -22,6 +22,10 @@ import matplotlib.pyplot as plt
 
 def plot(x, y, title, file_name):
 
+    """ saves the simple plot with given x and y values
+
+    """
+
     plt.plot(x, y)
     plt.xlabel('disk no')
 
@@ -35,6 +39,10 @@ def plot(x, y, title, file_name):
 
 
 def save_hdf5(dt, fname):
+
+    """ saves the given input dataframe to .h5 file
+
+    """
 
     df = pd.DataFrame(dt)
     filename_hdf5 = fname+'.h5'
@@ -50,6 +58,27 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
     """ peak_values function finds the peak direction and peak value of a point
         on a streamline used while tracking (generating the tractogram) and
         save it in hd5 file.
+
+        Parameters
+        ----------
+        bundle : string
+            Name of bundle being analyzed
+        peaks : peaks
+            contains peak directions and values
+        dt : DataFrame
+            DataFrame to be populated
+        pname : string
+            Name of the dti metric
+        bname : string
+            Name of bundle being analyzed.
+        subject : string
+            subject number as a string (e.g. 10001)
+        group : string
+            which group subject belongs to (e.g. patient or control)
+        ind : integer list
+            ind tells which disk number a point belong.
+        dir : string
+            path of output directory
 
     """
 
@@ -100,6 +129,27 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
 
     """ calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
+
+        Parameters
+        ----------
+        bundle : string
+            Name of bundle being analyzed
+        metric : matrix of float values
+            dti metric e.g. FA, MD
+        dt : DataFrame
+            DataFrame to be populated
+        pname : string
+            Name of the dti metric
+        bname : string
+            Name of bundle being analyzed.
+        subject : string
+            subject number as a string (e.g. 10001)
+        group : string
+            which group subject belongs to (e.g. patient or control)
+        ind : integer list
+            ind tells which disk number a point belong.
+        dir : string
+            path of output directory
     """
 
     dt["bundle"] = []
@@ -111,8 +161,6 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     values = map_coordinates(metric, bundle._data.T,
                              order=1)
 
-    print("ind = ", len(ind), " value= ", len(values))
-
     dt["disk#"].extend(ind[list(range(len(values)))]+1)
     dt["bundle"].extend([bname]*len(values))
     dt["subject"].extend([subject]*len(values))
@@ -122,15 +170,10 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     save_hdf5(dt, os.path.join(dir, pname))
 
 
-class BundleAnalysisFlow(Workflow):
-    @classmethod
-    def get_short_name(cls):
-        return 'ba'
+def BundleAnalysis(model_bundle_files, bundle_files, orig_bundle_files,
+                   dti_metric_files, group, no_disks=100, out_dir=''):
 
-    def run(self, model_bundle_files, bundle_files, orig_bundle_files,
-            dti_metric_files, group, no_disks=100, out_dir=''):
-        """Workflow of bundle analytics.
-
+        """
         Applies statistical analysis on bundles and saves the results
         in a directory specified by ``out_dir``.
 
@@ -188,14 +231,12 @@ class BundleAnalysisFlow(Workflow):
             clusters = qb.cluster(mbundle_streamlines)
             centroids = Streamlines(clusters.centroids)
 
-            logging.info('number of centroids {0}'.format(len(centroids.data)))
-            print(mb[io])
-            print(bd[io])
-            logging.info('number of streamlines in bundle in common \
-                         space {0}'.format(len(bundles)))
-            print(org_bd[io])
-            logging.info('number of streamlines in bundle in original \
-                         space {0}'.format(len(orig_bundles)))
+            print('Number of centroids ', len(centroids.data))
+            print('Model bundle ', mb[io])
+            print('number of streamlines in bundle in common space ',
+                  len(bundles))
+            print('Number of streamlines in bundle in original space ',
+                  len(orig_bundles))
 
             _, indx = cKDTree(centroids.data, 1,
                               copy_data=True).query(bundles.data, k=1)
@@ -230,10 +271,10 @@ class BundleAnalysisFlow(Workflow):
                                 ind, out_dir)
 
 
-class AutoBundleAnalysisFlow(Workflow):
+class BundleAnalysisPopulationFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'auto_ba'
+        return 'ba'
 
     def run(self, model_bundle_files, subject_files, no_disks=100, out_dir=''):
         """Workflow of bundle analytics.
@@ -269,20 +310,20 @@ class AutoBundleAnalysisFlow(Workflow):
             for sub in all_subjects:
 
                 pre = os.path.join(subject_files, group, sub)
-                obj = BundleAnalysisFlow()
 
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "dti_measures")
-                obj.run(model_bundle_files, b, c, d, group, no_disks, out_dir)
+                BundleAnalysis(model_bundle_files, b, c, d, group,
+                               no_disks, out_dir)
 
 
-class linearMixedModelsFlow(Workflow):
+class LinearMixedModelsFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'lmm'
 
-    def run(self, metric_files, out_dir=''):
+    def run(self, metric_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
 
         Applies linear Mixed Models on bundles of subjects and saves the
@@ -294,6 +335,9 @@ class linearMixedModelsFlow(Workflow):
         metric_files : string
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
+
+        no_disks : integer, optional
+            Number of disks used for dividing bundle into disks. (Default 100)
 
         out_dir : string, optional
             Output directory (default input file directory)
@@ -310,11 +354,12 @@ class linearMixedModelsFlow(Workflow):
             # all_pvalues = []
             for bundle in all_bundles:
                 sub_af = df[df['bundle'] == bundle]  # sub sample
-                pvalues = np.zeros(100)
+                pvalues = np.zeros(no_disks)
 
-                for i in range(100):  # run mixed linear model for every disk
+                # run mixed linear model for every disk
+                for i in range(no_disks):
 
-                    sub = sub_af[sub_af['disk#'] == (i+1)]  # disk no
+                    sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
 
                     if len(sub) > 0:
                         criteria = file[:-3] + " ~ group"

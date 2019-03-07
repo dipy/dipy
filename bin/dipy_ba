@@ -1,7 +1,7 @@
 from __future__ import division, print_function
 
 from dipy.workflows.flow_runner import run_flow
-from analysis import BundleAnalysisFlow
+from dipy.workflows.analysis import BundleAnalysisPopulationFlow
 
 if __name__ == "__main__":
-    run_flow(BundleAnalysisFlow())
+    run_flow(BundleAnalysisPopulationFlow())
