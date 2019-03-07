@@ -15,7 +15,8 @@ from dipy.io.image import save_nifti
 from dipy.io.streamline import save_trk
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
-                                  ApplyAffineFlow, ResliceFlow, SlrWithQbxFlow)
+                                  ApplyTransformFlow, ResliceFlow,
+                                  SlrWithQbxFlow)
 
 
 def test_reslice():
@@ -188,6 +189,13 @@ def test_image_registration():
         test_err()
 
 
+def test_apply_transform_error():
+    flow = ApplyTransformFlow()
+    npt.assert_raises(ValueError, flow.run,
+                      'my_fake_static.nii.gz', 'my_fake_moving.nii.gz',
+                      'my_fake_map.nii.gz', transform_type='wrong_type')
+
+
 def test_apply_affine_transform():
     with TemporaryDirectory() as temp_out_dir:
 
@@ -200,7 +208,7 @@ def test_apply_affine_transform():
                                                  -0.07, 0.10, 0.99, -1.4]))}
 
         image_registeration_flow = ImageRegistrationFlow()
-        apply_trans = ApplyAffineFlow()
+        apply_trans = ApplyTransformFlow()
 
         for i in factors.keys():
             static, moving, static_g2w, moving_g2w, smask, mmask, M = \
@@ -246,7 +254,7 @@ def test_apply_affine_transform():
         images = pjoin(temp_out_dir, '*moving*')
         apply_trans.run(static_image_file, images,
                         out_dir=temp_out_dir,
-                        affine_matrix_file=out_affine)
+                        transform_map_file=out_affine)
 
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
