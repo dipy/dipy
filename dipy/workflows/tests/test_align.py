@@ -284,10 +284,11 @@ def test_syn_registration_flow():
                                    'ss_sigma_factor': 0.2
                                    }
 
+        all_args = dict(metric_optional_args, **optimizer_optional_args)
         syn_flow.run(*positional_args,
                      out_dir=out_dir,
-                     **metric_optional_args,
-                     **optimizer_optional_args)
+                     **all_args
+                     )
 
         warped_path = syn_flow.last_generated_outputs['out_warped']
         npt.assert_equal(os.path.isfile(warped_path), True)
@@ -295,5 +296,4 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_map_path), True)
 
 if __name__ == "__main__":
-    # npt.run_module_suite()
-    test_syn_registration_flow()
+    npt.run_module_suite()
