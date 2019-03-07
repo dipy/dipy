@@ -304,7 +304,7 @@ class BundleAnalysisPopulationFlow(Workflow):
         groups = os.listdir(subject_files)
 
         for group in groups:
-            print(group)
+            logging.info('group = {0}'.format(group))
             all_subjects = os.listdir(os.path.join(subject_files, group))
 
             for sub in all_subjects:
@@ -348,7 +348,7 @@ class LinearMixedModelsFlow(Workflow):
 
         for file in all_files:
 
-            print(file)
+            logging.info('Applying metric {0}'.format(file))
             df = pd.read_hdf(os.path.join(metric_files, file))
             all_bundles = df.bundle.unique()
             # all_pvalues = []
