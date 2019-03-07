@@ -147,10 +147,10 @@ def ivim_model_selector(gtab, fit_method='LM', **kwargs):
 
     """
 
-    if fit_method == 'LM':
+    if fit_method.lower() == 'lm':
         return IvimModelLM(gtab, **kwargs)
 
-    elif fit_method == 'VarPro':
+    elif fit_method.lower() == 'varpro':
         return IvimModelVP(gtab, **kwargs)
 
     else:
@@ -574,14 +574,15 @@ class IvimModelVP(ReconstModel):
 
             S_0, f, D\* and D are the IVIM parameters.
 
-        tol : float, optional
-            Tolerance for convergence of minimization.
-            default : 1e-15
 
         maxiter: int, optional
             Maximum number of iterations for the Differential Evolution in
             SciPy.
             default : 10
+
+        xtol : float, optional
+            Tolerance for convergence of minimization.
+            default : 1e-8
 
         References
         ----------
@@ -677,7 +678,7 @@ class IvimModelVP(ReconstModel):
 
     def stoc_search_cost(self, x, signal):
         """
-        Cost function for differntial evolution algorithm. Performs a
+        Cost function for differential evolution algorithm. Performs a
         stochastic search for the non-linear parameters 'x'. The objective
         funtion is calculated in the :func: `ivim_mix_cost_one`. The function
         constructs the parameters using :func: `phi`.
