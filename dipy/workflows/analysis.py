@@ -200,10 +200,11 @@ def BundleAnalysis(model_bundle_files, bundle_files, orig_bundle_files,
 
         References
         ----------
-        Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak, E. Garyfallidis,
-        Bundle Analytics: a computational and statistical analyses framework
-        for tractometric studies, Proceedings of: International Society of
-        Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+        E. Garyfallidis, Bundle Analytics: a computational and statistical
+        analyses framework for tractometric studies, Proceedings of:
+        International Society of Magnetic Resonance in Medicine (ISMRM),
+        Montreal, Canada, 2019.
 
         """
 
@@ -298,6 +299,14 @@ class BundleAnalysisPopulationFlow(Workflow):
 
         out_dir : string, optional
             Output directory (default input file directory)
+
+        References
+        ----------
+        .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+        E. Garyfallidis, Bundle Analytics: a computational and statistical
+        analyses framework for tractometric studies, Proceedings of:
+        International Society of Magnetic Resonance in Medicine (ISMRM),
+        Montreal, Canada, 2019.
 
         """
 
