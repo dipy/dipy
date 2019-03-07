@@ -609,7 +609,7 @@ class IvimModelVP(ReconstModel):
 
         MicroLearn framework (VarPro)[1]_.
 
-        The VarPro computes the IVIM parameters.
+        The VarPro computes the IVIM parameters using the MIX approach.
         This algorithm uses three different optimizers. It starts with a
         differential evolution algorithm and fits the parameters in the
         power of exponentials. Then the fitted parameters in the first step are
@@ -617,7 +617,8 @@ class IvimModelVP(ReconstModel):
         the volume fractions are determined. Then the last step is non linear
         least square fitting on all the parameters. The results of the first
         and second step are utilized as the initial values for the last step
-        of the algorithm. (see [1]_ for a comparison and a through discussion).
+        of the algorithm. (see [1]_ and [2]_ for a comparison and a through
+        discussion).
 
         References
         ----------
@@ -625,6 +626,9 @@ class IvimModelVP(ReconstModel):
                learning, reconstruction, optimization and microstructure
                modeling, Proceedings of: International Society of Magnetic
                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
 
         """
         if SCIPY_LESS_0_15:
@@ -640,14 +644,19 @@ class IvimModelVP(ReconstModel):
 
         bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
+        # Optimizer #1: Differential Evolution
         res_one = differential_evolution(self.stoc_search_cost, bounds,
                                          maxiter=self.maxiter, args=(data,),
                                          disp=False, polish=True, popsize=28)
         x = res_one.x
         phi = self.Phi(x)
+
+        # Optimizer #2: Convex Optimizer
         f = self.cvx_fit(data, phi)
         x_f = self.x_and_f_to_x_f(x, f)
         bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
+
+        # Optimizer #3: Nonlinear-Least Squares
         res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
                             xtol=self.xtol, args=(data,))
         result = res.x
@@ -658,51 +667,73 @@ class IvimModelVP(ReconstModel):
         S0 = data / (f_est * np.exp(-b * D_star_est) + (1 - f_est) *
                      np.exp(-b * D_est))
         S0_est = S0 * data_max
+
+        # final result containing the four fit parameters: S0, f, D* and D
         result = np.insert(result, 0, np.mean(S0_est), axis=0)
         return IvimFit(self, result)
 
     def stoc_search_cost(self, x, signal):
         """
-        Cost function for differntial evolution algorithm
+        Cost function for differntial evolution algorithm. Performs a
+        stochastic search for the non-linear parameters 'x'. The objective
+        funtion is calculated in the :func: `ivim_mix_cost_one`. The function
+        constructs the parameters using :func: `Phi`.
 
         Parameters
         ----------
         x : array
+            input from the Differential Evolution optimizer.
+
         signal : array
+            The signal values measured for this model.
+
         Returns
         -------
-        (signal -  S)^T(signal -  S)
+        :func: `ivim_mix_cost_one`
 
-        Notes
-        --------
-        cost function for genetic algorithm:
-
-        .. math::
-
-            (signal -  S)^T(signal -  S)
         """
         phi = self.Phi(x)
         return self.ivim_mix_cost_one(phi, signal)
 
-    def ivim_mix_cost_one(self, phi, signal):  # sigma
-
+    def ivim_mix_cost_one(self, phi, signal):
         """
-        ivim_mix_nlin
-        to make cost function for differential evolution algorithm
+        Constructs the objective for the :func: `stoc_search_cost`.
+
+        First calculates the Moore-Penrose inverse of the input `phi` and takes
+        a dot product with the measured signal. The result obtained is again
+        multiplied with `phi` to complete the projection of the variable into
+        a transformed space. (see [1]_ and [2]_ for thorough discussion on
+        Variable Projections and relevant cost functions).
+
         Parameters
         ----------
-        phi:
-            phi.shape = number of data points x 4
-        signal:
-                signal.shape = number of data points x 1
+        phi : array
+            Returns an array calculated from :func: `Phi`.
+
+        signal : array
+            The signal values measured for this model.
+
         Returns
         -------
         (signal -  S)^T(signal -  S)
+
         Notes
         --------
-        to make cost function for genetic algorithm:
+        to make cost function for Differential Evolution algorithm:
         .. math::
+
             (signal -  S)^T(signal -  S)
+
+        References
+        ----------
+        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+
         """
         # moore-penrose
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
@@ -712,18 +743,24 @@ class IvimModelVP(ReconstModel):
 
     def cvx_fit(self, signal, phi):
         """
-        Linear parameters fit using cvx
+        Performs the constrained search for the linear parameters `f` after
+        the estimation of `x` is done. Estimation of the linear parameters `f`
+        is a constrained linear least-squares optimization problem solved by
+        using a convex optimizer from cvxpy. The IVIM equation contains two
+        parameters that depend on the same volume fraction. Both are estimated
+        as separately in the convex optimizer.
 
         Parameters
         ----------
         phi : array
+            Returns an array calculated from :func: `Phi`.
+
         signal : array
+            The signal values measured for this model.
 
         Returns
         -------
         f1, f2 (volume fractions)
-        f1 = fe[0]
-        f2 = fe[1]
 
         Notes
         --------
@@ -731,7 +768,7 @@ class IvimModelVP(ReconstModel):
 
         .. math::
 
-            minimize(norm((signal)- (phi*fe)))
+            minimize(norm((signal)- (phi*f)))
         """
 
         # Create four scalar optimization variables.
@@ -753,25 +790,31 @@ class IvimModelVP(ReconstModel):
 
     def nlls_cost(self, x_f, signal):
         """
-        cost function for the least square problem
+        Cost function for the least square problem. The cost function is used
+        in the Least Squares function of SciPy in :func: `fit`. It guarantees
+        that stopping point of the algorithm is at least a stationary point
+        with reduction in the the number of iterations required by the
+        differential evolution optimizer.
 
         Parameters
         ----------
-        x_fe : array
+        x_f : array
+            Contains the parameters 'x' and 'f' combines in the same array.
 
         signal : array
+            The signal values measured for this model.
 
         Returns
         -------
-        sum{(signal -  phi*fe)^2}
+        sum{(signal -  phi*f)^2}
 
         Notes
         --------
-        cost function for the least square problem
+        cost function for the least square problem.
 
         .. math::
 
-            sum{(signal -  phi*fe)^2}
+            sum{(signal -  phi*f)^2}
         """
 
         x, f = self.x_f_to_x_and_f(x_f)
@@ -780,18 +823,66 @@ class IvimModelVP(ReconstModel):
         return np.sum((np.dot(phi, f1) - signal) ** 2)
 
     def x_f_to_x_and_f(self, x_f):
+        """
+        Splits the array of parameters in x_f to 'x' and 'f' for performing
+        a search on the both of them independently using the Trust Region
+        Method.
+
+        Parameters
+        ----------
+        x_f : array
+            Combined array of parameters 'x' and 'f' parameters.
+
+        Returns
+        -------
+        x, f : array
+            Splitted parameters into two separate arrays
+
+        """
         x = np.zeros(2)
         f = x_f[0]
         x = x_f[1:3]
         return x, f
 
     def x_and_f_to_x_f(self, x, f):
+        """
+        Combines the array of parameters 'x' and 'f' into x_f for performing
+        NLLS on the final stage of optimization.
+
+        Parameters
+        ----------
+         x, f : array
+            Splitted parameters into two separate arrays
+
+        Returns
+        -------
+        x_f : array
+            Combined array of parameters 'x' and 'f' parameters.
+
+        """
         x_f = np.zeros(3)
         x_f[0] = f[0]
         x_f[1:3] = x
         return x_f
 
     def Phi(self, x):
+        """
+        Creates a structure for the combining the diffusion and pseudo-
+        diffusion by multipling with the bvals and then exponentiating each of
+        the twho components for fitting as per the IVIM- two compartment model.
+
+        Parameters
+        ----------
+         x : array
+            input from the Differential Evolution optimizer.
+
+        Returns
+        -------
+        exp_phi1 : array
+            Combined array of parameters perfusion/pseudo-diffusion
+            and diffusion parameters.
+
+        """
         self.yhat_perfusion = self.bvals * x[0]
         self.yhat_diffusion = self.bvals * x[1]
         self.exp_phi1[:, 0] = np.exp(-self.yhat_perfusion)
