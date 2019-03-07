@@ -242,7 +242,7 @@ class LinearMixedModelsFlow(Workflow):
         for file in all_files:
 
             logging.info('Applying metric {0}'.format(file))
-            df = pd.read_hdf(os.path.join(metric_files, file))
+            df = pd.read_hdf(os.path.join(metric_files, file), key=file[:-3])
             all_bundles = df.bundle.unique()
             # all_pvalues = []
             for bundle in all_bundles:
