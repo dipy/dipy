@@ -274,7 +274,7 @@ class IvimModelLM(ReconstModel):
             self.bounds = kwargs.get('bounds', None)
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, mask=None):
         """ Fit method of the IvimModelLM class.
 
         The fitting takes place in the following steps: Linear fitting for D
@@ -604,7 +604,7 @@ class IvimModelVP(ReconstModel):
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, mask=None):
         r""" Fit method of the IvimModelVP model class
 
         MicroLearn framework (VarPro)[1]_.
@@ -639,9 +639,9 @@ class IvimModelVP(ReconstModel):
 
         data_max = data.max()
         data = data / data_max
-        data[data > 1] = 1
         b = self.bvals
 
+        # Setting up the bounds for differential_evolution
         bounds = np.array([(0.005, 0.01), (10**-4, 0.001)])
 
         # Optimizer #1: Differential Evolution
@@ -649,11 +649,13 @@ class IvimModelVP(ReconstModel):
                                          maxiter=self.maxiter, args=(data,),
                                          disp=False, polish=True, popsize=28)
         x = res_one.x
-        phi = self.Phi(x)
+        phi = self.phi(x)
 
         # Optimizer #2: Convex Optimizer
         f = self.cvx_fit(data, phi)
         x_f = self.x_and_f_to_x_f(x, f)
+
+        # Setting up the bounds for least_squares
         bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
 
         # Optimizer #3: Nonlinear-Least Squares
@@ -677,7 +679,7 @@ class IvimModelVP(ReconstModel):
         Cost function for differntial evolution algorithm. Performs a
         stochastic search for the non-linear parameters 'x'. The objective
         funtion is calculated in the :func: `ivim_mix_cost_one`. The function
-        constructs the parameters using :func: `Phi`.
+        constructs the parameters using :func: `phi`.
 
         Parameters
         ----------
@@ -692,7 +694,7 @@ class IvimModelVP(ReconstModel):
         :func: `ivim_mix_cost_one`
 
         """
-        phi = self.Phi(x)
+        phi = self.phi(x)
         return self.ivim_mix_cost_one(phi, signal)
 
     def ivim_mix_cost_one(self, phi, signal):
@@ -753,7 +755,7 @@ class IvimModelVP(ReconstModel):
         Parameters
         ----------
         phi : array
-            Returns an array calculated from :func: `Phi`.
+            Returns an array calculated from :func: `phi`.
 
         signal : array
             The signal values measured for this model.
@@ -819,7 +821,7 @@ class IvimModelVP(ReconstModel):
 
         x, f = self.x_f_to_x_and_f(x_f)
         f1 = np.array([f, 1 - f])
-        phi = self.Phi(x)
+        phi = self.phi(x)
         return np.sum((np.dot(phi, f1) - signal) ** 2)
 
     def x_f_to_x_and_f(self, x_f):
@@ -865,11 +867,11 @@ class IvimModelVP(ReconstModel):
         x_f[1:3] = x
         return x_f
 
-    def Phi(self, x):
+    def phi(self, x):
         """
         Creates a structure for the combining the diffusion and pseudo-
         diffusion by multipling with the bvals and then exponentiating each of
-        the twho components for fitting as per the IVIM- two compartment model.
+        the two components for fitting as per the IVIM- two compartment model.
 
         Parameters
         ----------
