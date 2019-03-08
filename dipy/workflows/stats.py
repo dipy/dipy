@@ -244,6 +244,10 @@ class LinearMixedModelsFlow(Workflow):
             logging.info('Applying metric {0}'.format(file_path))
             file_name = os.path.basename(file_path)[:-3]
             df = pd.read_hdf(file_path, key=file_name)
+
+            if len(df) < 100:
+                raise ValueError("Dataset for Linear Mixed Model is too small")
+
             all_bundles = df.bundle.unique()
             # all_pvalues = []
             for bundle in all_bundles:
@@ -267,7 +271,8 @@ class LinearMixedModelsFlow(Workflow):
                 y = -1*np.log10(pvalues)
 
                 title = bundle + " on " + file_name + " Values"
-                plot_file = os.path.join(out_dir, bundle + " " +
+                plot_file = os.path.join(out_dir, bundle + "_" +
                                          file_name + ".png")
+
                 simple_plot(plot_file, title, x, y, "disk no",
                             "-log10(pvalues)")
