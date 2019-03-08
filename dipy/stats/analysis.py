@@ -161,7 +161,8 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
 
 
 def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
-                    dti_metric_files, group, no_disks=100, out_dir=''):
+                    dti_metric_files, group, subject, no_disks=100,
+                    out_dir=''):
 
         """
         Applies statistical analysis on bundles and saves the results
@@ -183,6 +184,8 @@ def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
             metric for statistical analysis of bundles.
         group : string
             what group subject belongs to e.g. control or patient
+        subject : string
+            subject id e.g. 10001
         no_disks : integer, optional
             Number of disks used for dividing bundle into disks. (Default 100)
         out_dir : string, optional
@@ -239,7 +242,6 @@ def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
             transformed_orig_bundles = transform_streamlines(orig_bundles,
                                                              affine_r)
 
-            subject = org_bd[io][:4]
             for mn in range(0, len(dti_metric_files_names)):
 
                 ind = np.array(indx)
