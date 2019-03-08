@@ -237,12 +237,13 @@ class LinearMixedModelsFlow(Workflow):
 
         """
 
-        all_files = os.listdir(metric_files)
+        io_it = self.get_io_iterator()
 
-        for file in all_files:
+        for file_path in io_it:
 
-            logging.info('Applying metric {0}'.format(file))
-            df = pd.read_hdf(os.path.join(metric_files, file), key=file[:-3])
+            logging.info('Applying metric {0}'.format(file_path))
+            file_name = os.path.basename(file_path)[:-3]
+            df = pd.read_hdf(file_path, key=file_name)
             all_bundles = df.bundle.unique()
             # all_pvalues = []
             for bundle in all_bundles:
@@ -255,7 +256,7 @@ class LinearMixedModelsFlow(Workflow):
                     sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
 
                     if len(sub) > 0:
-                        criteria = file[:-3] + " ~ group"
+                        criteria = file_name + " ~ group"
                         md = smf.mixedlm(criteria, sub, groups=sub["subject"])
 
                         mdf = md.fit()
@@ -265,7 +266,8 @@ class LinearMixedModelsFlow(Workflow):
                 x = list(range(1, len(pvalues)+1))
                 y = -1*np.log10(pvalues)
 
-                title = bundle+" on "+file[:-3]+" Values"
-                file_name = os.path.join(out_dir, bundle+" "+file[:-3]+".png")
-                simple_plot(file_name, title, x, y, "disk no",
+                title = bundle + " on " + file_name + " Values"
+                plot_file = os.path.join(out_dir, bundle + " " +
+                                         file_name + ".png")
+                simple_plot(plot_file, title, x, y, "disk no",
                             "-log10(pvalues)")
