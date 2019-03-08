@@ -18,7 +18,7 @@ def _tile_plot(imgs, titles, **kwargs):
     return fig
 
 
-def simple_plot(file_name, title, x, y, xlable, ylabel):
+def simple_plot(file_name, title, x, y, xlabel, ylabel):
 
     """ saves the simple plot with given x and y values
 
@@ -32,7 +32,7 @@ def simple_plot(file_name, title, x, y, xlable, ylabel):
         x-axis values to be ploted
     y : integer list
         y-axis values to be ploted
-    xlable : string
+    xlabel : string
         label for x-axis
     ylable : string
         label for y-axis
@@ -41,7 +41,7 @@ def simple_plot(file_name, title, x, y, xlable, ylabel):
     """
 
     plt.plot(x, y)
-    plt.xlabel(xlable)
+    plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
 
