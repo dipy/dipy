@@ -997,6 +997,7 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
         msd += f * single_tensor_msd(mevals[j], tau=tau)
     return msd
 
+
 # Use standard naming convention, but keep old names
 # for backward compatibility
 SticksAndBall = sticks_and_ball
