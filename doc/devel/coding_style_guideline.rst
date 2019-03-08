@@ -49,6 +49,144 @@ No alias should be used for `h5py`::
 
   import h5py
 
+-------------------
+Cython coding style
+-------------------
+DIPY recommends the use of the standard Python
+`PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ style when writing
+`Cython <https://cython.org/>` code.
+
+Cython-specific syntax should follow these additional rules:
+
+Imports
+-------
+The `cimport`s should add the `c` prefix to the usual Python import package
+shorthand, e.g.::
+
+  cimport numpy as cnp
+
+Adding the `c` prefix to the import line makes it clear that the Cython/C
+symbols are being referred to as to compared to the Python symbols.
+
+Variable declaration
+--------------------
+Separate `cdef`, `cpdef`, and `ctypedef` statements from the following type by
+exactly one space. In turn, separate the type from the variable name by exactly
+one space. Declare only one `ctypedef` variable per line. You may `cdef` or
+`cpdef` multiple variables per line as long as these are simple declarations;
+note that multiple assignment, references, or pointers are not allowed on the
+same line. Grouping `cdef` statements is allowed. For example::
+
+  # Good
+  cdef int n
+  cdef char * s
+  cdef double Xf[3]
+  cdef double d[3]
+  cpdef int i, j, k
+  cdef ClusterMapCentroid clusters = ClusterMapCentroid()
+  cdef:
+      double *ps = <double *> cnp.PyArray_DATA(seed)
+      cnp.npy_intp *pstr = <cnp.npy_intp *> qa.strides
+      cnp.npy_intp d, i, j, cnt
+      double direction[3]
+      double tmp, ftmp
+  cdef int get_direction_c(self, double* point, double* direction):
+      return 1
+
+  # Bad
+  cdef  char *s
+  cdef char * s, * t, * u, * v
+  cdef double Xf[3], d[3]
+  cdef double x=42, y=x+1, z=x*y
+  cdef ClusterMapCentroid     clusters   = ClusterMapCentroid()
+  cdef   int   get_direction_c(self, double* point, double* direction):
+      return 0
+
+Inside of a function, place all `cdef` statements at the top of the function
+body::
+
+  # Good
+  cdef void estimate_kernel_size(self, verbose=True):
+  cdef:
+      double [:] x
+      double [:] y
+
+  # Bad
+  cdef void estimate_kernel_size(self, verbose=True):
+      cdef double [:] x
+      self.kernelmax = self.k2(x, y, r, v)
+      cdef double [:] y
+      x = np.array([0., 0., 0.])
+
+Using C libraries
+-----------------
+The `cimport`s should follow the same rules defined in PEP8 for `import`
+statements. If a module is both *imported* and *cimported*, the `cimport`
+should come before the `import`.
+
+An example of an imported C library::
+
+  from libc.stdlib cimport calloc, realloc, free
+
+Do not use `include` statements.
+
+Error return values
+-------------------
+When declaring an error return value with the `except` keyword, use one space on
+both sides of the `except`. If in a function definition, there should be no
+spaces between the error return value and the colon `:`. Avoid `except *`
+unless it is needed for functions returning `void`::
+
+  # Good
+  cdef void bar() except *
+  cdef void c_extract(Feature self, Data2D datum, Data2D out) nogil except *:
+  cdef int front(x) except +:
+      ...
+
+  # Bad
+  cdef char * hat(x) except *:
+  cdef int front(x)    except   +  :
+      ...
+
+Pointers and references
+-----------------------
+Pointers and references may be either zero or one space away from the type name.
+If followed by a variable name, they must be one space away from the variable
+name. Do not put any spaces between the reference operator `&` and the variable
+name::
+
+  # Good
+  cdef int& i
+  cdef char * s
+  i = &j
+
+  # Bad
+  cdef int &i
+  cdef char *s
+  i = & j
+
+Casting
+-------
+When casting a variable there must be no whitespace between the opening `<` and
+the type. There must one space between the closing `>` and the variable::
+
+  # Good
+  <float> i
+  <void *> s
+
+  # Bad
+  < float >i
+  <void*>  s
+
+Loops
+-----
+Use Python loop syntax::
+
+  for i in range(nrows):
+    ...
+
+Other `for`-loop constructs are deprecated and must be avoided.
+
 -------------
 Documentation
 -------------
