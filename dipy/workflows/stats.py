@@ -19,8 +19,14 @@ from dipy.workflows.workflow import Workflow
 
 from dipy.viz.regtools import simple_plot
 from dipy.stats.analysis import bundle_analysis
-pd, _, _ = optional_package("pandas")
-smf, _, _ = optional_package("statsmodels.formula.api")
+pd, have_pd, _ = optional_package("pandas")
+smf, have_smf, _ = optional_package("statsmodels.formula.api")
+
+if have_pd:
+    import pandas as pd
+
+if have_smf:
+    import tatsmodels.formula.api as smf
 
 
 class SNRinCCFlow(Workflow):

@@ -14,7 +14,10 @@ from dipy.segment.metric import AveragePointwiseEuclideanMetric
 import os
 from scipy import spatial
 from dipy.io.peaks import load_peaks
-pd, _, _ = optional_package("pandas")
+pd, have_pd, _ = optional_package("pandas")
+
+if have_pd:
+    import pandas as pd
 
 
 def _save_hdf5(fname, dt, col_name, col_size=5):
