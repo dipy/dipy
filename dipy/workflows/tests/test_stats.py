@@ -124,8 +124,10 @@ def test_bundle_analysis_population_flow():
         assert_true(os.path.exists(os.path.join(out_dir, 'fa.h5')))
 
         dft = pd.read_hdf(os.path.join(out_dir, 'fa.h5'))
+
         assert_true(dft.bundle.unique() == "temp")
-        assert_true(list(dft.subject.unique()) == ['10001', '20002'])
+
+        assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
 @npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)

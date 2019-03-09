@@ -227,7 +227,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
             print('Number of centroids ', len(centroids.data))
             print('Model bundle ', mb[io])
-            print('number of streamlines in bundle in common space ',
+            print('Number of streamlines in bundle in common space ',
                   len(bundles))
             print('Number of streamlines in bundle in original space ',
                   len(orig_bundles))
