@@ -2,16 +2,20 @@ import numpy as np
 import nibabel as nib
 from numpy.testing import assert_equal, run_module_suite
 from dipy.data import get_fnames
-from dipy.io.streamline import load_trk, save_trk
+from dipy.io.streamline import save_trk
 from dipy.tracking.streamline import Streamlines
-from dipy.segment.metric import AveragePointwiseEuclideanMetric
 import os
-from dipy.io.image import load_nifti, save_nifti
+import numpy.testing as npt
+from dipy.utils.optpkg import optional_package
+from dipy.io.image import save_nifti
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.stats.analysis import bundle_analysis
 from dipy.testing import assert_true
+_, have_pd, _ = optional_package("pandas")
+_, have_smf, _ = optional_package("statsmodels")
 
 
+@npt.dec.skipif(not have_pd or not have_smf)
 def test_ba():
 
     with TemporaryDirectory() as dirpath:
