@@ -1,21 +1,22 @@
+from os.path import join as pjoin
+import os.path
+
 import numpy.testing as npt
 import numpy as np
 
-import numpy as np
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.tracking.streamline import Streamlines
-from dipy.data import get_fnames
-from dipy.workflows.align import ResliceFlow, SlrWithQbxFlow
-from os.path import join as pjoin
-from dipy.io.streamline import save_trk
-import os.path
 
+from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
+from dipy.data import get_fnames
 from dipy.io.image import save_nifti
-from dipy.workflows.align import ImageRegistrationFlow
-from dipy.workflows.align import ApplyAffineFlow
+from dipy.io.streamline import save_trk
+from dipy.tracking.streamline import Streamlines
+from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
+                                  ApplyTransformFlow, ResliceFlow,
+                                  SlrWithQbxFlow)
 
 
 def test_reslice():
@@ -188,6 +189,13 @@ def test_image_registration():
         test_err()
 
 
+def test_apply_transform_error():
+    flow = ApplyTransformFlow()
+    npt.assert_raises(ValueError, flow.run,
+                      'my_fake_static.nii.gz', 'my_fake_moving.nii.gz',
+                      'my_fake_map.nii.gz', transform_type='wrong_type')
+
+
 def test_apply_affine_transform():
     with TemporaryDirectory() as temp_out_dir:
 
@@ -200,7 +208,7 @@ def test_apply_affine_transform():
                                                  -0.07, 0.10, 0.99, -1.4]))}
 
         image_registeration_flow = ImageRegistrationFlow()
-        apply_trans = ApplyAffineFlow()
+        apply_trans = ApplyTransformFlow()
 
         for i in factors.keys():
             static, moving, static_g2w, moving_g2w, smask, mmask, M = \
@@ -246,11 +254,54 @@ def test_apply_affine_transform():
         images = pjoin(temp_out_dir, '*moving*')
         apply_trans.run(static_image_file, images,
                         out_dir=temp_out_dir,
-                        affine_matrix_file=out_affine)
+                        transform_map_file=out_affine)
 
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
 
+
+def test_syn_registration_flow():
+    moving_data, static_data = get_synthetic_warped_circle(40)
+    moving_data[..., :10] = 0
+    moving_data[..., -1:-11:-1] = 0
+    static_data[..., :10] = 0
+    static_data[..., -1:-11:-1] = 0
+
+    syn_flow = SynRegistrationFlow()
+
+    with TemporaryDirectory() as out_dir:
+        static_img = nib.Nifti1Image(static_data.astype(np.float), np.eye(4))
+        fname_static = pjoin(out_dir, 'tmp_static.nii.gz')
+        nib.save(static_img, fname_static)
+
+        moving_img = nib.Nifti1Image(moving_data.astype(np.float), np.eye(4))
+        fname_moving = pjoin(out_dir, 'tmp_moving.nii.gz')
+        nib.save(moving_img, fname_moving)
+
+        positional_args = [fname_static, fname_moving]
+        metric_optional_args = {'metric': 'ssd',
+                                'mopt_smooth': 4.0,
+                                'mopt_inner_iter': 5,
+                                'mopt_step_type': 'demons',
+                                }
+        optimizer_optional_args = {'level_iters': [200, 100, 50, 25],
+                                   'step_length': 0.5,
+                                   'opt_tol': 1e-4,
+                                   'inv_iter': 40,
+                                   'inv_tol': 1e-3,
+                                   'ss_sigma_factor': 0.2
+                                   }
+
+        all_args = dict(metric_optional_args, **optimizer_optional_args)
+        syn_flow.run(*positional_args,
+                     out_dir=out_dir,
+                     **all_args
+                     )
+
+        warped_path = syn_flow.last_generated_outputs['out_warped']
+        npt.assert_equal(os.path.isfile(warped_path), True)
+        warped_map_path = syn_flow.last_generated_outputs['out_field']
+        npt.assert_equal(os.path.isfile(warped_map_path), True)
 
 if __name__ == "__main__":
     npt.run_module_suite()

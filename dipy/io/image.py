@@ -40,7 +40,6 @@ def save_qa_metric(fname, xopt, fopt):
         image registration.
     fopt: int
         The distance between the registered images.
-
     """
     np.savetxt(fname, xopt, header="Optimal Parameter metric")
     with open(fname, 'a') as f:
