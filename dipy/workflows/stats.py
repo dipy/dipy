@@ -26,7 +26,7 @@ if have_pd:
     import pandas as pd
 
 if have_smf:
-    import tatsmodels.formula.api as smf
+    import statsmodels.formula.api as smf
 
 
 class SNRinCCFlow(Workflow):
