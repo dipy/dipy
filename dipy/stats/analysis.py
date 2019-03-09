@@ -15,6 +15,7 @@ import os
 from scipy import spatial
 from dipy.io.peaks import load_peaks
 pd, have_pd, _ = optional_package("pandas")
+_, have_tables, _ = optional_package("tables")
 
 if have_pd:
     import pandas as pd
@@ -37,7 +38,7 @@ def _save_hdf5(fname, dt, col_name, col_size=5):
     """
 
     df = pd.DataFrame(dt)
-    filename_hdf5 = fname+'.h5'
+    filename_hdf5 = fname + '.h5'
 
     store = pd.HDFStore(filename_hdf5)
     store.append(fname, df, data_columns=True,
@@ -84,7 +85,7 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
     for st in bundle:
         di = st[1:] - st[0:-1]
         dnorm = np.linalg.norm(di, axis=1)
-        di = di/dnorm[:, None]
+        di = di / dnorm[:, None]
         count = 0
         for ip in range(len(st)-1):
             point += 1

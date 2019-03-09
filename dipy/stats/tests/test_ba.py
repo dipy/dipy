@@ -13,9 +13,10 @@ from dipy.stats.analysis import bundle_analysis
 from dipy.testing import assert_true
 _, have_pd, _ = optional_package("pandas")
 _, have_smf, _ = optional_package("statsmodels")
+_, have_tables, _ = optional_package("tables")
 
 
-@npt.dec.skipif(not have_pd or not have_smf)
+@npt.dec.skipif(not have_pd or not have_smf or not have_tables)
 def test_ba():
 
     with TemporaryDirectory() as dirpath:

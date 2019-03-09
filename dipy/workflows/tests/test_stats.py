@@ -18,6 +18,7 @@ from dipy.workflows.stats import BundleAnalysisPopulationFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels")
+_, have_tables, _ = optional_package("tables")
 
 
 def test_stats():
@@ -67,7 +68,7 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels)
+@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -127,7 +128,7 @@ def test_bundle_analysis_population_flow():
         assert_true(list(dft.subject.unique()) == ['10001', '20002'])
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels)
+@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
