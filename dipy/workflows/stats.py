@@ -161,7 +161,8 @@ class BundleAnalysisPopulationFlow(Workflow):
     def get_short_name(cls):
         return 'ba'
 
-    def run(self, model_bundle_files, subject_files, no_disks=100, out_dir=''):
+    def run(self, model_bundle_folder, subject_folder, no_disks=100,
+            out_dir=''):
         """Workflow of bundle analytics.
 
         Applies statistical analysis on bundles of subjects and saves the
@@ -170,11 +171,11 @@ class BundleAnalysisPopulationFlow(Workflow):
         Parameters
         ----------
 
-        model_bundle_files : string
+        model_bundle_folder : string
             Path to the input model bundle files. This path may
             contain wildcards to process multiple inputs at once.
 
-        subject_files : string
+        subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
 
@@ -194,20 +195,20 @@ class BundleAnalysisPopulationFlow(Workflow):
 
         """
 
-        groups = os.listdir(subject_files)
+        groups = os.listdir(subject_folder)
 
         for group in groups:
             logging.info('group = {0}'.format(group))
-            all_subjects = os.listdir(os.path.join(subject_files, group))
+            all_subjects = os.listdir(os.path.join(subject_folder, group))
 
             for sub in all_subjects:
 
-                pre = os.path.join(subject_files, group, sub)
+                pre = os.path.join(subject_folder, group, sub)
 
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
-                d = os.path.join(pre, "dti_measures")
-                bundle_analysis(model_bundle_files, b, c, d, group, sub,
+                d = os.path.join(pre, "measures")
+                bundle_analysis(model_bundle_folder, b, c, d, group, sub,
                                 no_disks, out_dir)
 
 
@@ -216,7 +217,7 @@ class LinearMixedModelsFlow(Workflow):
     def get_short_name(cls):
         return 'lmm'
 
-    def run(self, metric_files, no_disks=100, out_dir=''):
+    def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
 
         Applies linear Mixed Models on bundles of subjects and saves the
@@ -225,7 +226,7 @@ class LinearMixedModelsFlow(Workflow):
         Parameters
         ----------
 
-        metric_files : string
+        h5_files : string
             Path to the input metric files. This path may
             contain wildcards to process multiple inputs at once.
 
@@ -243,7 +244,7 @@ class LinearMixedModelsFlow(Workflow):
 
             logging.info('Applying metric {0}'.format(file_path))
             file_name = os.path.basename(file_path)[:-3]
-            df = pd.read_hdf(file_path, key=file_name)
+            df = pd.read_hdf(file_path)
 
             if len(df) < 100:
                 raise ValueError("Dataset for Linear Mixed Model is too small")

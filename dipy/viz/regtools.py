@@ -19,8 +19,7 @@ def _tile_plot(imgs, titles, **kwargs):
 
 
 def simple_plot(file_name, title, x, y, xlabel, ylabel):
-
-    """ saves the simple plot with given x and y values
+    """ Saves the simple plot with given x and y values
 
     Parameters
     ----------
@@ -36,7 +35,6 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
         label for x-axis
     ylable : string
         label for y-axis
-
 
     """
 

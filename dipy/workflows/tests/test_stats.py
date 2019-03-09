@@ -3,7 +3,8 @@
 import os
 from os.path import join
 from dipy.utils.optpkg import optional_package
-from numpy.testing import assert_equal, run_module_suite, assert_raises
+import numpy.testing as npt
+from numpy.testing import run_module_suite, assert_raises
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.io.streamline import save_trk
@@ -15,7 +16,8 @@ from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisPopulationFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
-pd, _, _ = optional_package("pandas")
+pd, have_pandas, _ = optional_package("pandas")
+_, have_statsmodels, _ = optional_package("statsmodels")
 
 
 def test_stats():
@@ -65,6 +67,7 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
+@npt.dec.skipif(not have_pandas or not have_statsmodels)
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -103,11 +106,11 @@ def test_bundle_analysis_population_flow():
 
             save_trk(os.path.join(pre, "org_bundles", "temp.trk"), f,
                      affine=np.eye(4))
-            os.mkdir(os.path.join(pre, "dti_measures"))
+            os.mkdir(os.path.join(pre, "measures"))
 
             fa = np.random.rand(255, 255, 255)
 
-            save_nifti(os.path.join(pre, "dti_measures", "fa.nii.gz"),
+            save_nifti(os.path.join(pre, "measures", "fa.nii.gz"),
                        fa, affine=np.eye(4))
 
         out_dir = os.path.join(dirpath, "output")
@@ -124,6 +127,7 @@ def test_bundle_analysis_population_flow():
         assert_true(list(dft.subject.unique()) == ['10001', '20002'])
 
 
+@npt.dec.skipif(not have_pandas or not have_statsmodels)
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -187,5 +191,4 @@ def test_linear_mixed_models_flow():
 
 
 if __name__ == '__main__':
-
     run_module_suite()

@@ -18,8 +18,7 @@ pd, _, _ = optional_package("pandas")
 
 
 def _save_hdf5(fname, dt, col_name, col_size=5):
-
-    """ saves the given input dataframe to .h5 file
+    """ Saves the given input dataframe to .h5 file
 
     Parameters
     ----------
@@ -44,8 +43,7 @@ def _save_hdf5(fname, dt, col_name, col_size=5):
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
-
-    """ peak_values function finds the peak direction and peak value of a point
+    """ Peak_values function finds the peak direction and peak value of a point
         on a streamline used while tracking (generating the tractogram) and
         save it in hd5 file.
 
@@ -116,8 +114,7 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
 
 
 def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
-
-    """ calculates dti measure (eg: FA, MD) per point on streamlines and
+    """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
         Parameters
@@ -160,26 +157,25 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     _save_hdf5(os.path.join(dir, pname), dt, col_name="bundle")
 
 
-def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
-                    dti_metric_files, group, subject, no_disks=100,
+def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
+                    metric_folder, group, subject, no_disks=100,
                     out_dir=''):
-
         """
         Applies statistical analysis on bundles and saves the results
         in a directory specified by ``out_dir``.
 
         Parameters
         ----------
-        model_bundle_files : string
+        model_bundle_folder : string
             Path to the input model bundle files. This path may contain
             wildcards to process multiple inputs at once.
-        bundle_files : string
+        bundle_folder : string
             Path to the input bundle files in common space. This path may
             contain wildcards to process multiple inputs at once.
-        orig_files : string
+        orig_folder : string
             Path to the input bundle files in native space. This path may
             contain wildcards to process multiple inputs at once.
-        dti_metric_files : string
+        metric_folder : string
             Path to the input dti metric or/and peak files. It will be used as
             metric for statistical analysis of bundles.
         group : string
@@ -203,18 +199,18 @@ def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
 
         dt = dict()
 
-        mb = os.listdir(model_bundle_files)
+        mb = os.listdir(model_bundle_folder)
         mb.sort()
-        bd = os.listdir(bundle_files)
+        bd = os.listdir(bundle_folder)
         bd.sort()
-        org_bd = os.listdir(orig_bundle_files)
+        org_bd = os.listdir(orig_bundle_folder)
         org_bd.sort()
         n = len(org_bd)
 
         for io in range(n):
-            mbundles, _ = load_trk(os.path.join(model_bundle_files, mb[io]))
-            bundles, _ = load_trk(os.path.join(bundle_files, bd[io]))
-            orig_bundles, _ = load_trk(os.path.join(orig_bundle_files,
+            mbundles, _ = load_trk(os.path.join(model_bundle_folder, mb[io]))
+            bundles, _ = load_trk(os.path.join(bundle_folder, bd[io]))
+            orig_bundles, _ = load_trk(os.path.join(orig_bundle_folder,
                                        org_bd[io]))
 
             mbundle_streamlines = set_number_of_points(mbundles,
@@ -235,30 +231,30 @@ def bundle_analysis(model_bundle_files, bundle_files, orig_bundle_files,
             _, indx = cKDTree(centroids.data, 1,
                               copy_data=True).query(bundles.data, k=1)
 
-            dti_metric_files_names = os.listdir(dti_metric_files)
-            _, affine = load_nifti(os.path.join(dti_metric_files, "fa.nii.gz"))
+            metric_files_names = os.listdir(metric_folder)
+            _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
 
             affine_r = np.linalg.inv(affine)
             transformed_orig_bundles = transform_streamlines(orig_bundles,
                                                              affine_r)
 
-            for mn in range(0, len(dti_metric_files_names)):
+            for mn in range(0, len(metric_files_names)):
 
                 ind = np.array(indx)
-                fm = dti_metric_files_names[mn][:2]
+                fm = metric_files_names[mn][:2]
                 bm = mb[io][:-4]
                 dt = dict()
-                metric_name = os.path.join(dti_metric_files,
-                                           dti_metric_files_names[mn])
+                metric_name = os.path.join(metric_folder,
+                                           metric_files_names[mn])
 
-                if dti_metric_files_names[mn][2:] == '.nii.gz':
+                if metric_files_names[mn][2:] == '.nii.gz':
                     metric, _ = load_nifti(metric_name)
 
                     dti_measures(transformed_orig_bundles, metric, dt, fm,
                                  bm, subject, group, ind, out_dir)
 
                 else:
-                    fm = dti_metric_files_names[mn][:3]
+                    fm = metric_files_names[mn][:3]
                     metric = load_peaks(metric_name)
                     peak_values(bundles, metric, dt, fm, bm, subject, group,
                                 ind, out_dir)
