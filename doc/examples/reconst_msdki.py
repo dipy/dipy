@@ -61,7 +61,7 @@ We simulate representative diffusion-weighted signals using MultiTensor
 simulations (for more information on this type of simulations see
 :ref:`example_simulate_multi_tensor`). For this example, simulations are
 produced based on the sum of four diffusion tensors to represent the intra-
-and extra-cellular spaces of two fiber populations. The parameters of theses
+and extra-cellular spaces of two fiber populations. The parameters of these
 tensors are adjusted according to [NetoHe2015]_ (see also
 :ref:`example_simulate_dki`).
 """
@@ -73,8 +73,8 @@ mevals = np.array([[0.00099, 0, 0],
 
 """
 For the acquisition parameters of the synthetic data, we use 60 gradient
-directions for two non-zero-b-values (1000 and 2000 $s/mm^{2}$) and two
-zero-bvalue (note that, such as the standard DKI, MSDKI requires at least
+directions for two non-zero b-values (1000 and 2000 $s/mm^{2}$) and two
+zero bvalues (note that, such as the standard DKI, MSDKI requires at least
 three different b-values).
 """
 
@@ -97,7 +97,7 @@ bvecs = np.vstack((np.zeros((2, 3)), directions, directions))
 gtab = gradient_table(bvals, bvecs)
 
 
-""" Simulations are lopped for different intra- and extra-cellular water
+""" Simulations are looped for different intra- and extra-cellular water
 volume fractions and different intersection angles of the two-fiber
 populations.
 """
@@ -158,7 +158,7 @@ dki_fit = dki_model.fit(dwi)
 MD = dki_fit.md
 MK = dki_fit.mk(0, 3)
 
-""" Now we plot the results as a function of the ground truth interstection
+""" Now we plot the results as a function of the ground truth intersection
 angle and for different volume fractions of intra-cellular water.
 """
 

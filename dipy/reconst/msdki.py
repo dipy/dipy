@@ -86,22 +86,19 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
            thesis). Downing College, University of Cambridge.
            https://doi.org/10.17863/CAM.29356
     """
-    # Define MSDKI design matrix given gtab.bvals
     A = design_matrix(round_bvals(gtab.bvals))
 
-    # Initialize pred_sig
-    pred_sig = np.zeros(msdki_params.shape[:-1] + gtab.bvals.shape)
+    params = msdki_params.copy()
+    params[..., 1] = params[..., 1] * params[..., 0] ** 2
 
-    # looping for all voxels
-    index = ndindex(msdki_params.shape[:-1])
-    for v in index:
-        params = msdki_params[v].copy()
-        params[1] = params[1] * params[0] ** 2
-        if isinstance(S0, np.ndarray):
-            S0v = S0[v]
-        else:
-            S0v = S0
-        pred_sig[v] = S0v * np.exp(np.dot(A[:, :2], params))
+    if isinstance(S0, float) or isinstance(S0, int):
+        pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
+    elif S0.size == 1:
+        pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
+    else:
+        S0r = np.broadcast_to(S0, gtab.bvals.shape + S0.shape)
+        S0r = np.swapaxes(S0r, 0, -1)
+        pred_sig = S0r * np.exp(np.dot(params, A[:, :2].T))
 
     return pred_sig
 
