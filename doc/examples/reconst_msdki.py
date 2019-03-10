@@ -9,9 +9,9 @@ of diffusion-weighted data; however, improper model assumptions are known to
 compromise the validity of the model's estimates [NetoHe2019]_. To avoid
 misleading interpretation, it might be enough to characterize
 diffusion-weighted data using signal representation techniques. For example,
-assuming that the degree the non-Gaussian diffusion decreases with tissue
+assuming that the degree of non-Gaussian diffusion decreases with tissue
 degeneration, this can be sensitive to general microstructural alterations.
-Although this cannot be use to distinguish different mechanisms of
+Although this cannot be used to distinguish different mechanisms of
 microstructural changes (e.g. axonal loss vs demyelination), the degree of
 non-Gaussian diffusion can provide insights on the general condition of tissue
 microstructure and provide useful markers to understanding, for instance, the
