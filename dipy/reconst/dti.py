@@ -1288,13 +1288,7 @@ def iter_fit_tensor(step=1e4):
                                   return_S0_hat=return_S0_hat,
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            params0 = fit_tensor(design_matrix, data[0:2],
-                                 *args, **kwargs)
-            if return_S0_hat:
-                pshape = params0[0].shape[-1]
-            else:
-                pshape = params0.shape[-1]
-            dtiparams = np.empty((size, pshape), dtype=np.float64)
+            dtiparams = np.empty((size, 12), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
@@ -1309,10 +1303,10 @@ def iter_fit_tensor(step=1e4):
                                                        data[i:i + step],
                                                        *args, **kwargs)
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (-1, )),
+                return (dtiparams.reshape(shape + (12, )),
                         S0params.reshape(shape + (1, )))
             else:
-                return dtiparams.reshape(shape + (-1, ))
+                return dtiparams.reshape(shape + (12, ))
 
         return wrapped_fit_tensor
 
