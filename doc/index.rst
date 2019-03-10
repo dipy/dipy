@@ -19,7 +19,7 @@ Highlights
 - New Tractometry tools : Bundle Analysis / Bundle Profiles
 - New reconstruction model: IVIM Mix
 - New command line interface: Affine and Diffeomorphic Registration
-- New command line interface: Probalistic, Deterministic and PFT Tracking
+- New command line interface: Probabilistic, Deterministic and PFT Tracking
 - Integration of Cython Guidelines for developers
 - Replacement of Nose by Pytest
 - Documentation update.
