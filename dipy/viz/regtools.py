@@ -18,6 +18,35 @@ def _tile_plot(imgs, titles, **kwargs):
     return fig
 
 
+def simple_plot(file_name, title, x, y, xlabel, ylabel):
+    """ Saves the simple plot with given x and y values
+
+    Parameters
+    ----------
+    file_name : string
+        file name for saving the plot
+    title : string
+        title of the plot
+    x : integer list
+        x-axis values to be ploted
+    y : integer list
+        y-axis values to be ploted
+    xlabel : string
+        label for x-axis
+    ylable : string
+        label for y-axis
+
+    """
+
+    plt.plot(x, y)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    plt.savefig(file_name)
+    plt.clf()
+
+
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     r""" Plot two images one on top of the other using red and green channels.
 

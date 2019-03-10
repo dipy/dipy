@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+from __future__ import division, print_function, absolute_import
 
 import logging
 import numpy as np
 import os
 import json
 from scipy.ndimage.morphology import binary_dilation
-
+from dipy.utils.optpkg import optional_package
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
@@ -16,6 +16,21 @@ from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
 from dipy.workflows.workflow import Workflow
+
+from dipy.viz.regtools import simple_plot
+from dipy.stats.analysis import bundle_analysis
+pd, have_pd, _ = optional_package("pandas")
+smf, have_smf, _ = optional_package("statsmodels.formula.api")
+tables, have_tables, _ = optional_package("tables")
+
+if have_pd:
+    import pandas as pd
+
+if have_smf:
+    import statsmodels.formula.api as smf
+
+if have_tables:
+    import tables
 
 
 class SNRinCCFlow(Workflow):
@@ -149,3 +164,126 @@ class SNRinCCFlow(Workflow):
 
             with open(os.path.join(out_dir, out_path), 'w') as myfile:
                 json.dump(data, myfile)
+
+
+class BundleAnalysisPopulationFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'ba'
+
+    def run(self, model_bundle_folder, subject_folder, no_disks=100,
+            out_dir=''):
+        """Workflow of bundle analytics.
+
+        Applies statistical analysis on bundles of subjects and saves the
+        results in a directory specified by ``out_dir``.
+
+        Parameters
+        ----------
+
+        model_bundle_folder : string
+            Path to the input model bundle files. This path may
+            contain wildcards to process multiple inputs at once.
+
+        subject_folder : string
+            Path to the input subject folder. This path may contain
+            wildcards to process multiple inputs at once.
+
+        no_disks : integer, optional
+            Number of disks used for dividing bundle into disks. (Default 100)
+
+        out_dir : string, optional
+            Output directory (default input file directory)
+
+        References
+        ----------
+        .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+        E. Garyfallidis, Bundle Analytics: a computational and statistical
+        analyses framework for tractometric studies, Proceedings of:
+        International Society of Magnetic Resonance in Medicine (ISMRM),
+        Montreal, Canada, 2019.
+
+        """
+
+        groups = os.listdir(subject_folder)
+
+        for group in groups:
+            logging.info('group = {0}'.format(group))
+            all_subjects = os.listdir(os.path.join(subject_folder, group))
+
+            for sub in all_subjects:
+
+                pre = os.path.join(subject_folder, group, sub)
+
+                b = os.path.join(pre, "rec_bundles")
+                c = os.path.join(pre, "org_bundles")
+                d = os.path.join(pre, "measures")
+                bundle_analysis(model_bundle_folder, b, c, d, group, sub,
+                                no_disks, out_dir)
+
+
+class LinearMixedModelsFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'lmm'
+
+    def run(self, h5_files, no_disks=100, out_dir=''):
+        """Workflow of linear Mixed Models.
+
+        Applies linear Mixed Models on bundles of subjects and saves the
+        results in a directory specified by ``out_dir``.
+
+        Parameters
+        ----------
+
+        h5_files : string
+            Path to the input metric files. This path may
+            contain wildcards to process multiple inputs at once.
+
+        no_disks : integer, optional
+            Number of disks used for dividing bundle into disks. (Default 100)
+
+        out_dir : string, optional
+            Output directory (default input file directory)
+
+        """
+
+        io_it = self.get_io_iterator()
+
+        for file_path in io_it:
+
+            logging.info('Applying metric {0}'.format(file_path))
+            file_name = os.path.basename(file_path)[:-3]
+            df = pd.read_hdf(file_path)
+
+            if len(df) < 100:
+                raise ValueError("Dataset for Linear Mixed Model is too small")
+
+            all_bundles = df.bundle.unique()
+            # all_pvalues = []
+            for bundle in all_bundles:
+                sub_af = df[df['bundle'] == bundle]  # sub sample
+                pvalues = np.zeros(no_disks)
+
+                # run mixed linear model for every disk
+                for i in range(no_disks):
+
+                    sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
+
+                    if len(sub) > 0:
+                        criteria = file_name + " ~ group"
+                        md = smf.mixedlm(criteria, sub, groups=sub["subject"])
+
+                        mdf = md.fit()
+
+                        pvalues[i] = mdf.pvalues[1]
+
+                x = list(range(1, len(pvalues)+1))
+                y = -1*np.log10(pvalues)
+
+                title = bundle + " on " + file_name + " Values"
+                plot_file = os.path.join(out_dir, bundle + "_" +
+                                         file_name + ".png")
+
+                simple_plot(plot_file, title, x, y, "disk no",
+                            "-log10(pvalues)")
