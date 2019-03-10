@@ -15,9 +15,15 @@ Highlights
 
 **DIPY 0.16.0** is now available. New features include:
 
--
--
--
+- Horizon, fast, modular, unified and adaptive visualization
+- New Tractometry tools : Bundle Analysis / Bundle Profiles
+- New reconstruction model: IVIM Mix
+- New command line interface: Affine and Diffeomorphic Registration
+- New command line interface: Probalistic, Deterministic and PFT Tracking
+- Integration of Cython Guidelines for developers
+- Replacement of Nose by Pytest
+- Documentation update.
+- Closed 103 issues and merged 41 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -31,7 +37,7 @@ Announcements
   <div style="width: 80% max-width=800px">
     <a href="https://workshop.dipy.org/" target="_blank"><img alt=" " class="align-center" src="_static/dipy-ws-header.png" style="width: 90%;max-height: 90%"></a>
   </div>
-- :ref:`DIPY 0.16 <release_notes/release0.16>` released March 8, 2019.
+- :ref:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 - :ref:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
 - :ref:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.

@@ -17,6 +17,19 @@ Older Highlights
 - Moved visualization module to a new library: FURY.
 - Closed 287 issues and merged 93 pull requests. 
 
+**DIPY 0.14** is now available. New features include:
+
+- RecoBundles: anatomically relevant segmentation of bundles
+- New super fast clustering algorithm: QuickBundlesX
+- New tracking algorithm: Particle Filtering Tracking.
+- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
+- Integration of the Streamlines API for reading, saving and processing tractograms.
+- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
+- New command line interfaces.
+- Deprecated fvtk (old visualization framework).
+- A range of new visualization improvements.
+- Large documentation update.
+
 **DIPY 0.13.0** is now available. New features include:
 
 - Faster local PCA implementation.

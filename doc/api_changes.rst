@@ -8,6 +8,19 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 0.16 Changes
 -----------------
 
+**Stats**
+
+Welcome to the new module ``dipy.viz.stats``. This module will be use to integrate various analysis.
+
+**Tracking**
+
+- New option to adjust number of threads for SLR in Recobundles
+- The tracking algoritm excludes the stop point inside the mask during tracking process.
+
+**Notes**
+
+- Replacement of Nose by Pytest
+
 
 DIPY 0.15 Changes
 -----------------
