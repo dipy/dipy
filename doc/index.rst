@@ -15,13 +15,13 @@ Highlights
 
 **DIPY 0.16.0** is now available. New features include:
 
-- Horizon, medical visualization interface powered by QuickBundlesX
-- New Tractometry tools : Bundle Analysis / Bundle Profiles
-- New reconstruction model: IVIM Mix
-- New command line interface: Affine and Diffeomorphic Registration
-- New command line interface: Probabilistic, Deterministic and PFT Tracking
-- Integration of Cython Guidelines for developers
-- Replacement of Nose by Pytest
+- Horizon, medical visualization interface powered by QuickBundlesX.
+- New Tractometry tools: Bundle Analysis / Bundle Profiles.
+- New reconstruction model: IVIM MIX.
+- New command line interface: Affine and Diffeomorphic Registration.
+- New command line interface: Probabilistic, Deterministic and PFT Tracking.
+- Integration of Cython Guidelines for developers.
+- Replacement of Nose by Pytest.
 - Documentation update.
 - Closed 103 issues and merged 41 pull requests.
 
