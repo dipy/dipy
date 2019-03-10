@@ -26,7 +26,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 
 * 0.16.0 (Sunday, 10 March 2019)
 
-- Horizon, fast, modular, unified and adaptive visualization
+- Horizon, medical visualization interface powered by QuickBundlesX
 - New Tractometry tools : Bundle Analysis / Bundle Profiles
 - New reconstruction model: IVIM Mix
 - New command line interface: Affine and Diffeomorphic Registration

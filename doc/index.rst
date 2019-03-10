@@ -15,7 +15,7 @@ Highlights
 
 **DIPY 0.16.0** is now available. New features include:
 
-- Horizon, fast, modular, unified and adaptive visualization
+- Horizon, medical visualization interface powered by QuickBundlesX
 - New Tractometry tools : Bundle Analysis / Bundle Profiles
 - New reconstruction model: IVIM Mix
 - New command line interface: Affine and Diffeomorphic Registration
