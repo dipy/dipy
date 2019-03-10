@@ -147,7 +147,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             raise ValueError(e_s)
 
         # Check if at least three b-values are given
-        enough_b = check_multi_b(self.gtab, 3, non_zero=False)
+        enough_b = check_multi_b(self.gtab, 3, non_zero=False, bmag=bmag)
         if not enough_b:
             mes = "MSDKI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
