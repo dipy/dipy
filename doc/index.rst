@@ -13,18 +13,17 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 0.15.0** is now available. New features include:
+**DIPY 0.16.0** is now available. New features include:
 
-- Updated RecoBundles for automatic anatomical bundle segmentation.
-- New Reconstruction Model: qtau-dMRI.
-- New command line interfaces (e.g. dipy_slr).
-- New continuous integration with AppVeyor CI.
-- Nibabel Streamlines API now used almost everywhere for better memory management.
-- Compatibility with Python 3.7.
-- Many tutorials added or updated (5 New).
-- Large documentation update.
-- Moved visualization module to a new library: FURY.
-- Closed 287 issues and merged 93 pull requests. 
+- Horizon, medical visualization interface powered by QuickBundlesX.
+- New Tractometry tools: Bundle Analysis / Bundle Profiles.
+- New reconstruction model: IVIM MIX (Variable Projection).
+- New command line interface: Affine and Diffeomorphic Registration.
+- New command line interface: Probabilistic, Deterministic and PFT Tracking.
+- Integration of Cython Guidelines for developers.
+- Replacement of Nose by Pytest.
+- Documentation update.
+- Closed 103 issues and merged 41 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -38,10 +37,10 @@ Announcements
   <div style="width: 80% max-width=800px">
     <a href="https://workshop.dipy.org/" target="_blank"><img alt=" " class="align-center" src="_static/dipy-ws-header.png" style="width: 90%;max-height: 90%"></a>
   </div>
+- :ref:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 - :ref:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
 - :ref:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
 - :ref:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.
-- :ref:`DIPY 0.12 <release_notes/release0.12>` released June 26, 2017.
 
 See some of our :ref:`Past Announcements <old_news>`
 
