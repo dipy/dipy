@@ -10,7 +10,7 @@ DIPY 0.16 Changes
 
 **Stats**
 
-Welcome to the new module ``dipy.viz.stats``. This module will be use to integrate various analysis.
+Welcome to the new module ``dipy.viz.stats``. This module will be used to integrate various analysis.
 
 **Tracking**
 

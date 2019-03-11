@@ -17,7 +17,7 @@ Highlights
 
 - Horizon, medical visualization interface powered by QuickBundlesX.
 - New Tractometry tools: Bundle Analysis / Bundle Profiles.
-- New reconstruction model: IVIM MIX.
+- New reconstruction model: IVIM MIX (Variable Projection).
 - New command line interface: Affine and Diffeomorphic Registration.
 - New command line interface: Probabilistic, Deterministic and PFT Tracking.
 - Integration of Cython Guidelines for developers.
