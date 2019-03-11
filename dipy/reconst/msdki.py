@@ -96,8 +96,10 @@ def msdki_prediction(msdki_params, gtab, S0=1.0):
     elif S0.size == 1:
         pred_sig = S0 * np.exp(np.dot(params, A[:, :2].T))
     else:
-        S0r = np.broadcast_to(S0, gtab.bvals.shape + S0.shape)
-        S0r = np.swapaxes(S0r, 0, -1)
+        nv = gtab.bvals.shape
+        S0r = np.zeros(S0.shape + nv)
+        for vi in range(nv):
+            S0r[..., vi] = S0
         pred_sig = S0r * np.exp(np.dot(params, A[:, :2].T))
 
     return pred_sig
