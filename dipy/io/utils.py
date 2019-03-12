@@ -95,7 +95,8 @@ def decfa(img_orig, scale=False):
 
 def decfa_to_float(img_orig):
     """
-    Create a nifti-compliant directional-encoded color FA file.
+    Convert a nifti-compliant directional-encoded color FA image into a
+    nifti image with RGB encoded in floating point resolution.
 
     Parameters
     ----------
@@ -105,8 +106,7 @@ def decfa_to_float(img_orig):
 
     Returns
     -------
-    img : Nifti1Image class instance with uint8 dtype.
-
+    img : Nifti1Image class instance with float dtype.
 
     Notes
     -----
