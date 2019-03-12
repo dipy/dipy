@@ -10,7 +10,7 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_gradient_strength_bvecs,
                                  WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
-                                 check_multi_b)
+                                 check_multi_b, round_bvals, unique_bvals)
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -337,6 +337,60 @@ def test_generate_bvecs():
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
+def test_round_bvals():
+    bvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    b = round_bvals(bvals_gt)
+    npt.assert_array_almost_equal(bvals_gt, b)
+
+    bvals = np.array([995, 995, 995, 995, 2005, 2005, 2005, 2005, 0])
+    # We don't consider differences this small to be sufficient:
+    b = round_bvals(bvals)
+    npt.assert_array_almost_equal(bvals_gt, b)
+
+    # Unless you specify that you are interested in this magnitude of changes:
+    b = round_bvals(bvals, bmag=0)
+    npt.assert_array_almost_equal(bvals, b)
+
+    # Case that b-valuea are in ms/um2
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
+                      0])
+    b = round_bvals(bvals)
+    bvals_gt = np.array([1, 1, 1, 1, 2, 2, 2, 2, 0])
+    npt.assert_array_almost_equal(bvals_gt, b)
+
+
+def test_unique_bvals():
+    bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    ubvals_gt = np.array([0, 1000, 2000])
+    b = unique_bvals(bvals)
+    npt.assert_array_almost_equal(ubvals_gt, b)
+
+    bvals = np.array([995, 995, 995, 995, 2005, 2005, 2005, 2005, 0])
+    # Case that b-values are rounded:
+    b = unique_bvals(bvals)
+    npt.assert_array_almost_equal(ubvals_gt, b)
+
+    # b-values are not rounded if you specific the magnitude of the values
+    # precision:
+    b = unique_bvals(bvals, bmag=0)
+    npt.assert_array_almost_equal(b, np.array([0, 995, 2005]))
+
+    # Case that b-values are in ms/um2
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
+                      0])
+    b = unique_bvals(bvals)
+    ubvals_gt = np.array([0, 1, 2])
+    npt.assert_array_almost_equal(ubvals_gt, b)
+
+    # Test case that optional parameter round_bvals is set to true
+    bvals = np.array([995, 1000, 1004, 1000, 2001, 2000, 1988, 2017, 0])
+    ubvals_gt = np.array([0, 1000, 2000])
+    rbvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
+    ub, rb = unique_bvals(bvals, rbvals=True)
+    npt.assert_array_almost_equal(ubvals_gt, ub)
+    npt.assert_array_almost_equal(rbvals_gt, rb)
+
+
 def test_check_multi_b():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     bvecs = generate_bvecs(bvals.shape[-1])
@@ -350,9 +404,16 @@ def test_check_multi_b():
     npt.assert_(not check_multi_b(gtab, 2, non_zero=True))
 
     # Unless you specify that you are interested in this magnitude of changes:
-    npt.assert_(check_multi_b(gtab, 2, non_zero=True, bmag=1))
+    npt.assert_(check_multi_b(gtab, 2, non_zero=True, bmag=0))
 
     # Or if you consider zero to be one of your b-values:
+    npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+
+    # Case that b-values are in ms/um2 (this should successfully pass)
+    bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
+                      0])
+    bvecs = generate_bvecs(bvals.shape[-1])
+    gtab = gradient_table(bvals, bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
