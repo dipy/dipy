@@ -109,6 +109,8 @@ We acknowledge support from the following organizations:
 - Google supported DIPY through the Google Summer of Code Program during
   Summer 2015, 2016 and 2018.
 
+- The International Neuroinformatics Coordination Facility.
+
 
 
 
