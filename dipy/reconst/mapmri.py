@@ -236,7 +236,7 @@ class MapmriModel(ReconstModel, Cache):
             msg = "Laplacian Regularization weighting must be 'GCV', "
             msg += "a positive float or an array of positive floats."
             if isinstance(laplacian_weighting, str):
-                if laplacian_weighting is not 'GCV':
+                if not laplacian_weighting == 'GCV':
                     raise ValueError(msg)
             elif (isinstance(laplacian_weighting, float) or
                     isinstance(laplacian_weighting, np.ndarray)):
@@ -351,7 +351,7 @@ class MapmriModel(ReconstModel, Cache):
                     self.ind_mat, mu, self.S_mat, self.T_mat, self.U_mat)
             else:
                 laplacian_matrix = self.laplacian_matrix * mu[0]
-            if self.laplacian_weighting is 'GCV':
+            if self.laplacian_weighting == 'GCV':
                 try:
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
