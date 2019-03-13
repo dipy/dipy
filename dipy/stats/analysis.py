@@ -220,10 +220,10 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         mbundles, _ = load_trk(os.path.join(model_bundle_folder, mb[io]))
         bundles, _ = load_trk(os.path.join(bundle_folder, bd[io]))
         orig_bundles, _ = load_trk(os.path.join(orig_bundle_folder,
-                                    org_bd[io]))
+                                   org_bd[io]))
 
         mbundle_streamlines = set_number_of_points(mbundles,
-                                                    nb_points=no_disks)
+                                                   nb_points=no_disks)
 
         metric = AveragePointwiseEuclideanMetric()
         qb = QuickBundles(threshold=25., metric=metric)
@@ -233,19 +233,19 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         print('Number of centroids ', len(centroids.data))
         print('Model bundle ', mb[io])
         print('Number of streamlines in bundle in common space ',
-                len(bundles))
+              len(bundles))
         print('Number of streamlines in bundle in original space ',
-                len(orig_bundles))
+              len(orig_bundles))
 
         _, indx = cKDTree(centroids.data, 1,
-                            copy_data=True).query(bundles.data, k=1)
+                          copy_data=True).query(bundles.data, k=1)
 
         metric_files_names = os.listdir(metric_folder)
         _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
 
         affine_r = np.linalg.inv(affine)
         transformed_orig_bundles = transform_streamlines(orig_bundles,
-                                                            affine_r)
+                                                         affine_r)
 
         for mn in range(0, len(metric_files_names)):
 
@@ -254,13 +254,13 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
             bm = mb[io][:-4]
             dt = dict()
             metric_name = os.path.join(metric_folder,
-                                        metric_files_names[mn])
+                                       metric_files_names[mn])
 
             if metric_files_names[mn][2:] == '.nii.gz':
                 metric, _ = load_nifti(metric_name)
 
                 dti_measures(transformed_orig_bundles, metric, dt, fm,
-                                bm, subject, group, ind, out_dir)
+                             bm, subject, group, ind, out_dir)
 
             else:
                 fm = metric_files_names[mn][:3]
