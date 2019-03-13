@@ -124,19 +124,19 @@ fa = img.get_fdata()
 Calculate weights for each bundle:
 """
 
-import dipy.segment.bundles as dsb
+import dipy.stats.analysis as dsa
 
-w_cst_l = dsb.gaussian_weights(oriented_cst_l)
-w_af_l = dsb.gaussian_weights(oriented_af_l)
+w_cst_l = dsa.gaussian_weights(oriented_cst_l)
+w_af_l = dsa.gaussian_weights(oriented_af_l)
 
 """
 And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dsb.afq_profile(fa, oriented_cst_l, affine=img.affine,
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=img.affine,
                                 weights=w_cst_l)
 
-profile_af_l = dsb.afq_profile(fa, oriented_af_l, affine=img.affine,
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, affine=img.affine,
                                weights=w_af_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
