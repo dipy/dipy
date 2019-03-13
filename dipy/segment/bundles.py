@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.spatial.distance import mahalanobis
 from dipy.tracking.streamline import (set_number_of_points, nbytes,
                                       select_random_set_of_streamlines,
                                       values_from_volume,
