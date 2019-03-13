@@ -21,6 +21,7 @@ except ImportError:
 from scipy.linalg import eigh
 
 
+
 def randommatrix_localpca(arr, patch_extent=0, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
