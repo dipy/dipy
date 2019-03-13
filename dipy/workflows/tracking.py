@@ -75,7 +75,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         return dg
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, direction_getter, out_tract):
+                  seed_density, step_size, direction_getter, out_tract):
 
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
@@ -89,7 +89,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         logging.info('seeds done')
 
         streamlines = LocalTracking(direction_getter, classifier,
-                                    seeds, affine, step_size=.5)
+                                    seeds, affine, step_size=step_size)
         logging.info('LocalTracking initiated')
 
         tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
@@ -100,6 +100,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def run(self, pam_files, stopping_files, seeding_files,
             stopping_thr=0.2,
             seed_density=1,
+            step_size=0.5,
             tracking_method="deterministic",
             pmf_threshold=0.1,
             max_angle=30.,
@@ -126,6 +127,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
+        step_size : float, optional
+            Step size used for tracking.
         tracking_method : string, optional
             Select direction getter strategy:
              - "eudx" (Uses the peaks saved in the pam_files)
@@ -165,7 +168,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                                             max_angle=max_angle)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, dg, out_tract)
+                           seed_density, step_size, dg, out_tract)
 
 
 class PFTrackingPAMFlow(Workflow):
