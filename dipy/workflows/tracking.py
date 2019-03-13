@@ -116,19 +116,19 @@ class LocalFiberTrackingPAMFlow(Workflow):
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
         stopping_files : string
-            Path of FA or other images used for stopping criteria for tracking.
+            Path to images (e.g. FA) used for stopping criteria for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-             tracking has to stop (default 0.25).
+            tracking has to stop (default 0.25).
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
         step_size : float, optional
-            Step size used for tracking.
+            Step size used for tracking (default 0.5mm).
         tracking_method : string, optional
             Select direction getter strategy:
              - "eudx" (Uses the peaks saved in the pam_files)
@@ -139,15 +139,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
                (Uses the sh saved in the pam_files)
         pmf_threshold : float, optional
-            Threshold for ODF functions. (default 0.1)
+            Threshold for ODF functions (default 0.1).
         max_angle : float, optional
-            Maximum angle between tract segments. This angle can be more
-            generous (larger) than values typically used with probabilistic
-            direction getters. The angle range is (0, 90)
+            Maximum angle between streamline segments (range [0, 90],
+            default 30).
         out_dir : string, optional
-           Output directory (default input file directory)
+           Output directory (default input file directory).
         out_tractogram : string, optional
-           Name of the tractogram file to be saved (default 'tractogram.trk')
+           Name of the tractogram file to be saved (default 'tractogram.trk').
 
         References
         ----------
@@ -184,7 +183,7 @@ class PFTrackingPAMFlow(Workflow):
             particle_count=15,
             seed_density=1,
             pmf_threshold=0.1,
-            max_angle=30.,
+            max_angle=20.,
             out_dir='',
             out_tractogram='tractogram.trk'):
         """Workflow for Particle Filtering Tracking.
@@ -197,41 +196,41 @@ class PFTrackingPAMFlow(Workflow):
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
         wm_files : string
-            Path of White matter for stopping criteria for tracking.
+            Path to white matter partial volume estimate for tracking (CMC).
         gm_files : string
-            Path of grey matter for stopping criteria for tracking.
+            Path to grey matter partial volume estimate for tracking (CMC).
         csf_files : string
-            Path of cerebrospinal fluid for stopping criteria for tracking.
+            Path to cerebrospinal fluid partial volume estimate for tracking
+            (CMC).
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         step_size : float, optional
-            Step size used for tracking.
-        back_tracking_dist : float, optional
-            Distance in mm to back track before starting the particle filtering
-            tractography. The total particle filtering tractography distance is
-            equal to back_tracking_dist + front_tracking_dist.
-            By default this is set to 2 mm.
-        front_tracking_dist : float, optional
-            Distance in mm to run the particle filtering tractography after the
-            the back track distance. The total particle filtering tractography
-            distance is equal to back_tracking_dist + front_tracking_dist. By
-            default this is set to 1 mm.
-        max_trial : int, optional
-            Maximum number of trial for the particle filtering tractography
-            (Prevents infinite loops, default=20).
-        particle_count : int, optional
-            Number of particles to use in the particle filter. (default 15)
+            Step size used for tracking (default 0.2mm).
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
         pmf_threshold : float, optional
-            Threshold for ODF functions. (default 0.1)
+            Threshold for ODF functions (default 0.1).
         max_angle : float, optional
-            Maximum angle between tract segments. This angle can be more
-            generous (larger) than values typically used with probabilistic
-            direction getters. The angle range is (0, 90)
+            Maximum angle between streamline segments (range [0, 90],
+            default 20).
+        back_tracking_dist : float, optional
+            Distance in mm to back track before starting the particle filtering
+            tractography (defaul 2mm). The total particle filtering
+            tractography distance is equal to back_tracking_dist +
+            front_tracking_dist.
+        front_tracking_dist : float, optional
+            Distance in mm to run the particle filtering tractography after the
+            the back track distance (default 1mm). The total particle filtering
+            tractography distance is equal to back_tracking_dist +
+            front_tracking_dist.
+        max_trial : int, optional
+            Maximum number of trial for the particle filtering tractography
+            (Prevents infinite loops, default 20).
+        particle_count : int, optional
+            Number of particles to use in the particle filter (default 15).
         out_dir : string, optional
            Output directory (default input file directory)
         out_tractogram : string, optional
