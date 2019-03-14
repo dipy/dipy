@@ -166,3 +166,103 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     tv = np.minimum(TVN, TVP)
 
     return xc, tv
+
+
+def gibbs_removal_2d_weigthing_functions(shape):
+    """ Computes the weights necessary to combine two images processed by
+    the 1D gibbs removal procedure along two different axis [1]_.
+
+    Parameters
+    ----------
+    shape : tuple
+        shape of the image
+
+    Returns
+    -------
+    G0 : 2D ndarray
+        Weights for the image corrected along axis 0.
+    G1 : 2D ndarray
+        Weights for the image corrected along axis 1.
+
+    References
+    ----------
+    .. [1] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
+           removal based on local subvoxel-shifts. Magn Reson Med. 2015
+           doi: 10.1002/mrm.26054.
+    """
+    G0 = np.zeros(shape)
+    G1 = np.zeros(shape)
+    k = np.linspace(-np.pi, np.pi, num=shape[0])
+
+    # Middle points
+    K1, K0 = np.meshgrid(k[1:-1], k[1:-1])
+    cosk0 = 1.0 + np.cos(K0)
+    cosk1 = 1.0 + np.cos(K1)
+    G1[1:-1, 1:-1] = cosk0 / (cosk0+cosk1)
+    G0[1:-1, 1:-1] = cosk1 / (cosk0+cosk1)
+
+    # Boundaries
+    G1[1:-1, 0] = G1[1:-1, -1] = 1
+    G1[0, 0] = G1[-1, -1] = G1[0, -1] = G1[-1, 0] = 1/2
+    G0[0, 1:-1] = G0[-1, 1:-1] = 1
+    G0[0, 0] = G0[-1, -1] = G0[0, -1] = G0[-1, 0] = 1/2
+
+    return G0, G1
+
+
+def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
+    """ Decreases gibbs ringing of a 2D image.
+
+    Parameters
+    ----------
+    image : 2D ndarray
+        Matrix cotaining the 2D image.
+    fn : int, optional
+        Distance of first neighbour used to access local TV (see note).
+        Default is set to 0 which means that the own point is also used to
+        access local TV.
+    nn : int, optional
+        Number of neighbour points to access local TV (see note). Default is
+        set to 3.
+    G0 : 2D ndarray, optional.
+        Weights for the image corrected along axis 1. If not given, the
+        function estimates them using function:
+            gibbs_removal_2d_weigthing_functions
+    G1 : 2D ndarray
+        Weights for the image corrected along axis 1. If not given, the
+        function estimates them using function:
+            gibbs_removal_2d_weigthing_functions
+
+    Returns
+    -------
+    imagec : 2D ndarray
+        Matrix with gibbs oscilantions reduced along axis a.
+    tv : 2D ndarray
+        Global TV which show variation not removed by the algorithm (edges,
+        anatomical variation, non-oscilatory component of gibbs artefact
+        normally present in image background, etc.)
+    Note
+    ----
+    This function decreases the effects of gibbs oscilations based on the
+    analysis of local total variation (TV) along the two axis of the image.
+    Although artefact correction is done based on each point primary adjanced
+    neighbors, total variation should be accessed in a larger range of
+    neigbors. If you want to adjust the number and index of the neigbors to be
+    considered in TV calculation please change parameters nn and fn.
+    """
+    if np.any(G0) == None or np.any(G1) == None:
+        G0, G1 = gibbs_removal_2d_weigthing_functions(image.shape)
+
+    img_c1, tv_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
+    img_c0, tv_c0 = gibbs_removal_1d(image, a=0, fn=fn, nn=nn)
+
+    C1 = np.fft.fft2(img_c1)
+    C0 = np.fft.fft2(img_c0)
+    imagec = abs(np.fft.ifft2(np.fft.fftshift(C1)*G1 + np.fft.fftshift(C0)*G0))
+
+    # Just to access performance
+    T1 = np.fft.fft2(tv_c1)
+    T0 = np.fft.fft2(tv_c0)
+    tv = abs(np.fft.ifft2(np.fft.fftshift(T1)*G1 + np.fft.fftshift(T0)*G0))
+
+    return imagec, tv
