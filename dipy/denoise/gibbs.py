@@ -90,3 +90,79 @@ def image_tv(x, fn=0, nn=3, a=0):
         return PTV, NTV
     else:
         return PTV.T, NTV.T
+
+
+def gibbs_removal_1d(x, a=0, fn=0, nn=3):
+    """ Decreases gibbs ringing along axis a.
+
+    Parameters
+    ----------
+    x : 2D ndarray
+        Matrix x.
+    a : int (0 or 1)
+        Axis along which gibbs oscilations will be reduced. Default a is set
+        to 0 (i.e. gibbs are reduce along axis y).
+    fn : int, optional
+        Distance of first neighbour used to access local TV (see note).
+        Default is set to 0 which means that the own point is also used to
+        access local TV.
+    nn : int, optional
+        Number of neighbour points to access local TV (see note). Default is
+        set to 3.
+
+    Returns
+    -------
+    xc : 2D ndarray
+        Matrix with gibbs oscilantions reduced along axis a.
+    tv : 2D ndarray
+        Global TV which show variation not removed (edges, anatomical
+        variation, non-oscilatory component of gibbs artefact normally present
+        in image background, etc.)
+    Note
+    ----
+    This function decreases the effects of gibbs oscilations based on the
+    analysis of local total variation (TV). Although artefact correction is
+    done based on two adjanced points for each voxel, total variation should be
+    accessed in a larger range of neigbors. If you want to adjust the number
+    and index of the neigbors to be considered in TV calculation please change
+    parameters nn and fn.
+    """
+    ssamp = np.linspace(0.02, 0.9, num=45)
+
+    # TV for shift zero (baseline)
+    TVR, TVL = image_tv(x, fn=fn, nn=nn, a=a)
+    TVP = np.minimum(TVR, TVL)
+    TVN = TVP.copy()
+
+    # Find optimal shift for gibbs removal
+    ISP = x.copy()
+    ISN = x.copy()
+    SP = np.zeros(x.shape)
+    SN = np.zeros(x.shape)
+    for s in ssamp:
+        # Image shift using current pos shift
+        Img_p = image_shift(x, s, a=a)
+        TVSR, TVSL = image_tv(Img_p, fn=fn, nn=nn, a=a)
+        TVS_p = np.minimum(TVSR, TVSL)
+        # Image shift using current neg shift
+        Img_n = image_shift(x, -s, a=a)
+        TVSR, TVSL = image_tv(Img_n, fn=fn, nn=nn, a=a)
+        TVS_n = np.minimum(TVSR, TVSL)
+        # Update positive shift params
+        ISP[TVP > TVS_p] = Img_p[TVP > TVS_p]
+        SP[TVP > TVS_p] = s
+        TVP[TVP > TVS_p] = TVS_p[TVP > TVS_p]
+        # Update negative shift params
+        ISN[TVN > TVS_n] = Img_n[TVN > TVS_n]
+        SN[TVN > TVS_n] = s
+        TVN[TVN > TVS_n] = TVS_n[TVN > TVS_n]
+
+    # apply correction if SP and SN are not zeros
+    xc = x.copy()
+    idx = np.nonzero(SP + SN)
+    xc[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
+
+    # Global minimum TV (can be useful as edge detector)
+    tv = np.minimum(TVN, TVP)
+
+    return xc, tv
