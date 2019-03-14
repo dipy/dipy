@@ -441,8 +441,8 @@ class ReconstCSDFlow(Workflow):
             Spherical harmonics order used for peak_from_model to compress
             the ODF to spherical harmonics coefficients (default 8)
         parallel : bool, optional
-            Whether to use parallelization in peak-finding during the calibration
-            procedure. Default: True
+            Whether to use parallelization in peak-finding during the
+            calibration procedure. Default: True
         nbr_processes: int
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
@@ -608,8 +608,8 @@ class ReconstCSAFlow(Workflow):
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         parallel : bool, optional
-            Whether to use parallelization in peak-finding during the calibration
-            procedure. Default: True
+            Whether to use parallelization in peak-finding during the
+            calibration procedure. Default: True
         nbr_processes: int
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
