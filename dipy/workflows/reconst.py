@@ -544,8 +544,8 @@ class ReconstCSDFlow(Workflow):
                                          return_sh=True,
                                          sh_order=sh_order,
                                          normalize_peaks=True,
-                                         parallel=False,
-                                         nbr_processes=None)
+                                         parallel=parallel,
+                                         nbr_processes=nbr_processes)
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
@@ -669,8 +669,8 @@ class ReconstCSAFlow(Workflow):
                                          return_sh=True,
                                          sh_order=odf_to_sh_order,
                                          normalize_peaks=True,
-                                         parallel=False,
-                                         nbr_processes=None)
+                                         parallel=parallel,
+                                         nbr_processes=nbr_processes)
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
