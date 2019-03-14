@@ -266,3 +266,67 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     tv = abs(np.fft.ifft2(np.fft.fftshift(T1)*G1 + np.fft.fftshift(T0)*G0))
 
     return imagec, tv
+
+
+def volume_gibbs_removal(vol, fn=0, nn=3):
+    """ Decreases gibbs ringing of image's volumes.
+
+    Parameters
+    ----------
+    vol : array ([X, Y, Z]) or ([X, Y, Z, g])
+        Matrix containing one volume (3D) or multiple (4D) volumes of images.
+    fn : int, optional
+        Distance of first neighbour used to access local TV (see note).
+        Default is set to 0 which means that the own point is also used to
+        access local TV.
+    nn : int, optional
+        Number of neighbour points to access local TV (see note). Default is
+        set to 3.
+
+    Returns
+    -------
+    vol : array ([X, Y, Z]) or ([X, Y, Z, g])
+        Matrix containing one volume (3D) or multiple (4D) volumes of corrected
+        images.
+    tv : array ([X, Y, Z]) or ([X, Y, Z, g])
+        Global TV which show variation not removed by the algorithm (edges,
+        anatomical variation, non-oscilatory component of gibbs artefact
+        normally present in image background, etc.)
+
+    Notes
+    -----
+    1) This function correct gibbs artifacts assuming that images were acquired
+       from 2D k-space Fourier expansion coefficients. Based on this,
+       correction is performed by applying the 2D gibbs artefact revomal slice
+       by slice. Please insure that original images were acquired along the
+       z-axis. If this is not the case, you have to orient your dataset in the
+       way that axis 2 of matrix vol correspond to different acquired images.
+       For 4D matrix last element should always correspond to different sets
+       of image volumes.
+    2) This function decreases the effects of gibbs oscilations based on the
+       analysis of local total variation (TV) along the two first axis of the
+       volumes. Although artefact correction is done based on each point
+       primary adjanced neighbors, total variation should be accessed in a
+       larger range of neigbors. If you want to adjust the number and index of
+       the neigbors to be considered in TV calculation please change parameters
+       nn and fn.
+    """
+    nd = vol.ndim
+    if nd == 4:
+        inishap = vol.shape
+        vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
+
+    shap = vol.shape
+    G0, G1 = gibbs_removal_2d_weigthing_functions(shap[:2])
+
+    tv = np.empty(shap)
+    for i in range(shap[2]):
+        imgc, tvi = gibbs_removal_2d(vol[:, :, i], fn=fn, nn=nn, G0=G0, G1=G1)
+        vol[:, :, i] = imgc
+        tv[:, :, i] = tvi
+
+    if nd == 4:
+        vol = vol.reshape(inishap)
+        tv = tv.reshape(inishap)
+
+    return vol, tv
