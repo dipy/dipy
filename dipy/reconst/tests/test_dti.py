@@ -851,6 +851,10 @@ def test_quantize_evecs():
             npt.assert_equal(peak_indices[ii], zero_idx)
 
             # Test parallel processing
+            peak_indices = quantize_evecs(zerovecs, vertices)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            # Test parallel processing
             peak_indices = quantize_evecs(zerovecs, vertices, nbr_processes=-1)
             npt.assert_equal(peak_indices, np.zeros(test_shape))
 

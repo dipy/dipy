@@ -2140,7 +2140,7 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
         for i, (start_pos, end_pos) in enumerate(indices):
             peak_indices[start_pos: end_pos] = peaks_res[i]
 
-        peak_indices = np.reshape(np.array(peak_indices), shape[:3])
+        peak_indices = np.reshape(np.array(peak_indices), shape[:-1])
 
     # Make sure all worker processes have exited before leaving context
     # manager in order to prevent temporary file deletion errors in windows
