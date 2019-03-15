@@ -2105,7 +2105,7 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
             try:
                 import psutil
                 psutil.cpu_count()
-            except:
+            except AttributeError:
                 warnings.warn("Cannot determine number of cpus.",
                               "returns quantize_evecs(...,",
                               "nbr_processes=1).")
