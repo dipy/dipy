@@ -89,7 +89,6 @@ def test_tensor_model():
                                     decimal=3)
 
     # And smoke-test that all these operations return sensibly-shaped arrays:
-<<<<<<< HEAD
     npt.assert_equal(dtifit.fa.shape, data.shape[:3])
     npt.assert_equal(dtifit.ad.shape, data.shape[:3])
     npt.assert_equal(dtifit.md.shape, data.shape[:3])
@@ -99,18 +98,6 @@ def test_tensor_model():
     npt.assert_equal(dtifit.linearity.shape, data.shape[:3])
     npt.assert_equal(dtifit.planarity.shape, data.shape[:3])
     npt.assert_equal(dtifit.sphericity.shape, data.shape[:3])
-=======
-    assert_equal(dtifit.fa.shape, data.shape[:3])
-    assert_equal(dtifit.ad.shape, data.shape[:3])
-    assert_equal(dtifit.md.shape, data.shape[:3])
-    assert_equal(dtifit.rd.shape, data.shape[:3])
-    assert_equal(dtifit.ga.shape, data.shape[:3])
-    assert_equal(dtifit.trace.shape, data.shape[:3])
-    assert_equal(dtifit.mode.shape, data.shape[:3])
-    assert_equal(dtifit.linearity.shape, data.shape[:3])
-    assert_equal(dtifit.planarity.shape, data.shape[:3])
-    assert_equal(dtifit.sphericity.shape, data.shape[:3])
->>>>>>> TST: Increase testing in dti
 
     # Test for the shape of the mask
     npt.assert_raises(ValueError, dm.fit, np.ones((10, 10, 3)), np.ones((3, 3)))
