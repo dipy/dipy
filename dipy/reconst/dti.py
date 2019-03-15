@@ -2077,11 +2077,10 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
 
 
 def _quantize_evecs_parallel_sub(args):
-    evecs_fname = args[0]
     (start_pos, end_pos) = args[1]
     odf_vertices = args[2]
     v = args[3]
-    evecs = np.load(evecs_fname, mmap_mode='r')[start_pos:end_pos]
+    evecs = args[0][start_pos:end_pos]
     return quantize_evecs(evecs, odf_vertices, v, nbr_processes=1)
 
 
@@ -2120,18 +2119,18 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
     indices = list(zip(np.arange(0, n, chunk_size),
                        np.arange(0, n, chunk_size) + chunk_size))
 
+    ctypes_evecs = np.ctypeslib.as_array(evecs)
+
+    pool = Pool(nbr_processes)
+
+    peaks_res = pool.map(_quantize_evecs_parallel_sub,
+                         zip(repeat(ctypes_evecs),
+                             indices,
+                             repeat(odf_vertices),
+                             repeat(v)))
+    pool.close()
+
     with InTemporaryDirectory() as tmpdir:
-        evecs_fname = path.join(tmpdir, 'evecs.npy')
-        np.save(evecs_fname, evecs)
-        pool = Pool(nbr_processes)
-
-        peaks_res = pool.map(_quantize_evecs_parallel_sub,
-                             zip(repeat(evecs_fname),
-                                 indices,
-                                 repeat(odf_vertices),
-                                 repeat(v)))
-        pool.close()
-
         peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
                                  dtype=peaks_res[0].dtype,
                                  mode='w+',
