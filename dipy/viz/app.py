@@ -363,7 +363,7 @@ class Horizon(object):
                 if key == 'i' or key == 'I':
 
                     for ca in self.cea:
-                        if (self.cea[ca]['length'] >= self.self.length_min and
+                        if (self.cea[ca]['length'] >= self.length_min and
                                 self.cea[ca]['size'] >= self.size_min):
                             self.cea[ca]['selected'] = \
                                 not self.cea[ca]['selected']
