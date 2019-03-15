@@ -27,7 +27,7 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
-clean: api-clean examples-clean
+clean: api-clean examples-clean notebooks-clean
 	-rm -rf _build/*
 	-rm *-stamp
 
@@ -40,6 +40,10 @@ api:
 	@mkdir -p reference_cmd
 	$(PYTHON) tools/docgen_cmd.py dipy reference_cmd
 	@echo "Build API docs...done."
+
+
+notebooks-clean:
+	-cd jupyter_notebooks && rm -rf *.ipynb
 
 examples-clean:
 	-cd examples_built && rm -rf *.py *.rst *.png fig
@@ -125,8 +129,8 @@ rstexamples-stamp:
 	touch $@
 
 ipynbexamples:
-	$(PYTHON) ../tools/make_notebooks.py
-	@echo "Notebooks can be found in doc/ipython_notebooks"
+	../tools/make_notebooks.py
+	@echo "Notebooks can be found in doc/jupyter_notebooks"
 
 pdf: pdf-stamp
 pdf-stamp: latex

@@ -33,16 +33,16 @@ def clean_string(test_str):
 
 
 def make_notebook(example):
-    """Generate Ipython notebook of the given example
+    """Generate jupyter notebook of the given example
     Paramters
     ---------
-    example : str 
+    example : str
               The raw text of the python example
 
     Returns
     -------
     notebook : str
-               Ipython notebook in the form of a raw text which can be
+               jupyter notebook in the form of a raw text which can be
                written to a file.
 
     """
@@ -72,7 +72,7 @@ def make_notebook(example):
 
 
 def read_example(fname, directory="../doc/examples/"):
-    """Read the example python file to convert to Ipython notebook
+    """Read the example python file to convert to jupyter notebook
     Parameters
     ----------
     fname :     str
@@ -80,7 +80,7 @@ def read_example(fname, directory="../doc/examples/"):
 
     directory : str
                 Directory in which the .py examples are located. This has
-                to specified and changed based on the folder from which we 
+                to specified and changed based on the folder from which we
                 call the make_notebook function
 
                 Default to ../doc/examples/
@@ -113,10 +113,11 @@ def write_notebook(notebook, fname, directory):
     -------
         Returns 1 if conversion isn't successful
     """
-    if not os.path.isdir("ipython_notebooks"):
-        os.mkdir("ipython_notebooks")
+    if not os.path.isdir("jupyter_notebooks"):
+        os.mkdir("jupyter_notebooks")
 
-    nbname = codecs.open("ipython_notebooks/" + str(fname) + ".ipynb",
+    nbname = codecs.open(pjoin('jupyter_notebooks',
+                                str(fname) + ".ipynb"),
                          encoding='utf-8', mode='w')
 
     nbf.write(notebook, nbname, 4)
@@ -137,7 +138,7 @@ def valid_examples():
     validated_examples = [line.strip() for line in validated_examples]
     # Remove blank lines
     validated_examples = filter(None, validated_examples)
-
+    out_examples = []
     for example in validated_examples:
         fullpath = pjoin(EG_SRC_DIR, example)
         if not example.endswith(".py"):
@@ -153,10 +154,12 @@ def valid_examples():
             msg = "Example, %s, not in index file %s."
             msg = msg % (example, EG_INDEX_FNAME)
             print(msg)
-    return validated_examples
+        out_examples.append(example)
+    return out_examples
 
-# if __name__ == "__main__":
-validated_examples = valid_examples()
-for fname in validated_examples:
-    notebook = make_notebook(read_example(fname))
-    write_notebook(notebook, fname.split(".")[0], "examples_built")
+
+if __name__ == "__main__":
+    validated_examples = valid_examples()
+    for fname in validated_examples:
+        notebook = make_notebook(read_example(fname))
+        write_notebook(notebook, fname.split(".")[0], "examples_built")
