@@ -1,4 +1,4 @@
-"""
+r"""
 ============================================================
 Intravoxel incoherent motion
 ============================================================
@@ -35,10 +35,11 @@ diffusion coefficients. First, we import all relevant modules:
 
 import matplotlib.pyplot as plt
 import time
+import numpy as np
 from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
-"""
+r"""
 We get an IVIM dataset using DIPY_'s data fetcher ``read_ivim``.
 This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
@@ -50,7 +51,7 @@ measured at 0 bvalue.
 
 img, gtab = read_ivim()
 
-"""
+r"""
 The variable ``img`` contains a nibabel NIfTI image object (with the data)
 and gtab contains a GradientTable object (information about the gradients e.g.
 b-values and b-vectors). We get the data from img using ``read_data``.
@@ -59,7 +60,7 @@ b-values and b-vectors). We get the data from img using ``read_data``.
 data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
-"""
+r"""
 The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
 dimension corresponds to the b-values in the gtab. Let us visualize the data
 by taking a slice midway(z=33) at $\mathbf{b} = 0$.
@@ -75,7 +76,7 @@ plt.axvline(x=170)
 plt.savefig("ivim_data_slice.png")
 plt.close()
 
-"""
+r"""
 .. figure:: ivim_data_slice.png
    :align: center
 
@@ -98,7 +99,7 @@ plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower',
 plt.savefig("CSF_slice.png")
 plt.close()
 
-"""
+r"""
 .. figure:: CSF_slice.png
    :align: center
 
@@ -130,7 +131,7 @@ $\mathbf{f}$).
 
 ivimmodel = IvimModel(gtab, fit_method='LM')
 
-"""
+r"""
 To fit the model, call the `fit` method and pass the data for fitting.
 """
 t1 = time.time()
@@ -138,7 +139,7 @@ ivimfit = ivimmodel.fit(data_slice)
 t2 = time.time()
 total = t2 - t1
 
-"""
+r"""
 The fit method creates a IvimFit object which contains the
 parameters of the model obtained after fitting. These are accessible
 through the `model_params` attribute of the IvimFit object.
@@ -151,7 +152,7 @@ order : $\mathbf{S_{0}, f, D^*, D}$.
 ivimparams = ivimfit.model_params
 print("ivimparams.shape : {}".format(ivimparams.shape))
 
-"""
+r"""
 As we see, we have a 20x20 slice at the height z = 33. Thus we
 have 400 voxels. We will now plot the parameters obtained from the
 fit for a voxel and also various maps for the entire slice.
@@ -166,7 +167,7 @@ i, j = 10, 10
 estimated_params = ivimfit.model_params[i, j, :]
 print(estimated_params)
 
-"""
+r"""
 Next, we plot the results relative to the model fit.
 For this we will use the `predict` method of the IvimFit object
 to get the estimated signal.
@@ -189,7 +190,7 @@ plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
 plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
 plt.close()
-"""
+r"""
 .. figure:: ivim_voxel_plot.png
    :align: center
 
@@ -217,7 +218,7 @@ def plot_map(raw_data, variable, limits, filename):
     plt.close()
 
 
-"""
+r"""
 Let us get the various plots so that we can visualize them in one page
 """
 
@@ -226,6 +227,45 @@ plot_map(data_slice[:, :, 0], "Measured S0", (0, 10000), "measured_S0.png")
 plot_map(ivimfit.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
 plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
+
+
+data_slice = data[x1:x2, y1:y2, z:z+1, :]
+
+ivim_model = IvimModel(gtab, fit_method='VarPro')
+bvals = ivim_model.bvals
+
+ivim_fit = ivim_model.fit(data_slice)
+
+i, j = 10, 10
+
+ivimx_predict = IvimModel.ivim_prediction(ivim_fit.model_params[i, j, :][0], gtab)
+plt.scatter(gtab.bvals, data_slice[i, j, :],
+            color="green", label="Actual signal")
+plt.plot(gtab.bvals, ivimx_predict, color="red",
+         label="Estimated Signal")
+plt.xlabel("bvalues")
+plt.ylabel("Signals")
+
+S0_est = ivim_fit.model_params[i, j, :][0][0]
+f_est = ivim_fit.model_params[i, j, :][0][1]
+D_star_est = ivim_fit.model_params[i, j, :][0][2]
+D_est = ivim_fit.model_params[i, j, :][0][3]
+
+text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
+            D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
+
+plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
+         verticalalignment='center', transform=plt.gca().transAxes)
+plt.legend(loc='upper right')
+plt.savefig("ivim_voxel_plot.png")
+
+
+plot_map(np.squeeze(ivim_fit.S0_predicted),"Predicted S0", (0, 10000), "predicted_S0.png")
+plot_map(np.squeeze(data_slice[..., 0]), "Measured S0", (0, 10000), "measured_S0.png")
+plot_map(np.squeeze(ivim_fit.perfusion_fraction),"f", (0, 1), "perfusion_fraction.png")
+plot_map(np.squeeze(ivim_fit.D_star), "D*", (0, 0.01), "perfusion_coeff.png")
+plot_map(np.squeeze(ivim_fit.D), "D", (0, 0.001), "diffusion_coeff.png")
+
 
 """
 .. figure:: predicted_S0.png
