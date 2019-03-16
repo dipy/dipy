@@ -174,13 +174,12 @@ class PFTrackingPAMFlow(Workflow):
 
     def run(self, pam_files, wm_files, gm_files, csf_files, seeding_files,
             step_size=0.2,
-            back_tracking_dist=2,
-            front_tracking_dist=1,
-            max_trial=20,
-            particle_count=15,
             seed_density=1,
             pmf_threshold=0.1,
             max_angle=20.,
+            pft_back=2,
+            pft_front=1,
+            pft_count=15,
             out_dir='',
             out_tractogram='tractogram.trk'):
         """Workflow for Particle Filtering Tracking.
@@ -213,20 +212,17 @@ class PFTrackingPAMFlow(Workflow):
         max_angle : float, optional
             Maximum angle between streamline segments (range [0, 90],
             default 20).
-        back_tracking_dist : float, optional
+        pft_back : float, optional
             Distance in mm to back track before starting the particle filtering
             tractography (defaul 2mm). The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
-        front_tracking_dist : float, optional
+        pft_front : float, optional
             Distance in mm to run the particle filtering tractography after the
             the back track distance (default 1mm). The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
-        max_trial : int, optional
-            Maximum number of trial for the particle filtering tractography
-            (Prevents infinite loops, default 20).
-        particle_count : int, optional
+        pft_count : int, optional
             Number of particles to use in the particle filter (default 15).
         out_dir : string, optional
            Output directory (default input file directory)
@@ -235,9 +231,9 @@ class PFTrackingPAMFlow(Workflow):
 
         References
         ----------
-        Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-               Towards quantitative connectivity analysis: reducing
-               tractography biases. NeuroImage, 98, 266-278, 2014..
+        Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M. Towards
+        quantitative connectivity analysis: reducing tractography biases.
+        NeuroImage, 98, 266-278, 2014.
 
         """
         io_it = self.get_io_iterator()
@@ -276,10 +272,10 @@ class PFTrackingPAMFlow(Workflow):
                 classifier,
                 seeds, affine,
                 step_size=step_size,
-                pft_back_tracking_dist=back_tracking_dist,
-                pft_front_tracking_dist=front_tracking_dist,
-                pft_max_trial=max_trial,
-                particle_count=particle_count)
+                pft_back_tracking_dist=pft_back,
+                pft_front_tracking_dist=pft_front,
+                pft_max_trial=20,
+                particle_count=pft_count)
 
             logging.info('ParticleFilteringTracking initiated')
 
