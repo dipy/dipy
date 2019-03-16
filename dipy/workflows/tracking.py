@@ -64,12 +64,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             msg = "Eudx"
             dg = pam
         else:
-            msg = "No direction getter defined. Deterministic"
-            dg = DeterministicMaximumDirectionGetter.from_shcoeff(
-                pam.shm_coeff,
-                sphere=pam.sphere,
-                max_angle=max_angle,
-                pmf_threshold=pmf_threshold)
+            msg = "No direction getter defined. Eudx"
+            dg = pam
 
         logging.info('{0} direction getter strategy selected'.format(msg))
         return dg
