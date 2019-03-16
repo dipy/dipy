@@ -35,6 +35,6 @@ def test_gibbs_2d():
     image_cor, tv = gibbs_removal_2d(image_gibbs)
 
     # Correction of gibbs ringing have to be closer to gt than denoised image
-    diff_raw = abs(image_gibbs - image_gt)
-    diff_cor = abs(image_cor - image_gt)
-    assert_(diff_raw.mean() > diff_cor.mean)
+    diff_raw = np.mean(abs(image_gibbs - image_gt))
+    diff_cor = np.mean(abs(image_cor - image_gt))
+    assert_(diff_raw > diff_cor)
