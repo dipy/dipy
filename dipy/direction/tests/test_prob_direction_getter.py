@@ -53,15 +53,16 @@ def test_ProbabilisticDirectionGetter():
                           bad_pmf, 90, unit_octahedron)
         # pmf cannot have negative values
         pmf[0, 0, 0, 0] = -1
-        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf, pmf,
-                          90, unit_octahedron)
+        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
+                          pmf, 90, unit_octahedron)
 
         # Check basis_type keyword
         dg = ProbabilisticDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
                                                        unit_octahedron,
                                                        basis_type="mrtrix")
 
-        npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_shcoeff,
+        npt.assert_raises(ValueError,
+                          ProbabilisticDirectionGetter.from_shcoeff,
                           fit.shm_coeff, 90, unit_octahedron,
                           basis_type="not a basis")
 
