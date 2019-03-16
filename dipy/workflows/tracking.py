@@ -23,8 +23,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
     def get_short_name(cls):
         return 'track_local'
 
-    def _get_direction_getter(self, strategy_name, pam, pmf_threshold=0.1,
-                              max_angle=30.):
+    def _get_direction_getter(self, strategy_name, pam, pmf_threshold,
+                              max_angle):
         """Get Tracking Direction Getter object.
 
         Parameters
@@ -84,13 +84,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 affine=affine)
         logging.info('seeds done')
 
-        streamlines = LocalTracking(direction_getter, classifier,
-                                    seeds, affine, step_size=step_size)
+        streamlines_generator = LocalTracking(direction_getter, classifier,
+                                              seeds, affine,
+                                              step_size=step_size)
         logging.info('LocalTracking initiated')
 
-        tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+        tractogram = Tractogram(streamlines_generator,
+                                affine_to_rasmm=np.eye(4))
         save(tractogram, out_tract)
-
         logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, stopping_files, seeding_files,
@@ -270,7 +271,7 @@ class PFTrackingPAMFlow(Workflow):
                                                sphere=pam.sphere,
                                                pmf_threshold=pmf_threshold)
 
-            streamlines = ParticleFilteringTracking(
+            streamlines_generator = ParticleFilteringTracking(
                 direction_getter,
                 classifier,
                 seeds, affine,
@@ -282,7 +283,8 @@ class PFTrackingPAMFlow(Workflow):
 
             logging.info('ParticleFilteringTracking initiated')
 
-            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+            tractogram = Tractogram(streamlines_generator,
+                                    affine_to_rasmm=np.eye(4))
             save(tractogram, out_tract)
 
             logging.info('Saved {0}'.format(out_tract))
