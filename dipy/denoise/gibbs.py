@@ -3,46 +3,6 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 
-def image_shift(x, s, a=0):
-    """ Shift elements of matrix x by a position difference s along axis a.
-
-    Parameters
-    ----------
-    x : 2D ndarray
-        Original values of matrix x
-    s : float
-        Value of the shift
-    a : int (0 or 1)
-        Axis along which the shift will be applied.
-        Default a is set to 0.
-
-    Returns
-    -------
-    Shifted version of matrix x.
-
-    Note
-    ----
-    The values of the new shifted matrix are calculated using linear
-    interpolation of the values of the original matrix.
-    """
-    if a:
-        xs = x.copy()
-    else:
-        xs = x.T.copy()
-
-    if s >= 1 or s <= -1:
-        raise ValueError('Shift should be a value between -1 and 1')
-    elif s > 0:
-        xs[:, :-1] = (xs[:, 1:] - xs[:, :-1]) * s + xs[:, :-1]
-    else:
-        xs[:, 1:] = (xs[:, 1:] - xs[:, :-1]) * (1+s) + xs[:, :-1]
-
-    if a:
-        return xs
-    else:
-        return xs.T
-
-
 def image_tv(x, fn=0, nn=3, a=0):
     """ Computes total variation (TV) of matrix x along axis a in two
     directions.
@@ -95,7 +55,7 @@ def image_tv(x, fn=0, nn=3, a=0):
 
 
 def gibbs_removal_1d(x, a=0, fn=0, nn=3):
-    """ Decreases gibbs ringing along axis a.
+    """ Decreases gibbs ringing along axis a using fourier subshifts.
 
     Parameters
     ----------
@@ -120,6 +80,7 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
         Global TV which show variation not removed (edges, anatomical
         variation, non-oscilatory component of gibbs artefact normally present
         in image background, etc.)
+
     Note
     ----
     This function decreases the effects of gibbs oscilations based on the
@@ -131,24 +92,33 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
+    if a:
+        xs = x.copy()
+    else:
+        xs = x.T.copy()
+
     # TV for shift zero (baseline)
-    TVR, TVL = image_tv(x, fn=fn, nn=nn, a=a)
+    TVR, TVL = image_tv(xs, fn=fn, nn=nn, a=1)
     TVP = np.minimum(TVR, TVL)
     TVN = TVP.copy()
 
     # Find optimal shift for gibbs removal
-    ISP = x.copy()
-    ISN = x.copy()
-    SP = np.zeros(x.shape)
-    SN = np.zeros(x.shape)
+    ISP = xs.copy()
+    ISN = xs.copy()
+    SP = np.zeros(xs.shape)
+    SN = np.zeros(xs.shape)
+    N = xs.shape[1]
+    c = np.fft.fftshift(np.fft.fft2(xs))
+    k = np.linspace(-N/2, N/2-1, num=N)
+    k = (2.0j * np.pi * k) / N
     for s in ssamp:
         # Image shift using current pos shift
-        Img_p = image_shift(x, s, a=a)
-        TVSR, TVSL = image_tv(Img_p, fn=fn, nn=nn, a=a)
+        Img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
+        TVSR, TVSL = image_tv(Img_p, fn=fn, nn=nn, a=1)
         TVS_p = np.minimum(TVSR, TVSL)
         # Image shift using current neg shift
-        Img_n = image_shift(x, -s, a=a)
-        TVSR, TVSL = image_tv(Img_n, fn=fn, nn=nn, a=a)
+        Img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
+        TVSR, TVSL = image_tv(Img_n, fn=fn, nn=nn, a=1)
         TVS_n = np.minimum(TVSR, TVSL)
         # Update positive shift params
         ISP[TVP > TVS_p] = Img_p[TVP > TVS_p]
@@ -160,14 +130,16 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
         TVN[TVN > TVS_n] = TVS_n[TVN > TVS_n]
 
     # apply correction if SP and SN are not zeros
-    xc = x.copy()
     idx = np.nonzero(SP + SN)
-    xc[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
+    xs[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
 
     # Global minimum TV (can be useful as edge detector)
     tv = np.minimum(TVN, TVP)
 
-    return xc, tv
+    if a:
+        return xs, tv
+    else:
+        return xs.T, tv.T
 
 
 def gibbs_removal_2d_weigthing_functions(shape):
@@ -252,7 +224,7 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     neigbors. If you want to adjust the number and index of the neigbors to be
     considered in TV calculation please change parameters nn and fn.
     """
-    if np.any(G0) == None or np.any(G1) == None:
+    if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = gibbs_removal_2d_weigthing_functions(image.shape)
 
     img_c1, tv_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
