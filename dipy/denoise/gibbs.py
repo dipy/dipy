@@ -55,7 +55,7 @@ def image_tv(x, fn=0, nn=3, a=0):
 
 
 def gibbs_removal_1d(x, a=0, fn=0, nn=3):
-    """ Decreases gibbs ringing along axis a using fourier subshifts.
+    """ Decreases gibbs ringing along an axis 'a' using fourier sub-shifts.
 
     Parameters
     ----------
@@ -75,7 +75,7 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     Returns
     -------
     xc : 2D ndarray
-        Matrix with gibbs oscilantions reduced along axis a.
+        Matrix with gibbs oscilantions reduced along an axis 'a'.
     tv : 2D ndarray
         Global TV which show variation not removed (edges, anatomical
         variation, non-oscilatory component of gibbs artefact normally present
@@ -142,7 +142,7 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
         return xs.T, tv.T
 
 
-def gibbs_removal_2d_weigthing_functions(shape):
+def gibbs_weigthing_functions(shape):
     """ Computes the weights necessary to combine two images processed by
     the 1D gibbs removal procedure along two different axis [1]_.
 
@@ -201,11 +201,11 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     G0 : 2D ndarray, optional.
         Weights for the image corrected along axis 1. If not given, the
         function estimates them using function:
-            gibbs_removal_2d_weigthing_functions
+            gibbs_weigthing_functions
     G1 : 2D ndarray
         Weights for the image corrected along axis 1. If not given, the
         function estimates them using function:
-            gibbs_removal_2d_weigthing_functions
+            gibbs_weigthing_functions
 
     Returns
     -------
@@ -225,7 +225,7 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     considered in TV calculation please change parameters nn and fn.
     """
     if np.any(G0) is None or np.any(G1) is None:
-        G0, G1 = gibbs_removal_2d_weigthing_functions(image.shape)
+        G0, G1 = gibbs_weigthing_functions(image.shape)
 
     img_c1, tv_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
     img_c0, tv_c0 = gibbs_removal_1d(image, a=0, fn=fn, nn=nn)
@@ -242,7 +242,7 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     return imagec, tv
 
 
-def volume_gibbs_removal(vol, fn=0, nn=3):
+def gibbs_removal(vol, fn=0, nn=3):
     """ Decreases gibbs ringing of image's volumes.
 
     Parameters
@@ -291,7 +291,7 @@ def volume_gibbs_removal(vol, fn=0, nn=3):
         vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
 
     shap = vol.shape
-    G0, G1 = gibbs_removal_2d_weigthing_functions(shap[:2])
+    G0, G1 = gibbs_weigthing_functions(shap[:2])
 
     tv = np.empty(shap)
     for i in range(shap[2]):
