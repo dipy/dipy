@@ -21,11 +21,10 @@ def test_ProbabilisticDirectionGetter():
 
     model = SillyModel(gtab=None)
     data = np.zeros((3, 3, 3, 7))
-    fit = model.fit(data)
 
     # Test if the tracking works on different dtype of the same data.
     for dtype in [np.float32, np.float64]:
-        fit = fit.astype(dtype)
+        fit = model.fit(data.astype(dtype))
 
         # Sample point and direction
         point = np.zeros(3)
