@@ -7,7 +7,6 @@ from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter)
 
 
-
 def test_ProbabilisticDirectionGetter():
     # Test the constructors and errors of the ProbabilisticDirectionGetter
 
