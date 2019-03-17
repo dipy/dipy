@@ -87,7 +87,7 @@ data = img.get_data()
 affine = img.affine
 
 """
-Function ``read_cenir_multib`` return img and gtab which contains respectively
+Function ``read_cfin_multib`` return img and gtab which contains respectively
 a nibabel Nifti1Image object (where the data can be extracted) and a
 GradientTable object with information about the b-values and b-vectors.
 
