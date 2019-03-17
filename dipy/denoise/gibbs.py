@@ -259,28 +259,37 @@ def gibbs_removal(vol, slice_axis=2, fn=0, nn=3):
     For 4D matrix last element should always correspond to the number of
     diffusion gradient directions.
     """
-    # check slice axis
+
+    # Make sure that slice are ordering in matrix axis 2
     if slice_axis > 2:
-        raise ValueError("The axis corresponding to different slices have to" +
-                         "correspond to one of the 3 first matrix dimensions")
+        raise ValueError("Different slices have to be organized along" +
+                         "one of the 3 first matrix dimensions")
+    elif slice_axis < 2:
+        vol = np.swapaxes(vol, slice_axis, 2)
+    # check matrix dimension
     nd = vol.ndim
     if nd > 4:
         raise ValueError("Data have to be a 4D or 3D matrix")
     elif nd < 3:
-        raise ValueError("Data is not a 3D matrix. Use gibbs_removal_2d or" +
-                         "gibbs_removal_1d instead")
+        raise ValueError("Data is not a 3D matrix. Use gibbs_removal_2d to" +
+                         "suppress gibbs artefacts in 2D matrices ")
     elif nd == 4:
         inishap = vol.shape
         vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
 
+    # Produce weigthing functions for 2D gibbs removal
     shap = vol.shape
     G0, G1 = gibbs_weigthing_functions(shap[:2])
 
-    for i in range(shap[2]):
-        imgc = gibbs_removal_2d(vol[:, :, i], fn=fn, nn=nn, G0=G0, G1=G1)
-        vol[:, :, i] = imgc
+    # Run gibbs removal 2D
+    for vi in range(shap[2]):
+        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], fn=fn, nn=nn,
+                                         G0=G0, G1=G1)
 
+    # Reshape data to original format
     if nd == 4:
         vol = vol.reshape(inishap)
+    if slice_axis < 2:
+        vol = np.swapaxes(vol, slice_axis, 2)
 
     return vol
