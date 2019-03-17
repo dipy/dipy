@@ -76,10 +76,6 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     -------
     xc : 2D ndarray
         Matrix with gibbs oscilantions reduced along an axis 'a'.
-    tv : 2D ndarray
-        Global TV which show variation not removed (edges, anatomical
-        variation, non-oscilatory component of gibbs artefact normally present
-        in image background, etc.)
 
     Note
     ----
@@ -133,13 +129,10 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     idx = np.nonzero(SP + SN)
     xs[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
 
-    # Global minimum TV (can be useful as edge detector)
-    tv = np.minimum(TVN, TVP)
-
     if a:
-        return xs, tv
+        return xs
     else:
-        return xs.T, tv.T
+        return xs.T
 
 
 def gibbs_weigthing_functions(shape):
@@ -227,28 +220,25 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = gibbs_weigthing_functions(image.shape)
 
-    img_c1, tv_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
-    img_c0, tv_c0 = gibbs_removal_1d(image, a=0, fn=fn, nn=nn)
+    img_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
+    img_c0 = gibbs_removal_1d(image, a=0, fn=fn, nn=nn)
 
     C1 = np.fft.fft2(img_c1)
     C0 = np.fft.fft2(img_c0)
     imagec = abs(np.fft.ifft2(np.fft.fftshift(C1)*G1 + np.fft.fftshift(C0)*G0))
 
-    # Just to access performance
-    T1 = np.fft.fft2(tv_c1)
-    T0 = np.fft.fft2(tv_c0)
-    tv = abs(np.fft.ifft2(np.fft.fftshift(T1)*G1 + np.fft.fftshift(T0)*G0))
-
-    return imagec, tv
+    return imagec
 
 
-def gibbs_removal(vol, fn=0, nn=3):
-    """ Decreases gibbs ringing of image's volumes.
+def gibbs_removal(vol, slice_axis, fn=0, nn=3):
+    """ Suppresses gibbs ringing artefacts of images volumes.
 
     Parameters
     ----------
     vol : array ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
+    slice_axis : int
+        Data axis corresponding to the number of acquired slices
     fn : int, optional
         Distance of first neighbour used to access local TV (see note).
         Default is set to 0 which means that the own point is also used to
@@ -262,28 +252,11 @@ def gibbs_removal(vol, fn=0, nn=3):
     vol : array ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of corrected
         images.
-    tv : array ([X, Y, Z]) or ([X, Y, Z, g])
-        Global TV which show variation not removed by the algorithm (edges,
-        anatomical variation, non-oscilatory component of gibbs artefact
-        normally present in image background, etc.)
 
     Notes
     -----
-    1) This function correct gibbs artifacts assuming that images were acquired
-       from 2D k-space Fourier expansion coefficients. Based on this,
-       correction is performed by applying the 2D gibbs artefact revomal slice
-       by slice. Please insure that original images were acquired along the
-       z-axis. If this is not the case, you have to orient your dataset in the
-       way that axis 2 of matrix vol correspond to different acquired images.
-       For 4D matrix last element should always correspond to different sets
-       of image volumes.
-    2) This function decreases the effects of gibbs oscilations based on the
-       analysis of local total variation (TV) along the two first axis of the
-       volumes. Although artefact correction is done based on each point
-       primary adjanced neighbors, total variation should be accessed in a
-       larger range of neigbors. If you want to adjust the number and index of
-       the neigbors to be considered in TV calculation please change parameters
-       nn and fn.
+    For 4D matrix last element should always correspond to the number of
+    diffusion gradient directions.
     """
     nd = vol.ndim
     if nd == 4:
@@ -293,14 +266,11 @@ def gibbs_removal(vol, fn=0, nn=3):
     shap = vol.shape
     G0, G1 = gibbs_weigthing_functions(shap[:2])
 
-    tv = np.empty(shap)
     for i in range(shap[2]):
-        imgc, tvi = gibbs_removal_2d(vol[:, :, i], fn=fn, nn=nn, G0=G0, G1=G1)
+        imgc = gibbs_removal_2d(vol[:, :, i], fn=fn, nn=nn, G0=G0, G1=G1)
         vol[:, :, i] = imgc
-        tv[:, :, i] = tvi
 
     if nd == 4:
         vol = vol.reshape(inishap)
-        tv = tv.reshape(inishap)
 
-    return vol, tv
+    return vol

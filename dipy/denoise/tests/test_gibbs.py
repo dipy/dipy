@@ -32,7 +32,7 @@ image_gt[4 * Nre: 5 * Nre, 3 * Nre: 5 * Nre] = 3
 
 
 def test_gibbs_2d():
-    image_cor, tv = gibbs_removal_2d(image_gibbs)
+    image_cor = gibbs_removal_2d(image_gibbs)
 
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(image_gibbs - image_gt))
@@ -41,7 +41,7 @@ def test_gibbs_2d():
 
 
 def test_gibbs_3d():
-    image_cor, tv = gibbs_removal_2d(image_gibbs)
+    image_cor = gibbs_removal_2d(image_gibbs)
 
     image3d = np.zeros((6 * Nre, 6 * Nre, 2))
     image3d[:, :, 0] = image_gibbs
