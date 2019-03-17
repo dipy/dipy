@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 
-def image_tv(x, fn=0, nn=3, a=0):
+def image_tv(x, a=0, nn=3):
     """ Computes total variation (TV) of matrix x along axis a in two
     directions.
 
@@ -11,13 +11,10 @@ def image_tv(x, fn=0, nn=3, a=0):
     ----------
     x : 2D ndarray
         matrix x
-    fn : int
-        Distance of first neighbor to be included in TV calculation. If fn=0
-        the own point is also included in the TV calculation.
-    nn : int
-        Number of points to be included in TV calculation.
     a : int (0 or 1)
         Axis along which TV will be calculated. Default a is set to 0.
+    nn : int
+        Number of points to be included in TV calculation.
 
     Returns
     -------
@@ -25,6 +22,7 @@ def image_tv(x, fn=0, nn=3, a=0):
         Total variation calculated from the right neighbors of each point
     NTV : 2D ndarray
         Total variation calculated from the left neighbors of each point
+
     Note
     ----
     This function was created to deal with gibbs artefacts of MR images.
@@ -38,15 +36,18 @@ def image_tv(x, fn=0, nn=3, a=0):
     else:
         xs = x.T.copy()
 
-    xs = np.concatenate((xs[:, (-nn-fn):], xs, xs[:, 0:(nn+fn)]), axis=1)
+    # Add copies of the data so that data extreme points are also analysed
+    xs = np.concatenate((xs[:, (-nn-1):], xs, xs[:, 0:(nn+1)]), axis=1)
 
-    PTV = np.absolute(xs[:, (nn+fn):(-nn-fn)] - xs[:, (nn+fn+1):(-nn-fn+1)])
-    NTV = np.absolute(xs[:, (nn+fn):(-nn-fn)] - xs[:, (nn+fn-1):(-nn-fn-1)])
-    for n in range(fn+1, nn-2):
-        PTV = PTV + np.absolute(xs[:, (nn+fn+n):(-nn-fn+n)] -
-                                xs[:, (nn+fn+n+1):(-nn-fn+n+1)])
-        NTV = NTV + np.absolute(xs[:, (nn+fn-n):(-nn-fn-n)] -
-                                xs[:, (nn+fn-n-1):(-nn-fn-n-1)])
+    PTV = np.absolute(xs[:, (nn+1):(-nn-1)] -
+                      xs[:, (nn+2):(-nn)])
+    NTV = np.absolute(xs[:, (nn+1):(-nn-1)] -
+                      xs[:, nn:(-nn-2)])
+    for n in range(1, nn):
+        PTV = PTV + np.absolute(xs[:, (nn+1+n):(-nn-1+n)] -
+                                xs[:, (nn+2+n):(-nn+n)])
+        NTV = NTV + np.absolute(xs[:, (nn+1-n):(-nn-1-n)] -
+                                xs[:, (nn-n):(-nn-2-n)])
 
     if a:
         return PTV, NTV
@@ -54,7 +55,7 @@ def image_tv(x, fn=0, nn=3, a=0):
         return PTV.T, NTV.T
 
 
-def gibbs_removal_1d(x, a=0, fn=0, nn=3):
+def gibbs_removal_1d(x, a=0, nn=3):
     """ Decreases gibbs ringing along an axis 'a' using fourier sub-shifts.
 
     Parameters
@@ -64,10 +65,6 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     a : int (0 or 1)
         Axis along which gibbs oscilations will be reduced. Default a is set
         to 0 (i.e. gibbs are reduce along axis y).
-    fn : int, optional
-        Distance of first neighbour used to access local TV (see note).
-        Default is set to 0 which means that the own point is also used to
-        access local TV.
     nn : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
@@ -83,8 +80,8 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     analysis of local total variation (TV). Although artefact correction is
     done based on two adjanced points for each voxel, total variation should be
     accessed in a larger range of neigbors. If you want to adjust the number
-    and index of the neigbors to be considered in TV calculation please change
-    parameters nn and fn.
+    of the neigbors to be considered in TV calculation please change
+    parameter nn.
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
@@ -94,7 +91,7 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
         xs = x.T.copy()
 
     # TV for shift zero (baseline)
-    TVR, TVL = image_tv(xs, fn=fn, nn=nn, a=1)
+    TVR, TVL = image_tv(xs, a=1, nn=nn)
     TVP = np.minimum(TVR, TVL)
     TVN = TVP.copy()
 
@@ -110,12 +107,12 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     for s in ssamp:
         # Access positive shift for given s
         Img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
-        TVSR, TVSL = image_tv(Img_p, fn=fn, nn=nn, a=1)
+        TVSR, TVSL = image_tv(Img_p, a=1, nn=nn)
         TVS_p = np.minimum(TVSR, TVSL)
 
         # Access negative shift for given s
         Img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
-        TVSR, TVSL = image_tv(Img_n, fn=fn, nn=nn, a=1)
+        TVSR, TVSL = image_tv(Img_n, a=1, nn=nn)
         TVS_n = np.minimum(TVSR, TVSL)
 
         # Update positive shift params
@@ -183,17 +180,13 @@ def gibbs_weigthing_functions(shape):
     return G0, G1
 
 
-def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
+def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
     """ Decreases gibbs ringing of a 2D image.
 
     Parameters
     ----------
     image : 2D ndarray
         Matrix cotaining the 2D image.
-    fn : int, optional
-        Distance of first neighbour used to access local TV (see note).
-        Default is set to 0 which means that the own point is also used to
-        access local TV.
     nn : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
@@ -220,14 +213,14 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     analysis of local total variation (TV) along the two axis of the image.
     Although artefact correction is done based on each point primary adjanced
     neighbors, total variation should be accessed in a larger range of
-    neigbors. If you want to adjust the number and index of the neigbors to be
-    considered in TV calculation please change parameters nn and fn.
+    neigbors. If you want to adjust the number of the neigbors to be
+    considered in TV calculation please change parameter nn.
     """
     if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = gibbs_weigthing_functions(image.shape)
 
-    img_c1 = gibbs_removal_1d(image, a=1, fn=fn, nn=nn)
-    img_c0 = gibbs_removal_1d(image, a=0, fn=fn, nn=nn)
+    img_c1 = gibbs_removal_1d(image, a=1, nn=nn)
+    img_c0 = gibbs_removal_1d(image, a=0, nn=nn)
 
     C1 = np.fft.fft2(img_c1)
     C0 = np.fft.fft2(img_c0)
@@ -236,7 +229,7 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, fn=0, nn=3):
+def gibbs_removal(vol, slice_axis=2, nn=3):
     """ Suppresses gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -246,10 +239,6 @@ def gibbs_removal(vol, slice_axis=2, fn=0, nn=3):
     slice_axis : int (0, 1, or 2)
         Data axis corresponding to the number of acquired slices. Default is
         set to the third axis
-    fn : int, optional
-        Distance of first neighbour used to access local TV (see note).
-        Default is set to 0 which means that the own point is also used to
-        access local TV.
     nn : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
@@ -289,8 +278,7 @@ def gibbs_removal(vol, slice_axis=2, fn=0, nn=3):
 
     # Run gibbs removal 2D
     for vi in range(shap[2]):
-        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], fn=fn, nn=nn,
-                                         G0=G0, G1=G1)
+        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], nn=nn, G0=G0, G1=G1)
 
     # Reshape data to original format
     if nd == 4:
