@@ -108,25 +108,31 @@ def gibbs_removal_1d(x, a=0, fn=0, nn=3):
     k = np.linspace(-N/2, N/2-1, num=N)
     k = (2.0j * np.pi * k) / N
     for s in ssamp:
-        # Image shift using current pos shift
+        # Access positive shift for given s
         Img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
         TVSR, TVSL = image_tv(Img_p, fn=fn, nn=nn, a=1)
         TVS_p = np.minimum(TVSR, TVSL)
-        # Image shift using current neg shift
+
+        # Access negative shift for given s
         Img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
         TVSR, TVSL = image_tv(Img_n, fn=fn, nn=nn, a=1)
         TVS_n = np.minimum(TVSR, TVSL)
+
         # Update positive shift params
         ISP[TVP > TVS_p] = Img_p[TVP > TVS_p]
         SP[TVP > TVS_p] = s
         TVP[TVP > TVS_p] = TVS_p[TVP > TVS_p]
+
         # Update negative shift params
         ISN[TVN > TVS_n] = Img_n[TVN > TVS_n]
         SN[TVN > TVS_n] = s
         TVN[TVN > TVS_n] = TVS_n[TVN > TVS_n]
 
-    # apply correction if SP and SN are not zeros
+    # check non-zero sub-voxel shifts
     idx = np.nonzero(SP + SN)
+
+    # use positive and negative optimal sub-voxel shifts to interpolate to
+    # original grid points
     xs[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
 
     if a:

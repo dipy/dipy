@@ -1,5 +1,6 @@
 import numpy as np
-from dipy.denoise.gibbs import (gibbs_removal_2d, gibbs_removal)
+from dipy.denoise.gibbs import (gibbs_removal_1d, gibbs_removal_2d,
+                                gibbs_removal, image_tv)
 from numpy.testing import (assert_, assert_array_almost_equal, assert_raises)
 
 # Produce a 2D image
@@ -101,3 +102,34 @@ def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2)))
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
+
+
+def test_gibbs_subfunction():
+    # This complementary test is to make sure that Gibbs suppression
+    # sub-functions are properly implemented
+
+    # Testing correction along axis 0
+    image_a0 = gibbs_removal_1d(image_gibbs, a=0)
+    # After this step tv along axis 0 should provide lower values than along
+    # axis 1
+    tv0_a0_r, tv0_a0_l = image_tv(image_a0, a=0)
+    tv0_a0 = np.minimum(tv0_a0_r, tv0_a0_l)
+    tv1_a0_r, tv1_a0_l = image_tv(image_a0, a=1)
+    tv1_a0 = np.minimum(tv1_a0_r, tv1_a0_l)
+    # Let's check that
+    mean_tv0 = np.mean(abs(tv0_a0))
+    mean_tv1 = np.mean(abs(tv1_a0))
+    assert_(mean_tv0 < mean_tv1)
+
+    # Testing correction along axis 1
+    image_a1 = gibbs_removal_1d(image_gibbs, a=1)
+    # After this step tv along axis 1 should provide higher values than along
+    # axis 0
+    tv0_a1_r, tv0_a1_l = image_tv(image_a1, a=0)
+    tv0_a1 = np.minimum(tv0_a1_r, tv0_a1_l)
+    tv1_a1_r, tv1_a1_l = image_tv(image_a1, a=1)
+    tv1_a1 = np.minimum(tv1_a1_r, tv1_a1_l)
+    # Let's check that
+    mean_tv0 = np.mean(abs(tv0_a1))
+    mean_tv1 = np.mean(abs(tv1_a1))
+    assert_(mean_tv0 > mean_tv1)
