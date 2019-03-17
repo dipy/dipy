@@ -230,15 +230,16 @@ def gibbs_removal_2d(image, fn=0, nn=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis, fn=0, nn=3):
+def gibbs_removal(vol, slice_axis=2, fn=0, nn=3):
     """ Suppresses gibbs ringing artefacts of images volumes.
 
     Parameters
     ----------
     vol : array ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
-    slice_axis : int
-        Data axis corresponding to the number of acquired slices
+    slice_axis : int (0, 1, or 2)
+        Data axis corresponding to the number of acquired slices. Default is
+        set to the third axis
     fn : int, optional
         Distance of first neighbour used to access local TV (see note).
         Default is set to 0 which means that the own point is also used to
@@ -258,8 +259,17 @@ def gibbs_removal(vol, slice_axis, fn=0, nn=3):
     For 4D matrix last element should always correspond to the number of
     diffusion gradient directions.
     """
+    # check slice axis
+    if slice_axis > 2:
+        raise ValueError("The axis corresponding to different slices have to" +
+                         "correspond to one of the 3 first matrix dimensions")
     nd = vol.ndim
-    if nd == 4:
+    if nd > 4:
+        raise ValueError("Data have to be a 4D or 3D matrix")
+    elif nd < 3:
+        raise ValueError("Data is not a 3D matrix. Use gibbs_removal_2d or" +
+                         "gibbs_removal_1d instead")
+    elif nd == 4:
         inishap = vol.shape
         vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
 

@@ -1,6 +1,6 @@
 import numpy as np
 from dipy.denoise.gibbs import (gibbs_removal_2d, gibbs_removal)
-from numpy.testing import (assert_, assert_array_almost_equal)
+from numpy.testing import (assert_, assert_array_almost_equal, assert_raises)
 
 # Produce a 2D image
 Nori = 32
@@ -50,3 +50,9 @@ def test_gibbs_3d():
     image3d_cor = gibbs_removal(image3d, 2)
     assert_array_almost_equal(image3d_cor[:, :, 0], image_cor)
     assert_array_almost_equal(image3d_cor[:, :, 1], image_cor)
+
+
+def test_gibbs_errors():
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2)))
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
