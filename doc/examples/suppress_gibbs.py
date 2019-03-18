@@ -4,21 +4,21 @@
 Suppress gibbs artefact in DWI
 ===============================================================================
 
-Magnectic Resonance (MR) images are reconstructed from the Fourier coefficients
+Magnetic Resonance (MR) images are reconstructed from the Fourier coefficients
 of acquired k-space images. Since only a finite number of Fourier coefficients
 can be acquired in practice, reconstructed MR images can be corrupted by Gibbs
-artefacts, which manifest by intensity oscilations adjacent to edges of
+artefacts, which manifest by intensity oscillations adjacent to edges of
 different tissues types [1]_. In the context of diffusion-weighted
-imaging, these oscilations can significantly corrupt derived estimates
+imaging, these oscillations can significantly corrupt derived estimates
 [1]_, [2]_.
 
 In the following example, we show how to suppress Gibbs artefacts of MRI images
 in dipy. This algorithm is based on an adapted version of the sub-voxel
-Gibbs suppersion procedure [3]_. Full details of the implemented algorithm
+Gibbs suppression procedure [3]_. Full details of the implemented algorithm
 can be found in the Chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using
 this code).
 
-For this example, we dowload a diffusion-weighted dataset:
+For this example, we download a diffusion-weighted dataset:
 """
 
 from dipy.data import read_cenir_multib
@@ -33,13 +33,13 @@ data = img.get_data()
 
 data_slices = data[:, :, 40:42, :]
 
-""" The algorithm to suppress Gibbs oscilations can be imported from the
+""" The algorithm to suppress Gibbs oscillations can be imported from the
 denoise module of dipy:
 """
 
 from dipy.denoise.gibbs import gibbs_removal
 
-""" Gibbs oscilation suppression can be performed by running the following
+""" Gibbs oscillation suppression can be performed by running the following
 command:
 """
 
@@ -58,21 +58,21 @@ fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
 ax.flat[0].imshow(data_slices[:, :, 0, 0].T, cmap='gray', origin='lower',
                   vmin=0, vmax=10000)
-ax.flat[0].set_title('Raw')
+ax.flat[0].set_title('Uncorrected')
 ax.flat[1].imshow(data_corrected[:, :, 0, 0].T, cmap='gray',
                   origin='lower', vmin=0, vmax=10000)
-ax.flat[1].set_title('corrupted')
+ax.flat[1].set_title('Corrected')
 
 plt.show()
-fig1.savefig('Gibbs_suppresion_b0.png')
+fig1.savefig('Gibbs_suppression_b0.png')
 
 """
-.. figure:: Gibbs_suppresion_b0.png
+.. figure:: Gibbs_suppression_b0.png
    :align: center
 
    Uncorrected (left panel) and corrected (right panel) b-value=0 images.
 
-For a better visualization of the benifit of Gibbs artefact suppression, we
+For a better visualization of the benefit of Gibbs artefact suppression, we
 process some diffusion derived metrics for both uncorrected and corrected
 version of the data. Below, we show the results for the mean signal kurtosis
 of the mean signal diffusion image technique (:ref:`example_reconst_msdki`).
@@ -116,19 +116,22 @@ ax.flat[2].imshow(MSKgib[:, :, 0].T - MSKini[:, :, 0].T, cmap='gray',
                   origin='lower', vmin=-0.2, vmax=0.2)
 ax.flat[2].set_title('MSK (uncorrected - corrected')
 
+plt.show()
+fig2.savefig('Gibbs_suppression_msdki.png')
+
 """
-.. figure:: Gibbs_suppresion_msdki.png
+.. figure:: Gibbs_suppression_msdki.png
    :align: center
 
    Uncorrected and corrected mean signal kurtosis images are shown in the right
    and middle panel. The difference between uncorrected and corrected images
    are show in the right panel.
 
-In the left panel of the figure above, Gibbs artefacts can be appriciated by
+In the left panel of the figure above, Gibbs artefacts can be appreciated by
 the negative values of mean signal kurtosis (black voxels) adjacent to the
 brain ventricle. These negative values seem to be suppressed after the
-`gibbs_removal` funtion is applied. For a better visualization, of gibbs
-oscilations the difference between corrected and uncorrected images are shown
+`gibbs_removal` function is applied. For a better visualization, of gibbs
+oscillations the difference between corrected and uncorrected images are shown
 in the right panel.
 
 
