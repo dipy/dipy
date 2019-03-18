@@ -69,3 +69,4 @@
  cluster_confidence.py
  path_length_map.py
  afq_tract_profiles.py
+ suppress_gibbs.py

@@ -157,7 +157,7 @@ def gibbs_weigthing_functions(shape):
     References
     ----------
     .. [1] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
-           removal based on local subvoxel-shifts. Magn Reson Med. 2015
+           removal based on local subvoxel-shifts. Magn Reson Med. 2016
            doi: 10.1002/mrm.26054.
     """
     G0 = np.zeros(shape)
@@ -207,6 +207,7 @@ def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
         Global TV which show variation not removed by the algorithm (edges,
         anatomical variation, non-oscilatory component of gibbs artefact
         normally present in image background, etc.)
+
     Note
     ----
     This function decreases the effects of gibbs oscilations based on the
@@ -215,6 +216,16 @@ def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
     neighbors, total variation should be accessed in a larger range of
     neigbors. If you want to adjust the number of the neigbors to be
     considered in TV calculation please change parameter nn.
+
+    References
+    ----------
+    Please cite the following articles
+    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
+           Analysis and their Application to the Healthy Ageing Brain
+           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
+    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
+           removal based on local subvoxel-shifts. Magn Reson Med. 2016
+           doi: 10.1002/mrm.26054.
     """
     if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = gibbs_weigthing_functions(image.shape)
@@ -253,6 +264,16 @@ def gibbs_removal(vol, slice_axis=2, nn=3):
     -----
     For 4D matrix last element should always correspond to the number of
     diffusion gradient directions.
+
+    References
+    ----------
+    Please cite the following articles
+    .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
+           Analysis and their Application to the Healthy Ageing Brain
+           (Doctoral thesis). https://doi.org/10.17863/CAM.29356
+    .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
+           removal based on local subvoxel-shifts. Magn Reson Med. 2016
+           doi: 10.1002/mrm.26054.
     """
 
     # Make sure that slice are ordering in matrix axis 2

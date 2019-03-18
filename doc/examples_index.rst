@@ -39,6 +39,10 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
+Gibbs suppression
+~~~~~~~~~~~~~~~~~
+
+- :ref:`example_suppress_gibbs`
 
 Denoising
 ~~~~~~~~~
