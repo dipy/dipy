@@ -219,7 +219,8 @@ def plot_map(raw_data, variable, limits, filename):
 
 
 r"""
-Let us get the various plots so that we can visualize them in one page
+Let us get the various plots with `fit_method = 'LM'` so that we can visualize 
+them in one page
 """
 
 plot_map(ivimfit.S0_predicted, "Predicted S0", (0, 10000), "predicted_S0.png")
@@ -228,17 +229,18 @@ plot_map(ivimfit.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
 plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
+r"""
+Declaring the data slice again for `fit_method = 'VarPro'`
+"""
 
-data_slice = data[x1:x2, y1:y2, z:z+1, :]
-
-ivim_model = IvimModel(gtab, fit_method='VarPro')
-bvals = ivim_model.bvals
-
-ivim_fit = ivim_model.fit(data_slice)
+ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
+ivimfit_vp = ivimmodel_vp.fit(data_slice)
 
 i, j = 10, 10
+estimated_params = ivimfit_vp.model_params[i, j, :]
+print(estimated_params)
 
-ivimx_predict = IvimModel.ivim_prediction(ivim_fit.model_params[i, j, :][0], gtab)
+ivimx_predict = ivimfit_vp.predict(gtab)[i, j, :]
 plt.scatter(gtab.bvals, data_slice[i, j, :],
             color="green", label="Actual signal")
 plt.plot(gtab.bvals, ivimx_predict, color="red",
@@ -246,10 +248,7 @@ plt.plot(gtab.bvals, ivimx_predict, color="red",
 plt.xlabel("bvalues")
 plt.ylabel("Signals")
 
-S0_est = ivim_fit.model_params[i, j, :][0][0]
-f_est = ivim_fit.model_params[i, j, :][0][1]
-D_star_est = ivim_fit.model_params[i, j, :][0][2]
-D_est = ivim_fit.model_params[i, j, :][0][3]
+S0_est, f_est, D_star_est, D_est = estimated_params
 
 text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
@@ -260,11 +259,16 @@ plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
 
 
-plot_map(np.squeeze(ivim_fit.S0_predicted),"Predicted S0", (0, 10000), "predicted_S0.png")
-plot_map(np.squeeze(data_slice[..., 0]), "Measured S0", (0, 10000), "measured_S0.png")
-plot_map(np.squeeze(ivim_fit.perfusion_fraction),"f", (0, 1), "perfusion_fraction.png")
-plot_map(np.squeeze(ivim_fit.D_star), "D*", (0, 0.01), "perfusion_coeff.png")
-plot_map(np.squeeze(ivim_fit.D), "D", (0, 0.001), "diffusion_coeff.png")
+"""
+Let us get the various plots with `fit_method = 'VarPro'` so that we can 
+visualize them in one page
+"""
+plot_map(ivimfit_vp.S0_predicted,"Predicted S0", (0, 10000), 
+         "predicted_S0.png")
+plot_map(data_slice[..., 0], "Measured S0", (0, 10000), "measured_S0.png")
+plot_map(ivimfit_vp.perfusion_fraction,"f", (0, 1), "perfusion_fraction.png")
+plot_map(ivimfit_vp.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
+plot_map(ivimfit_vp.D, "D", (0, 0.001), "diffusion_coeff.png")
 
 
 """
