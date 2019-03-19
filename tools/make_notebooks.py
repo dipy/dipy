@@ -34,8 +34,9 @@ def clean_string(test_str):
 
 def make_notebook(example):
     """Generate jupyter notebook of the given example
-    Paramters
-    ---------
+
+    Parameters
+    ----------
     example : str
               The raw text of the python example
 
