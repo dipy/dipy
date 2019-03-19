@@ -921,13 +921,16 @@ def unique_rows(in_array, dtype='f4'):
 
 
 @_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
+def move_streamlines(streamlines, output_space, input_space=None,
+                     return_seeds=False):
     """Applies a linear transformation, given by affine, to streamlines.
 
     Parameters
     ----------
     streamlines : sequence
         A set of streamlines to be transformed.
+        If return_seeds is True, `streamlines` will be a tuple
+        of (streamlines, seeds)
     output_space : array (4, 4)
         An affine matrix describing the target space to which the streamlines
         will be transformed.
@@ -941,6 +944,7 @@ def move_streamlines(streamlines, output_space, input_space=None):
     -------
     streamlines : generator
         A sequence of transformed streamlines.
+        If return_seeds is True, also return seeds
 
     """
     if input_space is None:
@@ -954,8 +958,13 @@ def move_streamlines(streamlines, output_space, input_space=None):
     yield
     # End of initialization
 
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
+    if return_seeds:
+        # Seeds are already moved
+        for sl, seed in streamlines:
+            yield np.dot(sl, lin_T) + offset, seed
+    else:
+        for sl in streamlines:
+            yield np.dot(sl, lin_T) + offset
 
 
 def reduce_rois(rois, include):

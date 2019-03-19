@@ -148,6 +148,66 @@ def test_stop_conditions():
     npt.assert_equal(len(sl), 1)
 
 
+def test_save_seeds():
+    tissue = np.array([[2, 1, 1, 2, 1],
+                       [2, 2, 1, 1, 2],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 2, 2],
+                       [0, 1, 1, 1, 2],
+                       [0, 1, 1, 0, 2],
+                       [1, 0, 1, 1, 1]])
+    tissue = tissue[None]
+
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf_lookup = np.array([[0., 0., 0., ],
+                           [0., 0., 1.]])
+    pmf = pmf_lookup[(tissue > 0).astype("int")]
+
+    # Create a seeds along
+    x = np.array([0., 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6])
+    z = np.array([1., 1, 1, 0, 1, 1, 1])
+    seeds = np.column_stack([x, y, z])
+
+    # Set up tracking
+    endpoint_mask = tissue == TissueTypes.ENDPOINT
+    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+
+    # valid streamlines only
+    streamlines_generator = LocalTracking(direction_getter=dg,
+                                          tissue_classifier=tc,
+                                          seeds=seeds,
+                                          affine=np.eye(4),
+                                          step_size=1.,
+                                          return_all=False,
+                                          save_seeds=True)
+
+    streamlines_not_all = iter(streamlines_generator)
+    # Verifiy that seeds are returned by the LocalTracker
+    sl, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[0])
+    sl, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[1])
+    # Verifiy that seeds are returned by the PFTTracker also
+    pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
+                                                tissue_classifier=tc,
+                                                seeds=seeds,
+                                                affine=np.eye(4),
+                                                step_size=1.,
+                                                max_cross=1,
+                                                return_all=False,
+                                                save_seeds=True)
+    streamlines = iter(pft_streamlines)
+    sl, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[0])
+    sl, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[1])
+
+
+
+
 def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabalistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.

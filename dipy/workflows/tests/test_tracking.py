@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_equal
-from dipy.testing import assert_false
+from dipy.testing import assert_false, assert_true
 from os.path import join
 
 import nibabel as nib
@@ -96,6 +96,20 @@ def test_particule_filtering_traking_workflows():
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
+        # Test that tracking returns seeds
+        pf_track_pam = PFTrackingPAMFlow()
+        pf_track_pam._force_overwrite = True
+        pf_track_pam.run(pam_path,
+                         wm_path,
+                         gm_path,
+                         csf_path,
+                         seeds_path,
+                         save_seeds=True)
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_true(tractogram_has_seeds(tractogram_path))
+
+
 
 def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
@@ -169,6 +183,15 @@ def test_local_fiber_tracking_workflow():
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
+        # Test that tracking returns seeds
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="deterministic",
+                         save_seeds=True)
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_true(tractogram_has_seeds(tractogram_path))
 
 def is_tractogram_empty(tractogram_path):
     tractogram_file = \
@@ -176,7 +199,12 @@ def is_tractogram_empty(tractogram_path):
 
     return len(tractogram_file.tractogram) == 0
 
+def tractogram_has_seeds(tractogram_path):
+    tractogram = \
+        nib.streamlines.load(tractogram_path).tractogram
+
+    return len(tractogram.data_per_streamline['seeds']) > 0
 
 if __name__ == '__main__':
     test_local_fiber_tracking_workflow()
-    # test_particule_filtering_traking_workflows()
+    test_particule_filtering_traking_workflows()

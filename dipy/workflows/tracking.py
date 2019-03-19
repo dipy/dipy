@@ -75,7 +75,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         return dg
 
     def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, direction_getter, out_tract):
+                  seed_density, direction_getter, out_tract, save_seeds):
 
         stop, affine = load_nifti(stopping_path)
         classifier = ThresholdTissueClassifier(stop, stopping_thr)
@@ -88,11 +88,22 @@ class LocalFiberTrackingPAMFlow(Workflow):
                 affine=affine)
         logging.info('seeds done')
 
-        streamlines = LocalTracking(direction_getter, classifier,
-                                    seeds, affine, step_size=.5)
+        tracking_result = LocalTracking(direction_getter,
+                                        classifier,
+                                        seeds,
+                                        affine,
+                                        step_size=.5,
+                                        save_seeds=save_seeds)
+
         logging.info('LocalTracking initiated')
 
-        tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+        if save_seeds:
+            streamlines, seeds = zip(*tracking_result)
+            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+            tractogram.data_per_streamline['seeds'] = seeds
+        else:
+            tractogram = Tractogram(tracking_result, affine_to_rasmm=np.eye(4))
+
         save(tractogram, out_tract)
 
         logging.info('Saved {0}'.format(out_tract))
@@ -104,7 +115,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             pmf_threshold=0.1,
             max_angle=30.,
             out_dir='',
-            out_tractogram='tractogram.trk'):
+            out_tractogram='tractogram.trk',
+            save_seeds=False):
         """Workflow for Local Fiber Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -145,6 +157,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
            Output directory (default input file directory)
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk')
+        save_seeds: bool, optional
+            If true, save the seeds associated to their streamline
+            in the 'data_per_streamline' Tractogram dictionary using
+            'seeds' as the key
 
         References
         ----------
@@ -165,7 +181,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
                                             max_angle=max_angle)
 
             self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, dg, out_tract)
+                           seed_density, dg, out_tract, save_seeds)
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -183,7 +199,8 @@ class PFTrackingPAMFlow(Workflow):
             pmf_threshold=0.1,
             max_angle=30.,
             out_dir='',
-            out_tractogram='tractogram.trk'):
+            out_tractogram='tractogram.trk',
+            save_seeds=False):
         """Workflow for Particle Filtering Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -233,6 +250,10 @@ class PFTrackingPAMFlow(Workflow):
            Output directory (default input file directory)
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk')
+        save_seeds: bool, optional
+            If true, save the seeds associated to their streamline
+            in the 'data_per_streamline' Tractogram dictionary using
+            'seeds' as the key
 
         References
         ----------
@@ -272,7 +293,7 @@ class PFTrackingPAMFlow(Workflow):
                                                sphere=pam.sphere,
                                                pmf_threshold=pmf_threshold)
 
-            streamlines = ParticleFilteringTracking(
+            tracking_result = ParticleFilteringTracking(
                 direction_getter,
                 classifier,
                 seeds, affine,
@@ -280,11 +301,19 @@ class PFTrackingPAMFlow(Workflow):
                 pft_back_tracking_dist=back_tracking_dist,
                 pft_front_tracking_dist=front_tracking_dist,
                 pft_max_trial=max_trial,
-                particle_count=particle_count)
+                particle_count=particle_count,
+                save_seeds=save_seeds)
 
             logging.info('ParticleFilteringTracking initiated')
 
-            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+            if save_seeds:
+                streamlines, seeds = zip(*tracking_result)
+                tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
+                tractogram.data_per_streamline['seeds'] = seeds
+            else:
+                tractogram = Tractogram(tracking_result,
+                                        affine_to_rasmm=np.eye(4))
+
             save(tractogram, out_tract)
 
             logging.info('Saved {0}'.format(out_tract))
