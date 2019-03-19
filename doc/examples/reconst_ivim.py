@@ -172,7 +172,7 @@ estimated_params = ivimfit.model_params[i, j, :]
 print(estimated_params)
 
 """
-Next, we plot the results relative to the model fit.
+Next, we plot the results relative to the model fit with `fit_method='LM'`.
 For this we will use the `predict` method of the IvimFit object
 to get the estimated signal.
 """
@@ -273,6 +273,12 @@ i, j = 10, 10
 estimated_params = ivimfit_vp.model_params[i, j, :]
 print(estimated_params)
 
+"""
+Next, we plot the results relative to the model fit with `fit_method='VarPro'`.
+For this we will use the `predict` method of the IvimFit object
+to get the estimated signal.
+"""
+
 ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
 plt.scatter(gtab.bvals, data_slice[i, j, :],
             color="green", label="Actual signal")
@@ -290,9 +296,12 @@ plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
          verticalalignment='center', transform=plt.gca().transAxes)
 plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
-
-
 """
+.. figure:: ivim_voxel_plot.png
+   :align: center
+
+   Plot of the signal from one voxel.
+
 Let us get the various plots with `fit_method = 'VarPro'` so that we can
 visualize them in one page
 """
