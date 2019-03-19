@@ -1,4 +1,4 @@
-r"""
+"""
 ============================================================
 Intravoxel incoherent motion
 ============================================================
@@ -39,7 +39,7 @@ import numpy as np
 from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
-r"""
+"""
 We get an IVIM dataset using DIPY_'s data fetcher ``read_ivim``.
 This dataset was acquired with 21 b-values in 3 different directions.
 Volumes corresponding to different directions were registered to each
@@ -51,7 +51,7 @@ measured at 0 bvalue.
 
 img, gtab = read_ivim()
 
-r"""
+"""
 The variable ``img`` contains a nibabel NIfTI image object (with the data)
 and gtab contains a GradientTable object (information about the gradients e.g.
 b-values and b-vectors). We get the data from img using ``read_data``.
@@ -60,7 +60,7 @@ b-values and b-vectors). We get the data from img using ``read_data``.
 data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
-r"""
+"""
 The data has 54 slices, with 256-by-256 voxels in each slice. The fourth
 dimension corresponds to the b-values in the gtab. Let us visualize the data
 by taking a slice midway(z=33) at $\mathbf{b} = 0$.
@@ -76,7 +76,7 @@ plt.axvline(x=170)
 plt.savefig("ivim_data_slice.png")
 plt.close()
 
-r"""
+"""
 .. figure:: ivim_data_slice.png
    :align: center
 
@@ -99,14 +99,20 @@ plt.imshow(data[x1:x2, y1:y2, z, b].T, origin='lower',
 plt.savefig("CSF_slice.png")
 plt.close()
 
-r"""
+"""
 .. figure:: CSF_slice.png
    :align: center
 
    Heat map of the CSF slice selected.
 
 Now that we have prepared the datasets we can go forward with
-the ivim fit. Instead of fitting the entire volume, we focus on a
+the ivim fit. We provide two methods of fitting the parameters of the IVIM 
+multi-exponential model explained above. We will first fit with the model with 
+the above mentioned fitting approach by passing the option `fit_method='LM'` 
+and will fit the same model with a more refined optimization process with 
+`fit_method='VarPro'`.
+
+Instead of fitting the entire volume, we focus on a
 small section of the slice as selected aboove, to fit the IVIM model.
 First, we instantiate the Ivim model. Using a two-stage approach: first,
 a linear fit used to get quick initial guesses for the parameters
@@ -131,7 +137,7 @@ $\mathbf{f}$).
 
 ivimmodel = IvimModel(gtab, fit_method='LM')
 
-r"""
+"""
 To fit the model, call the `fit` method and pass the data for fitting.
 """
 t1 = time.time()
@@ -139,7 +145,7 @@ ivimfit = ivimmodel.fit(data_slice)
 t2 = time.time()
 total = t2 - t1
 
-r"""
+"""
 The fit method creates a IvimFit object which contains the
 parameters of the model obtained after fitting. These are accessible
 through the `model_params` attribute of the IvimFit object.
@@ -152,7 +158,7 @@ order : $\mathbf{S_{0}, f, D^*, D}$.
 ivimparams = ivimfit.model_params
 print("ivimparams.shape : {}".format(ivimparams.shape))
 
-r"""
+"""
 As we see, we have a 20x20 slice at the height z = 33. Thus we
 have 400 voxels. We will now plot the parameters obtained from the
 fit for a voxel and also various maps for the entire slice.
@@ -167,7 +173,7 @@ i, j = 10, 10
 estimated_params = ivimfit.model_params[i, j, :]
 print(estimated_params)
 
-r"""
+"""
 Next, we plot the results relative to the model fit.
 For this we will use the `predict` method of the IvimFit object
 to get the estimated signal.
@@ -190,7 +196,7 @@ plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
 plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
 plt.close()
-r"""
+"""
 .. figure:: ivim_voxel_plot.png
    :align: center
 
@@ -218,7 +224,7 @@ def plot_map(raw_data, variable, limits, filename):
     plt.close()
 
 
-r"""
+"""
 Let us get the various plots with `fit_method = 'LM'` so that we can visualize 
 them in one page
 """
@@ -229,21 +235,50 @@ plot_map(ivimfit.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
 plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
-r"""
-Declaring the data slice again for `fit_method = 'VarPro'`
+"""
+The VarPro computes the IVIM parameters using the MIX approach. This algorithm 
+uses three different optimizers. It starts with a differential evolution 
+algorithm and fits the parameters in the power of exponentials: optimizer #1. 
+Then the fitted parameters in the first step are utilized to make a linear 
+convex problem. Using a convex optimization, the volume fractions are 
+determined: optimizer #2. Then the last step is non linear least 
+square fitting on all the parameters: optimizer #3. The results of the first 
+and second optimizers are utilized as the initial values for the last step of 
+the algorithm.
+
+As opposed to the above fitting method, this approach does not need to set any
+thresholds on the bvals to differentiate between the perfusion 
+(pseudo-diffsion) portions and fits the parameters simultaneously. Making use
+of the three step optimization mentioned above increases the convergence basin
+for fitting the multi-exponential functions of microstructure models. This 
+method has been described in further detail in [Fadnavis19]_ and [Farooq16]_.
 """
 
 ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
+
+t1 = time.time()
 ivimfit_vp = ivimmodel_vp.fit(data_slice)
+t2 = time.time()
+total = t2 - t1
+
+"""
+Just like the `'LM'` fit method, `'VarPro'` creates a IvimFit object which 
+contains the parameters of the model obtained after fitting. These are 
+accessible through the `model_params` attribute of the IvimFit object.
+The parameters are arranged as a 4D array, corresponding to the spatial
+dimensions of the data, and the last dimension (of length 4)
+corresponding to the model parameters according to the following
+order : $\mathbf{S_{0}, f, D^*, D}$.
+"""
 
 i, j = 10, 10
 estimated_params = ivimfit_vp.model_params[i, j, :]
 print(estimated_params)
 
-ivimx_predict = ivimfit_vp.predict(gtab)[i, j, :]
+ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
 plt.scatter(gtab.bvals, data_slice[i, j, :],
             color="green", label="Actual signal")
-plt.plot(gtab.bvals, ivimx_predict, color="red",
+plt.plot(gtab.bvals, ivim_predict_vp, color="red",
          label="Estimated Signal")
 plt.xlabel("bvalues")
 plt.ylabel("Signals")
@@ -308,6 +343,15 @@ References:
 .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
                and perfusion in intravoxel incoherent motion MR
                imaging." Radiology 168.2 (1988): 497-505.
+               
+.. [Fadnavis19] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+               
+.. [Farooq16] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
 
 .. include:: ../links_names.inc
 """
