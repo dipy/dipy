@@ -35,7 +35,6 @@ diffusion coefficients. First, we import all relevant modules:
 
 import matplotlib.pyplot as plt
 import time
-import numpy as np
 from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
@@ -106,10 +105,10 @@ plt.close()
    Heat map of the CSF slice selected.
 
 Now that we have prepared the datasets we can go forward with
-the ivim fit. We provide two methods of fitting the parameters of the IVIM 
-multi-exponential model explained above. We will first fit with the model with 
-the above mentioned fitting approach by passing the option `fit_method='LM'` 
-and will fit the same model with a more refined optimization process with 
+the ivim fit. We provide two methods of fitting the parameters of the IVIM
+multi-exponential model explained above. We will first fit with the model with
+the above mentioned fitting approach by passing the option `fit_method='LM'`
+and will fit the same model with a more refined optimization process with
 `fit_method='VarPro'`.
 
 Instead of fitting the entire volume, we focus on a
@@ -166,7 +165,6 @@ This will give us an idea about the diffusion and perfusion in
 that section. Let(i, j) denote the coordinate of the voxel. We have
 already fixed the z component as 33 and hence we will get a slice
 which is 33 units above.
-
 """
 
 i, j = 10, 10
@@ -225,7 +223,7 @@ def plot_map(raw_data, variable, limits, filename):
 
 
 """
-Let us get the various plots with `fit_method = 'LM'` so that we can visualize 
+Let us get the various plots with `fit_method = 'LM'` so that we can visualize
 them in one page
 """
 
@@ -236,21 +234,21 @@ plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
 """
-The VarPro computes the IVIM parameters using the MIX approach. This algorithm 
-uses three different optimizers. It starts with a differential evolution 
-algorithm and fits the parameters in the power of exponentials: optimizer #1. 
-Then the fitted parameters in the first step are utilized to make a linear 
-convex problem. Using a convex optimization, the volume fractions are 
-determined: optimizer #2. Then the last step is non linear least 
-square fitting on all the parameters: optimizer #3. The results of the first 
-and second optimizers are utilized as the initial values for the last step of 
+The VarPro computes the IVIM parameters using the MIX approach. This algorithm
+uses three different optimizers. It starts with a differential evolution
+algorithm and fits the parameters in the power of exponentials: optimizer #1.
+Then the fitted parameters in the first step are utilized to make a linear
+convex problem. Using a convex optimization, the volume fractions are
+determined: optimizer #2. Then the last step is non linear least
+square fitting on all the parameters: optimizer #3. The results of the first
+and second optimizers are utilized as the initial values for the last step of
 the algorithm.
 
 As opposed to the above fitting method, this approach does not need to set any
-thresholds on the bvals to differentiate between the perfusion 
+thresholds on the bvals to differentiate between the perfusion
 (pseudo-diffsion) portions and fits the parameters simultaneously. Making use
 of the three step optimization mentioned above increases the convergence basin
-for fitting the multi-exponential functions of microstructure models. This 
+for fitting the multi-exponential functions of microstructure models. This
 method has been described in further detail in [Fadnavis19]_ and [Farooq16]_.
 """
 
@@ -262,8 +260,8 @@ t2 = time.time()
 total = t2 - t1
 
 """
-Just like the `'LM'` fit method, `'VarPro'` creates a IvimFit object which 
-contains the parameters of the model obtained after fitting. These are 
+Just like the `'LM'` fit method, `'VarPro'` creates a IvimFit object which
+contains the parameters of the model obtained after fitting. These are
 accessible through the `model_params` attribute of the IvimFit object.
 The parameters are arranged as a 4D array, corresponding to the spatial
 dimensions of the data, and the last dimension (of length 4)
@@ -295,13 +293,13 @@ plt.savefig("ivim_voxel_plot.png")
 
 
 """
-Let us get the various plots with `fit_method = 'VarPro'` so that we can 
+Let us get the various plots with `fit_method = 'VarPro'` so that we can
 visualize them in one page
 """
-plot_map(ivimfit_vp.S0_predicted,"Predicted S0", (0, 10000), 
+plot_map(ivimfit_vp.S0_predicted, "Predicted S0", (0, 10000),
          "predicted_S0.png")
 plot_map(data_slice[..., 0], "Measured S0", (0, 10000), "measured_S0.png")
-plot_map(ivimfit_vp.perfusion_fraction,"f", (0, 1), "perfusion_fraction.png")
+plot_map(ivimfit_vp.perfusion_fraction, "f", (0, 1), "perfusion_fraction.png")
 plot_map(ivimfit_vp.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit_vp.D, "D", (0, 0.001), "diffusion_coeff.png")
 
@@ -343,12 +341,12 @@ References:
 .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
                and perfusion in intravoxel incoherent motion MR
                imaging." Radiology 168.2 (1988): 497-505.
-               
+
 .. [Fadnavis19] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
                learning, reconstruction, optimization and microstructure
                modeling, Proceedings of: International Society of Magnetic
                Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-               
+
 .. [Farooq16] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
                White Matter Fibers from diffusion MRI." Scientific reports 6
                (2016).
