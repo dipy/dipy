@@ -109,12 +109,12 @@ def test_gibbs_subfunction():
     # sub-functions are properly implemented
 
     # Testing correction along axis 0
-    image_a0 = gibbs_removal_1d(image_gibbs, a=0)
+    image_a0 = gibbs_removal_1d(image_gibbs, axis=0)
     # After this step tv along axis 0 should provide lower values than along
     # axis 1
-    tv0_a0_r, tv0_a0_l = image_tv(image_a0, a=0)
+    tv0_a0_r, tv0_a0_l = image_tv(image_a0, axis=0)
     tv0_a0 = np.minimum(tv0_a0_r, tv0_a0_l)
-    tv1_a0_r, tv1_a0_l = image_tv(image_a0, a=1)
+    tv1_a0_r, tv1_a0_l = image_tv(image_a0, axis=1)
     tv1_a0 = np.minimum(tv1_a0_r, tv1_a0_l)
     # Let's check that
     mean_tv0 = np.mean(abs(tv0_a0))
@@ -122,12 +122,12 @@ def test_gibbs_subfunction():
     assert_(mean_tv0 < mean_tv1)
 
     # Testing correction along axis 1
-    image_a1 = gibbs_removal_1d(image_gibbs, a=1)
+    image_a1 = gibbs_removal_1d(image_gibbs, axis=1)
     # After this step tv along axis 1 should provide higher values than along
     # axis 0
-    tv0_a1_r, tv0_a1_l = image_tv(image_a1, a=0)
+    tv0_a1_r, tv0_a1_l = image_tv(image_a1, axis=0)
     tv0_a1 = np.minimum(tv0_a1_r, tv0_a1_l)
-    tv1_a1_r, tv1_a1_l = image_tv(image_a1, a=1)
+    tv1_a1_r, tv1_a1_l = image_tv(image_a1, axis=1)
     tv1_a1 = np.minimum(tv1_a1_r, tv1_a1_l)
     # Let's check that
     mean_tv0 = np.mean(abs(tv0_a1))

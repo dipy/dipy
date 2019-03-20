@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 
-def image_tv(x, a=0, nn=3):
+def image_tv(x, axis=0, n_points=3):
     """ Computes total variation (TV) of matrix x along axis a in two
     directions.
 
@@ -11,16 +11,16 @@ def image_tv(x, a=0, nn=3):
     ----------
     x : 2D ndarray
         matrix x
-    a : int (0 or 1)
+    axis : int (0 or 1)
         Axis along which TV will be calculated. Default a is set to 0.
-    nn : int
+    n_points : int
         Number of points to be included in TV calculation.
 
     Returns
     -------
-    PTV : 2D ndarray
+    ptv : 2D ndarray
         Total variation calculated from the right neighbors of each point
-    NTV : 2D ndarray
+    ntv : 2D ndarray
         Total variation calculated from the left neighbors of each point
 
     Note
@@ -28,44 +28,46 @@ def image_tv(x, a=0, nn=3):
     This function was created to deal with gibbs artefacts of MR images.
     Assuming that MR images are reconstructed from estimates of their Fourier
     expansion coefficients, during TV calculation matrix x can taken as and
-    periodic signal. In this way NTV values on the image left boundary is
-    computed using the time series values on the right boundary and vice versa.
+    periodic signal. In this way ntv values on the image left boundary is
+    computed using the time series values on the right boundary and ptv values
+    are computed using the time series values on the left boundary.
     """
-    if a:
+    if axis:
         xs = x.copy()
     else:
         xs = x.T.copy()
 
     # Add copies of the data so that data extreme points are also analysed
-    xs = np.concatenate((xs[:, (-nn-1):], xs, xs[:, 0:(nn+1)]), axis=1)
+    xs = np.concatenate((xs[:, (-n_points-1):], xs, xs[:, 0:(n_points+1)]),
+                        axis=1)
 
-    PTV = np.absolute(xs[:, (nn+1):(-nn-1)] -
-                      xs[:, (nn+2):(-nn)])
-    NTV = np.absolute(xs[:, (nn+1):(-nn-1)] -
-                      xs[:, nn:(-nn-2)])
-    for n in range(1, nn):
-        PTV = PTV + np.absolute(xs[:, (nn+1+n):(-nn-1+n)] -
-                                xs[:, (nn+2+n):(-nn+n)])
-        NTV = NTV + np.absolute(xs[:, (nn+1-n):(-nn-1-n)] -
-                                xs[:, (nn-n):(-nn-2-n)])
+    ptv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
+                      xs[:, (n_points+2):(-n_points)])
+    ntv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
+                      xs[:, (n_points):(-n_points-2)])
+    for n in range(1, n_points):
+        ptv = ptv + np.absolute(xs[:, (n_points+1+n):(-n_points-1+n)] -
+                                xs[:, (n_points+2+n):(-n_points+n)])
+        ntv = ntv + np.absolute(xs[:, (n_points+1-n):(-n_points-1-n)] -
+                                xs[:, (n_points-n):(-n_points-2-n)])
 
-    if a:
-        return PTV, NTV
+    if axis:
+        return ptv, ntv
     else:
-        return PTV.T, NTV.T
+        return ptv.T, ntv.T
 
 
-def gibbs_removal_1d(x, a=0, nn=3):
+def gibbs_removal_1d(x, axis=0, n_points=3):
     """ Decreases gibbs ringing along an axis 'a' using fourier sub-shifts.
 
     Parameters
     ----------
     x : 2D ndarray
         Matrix x.
-    a : int (0 or 1)
+    axis : int (0 or 1)
         Axis along which gibbs oscilations will be reduced. Default a is set
         to 0 (i.e. gibbs are reduce along axis y).
-    nn : int, optional
+    n_points : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
 
@@ -85,54 +87,54 @@ def gibbs_removal_1d(x, a=0, nn=3):
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
-    if a:
+    if axis:
         xs = x.copy()
     else:
         xs = x.T.copy()
 
     # TV for shift zero (baseline)
-    TVR, TVL = image_tv(xs, a=1, nn=nn)
-    TVP = np.minimum(TVR, TVL)
-    TVN = TVP.copy()
+    tvr, tvl = image_tv(xs, axis=1, n_points=n_points)
+    tvp = np.minimum(tvr, tvl)
+    tvn = tvp.copy()
 
     # Find optimal shift for gibbs removal
-    ISP = xs.copy()
-    ISN = xs.copy()
-    SP = np.zeros(xs.shape)
-    SN = np.zeros(xs.shape)
+    isp = xs.copy()
+    isn = xs.copy()
+    sp = np.zeros(xs.shape)
+    sn = np.zeros(xs.shape)
     N = xs.shape[1]
     c = np.fft.fftshift(np.fft.fft2(xs))
     k = np.linspace(-N/2, N/2-1, num=N)
     k = (2.0j * np.pi * k) / N
     for s in ssamp:
         # Access positive shift for given s
-        Img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
-        TVSR, TVSL = image_tv(Img_p, a=1, nn=nn)
-        TVS_p = np.minimum(TVSR, TVSL)
+        img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
+        tvsr, tvsl = image_tv(img_p, axis=1, n_points=n_points)
+        tvs_p = np.minimum(tvsr, tvsl)
 
         # Access negative shift for given s
-        Img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
-        TVSR, TVSL = image_tv(Img_n, a=1, nn=nn)
-        TVS_n = np.minimum(TVSR, TVSL)
+        img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
+        tvsr, tvsl = image_tv(img_n, axis=1, n_points=n_points)
+        tvs_n = np.minimum(tvsr, tvsl)
 
         # Update positive shift params
-        ISP[TVP > TVS_p] = Img_p[TVP > TVS_p]
-        SP[TVP > TVS_p] = s
-        TVP[TVP > TVS_p] = TVS_p[TVP > TVS_p]
+        isp[tvp > tvs_p] = img_p[tvp > tvs_p]
+        sp[tvp > tvs_p] = s
+        tvp[tvp > tvs_p] = tvs_p[tvp > tvs_p]
 
         # Update negative shift params
-        ISN[TVN > TVS_n] = Img_n[TVN > TVS_n]
-        SN[TVN > TVS_n] = s
-        TVN[TVN > TVS_n] = TVS_n[TVN > TVS_n]
+        isn[tvn > tvs_n] = img_n[tvn > tvs_n]
+        sn[tvn > tvs_n] = s
+        tvn[tvn > tvs_n] = tvs_n[tvn > tvs_n]
 
     # check non-zero sub-voxel shifts
-    idx = np.nonzero(SP + SN)
+    idx = np.nonzero(sp + sn)
 
     # use positive and negative optimal sub-voxel shifts to interpolate to
     # original grid points
-    xs[idx] = (ISP[idx] - ISN[idx])/(SP[idx] + SN[idx])*SN[idx] + ISN[idx]
+    xs[idx] = (isp[idx] - isn[idx])/(sp[idx] + sn[idx])*sn[idx] + isn[idx]
 
-    if a:
+    if axis:
         return xs
     else:
         return xs.T
@@ -180,14 +182,14 @@ def gibbs_weigthing_functions(shape):
     return G0, G1
 
 
-def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
+def gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     """ Decreases gibbs ringing of a 2D image.
 
     Parameters
     ----------
     image : 2D ndarray
         Matrix cotaining the 2D image.
-    nn : int, optional
+    n_points : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
     G0 : 2D ndarray, optional.
@@ -230,8 +232,8 @@ def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
     if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = gibbs_weigthing_functions(image.shape)
 
-    img_c1 = gibbs_removal_1d(image, a=1, nn=nn)
-    img_c0 = gibbs_removal_1d(image, a=0, nn=nn)
+    img_c1 = gibbs_removal_1d(image, axis=1, n_points=n_points)
+    img_c0 = gibbs_removal_1d(image, axis=0, n_points=n_points)
 
     C1 = np.fft.fft2(img_c1)
     C0 = np.fft.fft2(img_c0)
@@ -240,7 +242,7 @@ def gibbs_removal_2d(image, nn=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, nn=3):
+def gibbs_removal(vol, slice_axis=2, n_points=3):
     """ Suppresses gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -250,7 +252,7 @@ def gibbs_removal(vol, slice_axis=2, nn=3):
     slice_axis : int (0, 1, or 2)
         Data axis corresponding to the number of acquired slices. Default is
         set to the third axis
-    nn : int, optional
+    n_points : int, optional
         Number of neighbour points to access local TV (see note). Default is
         set to 3.
 
@@ -299,7 +301,8 @@ def gibbs_removal(vol, slice_axis=2, nn=3):
 
     # Run gibbs removal 2D
     for vi in range(shap[2]):
-        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], nn=nn, G0=G0, G1=G1)
+        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
+                                         G0=G0, G1=G1)
 
     # Reshape data to original format
     if nd == 4:
