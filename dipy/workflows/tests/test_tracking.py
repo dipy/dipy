@@ -199,6 +199,7 @@ def is_tractogram_empty(tractogram_path):
 
     return len(tractogram_file.tractogram) == 0
 
+
 def tractogram_has_seeds(tractogram_path):
     tractogram = \
         nib.streamlines.load(tractogram_path).tractogram
