@@ -12,10 +12,10 @@ different tissues types [1]_. In the context of diffusion-weighted
 imaging, these oscillations can significantly corrupt derived estimates
 [1]_, [2]_.
 
-In the following example, we show how to suppress Gibbs artefacts of MRI images
-in dipy. This algorithm is based on an adapted version of the sub-voxel
+In the following example, we show how to suppress Gibbs artefacts of MRI
+images. This algorithm is based on an adapted version of the sub-voxel
 Gibbs suppression procedure [3]_. Full details of the implemented algorithm
-can be found in the Chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using
+can be found in the chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using
 this code).
 
 For this example, we download a diffusion-weighted dataset:

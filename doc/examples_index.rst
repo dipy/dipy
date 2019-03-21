@@ -39,16 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Gibbs suppression
-~~~~~~~~~~~~~~~~~
-
-- :ref:`example_suppress_gibbs`
-
 Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
+- :ref:`example_denoise_gibbs`
 
 Reslice
 ~~~~~~~
