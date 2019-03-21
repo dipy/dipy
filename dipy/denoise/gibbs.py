@@ -194,12 +194,10 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
         set to 3.
     G0 : 2D ndarray, optional.
         Weights for the image corrected along axis 1. If not given, the
-        function estimates them using function:
-            gibbs_weigthing_functions
+        function estimates them using function :func:`_weights`
     G1 : 2D ndarray
         Weights for the image corrected along axis 1. If not given, the
-        function estimates them using function:
-            gibbs_weigthing_functions
+        function estimates them using function :func:`_weights`
 
     Returns
     -------
