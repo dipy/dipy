@@ -29,8 +29,8 @@ fraction, $\mathbf{D}$ is the diffusion coefficient and $\mathbf{D^*}$ is
 the pseudo-diffusion constant, due to vascular contributions.
 
 In the following example we show how to fit the IVIM model on a
-diffusion-weighteddataset and visualize the diffusion and pseudo
-diffusion coefficients. First, we import all relevant modules:
+diffusion-weighted dataset and visualize the diffusion and pseudo-diffusion
+coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt
@@ -82,11 +82,11 @@ plt.close()
    Heat map of a slice of data
 
 The region around the intersection of the cross-hairs in the figure
-contains cerebral spinal fluid (CSF), so it so it should have a very high
-$\mathbf{f}$ and $\mathbf{D^*}$, the area between the right and left is white
-matter so that should be lower, and the region on the right is gray matter
-and CSF. That should give us some contrast to see the values varying across
-the regions.
+contains cerebral spinal fluid (CSF), so it should have a very high
+$\mathbf{f}$ and $\mathbf{D^*}$, the area just medial to that is white matter
+so that should be lower, and the region more laterally contains a mixture of
+gray matter and CSF. That should give us some contrast to see the
+values varying across the regions.
 """
 
 x1, x2 = 90, 155
@@ -106,32 +106,25 @@ plt.close()
 
 Now that we have prepared the datasets we can go forward with
 the ivim fit. We provide two methods of fitting the parameters of the IVIM
-multi-exponential model explained above. We will first fit with the model with
-the above mentioned fitting approach by passing the option `fit_method='LM'`
-and will fit the same model with a more refined optimization process with
-`fit_method='VarPro'`.
-
-Instead of fitting the entire volume, we focus on a
-small section of the slice as selected aboove, to fit the IVIM model.
-First, we instantiate the Ivim model. Using a two-stage approach: first,
-a linear fit used to get quick initial guesses for the parameters
-$\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values greater than
-``split_b_D`` (default: 400))and assuming a mono-exponential signal. This is
-based on the assumption that at high b-values the signal can be approximated
-as a mono exponential decay and by taking the logarithm of the signal values
-a linear fit can be obtained. Another linear fit for ``S0`` (bvals <
+multi-exponential model explained above. We first fit the model with a simple
+fitting approach by passing the option `fit_method='LM'`. This method uses
+a two-stage approach: first, a linear fit used to get quick initial guesses
+for the parameters $\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values
+greater than ``split_b_D`` (default: 400))and assuming a mono-exponential signal.
+This is based on the assumption that at high b-values the signal can be
+approximated as a mono exponential decay and by taking the logarithm of the signal
+values a linear fit can be obtained. Another linear fit for ``S0`` (bvals <
 ``split_b_S0`` (default: 200)) follows and ``f`` is estimated using $1 -
-S0_{prime}/S0$. Then a non-linear least squares fitting is performed to fit
+S0_{prime}/S0$. Then a non-linear least-squares fitting is performed to fit
 ``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
 initializing the model, a final non-linear least squares fitting is performed
-for all the parameters using Scipy's ``leastsq`` or ``least_square`` function
-depending on which Scipy version you are using. All initializations for the
-model such as ``split_b_D`` are passed while creating the ``IvimModel``. If you
-are using Scipy 0.17, you can also set bounds by setting ``bounds=([0., 0., 0.,
-0.], [np.inf, 1., 1., 1.]))`` while initializing the ``IvimModel``. It is
-recommeded that you upgrade to Scipy 0.17 since the fitting results might at
-times return values which do not make sense physically (for example, a negative
-$\mathbf{f}$).
+for all the parameters. All initializations for the model such as ``split_b_D``
+are passed while creating the ``IvimModel``. If you are using Scipy 0.17, you
+can also set bounds by setting ``bounds=([0., 0., 0.,0.], [np.inf, 1., 1., 1.]))``
+while initializing the ``IvimModel``.
+
+For brevity, we focus on a small section of the slice as selected aboove,
+to fit the IVIM model. First, we instantiate the IvimModel object.
 """
 
 ivimmodel = IvimModel(gtab, fit_method='LM')
@@ -234,22 +227,25 @@ plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
 """
-The VarPro computes the IVIM parameters using the MIX approach. This algorithm
-uses three different optimizers. It starts with a differential evolution
-algorithm and fits the parameters in the power of exponentials: optimizer #1.
-Then the fitted parameters in the first step are utilized to make a linear
-convex problem. Using a convex optimization, the volume fractions are
-determined: optimizer #2. Then the last step is non linear least
-square fitting on all the parameters: optimizer #3. The results of the first
+
+Next, we will fit the same model with a more refined optimization process with
+`fit_method='VarPro'` (for "Variable Projection"). The VarPro computes the
+IVIM parameters using the MIX approach [Farooq16]_. This algorithm uses three
+different optimizers. It starts with a differential evolution
+algorithm and fits the parameters in the power of exponentials. Then the fitted
+parameters in the first step are utilized to make a linear convex problem.
+Using a convex optimization, the volume fractions are determined. The last step
+is non-linear least-squares fitting on all the parameters. The results of the first
 and second optimizers are utilized as the initial values for the last step of
 the algorithm.
 
-As opposed to the above fitting method, this approach does not need to set any
+As opposed to the `'LM'` fitting method, this approach does not need to set any
 thresholds on the bvals to differentiate between the perfusion
-(pseudo-diffsion) portions and fits the parameters simultaneously. Making use
-of the three step optimization mentioned above increases the convergence basin
-for fitting the multi-exponential functions of microstructure models. This
-method has been described in further detail in [Fadnavis19]_ and [Farooq16]_.
+(pseudo-diffusion) and diffusion portions and fits the parameters simultaneously.
+Making use of the three step optimization mentioned above increases the
+convergence basin for fitting the multi-exponential functions of
+microstructure models. This method has been described in further detail in
+[Fadnavis19]_ and [Farooq16]_.
 """
 
 ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
