@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 
 
-def image_tv(x, axis=0, n_points=3):
+def _image_tv(x, axis=0, n_points=3):
     """ Computes total variation (TV) of matrix x along axis a in two
     directions.
 
@@ -57,7 +57,7 @@ def image_tv(x, axis=0, n_points=3):
         return ptv.T, ntv.T
 
 
-def gibbs_removal_1d(x, axis=0, n_points=3):
+def _gibbs_removal_1d(x, axis=0, n_points=3):
     """ Decreases gibbs ringing along an axis 'a' using fourier sub-shifts.
 
     Parameters
@@ -93,7 +93,7 @@ def gibbs_removal_1d(x, axis=0, n_points=3):
         xs = x.T.copy()
 
     # TV for shift zero (baseline)
-    tvr, tvl = image_tv(xs, axis=1, n_points=n_points)
+    tvr, tvl = _image_tv(xs, axis=1, n_points=n_points)
     tvp = np.minimum(tvr, tvl)
     tvn = tvp.copy()
 
@@ -109,12 +109,12 @@ def gibbs_removal_1d(x, axis=0, n_points=3):
     for s in ssamp:
         # Access positive shift for given s
         img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
-        tvsr, tvsl = image_tv(img_p, axis=1, n_points=n_points)
+        tvsr, tvsl = _image_tv(img_p, axis=1, n_points=n_points)
         tvs_p = np.minimum(tvsr, tvsl)
 
         # Access negative shift for given s
         img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
-        tvsr, tvsl = image_tv(img_n, axis=1, n_points=n_points)
+        tvsr, tvsl = _image_tv(img_n, axis=1, n_points=n_points)
         tvs_n = np.minimum(tvsr, tvsl)
 
         # Update positive shift params
@@ -140,7 +140,7 @@ def gibbs_removal_1d(x, axis=0, n_points=3):
         return xs.T
 
 
-def gibbs_weigthing_functions(shape):
+def _weights(shape):
     """ Computes the weights necessary to combine two images processed by
     the 1D gibbs removal procedure along two different axis [1]_.
 
@@ -182,7 +182,7 @@ def gibbs_weigthing_functions(shape):
     return G0, G1
 
 
-def gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
+def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     """ Decreases gibbs ringing of a 2D image.
 
     Parameters
@@ -230,10 +230,10 @@ def gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
            doi: 10.1002/mrm.26054.
     """
     if np.any(G0) is None or np.any(G1) is None:
-        G0, G1 = gibbs_weigthing_functions(image.shape)
+        G0, G1 = _weights(image.shape)
 
-    img_c1 = gibbs_removal_1d(image, axis=1, n_points=n_points)
-    img_c0 = gibbs_removal_1d(image, axis=0, n_points=n_points)
+    img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
+    img_c0 = _gibbs_removal_1d(image, axis=0, n_points=n_points)
 
     C1 = np.fft.fft2(img_c1)
     C0 = np.fft.fft2(img_c0)
@@ -284,25 +284,28 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
                          "one of the 3 first matrix dimensions")
     elif slice_axis < 2:
         vol = np.swapaxes(vol, slice_axis, 2)
+
     # check matrix dimension
     nd = vol.ndim
-    if nd > 4:
-        raise ValueError("Data have to be a 4D or 3D matrix")
-    elif nd < 3:
-        raise ValueError("Data is not a 3D matrix. Use gibbs_removal_2d to" +
-                         "suppress gibbs artefacts in 2D matrices ")
-    elif nd == 4:
+    if nd == 4:
         inishap = vol.shape
         vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
+    elif nd > 4:
+        raise ValueError("Data have to be a 4D, 3D or 2D matrix")
+    elif nd < 2:
+        raise ValueError("Data is not an image")
 
     # Produce weigthing functions for 2D gibbs removal
     shap = vol.shape
-    G0, G1 = gibbs_weigthing_functions(shap[:2])
+    G0, G1 = _weights(shap[:2])
 
-    # Run gibbs removal 2D
-    for vi in range(shap[2]):
-        vol[:, :, vi] = gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
-                                         G0=G0, G1=G1)
+    # Run gibbs removal of 2D images
+    if nd == 2:
+        vol = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
+    else:
+        for vi in range(shap[2]):
+            vol[:, :, vi] = _gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
+                                              G0=G0, G1=G1)
 
     # Reshape data to original format
     if nd == 4:
