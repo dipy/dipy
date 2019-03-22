@@ -131,6 +131,7 @@ ivimmodel = IvimModel(gtab, fit_method='LM')
 """
 To fit the model, call the `fit` method and pass the data for fitting.
 """
+
 ivimfit = ivimmodel.fit(data_slice)
 
 """
@@ -183,6 +184,7 @@ plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
 plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
 plt.close()
+
 """
 .. figure:: ivim_voxel_plot.png
    :align: center
@@ -285,6 +287,7 @@ plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
          verticalalignment='center', transform=plt.gca().transAxes)
 plt.legend(loc='upper right')
 plt.savefig("ivim_voxel_plot.png")
+
 """
 .. figure:: ivim_voxel_plot.png
    :align: center
@@ -294,6 +297,7 @@ plt.savefig("ivim_voxel_plot.png")
 Let us get the various plots with `fit_method = 'VarPro'` so that we can
 visualize them in one page
 """
+
 plot_map(ivimfit_vp.S0_predicted, "Predicted S0", (0, 10000),
          "predicted_S0.png")
 plot_map(data_slice[..., 0], "Measured S0", (0, 10000), "measured_S0.png")
