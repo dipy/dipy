@@ -94,7 +94,6 @@ for modulename, other_sources, language in (
         ('dipy.denoise.nlmeans_block', [], 'c'),
         ('dipy.denoise.enhancement_kernel', [], 'c'),
         ('dipy.denoise.shift_twist_convolution', [], 'c'),
-        ('dipy.denoise.randommatrix_lpca', [], 'c'),
         ('dipy.align.vector_fields', [], 'c'),
         ('dipy.align.sumsqdiff', [], 'c'),
         ('dipy.align.expectmax', [], 'c'),
