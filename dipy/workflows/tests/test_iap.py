@@ -63,11 +63,12 @@ def test_iap():
     npt.assert_array_equal(return_values, all_results + [2.0])
 
 
-def test_iap_epilog():
+def test_iap_epilog_and_description():
     parser = IntrospectiveArgumentParser()
     dummy_flow = DummyWorkflow1()
     parser.add_workflow(dummy_flow)
     assert "dummy references" in parser.epilog
+    assert "Workflow used to test combined" in parser.description
 
 
 def test_flow_runner():
@@ -119,4 +120,5 @@ def inputs_from_results(results, keys=None, optional=False):
 if __name__ == '__main__':
     # test_iap()
     # test_flow_runner()
-    test_variable_type()
+    # test_variable_type()
+    test_iap_epilog_and_description()
