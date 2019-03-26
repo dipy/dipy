@@ -298,6 +298,7 @@ Let us get the various plots with `fit_method = 'VarPro'` so that we can
 visualize them in one page
 """
 
+plt.figure()
 plot_map(ivimfit_vp.S0_predicted, "Predicted S0", (0, 10000),
          "predicted_S0.png")
 plot_map(data_slice[..., 0], "Measured S0", (0, 10000), "measured_S0.png")
