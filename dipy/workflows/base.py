@@ -140,7 +140,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = ''.join(self.doc[i][2])
+            help_msg = ' '.join(self.doc[i][2])
 
             _args = ['{0}{1}'.format(prefix, arg)]
             _kwargs = {'help': help_msg,
