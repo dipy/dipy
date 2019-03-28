@@ -65,7 +65,7 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     x : 2D ndarray
         Matrix x.
     axis : int (0 or 1)
-        Axis along which gibbs oscilations will be reduced. Default a is set
+        Axis along which gibbs oscillations will be reduced. Default a is set
         to 0 (i.e. gibbs are reduce along axis y).
     n_points : int, optional
         Number of neighbour points to access local TV (see note). Default is
@@ -74,11 +74,11 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     Returns
     -------
     xc : 2D ndarray
-        Matrix with gibbs oscilantions reduced along an axis 'a'.
+        Matrix with gibbs oscillations reduced along an axis 'a'.
 
     Note
     ----
-    This function decreases the effects of gibbs oscilations based on the
+    This function decreases the effects of gibbs oscillations based on the
     analysis of local total variation (TV). Although artefact correction is
     done based on two adjanced points for each voxel, total variation should be
     accessed in a larger range of neigbors. If you want to adjust the number
@@ -202,15 +202,15 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     Returns
     -------
     imagec : 2D ndarray
-        Matrix with gibbs oscilantions reduced along axis a.
+        Matrix with gibbs oscillations reduced along axis a.
     tv : 2D ndarray
         Global TV which show variation not removed by the algorithm (edges,
-        anatomical variation, non-oscilatory component of gibbs artefact
+        anatomical variation, non-oscillatory component of gibbs artefact
         normally present in image background, etc.)
 
     Note
     ----
-    This function decreases the effects of gibbs oscilations based on the
+    This function decreases the effects of gibbs oscillations based on the
     analysis of local total variation (TV) along the two axis of the image.
     Although artefact correction is done based on each point primary adjanced
     neighbors, total variation should be accessed in a larger range of
@@ -245,7 +245,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
 
     Parameters
     ----------
-    vol : array ([X, Y, Z]) or ([X, Y, Z, g])
+    vol : ndarray ([X, Y]), ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
     slice_axis : int (0, 1, or 2)
         Data axis corresponding to the number of acquired slices. Default is
@@ -256,7 +256,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
 
     Returns
     -------
-    vol : array ([X, Y, Z]) or ([X, Y, Z, g])
+    vol : ndarray ([X, Y]), ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of corrected
         images.
 
