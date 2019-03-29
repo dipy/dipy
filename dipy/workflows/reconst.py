@@ -394,7 +394,7 @@ class ReconstCSDFlow(Workflow):
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radius=10,
             fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
-            odf_to_sh_order=8,
+            odf_to_sh_order=8, parallel=False, nbr_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -440,6 +440,12 @@ class ReconstCSDFlow(Workflow):
         odf_to_sh_order : int, optional
             Spherical harmonics order used for peak_from_model to compress
             the ODF to spherical harmonics coefficients (default 8)
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure. Default: False
+        nbr_processes: int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()).
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
@@ -538,7 +544,8 @@ class ReconstCSDFlow(Workflow):
                                          return_sh=True,
                                          sh_order=sh_order,
                                          normalize_peaks=True,
-                                         parallel=False)
+                                         parallel=parallel,
+                                         nbr_processes=nbr_processes)
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
@@ -566,7 +573,7 @@ class ReconstCSAFlow(Workflow):
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
-            extract_pam_values=False,
+            extract_pam_values=False, parallel=False, nbr_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -600,6 +607,12 @@ class ReconstCSAFlow(Workflow):
             Threshold used so that norm(bvec)=1 (default 0.01)
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure. Default: False
+        nbr_processes: int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()).
         out_dir : string, optional
             Output directory (default input file directory)
         out_pam : string, optional
@@ -656,7 +669,8 @@ class ReconstCSAFlow(Workflow):
                                          return_sh=True,
                                          sh_order=odf_to_sh_order,
                                          normalize_peaks=True,
-                                         parallel=False)
+                                         parallel=parallel,
+                                         nbr_processes=nbr_processes)
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)
