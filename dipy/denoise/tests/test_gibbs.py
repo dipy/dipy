@@ -3,38 +3,42 @@ from dipy.denoise.gibbs import (_gibbs_removal_1d, _gibbs_removal_2d,
                                 gibbs_removal, _image_tv)
 from numpy.testing import (assert_, assert_array_almost_equal, assert_raises)
 
-# Produce a 2D image
-Nori = 32
-image = np.zeros((6 * Nori, 6 * Nori))
-image[Nori: 2 * Nori, Nori: 2 * Nori] = 1
-image[Nori: 2 * Nori, 4 * Nori: 5 * Nori] = 1
-image[2 * Nori: 3 * Nori, Nori: 3 * Nori] = 1
-image[3 * Nori: 4 * Nori, 2 * Nori: 3 * Nori] = 2
-image[3 * Nori: 4 * Nori, 4 * Nori: 5 * Nori] = 1
-image[4 * Nori: 5 * Nori, 3 * Nori: 5 * Nori] = 3
 
-# Corrupt image with gibbs ringing
-c = np.fft.fft2(image)
-c = np.fft.fftshift(c)
-N = c.shape[0]
-c_crop = c[48:144, 48:144]
-N = c_crop.shape[0]
-image_gibbs = abs(np.fft.ifft2(c_crop)/4)
+def setup_module():
+    """Module-level setup"""
+    global image_gibbs, image_gt, image_cor, Nre
 
-# Produce ground truth
-Nre = 16
-image_gt = np.zeros((6 * Nre, 6 * Nre))
-image_gt[Nre: 2 * Nre, Nre: 2 * Nre] = 1
-image_gt[Nre: 2 * Nre, 4 * Nre: 5 * Nre] = 1
-image_gt[2 * Nre: 3 * Nre, Nre: 3 * Nre] = 1
-image_gt[3 * Nre: 4 * Nre, 2 * Nre: 3 * Nre] = 2
-image_gt[3 * Nre: 4 * Nre, 4 * Nre: 5 * Nre] = 1
-image_gt[4 * Nre: 5 * Nre, 3 * Nre: 5 * Nre] = 3
+    # Produce a 2D image
+    Nori = 32
+    image = np.zeros((6 * Nori, 6 * Nori))
+    image[Nori: 2 * Nori, Nori: 2 * Nori] = 1
+    image[Nori: 2 * Nori, 4 * Nori: 5 * Nori] = 1
+    image[2 * Nori: 3 * Nori, Nori: 3 * Nori] = 1
+    image[3 * Nori: 4 * Nori, 2 * Nori: 3 * Nori] = 2
+    image[3 * Nori: 4 * Nori, 4 * Nori: 5 * Nori] = 1
+    image[4 * Nori: 5 * Nori, 3 * Nori: 5 * Nori] = 3
+
+    # Corrupt image with gibbs ringing
+    c = np.fft.fft2(image)
+    c = np.fft.fftshift(c)
+    c_crop = c[48:144, 48:144]
+    image_gibbs = abs(np.fft.ifft2(c_crop)/4)
+
+    # Produce ground truth
+    Nre = 16
+    image_gt = np.zeros((6 * Nre, 6 * Nre))
+    image_gt[Nre: 2 * Nre, Nre: 2 * Nre] = 1
+    image_gt[Nre: 2 * Nre, 4 * Nre: 5 * Nre] = 1
+    image_gt[2 * Nre: 3 * Nre, Nre: 3 * Nre] = 1
+    image_gt[3 * Nre: 4 * Nre, 2 * Nre: 3 * Nre] = 2
+    image_gt[3 * Nre: 4 * Nre, 4 * Nre: 5 * Nre] = 1
+    image_gt[4 * Nre: 5 * Nre, 3 * Nre: 5 * Nre] = 3
+
+    # Suppressing gibbs artefacts
+    image_cor = _gibbs_removal_2d(image_gibbs)
 
 
 def test_gibbs_2d():
-    # Suppressing gibbs artefacts
-    image_cor = _gibbs_removal_2d(image_gibbs)
 
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(image_gibbs - image_gt))
@@ -47,8 +51,6 @@ def test_gibbs_2d():
 
 
 def test_gibbs_3d():
-    # for reference let's do first the 2d correction
-    image_cor = _gibbs_removal_2d(image_gibbs)
 
     image3d = np.zeros((6 * Nre, 6 * Nre, 2))
     image3d[:, :, 0] = image_gibbs
@@ -60,8 +62,6 @@ def test_gibbs_3d():
 
 
 def test_gibbs_4d():
-    # for reference let's do first the 2d correction
-    image_cor = _gibbs_removal_2d(image_gibbs)
 
     image4d = np.zeros((6 * Nre, 6 * Nre, 2, 2))
     image4d[:, :, 0, 0] = image_gibbs
@@ -77,8 +77,6 @@ def test_gibbs_4d():
 
 
 def test_swaped_gibbs_3d():
-    # for reference let's do first the 2d correction
-    image_cor = _gibbs_removal_2d(image_gibbs)
 
     image3d = np.zeros((6 * Nre, 2, 6 * Nre))
     image3d[:, 0, :] = image_gibbs
@@ -98,8 +96,6 @@ def test_swaped_gibbs_3d():
 
 
 def test_swaped_gibbs_4d():
-    # for reference let's do first the 2d correction
-    image_cor = _gibbs_removal_2d(image_gibbs)
 
     image4d = np.zeros((2, 6 * Nre, 6 * Nre, 2))
     image4d[0, :, :, 0] = image_gibbs
