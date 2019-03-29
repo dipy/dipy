@@ -275,16 +275,21 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
            removal based on local subvoxel-shifts. Magn Reson Med. 2016
            doi: 10.1002/mrm.26054.
     """
+    nd = vol.ndim
 
-    # Make sure that slice are ordering in matrix axis 2
+    # check the axis corresponding to different slices
+    # 1) This axis cannot be larger than 2
     if slice_axis > 2:
         raise ValueError("Different slices have to be organized along" +
                          "one of the 3 first matrix dimensions")
-    elif slice_axis < 2:
+
+    # 2) If this is not 2, swap axis so that different slices are ordered
+    # along axis 2. Note that swapping is not required if data is already a
+    # single image
+    elif slice_axis < 2 and nd > 2:
         vol = np.swapaxes(vol, slice_axis, 2)
 
     # check matrix dimension
-    nd = vol.ndim
     if nd == 4:
         inishap = vol.shape
         vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
