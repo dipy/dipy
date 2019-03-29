@@ -313,7 +313,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     # Reshape data to original format
     if nd == 4:
         vol = vol.reshape(inishap)
-    if slice_axis < 2:
+    if slice_axis < 2 and nd > 2:
         vol = np.swapaxes(vol, slice_axis, 2)
 
     return vol
