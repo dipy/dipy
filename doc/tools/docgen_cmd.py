@@ -13,6 +13,8 @@ import inspect
 # version comparison
 from distutils.version import LooseVersion as V
 
+# List of workflows to ignore
+SKIP_WORKFLOWS_LIST = ['Workflow', 'CombinedWorkflow']
 
 def sh3(cmd):
     """
@@ -127,7 +129,7 @@ if __name__ == '__main__':
                    for name, obj in members
                    if inspect.isclass(obj) and
                    issubclass(obj, workflow_module.Workflow) and
-                   name not in ['Workflow', 'CombinedWorkflow']
+                   name not in SKIP_WORKFLOWS_LIST
                    }
 
         workflow_desc.update(d_wkflw)
