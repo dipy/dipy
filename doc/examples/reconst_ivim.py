@@ -235,47 +235,43 @@ estimated_params = ivimfit_vp.model_params[i, j, :]
 print(estimated_params)
 
 """
-
 To compare the fit using `fit_method='VarPro'` and `fit_method='LM'`, we can
 plot one voxel's signal and the model fit using both methods.
 
-For this, we will use the `predict` method of the IvimFit object,
-to get the predicted signal, based on each one of the model fit methods.
-
+We will use the `predict` method of the IvimFit objects, to get the predicted
+signal, based on each one of the model fit methods.
 """
 
 fig, ax = plt.subplots(1)
 
-ax.scatter(gtab.bvals, data_slice[i, j, :]/ data_slice[i, j, 0],
+ax.scatter(gtab.bvals, data_slice[i, j, :],
            color="green", label="Measured signal")
 
 ivim_lm_predict = ivimfit.predict(gtab)[i, j, :]
-ivim_lm_predict = ivim_lm_predict / ivim_lm_predict[0]
 
 ax.plot(gtab.bvals, ivim_lm_predict, label="LM prediction")
 
-S0_est, f_est, D_star_est, D_est = estimated_params
-text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
+S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
+
+text_fit = """LM param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
-ax.text(0.65, 0.50, text_fit, horizontalalignment='center',
+ax.text(0.65, 0.80, text_fit, horizontalalignment='center',
         verticalalignment='center', transform=plt.gca().transAxes)
 
 ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
-ivim_predict_vp = ivim_predict_vp / ivim_predict_vp[0]
-
 ax.plot(gtab.bvals, ivim_predict_vp, label="VarPro prediction")
 
 ax.set_xlabel("bvalues")
 ax.set_ylabel("Signals")
 
-S0_est, f_est, D_star_est, D_est = estimated_params
+S0_est, f_est, D_star_est, D_est = ivimfit_vp.model_params[i, j, :]
 
-text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
+text_fit = """VarPro param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
 ax.text(0.65, 0.50, text_fit, horizontalalignment='center',
-         verticalalignment='center', transform=plt.gca().transAxes)
+        verticalalignment='center', transform=plt.gca().transAxes)
 
 fig.legend(loc='upper right')
 fig.savefig("ivim_voxel_plot.png")
