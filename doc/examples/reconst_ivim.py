@@ -180,7 +180,7 @@ def plot_map(raw_data, variable, limits, filename):
     lower, upper = limits
     ax.set_title('Map for {}'.format(variable))
     im = ax.imshow(raw_data.T, origin='lower', clim=(lower, upper),
-                 cmap="gray", interpolation='nearest')
+                   cmap="gray", interpolation='nearest')
     fig.colorbar(im)
     fig.savefig(filename)
 
