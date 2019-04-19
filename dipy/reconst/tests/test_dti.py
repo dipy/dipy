@@ -857,6 +857,9 @@ def test_quantize_evecs():
             peak_indices = quantize_evecs(zerovecs, vertices, nbr_processes=-1)
             npt.assert_equal(peak_indices, np.zeros(test_shape))
 
+            peak_indices = quantize_evecs(zerovecs, vertices, nbr_processes=0)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
             peak_indices = quantize_evecs(eyevecs, vertices, nbr_processes=-1)
             npt.assert_equal(peak_indices, idx * np.ones(test_shape))
 

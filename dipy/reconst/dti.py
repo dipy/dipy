@@ -2050,7 +2050,7 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
         If 0, uses the largest eigenvalue.
     nbr_processes : int
         Number of processes to use. If > 1, divides data into nbr_processes for
-        multiprocessing. If -1, uses as many processes as possible.
+        multiprocessing. If -1 or 0, uses as many processes as possible.
 
     Returns
     -------
@@ -2097,7 +2097,7 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
         The eigenvector to
 
     """
-    if nbr_processes == -1:
+    if nbr_processes < 1:
         try:
             nbr_processes = cpu_count()
         except NotImplementedError:
