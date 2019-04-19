@@ -176,14 +176,13 @@ the plot.
 
 
 def plot_map(raw_data, variable, limits, filename):
+    fig, ax = plt.subplots(1)
     lower, upper = limits
-    plt.title('Map for {}'.format(variable))
-    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper),
-               cmap="gray", interpolation='nearest')
-    plt.colorbar()
-    plt.savefig(filename)
-    plt.close()
-
+    ax.set_title('Map for {}'.format(variable))
+    im = ax.imshow(raw_data.T, origin='lower', clim=(lower, upper),
+                 cmap="gray", interpolation='nearest')
+    fig.colorbar(im)
+    fig.savefig(filename)
 
 """
 Let us get the various plots with `fit_method = 'LM'` so that we can visualize
