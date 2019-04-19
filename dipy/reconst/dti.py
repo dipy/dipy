@@ -2036,7 +2036,7 @@ def eig_from_lo_tri(data, min_diffusivity=0):
     return dti_params.reshape(data.shape[:-1] + (12, ))
 
 
-def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
+def quantize_evecs(evecs, odf_vertices=None, idx=0, nbr_processes=1):
     """ Find the closest orientation of an evenly distributed sphere
 
     Parameters
@@ -2045,8 +2045,8 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
     odf_vertices : None or ndarray
         If None, then set vertices from symmetric362 sphere.  Otherwise use
         passed ndarray as vertices
-    v : int
-        Use v-th eigenvector as the primary eigenvector for fiber tracking.
+    idx : int
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
         If 0, uses the largest eigenvalue.
     nbr_processes : int
         Number of processes to use. If > 1, divides data into nbr_processes for
@@ -2057,7 +2057,8 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
     closest : ndarray
     """
     if nbr_processes != 1:
-        return _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes)
+        return _quantize_evecs_parallel(evecs, odf_vertices, idx,
+                                        nbr_processes)
 
     if odf_vertices is None:
         odf_vertices = get_sphere('symmetric362').vertices
@@ -2066,7 +2067,7 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
         closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
                             evecs])
     else:
-        max_evecs = evecs[..., :, v]
+        max_evecs = evecs[..., :, idx]
         tup = max_evecs.shape[:-1]
         mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
         closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
@@ -2079,23 +2080,28 @@ def quantize_evecs(evecs, odf_vertices=None, v=0, nbr_processes=1):
 def _quantize_evecs_parallel_sub(args):
     (start_pos, end_pos) = args[1]
     odf_vertices = args[2]
-    v = args[3]
+    idx = args[3]
     evecs = args[0][start_pos:end_pos]
-    return quantize_evecs(evecs, odf_vertices, v, nbr_processes=1)
+    return quantize_evecs(evecs, odf_vertices, idx, nbr_processes=1)
 
 
-def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
+def _quantize_evecs_parallel(evecs, odf_vertices, idx, nbr_processes):
     """
     Paralellized implementation of :func:`quantize_evecs` (using
     multiprocessing).
 
     Parameters
     ----------
-    evecs
-    odf_vertices
-    v : int
-        The eigenvector to
-
+    evecs : ndarray
+    odf_vertices : None or ndarray
+        If None, then set vertices from symmetric362 sphere.  Otherwise use
+        passed ndarray as vertices
+    idx : int
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
+        If 0, uses the largest eigenvalue.
+    nbr_processes : int
+        Number of processes to use. If > 1, divides data into nbr_processes for
+        multiprocessing. If -1 or 0, uses as many processes as possible.
     """
     if nbr_processes < 1:
         try:
@@ -2108,9 +2114,10 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
                 warnings.warn("Cannot determine number of cpus.",
                               "returns quantize_evecs(...,",
                               "nbr_processes=1).")
-                return quantize_evecs(evecs, odf_vertices, v, nbr_processes=1)
+                return quantize_evecs(evecs, odf_vertices, idx,
+                                      nbr_processes=1)
 
-    evecs = evecs[..., :, v]
+    evecs = evecs[..., :, idx]
     shape = list(evecs.shape)
     evecs = np.reshape(evecs, (-1, shape[-1]))
     n = evecs.shape[0]
@@ -2127,7 +2134,7 @@ def _quantize_evecs_parallel(evecs, odf_vertices, v, nbr_processes):
                          zip(repeat(ctypes_evecs),
                              indices,
                              repeat(odf_vertices),
-                             repeat(v)))
+                             repeat(idx)))
     pool.close()
 
     with InTemporaryDirectory() as tmpdir:

@@ -867,8 +867,8 @@ def test_quantize_evecs():
             npt.assert_equal(peak_indices[ii], zero_idx)
 
             # Test v
-            peak_indices = quantize_evecs(eyevecs, sphere.vertices, v=1)
+            peak_indices = quantize_evecs(eyevecs, sphere.vertices, idx=1)
             npt.assert_equal(peak_indices, np.zeros(test_shape))
 
-            peak_indices = quantize_evecs(eyevecs, sphere.vertices, v=2)
+            peak_indices = quantize_evecs(eyevecs, sphere.vertices, idx=2)
             npt.assert_equal(peak_indices, 358 * np.ones(test_shape))
