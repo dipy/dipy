@@ -507,7 +507,7 @@ class SphHarmModel(OdfModel, Cache):
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
-    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
+    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1e-5,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -733,7 +733,7 @@ class QballModel(QballBaseModel):
         return dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
-def normalize_data(data, where_b0, min_signal=1., out=None):
+def normalize_data(data, where_b0, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0
     """
     if out is None:
@@ -825,7 +825,7 @@ class ResidualBootstrapWrapper(object):
     There wrapper than samples the residual boostrap distribution of signal and
     returns that sample.
     """
-    def __init__(self, signal_object, B, where_dwi, min_signal=1.):
+    def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):
         """Builds a ResidualBootstrapWapper
 
         Given some linear model described by B, the design matrix, and a

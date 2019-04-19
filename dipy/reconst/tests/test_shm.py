@@ -265,6 +265,14 @@ class TestQballModel(object):
         fit = model.fit(signal, mask)
         assert_array_equal(fit.gfa, 0)
 
+    def test_min_signal_default(self):
+        signal, gtab, expected = make_fake_signal()
+        model_default = self.model(gtab, 4)
+        shm_default = model_default.fit(signal).shm_coeff
+        model_correct = self.model(gtab, 4, min_signal=1e-5)
+        shm_correct = model_correct.fit(signal).shm_coeff
+        assert_equal(shm_default, shm_correct)
+
 
 def test_SphHarmFit():
     coef = np.zeros((3, 4, 5, 45))
