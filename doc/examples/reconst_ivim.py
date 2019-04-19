@@ -34,6 +34,7 @@ coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
 from dipy.reconst.ivim import IvimModel
 from dipy.data.fetcher import read_ivim
 
@@ -162,35 +163,6 @@ estimated_params = ivimfit.model_params[i, j, :]
 print(estimated_params)
 
 """
-Next, we plot the results relative to the model fit with `fit_method='LM'`.
-For this we will use the `predict` method of the IvimFit object
-to get the estimated signal.
-"""
-
-estimated_signal = ivimfit.predict(gtab)[i, j, :]
-
-plt.scatter(gtab.bvals, data_slice[i, j, :],
-            color="green", label="Actual signal")
-plt.plot(gtab.bvals, estimated_signal, color="red", label="Estimated Signal")
-plt.xlabel("bvalues")
-plt.ylabel("Signals")
-
-S0_est, f_est, D_star_est, D_est = estimated_params
-text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
-            D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
-
-plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
-         verticalalignment='center', transform=plt.gca().transAxes)
-plt.legend(loc='upper right')
-plt.savefig("ivim_voxel_plot.png")
-plt.close()
-
-"""
-.. figure:: ivim_voxel_plot.png
-   :align: center
-
-   Plot of the signal from one voxel.
-
 Now we can map the perfusion and diffusion maps for the slice. We
 will plot a heatmap showing the values using a colormap. It will be
 useful to define a plotting function for the heatmap here since we
@@ -204,14 +176,13 @@ the plot.
 
 
 def plot_map(raw_data, variable, limits, filename):
+    fig, ax = plt.subplots(1)
     lower, upper = limits
-    plt.title('Map for {}'.format(variable))
-    plt.imshow(raw_data.T, origin='lower', clim=(lower, upper),
-               cmap="gray", interpolation='nearest')
-    plt.colorbar()
-    plt.savefig(filename)
-    plt.close()
-
+    ax.set_title('Map for {}'.format(variable))
+    im = ax.imshow(raw_data.T, origin='lower', clim=(lower, upper),
+                   cmap="gray", interpolation='nearest')
+    fig.colorbar(im)
+    fig.savefig(filename)
 
 """
 Let us get the various plots with `fit_method = 'LM'` so that we can visualize
@@ -225,29 +196,27 @@ plot_map(ivimfit.D_star, "D*", (0, 0.01), "perfusion_coeff.png")
 plot_map(ivimfit.D, "D", (0, 0.001), "diffusion_coeff.png")
 
 """
-
 Next, we will fit the same model with a more refined optimization process with
-`fit_method='VarPro'` (for "Variable Projection"). The VarPro computes the
-IVIM parameters using the MIX approach [Farooq16]_. This algorithm uses three
-different optimizers. It starts with a differential evolution
-algorithm and fits the parameters in the power of exponentials. Then the fitted
-parameters in the first step are utilized to make a linear convex problem.
-Using a convex optimization, the volume fractions are determined. The last step
-is non-linear least-squares fitting on all the parameters. The results of the first
-and second optimizers are utilized as the initial values for the last step of
-the algorithm.
+`fit_method='VarPro'` (for "Variable Projection"). The VarPro computes the IVIM
+parameters using the MIX approach [Farooq16]_. This algorithm uses three
+different optimizers. It starts with a differential evolution algorithm and
+fits the parameters in the power of exponentials. Then the fitted parameters in
+the first step are utilized to make a linear convex problem. Using a convex
+optimization, the volume fractions are determined. The last step is non-linear
+least-squares fitting on all the parameters. The results of the first and
+second optimizers are utilized as the initial values for the last step of the
+algorithm.
 
 As opposed to the `'LM'` fitting method, this approach does not need to set any
 thresholds on the bvals to differentiate between the perfusion
-(pseudo-diffusion) and diffusion portions and fits the parameters simultaneously.
-Making use of the three step optimization mentioned above increases the
-convergence basin for fitting the multi-exponential functions of
+(pseudo-diffusion) and diffusion portions and fits the parameters
+simultaneously. Making use of the three step optimization mentioned above
+increases the convergence basin for fitting the multi-exponential functions of
 microstructure models. This method has been described in further detail in
 [Fadnavis19]_ and [Farooq16]_.
 """
 
 ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
-
 ivimfit_vp = ivimmodel_vp.fit(data_slice)
 
 """
@@ -265,28 +234,46 @@ estimated_params = ivimfit_vp.model_params[i, j, :]
 print(estimated_params)
 
 """
-Next, we plot the results relative to the model fit with `fit_method='VarPro'`.
-For this we will use the `predict` method of the IvimFit object
-to get the estimated signal.
+To compare the fit using `fit_method='VarPro'` and `fit_method='LM'`, we can
+plot one voxel's signal and the model fit using both methods.
+
+We will use the `predict` method of the IvimFit objects, to get the predicted
+signal, based on each one of the model fit methods.
 """
 
-ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
-plt.scatter(gtab.bvals, data_slice[i, j, :],
-            color="green", label="Actual signal")
-plt.plot(gtab.bvals, ivim_predict_vp, color="red",
-         label="Estimated Signal")
-plt.xlabel("bvalues")
-plt.ylabel("Signals")
+fig, ax = plt.subplots(1)
 
-S0_est, f_est, D_star_est, D_est = estimated_params
+ax.scatter(gtab.bvals, data_slice[i, j, :],
+           color="green", label="Measured signal")
 
-text_fit = """Estimated \n S0={:06.3f} f={:06.4f}\n
+ivim_lm_predict = ivimfit.predict(gtab)[i, j, :]
+
+ax.plot(gtab.bvals, ivim_lm_predict, label="LM prediction")
+
+S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
+
+text_fit = """LM param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
-plt.text(0.65, 0.50, text_fit, horizontalalignment='center',
-         verticalalignment='center', transform=plt.gca().transAxes)
-plt.legend(loc='upper right')
-plt.savefig("ivim_voxel_plot.png")
+ax.text(0.65, 0.80, text_fit, horizontalalignment='center',
+        verticalalignment='center', transform=plt.gca().transAxes)
+
+ivim_predict_vp = ivimfit_vp.predict(gtab)[i, j, :]
+ax.plot(gtab.bvals, ivim_predict_vp, label="VarPro prediction")
+
+ax.set_xlabel("bvalues")
+ax.set_ylabel("Signals")
+
+S0_est, f_est, D_star_est, D_est = ivimfit_vp.model_params[i, j, :]
+
+text_fit = """VarPro param estimates: \n S0={:06.3f} f={:06.4f}\n
+            D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
+
+ax.text(0.65, 0.50, text_fit, horizontalalignment='center',
+        verticalalignment='center', transform=plt.gca().transAxes)
+
+fig.legend(loc='upper right')
+fig.savefig("ivim_voxel_plot.png")
 
 """
 .. figure:: ivim_voxel_plot.png
