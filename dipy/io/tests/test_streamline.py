@@ -7,6 +7,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import (save_trk, load_trk, save_tractogram,
                                 save_tck, load_tck, load_tractogram,
                                 save_dpy, load_dpy)
+from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.io.trackvis import save_trk as trackvis_save_trk
 from dipy.tracking.streamline import Streamlines
 
@@ -182,11 +183,11 @@ def io_tractogram(load_fn, save_fn, extension):
         vox_size = tfile.header.get('voxel_sizes')
         dims = tfile.header.get('dimensions')
         if isinstance(vox_size, str):
-                vox_size = vox_size.replace('[', '').replace(']', '')
-                vox_size = np.fromstring(vox_size, sep=" ", dtype=np.float)
+            vox_size = vox_size.replace('[', '').replace(']', '')
+            vox_size = np.fromstring(vox_size, sep=" ", dtype=np.float)
         if isinstance(dims, str):
-                dims = dims.replace('[', '').replace(']', '')
-                dims = np.fromstring(dims, sep=" ", dtype=np.int)
+            dims = dims.replace('[', '').replace(']', '')
+            dims = np.fromstring(dims, sep=" ", dtype=np.int)
         npt.assert_array_equal(np.array([2, 1.5, 1.5]), vox_size)
         npt.assert_array_equal(np.array([50, 50, 50]), dims)
         npt.assert_equal(len(tfile.streamlines), len(streamlines))
@@ -237,6 +238,18 @@ def test_io_dpy():
         # Test save
         save_dpy(fname, streamlines)
         tracks, _ = load_dpy(fname)
+        npt.assert_equal(len(tracks), len(streamlines))
+        npt.assert_array_almost_equal(tracks[1], streamline,
+                                      decimal=4)
+
+
+def test_io_vtk():
+    with InTemporaryDirectory():
+        fname = 'test.fib'
+
+        # Test save
+        save_vtk_streamlines(streamlines, fname, binary=True)
+        tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(streamlines))
         npt.assert_array_almost_equal(tracks[1], streamline,
                                       decimal=4)
