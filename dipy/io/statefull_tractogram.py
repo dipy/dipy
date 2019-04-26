@@ -28,8 +28,8 @@ class Space(enum.Enum):
 
 
 class StateFullTractogram(object):
-    """ Object designed to be identical no matter the file format 
-    (trk, tck, fib, dpy). Facilitate transformation between space and 
+    """ Object designed to be identical no matter the file format
+    (trk, tck, fib, dpy). Facilitate transformation between space and
     data manipulation for each streamline / point.
     """
 
@@ -722,6 +722,9 @@ def get_reference_info(reference):
         voxel_order = header['voxel_order']
     else:
         raise TypeError('Input reference is not one of the supported format')
+
+    if isinstance(voxel_order, np.bytes_):
+        voxel_order = voxel_order.decode('utf-8')
 
     return affine, dimensions, voxel_sizes, voxel_order
 

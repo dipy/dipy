@@ -125,7 +125,7 @@ def save_vtk_streamlines(streamlines, filename,
     # Get lines_array in vtk input format
     lines_array = []
     current_position = 0
-    for i in xrange(nb_lines):
+    for i in range(nb_lines):
         current_len = len(streamlines[i])
 
         end_position = current_position + current_len
