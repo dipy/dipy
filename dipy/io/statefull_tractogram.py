@@ -28,9 +28,9 @@ class Space(enum.Enum):
 
 
 class StateFullTractogram(object):
-    """ Object designed to be identical no matter the file format (trk, tck, fib)
-    Facilitate transformation between space and data manipulation for each
-    streamline / point.
+    """ Object designed to be identical no matter the file format 
+    (trk, tck, fib, dpy). Facilitate transformation between space and 
+    data manipulation for each streamline / point.
     """
 
     def __init__(self, streamlines, reference, space,
@@ -510,7 +510,7 @@ class StateFullTractogram(object):
 
 
 def save_tractogram(sft, filename, bbox_valid_check=True):
-    """ Save the statefull tractogram in any format (trk, tck, fib)
+    """ Save the statefull tractogram in any format (trk, tck, fib, dpy)
 
     Parameters
     ----------
