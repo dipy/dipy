@@ -49,8 +49,8 @@ class StateFullTractogram(object):
             streamlines generation
         space : string
             Current space in which the streamlines are (vox, voxmm or rasmm)
-            Typically after tracking the space is vox, after nibabel loading the
-            space is rasmm
+            Typically after tracking the space is VOX, after nibabel loading
+            the space is RASMM
         shifted_origin : bool
             Information on the position of the origin,
             False is Trackvis standard, default (corner of the voxel)
@@ -96,12 +96,12 @@ class StateFullTractogram(object):
         if space_attribute is None:
             raise TypeError('Reference MUST be one of the valid types')
 
-        self._affine, self._dimensions, self._voxel_sizes, self._voxel_order = \
-            space_attribute
+        (self._affine, self._dimensions,
+         self._voxel_sizes, self._voxel_order) = space_attribute
         self._inv_affine = np.linalg.inv(self._affine)
 
         if space not in Space:
-            raise ValueError('Space MUST be one of the 3 choices ')
+            raise ValueError('Space MUST be one of the 3 choices (Enum)')
         self._space = space
 
         if not isinstance(shifted_origin, bool):
@@ -193,8 +193,10 @@ class StateFullTractogram(object):
         logging.warning('Streamlines were modified, data still match')
         self._streamlines = ArraySequence(streamlines)
 
-    def set_streamlines_and_data(self, streamlines, overwrite_data=False,
-                                 data_per_point=None, data_per_streamline=None):
+    def set_streamlines_and_data(self, streamlines,
+                                 overwrite_data=False,
+                                 data_per_point=None,
+                                 data_per_streamline=None):
         """ Modify streamlines AND data at the same time. Creating a new object
         would be less risky.
 
@@ -395,8 +397,8 @@ class StateFullTractogram(object):
             logging.debug(bbox_corners)
             is_valid = False
 
-        if old_space == Space.VOX:
-            self.to_vox()
+        if old_space == Space.RASMM:
+            self.to_rasmm()
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
@@ -507,7 +509,7 @@ class StateFullTractogram(object):
         self._shifted_origin = not self._shifted_origin
 
 
-def save_tractogram(sft, filename):
+def save_tractogram(sft, filename, bbox_valid_check=True):
     """ Save the statefull tractogram in any format (trk, tck, fib)
 
     Parameters
@@ -525,17 +527,15 @@ def save_tractogram(sft, filename):
 
     _, extension = robust_split_name(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
-        logging.error('Invalid file format!')
-        return False
+        TypeError('Output filename is not one of the supported format')
 
-    # if not sft.is_bbox_in_vox_valid():
-    #     logging.error('Invalid streamlines coordinates!')
-    #     return False
+    if bbox_valid_check and not sft.is_bbox_in_vox_valid():
+        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
+                         'save a valid file if some coordinates are invalid')
 
     old_space = deepcopy(sft.get_current_space())
     old_shift = deepcopy(sft.get_current_shift())
 
-    # All underlying saving method expect rasmm
     sft.to_rasmm()
     sft.to_center()
 
@@ -576,7 +576,8 @@ def save_tractogram(sft, filename):
 
 
 def load_tractogram(filename, reference, to_space=Space.RASMM,
-                    shifted_origin=False):
+                    shifted_origin=False, bbox_valid_check=True,
+                    trk_header_check=True):
     """ Applies median filter multiple times on input data.
 
     Parameters
@@ -603,23 +604,29 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     """
     _, extension = robust_split_name(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
-        logging.error('Invalid file format!')
+        logging.error('Output filename is not one of the supported format')
         return False
 
     if to_space not in Space:
-        logging.error('Invalid space!')
+        logging.error('Space MUST be one of the 3 choices (Enum)')
         return False
 
-    if extension == '.trk':
+    if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):
-            logging.error('Header of %s does not match the provided reference',
-                          filename)
+            logging.error('Trk file header does not match the provided ' +
+                          'reference')
             return False
 
     timer = time.time()
+    data_per_point = None
+    data_per_streamline = None
     if extension in ['.trk', '.tck']:
         tractogram_obj = nib.streamlines.load(filename).tractogram
         streamlines = tractogram_obj.streamlines
+        if extension == '.trk':
+            data_per_point = tractogram_obj.data_per_point
+            data_per_streamline = tractogram_obj.data_per_streamline
+
     elif extension in ['.vtk', '.fib']:
         streamlines = load_vtk_streamlines(filename)
     elif extension in ['.dpy']:
@@ -628,23 +635,19 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     logging.debug('Load %s with %s streamlines in %s seconds',
                   filename, len(streamlines), round(time.time() - timer, 3))
 
-    if extension == '.trk':
-        sft = StateFullTractogram(streamlines, reference, Space.RASMM,
-                                  shifted_origin=shifted_origin,
-                                  data_per_point=tractogram_obj.data_per_point,
-                                  data_per_streamline=tractogram_obj.data_per_streamline)
-    else:
-        sft = StateFullTractogram(streamlines, reference, Space.RASMM,
-                                  shifted_origin=shifted_origin)
+    sft = StateFullTractogram(streamlines, reference, Space.RASMM,
+                              shifted_origin=shifted_origin,
+                              data_per_point=data_per_point,
+                              data_per_streamline=data_per_streamline)
 
     if to_space == Space.VOX:
         sft.to_vox()
     elif to_space == Space.VOXMM:
         sft.to_voxmm()
 
-    # if not sft.is_bbox_in_vox_valid():
-    #     logging.error('Invalid streamlines coordinates!')
-    #     return False
+    if bbox_valid_check and not sft.is_bbox_in_vox_valid():
+        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
+                         'load a valid file if some coordinates are invalid')
 
     return sft
 
@@ -674,7 +677,7 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, tranformation of voxel to rasmm space
+        - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
         - dimensions list (3), int, volume shape for each axis
         - voxel_sizes  list (3), float, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
