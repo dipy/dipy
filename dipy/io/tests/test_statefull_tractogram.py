@@ -12,6 +12,13 @@ from dipy.io.statefull_tractogram import (StateFullTractogram,
                                           load_tractogram,
                                           Space)
 
+# Allow import, but disable doctests if we don't have fury
+from dipy.utils.optpkg import optional_package
+fury, have_fury, setup_module = optional_package('fury')
+ns, have_ns, setup_module = optional_package('vtk.util.numpy_support')
+
+if have_fury:
+    from dipy.viz import utils, vtk
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()
@@ -488,7 +495,7 @@ def bounding_bbox_valid(shift):
 
 def random_point_color():
     np.random.seed(0)
-    sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'])
+    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
     random_colors = np.random.randint(0, 255, (13, 8, 3))
     coloring_dict = {}
@@ -505,7 +512,7 @@ def random_point_color():
 
 def random_point_gray():
     np.random.seed(0)
-    sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'])
+    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
     random_colors = np.random.randint(0, 255, (13, 8, 1))
     coloring_dict = {}
@@ -524,7 +531,7 @@ def random_point_gray():
 
 def random_streamline_color():
     np.random.seed(0)
-    sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'])
+    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
     uniform_colors_x = np.random.randint(0, 255, (13, 1))
     uniform_colors_y = np.random.randint(0, 255, (13, 1))
@@ -571,28 +578,32 @@ def test_iterative_transformation():
 def test_iterative_saving_loading():
     trk_iterative_saving_loading()
     tck_iterative_saving_loading()
-    fib_iterative_saving_loading()
+    if have_fury:
+        fib_iterative_saving_loading()
     dpy_iterative_saving_loading()
 
 
 def test_equal_in_vox_space():
     trk_equal_in_vox_space()
     tck_equal_in_vox_space()
-    fib_equal_in_vox_space()
+    if have_fury:
+        fib_equal_in_vox_space()
     dpy_equal_in_vox_space()
 
 
 def test_equal_in_rasmm_space():
     trk_equal_in_rasmm_space()
     tck_equal_in_rasmm_space()
-    fib_equal_in_rasmm_space()
+    if have_fury:
+        fib_equal_in_rasmm_space()
     dpy_equal_in_rasmm_space()
 
 
 def test_equal_in_voxmm_space():
     trk_equal_in_voxmm_space()
     tck_equal_in_voxmm_space()
-    fib_equal_in_voxmm_space()
+    if have_fury:
+        fib_equal_in_voxmm_space()
     dpy_equal_in_voxmm_space()
 
 
