@@ -98,7 +98,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             stopping_thr=0.2,
             seed_density=1,
             step_size=0.5,
-            tracking_method="deterministic",
+            tracking_method="eudx",
             pmf_threshold=0.1,
             max_angle=30.,
             out_dir='',
