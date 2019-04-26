@@ -30,7 +30,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
         Parameters
         ----------
         strategy_name: str
-            string representing direction getter name
+            String representing direction getter name.
+        pam: instance of PeaksAndMetrics
+            An object with ``gfa``, ``peak_directions``, ``peak_values``,
+            ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes.
+        pmf_threshold : float
+            Threshold for ODF functions.
+        max_angle : float
+            Maximum angle between streamline segments.
 
         Returns
         -------
