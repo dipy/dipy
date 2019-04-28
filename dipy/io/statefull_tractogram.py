@@ -560,6 +560,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='w')
         dpy_obj.write_tracks(sft.get_streamlines())
+        dpy_obj.close()
 
     logging.debug('Save %s with %s streamlines in %s seconds',
                   filename, len(sft), round(time.time() - timer, 3))
@@ -632,6 +633,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='r')
         streamlines = list(dpy_obj.read_tracks())
+        dpy_obj.close()
     logging.debug('Load %s with %s streamlines in %s seconds',
                   filename, len(streamlines), round(time.time() - timer, 3))
 
