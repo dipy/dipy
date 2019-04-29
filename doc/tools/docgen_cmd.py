@@ -14,7 +14,7 @@ import inspect
 from distutils.version import LooseVersion as V
 
 # List of workflows to ignore
-SKIP_WORKFLOWS_LIST = ['Workflow', 'CombinedWorkflow']
+SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
 
 def sh3(cmd):
     """
@@ -118,8 +118,8 @@ if __name__ == '__main__':
 
     workflow_desc = {}
     # We get all workflows class obj in a dictionnary
-    for f in os.listdir(pjoin('..', 'dipy', 'workflows')):
-        module_name = inspect.getmodulename(f)
+    for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
+        module_name = inspect.getmodulename(path_file)
         if module_name is None:
             continue
 
@@ -137,24 +137,25 @@ if __name__ == '__main__':
     cmd_list = []
     for fpath in workflow_flist:
         fname = os.path.basename(fpath)
-        with open(fpath) as f:
-            flow_name = set(re.findall(r"[A-Z]\w+Flow", f.read(), re.X | re.M))
+        with open(fpath) as file_object:
+            flow_name = set(re.findall(r"[A-Z]\w+Flow", file_object.read(),
+                                       re.X | re.M))
 
         if not flow_name or len(flow_name) != 1:
             continue
 
         flow_name = list(flow_name)[-1]
         print("Generating docs for: {0} ({1})".format(fname, flow_name))
-        out_f = fname + ".rst"
-        with open(pjoin(outdir, out_f), "w") as f:
+        out_fname = fname + ".rst"
+        with open(pjoin(outdir, out_fname), "w") as fp:
             dashes = "========================"
-            f.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
+            fp.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
             # Trick to avoid docgen_cmd.py as cmd line
             help_txt = workflow_desc[flow_name]["help"]
             help_txt = help_txt.replace("docgen_cmd.py", fname)
-            f.write(help_txt)
+            fp.write(help_txt)
 
-        cmd_list.append(out_f)
+        cmd_list.append(out_fname)
         print("Done")
 
     # generate index.rst
