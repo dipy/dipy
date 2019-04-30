@@ -10,6 +10,15 @@ import numpy as np
 
 import scipy.optimize as opt
 
+import os
+from os import path
+from multiprocessing import cpu_count, Pool, sharedctypes
+from itertools import repeat
+
+import sys
+
+from nibabel.tmpdirs import InTemporaryDirectory
+
 from dipy.utils.six.moves import range
 from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
@@ -1237,12 +1246,13 @@ def iter_fit_tensor(step=1e4):
         The chunk size as a number of voxels. Optional parameter with default
         value 10,000.
 
-        In order to increase speed of processing, tensor fitting is done
-        simultaneously over many voxels. This parameter sets the number of
-        voxels that will be fit at once in each iteration. A larger step value
-        should speed things up, but it will also take up more memory. It is
-        advisable to keep an eye on memory consumption as this value is
-        increased.
+    Notes
+    -----
+    In order to increase speed of processing, tensor fitting is done
+    simultaneously over many voxels. This parameter sets the number of voxels
+    that will be fit at once in each iteration. A larger step value should
+    speed things up, but it will also take up more memory. It is advisable to
+    keep an eye on memory consumption as this value is increased.
     """
 
     def iter_decorator(fit_tensor):
@@ -2002,30 +2012,6 @@ def design_matrix(gtab, dtype=None):
     return -B
 
 
-def quantize_evecs(evecs, odf_vertices=None):
-    """ Find the closest orientation of an evenly distributed sphere
-
-    Parameters
-    ----------
-    evecs : ndarray
-    odf_vertices : None or ndarray
-        If None, then set vertices from symmetric362 sphere.  Otherwise use
-        passed ndarray as vertices
-
-    Returns
-    -------
-    IN : ndarray
-    """
-    max_evecs = evecs[..., :, 0]
-    if odf_vertices is None:
-        odf_vertices = get_sphere('symmetric362').vertices
-    tup = max_evecs.shape[:-1]
-    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
-    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
-    IN = IN.reshape(tup)
-    return IN
-
-
 def eig_from_lo_tri(data, min_diffusivity=0):
     """
     Calculates tensor eigenvalues/eigenvectors from an array containing the
@@ -2048,6 +2034,124 @@ def eig_from_lo_tri(data, min_diffusivity=0):
                                     min_diffusivity=min_diffusivity)
     dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
     return dti_params.reshape(data.shape[:-1] + (12, ))
+
+
+def quantize_evecs(evecs, odf_vertices=None, idx=0, nbr_processes=1):
+    """ Find the closest orientation of an evenly distributed sphere
+
+    Parameters
+    ----------
+    evecs : ndarray
+    odf_vertices : None or ndarray
+        If None, then set vertices from symmetric362 sphere.  Otherwise use
+        passed ndarray as vertices
+    idx : int
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
+        If 0, uses the largest eigenvalue.
+    nbr_processes : int
+        Number of processes to use. If > 1, divides data into nbr_processes for
+        multiprocessing. If -1 or 0, uses as many processes as possible.
+
+    Returns
+    -------
+    closest : ndarray
+    """
+    if nbr_processes != 1:
+        return _quantize_evecs_parallel(evecs, odf_vertices, idx,
+                                        nbr_processes)
+
+    if odf_vertices is None:
+        odf_vertices = get_sphere('symmetric362').vertices
+
+    if len(evecs.shape) == 2:
+        closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
+                            evecs])
+    else:
+        max_evecs = evecs[..., :, idx]
+        tup = max_evecs.shape[:-1]
+        mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
+        closest = np.array([np.argmin(np.dot(odf_vertices, m)) for m in
+                            mec])
+        closest = closest.reshape(tup)
+
+    return closest
+
+
+def _quantize_evecs_parallel_sub(args):
+    (start_pos, end_pos) = args[1]
+    odf_vertices = args[2]
+    idx = args[3]
+    evecs = args[0][start_pos:end_pos]
+    return quantize_evecs(evecs, odf_vertices, idx, nbr_processes=1)
+
+
+def _quantize_evecs_parallel(evecs, odf_vertices, idx, nbr_processes):
+    """
+    Paralellized implementation of :func:`quantize_evecs` (using
+    multiprocessing).
+
+    Parameters
+    ----------
+    evecs : ndarray
+    odf_vertices : None or ndarray
+        If None, then set vertices from symmetric362 sphere.  Otherwise use
+        passed ndarray as vertices
+    idx : int
+        Use idx-th eigenvector as the primary eigenvector for fiber tracking.
+        If 0, uses the largest eigenvalue.
+    nbr_processes : int
+        Number of processes to use. If > 1, divides data into nbr_processes for
+        multiprocessing. If -1 or 0, uses as many processes as possible.
+    """
+    if nbr_processes < 1:
+        try:
+            nbr_processes = cpu_count()
+        except NotImplementedError:
+            try:
+                import psutil
+                psutil.cpu_count()
+            except AttributeError:
+                warnings.warn("Cannot determine number of cpus.",
+                              "returns quantize_evecs(...,",
+                              "nbr_processes=1).")
+                return quantize_evecs(evecs, odf_vertices, idx,
+                                      nbr_processes=1)
+
+    evecs = evecs[..., :, idx]
+    shape = list(evecs.shape)
+    evecs = np.reshape(evecs, (-1, shape[-1]))
+    n = evecs.shape[0]
+    nbr_chunks = nbr_processes ** 2
+    chunk_size = int(np.ceil(n / nbr_chunks))
+    indices = list(zip(np.arange(0, n, chunk_size),
+                       np.arange(0, n, chunk_size) + chunk_size))
+
+    ctypes_evecs = np.ctypeslib.as_array(evecs)
+
+    pool = Pool(nbr_processes)
+
+    peaks_res = pool.map(_quantize_evecs_parallel_sub,
+                         zip(repeat(ctypes_evecs),
+                             indices,
+                             repeat(odf_vertices),
+                             repeat(idx)))
+    pool.close()
+
+    with InTemporaryDirectory() as tmpdir:
+        peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
+                                 dtype=peaks_res[0].dtype,
+                                 mode='w+',
+                                 shape=evecs.shape[0])
+
+        for i, (start_pos, end_pos) in enumerate(indices):
+            peak_indices[start_pos: end_pos] = peaks_res[i]
+
+        peak_indices = np.reshape(np.array(peak_indices), shape[:-1])
+
+    # Make sure all worker processes have exited before leaving context
+    # manager in order to prevent temporary file deletion errors in windows
+    pool.join()
+    return peak_indices
 
 
 common_fit_methods = {'WLS': wls_fit_tensor,

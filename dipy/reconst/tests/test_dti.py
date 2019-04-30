@@ -1,6 +1,7 @@
 """Testing DTI."""
 from __future__ import division, print_function, absolute_import
 
+import math
 import numpy as np
 import numpy.testing as npt
 import nibabel as nib
@@ -13,7 +14,7 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               geodesic_anisotropy, lower_triangular,
                               mean_diffusivity, radial_diffusivity,
                               TensorModel, trace, linearity, planarity,
-                              sphericity, decompose_tensor,
+                              sphericity, decompose_tensor, quantize_evecs,
                               _decompose_tensor_nan)
 
 from dipy.io.bvectxt import read_bvec_file
@@ -770,6 +771,7 @@ def test_eig_from_lo_tri():
 
 
 
+
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_fnames()
     data = nib.load(fdata).get_data()
@@ -781,6 +783,7 @@ def test_min_signal_alone():
     fit_together = ten_model.fit(data)
     npt.assert_array_almost_equal(fit_together.model_params[idx],
                                   fit_alone.model_params, decimal=12)
+
 
 
 def test_decompose_tensor_nan():
@@ -799,3 +802,73 @@ def test_decompose_tensor_nan():
                                            from_lower_triangular(D_alter))
     npt.assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
     npt.assert_array_almost_equal(valter, vref)
+
+
+# Test eigen-vector quantization:
+def _normalize(evec):
+    """ Routine for normalizing a vector in place """
+    n = math.sqrt(sum([x*x for x in evec]))
+    i = 0
+    while i < len(evec):
+        evec[i] = evec[i] / n
+        i += 1
+
+
+def random_evecs(shape):
+    """ Random evec with a given shape """
+    np.random.seed(7)
+    evecs = np.random.rand(np.prod(shape) * 3, 3)
+    for evec in evecs:
+        _normalize(evec)
+    evecs = np.reshape(evecs, shape+(3, 3))
+    return evecs
+
+
+def test_quantize_evecs():
+    sphere = get_sphere('symmetric724')
+
+    for test_shape in [(3, 4, 7), (3, )]:
+        # Index to the first item depends on the length of the shape:
+        ii = tuple([0] * len(test_shape))
+        # Test with default (362) and dense (724) spheres:
+        for vertices, idx, zero_idx in zip(
+                            [None, sphere.vertices], [174, 360], [207, 159]):
+            # Test for zero case
+            zerovecs = np.zeros(test_shape + (3, 3))
+            peak_indices = quantize_evecs(zerovecs, vertices)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            # Test for I case
+            eyevecs = np.tile(np.identity(3), (np.prod(test_shape), 1))
+            eyevecs = np.reshape(eyevecs, test_shape + (3, 3))
+            peak_indices = quantize_evecs(eyevecs, vertices)
+            npt.assert_equal(peak_indices, idx * np.ones(test_shape))
+
+            # Test an artificial evecs dataset
+            evecs = random_evecs(test_shape)
+            peak_indices = quantize_evecs(evecs, vertices)
+            npt.assert_equal(peak_indices[ii], zero_idx)
+
+            # Test parallel processing
+            peak_indices = quantize_evecs(zerovecs, vertices)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            # Test parallel processing
+            peak_indices = quantize_evecs(zerovecs, vertices, nbr_processes=-1)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            peak_indices = quantize_evecs(zerovecs, vertices, nbr_processes=0)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            peak_indices = quantize_evecs(eyevecs, vertices, nbr_processes=-1)
+            npt.assert_equal(peak_indices, idx * np.ones(test_shape))
+
+            peak_indices = quantize_evecs(evecs, vertices, nbr_processes=-1)
+            npt.assert_equal(peak_indices[ii], zero_idx)
+
+            # Test v
+            peak_indices = quantize_evecs(eyevecs, sphere.vertices, idx=1)
+            npt.assert_equal(peak_indices, np.zeros(test_shape))
+
+            peak_indices = quantize_evecs(eyevecs, sphere.vertices, idx=2)
+            npt.assert_equal(peak_indices, 358 * np.ones(test_shape))
