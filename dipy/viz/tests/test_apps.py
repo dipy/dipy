@@ -63,6 +63,12 @@ def test_horizon():
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
+    tractograms = []
+    horizon(tractograms, images=images, cluster=True, cluster_thr=5,
+            random_colors=False, length_lt=np.inf, length_gt=0,
+            clusters_lt=np.inf, clusters_gt=0,
+            world_coords=True, interactive=False)
+
 
 if __name__ == '__main__':
 
