@@ -86,7 +86,7 @@ follows. If we fill out the symmetric B-matrix as:
                  b_{xz} & b_{yz} & b_{zz}
                  \end{pmatrix}
 
-then $\mathbf{B}$ is equal to the rank 1 tensor $\gamma^2 G^2 R
+then $\mathbf{B}$ is equal to the rank 2 tensor $\gamma^2 G^2 R
 \mathbf{g} \mathbf{g}^T$. By performing an eigenvalue and
 eigenvector decomposition of $\mathbf{B}$ we obtain
 
