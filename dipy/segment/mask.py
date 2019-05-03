@@ -119,8 +119,8 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-def median_otsu(input_volume, median_radius=4, numpass=4,
-                autocrop=False, vol_idx=None, dilate=None):
+def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
+                autocrop=False, dilate=None):
     """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an
@@ -194,7 +194,7 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         if vol_idx is not None:
             b0vol = np.mean(input_volume[..., tuple(vol_idx)], axis=3)
         else:
-            b0vol = input_volume[..., 0].copy()
+            raise ValueError("For 4D images, must provide vol_idx input")
     else:
         b0vol = input_volume.copy()
     # Make a mask using a multiple pass median filter and histogram
