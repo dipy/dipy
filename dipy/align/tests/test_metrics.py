@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 from scipy import ndimage
 from dipy.align import floating
@@ -14,6 +15,21 @@ def test_exceptions():
         assert_raises(ValueError, SSDMetric, invalid_dim)
     assert_raises(ValueError, SSDMetric, 3, step_type='unknown_metric_name')
     assert_raises(ValueError, EMMetric, 3, step_type='unknown_metric_name')
+
+    def check_image_size_error(metric):
+        metric.set_static_image(np.arange(np.prod(shape)).reshape(shape),
+                                np.eye(4), np.ones(3), np.eye(3))
+        metric.set_moving_image(np.arange(np.prod(shape)).reshape(shape),
+                                np.eye(4), np.ones(3), np.eye(3))
+        assert_raises(IOError, metric.initialize_iteration)
+
+    metric = CCMetric(2)
+    for shape in itertools.product((5, 8), (8, 5)):
+        check_image_size_error(metric)
+
+    metric = CCMetric(3)
+    for shape in itertools.product((5, 8, 3), (8, 5, 30)):
+        check_image_size_error(metric)
 
 
 def test_EMMetric_image_dynamics():
@@ -234,7 +250,7 @@ def test_em_demons_step_3d():
 
 
 if __name__ == '__main__':
-    test_em_demons_step_2d()
-    test_em_demons_step_3d()
+    # test_em_demons_step_2d()
+    # test_em_demons_step_3d()
     test_exceptions()
-    test_EMMetric_image_dynamics()
+    # test_EMMetric_image_dynamics()
