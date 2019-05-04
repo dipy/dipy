@@ -244,20 +244,18 @@ class CCMetric(SimilarityMetric):
         re-orienting the gradients in the voxel space using the corresponding
         affine transformations.
         """
-        min_size = self.radius * 2 + 1
 
         def invalid_image_size(image):
-            valid_shape = [size for size in image.shape if
-                           size >= min_size]
-            return True if len(valid_shape) != image.ndim else False
+            min_size = self.radius * 2 + 1
+            return any([size < min_size for size in image.shape])
 
-        msg = ("Each image dimensions should be superior to 2 * radius + 1."
-               "Decrease CCMetric radius or Increase your image size")
+        msg = ("Each image dimension should be superior to 2 * radius + 1."
+               "Decrease CCMetric radius or increase your image size")
 
         if invalid_image_size(self.static_image):
-            raise IOError("Static image size is too small. " + msg)
+            raise ValueError("Static image size is too small. " + msg)
         if invalid_image_size(self.moving_image):
-            raise IOError("Moving image size is too small. " + msg)
+            raise ValueError("Moving image size is too small. " + msg)
 
         self.factors = self.precompute_factors(self.static_image,
                                                self.moving_image,
