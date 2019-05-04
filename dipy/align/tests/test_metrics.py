@@ -259,7 +259,7 @@ def test_em_demons_step_3d():
 
 
 if __name__ == '__main__':
-    # test_em_demons_step_2d()
-    # test_em_demons_step_3d()
+    test_em_demons_step_2d()
+    test_em_demons_step_3d()
     test_exceptions()
-    # test_EMMetric_image_dynamics()
+    test_EMMetric_image_dynamics()
