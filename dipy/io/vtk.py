@@ -2,16 +2,16 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 
-# Conditional import machinery for fury
 from dipy.tracking.streamline import transform_streamlines
-from dipy.utils.optpkg import optional_package
 
-# Allow import, but disable doctests if we don't have fury
+
+from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
-ns, have_ns, setup_module = optional_package('vtk.util.numpy_support')
 
 if have_fury:
-    from dipy.viz import utils, vtk
+    import vtk
+    from dipy.viz import utils
+    import vtk.util.numpy_support as ns
 
 
 def load_polydata(file_name):
@@ -197,9 +197,9 @@ def load_vtk_streamlines(filename, to_lps=True):
         lines += [lines_vertices[line_range]]
         current_idx = next_idx
     if to_lps:
-        to_ras = np.eye(4)
-        to_ras[0, 0] = -1
-        to_ras[1, 1] = -1
-        return transform_streamlines(lines, to_ras)
+        to_lps = np.eye(4)
+        to_lps[0, 0] = -1
+        to_lps[1, 1] = -1
+        return transform_streamlines(lines, to_lps)
 
     return lines

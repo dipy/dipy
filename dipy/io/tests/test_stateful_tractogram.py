@@ -7,18 +7,13 @@ import numpy.testing as npt
 from numpy.testing import assert_allclose
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.statefull_tractogram import (StateFullTractogram,
-                                          save_tractogram,
-                                          load_tractogram,
-                                          Space)
+from dipy.io.stateful_tractogram import (StatefulTractogram,
+                                         save_tractogram,
+                                         load_tractogram,
+                                         Space)
 
-# Allow import, but disable doctests if we don't have fury
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
-ns, have_ns, setup_module = optional_package('vtk.util.numpy_support')
-
-if have_fury:
-    from dipy.viz import utils, vtk
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()
@@ -49,6 +44,7 @@ def tck_equal_in_vox_space():
                     sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
 
 
+@npt.dec.skipif(not have_fury)
 def fib_equal_in_vox_space():
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
@@ -81,6 +77,7 @@ def tck_equal_in_rasmm_space():
                     sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
 
 
+@npt.dec.skipif(not have_fury)
 def fib_equal_in_rasmm_space():
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
@@ -113,6 +110,7 @@ def tck_equal_in_voxmm_space():
                     sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
 
 
+@npt.dec.skipif(not have_fury)
 def fib_equal_in_voxmm_space():
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
@@ -129,10 +127,10 @@ def dpy_equal_in_voxmm_space():
                     sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
 
 
-def switch_voxel_sizes_while_in_rasmm():
+def switch_voxel_sizes_from_rasmm():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    sft_switch = StateFullTractogram(
+    sft_switch = StatefulTractogram(
         sft.get_streamlines(), filepath_dix['gs_3mm.nii'], Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
@@ -146,12 +144,12 @@ def switch_voxel_sizes_while_in_rasmm():
                     sft_switch.get_streamlines().data, atol=1e-3, rtol=1e-6)
 
 
-def switch_voxel_sizes_while_in_voxmm():
+def switch_voxel_sizes_from_voxmm():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
-    sft_switch = StateFullTractogram(sft.get_streamlines(),
-                                     filepath_dix['gs_3mm.nii'],
-                                     Space.VOXMM)
+    sft_switch = StatefulTractogram(sft.get_streamlines(),
+                                    filepath_dix['gs_3mm.nii'],
+                                    Space.VOXMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
 
@@ -196,6 +194,7 @@ def tck_iterative_saving_loading():
             save_tractogram(sft_iter, 'gs_iter.tck')
 
 
+@npt.dec.skipif(not have_fury)
 def fib_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
@@ -292,152 +291,6 @@ def iterative_shift_corner():
                     tmp_streamlines, atol=1e-3, rtol=1e-6)
 
 
-# INTEGRATIVE TEST
-def subsample_streamlines(overwrite):
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    sub_streamlines = sft.get_streamlines()[0:12]
-
-    try:
-        sft.set_streamlines_and_data(sub_streamlines, overwrite_data=overwrite)
-        return len(sft) == 12
-    except (TypeError, ValueError):
-        return False
-
-
-def assign_both_data():
-    # TCK should be empty first and then dict
-    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_point=points_data,
-                                     data_per_streamline=streamlines_data)
-        return isinstance(sft.get_data_per_point(), dict) and \
-            isinstance(sft.get_data_per_streamline(), dict)
-    except (TypeError, ValueError):
-        return False
-
-
-def reassign_point_data():
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_point=points_data,
-                                     overwrite_data=True)
-        return isinstance(sft.get_data_per_point(), dict) and \
-            sft.get_data_per_streamline() == {}
-    except (TypeError, ValueError):
-        return False
-
-
-def reassign_streamline_data():
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-    tmp_data_streamline = sft.get_data_per_streamline()
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_streamline=tmp_data_streamline,
-                                     overwrite_data=True)
-        return isinstance(sft.get_data_per_streamline(), dict) and \
-            sft.get_data_per_point() == {}
-    except (TypeError, ValueError):
-        return False
-
-
-def reassign_both_data_from_empty():
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-    tmp_data_point = sft.get_data_per_point()
-    tmp_data_streamline = sft.get_data_per_streamline()
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines, overwrite_data=True)
-        test_1 = sft.get_data_per_point() == {} and \
-            sft.get_data_per_streamline() == {}
-
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_point=tmp_data_point,
-                                     data_per_streamline=tmp_data_streamline)
-        test_2 = isinstance(sft.get_data_per_point(), dict) and \
-            isinstance(sft.get_data_per_streamline(), dict)
-        return test_1 and test_2
-    except (TypeError, ValueError):
-        return False
-
-
-def reassign_point_data_from_empty():
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-    tmp_data_point = sft.get_data_per_point()
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines, overwrite_data=True)
-        test_1 = sft.get_data_per_point() == {} and \
-            sft.get_data_per_streamline() == {}
-
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_point=tmp_data_point)
-        test_2 = isinstance(sft.get_data_per_point(), dict) and \
-            sft.get_data_per_streamline() == {}
-        return test_1 and test_2
-    except (TypeError, ValueError):
-        return False
-
-
-def reassign_streamline_data_from_empty():
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-    tmp_data_streamline = sft.get_data_per_streamline()
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines, overwrite_data=True)
-        test_1 = sft.get_data_per_point() == {} and \
-            sft.get_data_per_streamline() == {}
-
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_streamline=tmp_data_streamline)
-        test_2 = sft.get_data_per_point() == {} and \
-            isinstance(sft.get_data_per_streamline(), dict)
-        return test_1 and test_2
-    except (TypeError, ValueError):
-        return False
-
-
-def subsample_reassign_both_data(overwrite, nb_streamlines=6,
-                                 nb_point_data=6, nb_streamline_data=6):
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          to_space=Space.RASMM)
-    tmp_streamlines = sft.get_streamlines_copy()[0:nb_streamlines]
-    tmp_data_point = sft.get_data_per_point()
-    tmp_data_streamline = sft.get_data_per_streamline()
-    for key in tmp_data_point.keys():
-        tmp_data_point[key] = \
-            tmp_data_point[key][0:nb_point_data]
-    for key in tmp_data_streamline.keys():
-        tmp_data_streamline[key] = \
-            tmp_data_streamline[key][0:nb_streamline_data]
-
-    try:
-        sft.set_streamlines_and_data(tmp_streamlines,
-                                     data_per_point=tmp_data_point,
-                                     data_per_streamline=tmp_data_streamline,
-                                     overwrite_data=overwrite)
-        return True
-    except (TypeError, ValueError):
-        return False
-
-
 def replace_streamlines():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
@@ -450,25 +303,16 @@ def replace_streamlines():
         return False
 
 
-def reassign_both_data_sep():
+def subsample_streamlines():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    tmp_streamlines = list(sft.get_streamlines())
-    tmp_data_point = sft.get_data_per_point()
-    tmp_data_streamline = sft.get_data_per_streamline()
+    tmp_streamlines = sft.get_streamlines_copy()[0:8]
 
     try:
-        sft.set_streamlines_and_data(tmp_streamlines, overwrite_data=True)
-        test_1 = sft.get_data_per_point() == {} and \
-            sft.get_data_per_streamline() == {}
-
-        sft.set_data_per_point(tmp_data_point)
-        sft.set_data_per_streamline(tmp_data_streamline)
-        test_2 = isinstance(sft.get_data_per_point(), dict) and \
-            isinstance(sft.get_data_per_streamline(), dict)
-        return test_1 and test_2
-    except (TypeError, ValueError):
+        sft.set_streamlines(tmp_streamlines)
         return False
+    except (TypeError, ValueError):
+        return True
 
 
 def reassign_both_data_sep_to_empty():
@@ -483,6 +327,19 @@ def reassign_both_data_sep_to_empty():
 
     return sft.get_data_per_point() == {} and \
         sft.get_data_per_streamline() == {}
+
+
+def reassign_both_data_sep():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                          to_space=Space.RASMM)
+
+    try:
+        sft.set_data_per_point(points_data)
+        sft.set_data_per_streamline(streamlines_data)
+    except (TypeError, ValueError):
+        return False
+
+    return True
 
 
 def bounding_bbox_valid(shift):
@@ -578,38 +435,34 @@ def test_iterative_transformation():
 def test_iterative_saving_loading():
     trk_iterative_saving_loading()
     tck_iterative_saving_loading()
-    if have_fury:
-        fib_iterative_saving_loading()
+    fib_iterative_saving_loading()
     dpy_iterative_saving_loading()
 
 
 def test_equal_in_vox_space():
     trk_equal_in_vox_space()
     tck_equal_in_vox_space()
-    if have_fury:
-        fib_equal_in_vox_space()
+    fib_equal_in_vox_space()
     dpy_equal_in_vox_space()
 
 
 def test_equal_in_rasmm_space():
     trk_equal_in_rasmm_space()
     tck_equal_in_rasmm_space()
-    if have_fury:
-        fib_equal_in_rasmm_space()
+    fib_equal_in_rasmm_space()
     dpy_equal_in_rasmm_space()
 
 
 def test_equal_in_voxmm_space():
     trk_equal_in_voxmm_space()
     tck_equal_in_voxmm_space()
-    if have_fury:
-        fib_equal_in_voxmm_space()
+    fib_equal_in_voxmm_space()
     dpy_equal_in_voxmm_space()
 
 
 def test_switch_reference():
-    switch_voxel_sizes_while_in_rasmm()
-    switch_voxel_sizes_while_in_voxmm()
+    switch_voxel_sizes_from_rasmm()
+    switch_voxel_sizes_from_voxmm()
 
 
 def test_shifting_corner():
@@ -619,30 +472,11 @@ def test_shifting_corner():
 
 
 def test_replace_streamlines():
-    # First is expected to fail
-    assert not subsample_streamlines(False)
-    assert subsample_streamlines(True)
+    # First two is expected to fail
+    assert subsample_streamlines()
     assert replace_streamlines()
     assert reassign_both_data_sep()
     assert reassign_both_data_sep_to_empty()
-
-
-def test_reassign_data():
-    assert assign_both_data()
-    assert reassign_point_data()
-    assert reassign_streamline_data()
-    assert reassign_both_data_from_empty()
-    assert reassign_point_data_from_empty()
-    assert reassign_streamline_data_from_empty()
-
-
-def test_subsampled_and_reassign_data():
-    # First 4 are expected to fail
-    assert not subsample_reassign_both_data(False)
-    assert not subsample_reassign_both_data(True, 6, 6, 5)
-    assert not subsample_reassign_both_data(True, 5, 6, 6)
-    assert not subsample_reassign_both_data(True, 4, 5, 6)
-    assert subsample_reassign_both_data(True)
 
 
 def test_bounding_box():

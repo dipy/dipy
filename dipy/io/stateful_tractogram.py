@@ -2,7 +2,6 @@ from copy import deepcopy
 import enum
 from itertools import product
 import logging
-import numbers
 import os
 import time
 import six
@@ -27,8 +26,9 @@ class Space(enum.Enum):
     RASMM = 'rasmm'
 
 
-class StateFullTractogram(object):
-    """ Object designed to be identical no matter the file format
+class StatefulTractogram(object):
+    """ Class for stateful representation of collections of streamlines
+    Object designed to be identical no matter the file format
     (trk, tck, fib, dpy). Facilitate transformation between space and
     data manipulation for each streamline / point.
     """
@@ -80,28 +80,22 @@ class StateFullTractogram(object):
         if data_per_streamline is None:
             data_per_streamline = {}
 
-        if not isinstance(streamlines, (list, ArraySequence)):
-            raise TypeError('Streamlines MUST be a list or an ArraySequence')
-        self._streamlines = ArraySequence(streamlines)
-
-        if not _is_data_per_point_valid(streamlines, data_per_point):
-            raise ValueError('Invalid data per point, does not match')
-        if not _is_data_per_streamline_valid(streamlines, data_per_streamline):
-            raise ValueError('Invalid data per streamlines, does not match')
-
-        self._data_per_point = dict(data_per_point)
-        self._data_per_streamline = dict(data_per_streamline)
+        self._tractogram = Tractogram(streamlines,
+                                      data_per_point=data_per_point,
+                                      data_per_streamline=data_per_streamline)
 
         space_attribute = get_reference_info(reference)
         if space_attribute is None:
-            raise TypeError('Reference MUST be one of the valid types')
+            raise TypeError('Reference MUST be one of the following:\n' +
+                            'Nifti or Trk filename, Nifti1Image or TrkFile, ' +
+                            'Nifti1Header or trk.header (dict)')
 
         (self._affine, self._dimensions,
          self._voxel_sizes, self._voxel_order) = space_attribute
         self._inv_affine = np.linalg.inv(self._affine)
 
         if space not in Space:
-            raise ValueError('Space MUST be one of the 3 choices (Enum)')
+            raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
         self._space = space
 
         if not isinstance(shifted_origin, bool):
@@ -134,24 +128,10 @@ class StateFullTractogram(object):
         """ Define the length of the object """
         return self._get_streamline_count()
 
-    def convert_data_per_point_for_trk(self):
-        """
-        Trk requires a specific way of writting metadata, attempt (heuristic)
-        at converting typical dictionnary to trk-friendly format
-        (WARNING)
-        """
-        for key in self._data_per_point:
-            for ind in range(len(self._data_per_point[key])):
-                for i, value in enumerate(self._data_per_point[key][ind]):
-                    if isinstance(value, numbers.Number):
-                        value = float(value)
-                    if not isinstance(value, (list, np.ndarray)):
-                        self._data_per_point[key][ind][i] = [value]
-
     def get_space_attribute(self):
         """ Getter for spatial attribute """
-        return self._affine, self._dimensions, \
-            self._voxel_sizes, self._voxel_order
+        return self._affine, self._dimensions, self._voxel_sizes, \
+            self._voxel_order
 
     def get_current_space(self):
         """ Getter for the current space """
@@ -163,11 +143,11 @@ class StateFullTractogram(object):
 
     def get_streamlines(self):
         """ Partially safe getter for streamlines """
-        return self._streamlines
+        return self._tractogram.streamlines
 
     def get_streamlines_copy(self):
         """ Safe getter for streamlines (for slicing) """
-        return deepcopy(list(self._streamlines))
+        return deepcopy(list(self._tractogram.streamlines))
 
     def set_streamlines(self, streamlines):
         """ Modify streamlines. Creating a new object would be less risky.
@@ -176,96 +156,15 @@ class StateFullTractogram(object):
         ----------
         streamlines : list or ArraySequence (list and deepcopy recommanded)
             Streamlines of the tractogram
-
-        Returns
-        -------
-        output : bool
-            Was the operation successful (did everything match)
         """
-        if not isinstance(streamlines, (list, ArraySequence)):
-            raise TypeError('Streamlines MUST be a list or an ArraySequence')
-
-        if not _is_data_per_point_valid(streamlines, self._data_per_point) or \
-            not _is_data_per_streamline_valid(streamlines,
-                                              self._data_per_streamline):
-            raise ValueError('Invalid data_per_point or data_per_streamline')
-
-        logging.warning('Streamlines were modified, data still match')
-        self._streamlines = ArraySequence(streamlines)
-
-    def set_streamlines_and_data(self, streamlines,
-                                 overwrite_data=False,
-                                 data_per_point=None,
-                                 data_per_streamline=None):
-        """ Modify streamlines AND data at the same time. Creating a new object
-        would be less risky.
-
-        Setting one of both or both data at the same time is possible.
-        Using overwrite_data without data will erase data (with {})
-
-        Subsampling streamlines from ArraySequence should ALWAYS be done with a
-        deepcopy and pass as a list. ArraySequence views are broken !
-
-        Parameters
-        ----------
-        streamlines : list or ArraySequence (list and deepcopy recommanded)
-            Streamlines of the tractogram
-        overwrite_data : bool
-            Is required if data already exist. Setting to {} is possible
-        data_per_point : dict
-            Dictionary in which each key has X items, each items has Y_i items
-            X being the number of streamlines
-            Y_i being the number of points on streamlines #i
-        data_per_streamline : dict
-            Dictionary in which each key has X items
-            X being the number of streamlines
-
-        Returns
-        -------
-        output : bool
-            Was the operation successful (did everything match)
-        """
-        if data_per_point is None:
-            data_per_point = {}
-        if data_per_streamline is None:
-            data_per_streamline = {}
-
-        logging.warning('Modifying the streamlines, if space/reference was ' +
-                        'changed you should create a new object!')
-
-        if not isinstance(streamlines, (list, ArraySequence)):
-            raise TypeError('Streamlines MUST be a list or an ArraySequence')
-
-        if overwrite_data or \
-                (isinstance(data_per_point, (dict, PerArraySequenceDict)) and
-                 self._data_per_point == {}):
-            tmp_data_per_point = data_per_point
-        else:
-            raise ValueError('Existing data_per_point, use overwrite')
-
-        if overwrite_data or \
-                (isinstance(data_per_streamline, (dict, PerArrayDict)) and
-                 self._data_per_streamline == {}):
-            tmp_data_per_streamline = data_per_streamline
-        else:
-            raise ValueError('Existing data_per_streamline, use overwrite')
-
-        if _is_data_per_point_valid(streamlines, tmp_data_per_point) and \
-                _is_data_per_streamline_valid(streamlines,
-                                              tmp_data_per_streamline):
-            self._streamlines = ArraySequence(streamlines)
-            self._data_per_point = dict(tmp_data_per_point)
-            self._data_per_streamline = dict(tmp_data_per_streamline)
-            logging.warning('Points and streamlines data and streamlines' +
-                            ' data were replaced')
-        else:
-            # One of the non-None data didn't match streamlines
-            # None is considered valid, and always match
-            raise ValueError('Invalid data_per_point or data_per_streamline')
+        self._tractogram._streamlines = ArraySequence(streamlines)
+        self.set_data_per_point(self.get_data_per_point())
+        self.set_data_per_streamline(self.get_data_per_streamline())
+        logging.warning('Streamlines has been modified')
 
     def get_data_per_point(self):
         """ Getter for data_per_point """
-        return self._data_per_point
+        return self._tractogram.data_per_point
 
     def set_data_per_point(self, data):
         """ Modify point data . Creating a new object would be less risky.
@@ -276,24 +175,13 @@ class StateFullTractogram(object):
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
             Y_i being the number of points on streamlines #i
-
-        Returns
-        -------
-        output : bool
-            Was the operation successful (did everything match)
         """
-        if data is None:
-            data = {}
-
-        if not _is_data_per_point_valid(self._streamlines, data):
-            raise ValueError('Invalid data_per_point, does not match')
-
-        self._data_per_point = dict(data)
-        logging.warning('Data_per_point was replaced')
+        self._tractogram.data_per_point = data
+        logging.warning('Data_per_point has been modified')
 
     def get_data_per_streamline(self):
         """ Getter for data_per_streamline """
-        return self._data_per_streamline
+        return self._tractogram.data_per_streamline
 
     def set_data_per_streamline(self, data):
         """ Modify point data . Creating a new object would be less risky.
@@ -303,20 +191,9 @@ class StateFullTractogram(object):
         data : dict
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
-
-        Returns
-        -------
-        output : bool
-            Was the operation successful (did everything match)
         """
-        if data is None:
-            data = {}
-
-        if not _is_data_per_streamline_valid(self._streamlines, data):
-            raise ValueError('Invalid data_per_streamlines, does not match')
-
-        self._data_per_streamline = dict(data)
-        logging.warning('Data_per_streamlines was replaced')
+        self._tractogram.data_per_streamline = data
+        logging.warning('Data_per_streamline has been modified')
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
@@ -359,9 +236,9 @@ class StateFullTractogram(object):
         output : ndarray
             8 corners of the XYZ aligned box, all zeros if no streamlines
         """
-        if self._streamlines.data.size > 0:
-            bbox_min = np.min(self._streamlines.data, axis=0)
-            bbox_max = np.max(self._streamlines.data, axis=0)
+        if self._tractogram.streamlines.data.size > 0:
+            bbox_min = np.min(self._tractogram.streamlines.data, axis=0)
+            bbox_max = np.max(self._tractogram.streamlines.data, axis=0)
 
             return np.asarray(list(product(*zip(bbox_min, bbox_max))))
 
@@ -409,17 +286,18 @@ class StateFullTractogram(object):
 
     def _get_streamline_count(self):
         """ Safe getter for the number of streamlines """
-        return len(self._streamlines._offsets)
+        return len(self._tractogram.streamlines._offsets)
 
     def _get_point_count(self):
         """ Safe getter for the number of streamlines """
-        return len(self._streamlines._data)
+        return len(self._tractogram.streamlines.data)
 
     def _vox_to_voxmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data *= np.asarray(self._voxel_sizes)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data *= np.asarray(
+                    self._voxel_sizes)
                 self._space = Space.VOXMM
                 logging.info('Moved streamlines from vox to voxmm')
         else:
@@ -429,8 +307,9 @@ class StateFullTractogram(object):
     def _voxmm_to_vox(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data /= np.asarray(self._voxel_sizes)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data /= np.asarray(
+                    self._voxel_sizes)
                 self._space = Space.VOX
                 logging.info('Moved streamlines from voxmm to vox')
         else:
@@ -440,9 +319,9 @@ class StateFullTractogram(object):
     def _vox_to_rasmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data = apply_affine(self._affine,
-                                                       self._streamlines.data)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data = apply_affine(self._affine,
+                                                                  self._tractogram.streamlines.data)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from vox to rasmm')
         else:
@@ -452,9 +331,9 @@ class StateFullTractogram(object):
     def _rasmm_to_vox(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data = apply_affine(self._inv_affine,
-                                                       self._streamlines.data)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data = apply_affine(self._inv_affine,
+                                                                  self._tractogram.streamlines.data)
                 self._space = Space.VOX
                 logging.info('Moved streamlines from rasmm to vox')
         else:
@@ -464,10 +343,11 @@ class StateFullTractogram(object):
     def _voxmm_to_rasmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data /= np.asarray(self._voxel_sizes)
-                self._streamlines._data = apply_affine(self._affine,
-                                                       self._streamlines.data)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data /= np.asarray(
+                    self._voxel_sizes)
+                self._tractogram.streamlines._data = apply_affine(self._affine,
+                                                                  self._tractogram.streamlines.data)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from voxmm to rasmm')
         else:
@@ -477,10 +357,11 @@ class StateFullTractogram(object):
     def _rasmm_to_voxmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
-            if self._streamlines.data.size > 0:
-                self._streamlines._data = apply_affine(self._inv_affine,
-                                                       self._streamlines.data)
-                self._streamlines._data *= np.asarray(self._voxel_sizes)
+            if self._tractogram.streamlines.data.size > 0:
+                self._tractogram.streamlines._data = apply_affine(self._inv_affine,
+                                                                  self._tractogram.streamlines.data)
+                self._tractogram.streamlines._data *= np.asarray(
+                    self._voxel_sizes)
                 self._space = Space.VOXMM
                 logging.info('Moved streamlines from rasmm to voxmm')
         else:
@@ -500,7 +381,7 @@ class StateFullTractogram(object):
         if self._shifted_origin:
             shift *= -1
 
-        self._streamlines._data += shift
+        self._tractogram.streamlines._data += shift
         if not self._shifted_origin:
             logging.info('Origin moved to the center of voxel')
         else:
@@ -510,12 +391,12 @@ class StateFullTractogram(object):
 
 
 def save_tractogram(sft, filename, bbox_valid_check=True):
-    """ Save the statefull tractogram in any format (trk, tck, fib, dpy)
+    """ Save the stateful tractogram in any format (trk, tck, fib, dpy)
 
     Parameters
     ----------
-    sft : StateFullTractogram
-        The tractogram to save (must have been generated properly)
+    sft : StatefulTractogram
+        The stateful tractogram to save
     filename : string
         Filename with valid extension
 
@@ -525,7 +406,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         Did the saving work properly
     """
 
-    _, extension = robust_split_name(filename)
+    _, extension = os.path.splitext(filename)[0]
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
         TypeError('Output filename is not one of the supported format')
 
@@ -548,7 +429,6 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
                                     affine_to_rasmm=np.eye(4))
 
         if extension == '.trk':
-            sft.convert_data_per_point_for_trk()
             new_tractogram.data_per_point = sft.get_data_per_point()
             new_tractogram.data_per_streamline = sft.get_data_per_streamline()
 
@@ -579,7 +459,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 def load_tractogram(filename, reference, to_space=Space.RASMM,
                     shifted_origin=False, bbox_valid_check=True,
                     trk_header_check=True):
-    """ Applies median filter multiple times on input data.
+    """ Load the stateful tractogram from any format (trk, tck, fib, dpy)
 
     Parameters
     ----------
@@ -600,10 +480,10 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
     Returns
     -------
-    output : StateFullTractogram
+    output : StatefulTractogram
         The tractogram to load (must have been saved properly)
     """
-    _, extension = robust_split_name(filename)
+    _, extension = os.path.splitext(filename)[0]
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format')
         return False
@@ -637,10 +517,10 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     logging.debug('Load %s with %s streamlines in %s seconds',
                   filename, len(streamlines), round(time.time() - timer, 3))
 
-    sft = StateFullTractogram(streamlines, reference, Space.RASMM,
-                              shifted_origin=shifted_origin,
-                              data_per_point=data_per_point,
-                              data_per_streamline=data_per_streamline)
+    sft = StatefulTractogram(streamlines, reference, Space.RASMM,
+                             shifted_origin=shifted_origin,
+                             data_per_point=data_per_point,
+                             data_per_streamline=data_per_streamline)
 
     if to_space == Space.VOX:
         sft.to_vox()
@@ -652,19 +532,6 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                          'load a valid file if some coordinates are invalid')
 
     return sft
-
-
-def robust_split_name(filename):
-    """ Get the basename and extension of a filename, robust to nii.gz """
-    base, ext = os.path.splitext(filename)
-    if ext == ".gz":
-        temp_base, add_ext = os.path.splitext(base)
-
-        if add_ext == ".nii":
-            ext = add_ext + ext
-            base = temp_base
-
-    return base, ext
 
 
 def get_reference_info(reference):
@@ -688,14 +555,16 @@ def get_reference_info(reference):
     is_nifti = False
     is_trk = False
     if isinstance(reference, six.string_types):
-        _, ext = robust_split_name(reference)
-        if ext == '.nii' or ext == '.nii.gz':
+        try:
             header = nib.load(reference).header
             is_nifti = True
-        elif ext == '.trk':
+        except nib.filebasedimages.ImageFileError:
+            pass
+        try:
             header = nib.streamlines.load(reference, lazy_load=True).header
             is_trk = True
-
+        except ValueError:
+            pass
     elif isinstance(reference, nib.nifti1.Nifti1Image):
         header = reference.header
         is_nifti = True

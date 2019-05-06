@@ -12,7 +12,7 @@ from dipy.io.trackvis import save_trk as trackvis_save_trk
 from dipy.tracking.streamline import Streamlines
 
 from dipy.utils.optpkg import optional_package
-vtk, have_vtk, setup_module = optional_package('vtk')
+fury, have_fury, setup_module = optional_package('fury')
 
 streamline = np.array([[82.20181274,  91.36505891,  43.15737152],
                        [82.38442231,  91.79336548,  43.87036514],
@@ -246,16 +246,16 @@ def test_io_dpy():
                                       decimal=4)
 
 
+@npt.dec.skipif(not have_fury)
 def test_io_vtk():
-    if have_vtk:
-        with InTemporaryDirectory():
-            fname = 'test.fib'
+    with InTemporaryDirectory():
+        fname = 'test.fib'
 
-            # Test save
-            save_vtk_streamlines(streamlines, fname, binary=True)
-            tracks = load_vtk_streamlines(fname)
-            npt.assert_equal(len(tracks), len(streamlines))
-            npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
+        # Test save
+        save_vtk_streamlines(streamlines, fname, binary=True)
+        tracks = load_vtk_streamlines(fname)
+        npt.assert_equal(len(tracks), len(streamlines))
+        npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
 
 
 def test_trackvis():
