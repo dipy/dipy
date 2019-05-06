@@ -320,8 +320,7 @@ class StatefulTractogram(object):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
             if self._tractogram.streamlines.data.size > 0:
-                self._tractogram.streamlines._data = apply_affine(self._affine,
-                                                                  self._tractogram.streamlines.data)
+                self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from vox to rasmm')
         else:
@@ -332,8 +331,7 @@ class StatefulTractogram(object):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
             if self._tractogram.streamlines.data.size > 0:
-                self._tractogram.streamlines._data = apply_affine(self._inv_affine,
-                                                                  self._tractogram.streamlines.data)
+                self._tractogram.apply_affine(self._inv_affine)
                 self._space = Space.VOX
                 logging.info('Moved streamlines from rasmm to vox')
         else:
@@ -346,8 +344,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
-                self._tractogram.streamlines._data = apply_affine(self._affine,
-                                                                  self._tractogram.streamlines.data)
+                self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from voxmm to rasmm')
         else:
@@ -358,8 +355,7 @@ class StatefulTractogram(object):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
             if self._tractogram.streamlines.data.size > 0:
-                self._tractogram.streamlines._data = apply_affine(self._inv_affine,
-                                                                  self._tractogram.streamlines.data)
+                self._tractogram.apply_affine(self._inv_affine)
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
@@ -406,7 +402,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         Did the saving work properly
     """
 
-    _, extension = os.path.splitext(filename)[0]
+    _, extension = os.path.splitext(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
         TypeError('Output filename is not one of the supported format')
 
@@ -483,7 +479,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     output : StatefulTractogram
         The tractogram to load (must have been saved properly)
     """
-    _, extension = os.path.splitext(filename)[0]
+    _, extension = os.path.splitext(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format')
         return False
