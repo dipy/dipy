@@ -58,15 +58,19 @@ class MedianOtsuFlow(Workflow):
         io_it = self.get_io_iterator()
         if vol_idx is not None:
             vol_idx = map(int, vol_idx)
+
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
                          format(fpath))
 
             data, affine, img = load_nifti(fpath, return_img=True)
 
-            masked_volume, mask_volume = median_otsu(data, median_radius,
-                                                     numpass, autocrop,
-                                                     vol_idx, dilate)
+            masked_volume, mask_volume = median_otsu(
+                data,
+                vol_idx=vol_idx,
+                median_radius=median_radius,
+                numpass=numpass,
+                autocrop=autocrop, dilate=dilate)
 
             save_nifti(mask_out_path, mask_volume.astype(np.float32), affine)
 
