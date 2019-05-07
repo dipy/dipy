@@ -149,13 +149,13 @@ def build_stamp(pyxes, include_dirs=()):
     includes = sum([['--include-dir', d] for d in include_dirs], [])
     for source in pyxes:
         base, ext = splitext(source)
-        pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
+        pyx_hash = sha1((open(source, 'rt').read().encode())).hexdigest()
         c_filename = base + '.c'
         options, sources = parse_command_line(includes + [source])
         result = compile(sources, options)
         if result.num_errors > 0:
             raise RuntimeError('Cython failed to compile ' + source)
-        c_hash = sha1(open(c_filename, 'rt').read()).hexdigest()
+        c_hash = sha1(open(c_filename, 'rt').read().encode()).hexdigest()
         pyx_defs[source] = dict(pyx_hash=pyx_hash,
                                 c_filename=c_filename,
                                 c_hash=c_hash)

@@ -4,6 +4,7 @@
 """Wrapper to run setup.py using setuptools."""
 
 if __name__ == '__main__':
-    execfile('setup.py', dict(__name__='__main__',
-                              __file__='setup.py', # needed in setup.py
-                              force_setuptools=True))
+    with open('setup.py') as f:
+        exec(f.read(), dict(__name__='__main__',
+                            __file__='setup.py',  # needed in setup.py
+                            force_setuptools=True))
