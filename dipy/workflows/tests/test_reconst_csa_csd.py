@@ -121,6 +121,17 @@ def reconst_flow_core(flow):
                                   out_dir=out_dir, frf=None,
                                   roi_center=[10, 10, 10])
 
+            # test parallel implementation
+            reconst_flow = flow()
+            reconst_flow._force_overwrite = True
+            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                             out_dir=out_dir,
+                             parallel=True, nbr_processes=None)
+            reconst_flow = flow()
+            reconst_flow._force_overwrite = True
+            reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
+                             out_dir=out_dir,
+                             parallel=True, nbr_processes=2)
 
 if __name__ == '__main__':
     test_reconst_csa()

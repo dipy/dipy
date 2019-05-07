@@ -19,7 +19,8 @@ modules and download the data we'll be using.
 """
 
 from dipy.tracking.eudx import EuDX
-from dipy.reconst import peaks, shm
+from dipy.reconst import shm
+from dipy.direction import peaks
 from dipy.tracking import utils
 from dipy.tracking.streamline import Streamlines
 

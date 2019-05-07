@@ -97,11 +97,14 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         doc = inspect.getdoc(workflow.run)
         npds = NumpyDocString(doc)
         self.doc = npds['Parameters']
-        self.description = ' '.join(npds['Extended Summary'])
+        self.description = '{0}\n\n{1}'.format(
+            ' '.join(npds['Summary']),
+            ' '.join(npds['Extended Summary']))
 
         if npds['References']:
             ref_text = [text if text else "\n" for text in npds['References']]
-            ref_idx = self.epilog.find('References: \n') + len('References: \n')
+            ref_idx = self.epilog.find('References: \n') + \
+                len('References: \n')
             self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
                                                ''.join(ref_text),
                                                self.epilog[ref_idx:])
@@ -137,7 +140,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
             typestr = self.doc[i][1]
             dtype, isnarg = self._select_dtype(typestr)
-            help_msg = ''.join(self.doc[i][2])
+            help_msg = ' '.join(self.doc[i][2])
 
             _args = ['{0}{1}'.format(prefix, arg)]
             _kwargs = {'help': help_msg,

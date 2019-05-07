@@ -205,7 +205,7 @@ class Horizon(object):
                                     reset_camera=False)
         show_m.initialize()
 
-        if self.cluster:
+        if self.cluster and self.tractograms:
 
             lengths = np.array(
                 [self.cla[c]['length'] for c in self.cla])

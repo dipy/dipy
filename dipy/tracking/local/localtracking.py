@@ -164,6 +164,7 @@ class LocalTracking(object):
                 else:
                     yield streamline
 
+
 class ParticleFilteringTracking(LocalTracking):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,

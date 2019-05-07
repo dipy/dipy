@@ -961,7 +961,7 @@ def move_streamlines(streamlines, output_space, input_space=None,
     if return_seeds:
         # Seeds are already moved
         for sl, seed in streamlines:
-            yield np.dot(sl, lin_T) + offset, seed
+            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
     else:
         for sl in streamlines:
             yield np.dot(sl, lin_T) + offset

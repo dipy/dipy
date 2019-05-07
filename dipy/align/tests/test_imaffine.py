@@ -8,7 +8,6 @@ from numpy.testing import (assert_array_equal,
                            assert_equal,
                            assert_raises)
 from dipy.core import geometry as geometry
-from dipy.data import get_data
 from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf

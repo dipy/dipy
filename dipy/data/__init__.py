@@ -294,16 +294,6 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
 
 
-def get_data(name='small_64D'):
-    """Deprecate function."""
-    warnings.warn("The `dipy.data.get_data` function is deprecated as of" +
-                  " version 0.15 of Dipy and will be removed in a future" +
-                  " version. Please use `dipy.data.get_fnames` function" +
-                  " instead",
-                  DeprecationWarning)
-    return get_fnames(name)
-
-
 def _gradient_from_file(filename):
     """Reads a gradient file saved as a text file compatible with np.loadtxt
     and saved in the dipy data directory"""
@@ -380,12 +370,7 @@ dipy_cmaps = None
 
 
 def get_cmap(name):
-    """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
-    if name.lower() == "accent":
-        warnings.warn("The `Accent` colormap is deprecated as of version" +
-                      " 0.12 of Dipy and will be removed in a future " +
-                      "version. Please use another colormap",
-                      DeprecationWarning)
+    """Make a callable, similar to maptlotlib.pyplot.get_cmap."""
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")
