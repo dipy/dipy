@@ -149,7 +149,9 @@ def build_stamp(pyxes, include_dirs=()):
     includes = sum([['--include-dir', d] for d in include_dirs], [])
     for source in pyxes:
         base, ext = splitext(source)
-        pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
+        pyx_hash = sha1(
+            open(source, 'rt', encoding='utf-8').read()
+            ).hexdigest()
         c_filename = base + '.c'
         options, sources = parse_command_line(includes + [source])
         result = compile(sources, options)
