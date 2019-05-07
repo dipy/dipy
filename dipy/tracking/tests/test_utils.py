@@ -221,11 +221,11 @@ def test_move_streamlines():
     for (a, b) in zip(streamlinesA, streamlinesB):
         npt.assert_array_equal(a, b)
 
-    # Test that seeds are returned but unchanged
+    # Test that seeds are also moved
     streamlinesA, seedsA = zip(*move_streamlines(
-        zip(streamlines, seeds), affineA, return_seeds=True))
+        streamlines, affineA, seeds=seeds))
     for (seed, seedA) in zip(seeds, seedsA):
-        npt.assert_array_equal(seed, seedA)
+        npt.assert_raises(AssertionError, npt.assert_array_equal, seed, seedA)
 
 
 def test_target():
