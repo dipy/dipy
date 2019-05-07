@@ -32,69 +32,75 @@ needs_cvxpy = dec.skipif(not have_cvxpy)
 pytestmark = pytest.mark.filterwarnings("always", message=".*",
                                         category=UserWarning)
 
-# Let us generate some data for testing.
-bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                  120., 140., 160., 180., 200., 300., 400.,
-                  500., 600., 700., 800., 900., 1000.])
-N = len(bvals)
-bvecs = generate_bvecs(N)
-gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
 
-S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
-# params for a single voxel
-params_LM = np.array([S0, f, D_star, D])
+def setup_module():
+    global gtab, ivim_fit_single, ivim_model_LM, data_single, params_LM, \
+        data_multi, ivim_params_LM, D_star, D, f, S0, gtab_with_multiple_b0, \
+        noisy_single, mevals, gtab_no_b0, ivim_fit_multi
 
-mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
-# This gives an isotropic signal.
-signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
-                      fractions=[f * 100, 100 * (1 - f)])
-# Single voxel data
-data_single = signal[0]
+    # Let us generate some data for testing.
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 300., 400.,
+                      500., 600., 700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
 
-data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
-data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
-    1, 0, 0] = data_multi[1, 1, 0] = data_single
+    S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
+    # params for a single voxel
+    params_LM = np.array([S0, f, D_star, D])
 
-ivim_params_LM = np.zeros((2, 2, 1, 4))
-ivim_params_LM[0, 0, 0] = ivim_params_LM[0, 1, 0] = params_LM
-ivim_params_LM[1, 0, 0] = ivim_params_LM[1, 1, 0] = params_LM
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal.
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
+    # Single voxel data
+    data_single = signal[0]
 
-ivim_model_LM = IvimModel(gtab, fit_method='LM')
-ivim_model_one_stage = IvimModel(gtab, fit_method='LM')
-ivim_fit_single = ivim_model_LM.fit(data_single)
-ivim_fit_multi = ivim_model_LM.fit(data_multi)
+    data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+    data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
+        1, 0, 0] = data_multi[1, 1, 0] = data_single
 
-ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
-ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
+    ivim_params_LM = np.zeros((2, 2, 1, 4))
+    ivim_params_LM[0, 0, 0] = ivim_params_LM[0, 1, 0] = params_LM
+    ivim_params_LM[1, 0, 0] = ivim_params_LM[1, 1, 0] = params_LM
 
-bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
-                        120., 140., 160., 180., 200., 300., 400.,
-                        500., 600., 700., 800., 900., 1000.])
+    ivim_model_LM = IvimModel(gtab, fit_method='LM')
+    ivim_model_one_stage = IvimModel(gtab, fit_method='LM')
+    ivim_fit_single = ivim_model_LM.fit(data_single)
+    ivim_fit_multi = ivim_model_LM.fit(data_multi)
 
-bvecs_no_b0 = generate_bvecs(N)
-gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+    ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
+    ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
 
-bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
-                                   120., 140., 160., 180., 200., 300., 400.,
-                                   500., 600., 700., 800., 900., 1000.])
+    bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
+                            120., 140., 160., 180., 200., 300., 400.,
+                            500., 600., 700., 800., 900., 1000.])
 
-bvecs_with_multiple_b0 = generate_bvecs(N)
-gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
-                                       bvecs_with_multiple_b0.T,
-                                       b0_threshold=0)
+    bvecs_no_b0 = generate_bvecs(N)
+    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
-noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
-                         4439.36816406, 4420.06201172, 4152.30078125,
-                         4114.34912109, 4104.59375, 4151.61914062,
-                         4003.58374023, 4013.68408203, 3906.39428711,
-                         3909.06079102, 3495.27197266, 3402.57006836,
-                         3163.10180664, 2896.04003906, 2663.7253418,
-                         2614.87695312, 2316.55371094, 2267.7722168])
+    bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
+                                       120., 140., 160., 180., 200., 300., 400.,
+                                       500., 600., 700., 800., 900., 1000.])
 
-noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
-noisy_multi[0, 1, 0] = noisy_multi[
-    1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
-noisy_multi[0, 0, 0] = data_single
+    bvecs_with_multiple_b0 = generate_bvecs(N)
+    gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
+                                           bvecs_with_multiple_b0.T,
+                                           b0_threshold=0)
+
+    noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
+                            4439.36816406, 4420.06201172, 4152.30078125,
+                            4114.34912109, 4104.59375, 4151.61914062,
+                            4003.58374023, 4013.68408203, 3906.39428711,
+                            3909.06079102, 3495.27197266, 3402.57006836,
+                            3163.10180664, 2896.04003906, 2663.7253418,
+                            2614.87695312, 2316.55371094, 2267.7722168])
+
+    noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+    noisy_multi[0, 1, 0] = noisy_multi[
+        1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
+    noisy_multi[0, 0, 0] = data_single
 
 
 def single_exponential(S0, D, bvals):
@@ -433,7 +439,7 @@ def test_leastsq_failing():
     """
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        fit_single = ivim_model.fit(noisy_single)
+        fit_single = ivim_model_LM.fit(noisy_single)
         assert_greater_equal(len(w), 3)
         u_warn = [l_w for l_w in w if issubclass(l_w.category, UserWarning)]
         assert_greater_equal(len(u_warn), 3)
@@ -456,7 +462,7 @@ def test_leastsq_error():
     """
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        fit = ivim_model._leastsq(data_single, [-1, -1, -1, -1])
+        fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
         assert_greater_equal(len(w), 1)
         assert_(issubclass(w[-1].category, UserWarning))
         assert_("" in str(w[-1].message))
