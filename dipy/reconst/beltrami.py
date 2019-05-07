@@ -842,3 +842,90 @@ def beltrami_affine(X, mask, zooms, beta):
     # dC[bad_g, :] = 0
 
     return (bad_g, g, dB, dC)
+
+
+def fidelity_euclidean(Ak, D, f, g, bvals, H, mask, Diso):
+    """
+    Computes the Fidelity increments to update the diffusion tensor
+    components, when the euclidean metric is chosen.
+
+    Parameters
+    ----------
+    Ak : (...) ndarray
+        Observed signal attenuatiions.
+    D : (..., 6) ndarray
+        The lower triangular components of the diffusion tensor,
+        in the following order: Dxx, Dxy, Dyy, Dxz, Dyz, Dzz.
+    f : (...) ndarray
+        Tissue volume fraction (f = 1 - fw)
+    g : (...) ndarray
+        Square root of the determinant of the euclidean metric tensor g.
+    bvals : (k) ndarray
+        Vector containing the bvals for all 'k' gradient directions.
+    H : (k, 6) ndarray
+        Transposed design matrix.
+    mask : boolean array
+        Boolean mask that marks indices of the data that should be updated.
+    Diso : float
+        The diffusion constant of isotropic Free Water.
+
+    Returns
+    -------
+    df : (...) ndarray
+        Increments to update the tissue volume fracion.
+    dF : (..., 6) ndarray
+        The Fidelity increments to be applied to each component of D.
+
+    Notes
+    -----
+    The H matrix is a transposed version of the design matrix implemented in
+    dipy, mutiplied by -1, also, the 'dummy' vector is cropped.
+
+    e.g. let A denote the design matrix implemented in dipy, then:
+
+    H = A[1:, :-1]
+    H = -1 * H.T
+    """
+
+    D_inmask = D[mask, :]
+    f_inmask = f[mask]
+    f_inmask = f_inmask[..., np.newaxis]
+    Ak_inmask = Ak[mask, :]
+    g_inmask = g[mask]
+
+    # computing the part of fidelity common to all X1,..X6
+    Aw = np.exp(-bvals * Diso)
+    Cw = (1 - f_inmask) * Aw
+    qDq = np.dot(D_inmask, H)
+    np.clip(qDq, a_min=10**-7, a_max=None, out=qDq[...])
+    At = np.exp(-qDq)
+    Ct = f_inmask * At
+    Abi = Ct + Cw
+    aux = (Abi - Ak_inmask) * At
+
+    # computing total fidelity terms
+    dF = np.zeros(D.shape)
+
+    dF[mask, 0] = np.sum(aux * H[0, :], axis=-1)
+    dF[mask, 0] /= -g_inmask
+
+    dF[mask, 1] = np.sum(aux * H[1, :], axis=-1)
+    dF[mask, 1] /= -g_inmask
+
+    dF[mask, 2] = np.sum(aux * H[2, :], axis=-1)
+    dF[mask, 2] /= -g_inmask
+
+    dF[mask, 3] = np.sum(aux * H[3, :], axis=-1)
+    dF[mask, 3] /= -g_inmask
+
+    dF[mask, 4] = np.sum(aux * H[4, :], axis=-1)
+    dF[mask, 4] /= -g_inmask
+
+    dF[mask, 5] = np.sum(aux * H[5, :], axis=-1)
+    dF[mask, 5] /= -g_inmask
+
+    # computing tissue fraction increment
+    df = np.zeros(f.shape)
+    df[mask] = -np.sum(bvals * (Abi - Ak_inmask) * (At - Aw), axis=-1)
+    
+    return (df, dF)
