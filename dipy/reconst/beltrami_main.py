@@ -165,3 +165,184 @@ def initialize(S0, Ak, bvals, bvecs, Diso, lambda_min, lambda_max):
     H = -1 * H.T
 
     return (fmin, fmax, f0, D0, H)
+
+
+def gradient_descent(data, gtab, zooms, maxiter, dt, mask, metric='affine',
+                     alpha1=1, alpha2=1, beta=1, Diso=3, lmin=0.01, lmax=2.5):
+    """
+    Perfoms the Beltrami minimization algorithm to estimate the Free Water
+    fraction from single-shell diffusion data.
+
+    Parameters
+    ----------
+    data : (X, Y, Z, K) ndarray
+        Raw diffusion data
+    gtab : gradients table class instance
+    zooms : (3) ndarray
+        Voxel dimensions (dx, dy, dz)
+    maxiter : int
+        Maximum number of allowed iterations
+    dt : float
+        Learning rate/step
+    mask : (X, Y, Z) boolean array
+        Boolean mask that marks indices of the data that
+        should be processed
+    metric : string
+        Type of metric tensor used for smoothing the diffusion manifold:
+        'affine' or 'euclidean'
+    alpha1 : float
+        Weight of the Fidelity term
+    alpha2 : float
+        Weight of the Beltrami/Civita terms
+    beta : float
+        Ratio that controls how isotropic is the regularization of thr manifold
+    Diso : float
+        Diffusion constant of isotropic Free Water
+    lmin : float
+        Minimum expected diffusion constant in tissue
+    lmax : float
+        Maximum expected difusion constant in tissue
+
+    Returns
+    -------   
+    fmin : (X, Y, Z) ndarray
+        Lower limit of the allowed tissue volume fraction (1 - fw).
+    fmax : (X, Y, Z) ndarray
+        Upper limit of the allowed tissue volume fraction (1 - fw).
+    f0 : (X, Y, Z) ndarray
+        Initial guess of the tissue volume fraction (1 - fw0)
+    D0 : (X, Y, Z, 6) ndarray
+        Initial guess of the tiddue diffusion tensor in lower triangular order:
+        Dxx, Dxy, Dyy, Dxz, Dyz, Dzz.
+    fn : (X, Y, Z) ndarray
+        Final estimate for the tissue volume fraction (1 - fw)
+    Dn : (X, Y, Z, 6) ndarray
+        Final estimate for the tissue diffusion tensor in lower triangular order:
+        Dxx, Dxy, Dyy, Dxz, Dyz, Dzz.
+    bad_g : (X, Y, Z) boolean array
+        Marks the indices of the voxels where the determinant of the metric tensor g
+        was found to be unstable during minimization, and where the Free Water
+        estimated may be invalid.
+    
+    Notes
+    -----
+    1) Before constructing the gtab and passing it to this fucntion,
+       the b-values should be converted to the units of
+       milisecond/micrometer^-2. This is done for numerical reasons.
+
+    2) Although this module is called Free Water estimation, the result
+       returned in the form of tissue fraction: f = 1 - fw, this was done
+       to maintain consistency with the equations of the original paper
+       (put reference!!!)    
+
+    3) The use of the affine metric over the euclidean takes more time to
+       process, because more complex operations are involved
+    """
+
+    # preprocessing
+    mask = mask.astype(bool)
+    zooms = np.array(zooms) / np.min(zooms)
+    S0, Ak, bvals, bvecs = get_atten(data, gtab)
+
+    # initialization
+    fmin, fmax, f0, D0, H = initialize(S0, Ak, bvals, bvecs, Diso, lmin, lmax)
+
+    # masks for spatial derivatives
+    nx, ny, nz = D0.shape[:-1]
+    ind_fx = np.append(np.arange(1, nx), nx-1)
+    ind_fy = np.append(np.arange(1, ny), ny-1)
+    ind_fz = np.append(np.arange(1, nz), nz-1)
+    ind_bx = np.append(0, np.arange(nx-1))
+    ind_by = np.append(0, np.arange(ny-1))
+    ind_bz = np.append(0, np.arange(nz-1))
+
+    mask_fx = np.logical_and(mask[ind_fx, :, :], mask)
+    mask_fy = np.logical_and(mask[:, ind_fy, :], mask)
+    mask_fz = np.logical_and(mask[:, :, ind_fz], mask)
+
+    mask_f = np.logical_and(mask_fx, mask_fy)
+    np.logical_and(mask_f, mask_fz, out=mask_f)
+
+    mask_bx = np.logical_and(mask[ind_bx, :, :], mask_f)
+    mask_by = np.logical_and(mask[:, ind_by, :], mask_f)
+    mask_bz = np.logical_and(mask[:, :, ind_bz], mask_f)
+
+    # Iwasawa parameterization
+    fn = np.copy(f0)
+    Dn = np.copy(D0)
+    if metric == 'affine' :
+       Xn = np.zeros(Dn.shape)
+       Xn[mask, :] = blt.x_manifold(Dn[mask, :])
+    
+    # allocating increment matrices
+    dB = np.zeros(Dn.shape)
+    dC = np.zeros(Dn.shape)
+    df = np.zeros(f0.shape)
+    dF = np.zeros(Dn.shape)
+
+
+    for i in np.arange(maxiter):
+
+        if i == maxiter // 2:
+            alpha2 = 0
+        
+        if metric == 'affine':
+            # compute beltrami and civita increments
+            bad_g, g, dB[...], dC[...] = blt.beltrami_affine(Xn, mask, mask_fx, mask_fy,
+                                                             mask_fz, mask_bx, mask_by,
+                                                             mask_bz, zooms, beta)
+            
+            # compute fidelity and f increments
+            df[...], dF[...] = blt.fidelity_affine(Ak, Xn, Dn, fn, g, bvals, H, mask, Diso)
+
+            # update
+            dB[bad_g, :] = 0  # no update where the metric g is unstable
+            dC[bad_g, :] = 0
+            df[bad_g] = 0
+            dF[bad_g, :] = 0
+
+            csf = df > 0.8 # no update for csf voxels
+            dB[csf, :] = 0
+            dC[csf, :] = 0
+            df[csf] = 0
+            dF[csf, :] = 0
+
+            Xn = Xn + dt * (alpha1 * dF + alpha2 * (dB + dC))
+
+            # compute new tensor
+            Dn[mask, :] = blt.d_manifold(Xn[mask, :])
+        
+        elif metric == 'euclidean':
+            bad_g, g, dB[...] = blt.beltrami_euclidean(Dn, mask, mask_fx, mask_fy,
+                                                       mask_fz, mask_bx, mask_by,
+                                                       mask_bz, zooms, beta)
+
+            # compute fidelity and f increments
+            df[...], dF[...] = blt.fidelity_euclidean(Ak, Dn, fn, g, bvals, H, mask, Diso)
+
+            # update
+            dB[bad_g, :] = 0  # no update where the metric g is unstable
+            df[bad_g] = 0
+            dF[bad_g, :] = 0
+
+            csf = df > 0.8 # no update for csf voxels
+            dB[csf, :] = 0
+            df[csf] = 0
+            dF[csf, :] = 0
+
+            Dn = Dn + dt * (alpha1 * dF + alpha2 * dB) 
+
+        # update tissue volume fraction
+        fn = fn + dt * df
+
+        # correct bad f values
+        fn = np.clip(fn, fmin, fmax)
+
+        # reset increments
+        dB[...] = 0
+        dC[...] = 0
+        df[...] = 0
+        dF[...] = 0
+
+    Dn = Dn * 10**-3
+    return (fmin, fmax, f0, D0, fn, Dn, bad_g)
