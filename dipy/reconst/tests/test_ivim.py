@@ -23,14 +23,14 @@ from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-
-needs_cvxpy = dec.skipif(not have_cvxpy)
-
-import scipy
 import pytest
 
-pytestmark = pytest.mark.filterwarnings("always", message=".*", category=UserWarning)
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
+needs_cvxpy = dec.skipif(not have_cvxpy)
+
+
+pytestmark = pytest.mark.filterwarnings("always", message=".*",
+                                        category=UserWarning)
 
 # Let us generate some data for testing.
 bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
