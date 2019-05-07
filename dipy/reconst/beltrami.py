@@ -929,3 +929,159 @@ def fidelity_euclidean(Ak, D, f, g, bvals, H, mask, Diso):
     df[mask] = -np.sum(bvals * (Abi - Ak_inmask) * (At - Aw), axis=-1)
     
     return (df, dF)
+
+
+def get_qDX1q(X4, X5, DX, H, out):
+    """
+    Get the q*DX1*q product to compute the fidelity term for X1,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX1 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X1
+
+    DX1 = d(D(X1, ..., X6)) / dX1 
+    """
+
+    DX[..., 0] = 1
+    DX[..., 1] = X4
+    DX[..., 2] = X4**2
+    DX[..., 3] = X5
+    DX[..., 4] = X4 * X5
+    DX[..., 5] = X5**2
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
+
+
+def get_qDX2q(X6, DX, H, out):
+    """
+    Get the q*DX2*q product to compute the fidelity term for X2,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX2 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X2
+
+    DX2 = d(D(X1, ..., X6)) / dX2 
+    """
+
+    DX[..., 0] = 0
+    DX[..., 1] = 0
+    DX[..., 2] = 1
+    DX[..., 3] = 0
+    DX[..., 4] = X6
+    DX[..., 5] = X6**2
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
+
+
+def get_qDX3q(DX, H, out):
+    """
+    Get the q*DX3*q product to compute the fidelity term for X3,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX3 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X3
+
+    DX3 = d(D(X1, ..., X6)) / dX3
+    """
+
+    DX[..., 0] = 0
+    DX[..., 1] = 0
+    DX[..., 2] = 0
+    DX[..., 3] = 0
+    DX[..., 4] = 0
+    DX[..., 5] = 1
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
+
+
+def get_qDX4q(X1, X4, X5, DX, H, out):
+    """
+    Get the q*DX4*q product to compute the fidelity term for X4,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX4 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X4
+
+    DX4 = d(D(X1, ..., X6)) / dX4
+    """
+
+    DX[..., 0] = 0
+    DX[..., 1] = X1
+    DX[..., 2] = 2 * X1 * X4
+    DX[..., 3] = 0
+    DX[..., 4] = X1 * X5
+    DX[..., 5] = 0
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
+
+
+def get_qDX5q(X1, X4, X5, DX, H, out):
+    """
+    Get the q*DX5*q product to compute the fidelity term for X5,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX5 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X5
+
+    DX5 = d(D(X1, ..., X6)) / dX5
+    """
+
+    DX[..., 0] = 0
+    DX[..., 1] = 0
+    DX[..., 2] = 0
+    DX[..., 3] = X1
+    DX[..., 4] = X1 * X4
+    DX[..., 5] = 2 * X1 * X5
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
+
+
+def get_qDX6q(X2, X6, DX, H, out):
+    """
+    Get the q*DX6*q product to compute the fidelity term for X6,
+    when the affine metric is chosen.
+    
+    Notes
+    -----
+    1) q denotes a single gradient direction
+
+    2) DX6 denotes the symmbolic derivative of the diffusion tensor
+    expressed in terms of the Iwasawa decomposition, with respect to X6
+
+    DX6 = d(D(X1, ..., X6)) / dX6 
+    """
+
+    DX[..., 0] = 0
+    DX[..., 1] = 0
+    DX[..., 2] = 0
+    DX[..., 3] = 0
+    DX[..., 4] = X2
+    DX[..., 5] = 2 * X2 * X6
+
+    np.dot(DX, H, out=out[...])
+    np.clip(out[...], a_min=10**-7, a_max=None, out=out[...])
