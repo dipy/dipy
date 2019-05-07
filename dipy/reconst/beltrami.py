@@ -132,9 +132,9 @@ def forward_diff(Xi, dim, vox_size):
 
     if dim == 0:
         dfX = (Xi[shift, ...] - Xi) / vox_size
-    elif: dim == 1:
+    elif dim == 1:
         dfX = (Xi[:, shift, :] - Xi) / vox_size
-    elif: dim == 2:
+    elif dim == 2:
         dfX = (Xi[..., shift] - Xi) / vox_size
 
     return dfX
@@ -176,10 +176,10 @@ def backward_diff(Xi, dim, vox_size):
     if dim == 0:
         dbX = (Xi - Xi[shift, ...]) / vox_size
 
-    elif: dim == 1:
+    elif dim == 1:
         dbX = (Xi - Xi[:, shift, :]) / vox_size
 
-    elif: dim == 2:
+    elif dim == 2:
         dbX = Xi - (Xi[..., shift]) / vox_size
 
     return dbX
