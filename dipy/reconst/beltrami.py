@@ -659,3 +659,186 @@ def civ6(X1, X2, X3, X6, X2x, X2y, X2z, X3x, X3y, X3z,
           A6x * B6x + A6y * B6y + A6z * B6z)
 
     return C6
+
+
+def beltrami_affine(X, mask, zooms, beta):
+    """ 
+    Computes Beltrami and Levi-Civita increments to uppdate the Iwasawa coordinates
+    when the affine metric is chosen instead of the euclidean metric.
+    """
+
+    x, y, z = X.shape[:-1]
+    dx, dy, dz = zooms
+    X1, X2, X3, X4, X5, X6 = np.rollaxis(X, axis=-1)
+
+    # computing all spatial derivatives of X,
+    # Xi denotes the "ith" components of X (e.g. X1x = d(X1) / dx)
+    X1x = forward_diff(Dxx, 0, dx) * mask
+    X1y = forward_diff(Dxx, 1, dy) * mask
+    X1z = forward_diff(Dxx, 2, dz) * mask
+
+    X2x = forward_diff(Dxy, 0, dx) * mask
+    X2y = forward_diff(Dxy, 1, dy) * mask
+    X2z = forward_diff(Dxy, 2, dz) * mask
+
+    X3x = forward_diff(Dyy, 0, dx) * mask
+    X3y = forward_diff(Dyy, 1, dy) * mask
+    X3z = forward_diff(Dyy, 2, dz) * mask
+
+    X4x = forward_diff(Dxz, 0, dx) * mask
+    X4y = forward_diff(Dxz, 1, dy) * mask
+    X4z = forward_diff(Dxz, 2, dz) * mask
+
+    X5x = forward_diff(Dyz, 0, dx) * mask
+    X5y = forward_diff(Dyz, 1, dy) * mask
+    X5z = forward_diff(Dyz, 2, dz) * mask
+
+    X6x = forward_diff(Dzz, 0, dx) * mask
+    X6y = forward_diff(Dzz, 1, dy) * mask
+    X6z = forward_diff(Dzz, 2, dz) * mask
+
+    h44, h55, h66, h77, h78, h88, h99 = np.zeros((7, x, y, z))
+
+    h44[mask] = 1 / (X1[mask]**2)
+    h55[mask] = 1 / (X2[mask]**2)
+    h66[mask] = 1 / (X3[mask]**2)
+    h77[mask] = (2 * X1[mask] * (X3[mask] + X2[mask] * X6[mask]**2)) / (X2[mask] * X3[mask])
+    h78[mask] = -(2 * X1[mask] * X6[mask]) / X3[mask]
+    h88[mask] = 2 * X1[mask] / X3[mask]
+    h99[mask] = 2 * X2[mask] / X3[mask]
+
+    g_11 = 1 + (X1x**2 * h44 + X2x**2 * h55 + X3x**2 * h66 +
+                X4x**2 * h77 + 2 * X4x * X5x * h78 +
+                X5x**2 * h88 + X6x**2 * h99) * beta
+
+    g_22 = 1 + (X1y**2 * h44 + X2y**2 * h55 + X3y**2 * h66 +
+                X4y**2 * h77 + 2 * X4y * X5y * h78 +
+                X5y**2 * h88 + X6y**2 * h99) * beta
+
+    g_33 = 1 + (X1z**2 * h44 + X2z**2 * h55 + X3z**2 * h66 +
+                X4z**2 * h77 + 2 * X4z * X5z * h78 +
+                X5z**2 * h88 + X6z**2 * h99) * beta
+
+    g_12 = (X1x * X1y * h44 + X2x * X2y * h55 +
+            X3x * X3y * h66 + X4x * X4y * h77 +
+            X5x * X4y * h78 + X4x * X5y * h78 +
+            X5x * X5y * h88 + X6x * X6y * h99) * beta
+
+    g_13 = (X1x * X1z * h44 + X2x * X2z * h55 +
+            X3x * X3z * h66 + X4x * X4z * h77 +
+            X5x * X4z * h78 + X4x * X5z * h78 +
+            X5x * X5z * h88 + X6x * X6z * h99) * beta
+
+    g_23 = (X1y * X1z * h44 + X2y * X2z * h55 +
+            X3y * X3z * h66 + X4y * X4z * h77 +
+            X5y * X4z * h78 + X4y * X5z * h78 +
+            X5y * X5z * h88 + X6y * X6z * h99) * beta
+    # computing g inverse
+    gdet = (g_11 * g_22 * g_33 + g_12 * g_13 * g_23 * 2 -
+            g_22 * g_13**2 - g_33 * g_12**2 - g_11 * g_23**2)
+
+    # gdet[gdet <= 0] = 0.0001
+    # bad_g = np.logical_and(mask, gdet <= 0)
+    bad_g = np.logical_or(gdet <= 0, gdet > 1000)
+    bad_g = np.logical_and(bad_g, mask)
+    gdet[bad_g] = 1
+    g_11[bad_g] = 1
+    g_22[bad_g] = 1
+    g_33[bad_g] = 1
+    g_12[bad_g] = 0
+    g_13[bad_g] = 0
+    g_23[bad_g] = 0
+
+    g11, g22, g33, g12, g13, g23 = np.zeros((6, x, y, z))
+
+    g11 = (g_22 * g_33 - g_23**2) / gdet
+    g22 = (g_11 * g_33 - g_13**2) / gdet
+    g33 = (g_11 * g_22 - g_12**2) / gdet
+    g12 = (g_13 * g_23 - g_12 * g_33) / gdet
+    g13 = (g_12 * g_23 - g_13 * g_22) / gdet
+    g23 = (g_12 * g_13 - g_11 * g_23) / gdet
+
+    # computing A matrix
+    A1x = g11 * X1x + g12 * X1y + g13 * X1z
+    A1y = g12 * X1x + g22 * X1y + g23 * X1z
+    A1z = g13 * X1x + g23 * X1y + g33 * X1z
+
+    A2x = g11 * X2x + g12 * X2y + g13 * X2z
+    A2y = g12 * X2x + g22 * X2y + g23 * X2z
+    A2z = g13 * X2x + g23 * X2y + g33 * X2z
+
+    A3x = g11 * X3x + g12 * X3y + g13 * X3z
+    A3y = g12 * X3x + g22 * X3y + g23 * X3z
+    A3z = g13 * X3x + g23 * X3y + g33 * X3z
+
+    A4x = g11 * X4x + g12 * X4y + g13 * X4z
+    A4y = g12 * X4x + g22 * X4y + g23 * X4z
+    A4z = g13 * X4x + g23 * X4y + g33 * X4z
+
+    A5x = g11 * X5x + g12 * X5y + g13 * X5z
+    A5y = g12 * X5x + g22 * X5y + g23 * X5z
+    A5z = g13 * X5x + g23 * X5y + g33 * X5z
+
+    A6x = g11 * X6x + g12 * X6y + g13 * X6z
+    A6y = g12 * X6x + g22 * X6y + g23 * X6z
+    A6z = g13 * X6x + g23 * X6y + g33 * X6z
+
+    # computing beltrami increment
+    g = np.sqrt(gdet)
+    dB = np.zeros(X.shape)
+    dB[..., 0] = 1 / g * (backward_diff(g * A1x, 0, dx) * mask +
+                          backward_diff(g * A1y, 1, dy) * mask +
+                          backward_diff(g * A1z, 2, dz) * mask)
+
+    dB[..., 1] = 1 / g * (backward_diff(g * A2x, 0, dx) * mask +
+                          backward_diff(g * A2y, 1, dy) * mask +
+                          backward_diff(g * A2z, 2, dz) * mask)
+
+    dB[..., 2] = 1 / g * (backward_diff(g * A3x, 0, dx) * mask +
+                          backward_diff(g * A3y, 1, dy) * mask +
+                          backward_diff(g * A3z, 2, dz) * mask)
+
+    dB[..., 3] = 1 / g * (backward_diff(g * A4x, 0, dx) * mask +
+                          backward_diff(g * A4y, 1, dy) * mask +
+                          backward_diff(g * A4z, 2, dz) * mask)
+
+    dB[..., 4] = 1 / g * (backward_diff(g * A5x, 0, dx) * mask +
+                          backward_diff(g * A5y, 1, dy) * mask +
+                          backward_diff(g * A5z, 2, dz) * mask)
+
+    dB[..., 5] = 1 / g * (backward_diff(g * A6x, 0, dx) * mask +
+                          backward_diff(g * A6y, 1, dy) * mask +
+                          backward_diff(g * A6z, 2, dz) * mask)
+
+    # computing civita increments
+    dC = np.zeros(X.shape)
+    dC[..., 0] = civ1(X1, X2, X3, X6, X1x, X1y, X1z, X4x, X4y, X4z,
+                      X5x, X5y, X5z, A1x, A1y, A1z, A4x, A4y, A4z,
+                      A5x, A5y, A5z, mask)
+
+    dC[..., 1] = civ2(X1, X2, X3, X2x, X2y, X2z, X4x, X4y, X4z, X6x, X6y, X6z,
+                      A2x, A2y, A2z, A4x, A4y, A4z, A6x, A6y, A6z, mask)
+
+    dC[..., 2] = civ3(X1, X2, X3, X6, X3x, X3y, X3z, X4x, X4y, X4z,
+                      X5x, X5y, X5z, X6x, X6y, X6z, A3x, A3y, A3z,
+                      A4x, A4y, A4z, A5x, A5y, A5z, A6x, A6y, A6z, mask)
+
+    dC[..., 3] = civ4(X1, X2, X3, X6, X1x, X1y, X1z, X2x, X2y, X2z,
+                      X4x, X4y, X4z, X5x, X5y, X5z, X6x, X6y, X6z,
+                      A1x, A1y, A1z, A2x, A2y, A2z, A4x, A4y, A4z,
+                      A5x, A5y, A5z, A6x, A6y, A6z, mask)
+
+    dC[..., 4] = civ5(X1, X2, X3, X6, X1x, X1y, X1z, X2x, X2y, X2z,
+                      X3x, X3y, X3z, X4x, X4y, X4z, X5x, X5y, X5z,
+                      X6x, X6y, X6z, A1x, A1y, A1z, A2x, A2y, A2z,
+                      A3x, A3y, A3z, A4x, A4y, A4z, A5x, A5y, A5z,
+                      A6x, A6y, A6z, mask)
+    dC[..., 5] = civ6(X1, X2, X3, X6, X2x, X2y, X2z, X3x, X3y, X3z,
+                      X4x, X4y, X4z, X5x, X5y, X5z, X6x, X6y, X6z,
+                      A2x, A2y, A2z, A3x, A3y, A3z, A4x, A4y, A4z,
+                      A5x, A5y, A5z, A6x, A6y, A6z, mask)
+
+    # dB[bad_g, :] = 0
+    # dC[bad_g, :] = 0
+
+    return (bad_g, g, dB, dC)
