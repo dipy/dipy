@@ -111,9 +111,12 @@ class LocalTracking(object):
     def __iter__(self):
         # Make tracks, move them to point space and return
         track = self._generate_streamlines()
+        seeds = None
+        if self.save_seeds:
+            track, seeds = zip(*track)
         return utils.move_streamlines(track,
                                       self.affine,
-                                      return_seeds=self.save_seeds)
+                                      seeds=seeds)
 
     def _generate_streamlines(self):
         """A streamline generator"""

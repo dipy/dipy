@@ -6,16 +6,12 @@ from os.path import join
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import (fetch_stanford_hardi, fetch_stanford_pve_maps,
-                       fetch_stanford_labels, get_fnames)
+from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
-from dipy.direction import (DeterministicMaximumDirectionGetter,
-                            ProbabilisticDirectionGetter,
-                            ClosestPeakDirectionGetter)
 
 
 def test_particule_filtering_traking_workflows():
@@ -108,7 +104,7 @@ def test_particule_filtering_traking_workflows():
         tractogram_path = \
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_true(tractogram_has_seeds(tractogram_path))
-
+        assert_true(seeds_are_same_space_as_streamlines(tractogram_path))
 
 
 def test_local_fiber_tracking_workflow():
@@ -192,6 +188,8 @@ def test_local_fiber_tracking_workflow():
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_true(tractogram_has_seeds(tractogram_path))
+        assert_true(seeds_are_same_space_as_streamlines(tractogram_path))
+
 
 def is_tractogram_empty(tractogram_path):
     tractogram_file = \
@@ -205,6 +203,23 @@ def tractogram_has_seeds(tractogram_path):
         nib.streamlines.load(tractogram_path).tractogram
 
     return len(tractogram.data_per_streamline['seeds']) > 0
+
+
+def seeds_are_same_space_as_streamlines(tractogram_path):
+    tractogram = \
+       nib.streamlines.load(tractogram_path).tractogram
+    seeds = tractogram.data_per_streamline['seeds']
+    streamlines = tractogram.streamlines
+
+    for seed, streamline in zip(seeds, streamlines):
+        map_res = list(map(lambda x: np.allclose(seed, x), streamline))
+        # If no point is close to the seed, it likely means that the seed is
+        # not in the same space as the streamline
+        if not np.any(map_res):
+            return False
+
+    return True
+
 
 if __name__ == '__main__':
     test_local_fiber_tracking_workflow()
