@@ -391,3 +391,271 @@ def beltrami_euclidean(D, mask, zooms, beta):
                           backward_diff(g * A6z, 2, dz) * mask)
 
     return (bad_g, g, dB)
+
+
+def civ1(X1, X2, X3, X6, X1x, X1y, X1z,
+         X4x, X4y, X4z, X5x, X5y, X5z,
+         A1x, A1y, A1z, A4x, A4y, A4z, A5x, A5y, A5z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X1,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+
+    # computing Christoffel symbols
+    G11, G44, G45, G55 = np.zeros((4, x, y, z)) 
+    G11[mask] = -1 / X1[mask]
+    G44[mask] = - X1[mask]**2 * (X3[mask] + X2[mask] * X6[mask]**2) / (X2[mask] * X3[mask])
+    G45[mask] = X1[mask]**2 * X6[mask] / X3[mask]
+    G55[mask] = -X1[mask]**2 / X3[mask]
+    # computing auxiliary B matrix
+    B1x = G11 * X1x
+    B1y = G11 * X1y
+    B1z = G11 * X1z
+
+    B4x = G44 * X4x + G45 * X5x
+    B4y = G44 * X4y + G45 * X5y
+    B4z = G44 * X4z + G45 * X5z
+
+    B5x = G45 * X4x + G55 * X5x
+    B5y = G45 * X4y + G55 * X5y
+    B5z = G45 * X4z + G55 * X5z
+
+    # computing the civita term
+    C1 = (A1x * B1x + A1y * B1y + A1z * B1z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A5x * B5x + A5y * B5y + A5z * B5z)
+
+    return C1
+
+
+def civ2(X1, X2, X3, X2x, X2y, X2z,
+         X4x, X4y, X4z, X6x, X6y, X6z,
+         A2x, A2y, A2z, A4x, A4y, A4z, A6x, A6y, A6z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X2,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+    # computing Christoffel symbols
+    G22, G44, G66 = np.zeros((3, x, y, z))
+    G22[mask] = -1 / X2[mask]
+    G44[mask] = X1[mask]
+    G66[mask] = -X2[mask]**2 / X3[mask]
+    # computing auxiliary B matrix
+    B2x = G22 * X2x
+    B2y = G22 * X2y
+    B2z = G22 * X2z
+
+    B4x = G44 * X4x
+    B4y = G44 * X4y
+    B4z = G44 * X4z
+
+    B6x = G66 * X6x
+    B6y = G66 * X6y
+    B6z = G66 * X6z
+
+    # computing the civita term
+    C2 = (A2x * B2x + A2y * B2y + A2z * B2z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A6x * B6x + A6y * B6y + A6z * B6z)
+
+    return C2
+
+
+def civ3(X1, X2, X3, X6, X3x, X3y, X3z, X4x, X4y, X4z,
+         X5x, X5y, X5z, X6x, X6y, X6z, A3x, A3y, A3z,
+         A4x, A4y, A4z, A5x, A5y, A5z, A6x, A6y, A6z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X3,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+
+    # computing Christoffel symbols
+    G33, G44, G45, G55, G66 = np.zeros((5, x, y, z)) 
+    G33[mask] = -1 / X3[mask]
+    G44[mask] = X1[mask] * X6[mask]**2
+    G45[mask] = -X1[mask] * X6[mask]
+    G55[mask] = X1[mask]
+    G66[mask] = X2[mask]
+
+    # computing auxiliary B matrix
+    B3x = G33 * X3x
+    B3y = G33 * X3y
+    B3z = G33 * X3z
+
+    B4x = G44 * X4x + G45 * X5x
+    B4y = G44 * X4y + G45 * X5y
+    B4z = G44 * X4z + G45 * X5z
+
+    B5x = G45 * X4x + G55 * X5x
+    B5y = G45 * X4y + G55 * X5y
+    B5z = G45 * X4z + G55 * X5z
+
+    B6x = G66 * X6x
+    B6y = G66 * X6y
+    B6z = G66 * X6z
+
+    # computing the civita term
+    C3 = (A3x * B3x + A3y * B3y + A3z * B3z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A5x * B5x + A5y * B5y + A5z * B5z +
+          A6x * B6x + A6y * B6y + A6z * B6z)
+
+    return C3
+
+
+def civ4(X1, X2, X3, X6, X1x, X1y, X1z, X2x, X2y, X2z, X4x, X4y, X4z,
+         X5x, X5y, X5z, X6x, X6y, X6z, A1x, A1y, A1z, A2x, A2y, A2z,
+         A4x, A4y, A4z, A5x, A5y, A5z, A6x, A6y, A6z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X4,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+
+    # computing Christoffel symbols
+    G14, G24, G46, G56 = np.zeros((4, x, y, z))
+    G14[mask] = 1 / (2 * X1[mask])
+    G24[mask] = -1 / (2 * X2[mask])
+    G46[mask] = X2[mask] * X6[mask] / (2 * X3[mask])
+    G56[mask] = -X2[mask] / (2 * X3[mask])
+    # computing auxiliary B matrix
+    B1x = G14 * X4x
+    B1y = G14 * X4y
+    B1z = G14 * X4z
+
+    B2x = G24 * X4x
+    B2y = G24 * X4y
+    B2z = G24 * X4z
+
+    B4x = G14 * X1x + G24 * X2x + G46 * X6x
+    B4y = G14 * X1y + G24 * X2y + G46 * X6y
+    B4z = G14 * X1z + G24 * X2z + G46 * X6z
+
+    B5x = G56 * X6x
+    B5y = G56 * X6y
+    B5z = G56 * X6z
+
+    B6x = G46 * X4x + G56 * X5x
+    B6y = G46 * X4y + G56 * X5y
+    B6z = G46 * X4z + G56 * X5z
+
+    # computing the civita term
+    C4 = (A1x * B1x + A1y * B1y + A1z * B1z +
+          A2x * B2x + A2y * B2y + A2z * B2z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A5x * B5x + A5y * B5y + A5z * B5z +
+          A6x * B6x + A6y * B6y + A6z * B6z)
+
+    return C4
+
+
+def civ5(X1, X2, X3, X6, X1x, X1y, X1z, X2x, X2y, X2z, X3x, X3y, X3z,
+         X4x, X4y, X4z, X5x, X5y, X5z, X6x, X6y, X6z, A1x, A1y, A1z,
+         A2x, A2y, A2z, A3x, A3y, A3z, A4x, A4y, A4z, A5x, A5y, A5z,
+         A6x, A6y, A6z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X5,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+
+    # computing Christoffel symbols
+    G24, G34, G15, G35, G46, G56 = np.zeros((6, x, y, z))
+    G24[mask] = -X6[mask] / (2 * X2[mask])
+    G34[mask] = X6[mask] / (2 * X3[mask])
+    G15[mask] = 1 / (2 * X1[mask])
+    G35[mask] = -1 / (2 * X3[mask])
+    G46[mask] = (-1 + X2[mask] * X6[mask]**2 / X3[mask]) / 2
+    G56[mask] = -X2[mask] * X6[mask] / (2 * X3[mask])
+
+    # computing auxiliary B matrix
+    B1x = G15 * X5x
+    B1y = G15 * X5y
+    B1z = G15 * X5z
+
+    B2x = G24 * X4x
+    B2y = G24 * X4y
+    B2z = G24 * X4z
+
+    B3x = G34 * X4x + G35 * X5x
+    B3y = G34 * X4y + G35 * X5y
+    B3z = G34 * X4z + G35 * X5z
+
+    B4x = G24 * X2x + G34 * X3x + G46 * X6x
+    B4y = G24 * X2y + G34 * X3y + G46 * X6y
+    B4z = G24 * X2z + G34 * X3z + G46 * X6z
+
+    B5x = G15 * X1x + G35 * X3x + G56 * X6x
+    B5y = G15 * X1y + G35 * X3y + G56 * X6y
+    B5z = G15 * X1z + G35 * X3z + G56 * X6z
+
+    B6x = G46 * X4x + G56 * X5x
+    B6y = G46 * X4y + G56 * X5y
+    B6z = G46 * X4z + G56 * X5z
+
+    # computing the civita term
+    C5 = (A1x * B1x + A1y * B1y + A1z * B1z +
+          A2x * B2x + A2y * B2y + A2z * B2z +
+          A3x * B3x + A3y * B3y + A3z * B3z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A5x * B5x + A5y * B5y + A5z * B5z +
+          A6x * B6x + A6y * B6y + A6z * B6z)
+
+    return C5
+
+
+def civ6(X1, X2, X3, X6, X2x, X2y, X2z, X3x, X3y, X3z,
+         X4x, X4y, X4z, X5x, X5y, X5z, X6x, X6y, X6z,
+         A2x, A2y, A2z, A3x, A3y, A3z, A4x, A4y, A4z,
+         A5x, A5y, A5z, A6x, A6y, A6z, mask):
+    """
+    Computes the Levi-Civita term to update the Iwasawa coodinate X6,
+    when the affine metric is used instead of the euclidean.
+    """
+
+    x, y, z = mask.shape
+
+    # computing Christoffel symbols
+    G44, G45, G26, G36 = np.zeros((4, x, y, z))
+    G44[mask] = -X1[mask] * X6[mask] / X2[mask]
+    G45[mask] = X1[mask] / (2 * X2[mask])
+    G26[mask] = 1 / (2 * X2[mask])
+    G36[mask] = -1 / (2 * X3[mask])
+
+    # computing auxiliary B matrix
+    B2x = G26 * X6x
+    B2y = G26 * X6y
+    B2z = G26 * X6z
+
+    B3x = G36 * X6x + G45 * X5x
+    B3y = G36 * X6y + G45 * X5y
+    B3z = G36 * X6z + G45 * X5z
+
+    B4x = G44 * X4x
+    B4y = G44 * X4y
+    B4z = G44 * X4z
+
+    B5x = G45 * X4x
+    B5y = G45 * X4y
+    B5z = G45 * X4z
+
+    B6x = G26 * X2x + G36 * X3x
+    B6y = G26 * X2y + G36 * X3y
+    B6z = G26 * X2z + G36 * X3z
+
+    # computing the civita term
+    C6 = (A2x * B2x + A2y * B2y + A2z * B2z +
+          A3x * B3x + A3y * B3y + A3z * B3z +
+          A4x * B4x + A4y * B4y + A4z * B4z +
+          A5x * B5x + A5y * B5y + A5z * B5z +
+          A6x * B6x + A6y * B6y + A6z * B6z)
+
+    return C6
