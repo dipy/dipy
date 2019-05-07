@@ -42,10 +42,10 @@ class MedianOtsuFlow(Workflow):
             reduce their size in memory and speed up some of the analysis.
             (default False)
         vol_idx : variable int, optional
-            1D array representing indices of ``axis=3`` of a 4D `input_volume`
-            'None' (the default) corresponds to ``(0,)`` (assumes first volume
-            in 4D array). From cmd line use 3 4 5 6. From script use
-            [3, 4, 5, 6].
+            1D array representing indices of ``axis=-1`` of a 4D
+            `input_volume`. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
         dilate : int, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional
