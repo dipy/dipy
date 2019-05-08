@@ -23,7 +23,6 @@ from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
 from dipy.utils.optpkg import optional_package
-import pytest
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 needs_cvxpy = dec.skipif(not have_cvxpy)
@@ -36,7 +35,8 @@ pytestmark = pytest.mark.filterwarnings("always", message=".*",
 def setup_module():
     global gtab, ivim_fit_single, ivim_model_LM, data_single, params_LM, \
         data_multi, ivim_params_LM, D_star, D, f, S0, gtab_with_multiple_b0, \
-        noisy_single, mevals, gtab_no_b0, ivim_fit_multi
+        noisy_single, mevals, gtab_no_b0, ivim_fit_multi, ivim_model_VP, \
+        f_VP, D_star_VP, D_VP, params_VP
 
     # Let us generate some data for testing.
     bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
@@ -101,6 +101,18 @@ def setup_module():
     noisy_multi[0, 1, 0] = noisy_multi[
         1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
     noisy_multi[0, 0, 0] = data_single
+
+    ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
+    f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
+    # params for a single voxel
+    params_VP = np.array([f, D_star, D])
+
+    ivim_params_VP = np.zeros((2, 2, 1, 3))
+    ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
+    ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
+
+    test_vae = "Using the Variable Projection Method for " + \
+               "fitting needs SciPy >= 0.15.1"
 
 
 def single_exponential(S0, D, bvals):
@@ -469,19 +481,6 @@ def test_leastsq_error():
         assert_("x0 is unfeasible" in str(w[-1].message))
 
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
-
-
-ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
-f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
-# params for a single voxel
-params_VP = np.array([f, D_star, D])
-
-ivim_params_VP = np.zeros((2, 2, 1, 3))
-ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
-ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
-
-test_vae = "Using the Variable Projection Method for " + \
-                             "fitting needs SciPy >= 0.15.1"
 
 
 @needs_cvxpy

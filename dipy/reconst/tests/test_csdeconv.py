@@ -31,9 +31,6 @@ from dipy.reconst.shm import lazy_index
 import dipy.reconst.dti as dti
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
-import pytest
-
-pytestmark = pytest.mark.filterwarnings("always", message=".*", category=UserWarning)
 
 
 def test_recursive_response_calibration():
