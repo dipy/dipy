@@ -290,7 +290,7 @@ class StatefulTractogram(object):
 
     def _get_point_count(self):
         """ Safe getter for the number of streamlines """
-        return len(self._tractogram.streamlines.data)
+        return self._tractogram.streamlines.total_nb_rows
 
     def _vox_to_voxmm(self):
         """ Unsafe function to transform streamlines """
