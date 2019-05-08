@@ -59,12 +59,8 @@ matrix:
       env:
         - COVERAGE=1
         - VTK=1
-        - VTK_VER="python-vtk"
-        - LIBGL_ALWAYS_INDIRECT=y
-        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
-        - DEPENDS="$DEPENDS scikit_learn fury"
-        - MESA_GL_VERSION_OVERRIDE=3.3
+        - DEPENDS="$DEPENDS scikit_learn vtk fury"
 
     - python: 3.7
       dist: xenial
