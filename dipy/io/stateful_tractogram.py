@@ -286,7 +286,7 @@ class StatefulTractogram(object):
 
     def _get_streamline_count(self):
         """ Safe getter for the number of streamlines """
-        return len(self._tractogram.streamlines._offsets)
+        return len(self._tractogram)
 
     def _get_point_count(self):
         """ Safe getter for the number of streamlines """
