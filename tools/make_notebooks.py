@@ -118,7 +118,7 @@ def write_notebook(notebook, fname, directory):
         os.mkdir("jupyter_notebooks")
 
     nbname = codecs.open(pjoin('jupyter_notebooks',
-                                str(fname) + ".ipynb"),
+                               str(fname) + ".ipynb"),
                          encoding='utf-8', mode='w')
 
     nbf.write(notebook, nbname, 4)
