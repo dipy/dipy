@@ -16,7 +16,6 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
-from dipy.utils.six import string_types
 from time import time
 
 DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
@@ -420,7 +419,7 @@ class StreamlineLinearRegistration(object):
                 raise ValueError("Array should have only one dimension")
             return x0
 
-        if isinstance(x0, string_types):
+        if isinstance(x0, str):
 
             if x0.lower() == 'translation':
                 return np.zeros(3)
