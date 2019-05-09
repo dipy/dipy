@@ -5,8 +5,6 @@ from itertools import repeat
 from os import path
 from warnings import warn
 
-from dipy.utils.six.moves import xrange
-
 from nibabel.tmpdirs import InTemporaryDirectory
 
 import numpy as np
@@ -66,7 +64,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
     num_seeds = len(seeds)
     theta = np.empty(num_seeds)
     phi = np.empty(num_seeds)
-    for i in xrange(num_seeds):
+    for i in range(num_seeds):
         peak = opt.fmin(_helper, seeds[i], xtol=xtol, disp=False)
         theta[i], phi[i] = peak
 
