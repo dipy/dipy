@@ -42,10 +42,10 @@ class MedianOtsuFlow(Workflow):
             reduce their size in memory and speed up some of the analysis.
             (default False)
         vol_idx : variable int, optional
-            1D array representing indices of ``axis=3`` of a 4D `input_volume`
-            'None' (the default) corresponds to ``(0,)`` (assumes first volume
-            in 4D array). From cmd line use 3 4 5 6. From script use
-            [3, 4, 5, 6].
+            1D array representing indices of ``axis=-1`` of a 4D
+            `input_volume`. From the command line use something like
+            `3 4 5 6`. From script use something like `[3, 4, 5, 6]`. This
+            input is required for 4D volumes.
         dilate : int, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional
@@ -58,15 +58,19 @@ class MedianOtsuFlow(Workflow):
         io_it = self.get_io_iterator()
         if vol_idx is not None:
             vol_idx = map(int, vol_idx)
+
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.
                          format(fpath))
 
             data, affine, img = load_nifti(fpath, return_img=True)
 
-            masked_volume, mask_volume = median_otsu(data, median_radius,
-                                                     numpass, autocrop,
-                                                     vol_idx, dilate)
+            masked_volume, mask_volume = median_otsu(
+                data,
+                vol_idx=vol_idx,
+                median_radius=median_radius,
+                numpass=numpass,
+                autocrop=autocrop, dilate=dilate)
 
             save_nifti(mask_out_path, mask_volume.astype(np.float32), affine)
 

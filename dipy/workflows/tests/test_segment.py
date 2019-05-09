@@ -34,9 +34,11 @@ def test_median_otsu_flow():
         mask_name = mo_flow.last_generated_outputs['out_mask']
         masked_name = mo_flow.last_generated_outputs['out_masked']
 
-        masked, mask = median_otsu(volume, median_radius,
-                                   numpass, autocrop,
-                                   vol_idx, dilate)
+        masked, mask = median_otsu(volume,
+                                   vol_idx=vol_idx,
+                                   median_radius=median_radius,
+                                   numpass=numpass,
+                                   autocrop=autocrop, dilate=dilate)
 
         result_mask_data = nib.load(join(out_dir, mask_name)).get_data()
         npt.assert_array_equal(result_mask_data, mask)
