@@ -1,6 +1,5 @@
 import abc
 import numpy as np
-from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
                                   _bundle_minimum_distance_asymmetric,
@@ -24,7 +23,7 @@ DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-10, 10), (-10, 10), (-10, 10)]
 
 
-class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
+class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
     def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration
