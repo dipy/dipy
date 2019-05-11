@@ -186,9 +186,9 @@ def test_save_seeds():
 
     streamlines_not_all = iter(streamlines_generator)
     # Verifiy that seeds are returned by the LocalTracker
-    sl, seed = next(streamlines_not_all)
+    _, seed = next(streamlines_not_all)
     npt.assert_equal(seed, seeds[0])
-    sl, seed = next(streamlines_not_all)
+    _, seed = next(streamlines_not_all)
     npt.assert_equal(seed, seeds[1])
     # Verifiy that seeds are returned by the PFTTracker also
     pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
@@ -200,9 +200,9 @@ def test_save_seeds():
                                                 return_all=False,
                                                 save_seeds=True)
     streamlines = iter(pft_streamlines)
-    sl, seed = next(streamlines)
+    _, seed = next(streamlines)
     npt.assert_equal(seed, seeds[0])
-    sl, seed = next(streamlines)
+    _, seed = next(streamlines)
     npt.assert_equal(seed, seeds[1])
 
 
