@@ -1,7 +1,9 @@
+from bisect import bisect
 from copy import deepcopy
 import enum
 from itertools import product
 import logging
+from operator import itemgetter
 import os
 import time
 import six
@@ -68,8 +70,8 @@ class StatefulTractogram(object):
         Very important to respect the convention, verify that streamlines
         match the reference and are effectively in the right space.
 
-        Any change to the number of streamlines, data_per_points or
-        data_per_streamlines requires particular verification.
+        Any change to the number of streamlines, data_per_point or
+        data_per_streamline requires particular verification.
 
         In a case of manipulation not allowed by this object, use Nibabel
         directly and be careful.
@@ -119,7 +121,7 @@ class StatefulTractogram(object):
         text += '\npoint_count: {}'.format(self._get_point_count())
         text += '\ndata_per_streamline keys: {}'.format(
             self.get_data_per_point().keys())
-        text += '\ndata_per_points keys: {}'.format(
+        text += '\ndata_per_point keys: {}'.format(
             self.get_data_per_streamline().keys())
 
         return text
@@ -283,6 +285,55 @@ class StatefulTractogram(object):
             self.to_center()
 
         return is_valid
+
+    def remove_invalid_streamlines(self):
+        old_space = deepcopy(self.get_current_space())
+        old_shift = deepcopy(self.get_current_shift())
+
+        self.to_vox()
+        self.to_corner()
+
+        min_condition = np.min(self._tractogram.streamlines.data,
+                               axis=1) < 0.0
+        max_condition = np.any(self._tractogram.streamlines.data >
+                               self._dimensions, axis=1)
+        ic_offsets_indices = np.where(np.logical_or(min_condition,
+                                                    max_condition))[0]
+
+        ic_indices = []
+        for i in ic_offsets_indices:
+            ic_indices.append(bisect(
+                self._tractogram.streamlines._offsets, i) - 1)
+
+        indices_to_save = np.setdiff1d(np.arange(len(self._tractogram)),
+                                       np.array(ic_indices)).astype(int)
+
+        tmp_streamlines = \
+            itemgetter(*indices_to_save)(self.get_streamlines_copy())
+        tmp_data_per_point = {}
+        tmp_data_per_streamline = {}
+
+        for key in self._tractogram.data_per_point:
+            tmp_data_per_point[key] = \
+                self._tractogram.data_per_point[key][indices_to_save]
+
+        for key in self._tractogram.data_per_streamline:
+            tmp_data_per_streamline[key] = \
+                self._tractogram.data_per_streamline[key][indices_to_save]
+
+        self._tractogram = Tractogram(tmp_streamlines,
+                                      affine_to_rasmm=np.eye(4))
+
+        self._tractogram.data_per_point = tmp_data_per_point
+        self._tractogram.data_per_streamline = tmp_data_per_streamline
+
+        if old_space == Space.RASMM:
+            self.to_rasmm()
+        elif old_space == Space.VOXMM:
+            self.to_voxmm()
+
+        if not old_shift:
+            self.to_center()
 
     def _get_streamline_count(self):
         """ Safe getter for the number of streamlines """
@@ -581,6 +632,7 @@ def get_reference_info(reference):
         affine[2, 0:4] = header['srow_z']
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
+        print(header)
         voxel_order = ''.join(nib.aff2axcodes(affine))
     elif is_trk:
         affine = header['voxel_to_rasmm']

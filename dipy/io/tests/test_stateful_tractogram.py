@@ -130,8 +130,9 @@ def dpy_equal_in_voxmm_space():
 def switch_voxel_sizes_from_rasmm():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    sft_switch = StatefulTractogram(
-        sft.get_streamlines(), filepath_dix['gs_3mm.nii'], Space.RASMM)
+    sft_switch = StatefulTractogram(sft.get_streamlines(),
+                                    filepath_dix['gs_3mm.nii'],
+                                    Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
 
@@ -344,10 +345,18 @@ def reassign_both_data_sep():
 
 def bounding_bbox_valid(shift):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          shifted_origin=shift, to_space=Space.RASMM,
-                          bbox_valid_check=False)
+                          shifted_origin=shift, bbox_valid_check=False)
 
     return sft.is_bbox_in_vox_valid()
+
+
+def remove_invalid_streamlines(resize):
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    if resize:
+        sft._dimensions[2] = 5
+
+    sft.remove_invalid_streamlines()
+    return len(sft)
 
 
 def random_point_color():
@@ -486,6 +495,11 @@ def test_bounding_box():
     # Last two are expected to fail
     assert not out_of_grid(100)
     assert not out_of_grid(-100)
+
+
+def test_invalid_streamlines():
+    assert remove_invalid_streamlines(True) == 5
+    assert remove_invalid_streamlines(False) == 13
 
 
 def test_trk_coloring():
