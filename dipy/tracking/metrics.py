@@ -1,8 +1,6 @@
 """ Metrics for tracks, where tracks are arrays of points """
 from __future__ import division, print_function, absolute_import
 
-from dipy.utils.six.moves import xrange
-
 import numpy as np
 from scipy.interpolate import splprep, splev
 
@@ -381,12 +379,12 @@ def generate_combinations(items, n):
         yield []
     elif n == 2:
         # if n=2 non_recursive
-        for i in xrange(len(items)-1):
-            for j in xrange(i+1, len(items)):
+        for i in range(len(items)-1):
+            for j in range(i+1, len(items)):
                 yield [i, j]
     else:
         # if n>2 uses recursion
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
 
@@ -471,7 +469,7 @@ def intersect_sphere(xyz, center, radius):
 
     lt = xyz.shape[0]
 
-    for i in xrange(lt-1):
+    for i in range(lt-1):
         # first point
         x1 = xyz[i]
         # second point

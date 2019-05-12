@@ -12,7 +12,6 @@ from dipy.data import small_sphere, get_sphere, default_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
-from dipy.utils.six.moves import range
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy

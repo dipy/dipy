@@ -9,7 +9,6 @@ import numpy as np
 import scipy
 import scipy.sparse as sps
 import scipy.optimize as opt
-from dipy.utils.six import with_metaclass
 
 SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
 
@@ -390,7 +389,7 @@ def sparse_nnls(y, X,
         iteration += 1
 
 
-class SKLearnLinearSolver(with_metaclass(abc.ABCMeta, object)):
+class SKLearnLinearSolver(object, metaclass=abc.ABCMeta):
     """
     Provide a sklearn-like uniform interface to algorithms that solve problems
     of the form: $y = Ax$ for $x$
