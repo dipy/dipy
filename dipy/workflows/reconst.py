@@ -242,7 +242,7 @@ class ReconstDtiFlow(Workflow):
             multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
-            multiple masks at once. 
+            multiple masks at once.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bvecs_tol : float, optional
