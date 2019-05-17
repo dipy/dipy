@@ -3,8 +3,6 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import warnings
 
-from dipy.utils.six.moves import xrange
-
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
@@ -242,7 +240,7 @@ class Sphere(object):
         """
         vertices = self.vertices
         faces = self.faces
-        for _ in xrange(n):
+        for _ in range(n):
             edges, mapping = unique_edges(faces, return_mapping=True)
             new_vertices = vertices[edges].sum(1)
             new_vertices /= vector_norm(new_vertices, keepdims=True)
@@ -482,7 +480,7 @@ def disperse_charges(hemi, iters, const=.2):
     potential = np.empty(iters)
     v_min = v
 
-    for ii in xrange(iters):
+    for ii in range(iters):
         new_charges = charges + forces * const
         norms = np.sqrt((new_charges**2).sum(-1))
         new_charges /= norms[:, None]

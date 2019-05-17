@@ -1,8 +1,6 @@
 """ Testing track_metrics module """
 from __future__ import division, print_function, absolute_import
 
-from dipy.utils.six.moves import xrange
-
 import numpy as np
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,

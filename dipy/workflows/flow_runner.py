@@ -8,7 +8,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import logging
 
 from dipy import __version__ as dipy_version
-from dipy.utils.six import iteritems
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 
@@ -77,8 +76,8 @@ def run_flow(flow):
     del args['mix_names']
 
     # Remove subflows related params
-    for sub_flow, params_dict in iteritems(sub_flows_dicts):
-        for key, _ in iteritems(params_dict):
+    for sub_flow, params_dict in sub_flows_dicts.items():
+        for key, _ in params_dict.items():
             if key in args.keys():
                 params_dict[key] = args.pop(key)
 

@@ -2,8 +2,6 @@ from __future__ import division, print_function, absolute_import
 
 import warnings
 
-from dipy.utils.six.moves import xrange
-
 import numpy as np
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
@@ -412,7 +410,7 @@ def test_voxel_ornt():
     npt.assert_array_equal(np.dot(toras_affine, sra_affine), I4)
     expected_sl = (sl[:, [2, 0, 1]] for sl in streamlines)
     test_sl = move_streamlines(streamlines, sra_affine)
-    for _ in xrange(len(streamlines)):
+    for _ in range(len(streamlines)):
         npt.assert_array_equal(next(test_sl), next(expected_sl))
 
     lpi_affine = reorder_voxels_affine(ras, lpi, sh, sz)
@@ -420,7 +418,7 @@ def test_voxel_ornt():
     npt.assert_array_equal(np.dot(toras_affine, lpi_affine), I4)
     expected_sl = (box - sl for sl in streamlines)
     test_sl = move_streamlines(streamlines, lpi_affine)
-    for _ in xrange(len(streamlines)):
+    for _ in range(len(streamlines)):
         npt.assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
@@ -431,7 +429,7 @@ def test_voxel_ornt():
         sl[:, 1] = box[1] - sl[:, 1]
     expected_sl = (sl[:, [2, 0, 1]] for sl in expected_sl)
     test_sl = move_streamlines(streamlines, srp_affine)
-    for _ in xrange(len(streamlines)):
+    for _ in range(len(streamlines)):
         npt.assert_array_equal(next(test_sl), next(expected_sl))
 
 

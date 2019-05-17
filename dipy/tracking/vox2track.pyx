@@ -10,9 +10,7 @@ from libc.math cimport ceil, floor, fabs, sqrt
 
 import numpy as np
 cimport numpy as cnp
-from ._utils import _mapping_to_voxel, _to_voxel_coordinates
-
-from ..utils.six.moves import xrange
+from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 
 @cython.boundscheck(False)

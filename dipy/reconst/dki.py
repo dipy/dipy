@@ -12,7 +12,6 @@ from dipy.reconst.dti import (TensorFit, mean_diffusivity,
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.recspeed import local_maxima
-from dipy.utils.six.moves import range
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere)
