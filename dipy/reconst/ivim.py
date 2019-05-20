@@ -286,7 +286,7 @@ class IvimModelLM(ReconstModel):
             e_s += "bounds. Please update to Scipy 0.17 to use bounds"
             raise ValueError(e_s)
         elif self.bounds is None:
-            self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
+            self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 0.2, 1.))
         else:
             self.bounds = bounds
 
@@ -555,7 +555,7 @@ class IvimModelLM(ReconstModel):
 
 class IvimModelVP(ReconstModel):
 
-    def __init__(self, gtab, maxiter=10, xtol=1e-8):
+    def __init__(self, gtab, maxiter=100, xtol=1e-8):
         r""" Initialize an IvimModelVP class.
 
         The IVIM model assumes that biological tissue includes a volume
