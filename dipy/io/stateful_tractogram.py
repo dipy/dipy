@@ -287,6 +287,14 @@ class StatefulTractogram(object):
         return is_valid
 
     def remove_invalid_streamlines(self):
+        """ Remove streamlines with invalid coordinates from the object.
+        Will also remove the data_per_point and data_per_streamlines.
+        Invalid coordinates are any X,Y,Z values above the reference
+        dimensions or below zero         Returns
+        -------
+        output : tuple
+            Tuple of two list, indices_to_remove, indices_to_keep
+        """
         old_space = deepcopy(self.get_current_space())
         old_shift = deepcopy(self.get_current_shift())
 
@@ -300,26 +308,26 @@ class StatefulTractogram(object):
         ic_offsets_indices = np.where(np.logical_or(min_condition,
                                                     max_condition))[0]
 
-        ic_indices = []
+        indices_to_remove = []
         for i in ic_offsets_indices:
-            ic_indices.append(bisect(
+            indices_to_remove.append(bisect(
                 self._tractogram.streamlines._offsets, i) - 1)
 
-        indices_to_save = np.setdiff1d(np.arange(len(self._tractogram)),
-                                       np.array(ic_indices)).astype(int)
+        indices_to_keep = np.setdiff1d(np.arange(len(self._tractogram)),
+                                       np.array(indices_to_remove)).astype(int)
 
         tmp_streamlines = \
-            itemgetter(*indices_to_save)(self.get_streamlines_copy())
+            itemgetter(*indices_to_keep)(self.get_streamlines_copy())
         tmp_data_per_point = {}
         tmp_data_per_streamline = {}
 
         for key in self._tractogram.data_per_point:
             tmp_data_per_point[key] = \
-                self._tractogram.data_per_point[key][indices_to_save]
+                self._tractogram.data_per_point[key][indices_to_keep]
 
         for key in self._tractogram.data_per_streamline:
             tmp_data_per_streamline[key] = \
-                self._tractogram.data_per_streamline[key][indices_to_save]
+                self._tractogram.data_per_streamline[key][indices_to_keep]
 
         self._tractogram = Tractogram(tmp_streamlines,
                                       affine_to_rasmm=np.eye(4))
@@ -334,6 +342,8 @@ class StatefulTractogram(object):
 
         if not old_shift:
             self.to_center()
+
+        return indices_to_remove, indices_to_keep
 
     def _get_streamline_count(self):
         """ Safe getter for the number of streamlines """
