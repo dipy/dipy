@@ -149,7 +149,7 @@ data = np.array(b0.get_data(), dtype=np.float64)
 We first remove the skull from the b0 volume
 """
 
-b0_mask, mask = median_otsu(data, 4, 4)
+b0_mask, mask = median_otsu(data, median_radius=4, numpass=4)
 
 """
 And select two slices to try the 2D registration

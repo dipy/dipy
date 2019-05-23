@@ -119,8 +119,8 @@ def crop(vol, mins, maxs):
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 
-def median_otsu(input_volume, median_radius=4, numpass=4,
-                autocrop=False, vol_idx=None, dilate=None):
+def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
+                autocrop=False, dilate=None):
     """Simple brain extraction tool method for images from DWI data.
 
     It uses a median filter smoothing of the input_volumes `vol_idx` and an
