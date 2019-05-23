@@ -1,10 +1,11 @@
 from __future__ import division, print_function, absolute_import
 
 import os
+import sys
 import numpy as np
 import logging
+import importlib
 from inspect import getmembers, isfunction, getfullargspec
-from dipy.data import fetcher
 from dipy.io.image import load_nifti
 from dipy.workflows.workflow import Workflow
 
@@ -105,33 +106,81 @@ class FetchFlow(Workflow):
     def get_short_name(cls):
         return 'fetch'
 
-    def run(self, input_files, out_dir=''):
+    def load_module(self, module_path):
+        """Load / reload an external module.
+
+        Parameters
+        ----------
+        module_path: string
+            the path to the module relative to the main script
+
+        Returns
+        -------
+        module: module object
+
+        """
+        if module_path in sys.modules:
+            return importlib.reload(sys.modules[module_path])
+        else:
+            return importlib.import_module(module_path)
+
+    def run(self, data_names, out_dir=''):
         """Download files to folder and checks their md5 checksums.
 
         Parameters
         ----------
-        input_files : variable string
+        data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory. Default: dipy home folder (~/.dipy)
 
         """
+        if out_dir:
+            dipy_home = os.environ.get('DIPY_HOME', None)
+            os.environ['DIPY_HOME'] = out_dir
+
+        fetcher_module = self.load_module('dipy.data.fetcher')
+
         available_data = dict([(name.replace('fetch_', ''), func)
-                               for name, func in getmembers(fetcher,
+                               for name, func in getmembers(fetcher_module,
                                                             isfunction)
                                if name.lower().startswith("fetch_")
                                if not len(getfullargspec(func).args)])
 
-        io_it = self.get_io_iterator()
-
-        skipped_name = []
-        for data_name in io_it:
-
-            if data_name.lower == 'all':
-                for _, fetcher_function in available_data.items():
+        skipped_names = []
+        for data_name in data_names:
+            data_name = data_name.lower()
+            if data_name == 'all':
+                for name, fetcher_function in available_data.items():
+                    logging.info('------------------------------------------')
+                    logging.info('Fetching at {0}'.format(name))
+                    logging.info('------------------------------------------')
                     fetcher_function()
                 break
 
-            if data_name.lower() not in available_data.keys():
-                skipped_name.append(data_name)
+            if data_name not in available_data.keys():
+                skipped_names.append(data_name)
                 continue
+
+            logging.info('------------------------------------------')
+            logging.info('Fetching at {0}'.format(data_name))
+            logging.info('------------------------------------------')
+            available_data[data_name]()
+
+        nb_success = len(data_names) - len(skipped_names)
+        print('\n')
+        logging.info('Fetched {0} / {1} Files '.format(nb_success,
+                                                       len(data_names)))
+        if skipped_names:
+            logging.warn('Skipped data name(s):'
+                         ' {0}'.format(' '.join(skipped_names)))
+            logging.warn('Please, select between the following data names:'
+                         ' {0}'.format(', '.join(available_data.keys())))
+
+        if out_dir:
+            if dipy_home:
+                os.environ['DIPY_HOME'] = dipy_home
+            else:
+                os.environ.pop('DIPY_HOME', None)
+
+            self.load_module('dipy.data.fetcher')
