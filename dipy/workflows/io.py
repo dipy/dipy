@@ -3,6 +3,8 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 import logging
+from inspect import getmembers, isfunction, getfullargspec
+from dipy.data import fetcher
 from dipy.io.image import load_nifti
 from dipy.workflows.workflow import Workflow
 
@@ -15,7 +17,6 @@ class IoInfoFlow(Workflow):
 
     def run(self, input_files,
             b0_threshold=50, bvecs_tol=0.01, bshell_thr=100):
-
         """ Provides useful information about different files used in
         medical imaging. Any number of input files can be provided. The
         program identifies the type of file by its extension.
@@ -33,7 +34,6 @@ class IoInfoFlow(Workflow):
             Threshold for distinguishing b-values in different shells
             (default 100)
         """
-
         np.set_printoptions(3, suppress=True)
 
         io_it = self.get_io_iterator()
@@ -97,3 +97,41 @@ class IoInfoFlow(Workflow):
                              .format(ncl1))
 
         np.set_printoptions()
+
+
+class FetchFlow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'fetch'
+
+    def run(self, input_files, out_dir=''):
+        """Download files to folder and checks their md5 checksums.
+
+        Parameters
+        ----------
+        input_files : variable string
+            Any number of Nifti1, bvals or bvecs files.
+        out_dir : string, optional
+            Output directory (default input file directory)
+
+        """
+        available_data = dict([(name.replace('fetch_', ''), func)
+                               for name, func in getmembers(fetcher,
+                                                            isfunction)
+                               if name.lower().startswith("fetch_")
+                               if not len(getfullargspec(func).args)])
+
+        io_it = self.get_io_iterator()
+
+        skipped_name = []
+        for data_name in io_it:
+
+            if data_name.lower == 'all':
+                for _, fetcher_function in available_data.items():
+                    fetcher_function()
+                break
+
+            if data_name.lower() not in available_data.keys():
+                skipped_name.append(data_name)
+                continue
