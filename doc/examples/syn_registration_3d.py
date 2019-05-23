@@ -42,7 +42,8 @@ We first remove the skull from the b0's
 """
 
 from dipy.segment.mask import median_otsu
-stanford_b0_masked, stanford_b0_mask = median_otsu(data, median_radius=4, numpass=4)
+stanford_b0_masked, stanford_b0_mask = median_otsu(data, median_radius=4,
+                                                   numpass=4)
 syn_b0_masked, syn_b0_mask = median_otsu(data, median_radius=4, numpass=4)
 
 static = stanford_b0_masked

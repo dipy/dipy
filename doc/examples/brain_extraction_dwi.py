@@ -85,7 +85,8 @@ smaller. Auto-cropping in ``median_otsu`` is activated by setting the
 ``autocrop`` parameter to ``True``.
 """
 
-b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4, autocrop=True)
+b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4,
+                                      autocrop=True)
 
 """
 Saving cropped data using nibabel as demonstrated previously.
