@@ -290,7 +290,7 @@ class Horizon(object):
 
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
-            data, affine = self.images[0]
+            data, affine = self.images[0]            
             self.panel = slicer_panel(scene, data, affine, self.world_coords)
         else:
             data = None
