@@ -122,43 +122,65 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
-        image_actor_z.display_extent(0, shape[0] - 1,
-                                     0, shape[1] - 1, z, z)
+        change_volume.image_actor_z.display_extent(0, shape[0] - 1,
+                                                   0, shape[1] - 1, z, z)
+        change_slice_z.z = z
 
     def change_slice_x(slider):
         x = int(np.round(slider.value))
-        image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                     shape[2] - 1)
+        change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
+                                                   shape[2] - 1)
+        change_slice_x.x = x
+
 
     def change_slice_y(slider):
         y = int(np.round(slider.value))
-        image_actor_y.display_extent(0, shape[0] - 1, y, y,
-                                     0, shape[2] - 1)
+        change_volume.image_actor_y.display_extent(0, shape[0] - 1, y, y,
+                                                   0, shape[2] - 1)
+        change_slice_y.y = y
 
     def change_opacity(slider):
         slicer_opacity = slider.value
-        image_actor_z.opacity(slicer_opacity)
-        image_actor_x.opacity(slicer_opacity)
-        image_actor_y.opacity(slicer_opacity)
+        change_volume.image_actor_z.opacity(slicer_opacity)
+        change_volume.image_actor_x.opacity(slicer_opacity)
+        change_volume.image_actor_y.opacity(slicer_opacity)
 
     def change_volume(iren, obj, slider):
         vol_idx = int(np.round(slider.value))        
-        print(data.shape)
-        print(vol_idx)
-        
+       
         renderer.rm(change_volume.image_actor_z)
-        change_volume.image_actor_z = actor.slicer(data[..., vol_idx], affine=affine)
+        image_actor_z = actor.slicer(data[..., vol_idx], affine=affine)
+        image_actor_z.display_extent(0, shape[0] - 1,
+                                     0, shape[1] - 1, change_slice_z.z, change_slice_z.z)
+    
+        change_volume.image_actor_z = image_actor_z
+        change_volume.image_actor_x = image_actor_z.copy()
+        change_volume.image_actor_x.display_extent(change_slice_x.x,
+                                                   change_slice_x.x, 0,
+                                                   shape[1] - 1, 0,
+                                                   shape[2] - 1)
+        change_volume.image_actor_y = image_actor_z.copy()
+        change_volume.image_actor_y.display_extent(0, shape[0] - 1,
+                                                   change_slice_y.y,
+                                                   change_slice_y.y,
+                                                   0, shape[2] - 1)
+                                                                          
         renderer.add(change_volume.image_actor_z)
         iren.force_render()
 
 
     change_volume.image_actor_z = image_actor_z
+    change_volume.image_actor_x = image_actor_x
+    change_volume.image_actor_y = image_actor_y
+    change_slice_z.z = int(np.round(shape[2] / 2))
+    change_slice_x.x = int(np.round(shape[0] / 2))
+    change_slice_y.y = int(np.round(shape[1] / 2))
+
     line_slider_z.on_change = change_slice_z
     line_slider_y.on_change = change_slice_y
     line_slider_x.on_change = change_slice_x
     opacity_slider.on_change = change_opacity
-    # volume_slider.on_change = change_volume
-    #volume_slider.add_callback(volume_slider.handle.actor, 'LeftButtonReleaseEvent', change_volume2)
+    
     volume_slider.handle_events(volume_slider.handle.actor)
     volume_slider.on_left_mouse_button_released = change_volume
 
