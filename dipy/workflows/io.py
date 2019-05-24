@@ -56,9 +56,15 @@ class IoInfoFlow(Workflow):
                 logging.info('Data type {0}'.format(data.dtype))
                 logging.info('Data min {0} max {1} avg {2}'
                              .format(data.min(), data.max(), data.mean()))
-                logging.info('2nd percentile {0} 98th percentile {1}'
-                             .format(np.percentile(data, 2),
-                                     np.percentile(data, 98)))
+                if data.ndim == 3:
+                    logging.info('2nd percentile {0} 98th percentile {1}'
+                                 .format(np.percentile(data, 2),
+                                         np.percentile(data, 98)))
+                if data.ndim == 4:
+                    msg = '2nd percentile {0} 98th percentile {1} of volume 0'
+                    logging.info(
+                                 .format(np.percentile(data[..., 0], 2),
+                                         np.percentile(data[..., 0], 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
                 logging.info('Affine to RAS1mm \n{0}'.format(affine))
