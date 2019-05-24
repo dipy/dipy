@@ -149,6 +149,8 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
         vol_idx = int(np.round(slider.value))        
        
         renderer.rm(change_volume.image_actor_z)
+        renderer.rm(change_volume.image_actor_x)
+        renderer.rm(change_volume.image_actor_y)
         image_actor_z = actor.slicer(data[..., vol_idx], affine=affine)
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1, change_slice_z.z, change_slice_z.z)
@@ -166,6 +168,8 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
                                                    0, shape[2] - 1)
                                                                           
         renderer.add(change_volume.image_actor_z)
+        renderer.add(change_volume.image_actor_x)
+        renderer.add(change_volume.image_actor_y)
         iren.force_render()
 
 
