@@ -54,20 +54,25 @@ class IoInfoFlow(Workflow):
                     return_coords=True)
                 logging.info('Data size {0}'.format(data.shape))
                 logging.info('Data type {0}'.format(data.dtype))
-                logging.info('Data min {0} max {1} avg {2}'
-                             .format(data.min(), data.max(), data.mean()))
+                
                 if data.ndim == 3:
+                    logging.info('Data min {0} max {1} avg {2}'
+                                 .format(data.min(), data.max(), data.mean()))
                     logging.info('2nd percentile {0} 98th percentile {1}'
                                  .format(np.percentile(data, 2),
                                          np.percentile(data, 98)))
                 if data.ndim == 4:
-                    msg = '2nd percentile {0} 98th percentile {1} of volume 0'
-                    logging.info(
+                    logging.info('Data min {0} max {1} avg {2} of vol 0'
+                                 .format(data[..., 0].min(),
+                                         data[..., 0].max(),
+                                         data[..., 0].mean()))
+                    msg = '2nd percentile {0} 98th percentile {1} of vol 0'
+                    logging.info(msg
                                  .format(np.percentile(data[..., 0], 2),
                                          np.percentile(data[..., 0], 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
-                logging.info('Affine to RAS1mm \n{0}'.format(affine))
+                logging.info('Affine Native to RAS matrix \n{0}'.format(affine))
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
