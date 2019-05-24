@@ -97,6 +97,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
                                     text_template="{value:.0f}",
                                     length=140)
 
+    line_slider_z.default_color = (1, 0.5, 0)
+
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1,
                                     initial_value=shape[0] / 2,
