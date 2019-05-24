@@ -291,7 +291,7 @@ class Horizon(object):
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
             data, affine = self.images[0]            
-            self.panel = slicer_panel(scene, data, affine, self.world_coords)
+            self.panel = slicer_panel(scene, show_m.iren, data, affine, self.world_coords)
         else:
             data = None
             affine = None
@@ -463,7 +463,7 @@ class Horizon(object):
         def timer_callback(obj, event):
 
             cnt = next(counter)
-            # print("Let's count up to 100 and exit :" + str(cnt))
+            # print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
             pass
