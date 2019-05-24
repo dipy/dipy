@@ -20,7 +20,7 @@ img, gtab = read_stanford_hardi()
 
 data = img.get_data()
 
-maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3, 
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
                              numpass=1, autocrop=True, dilate=2)
 
 """
