@@ -39,9 +39,10 @@ class IoInfoFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for input_path in io_it:
-            logging.info('------------------------------------------')
+            mult_ = len(input_path)
+            logging.info('-----------' + mult_*'-')
             logging.info('Looking at {0}'.format(input_path))
-            logging.info('------------------------------------------')
+            logging.info('-----------' + mult_*'-')
 
             ipath_lower = input_path.lower()
 
