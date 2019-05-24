@@ -36,12 +36,13 @@ def build_label(text, font_size=18, bold=False):
     return label
 
 
-def slicer_panel(renderer, data=None, affine=None, world_coords=False):
+def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
     """ Slicer panel with slicer included
 
     Parameters
     ----------
     renderer : Renderer
+    iren : Interactor
     data : 3d ndarray
     affine : 4x4 ndarray
     world_coords : bool
@@ -172,7 +173,12 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
         change_volume.image_actor_z.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
-        change_volume.istyle = istyle
+        change_volume.image_actor_x.AddObserver('LeftButtonPressEvent',
+                                                left_click_picker_callback,
+                                                1.0)
+        change_volume.image_actor_y.AddObserver('LeftButtonPressEvent',
+                                                left_click_picker_callback,
+                                                1.0)
         renderer.add(change_volume.image_actor_z)
         renderer.add(change_volume.image_actor_x)
         renderer.add(change_volume.image_actor_y)
@@ -180,9 +186,8 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
 
     def left_click_picker_callback(obj, ev):
         ''' Get the value of the clicked voxel and show it in the panel.'''
-        
-        print(obj)
-        event_pos = change_volume.istyle.GetInteractor().GetEventPosition()
+       
+        event_pos = iren.GetEventPosition()
         
         obj.picker.Pick(event_pos[0],
                         event_pos[1],
