@@ -66,7 +66,6 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
 
     image_actor_z = actor.slicer(tmp, affine)
 
-
     slicer_opacity = 1.
     image_actor_z.opacity(slicer_opacity)
 
@@ -145,15 +144,18 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
         change_volume.image_actor_x.opacity(slicer_opacity)
         change_volume.image_actor_y.opacity(slicer_opacity)
 
-    def change_volume(iren, obj, slider):
+    def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))        
        
         renderer.rm(change_volume.image_actor_z)
         renderer.rm(change_volume.image_actor_x)
         renderer.rm(change_volume.image_actor_y)
-        image_actor_z = actor.slicer(data[..., vol_idx], affine=affine)
+        image_actor_z = actor.slicer(data[..., vol_idx],
+                                     affine=affine)
         image_actor_z.display_extent(0, shape[0] - 1,
-                                     0, shape[1] - 1, change_slice_z.z, change_slice_z.z)
+                                     0, shape[1] - 1,
+                                     change_slice_z.z,
+                                     change_slice_z.z)
     
         change_volume.image_actor_z = image_actor_z
         change_volume.image_actor_x = image_actor_z.copy()
@@ -166,14 +168,42 @@ def slicer_panel(renderer, data=None, affine=None, world_coords=False):
                                                    change_slice_y.y,
                                                    change_slice_y.y,
                                                    0, shape[2] - 1)
-                                                                          
+
+        change_volume.image_actor_z.AddObserver('LeftButtonPressEvent',
+                                                left_click_picker_callback,
+                                                1.0)
+        change_volume.istyle = istyle
         renderer.add(change_volume.image_actor_z)
         renderer.add(change_volume.image_actor_x)
         renderer.add(change_volume.image_actor_y)
-        iren.force_render()
+        istyle.force_render()
 
+    def left_click_picker_callback(obj, ev):
+        ''' Get the value of the clicked voxel and show it in the panel.'''
+        
+        print(obj)
+        event_pos = change_volume.istyle.GetInteractor().GetEventPosition()
+        
+        obj.picker.Pick(event_pos[0],
+                        event_pos[1],
+                        0,
+                        renderer)
+
+        i, j, k = obj.picker.GetPointIJK()
+        # result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
+        # result_value.message = '%.8f' % data[i, j, k]
+        message = '({}, {}, {})'.format(str(i), str(j), str(k))
+        print(message)
+        message = '%.8f' % data[i, j, k, 0]
+        print(message)
+        
 
     change_volume.image_actor_z = image_actor_z
+
+    change_volume.image_actor_z.AddObserver('LeftButtonPressEvent',
+                                            left_click_picker_callback,
+                                            1.0)
+
     change_volume.image_actor_x = image_actor_x
     change_volume.image_actor_y = image_actor_y
     change_slice_z.z = int(np.round(shape[2] / 2))

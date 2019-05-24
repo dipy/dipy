@@ -456,6 +456,19 @@ class Horizon(object):
 
                 show_m.render()
 
+        
+        import itertools
+        counter = itertools.count()
+        
+        def timer_callback(obj, event):
+
+            cnt = next(counter)
+            # print("Let's count up to 100 and exit :" + str(cnt))
+            # show_m.scene.azimuth(0.05 * cnt)
+            # show_m.render()
+            pass
+    
+    
         scene.reset_camera()
         scene.zoom(1.5)
         scene.reset_clipping_range()
@@ -463,6 +476,7 @@ class Horizon(object):
         if self.interactive:
 
             show_m.add_window_callback(win_callback)
+            show_m.add_timer_callback(True, 200, timer_callback)
             show_m.iren.AddObserver('KeyPressEvent', key_press)
             show_m.render()
             show_m.start()
