@@ -146,8 +146,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
         change_volume.image_actor_y.opacity(slicer_opacity)
 
     def change_volume(istyle, obj, slider):
-        vol_idx = int(np.round(slider.value))        
-       
+        vol_idx = int(np.round(slider.value))
+        change_volume.vol_idx = vol_idx       
         renderer.rm(change_volume.image_actor_z)
         renderer.rm(change_volume.image_actor_x)
         renderer.rm(change_volume.image_actor_y)
@@ -197,10 +197,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
         i, j, k = obj.picker.GetPointIJK()
         # result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
         # result_value.message = '%.8f' % data[i, j, k]
-        message = '({}, {}, {})'.format(str(i), str(j), str(k))
-        print(message)
-        message = '%.8f' % data[i, j, k, 0]
-        print(message)
+        # message = '({}, {}, {})'.format(str(i), str(j), str(k))
+        # print(message)
+        if data.ndim == 4:
+            message = '%.3f' % data[i, j, k, change_volume.vol_idx]
+        if data.ndim == 3:
+            message = '%.3f' % data[i, j, k]
+        picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
         
 
     change_volume.image_actor_z = image_actor_z
@@ -230,27 +233,39 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
     line_slider_label_y = build_label(text="Y Slice")
     opacity_slider_label = build_label(text="Opacity")
     volume_slider_label = build_label(text="Volume")
+    picker_label = build_label(text = '')
     
-    panel = ui.Panel2D(size=(400, 300),
+    if data.ndim == 4:
+        panel_size = (400, 400)
+    if data.ndim == 3:
+        panel_size = (400, 300)
+    
+    panel = ui.Panel2D(size=panel_size,
                        position=(850, 110),
                        color=(1, 1, 1),
                        opacity=0.1,
                        align="right")
 
+    ys = np.linspace(0, 1, 8)
 
-    panel.add_element(line_slider_x, coords=(0.4, 0.8))
-    panel.add_element(line_slider_y, coords=(0.4, 0.6))
-    panel.add_element(line_slider_z, coords=(0.4, 0.4))
-    panel.add_element(opacity_slider, coords=(0.4, 0.2))
-    panel.add_element(volume_slider, coords=(0.4, 0.0))
+    panel.add_element(line_slider_x, coords=(0.4, ys[1]))
+    panel.add_element(line_slider_y, coords=(0.4, ys[2]))
+    panel.add_element(line_slider_z, coords=(0.4, ys[3]))
+    panel.add_element(opacity_slider, coords=(0.4, ys[4]))
+
+    if data.ndim == 4:    
+        panel.add_element(volume_slider, coords=(0.4, ys[6]))
     
     
-    panel.add_element(line_slider_label_x, coords=(0.1, 0.75))
-    panel.add_element(line_slider_label_y, coords=(0.1, 0.55))
-    panel.add_element(line_slider_label_z, coords=(0.1, 0.35))
-    panel.add_element(opacity_slider_label, coords=(0.1, 0.15))
-    panel.add_element(volume_slider_label, coords=(0.1, 0.0))
+    panel.add_element(line_slider_label_x, coords=(0.1, ys[1]))
+    panel.add_element(line_slider_label_y, coords=(0.1, ys[2]))
+    panel.add_element(line_slider_label_z, coords=(0.1, ys[3]))
+    panel.add_element(opacity_slider_label, coords=(0.1, ys[4]))
     
+    if data.ndim == 4:    
+        panel.add_element(volume_slider_label, coords=(0.1, ys[6]))
+    
+    panel.add_element(picker_label, coords=(0.2, ys[5]))
 
     renderer.add(panel)
     return panel
