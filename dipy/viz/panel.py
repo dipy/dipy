@@ -1,5 +1,6 @@
 import numpy as np
 from dipy.utils.optpkg import optional_package
+import itertools
 
 fury, have_fury, setup_module = optional_package('fury')
 
@@ -137,6 +138,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
 
     _color_slider(volume_slider)
 
+    # TODO ADD CheckBoxes to select between showing a slice or not.
+    # Or make textboxes clickable.
+    # Add double slider for selecting contrast range.
+
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
@@ -211,10 +216,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
                         renderer)
 
         i, j, k = obj.picker.GetPointIJK()
-        # result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
-        # result_value.message = '%.8f' % data[i, j, k]
-        # message = '({}, {}, {})'.format(str(i), str(j), str(k))
-        # print(message)
         if data.ndim == 4:
             message = '%.3f' % data[i, j, k, change_volume.vol_idx]
         if data.ndim == 3:
@@ -254,8 +255,58 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
     # volume_slider.on_right_mouse_button_released = change_volume2
 
     line_slider_label_x = build_label(text="X Slice")
+    line_slider_label_x.visibility = True
+    x_counter = itertools.count()
+
+    def label_callback_x(obj, event):
+        line_slider_label_x.visibility = not line_slider_label_x.visibility
+        line_slider_x.set_visibility(line_slider_label_x.visibility)
+        cnt = next(x_counter)
+        if line_slider_label_x.visibility and cnt > 0 :
+            renderer.add(change_volume.image_actor_x)
+        else:
+            renderer.rm(change_volume.image_actor_x)
+        iren.Render()
+    
+    line_slider_label_x.actor.AddObserver('LeftButtonPressEvent',
+                                          label_callback_x,
+                                          1.0)
+
     line_slider_label_y = build_label(text="Y Slice")
+    line_slider_label_y.visibility = True
+    y_counter = itertools.count()
+
+    def label_callback_y(obj, event):
+        line_slider_label_y.visibility = not line_slider_label_y.visibility
+        line_slider_y.set_visibility(line_slider_label_y.visibility)
+        cnt = next(y_counter)
+        if line_slider_label_y.visibility and cnt > 0 :
+            renderer.add(change_volume.image_actor_y)
+        else:
+            renderer.rm(change_volume.image_actor_y)
+        iren.Render()
+    
+    line_slider_label_y.actor.AddObserver('LeftButtonPressEvent',
+                                          label_callback_y,
+                                          1.0)
+
     line_slider_label_z = build_label(text="Z Slice")
+    line_slider_label_z.visibility = True
+    z_counter = itertools.count()
+
+    def label_callback_z(obj, event):
+        line_slider_label_z.visibility = not line_slider_label_z.visibility
+        line_slider_z.set_visibility(line_slider_label_z.visibility)
+        cnt = next(z_counter)
+        if line_slider_label_z.visibility and cnt > 0 :
+            renderer.add(change_volume.image_actor_z)
+        else:
+            renderer.rm(change_volume.image_actor_z)
+        iren.Render()
+    
+    line_slider_label_z.actor.AddObserver('LeftButtonPressEvent',
+                                          label_callback_z,
+                                          1.0)
     
     opacity_slider_label = build_label(text="Opacity")
     volume_slider_label = build_label(text="Volume")
