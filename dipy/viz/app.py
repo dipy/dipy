@@ -75,8 +75,8 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-    def __init__(self, tractograms, images, cluster, cluster_thr,
-                 random_colors, length_lt, length_gt, clusters_lt, clusters_gt,
+    def __init__(self, tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
+                 random_colors=0, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
@@ -86,15 +86,16 @@ class Horizon(object):
             Sequence of Streamlines objects
         images : sequence of tuples
             Each tuple contains data and affine
+        pams : PeakAndMetrics files
         cluster : bool
             Enable QuickBundlesX clustering
         cluster_thr : float
             Distance threshold used for clustering
         random_colors : bool
-        length_lt : float
         length_gt : float
-        clusters_lt : int
+        length_lt : float
         clusters_gt : int
+        clusters_lt : int
         world_coords : bool
         interactive : bool
         out_png : string
@@ -121,6 +122,7 @@ class Horizon(object):
         self.tractograms = tractograms
         self.out_png = out_png
         self.images = images or []
+        self.pams = pams or []
 
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
@@ -290,11 +292,13 @@ class Horizon(object):
 
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
-            data, affine = self.images[0]            
-            self.panel = slicer_panel(scene, show_m.iren, data, affine, self.world_coords)
+            data, affine = self.images[0]
+            pam = self.pams[0]
+            self.panel = slicer_panel(scene, show_m.iren, data, affine, self.world_coords, pam=pam)
         else:
             data = None
             affine = None
+            pam = None
 
         self.win_size = scene.GetSize()
 
@@ -488,8 +492,8 @@ class Horizon(object):
                           reset_camera=False)
 
 
-def horizon(tractograms, images, cluster, cluster_thr, random_colors,
-            length_lt, length_gt, clusters_lt, clusters_gt,
+def horizon(tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
+            random_colors=0, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png'):
     """Highly interactive visualization - invert the Horizon!
 
@@ -499,15 +503,16 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         Sequence of Streamlines objects
     images : sequence of tuples
         Each tuple contains data and affine
+    pams : peaks
     cluster : bool
         Enable QuickBundlesX clustering
     cluster_thr : float
         Distance threshold used for clustering
     random_colors : bool
-    length_lt : float
     length_gt : float
-    clusters_lt : int
+    length_lt : float
     clusters_gt : int
+    clusters_lt : int
     world_coords : bool
     interactive : bool
     out_png : string
@@ -520,8 +525,8 @@ def horizon(tractograms, images, cluster, cluster_thr, random_colors,
         adaptive visualization, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
-    hz = Horizon(tractograms, images, cluster, cluster_thr, random_colors,
-                 length_lt, length_gt, clusters_lt, clusters_gt,
+    hz = Horizon(tractograms, images, pams, cluster, cluster_thr, random_colors,
+                 length_gt, length_lt, clusters_gt, clusters_lt,
                  world_coords, interactive, out_png)
 
     scene = hz.build_scene()

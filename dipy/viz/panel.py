@@ -32,12 +32,12 @@ def build_label(text, font_size=18, bold=False):
     label.shadow = False
     label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
     label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
-    label.color = (1, 1, 1)
+    label.color = (0.7, 0.7, 0.7)
 
     return label
 
 
-def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
+def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam=None, mask=None):
     """ Slicer panel with slicer included
 
     Parameters
@@ -49,6 +49,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
     world_coords : bool
         If True then the affine is applied.
 
+    peaks : PeaksAndMetrics
+        Default None
+    
     Returns
     -------
     panel : Panel
@@ -67,6 +70,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
         affine = np.eye(4)
 
     image_actor_z = actor.slicer(tmp, affine)
+    
+    if pam is not None:
+        
+        peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None, mask=mask, affine=affine)
 
     slicer_opacity = 1.
     image_actor_z.opacity(slicer_opacity)
@@ -91,6 +98,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False):
     renderer.add(image_actor_z)
     renderer.add(image_actor_x)
     renderer.add(image_actor_y)
+
+    renderer.add(peaks_actor_z)
 
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1,
