@@ -148,10 +148,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     _color_slider(volume_slider)
 
-    # TODO ADD CheckBoxes to select between showing a slice or not.
-    # Or make textboxes clickable.
-    # Add double slider for selecting contrast range.
-
+ 
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
