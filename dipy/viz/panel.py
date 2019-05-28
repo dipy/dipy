@@ -255,6 +255,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                             left_click_picker_callback,
                                             1.0)
 
+    if pam is not None:
+        change_volume.peaks_actor_z.AddObserver('LeftButtonPressEvent',
+                                                 left_click_picker_callback,
+                                                1.0)
 
     change_slice_x.x = int(np.round(shape[0] / 2))
     change_slice_y.y = int(np.round(shape[1] / 2))
