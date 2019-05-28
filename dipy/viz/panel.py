@@ -58,19 +58,29 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     """
 
-    shape = data.shape
+    orig_shape = data.shape
+    print('Original shape', orig_shape)
     ndim = data.ndim
     tmp = data
     if ndim == 4:
-        if shape[-1] > 3:
-            tmp = data[..., 0] 
-            shape = shape[:3]
+        if orig_shape[-1] > 3:
+            tmp = data[..., 0]
+            orig_shape = orig_shape[:3]
 
     if not world_coords:
         affine = np.eye(4)
 
-    image_actor_z = actor.slicer(tmp, affine)
-    
+    # renderer.add(actor.axes(scale=(50, 50, 50)))
+
+    image_actor_z = actor.slicer(tmp, affine=affine, interpolation='nearest', picking_tol=0.025)
+
+    tmp_new = image_actor_z.get_numpy()
+    tmp_new = np.swapaxes(tmp_new, 0, 2)
+    tmp_new = np.ascontiguousarray(tmp_new)
+
+    print('New shape', tmp_new.shape)
+    shape = tmp_new.shape
+
     if pam is not None:
         
         peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None, mask=mask, affine=affine, colors=None)
@@ -183,8 +193,17 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.rm(change_volume.image_actor_z)
         renderer.rm(change_volume.image_actor_x)
         renderer.rm(change_volume.image_actor_y)
-        image_actor_z = actor.slicer(data[..., vol_idx],
-                                     affine=affine)
+
+        tmp = data[..., vol_idx]
+        image_actor_z = actor.slicer(tmp,
+                                     affine=affine,
+                                     interpolation='nearest',
+                                     picking_tol=0.025)
+        tmp_new = image_actor_z.get_numpy()
+        tmp_new = np.swapaxes(tmp_new, 0, 2)
+        tmp_new = np.ascontiguousarray(tmp_new)
+        change_volume.tmp_new = tmp_new
+
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
                                      change_slice_z.z,
@@ -230,15 +249,20 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                         0,
                         renderer)
 
-        i, j, k = obj.picker.GetPointIJK()
-        if data.ndim == 4:
-            message = '%.3f' % data[i, j, k, change_volume.vol_idx]
-        if data.ndim == 3:
-            message = '%.3f' % data[i, j, k]
+        # x, y, z = obj.picker.GetPCoords()
+        # res = np.dot(np.linalg.inv(affine), np.array([[x, y, z, 1]]).T)
+        # x1, y1, z1, _ = res.ravel()
+
+        i, j, k = obj.picker.GetPointIJK()        
+        #if data.ndim == 4:
+        #    message = '%.3f' % tmp_new[i, j, k, change_volume.vol_idx]
+        #if data.ndim == 3:
+        message = '%.3f' % change_volume.tmp_new[i, j, k]
         picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
         
 
     change_volume.vol_idx = 0
+    change_volume.tmp_new = tmp_new
     change_volume.image_actor_x = image_actor_x
     change_volume.image_actor_y = image_actor_y
     change_volume.image_actor_z = image_actor_z
