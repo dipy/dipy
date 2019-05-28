@@ -73,7 +73,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     
     if pam is not None:
         
-        peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None, mask=mask, affine=affine)
+        peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None, mask=mask, affine=affine, colors=None)
 
     slicer_opacity = 1.
     image_actor_z.opacity(slicer_opacity)
@@ -99,7 +99,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     renderer.add(image_actor_x)
     renderer.add(image_actor_y)
 
-    renderer.add(peaks_actor_z)
+    if pam is not None:
+        renderer.add(peaks_actor_z)
 
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1,
@@ -155,6 +156,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         x = int(np.round(slider.value))
         change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                    shape[2] - 1)
+            
         change_slice_x.x = x
 
     def change_slice_y(slider):
@@ -167,6 +169,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         z = int(np.round(slider.value))
         change_volume.image_actor_z.display_extent(0, shape[0] - 1,
                                                    0, shape[1] - 1, z, z)
+        if pam is not None:
+            change_volume.peaks_actor_z.display_extent(0, shape[0] - 1,
+                                                       0, shape[1] - 1, z, z)
         change_slice_z.z = z
 
     def change_opacity(slider):
@@ -190,6 +195,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     
         change_volume.image_actor_z = image_actor_z
         change_volume.image_actor_x = image_actor_z.copy()
+        if pam is not None:
+            change_volume.peaks_actor_z = peaks_actor_z
         change_volume.image_actor_x.display_extent(change_slice_x.x,
                                                    change_slice_x.x, 0,
                                                    shape[1] - 1, 0,
@@ -212,6 +219,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.add(change_volume.image_actor_z)
         renderer.add(change_volume.image_actor_x)
         renderer.add(change_volume.image_actor_y)
+        if pam is not None:
+            renderer.add(change_volume.peaks_actor_z)
         istyle.force_render()
 
     def left_click_picker_callback(obj, ev):
@@ -236,6 +245,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     change_volume.image_actor_x = image_actor_x
     change_volume.image_actor_y = image_actor_y
     change_volume.image_actor_z = image_actor_z
+    if pam is not None:
+        change_volume.peaks_actor_z = peaks_actor_z
 
     change_volume.image_actor_x.AddObserver('LeftButtonPressEvent',
                                             left_click_picker_callback,

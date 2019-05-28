@@ -293,7 +293,10 @@ class Horizon(object):
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
             data, affine = self.images[0]
-            pam = self.pams[0]
+            if len(self.pams) > 0:
+                pam = self.pams[0]
+            else:
+                pam = None
             self.panel = slicer_panel(scene, show_m.iren, data, affine, self.world_coords, pam=pam)
         else:
             data = None
