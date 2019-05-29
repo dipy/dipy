@@ -577,6 +577,18 @@ def test_csd_superres():
     assert_(all(cos_sim > .99))
 
 
+def test_csd_convergence():
+    """ Check existence of `convergence` keyword in CSD model """
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
+
+    model = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                            sh_order=8, convergence=50)
+
+
 if __name__ == '__main__':
     # run_module_suite()
     test_csdeconv()
