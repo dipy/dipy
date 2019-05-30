@@ -281,7 +281,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     if pam is not None:
         change_volume.peaks_actor_z.AddObserver('LeftButtonPressEvent',
-                                                 left_click_picker_callback,
+                                                left_click_picker_callback,
                                                 1.0)
 
     change_slice_x.x = int(np.round(shape[0] / 2))
@@ -375,17 +375,19 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
 
-    if data.ndim == 4:    
-        panel.add_element(volume_slider, coords=(0.4, ys[6]))
-    
-    
+    if data.ndim == 4: 
+        if data.shape[-1] > 3 :   
+            panel.add_element(volume_slider, coords=(0.4, ys[6]))
+        
     panel.add_element(line_slider_label_z, coords=(0.1, ys[1]))
     panel.add_element(line_slider_label_y, coords=(0.1, ys[2]))
     panel.add_element(line_slider_label_x, coords=(0.1, ys[3]))
     panel.add_element(opacity_slider_label, coords=(0.1, ys[4]))
     
-    if data.ndim == 4:    
-        panel.add_element(volume_slider_label, coords=(0.1, ys[6]))
+    if data.ndim == 4:
+        if data.shape[-1] > 3 :      
+            panel.add_element(volume_slider_label,
+                              coords=(0.1, ys[6]))
     
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
