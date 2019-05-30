@@ -257,7 +257,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         #if data.ndim == 4:
         #    message = '%.3f' % tmp_new[i, j, k, change_volume.vol_idx]
         #if data.ndim == 3:
-        message = '%.3f' % change_volume.tmp_new[i, j, k]
+        res = change_volume.tmp_new[i, j, k]
+        if len(res) == 1:
+            message = '%.3f' % res
+        if len(res) == 3:
+            message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
         picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
         
 
