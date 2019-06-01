@@ -147,35 +147,41 @@ class FetchFlow(Workflow):
                                if name.lower().startswith("fetch_")
                                if not len(getfullargspec(func).args)])
 
-        skipped_names = []
-        for data_name in data_names:
-            data_name = data_name.lower()
-            if data_name == 'all':
-                for name, fetcher_function in available_data.items():
-                    logging.info('------------------------------------------')
-                    logging.info('Fetching at {0}'.format(name))
-                    logging.info('------------------------------------------')
-                    fetcher_function()
-                break
+        data_names = [name.lower() for name in data_names]
 
-            if data_name not in available_data.keys():
-                skipped_names.append(data_name)
-                continue
+        if 'all' in data_names:
+            for name, fetcher_function in available_data.items():
+                logging.info('------------------------------------------')
+                logging.info('Fetching at {0}'.format(name))
+                logging.info('------------------------------------------')
+                fetcher_function()
 
-            logging.info('------------------------------------------')
-            logging.info('Fetching at {0}'.format(data_name))
-            logging.info('------------------------------------------')
-            available_data[data_name]()
-
-        nb_success = len(data_names) - len(skipped_names)
-        print('\n')
-        logging.info('Fetched {0} / {1} Files '.format(nb_success,
-                                                       len(data_names)))
-        if skipped_names:
-            logging.warn('Skipped data name(s):'
-                         ' {0}'.format(' '.join(skipped_names)))
-            logging.warn('Please, select between the following data names:'
+        elif 'list' in data_names:
+            logging.info('Please, select between the following data names:'
                          ' {0}'.format(', '.join(available_data.keys())))
+
+        else:
+            skipped_names = []
+            for data_name in data_names:
+                if data_name not in available_data.keys():
+                    skipped_names.append(data_name)
+                    continue
+
+                logging.info('------------------------------------------')
+                logging.info('Fetching at {0}'.format(data_name))
+                logging.info('------------------------------------------')
+                available_data[data_name]()
+
+            nb_success = len(data_names) - len(skipped_names)
+            print('\n')
+            logging.info('Fetched {0} / {1} Files '.format(nb_success,
+                                                           len(data_names)))
+            if skipped_names:
+                logging.warn('Skipped data name(s):'
+                             ' {0}'.format(' '.join(skipped_names)))
+                logging.warn('Please, select between the following data'
+                             ' names: {0}'.format(
+                                 ', '.join(available_data.keys())))
 
         if out_dir:
             if dipy_home:

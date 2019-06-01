@@ -1,5 +1,4 @@
 import logging
-import itertools
 import os
 import numpy.testing as npt
 
