@@ -73,22 +73,29 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     # renderer.add(actor.axes(scale=(50, 50, 50)))
 
     data_actors = []
+    resliced_volumes = []
 
     def build_all_volume_actors():
 
-        for i in range(data_actors.shape[-1]):
-            tmp = data[..., vol_idx]
+        for i in range(data.shape[-1]):
+            print(i)
+            tmp = data[..., i]
             image_actor_z = actor.slicer(tmp,
                                          affine=affine,
                                          interpolation='nearest',
                                          picking_tol=0.025)
+
+            data_actors.append(image_actor_z)
+            '''
             tmp_new = image_actor_z.get_numpy()
             tmp_new = np.swapaxes(tmp_new, 0, 2)
             tmp_new = np.ascontiguousarray(tmp_new)
         
             change_volume.tmp_new = tmp_new
+            '''
 
     image_actor_z = actor.slicer(tmp, affine=affine, interpolation='nearest', picking_tol=0.025)
+    # build_all_volume_actors()
 
     tmp_new = image_actor_z.get_numpy()
     tmp_new = np.swapaxes(tmp_new, 0, 2)
@@ -210,6 +217,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.rm(change_volume.image_actor_x)
         renderer.rm(change_volume.image_actor_y)
 
+        #'''
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
                                      affine=affine,
@@ -220,7 +228,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         tmp_new = np.swapaxes(tmp_new, 0, 2)
         tmp_new = np.ascontiguousarray(tmp_new)
         change_volume.tmp_new = tmp_new
-        
+        # '''
+        # image_actor_z = data_actors[vol_idx]
+
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
                                      change_slice_z.z,
@@ -316,7 +326,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     opacity_slider.on_change = change_opacity
     
     volume_slider.handle_events(volume_slider.handle.actor)
-    volume_slider.on_left_mouse_button_released = change_volume
+    volume_slider.on_left_mouse_button_released = change_volume    
 
     # volume_slider.on_right_mouse_button_released = change_volume2
 
