@@ -57,7 +57,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel : Panel
 
     """
-
+    bigmem = True
     orig_shape = data.shape
     print('Original shape', orig_shape)
     ndim = data.ndim
@@ -71,6 +71,22 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         affine = np.eye(4)
 
     # renderer.add(actor.axes(scale=(50, 50, 50)))
+
+    data_actors = []
+
+    def build_all_volume_actors():
+
+        for i in range(data_actors.shape[-1]):
+            tmp = data[..., vol_idx]
+            image_actor_z = actor.slicer(tmp,
+                                         affine=affine,
+                                         interpolation='nearest',
+                                         picking_tol=0.025)
+            tmp_new = image_actor_z.get_numpy()
+            tmp_new = np.swapaxes(tmp_new, 0, 2)
+            tmp_new = np.ascontiguousarray(tmp_new)
+        
+            change_volume.tmp_new = tmp_new
 
     image_actor_z = actor.slicer(tmp, affine=affine, interpolation='nearest', picking_tol=0.025)
 
@@ -199,11 +215,12 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                      affine=affine,
                                      interpolation='nearest',
                                      picking_tol=0.025)
+        
         tmp_new = image_actor_z.get_numpy()
         tmp_new = np.swapaxes(tmp_new, 0, 2)
         tmp_new = np.ascontiguousarray(tmp_new)
         change_volume.tmp_new = tmp_new
-
+        
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
                                      change_slice_z.z,
@@ -258,9 +275,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         #    message = '%.3f' % tmp_new[i, j, k, change_volume.vol_idx]
         #if data.ndim == 3:
         res = change_volume.tmp_new[i, j, k]
-        if len(res) == 1:
+        try:
             message = '%.3f' % res
-        if len(res) == 3:
+        except:
             message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
         picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
         
