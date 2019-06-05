@@ -57,7 +57,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel : Panel
 
     """
-    bigmem = True
+
     orig_shape = data.shape
     print('Original shape', orig_shape)
     ndim = data.ndim
@@ -66,36 +66,21 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         if orig_shape[-1] > 3:
             tmp = data[..., 0]
             orig_shape = orig_shape[:3]
+            #value_range = np.percentile(data[..., min(10, data.shape[-1])], q=[2, 98])
+            value_range = np.percentile(data[..., 0], q=[2, 98])
+    if ndim == 3:
+        value_range = np.percentile(tmp, q=[2, 98])
 
     if not world_coords:
         affine = np.eye(4)
 
     # renderer.add(actor.axes(scale=(50, 50, 50)))
-
-    data_actors = []
-    resliced_volumes = []
-
-    def build_all_volume_actors():
-
-        for i in range(data.shape[-1]):
-            print(i)
-            tmp = data[..., i]
-            image_actor_z = actor.slicer(tmp,
-                                         affine=affine,
-                                         interpolation='nearest',
-                                         picking_tol=0.025)
-
-            data_actors.append(image_actor_z)
-            '''
-            tmp_new = image_actor_z.get_numpy()
-            tmp_new = np.swapaxes(tmp_new, 0, 2)
-            tmp_new = np.ascontiguousarray(tmp_new)
-        
-            change_volume.tmp_new = tmp_new
-            '''
-
-    image_actor_z = actor.slicer(tmp, affine=affine, interpolation='nearest', picking_tol=0.025)
+    
+    image_actor_z = actor.slicer(tmp, affine=affine, value_range=value_range, interpolation='nearest', picking_tol=0.025)
     # build_all_volume_actors()
+
+    # from pdb import set_trace
+    # set_trace()
 
     tmp_new = image_actor_z.get_numpy()
     tmp_new = np.swapaxes(tmp_new, 0, 2)
@@ -165,6 +150,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     _color_slider(line_slider_y)
 
+    intensity_slider = ui.LineDoubleSlider2D(initial_values=(tmp.min(), tmp.max()),
+                                             min_value=tmp.min(), max_value=tmp.max(),
+                                             length=140, shape='square')
+
+    # _color_slider(intensity_slider)
     opacity_slider = ui.LineSlider2D(min_value=0.0,
                                      max_value=1.0,
                                      initial_value=slicer_opacity,
@@ -210,6 +200,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         change_volume.image_actor_x.opacity(slicer_opacity)
         change_volume.image_actor_y.opacity(slicer_opacity)
 
+    def change_intensity_range(slider):
+        print('yo')
+        # set lookup here image_actor_z.output.Set
+        #(Pdb) from fury.actor import colormap_lookup_table
+        #(Pdb) lut = colormap_lookup_table((0, 3000), (0, 0), (0, 0), (0, 1))
+        #(Pdb) check.SetLookupTable(lut)
+
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
         change_volume.vol_idx = vol_idx       
@@ -221,6 +218,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
                                      affine=affine,
+                                     value_range=value_range,
                                      interpolation='nearest',
                                      picking_tol=0.025)
         
@@ -322,6 +320,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     line_slider_x.on_change = change_slice_x
     line_slider_y.on_change = change_slice_y
     line_slider_z.on_change = change_slice_z
+    intensity_slider.on_change = change_intensity_range
     
     opacity_slider.on_change = change_opacity
     
@@ -405,6 +404,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_y, coords=(0.4, ys[2]))
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
+    panel.add_element(intensity_slider, coords=(0.4, ys[5]))
 
     if data.ndim == 4: 
         if data.shape[-1] > 3 :   
