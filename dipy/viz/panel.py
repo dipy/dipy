@@ -132,6 +132,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         slider.active_color = (0.9, 0.4, 0)
         slider.handle.color = (1, 0.5, 0)
 
+    def _color_dslider(slider):
+        slider.default_color = (1, 0.5, 0)
+        slider.track.color = (0.8, 0.3, 0)
+        slider.active_color = (0.9, 0.4, 0)
+        #slider.handles[0].color = (1, 0.5, 0)
+        #slider.handles[1].color = (1, 0.5, 0)
+
     _color_slider(line_slider_z)
 
     line_slider_x = ui.LineSlider2D(min_value=0,
@@ -150,11 +157,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     _color_slider(line_slider_y)
 
-    intensity_slider = ui.LineDoubleSlider2D(initial_values=(tmp.min(), tmp.max()),
-                                             min_value=tmp.min(), max_value=tmp.max(),
-                                             length=140, shape='square')
+    intensity_slider = ui.LineSlider2D(min_value=value_range[0],
+                                       max_value=value_range[1],
+                                       length=140,
+                                       text_template='{value:.0}')
+    
+    _color_slider(intensity_slider)
 
-    # _color_slider(intensity_slider)
     opacity_slider = ui.LineSlider2D(min_value=0.0,
                                      max_value=1.0,
                                      initial_value=slicer_opacity,
@@ -200,13 +209,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         change_volume.image_actor_x.opacity(slicer_opacity)
         change_volume.image_actor_y.opacity(slicer_opacity)
 
-    def change_intensity_range(slider):
-        print('yo')
-        # set lookup here image_actor_z.output.Set
-        #(Pdb) from fury.actor import colormap_lookup_table
-        #(Pdb) lut = colormap_lookup_table((0, 3000), (0, 0), (0, 0), (0, 1))
-        #(Pdb) check.SetLookupTable(lut)
-
+    
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
         change_volume.vol_idx = vol_idx       
@@ -320,8 +323,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     line_slider_x.on_change = change_slice_x
     line_slider_y.on_change = change_slice_y
     line_slider_z.on_change = change_slice_z
-    intensity_slider.on_change = change_intensity_range
-    
+
+    intensity_slider.on_change = change_opacity
+    # intensity_slider.handles[0].on_left_mouse_button_dragged = change_intensity_range_left_handle
+    # intensity_slider.handles[1].on_left_mouse_button_dragged = change_intensity_range_right_handle
+
     opacity_slider.on_change = change_opacity
     
     volume_slider.handle_events(volume_slider.handle.actor)
@@ -388,9 +394,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     picker_label = build_label(text = '')
     
     if data.ndim == 4:
-        panel_size = (400, 400)
+        panel_size = (400, 400 + 300)
     if data.ndim == 3:
-        panel_size = (400, 300)
+        panel_size = (400, 300 + 300)
     
     panel = ui.Panel2D(size=panel_size,
                        position=(850, 110),
@@ -398,13 +404,14 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                        opacity=0.1,
                        align="right")
 
-    ys = np.linspace(0, 1, 8)
+    ys = np.linspace(0, 1, 10)
 
     panel.add_element(line_slider_z, coords=(0.4, ys[1]))
     panel.add_element(line_slider_y, coords=(0.4, ys[2]))
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
-    panel.add_element(intensity_slider, coords=(0.4, ys[5]))
+    panel.add_element(intensity_slider, coords=(0.4, ys[7]))
+
 
     if data.ndim == 4: 
         if data.shape[-1] > 3 :   
