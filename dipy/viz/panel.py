@@ -37,6 +37,21 @@ def build_label(text, font_size=18, bold=False):
     return label
 
 
+def _color_slider(slider):
+    slider.default_color = (1, 0.5, 0)
+    slider.track.color = (0.8, 0.3, 0)
+    slider.active_color = (0.9, 0.4, 0)
+    slider.handle.color = (1, 0.5, 0)
+
+
+def _color_dslider(slider):
+    slider.default_color = (1, 0.5, 0)
+    slider.track.color = (0.8, 0.3, 0)
+    slider.active_color = (0.9, 0.4, 0)
+    slider.handles[0].color = (1, 0.5, 0)
+    slider.handles[1].color = (1, 0.5, 0)
+
+
 def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam=None, mask=None):
     """ Slicer panel with slicer included
 
@@ -77,14 +92,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     # renderer.add(actor.axes(scale=(50, 50, 50)))
     
     image_actor_z = actor.slicer(tmp, affine=affine, value_range=value_range, interpolation='nearest', picking_tol=0.025)
-    # build_all_volume_actors()
 
-    # from pdb import set_trace
-    # set_trace()
 
     tmp_new = image_actor_z.get_numpy()
-    tmp_new = np.swapaxes(tmp_new, 0, 2)
-    tmp_new = np.ascontiguousarray(tmp_new)
 
     print('New shape', tmp_new.shape)
     shape = tmp_new.shape
@@ -126,80 +136,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                     text_template="{value:.0f}",
                                     length=140)
 
-    def _color_slider(slider):
-        slider.default_color = (1, 0.5, 0)
-        slider.track.color = (0.8, 0.3, 0)
-        slider.active_color = (0.9, 0.4, 0)
-        slider.handle.color = (1, 0.5, 0)
 
-    def _color_dslider(slider):
-        slider.default_color = (1, 0.5, 0)
-        slider.track.color = (0.8, 0.3, 0)
-        slider.active_color = (0.9, 0.4, 0)
-        #slider.handles[0].color = (1, 0.5, 0)
-        #slider.handles[1].color = (1, 0.5, 0)
 
     _color_slider(line_slider_z)
-
-    line_slider_x = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[0] - 1,
-                                    initial_value=shape[0] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    _color_slider(line_slider_x)
-
-    line_slider_y = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[1] - 1,
-                                    initial_value=shape[1] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    _color_slider(line_slider_y)
-
-    double_slider = ui.LineDoubleSlider2D(length=140)
-
-    def on_change_ds(slider):
-        print('koukou', slider._values)
-
-    double_slider.on_change = on_change_ds 
-
-    intensity_slider = ui.LineSlider2D(min_value=value_range[0],
-                                       max_value=value_range[1],
-                                       length=140,
-                                       text_template='{value:.0}')
-    
-    _color_slider(intensity_slider)
-
-    opacity_slider = ui.LineSlider2D(min_value=0.0,
-                                     max_value=1.0,
-                                     initial_value=slicer_opacity,
-                                     length=140,
-                                     text_template="{ratio:.0%}")
-
-    _color_slider(opacity_slider)
-
-    volume_slider = ui.LineSlider2D(min_value=0,
-                                    max_value=data.shape[-1] - 1,
-                                    initial_value=0,
-                                    length=140,
-                                    text_template="{value:.0f}", shape='square')
-
-    _color_slider(volume_slider)
-
- 
-    def change_slice_x(slider):
-        x = int(np.round(slider.value))
-        change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                                   shape[2] - 1)
-            
-        change_slice_x.x = x
-
-    def change_slice_y(slider):
-        y = int(np.round(slider.value))
-        change_volume.image_actor_y.display_extent(0, shape[0] - 1, y, y,
-                                                   0, shape[2] - 1)
-        change_slice_y.y = y
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
@@ -210,12 +149,67 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                                        0, shape[1] - 1, z, z)
         change_slice_z.z = z
 
+    line_slider_x = ui.LineSlider2D(min_value=0,
+                                    max_value=shape[0] - 1,
+                                    initial_value=shape[0] / 2,
+                                    text_template="{value:.0f}",
+                                    length=140)
+
+    _color_slider(line_slider_x)
+
+
+    def change_slice_x(slider):
+        x = int(np.round(slider.value))
+        change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
+                                                   shape[2] - 1)
+            
+        change_slice_x.x = x
+
+
+    line_slider_y = ui.LineSlider2D(min_value=0,
+                                    max_value=shape[1] - 1,
+                                    initial_value=shape[1] / 2,
+                                    text_template="{value:.0f}",
+                                    length=140)
+
+    _color_slider(line_slider_y)
+
+    def change_slice_y(slider):
+        y = int(np.round(slider.value))
+        change_volume.image_actor_y.display_extent(0, shape[0] - 1, y, y,
+                                                   0, shape[2] - 1)
+        change_slice_y.y = y
+
+    double_slider = ui.LineDoubleSlider2D(length=140)
+
+    _color_dslider(double_slider)
+
+    def on_change_ds(slider):
+        print('koukou', slider._values)
+
+    double_slider.on_change = on_change_ds 
+
+    opacity_slider = ui.LineSlider2D(min_value=0.0,
+                                     max_value=1.0,
+                                     initial_value=slicer_opacity,
+                                     length=140,
+                                     text_template="{ratio:.0%}")
+
+    _color_slider(opacity_slider)
+
     def change_opacity(slider):
         slicer_opacity = slider.value
         change_volume.image_actor_z.opacity(slicer_opacity)
         change_volume.image_actor_x.opacity(slicer_opacity)
         change_volume.image_actor_y.opacity(slicer_opacity)
 
+    volume_slider = ui.LineSlider2D(min_value=0,
+                                    max_value=data.shape[-1] - 1,
+                                    initial_value=0,
+                                    length=140,
+                                    text_template="{value:.0f}", shape='square')
+
+    _color_slider(volume_slider)
     
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
@@ -224,7 +218,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.rm(change_volume.image_actor_x)
         renderer.rm(change_volume.image_actor_y)
 
-        #'''
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
                                      affine=affine,
@@ -233,11 +226,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                      picking_tol=0.025)
         
         tmp_new = image_actor_z.get_numpy()
-        tmp_new = np.swapaxes(tmp_new, 0, 2)
-        tmp_new = np.ascontiguousarray(tmp_new)
         change_volume.tmp_new = tmp_new
-        # '''
-        # image_actor_z = data_actors[vol_idx]
 
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
@@ -274,7 +263,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
             renderer.add(change_volume.peaks_actor_z)
         istyle.force_render()
 
-
     def left_click_picker_callback(obj, ev):
         ''' Get the value of the clicked voxel and show it in the panel.'''
        
@@ -285,14 +273,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                         0,
                         renderer)
 
-        # x, y, z = obj.picker.GetPCoords()
-        # res = np.dot(np.linalg.inv(affine), np.array([[x, y, z, 1]]).T)
-        # x1, y1, z1, _ = res.ravel()
-
         i, j, k = obj.picker.GetPointIJK()        
-        #if data.ndim == 4:
-        #    message = '%.3f' % tmp_new[i, j, k, change_volume.vol_idx]
-        #if data.ndim == 3:
         res = change_volume.tmp_new[i, j, k]
         try:
             message = '%.3f' % res
@@ -332,10 +313,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     line_slider_y.on_change = change_slice_y
     line_slider_z.on_change = change_slice_z
 
-    intensity_slider.on_change = change_opacity
-    # intensity_slider.handles[0].on_left_mouse_button_dragged = change_intensity_range_left_handle
-    # intensity_slider.handles[1].on_left_mouse_button_dragged = change_intensity_range_right_handle
-
+    double_slider.on_change = on_change_ds
+    
     opacity_slider.on_change = change_opacity
     
     volume_slider.handle_events(volume_slider.handle.actor)
@@ -418,10 +397,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_y, coords=(0.4, ys[2]))
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
-    panel.add_element(intensity_slider, coords=(0.4, ys[7]))
-    panel.add_element(double_slider, coords=(0.4, ys[8]))
-
-
+    panel.add_element(double_slider, coords=(0.4, ys[7]))
+    
     if data.ndim == 4: 
         if data.shape[-1] > 3 :   
             panel.add_element(volume_slider, coords=(0.4, ys[6]))
