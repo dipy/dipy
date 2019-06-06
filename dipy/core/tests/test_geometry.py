@@ -19,13 +19,15 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 compose_matrix,
                                 decompose_matrix,
                                 perpendicular_directions,
-                                dist_to_corner)
+                                dist_to_corner,
+                                is_hemispherical)
 
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, assert_almost_equal,
                            run_module_suite)
 
 from dipy.testing.spherepoints import sphere_points
+from dipy.core.sphere_stats import random_uniform_on_sphere
 from itertools import permutations
 
 
@@ -313,6 +315,16 @@ def test_dist_to_corner():
     R = _rotation_from_angles(np.random.randn(3) * np.pi)
     new_aff = np.vstack([np.dot(R, affine[:3, :]), [0, 0, 0, 1]])
     assert_array_almost_equal(dist_to_corner(new_aff), pythagoras)
+
+
+def test_is_hemispherical():
+    xyz = random_uniform_on_sphere(n=100, coords='xyz')
+    xyz = xyz[xyz[:, 2] > 0]
+    assert is_hemispherical(xyz)[0]
+
+    xyz = random_uniform_on_sphere(n=100, coords='xyz')
+    assert not is_hemispherical(xyz)[0]
+
 
 
 if __name__ == '__main__':
