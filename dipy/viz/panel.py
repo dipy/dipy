@@ -5,7 +5,7 @@ import itertools
 fury, have_fury, setup_module = optional_package('fury')
 
 if have_fury:
-    from dipy.viz import actor, ui
+    from dipy.viz import actor, ui, colormap
 
 
 def build_label(text, font_size=18, bold=False):
@@ -180,12 +180,69 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                                    0, shape[2] - 1)
         change_slice_y.y = y
 
-    double_slider = ui.LineDoubleSlider2D(length=140)
+    double_slider = ui.LineDoubleSlider2D(length=10*140,
+                                          initial_values=value_range,
+                                          min_value=tmp.min(),
+                                          max_value=tmp.max(), 
+                                          shape='square')
 
     _color_dslider(double_slider)
 
     def on_change_ds(slider):
-        print('koukou', slider._values)
+        values = slider._values
+        r1, r2 = values
+        # r1, r2 = values
+
+        #rgb = colormap.distinguishable_colormap(nb_colors=100)
+        # rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='Pastel1', auto=True)
+        rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='coolwarm', auto=True)
+        
+        #rgb = np.array([[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]])
+        # print(rgb.dtype)
+        # print('Len rgb', len(rgb))
+        # print(rgb)
+        #print(rgb)
+        #N= 100
+        N = rgb.shape[0]
+        print('Yo', N)
+        print(rgb)
+
+
+        # lut = colormap.colormap_lookup_table((r1, r2), (0, 0), (0, 0), (0, 1))
+        """
+        lut = colormap.vtk.vtkLookupTable()
+        lut.SetNumberOfTableValues(N)
+        #lut.SetTableRange(0, N)
+        lut.Build()
+
+        for i in range(N):
+
+            r, g, b = rgb[i]
+            print(r, g, b)
+            lut.SetTableValue(i, r, g, b, 1.0)
+        #lut.Build()
+        """
+
+        """
+        lut = colormap.vtk.vtkLookupTable()
+        lut.SetNumberOfTableValues(2)
+        lut.SetRange(r1, r2)
+        lut.SetTableValue(0, 0.0, 0.0, 0.0)
+        lut.SetTableValue(1, 1, .5, .0)
+        lut.SetRampToLinear()
+        lut.Build()
+        """
+        lut = colormap.vtk.vtkLookupTable()
+        lut.SetNumberOfTableValues(N)
+        lut.SetRange(r1, r2)
+        for i in range(N):
+            r, g, b = rgb[i]
+            lut.SetTableValue(i, r, g, b)
+        lut.SetRampToLinear()
+        lut.Build()
+
+        image_actor_z.output.SetLookupTable(lut)
+        image_actor_z.output.Update()        
 
     double_slider.on_change = on_change_ds 
 
@@ -379,11 +436,12 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     opacity_slider_label = build_label(text="Opacity")
     volume_slider_label = build_label(text="Volume")
     picker_label = build_label(text = '')
+    double_slider_label = build_label(text='Colormap')
     
     if data.ndim == 4:
-        panel_size = (400, 400 + 300)
+        panel_size = (400, 400 + 100)
     if data.ndim == 3:
-        panel_size = (400, 300 + 300)
+        panel_size = (400, 300 + 100)
     
     panel = ui.Panel2D(size=panel_size,
                        position=(850, 110),
@@ -397,7 +455,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_y, coords=(0.4, ys[2]))
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
-    panel.add_element(double_slider, coords=(0.4, ys[7]))
+    panel.add_element(double_slider, coords=(0.4, (ys[7] + ys[8])/2.))
     
     if data.ndim == 4: 
         if data.shape[-1] > 3 :   
@@ -407,7 +465,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_label_y, coords=(0.1, ys[2]))
     panel.add_element(line_slider_label_x, coords=(0.1, ys[3]))
     panel.add_element(opacity_slider_label, coords=(0.1, ys[4]))
-    
+    panel.add_element(double_slider_label, coords=(0.1, (ys[7] + ys[8])/2.))
+
     if data.ndim == 4:
         if data.shape[-1] > 3 :      
             panel.add_element(volume_slider_label,
