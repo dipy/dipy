@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import abc
-from dipy.utils.six import with_metaclass
 import numpy as np
 import numpy.linalg as npl
 import scipy as sp
@@ -830,7 +829,7 @@ class DiffeomorphicMap(object):
         return simplified
 
 
-class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
+class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
     def __init__(self, metric=None):
         r""" Diffeomorphic Registration
 

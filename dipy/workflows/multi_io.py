@@ -4,7 +4,6 @@ import numpy as np
 import os
 from glob import glob
 
-from dipy.utils.six import string_types
 from dipy.workflows.base import get_args_default
 
 
@@ -51,9 +50,9 @@ def connect_output_paths(inputs, out_dir, out_files,
         A list of output file paths.
     """
     outputs = []
-    if isinstance(inputs, string_types):
+    if isinstance(inputs, str):
         inputs = [inputs]
-    if isinstance(out_files, string_types):
+    if isinstance(out_files, str):
         out_files = [out_files]
 
     sizes_of_inputs = [len(inp) for inp in inputs]

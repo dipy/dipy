@@ -10,7 +10,6 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.utils.six.moves import range
 from dipy.utils.arrfuncs import pinv, eigh
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table

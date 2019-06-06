@@ -1,8 +1,6 @@
 from __future__ import division, print_function, absolute_import
 from warnings import warn
 
-from dipy.utils.six import string_types
-
 import numpy as np
 try:
     from scipy.linalg import polar
@@ -420,9 +418,9 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     # If you provided strings with full paths, we go and load those from
     # the files:
-    if isinstance(bvals, string_types):
+    if isinstance(bvals, str):
         bvals, _ = io.read_bvals_bvecs(bvals, None)
-    if isinstance(bvecs, string_types):
+    if isinstance(bvecs, str):
         _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)

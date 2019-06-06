@@ -58,7 +58,6 @@ from numpy import ravel_multi_index
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
-from dipy.utils.six.moves import xrange, map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
@@ -302,7 +301,7 @@ def subsegment(streamlines, max_segment_length):
         output_sl[0] = sl[0]
 
         count = 1
-        for ii in xrange(len(num_segments)):
+        for ii in range(len(num_segments)):
             ns = num_segments[ii]
             if ns == 1:
                 output_sl[count] = sl[ii+1]
@@ -310,7 +309,7 @@ def subsegment(streamlines, max_segment_length):
             elif ns > 1:
                 small_d = diff[ii]/ns
                 point = sl[ii]
-                for _ in xrange(ns):
+                for _ in range(ns):
                     point = point + small_d
                     output_sl[count] = point
                     count += 1

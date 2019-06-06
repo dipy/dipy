@@ -50,16 +50,8 @@ def update_progressbar(progress, total_length):
     Takes a number between 0 and 1 to indicate progress from 0 to 100%.
 
     """
-    # Try to set the bar_length according to the console size
-    try:
-        with os.popen('tput cols', 'r') as f:
-            columns = f.read()
-            bar_length = int(columns) - 46
-            if(not (bar_length > 1)):
-                bar_length = 20
-    except Exception:
-        # Default value if determination of console size fails
-        bar_length = 20
+    # TODO: To improve bar management, https://gist.github.com/jtriley/1108174
+    bar_length = 40
     block = int(round(bar_length * progress))
     size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(

@@ -1,6 +1,5 @@
 import abc
 import numpy as np
-from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
                                   _bundle_minimum_distance_asymmetric,
@@ -16,7 +15,6 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
-from dipy.utils.six import string_types
 from time import time
 
 DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
@@ -25,7 +23,7 @@ DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-10, 10), (-10, 10), (-10, 10)]
 
 
-class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
+class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
     def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration
@@ -420,7 +418,7 @@ class StreamlineLinearRegistration(object):
                 raise ValueError("Array should have only one dimension")
             return x0
 
-        if isinstance(x0, string_types):
+        if isinstance(x0, str):
 
             if x0.lower() == 'translation':
                 return np.zeros(3)
