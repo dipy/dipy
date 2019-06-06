@@ -157,6 +157,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     _color_slider(line_slider_y)
 
+    double_slider = ui.LineDoubleSlider2D(length=140)
+
+    def on_change_ds(slider):
+        print('koukou', slider._values)
+
+    double_slider.on_change = on_change_ds 
+
     intensity_slider = ui.LineSlider2D(min_value=value_range[0],
                                        max_value=value_range[1],
                                        length=140,
@@ -266,6 +273,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         if pam is not None:
             renderer.add(change_volume.peaks_actor_z)
         istyle.force_render()
+
 
     def left_click_picker_callback(obj, ev):
         ''' Get the value of the clicked voxel and show it in the panel.'''
@@ -411,6 +419,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
     panel.add_element(intensity_slider, coords=(0.4, ys[7]))
+    panel.add_element(double_slider, coords=(0.4, ys[8]))
 
 
     if data.ndim == 4: 
