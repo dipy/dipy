@@ -318,13 +318,22 @@ def test_dist_to_corner():
 
 
 def test_is_hemispherical():
+    # Smoke test the ValueError for non-3D vectors
+    assert_raises(ValueError, is_hemispherical, np.array(
+        [[1, 2, 3, 4], [5, 6, 7, 8]]
+    ))
+
+    # Test on hemispherical input
     xyz = random_uniform_on_sphere(n=100, coords='xyz')
     xyz = xyz[xyz[:, 2] > 0]
     assert is_hemispherical(xyz)[0]
 
+    # Test on spherical input
     xyz = random_uniform_on_sphere(n=100, coords='xyz')
     assert not is_hemispherical(xyz)[0]
 
+    # Smoke test the ValueError for non unit-vectors
+    assert_raises(ValueError, is_hemispherical, xyz * 2.0)
 
 
 if __name__ == '__main__':
