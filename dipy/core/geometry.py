@@ -1076,7 +1076,10 @@ def is_hemispherical(vecs):
     is_hemi = len(vecs) in np.sum(dot_prod_test.astype(int), axis=1)
 
     if is_hemi:
-        vertices = cross_prods[np.sum(dot_prod_test.astype(int), axis=1) == len(vecs)]
+        vertices = cross_prods[
+            np.sum(dot_prod_test.astype(int), axis=1) == len(vecs)
+        ]
+
         pole = np.mean(vertices, axis=0)
         pole /= np.linalg.norm(pole)
     else:
