@@ -20,14 +20,13 @@ from dipy.workflows.workflow import Workflow
 from dipy.viz.regtools import simple_plot
 from dipy.stats.analysis import bundle_analysis
 pd, have_pd, _ = optional_package("pandas")
-smf, have_smf, _ = optional_package("statsmodels.formula.api")
+#smf, have_smf, _ = optional_package("statsmodels.formula.api")
 tables, have_tables, _ = optional_package("tables")
 
 if have_pd:
     import pandas as pd
 
-if have_smf:
-    import statsmodels.formula.api as smf
+import statsmodels.formula.api as smf
 
 if have_tables:
     import tables
