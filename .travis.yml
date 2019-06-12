@@ -16,7 +16,7 @@ addons:
 
 env:
     global:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxpy"
+        - DEPENDS="cython numpy matplotlib h5py nibabel cvxpy"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
         - EXTRA_WHEELS="https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
@@ -32,6 +32,8 @@ matrix:
   include:
     - python: 3.7
       dist: xenial
+      env:
+        - DEPENDS="$DEPENDS scipy"
     # To test minimum dependencies for Python 3.6:
     - python: 3.4
       env:
@@ -62,12 +64,14 @@ matrix:
         - TEST_WITH_XVFB=true
         - MESA_GL_VERSION_OVERRIDE=3.3
         - LIBGL_ALWAYS_INDIRECT=y
-        - DEPENDS="$DEPENDS scikit_learn vtk fury"
+        - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
 
     - python: 3.7
       dist: xenial
       env:
         - INSTALL_TYPE=sdist
+        - DEPENDS="$DEPENDS scipy"
+
     - python: 3.7
       dist: xenial
       env:
@@ -78,6 +82,7 @@ matrix:
       dist: xenial
       env:
         - INSTALL_TYPE=wheel
+        - DEPENDS="$DEPENDS scipy"
     - python: 3.7
       dist: xenial
       env:
@@ -88,11 +93,13 @@ matrix:
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
   allow_failures:
     - python: 3.7
       dist: xenial
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"
