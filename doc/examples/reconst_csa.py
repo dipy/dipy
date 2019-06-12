@@ -41,8 +41,8 @@ Remove most of the background using DIPY's mask module.
 from dipy.segment.mask import median_otsu
 
 
-maskdata, mask = median_otsu(data, 3, 1, True,
-                             vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=True, dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4

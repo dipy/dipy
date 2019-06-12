@@ -42,8 +42,9 @@ We first remove the skull from the b0's
 """
 
 from dipy.segment.mask import median_otsu
-stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, 4, 4)
-syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, 4, 4)
+stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, median_radius=4,
+                                                   numpass=4)
+syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, median_radius=4, numpass=4)
 
 static = stanford_b0_masked
 static_affine = nib_stanford.affine

@@ -70,7 +70,8 @@ The free water DTI model can take some minutes to process the full data set.
 Thus, we remove the background of the image to avoid unnecessary calculations.
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+                             autocrop=False, dilate=1)
 
 """
 Moreover, for illustration purposes we process only an axial slice of the

@@ -240,7 +240,8 @@ For example, some state of the art denoising algorithms are available in DIPY_
 local pca :ref:`example-denoise-localpca`).
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+                             autocrop=False, dilate=1)
 
 """
 Now that we have loaded and pre-processed the data we can go forward

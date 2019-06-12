@@ -50,8 +50,8 @@ default ``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`)
 therefore we use here more advanced options.
 """
 
-maskdata, mask = median_otsu(data, 3, 1, False,
-                             vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=False, dilate=2)
 
 """
 For the Constrained Spherical Deconvolution we need to estimate the response

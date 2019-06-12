@@ -38,7 +38,7 @@ parameters work well on most volumes. For this example, we used 2 as
 """
 
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data, 2, 1)
+b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 
 """
 Saving the segmentation results is very easy using nibabel. We need the
@@ -85,7 +85,8 @@ smaller. Auto-cropping in ``median_otsu`` is activated by setting the
 ``autocrop`` parameter to ``True``.
 """
 
-b0_mask_crop, mask_crop = median_otsu(data, 4, 4, autocrop=True)
+b0_mask_crop, mask_crop = median_otsu(data, median_radius=4, numpass=4,
+                                      autocrop=True)
 
 """
 Saving cropped data using nibabel as demonstrated previously.
