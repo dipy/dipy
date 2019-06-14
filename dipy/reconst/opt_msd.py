@@ -1,17 +1,12 @@
 import numpy as np
 import numpy.linalg as la
-
+import cvxpy as cvxpy
+import cvxopt as cvx
 from dipy.core import geometry as geo
 from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst import csdeconv as csd
 from dipy.reconst.multi_voxel import multi_voxel_fit
-
-from ..utils.optpkg import optional_package
-
-cvx, have_cvxopt, _ = optional_package("cvxopt")
-if have_cvxopt:
-    cvx.solvers.options['show_progress'] = False
 
 sh_const = .5 / np.sqrt(np.pi)
 
@@ -88,19 +83,27 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     _, t, p = geo.cart2sphere(*new_vertices.T)
 
     B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
-    G = B[:, n != 0]
-    # c samples the delta function at the delta orientation.
-    c = G[0]
-    a, b = G.shape
+    G_ = np.ascontiguousarray(B[:, n != 0])
+    # c_ samples the delta function at the delta orientation.
+    c_ = G_[0][:, None]
+    print("G", G_.shape)
+    print("c", c_.shape)
+    a_, b_ = G_.shape
 
-    c = cvx.matrix(-c)
-    G = cvx.matrix(-G)
-    h = cvx.matrix(sh_const**2, (a, 1))
+    c_int = cvxpy.Parameter((c_.shape[0], 1))
+    c_int.value = -c_
+    G = cvxpy.Parameter((G_.shape[0], 4))
+    G.value = -G_
+    h_ = cvxpy.Parameter((a_, 1))
+    h_int = np.full((a_, 1), sh_const ** 2)
+    h_.value = h_int
+    print("h", h_int.shape)
 
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-    r = cvx.solvers.lp(c, G, h)
+    lp_prob = cvxpy.Problem(cvxpy.Maximize(cvxpy.sum(c_)), [G, h_])
+    r = lp_prob.solve(solver=cvxpy.GLPK)  # solver = cvx.GLPK_MI
     x = np.asarray(r['x'])[:, 0]
     out = np.zeros(B.shape[1])
     out[n == 0] = sh_const
@@ -109,8 +112,9 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     iso_d = [sh_const] * iso
     return np.concatenate([iso_d, out])
 
-delta_functions = {"basic":_basic_delta,
-                   "positivity_constrained":_pos_constrained_delta}
+
+delta_functions = {"basic": _basic_delta,
+                   "positivity_constrained": _pos_constrained_delta}
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
