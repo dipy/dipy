@@ -15,9 +15,7 @@ from scipy.linalg.cython_blas cimport dgemv
 from scipy.linalg.cython_lapack cimport dsyevd
 from scipy.linalg.cython_lapack cimport dlasrt
 
-
-
-# Fast Matrix-Vector Multiplications
+# Fast Matrix-Vector Multiplications from Lapack
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.nonecheck(False)
@@ -44,7 +42,7 @@ cpdef int fast_matvec(char ta, double[:,::1] A, double[:] b, double[:] y, double
 
     return 0
 
-# Fast Computing Eigen Values
+# Fast Computing Eigen Values Multiplication from Lapack
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.nonecheck(False)
@@ -68,6 +66,7 @@ cpdef int fast_eig(double[:,::1] a, double[::1] W, double[::1] WORK, int LWORK, 
 
     # Output compute is in Ascending Order
     dsyevd( &JOBZ, &UPLO, &N, a0, &lda, w0,work0,&LWORK, iwork0,&liw,&info)
+    # Inverse the result to Descending Order
     dlasrt ( &JOBA, &N, w0, &info)
     return 0
 
@@ -278,11 +277,13 @@ def randommatrix_lpca_parallel(arr, patch_extent=0, out_dtype=None,num_threads=N
                     if eigenV[p] <= 0:
                         z = p
                         break
-
+		
+		# Cummulatively sum up eigen values.
                 for p in range(z-2):
                     v = z - 2 - p
                     cum_W[v] = cum_W[v+1]+ eigenV[v+1]
 
+		# Finding p_hat and sigma_hat_sq in eq [10-12]
                 p_hat = z
                 for p in range(z-1):
                     r0 = z-p-1
@@ -293,7 +294,7 @@ def randommatrix_lpca_parallel(arr, patch_extent=0, out_dtype=None,num_threads=N
                         p_hat = p
                         break
 
-
+		# If p_hat equal to p-1, there is no noise signal
                 if p_hat == p - 1:
                     sigma2 = 0.
                 else:
@@ -301,15 +302,18 @@ def randommatrix_lpca_parallel(arr, patch_extent=0, out_dtype=None,num_threads=N
                     sigma2 = cum_W[p_hat] / r0
 
                 noise_arr_view[i,j,k]=sqrt(sigma2)
-                # Reconstruct the donoised image
+                
+		# Reconstruct the denoised image
                 tmp0 = rr - p_hat - 1
                 v = rr
-
+		
+		# Creating diagonal eigen matrix.
                 for p in range(tmp0):
                     diag_eigmat[k,p,p]=0
                 for p in range(tmp0,v):
                     diag_eigmat[k,p,p]=1
-
+		
+		# Equation [6], perform matrix multiplication
                 if mm<=nn:
                     fast_matvec('t',C[k,:,:], X[k,nn/2,:], temp2[k,:])
                     fast_matvec('n',diag_eigmat[k,:,:],temp2[k,:],temp3[k,:])
