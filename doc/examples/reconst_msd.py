@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.reconst.opt_msd import MultiShellResponse
+from dipy.reconst.mcsd import MultiShellResponse
 from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -13,7 +13,7 @@ from dipy.core.gradients import GradientTable
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 import dipy.reconst.dti as dti
-from dipy.reconst.opt_msd import MultiShellDeconvModel
+from dipy.reconst.mcsd import MultiShellDeconvModel
 from dipy.viz import window, actor
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
