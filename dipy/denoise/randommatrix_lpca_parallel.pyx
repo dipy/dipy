@@ -115,7 +115,7 @@ cpdef int fast_dgemm(double[:,::1] a, double[:,::1] c) nogil except -1:
 @cython.boundscheck(False)
 @cython.nonecheck(False)
 def randommatrix_lpca_parallel(arr, patch_extent=0, out_dtype=None,num_threads=None):
-    r"""Local PCA-based denoising of diffusion datasets.
+    """Local PCA-based denoising of diffusion datasets.
 
     Parameters
     ----------
