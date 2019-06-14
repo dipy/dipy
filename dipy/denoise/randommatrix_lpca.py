@@ -60,7 +60,7 @@ def randommatrix_lpca(arr, patch_size = 0, out_dtype=None):
     # Denoising array dimension varibles
     nVols = arr.shape[-1]
     if patch_size <= 0:
-        patch_size = max(5, nVols ** (1 / 3))
+        patch_size = max(5, nVols ** (1 / 3))		# Default slide windown (5,5,5)
 
     if patch_size % 2 == 0:
         patch_size -= 1
@@ -108,7 +108,7 @@ def randommatrix_lpca(arr, patch_size = 0, out_dtype=None):
                 for t in range(p - 2, -1, -1):
                     cum_eigenVal[t] = cum_eigenVal[t + 1] + eigenVal[t + 1]
 
-                # Finding p_hat
+                # Finding p_hat and sigma_hat_sq in eq [10-12]
                 p_hat = 0
                 for t in range(p - 1):
 
