@@ -1,11 +1,10 @@
 import numpy as np
 import numpy.linalg as la
 import cvxpy as cvxpy
-import cvxopt as cvx
 from dipy.core import geometry as geo
 from dipy.data import default_sphere
 from dipy.reconst import shm
-from dipy.reconst import csdeconv as csd
+from cvxpy import Constant, Minimize, Problem, Variable, quad_form
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
 sh_const = .5 / np.sqrt(np.pi)
@@ -190,14 +189,55 @@ def _rank(A, tol=1e-8):
     return rnk
 
 
-class QpFitter(object):
+def solve_qp(Q, P, G=None, H=None, A=None, B=None, solver='OSQP'):
+    """
+    Solve a Quadratic Program defined as:
+        minimize
+            (1/2) * x.T * P * x + q.T * x
+        subject to
+            G * x <= h
+            A * x == b
+    calling a given solver using the CVXPY <http://www.cvxpy.org/> modelling
+    language.
+    Parameters
+    ----------
+    P : array, shape=(n, n)
+        Primal quadratic cost matrix.
+    Q : array, shape=(n,)
+        Primal quadratic cost vector.
+    G : array, shape=(m, n)
+        Linear inequality constraint matrix.
+    H : array, shape=(m,)
+        Linear inequality constraint vector.
+    A : array, shape=(meq, n), optional
+        Linear equality constraint matrix.
+    B : array, shape=(meq,), optional
+        Linear equality constraint vector.
+    initvals : array, shape=(n,), optional
+        Warm-start guess vector (not used).
+    solver : string, optional
+        Solver name in ``cvxpy.installed_solvers()``.
+    Returns
+    -------
+    x : array, shape=(n,)
+        Solution to the QP, if found, otherwise ``None``.
+    """
+    n = Q.shape[0]
+    x = Variable(n)
+    P = Constant(P)
+    objective = Minimize(0.5 * quad_form(x, P) + Q * x)
+    constraints = []
+    if G is not None:
+        constraints.append(G * x <= H)
+    if A is not None:
+        constraints.append(A * x == B)
+    prob = Problem(objective, constraints)
+    prob.solve(solver=solver)
+    x_opt = np.array(x.value).reshape((n,))
+    return x_opt
 
-    def _lstsq_initial(self, z):
-        fodf_sh = csd._solve_cholesky(self._P, z)
-        s = np.dot(self._reg, fodf_sh)
-        init = {'x': cvx.matrix(fodf_sh),
-                's': cvx.matrix(s.clip(1e-10))}
-        return init
+
+class QpFitter(object):
 
     def __init__(self, X, reg):
         self._P = P = np.dot(X.T, X)
@@ -207,20 +247,13 @@ class QpFitter(object):
         assert _rank(P) == P.shape[0]
 
         self._reg = reg
-        # self._P_init = np.dot(X[:, :N].T, X[:, :N])
 
-        # Make cvxopt matrix types for later re-use.
-        self._P_mat = cvx.matrix(P)
-        self._reg_mat = cvx.matrix(-reg)
-        self._h_mat = cvx.matrix(0., (reg.shape[0], 1))
+        self._P_mat = np.array(P)
+        self._reg_mat = np.array(-reg)
+        self._h_mat = np.array([0])
 
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
-        init = self._lstsq_initial(z)
-
-        z_mat = cvx.matrix(-z)
-        qp = cvx.solvers.qp
-        r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
-        fodf_sh = r['x']
-        fodf_sh = np.array(fodf_sh)[:, 0]
+        z_mat = np.array(-z)
+        fodf_sh = solve_qp(z_mat, self._P_mat, self._reg_mat, self._h_mat)
         return fodf_sh

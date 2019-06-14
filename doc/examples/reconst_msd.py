@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.reconst.msd import MultiShellResponse
+from dipy.reconst.opt_msd import MultiShellResponse
 from dipy.reconst.csdeconv import auto_response
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -13,77 +13,10 @@ from dipy.core.gradients import GradientTable
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
 import dipy.reconst.dti as dti
-from dipy.reconst.msd import MultiShellDeconvModel
+from dipy.reconst.opt_msd import MultiShellDeconvModel
 from dipy.viz import window, actor
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
-
-
-def show_slicer_and_pick(data, affine):
-    from dipy.viz import window, actor, ui
-
-    im_actor = actor.slicer(data, affine)
-    shape = data.shape
-
-    renderer = window.Renderer()
-    renderer.projection('parallel')
-    show_m = window.ShowManager(renderer, size=(1200, 900))
-    show_m.initialize()
-    line_slider_z = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[2] - 1,
-                                    initial_value=shape[2] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
-    def change_slice_z(slider):
-        z = int(np.round(slider.value))
-        im_actor.display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
-        show_m.ren.reset_camera()
-        show_m.ren.reset_clipping_range()
-        show_m.render()
-
-    line_slider_z.on_change = change_slice_z
-
-    label_position = ui.TextBlock2D(text='Position:')
-    label_value = ui.TextBlock2D(text='Value:')
-    result_position = ui.TextBlock2D(text='')
-    result_value = ui.TextBlock2D(text='')
-
-    panel_picking = ui.Panel2D(size=(250, 225),
-                               position=(20, 20),
-                               color=(0, 0, 0),
-                               opacity=0.75,
-                               align="left")
-
-    panel_picking.add_element(label_position, (0.1, 0.55))
-    panel_picking.add_element(label_value, (0.1, 0.25))
-    panel_picking.add_element(result_position, (0.45, 0.55))
-    panel_picking.add_element(result_value, (0.45, 0.25))
-    panel_picking.add_element(line_slider_z, (0.1, 0.75))
-    show_m.ren.add(panel_picking)
-
-    def left_click_callback(obj, ev):
-        """Get the value of the clicked voxel and show it in the panel."""
-        event_pos = show_m.iren.GetEventPosition()
-
-        obj.picker.Pick(event_pos[0],
-                        event_pos[1],
-                        0,
-                        show_m.ren)
-
-        i, j, k = obj.picker.GetPointIJK()
-        result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
-        result_value.message = '%.8f' % data[i, j, k]
-
-    im_actor.SetInterpolate(False)
-    im_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
-
-    show_m.ren.add(im_actor)
-    show_m.ren.reset_camera()
-    show_m.ren.reset_clipping_range()
-    show_m.render()
-    show_m.start()
-
 
 # static file paths for experiments
 fbvals = '/home/shreyasfadnavis/Data/HCP/BL/sub-100408/598a2aa44258600aa3128fd0.neuro-dwi/dwi.bvals'
@@ -95,9 +28,6 @@ t1, t1_affine = load_nifti(ft1)
 
 dwi, dwi_affine = load_nifti(fdwi)
 b0_mask, mask = median_otsu(dwi)
-
-# t1[mask == 0] = 0
-
 print("Data Loaded!")
 
 """
@@ -156,15 +86,8 @@ selected_cgm[indices_cgm] = True
 csf_md = np.mean(tenfit.md[selected_csf])
 cgm_md = np.mean(tenfit.md[selected_cgm])
 
-# save_nifti('selected_csf.nii.gz', selected_csf, dwi_affine)
-# save_nifti('selected_cgm.nii.gz', selected_cgm, dwi_affine)
-
 save_nifti('md.nii.gz', MD, dwi_affine)
 save_nifti('fa.nii.gz', FA, dwi_affine)
-
-# center = np.zeros(FA.shape)
-# center[63 - 10: 63 + 10, 113 - 10: 113 + 10, 75 - 10: 75 + 10] = 1
-# save_nifti('center.nii.gz', center, dwi_affine)
 
 # generating the autoresponse
 dwi[mask == 0] = 0
@@ -218,7 +141,5 @@ interactive = True
 ren = window.Renderer()
 ren.add(fodf_spheres)
 
-print('Saving illustration as msd_odfs.png')
-#window.record(ren, out_path='msd_odfs.png', size=(600, 600), magnification=16)
 if interactive:
     window.show(ren)

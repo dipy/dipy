@@ -106,7 +106,6 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-#    r = cvx.solvers.lp(c, G, h_)
     lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_)), [G, h_])
     r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI
     x = np.asarray(r['x'])[:, 0]
