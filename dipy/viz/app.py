@@ -10,6 +10,7 @@ if have_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label
+    from dipy.viz.gmem import HORIZON
 
 
 def apply_shader(hz, actor):
@@ -76,7 +77,7 @@ HELP_MESSAGE = """
 class Horizon(object):
 
     def __init__(self, tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
-                 random_colors=0, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
+                 random_colors=False, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
@@ -464,13 +465,16 @@ class Horizon(object):
                 show_m.render()
 
         
-        import itertools
-        counter = itertools.count()
-        
+        #import itertools
+        #counter = itertools.count()
+        HORIZON.window_timer_cnt = 0
+
         def timer_callback(obj, event):
 
-            cnt = next(counter)
-            # print("Let's count up to 100 " + str(cnt))
+            #cnt = next(counter)
+            HORIZON.window_cnt += 1
+            cnt = HORIZON.cnt
+            print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
             pass
@@ -496,7 +500,7 @@ class Horizon(object):
 
 
 def horizon(tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
-            random_colors=0, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
+            random_colors=False, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png'):
     """Highly interactive visualization - invert the Horizon!
 

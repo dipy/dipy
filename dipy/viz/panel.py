@@ -180,7 +180,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                                    0, shape[2] - 1)
         change_slice_y.y = y
 
-    double_slider = ui.LineDoubleSlider2D(length=10*140,
+    double_slider = ui.LineDoubleSlider2D(length=140,
                                           initial_values=value_range,
                                           min_value=tmp.min(),
                                           max_value=tmp.max(), 
@@ -194,8 +194,8 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         # r1, r2 = values
 
         #rgb = colormap.distinguishable_colormap(nb_colors=100)
-        # rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='Pastel1', auto=True)
-        rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='coolwarm', auto=True)
+        rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='Pastel1', auto=True)
+        #rgb = colormap.create_colormap(np.linspace(r1, r2, 100), name='coolwarm', auto=True)
         
         #rgb = np.array([[0, 0, 0], [0.5, 0.5, 0.5], [1, 1, 1]])
         # print(rgb.dtype)
@@ -209,29 +209,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
 
         # lut = colormap.colormap_lookup_table((r1, r2), (0, 0), (0, 0), (0, 1))
-        """
-        lut = colormap.vtk.vtkLookupTable()
-        lut.SetNumberOfTableValues(N)
-        #lut.SetTableRange(0, N)
-        lut.Build()
-
-        for i in range(N):
-
-            r, g, b = rgb[i]
-            print(r, g, b)
-            lut.SetTableValue(i, r, g, b, 1.0)
-        #lut.Build()
-        """
-
-        """
-        lut = colormap.vtk.vtkLookupTable()
-        lut.SetNumberOfTableValues(2)
-        lut.SetRange(r1, r2)
-        lut.SetTableValue(0, 0.0, 0.0, 0.0)
-        lut.SetTableValue(1, 1, .5, .0)
-        lut.SetRampToLinear()
-        lut.Build()
-        """
         lut = colormap.vtk.vtkLookupTable()
         lut.SetNumberOfTableValues(N)
         lut.SetRange(r1, r2)
@@ -475,4 +452,5 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
     renderer.add(panel)
+
     return panel
