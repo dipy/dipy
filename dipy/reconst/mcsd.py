@@ -1,13 +1,12 @@
 import numpy as np
 import numpy.linalg as la
-import cvxpy as cvxpy
+import cvxpy as cvx
 from dipy.core import geometry as geo
 from dipy.data import default_sphere
 from dipy.reconst import shm
-from cvxpy import Constant, Minimize, Problem, Variable, quad_form
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
-sh_const = .5 / np.sqrt(np.pi)
+SH_CONST = .5 / np.sqrt(np.pi)
 
 
 def multi_tissue_basis(gtab, sh_order, iso_comp):
@@ -21,7 +20,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     B[np.ix_(gtab.b0s_mask, n > 0)] = 0.
 
     iso = np.empty([B.shape[0], iso_comp])
-    iso[:] = sh_const
+    iso[:] = SH_CONST
 
     B = np.concatenate([iso, B], axis=1)
     return B, m, n
@@ -66,7 +65,7 @@ def _inflate_response(response, gtab, n, delta):
 def _basic_delta(iso, m, n, theta, phi):
     """Simple delta function"""
     wm_d = shm.gen_dirac(m, n, theta, phi)
-    iso_d = [sh_const] * iso
+    iso_d = [SH_CONST] * iso
     return np.concatenate([iso_d, wm_d])
 
 
@@ -82,33 +81,29 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     _, t, p = geo.cart2sphere(*new_vertices.T)
 
     B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
-    G_ = np.ascontiguousarray(B[:, n != 0])
+    G_temp = np.ascontiguousarray(B[:, n != 0])
     # c_ samples the delta function at the delta orientation.
-    c_ = G_[0][:, None]
-    print("G", G_.shape)
-    print("c", c_.shape)
-    a_, b_ = G_.shape
+    c_temp = G_temp[0][:, None]
+    a_temp, b_ = G_temp.shape
 
-    c_int = cvxpy.Parameter((c_.shape[0], 1))
-    c_int.value = -c_
-    G = cvxpy.Parameter((G_.shape[0], 4))
-    G.value = -G_
-    h_ = cvxpy.Parameter((a_, 1))
-    h_int = np.full((a_, 1), sh_const ** 2)
-    h_.value = h_int
-    print("h", h_int.shape)
+    c_int = cvx.Parameter((c_temp.shape[0], 1))
+    c_int.value = -c_temp
+    G = cvx.Parameter((G_temp.shape[0], 4))
+    G.value = -G_temp
+    h = cvx.Parameter((a_temp, 1))
+    h_temp = np.full((a_temp, 1), SH_CONST ** 2)
+    h.value = h_temp
 
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-    lp_prob = cvxpy.Problem(cvxpy.Maximize(cvxpy.sum(c_)), [G, h_])
-    r = lp_prob.solve(solver=cvxpy.GLPK)  # solver = cvx.GLPK_MI
-    x = np.asarray(r['x'])[:, 0]
+    lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_temp)), [G, h])
+    r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI
     out = np.zeros(B.shape[1])
-    out[n == 0] = sh_const
-    out[n != 0] = x
+    out[n == 0] = SH_CONST
+    out[n != 0] = r
 
-    iso_d = [sh_const] * iso
+    iso_d = [SH_CONST] * iso
     return np.concatenate([iso_d, out])
 
 
@@ -179,7 +174,7 @@ class MSDeconvFit(shm.SphHarmFit):
     @property
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
-        return self._shm_coef[..., :tissue_classes] / sh_const
+        return self._shm_coef[..., :tissue_classes] / SH_CONST
 
 
 def _rank(A, tol=1e-8):
@@ -189,18 +184,18 @@ def _rank(A, tol=1e-8):
     return rnk
 
 
-def solve_qp(Q, P, G=None, H=None, A=None, B=None, solver='OSQP'):
+def solve_qp(P, Q, G=None, H=None, A=None, B=None, solver='OSQP'):
 
     n = Q.shape[0]
-    x = Variable(n)
-    P = Constant(P)
-    objective = Minimize(0.5 * quad_form(x, P) + Q * x)
+    x = cvx.Variable(n)
+    P = cvx.Constant(P)
+    objective = cvx.Minimize(0.5 * cvx.quad_form(x, P) + Q * x)
     constraints = []
     if G is not None:
         constraints.append(G * x <= H)
     if A is not None:
         constraints.append(A * x == B)
-    prob = Problem(objective, constraints)
+    prob = cvx.Problem(objective, constraints)
     prob.solve(solver=solver)
     x_opt = np.array(x.value).reshape((n,))
     return x_opt
@@ -222,5 +217,5 @@ class QpFitter(object):
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
         z_mat = np.array(-z)
-        fodf_sh = solve_qp(z_mat, self._P_mat, self._reg_mat, self._h_mat)
+        fodf_sh = solve_qp(self._P_mat, z_mat, self._reg_mat, self._h_mat)
         return fodf_sh
