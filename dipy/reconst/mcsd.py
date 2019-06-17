@@ -12,7 +12,9 @@ SH_CONST = .5 / np.sqrt(np.pi)
 
 
 def multi_tissue_basis(gtab, sh_order, iso_comp):
-    """Builds a basis for multi-shell CSD model"""
+    """
+    Builds a basis for multi-shell CSD model.
+    """
     if iso_comp < 1:
         msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
         raise ValueError(msg)
@@ -31,6 +33,20 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
 class MultiShellResponse(object):
 
     def __init__(self, response, sh_order, shells):
+        """ Estimate Multi Shell response function for multiple tissues and
+        multiple shells.
+
+        Parameters
+        ----------
+        response : tuple or AxSymShResponse object
+            A tuple with two elements. The first is the eigen-values as an (3,)
+            ndarray and the second is the signal value for the response
+            function without diffusion weighting.  This is to be able to
+            generate a single fiber synthetic signal.
+        sh_order : ndarray
+        shells : int
+            Number of shells in the data
+        """
         self.response = response
         self.sh_order = sh_order
         self.n = np.arange(0, sh_order + 1, 2)
@@ -65,14 +81,53 @@ def _inflate_response(response, gtab, n, delta):
 
 
 def _basic_delta(iso, m, n, theta, phi):
-    """Simple delta function"""
+    """Simple delta function
+    Parameters
+    ----------
+    iso: int (optional)
+        Number of tissue compartments for running the MSMT-CSD. Minimum
+        number of compartments required is 2.
+        Default: 2
+    m : int ``|m| <= n``
+        The order of the harmonic.
+    n : int ``>= 0``
+        The degree of the harmonic.
+    theta : array_like
+       inclination or polar angle
+    phi : array_like
+       azimuth angle
+    """
     wm_d = shm.gen_dirac(m, n, theta, phi)
     iso_d = [SH_CONST] * iso
     return np.concatenate([iso_d, wm_d])
 
 
 def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
-    """Delta function optimized to avoid negative lobes."""
+    """
+    Delta function optimized to avoid negative lobes. Implements a Linear
+    Programming solver from `CVXPY` to impose this positivity constraint. The
+    default solver used is GLPK.
+
+    Parameters
+    ----------
+    iso: int (optional)
+        Number of tissue compartments for running the MSMT-CSD. Minimum
+        number of compartments required is 2.
+        Default: 2
+    m : int ``|m| <= n``
+        The order of the harmonic.
+    n : int ``>= 0``
+        The degree of the harmonic.
+    theta : array_like
+       inclination or polar angle
+    phi : array_like
+       azimuth angle
+    reg_sphere : Sphere (optional)
+        sphere used to build the regularization B matrix.
+        Default: 'symmetric362'.
+        weight given to the constrained-positivity regularization part of
+        the deconvolution equation (see [1]_). Default: 1
+    """
 
     x, y, z = geo.sphere2cart(1., theta, phi)
 
@@ -114,11 +169,55 @@ delta_functions = {"basic": _basic_delta,
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
-
     def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2,
-                 delta_form='positivity_constrained'):
+                 delta_form='basic'):
+        r"""
+        Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
+        (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
+        the estimation of multiple response functions as a function of multiple
+        b-values and multiple tissue types.
+
+        Spherical deconvolution computes a fiber orientation distribution
+        (FOD), also called fiber ODF (fODF) [2]_. The fODF is derived from
+        different tissue types and thus overcomes the overestimation of WM in
+        GM and CSF areas.
+
+        The response function is based on the different tissue types
+        and is provided as input to the MultiShellDeconvModel.
+        It will be used as deconvolution kernel, as described in [2]_.
+
+        Parameters
+        ----------
+        gtab : GradientTable
+        response : tuple or AxSymShResponse object
+            A tuple with two elements. The first is the eigen-values as an (3,)
+            ndarray and the second is the signal value for the response
+            function without diffusion weighting.  This is to be able to
+            generate a single fiber synthetic signal. The response function
+            will be used as deconvolution kernel ([1]_)
+        reg_sphere : Sphere (optional)
+            sphere used to build the regularization B matrix.
+            Default: 'symmetric362'.
+            weight given to the constrained-positivity regularization part of
+            the deconvolution equation (see [1]_). Default: 1
+        iso: int (optional)
+            Number of tissue compartments for running the MSMT-CSD. Minimum
+            number of compartments required is 2.
+            Default: 2
+
+        References
+        ----------
+        .. [1] Jeurissen, B., et al. NeuroImage 2014. Multi-tissue constrained
+               spherical deconvolution for improved analysisof multi-shell
+               diffusion MRI data
+        .. [2] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+               the fibre orientation distribution in diffusion MRI:
+               Non-negativity constrained super-resolved spherical
+               deconvolution
+        .. [3] Tournier, J.D, et al. Imaging Systems and Technology
+               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
-        """
+
         sh_order = response.sh_order
         super(MultiShellDeconvModel, self).__init__(gtab)
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
@@ -146,6 +245,21 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.n = n
 
     def predict(self, params, gtab=None, S0=None):
+        """Compute a signal prediction given spherical harmonic coefficients
+        for the provided GradientTable class instance.
+
+        Parameters
+        ----------
+        params : ndarray
+            The spherical harmonic representation of the FOD from which to make
+            the signal prediction.
+        gtab : GradientTable
+            The gradients for which the signal will be predicted. Use the
+            model's gradient table by default.
+        S0 : ndarray or float
+            The non diffusion-weighted signal value.
+            Default : None
+        """
         if gtab is None:
             X = self._X
         else:
@@ -186,28 +300,40 @@ def _rank(A, tol=1e-8):
     return rnk
 
 
-def quadprog(P, Q, G=None, H=None, A=None, B=None, solver='OSQP'):
+def quadprog(P, Q, G, H):
+    r"""
+    Helper funstion to set up the Quadratic Program (QP) solver in CVXPY.
+    A QP problem has the following form:
+    minimize      1/2 x' P x + Q' x
+    subject to    G x <= H
 
-    n = Q.shape[0]
-    x = cvx.Variable(n)
+    Here the QP solver is based on CVXPY and uses OSQP by default.
+    """
+    x = cvx.Variable(Q.shape[0])
     P = cvx.Constant(P)
     objective = cvx.Minimize(0.5 * cvx.quad_form(x, P) + Q * x)
-    constraints = []
-    if G is not None:
-        constraints.append(G * x <= H)
-    if A is not None:
-        constraints.append(A * x == B)
+    constraints = [G*x <= H]
+
+    # setting up the problem
     prob = cvx.Problem(objective, constraints)
-    prob.solve(solver=solver)
-    x_opt = np.array(x.value).reshape((n,))
-    return x_opt
+    prob.solve()
+    opt = np.array(x.value).reshape((Q.shape[0],))
+    return opt
 
 
 class QpFitter(object):
 
     def __init__(self, X, reg):
+        r"""
+        Makes use of the quadratic programming solver `quadprog` to fit the
+        model. The initialization for the model is done using the warm-start by
+        default in `CVXPY`.
+        """
         self._P = P = np.dot(X.T, X)
         self._X = X
+
+        # No super res for now.
+        assert _rank(P) == P.shape[0]
 
         self._reg = reg
         self._P_mat = np.array(P)
@@ -215,7 +341,7 @@ class QpFitter(object):
         self._h_mat = np.array([0])
 
     def __call__(self, signal):
-        z = np.dot(self._X.T, signal)
-        z_mat = np.array(-z)
-        fodf_sh = quadprog(self._P_mat, z_mat, self._reg_mat, self._h_mat)
+        Q = np.dot(self._X.T, signal)
+        Q_mat = np.array(-Q)
+        fodf_sh = quadprog(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh
