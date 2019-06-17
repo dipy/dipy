@@ -100,7 +100,7 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
     lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_temp)), [G*x <= h])
-    r = lp_prob.solve(solver=cvx.GLPK)
+    r = lp_prob.solve()
     out = np.zeros(B.shape[1])
     out[n == 0] = SH_CONST
     out[n != 0] = r
@@ -186,7 +186,7 @@ def _rank(A, tol=1e-8):
     return rnk
 
 
-def solve_qp(P, Q, G=None, H=None, A=None, B=None, solver='OSQP'):
+def quadprog(P, Q, G=None, H=None, A=None, B=None, solver='OSQP'):
 
     n = Q.shape[0]
     x = cvx.Variable(n)
@@ -217,5 +217,5 @@ class QpFitter(object):
     def __call__(self, signal):
         z = np.dot(self._X.T, signal)
         z_mat = np.array(-z)
-        fodf_sh = solve_qp(self._P_mat, z_mat, self._reg_mat, self._h_mat)
+        fodf_sh = quadprog(self._P_mat, z_mat, self._reg_mat, self._h_mat)
         return fodf_sh
