@@ -22,20 +22,8 @@ def _image_tv(x, axis=0, n_points=3):
         Total variation calculated from the right neighbors of each point
     ntv : 2D ndarray
         Total variation calculated from the left neighbors of each point
-
-    Note
-    ----
-    This function was created to deal with gibbs artefacts of MR images.
-    Assuming that MR images are reconstructed from estimates of their Fourier
-    expansion coefficients, during TV calculation matrix x can taken as and
-    periodic signal. In this way ntv values on the image left boundary is
-    computed using the time series values on the right boundary and ptv values
-    are computed using the time series values on the left boundary.
     """
-    if axis:
-        xs = x.copy()
-    else:
-        xs = x.T.copy()
+    xs = x.copy() if axis else x.T.copy()
 
     # Add copies of the data so that data extreme points are also analysed
     xs = np.concatenate((xs[:, (-n_points-1):], xs, xs[:, 0:(n_points+1)]),
@@ -87,10 +75,7 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
-    if axis:
-        xs = x.copy()
-    else:
-        xs = x.T.copy()
+    xs = x.copy() if axis else x.T.copy()
 
     # TV for shift zero (baseline)
     tvr, tvl = _image_tv(xs, axis=1, n_points=n_points)
@@ -134,15 +119,12 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     # original grid points
     xs[idx] = (isp[idx] - isn[idx])/(sp[idx] + sn[idx])*sn[idx] + isn[idx]
 
-    if axis:
-        return xs
-    else:
-        return xs.T
+    return xs if axis else xs.T
 
 
 def _weights(shape):
     """ Computes the weights necessary to combine two images processed by
-    the 1D gibbs removal procedure along two different axis [1]_.
+    the 1D gibbs removal procedure along two different axes [1]_.
 
     Parameters
     ----------
@@ -170,8 +152,8 @@ def _weights(shape):
     K1, K0 = np.meshgrid(k[1:-1], k[1:-1])
     cosk0 = 1.0 + np.cos(K0)
     cosk1 = 1.0 + np.cos(K1)
-    G1[1:-1, 1:-1] = cosk0 / (cosk0+cosk1)
-    G0[1:-1, 1:-1] = cosk1 / (cosk0+cosk1)
+    G1[1:-1, 1:-1] = cosk0 / (cosk0 + cosk1)
+    G0[1:-1, 1:-1] = cosk1 / (cosk0 + cosk1)
 
     # Boundaries
     G1[1:-1, 0] = G1[1:-1, -1] = 1
@@ -292,7 +274,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     # check matrix dimension
     if nd == 4:
         inishap = vol.shape
-        vol = vol.reshape((inishap[0], inishap[1], inishap[2]*inishap[3]))
+        vol = vol.reshape((inishap[0], inishap[1], inishap[2] * inishap[3]))
     elif nd > 4:
         raise ValueError("Data have to be a 4D, 3D or 2D matrix")
     elif nd < 2:
