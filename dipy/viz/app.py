@@ -472,8 +472,8 @@ class Horizon(object):
         def timer_callback(obj, event):
 
             #cnt = next(counter)
-            HORIZON.window_cnt += 1
-            cnt = HORIZON.cnt
+            HORIZON.window_timer_cnt += 1
+            cnt = HORIZON.window_timer_cnt
             print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
