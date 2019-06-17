@@ -1,10 +1,12 @@
 import numpy as np
 import numpy.linalg as la
-import cvxpy as cvx
 from dipy.core import geometry as geo
 from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst.multi_voxel import multi_voxel_fit
+
+from dipy.utils.optpkg import optional_package
+cvx, have_cvxpy, _ = optional_package("cvxpy")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
@@ -84,21 +86,21 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     G_temp = np.ascontiguousarray(B[:, n != 0])
     # c_ samples the delta function at the delta orientation.
     c_temp = G_temp[0][:, None]
-    a_temp, b_ = G_temp.shape
+    a_temp, b_temp = G_temp.shape
 
     c_int = cvx.Parameter((c_temp.shape[0], 1))
     c_int.value = -c_temp
-    G = cvx.Parameter((G_temp.shape[0], 4))
+    G = cvx.Parameter((a_temp, b_temp))
     G.value = -G_temp
-    h = cvx.Parameter((a_temp, 1))
-    h_temp = np.full((a_temp, 1), SH_CONST ** 2)
+    h = cvx.Parameter((a_temp, b_temp))
+    h_temp = np.full((a_temp, b_temp), SH_CONST ** 2)
     h.value = h_temp
 
     # n == 0 is set to sh_const to ensure a normalized delta function.
     # n > 0 values are optimized so that delta > 0 on all points of the sphere
     # and delta(theta, phi) is maximized.
-    lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_temp)), [G, h])
-    r = lp_prob.solve(solver=cvx.GLPK)  # solver = cvx.GLPK_MI
+    lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_temp)), [G*x <= h])
+    r = lp_prob.solve(solver=cvx.GLPK)
     out = np.zeros(B.shape[1])
     out[n == 0] = SH_CONST
     out[n != 0] = r
@@ -114,7 +116,7 @@ delta_functions = {"basic": _basic_delta,
 class MultiShellDeconvModel(shm.SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2,
-                 delta_form='basic'):
+                 delta_form='positivity_constrained'):
         """
         """
         sh_order = response.sh_order
@@ -206,8 +208,6 @@ class QpFitter(object):
     def __init__(self, X, reg):
         self._P = P = np.dot(X.T, X)
         self._X = X
-
-        assert _rank(P) == P.shape[0]
 
         self._reg = reg
         self._P_mat = np.array(P)

@@ -1,5 +1,5 @@
-from dipy.reconst.opt_msd import MultiShellDeconvModel, MultiShellResponse
-from dipy.reconst import msd
+from dipy.reconst.mcsd import MultiShellDeconvModel, MultiShellResponse
+from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
 
@@ -7,6 +7,11 @@ from dipy.sims.voxel import (multi_tensor, single_tensor)
 from dipy.reconst import shm
 from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
+
+from dipy.utils.optpkg import optional_package
+cvx, have_cvxpy, _ = optional_package("cvxpy")
+
+needs_cvxpy = npt.dec.skipif(not have_cvxpy)
 
 
 csf_md = 3e-3
@@ -49,8 +54,8 @@ def _expand(m, iso, coeff):
     return params
 
 
-@npt.dec.skipif(not msd.have_cvxpy)
-def test_msd_model_delta():
+@npt.dec.skipif(not mcsd.have_cvxpy)
+def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
     shells = np.unique(gtab.bvals // 100.) * 100.
@@ -78,14 +83,11 @@ def test_msd_model_delta():
     m = model.m
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
-    expected = model.delta[2:]
-    npt.assert_array_almost_equal(fit.shm_coeff[m == 0], expected, 2)
+
+test_mcsd_model_delta()
 
 
-test_msd_model_delta()
-
-
-@npt.dec.skipif(not msd.have_cvxpy)
+@npt.dec.skipif(not mcsd.have_cvxpy)
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
