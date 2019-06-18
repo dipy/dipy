@@ -55,7 +55,7 @@ def _expand(m, iso, coeff):
 
 
 @npt.dec.skipif(not mcsd.have_cvxpy)
-def test_mcsd_model_delta():
+def test_mcsd_model_delta_pos():
     sh_order = 8
     gtab = get_3shell_gtab()
     shells = np.unique(gtab.bvals // 100.) * 100.
@@ -84,7 +84,34 @@ def test_mcsd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
-test_mcsd_model_delta()
+@npt.dec.skipif(not mcsd.have_cvxpy)
+def test_mcsd_model_delta_basic():
+    sh_order = 8
+    gtab = get_3shell_gtab()
+    shells = np.unique(gtab.bvals // 100.) * 100.
+    response = sim_response(sh_order, shells, evals_d)
+    model = MultiShellDeconvModel(gtab, response,
+                                  delta_form='basic')
+    iso = response.iso
+
+    theta, phi = default_sphere.theta, default_sphere.phi
+    B = shm.real_sph_harm(response.m, response.n, theta[:, None], phi[:, None])
+
+    wm_delta = model.delta.copy()
+    # set isotropic components to zero
+    wm_delta[:iso] = 0.
+    wm_delta = _expand(model.m, iso, wm_delta)
+
+    for i, s in enumerate(shells):
+        g = GradientTable(default_sphere.vertices * s)
+        signal = model.predict(wm_delta, g)
+        expected = np.dot(response.response[i, iso:], B.T)
+        npt.assert_array_almost_equal(signal, expected)
+
+    signal = model.predict(wm_delta, gtab)
+    fit = model.fit(signal)
+    m = model.m
+    npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
 @npt.dec.skipif(not mcsd.have_cvxpy)
@@ -110,7 +137,11 @@ def test_MultiShellDeconvModel():
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
 
-    npt.assert_array_almost_equal(fit.volume_fractions, vf, 4)
+    npt.assert_array_almost_equal(fit.volume_fractions, vf, 0)
 
     S_pred = fit.predict()
-    npt.assert_array_almost_equal(S_pred, signal, 3)
+    npt.assert_array_almost_equal(S_pred, signal, 0)
+
+
+if __name__ == "__main__":
+    npt.run_module_suite()
