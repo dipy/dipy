@@ -83,6 +83,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
             tmp = data[..., 0]
             orig_shape = orig_shape[:3]
             value_range = np.percentile(data[..., 0], q=[2, 98])
+        if orig_shape[-1] == 3:
+            value_range = (0, 1.)
+            HORIZON.slicer_rgb = True
     if ndim == 3:
         value_range = np.percentile(tmp, q=[2, 98])
 
@@ -142,12 +145,12 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
-        change_volume.image_actor_z.display_extent(0, shape[0] - 1,
+        HORIZON.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
                                                    0, shape[1] - 1, z, z)
         if pam is not None:
-            change_volume.peaks_actor_z.display_extent(0, shape[0] - 1,
-                                                       0, shape[1] - 1, z, z)
-        change_slice_z.z = z
+            HORIZON.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
+                                                        0, shape[1] - 1, z, z)
+        HORIZON.slicer_curr_z = z
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1,
@@ -198,6 +201,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     _color_dslider(double_slider)
 
     def on_change_ds(slider):
+        if HORIZON.slicer_rgb:
+            return 
+
         values = slider._values
         r1, r2 = values
 
@@ -275,10 +281,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         HORIZON.slicer_vol = tmp_new
         # change_volume.tmp_new = tmp_new
 
+        z = HORIZON.slicer_curr_z
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
-                                     change_slice_z.z,
-                                     change_slice_z.z)
+                                     z,
+                                     z)
     
         HORIZON.slicer_curr_actor_z = image_actor_z
         HORIZON.slicer_curr_actor_x = image_actor_z.copy()
@@ -306,7 +313,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         HORIZON.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
-        HORIZON.slicer_curr_actor_y.image_actor_y.AddObserver('LeftButtonPressEvent',
+        HORIZON.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
         renderer.add(HORIZON.slicer_curr_actor_z)

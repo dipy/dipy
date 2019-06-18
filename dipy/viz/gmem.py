@@ -21,6 +21,7 @@ class GlobalHorizon(object):
     slicer_vol = None
 
     slicer_peaks_actor_z = None
+    slicer_rgb = False
 
     slicer_grid = False
     
