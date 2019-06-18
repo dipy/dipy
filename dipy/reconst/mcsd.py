@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.linalg as la
 from dipy.core import geometry as geo
 from dipy.data import default_sphere
 from dipy.reconst import shm
@@ -30,7 +29,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     return B, m, n
 
 
-class MultiShellResponse(object):
+class MultiShellResponse():
 
     def __init__(self, response, sh_order, shells):
         """ Estimate Multi Shell response function for multiple tissues and
@@ -60,11 +59,6 @@ class MultiShellResponse(object):
         return self.response.shape[1] - (self.sh_order // 2) - 1
 
 
-def closest(haystack, needle):
-    diff = abs(haystack[:, None] - needle)
-    return diff.argmin(axis=0)
-
-
 def _inflate_response(response, gtab, n, delta):
     if any((n % 2) != 0) or (n.max() // 2) >= response.sh_order:
         raise ValueError("Response and n do not match")
@@ -73,8 +67,8 @@ def _inflate_response(response, gtab, n, delta):
     n_idx = np.empty(len(n) + iso, dtype=int)
     n_idx[:iso] = np.arange(0, iso)
     n_idx[iso:] = n // 2 + iso
-
-    b_idx = closest(response.shells, gtab.bvals)
+    diff = abs(response.shells[:, None] - gtab.bvals)
+    b_idx = np.argmin(diff, axis=0)
     kernal = response.response / delta
 
     return kernal[np.ix_(b_idx, n_idx)]
@@ -84,7 +78,7 @@ def _basic_delta(iso, m, n, theta, phi):
     """Simple delta function
     Parameters
     ----------
-    iso: int (optional)
+    iso: int
         Number of tissue compartments for running the MSMT-CSD. Minimum
         number of compartments required is 2.
         Default: 2
@@ -110,7 +104,7 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
 
     Parameters
     ----------
-    iso: int (optional)
+    iso: int
         Number of tissue compartments for running the MSMT-CSD. Minimum
         number of compartments required is 2.
         Default: 2
@@ -125,8 +119,6 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
     reg_sphere : Sphere (optional)
         sphere used to build the regularization B matrix.
         Default: 'symmetric362'.
-        weight given to the constrained-positivity regularization part of
-        the deconvolution equation (see [1]_). Default: 1
     """
 
     x, y, z = geo.sphere2cart(1., theta, phi)
@@ -139,7 +131,7 @@ def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
 
     B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
     G_temp = np.ascontiguousarray(B[:, n != 0])
-    # c_ samples the delta function at the delta orientation.
+    # c_temp samples the delta function at the delta orientation.
     c_temp = G_temp[0][:, None]
     a_temp, b_temp = G_temp.shape
 
@@ -170,7 +162,7 @@ delta_functions = {"basic": _basic_delta,
 
 class MultiShellDeconvModel(shm.SphHarmModel):
     def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2,
-                 delta_form='basic'):
+                 pos_constrained=False):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -198,12 +190,13 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
-            weight given to the constrained-positivity regularization part of
-            the deconvolution equation (see [1]_). Default: 1
         iso: int (optional)
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
             Default: 2
+        pos_constrained: boolean (optional)
+            parameter that constrains positivity to avoid negative lobes.
+            Default: False
 
         References
         ----------
@@ -217,10 +210,19 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         .. [3] Tournier, J.D, et al. Imaging Systems and Technology
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
+        if not iso >= 2:
+            msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
+            raise ValueError(msg)
 
         sh_order = response.sh_order
         super(MultiShellDeconvModel, self).__init__(gtab)
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
+
+        if pos_constrained is False:
+            delta_form = 'basic'
+
+        elif pos_constrained is True:
+            delta_form = 'positivity_constrained'
 
         delta_f = delta_functions[delta_form]
         delta = delta_f(response.iso, response.m, response.n, 0., 0.)
@@ -279,6 +281,10 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 class MSDeconvFit(shm.SphHarmFit):
 
     def __init__(self, model, coeff, mask):
+        """
+        Inherits the SphHarmFit which fits the diffusion data to a spherical
+        harmic model.
+        """
         self._shm_coef = coeff
         self.mask = mask
         self.model = model
@@ -293,21 +299,14 @@ class MSDeconvFit(shm.SphHarmFit):
         return self._shm_coef[..., :tissue_classes] / SH_CONST
 
 
-def _rank(A, tol=1e-8):
-    s = la.svd(A, False, False)
-    threshold = (s[0] * tol)
-    rnk = (s > threshold).sum()
-    return rnk
-
-
 def quadprog(P, Q, G, H):
     r"""
-    Helper funstion to set up the Quadratic Program (QP) solver in CVXPY.
+    Helper function to set up and solve the Quadratic Program (QP) in CVXPY.
     A QP problem has the following form:
     minimize      1/2 x' P x + Q' x
     subject to    G x <= H
 
-    Here the QP solver is based on CVXPY and uses OSQP by default.
+    Here the QP solver is based on CVXPY and uses OSQP.
     """
     x = cvx.Variable(Q.shape[0])
     P = cvx.Constant(P)
@@ -331,9 +330,6 @@ class QpFitter(object):
         """
         self._P = P = np.dot(X.T, X)
         self._X = X
-
-        # No super res for now.
-        assert _rank(P) == P.shape[0]
 
         self._reg = reg
         self._P_mat = np.array(P)
