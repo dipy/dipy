@@ -61,7 +61,7 @@ def test_mcsd_model_delta_pos():
     shells = np.unique(gtab.bvals // 100.) * 100.
     response = sim_response(sh_order, shells, evals_d)
     model = MultiShellDeconvModel(gtab, response,
-                                  delta_form='positivity_constrained')
+                                  pos_constrained=True)
     iso = response.iso
 
     theta, phi = default_sphere.theta, default_sphere.phi
@@ -91,7 +91,7 @@ def test_mcsd_model_delta_basic():
     shells = np.unique(gtab.bvals // 100.) * 100.
     response = sim_response(sh_order, shells, evals_d)
     model = MultiShellDeconvModel(gtab, response,
-                                  delta_form='basic')
+                                  pos_constrained=False)
     iso = response.iso
 
     theta, phi = default_sphere.theta, default_sphere.phi
@@ -132,7 +132,7 @@ def test_MultiShellDeconvModel():
     sh_order = 8
     response = sim_response(sh_order, [0, 1000, 2000, 3500])
     model = MultiShellDeconvModel(gtab, response,
-                                  delta_form='positivity_constrained')
+                                  pos_constrained=False)
     vf = [1.3, .8, 1.9]
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
