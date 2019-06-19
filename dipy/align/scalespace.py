@@ -1,8 +1,10 @@
+import logging
 from dipy.align import floating
 import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage.filters as filters
 
+logger = logging.getLogger(__name__)
 
 class ScaleSpace(object):
     def __init__(self, image, num_levels,
@@ -144,11 +146,11 @@ class ScaleSpace(object):
         level : int, 0 <= from_level < L, (L = number of resolutions)
             the scale space level to be printed
         """
-        print('Domain shape: ', self.get_domain_shape(level))
-        print('Spacing: ', self.get_spacing(level))
-        print('Scaling: ', self.get_scaling(level))
-        print('Affine: ', self.get_affine(level))
-        print('Sigmas: ', self.get_sigmas(level))
+        logger.info('Domain shape: ', self.get_domain_shape(level))
+        logger.info('Spacing: ', self.get_spacing(level))
+        logger.info('Scaling: ', self.get_scaling(level))
+        logger.info('Affine: ', self.get_affine(level))
+        logger.info('Sigmas: ', self.get_sigmas(level))
 
     def _get_attribute(self, attribute, level):
         r"""Returns an attribute from the Scale Space at a given level
