@@ -2,6 +2,7 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 import os.path
+import logging
 
 from dipy.data import get_sphere
 from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
@@ -9,8 +10,10 @@ from tempfile import gettempdir
 from libc.math cimport sqrt, exp, fabs, cos, sin, tan, acos, atan2
 from math import ceil
 
-cdef class EnhancementKernel:
+logger = logging.getLogger(__name__)
 
+
+cdef class EnhancementKernel:
     cdef double D33
     cdef double D44
     cdef double t
@@ -42,25 +45,25 @@ cdef class EnhancementKernel:
             The default sphere is 'repulsion100'.
         verbose : boolean
             Enable verbose mode.
-            
+
         References
         ----------
-        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis, 
-                             J. Portegies, R. Duits. (2016) Fast implementations 
-                             of contextual PDE’s for HARDI data processing in 
+        [Meesters2016_ISMRM] S. Meesters, G. Sanguinetti, E. Garyfallidis,
+                             J. Portegies, R. Duits. (2016) Fast implementations
+                             of contextual PDE’s for HARDI data processing in
                              DIPY. ISMRM 2016 conference.
-        [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions 
-                        on the space of positions and orientations and their 
-                        application to crossing-preserving smoothing of HARDI 
+        [DuitsAndFranken_IJCV] R. Duits and E. Franken (2011) Left-invariant diffusions
+                        on the space of positions and orientations and their
+                        application to crossing-preserving smoothing of HARDI
                         images. International Journal of Computer Vision, 92:231-264.
         [Portegies2015] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-                        (2015) New Approximation of a Scale Space Kernel on SE(3) 
+                        (2015) New Approximation of a Scale Space Kernel on SE(3)
                         and Applications in Neuroimaging. Fifth International
                         Conference on Scale Space and Variational Methods in
                         Computer Vision
-        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters, 
-                         G. Girard, and R. Duits. (2015) Improving Fiber 
-                         Alignment in HARDI by Combining Contextual PDE flow with 
+        [Portegies2015b] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
+                         G. Girard, and R. Duits. (2015) Improving Fiber
+                         Alignment in HARDI by Combining Contextual PDE flow with
                          Constrained Spherical Deconvolution. PLoS One.
         """
 
@@ -93,26 +96,26 @@ cdef class EnhancementKernel:
         else:
             self.orientations_list = np.zeros((0,0))
             self.sphere = None
-        
+
         # file location of the lut table for saving/loading
-        kernellutpath = os.path.join(gettempdir(), 
+        kernellutpath = os.path.join(gettempdir(),
                                      "kernel_d33@%4.2f_d44@%4.2f_t@%4.2f_numverts%d.npy" \
                                        % (D33, D44, t, len(self.orientations_list)))
 
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
             if verbose:
-                print("The kernel already exists. Loading from " + kernellutpath)
+                logger.info("The kernel already exists. Loading from " + kernellutpath)
             self.lookuptable = np.load(kernellutpath)
 
         # else, create
         else:
             if verbose:
-                print("The kernel doesn't exist yet. Computing...")
+                logger.info("The kernel doesn't exist yet. Computing...")
             self.create_lookup_table(verbose)
             if self.sphere is not None:
                 np.save(kernellutpath, self.lookuptable)
-            
+
     def get_lookup_table(self):
         """ Return the computed look-up table.
         """
@@ -122,7 +125,7 @@ cdef class EnhancementKernel:
         """ Return the orientations.
         """
         return self.orientations_list
-        
+
     def get_sphere(self):
         """ Get the sphere corresponding with the orientations
         """
@@ -248,7 +251,7 @@ cdef class EnhancementKernel:
             N -= 1
 
         if verbose:
-            print("Dimensions of kernel: %dx%dx%d" % (N, N, N))
+            logger.info("Dimensions of kernel: %dx%dx%d" % (N, N, N))
 
         self.kernelsize = N
 
@@ -459,9 +462,9 @@ cdef double [:,:] R(double [:] inp) nogil:
 
     beta = inp[0]
     gamma = inp[1]
-    
+
     with gil:
-        
+
         output = np.zeros(9)
 
     cb = cos(beta)
