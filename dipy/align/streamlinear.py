@@ -1,3 +1,4 @@
+import logging
 import abc
 import numpy as np
 from dipy.core.optimize import Optimizer
@@ -21,6 +22,8 @@ DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-45, 45), (-45, 45), (-45, 45),
                   (0.6, 1.4), (0.6, 1.4), (0.6, 1.4),
                   (-10, 10), (-10, 10), (-10, 10)]
+
+logger = logging.getLogger(__name__)
 
 
 class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
@@ -749,13 +752,13 @@ def progressive_slr(static, moving, metric, x0, bounds,
     """
 
     if verbose:
-        print('Progressive Registration is Enabled')
+        logger.info('Progressive Registration is Enabled')
 
     if x0 == 'translation' or x0 == 'rigid' or \
        x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
 
         if verbose:
-            print(' Translation  (3 parameters)...')
+            logger.info(' Translation  (3 parameters)...')
         slr_t = StreamlineLinearRegistration(metric=metric,
                                              x0='translation',
                                              bounds=bounds[:3],
@@ -771,7 +774,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:3] = x_translation
 
         if verbose:
-            print(' Rigid  (6 parameters) ...')
+            logger.info(' Rigid  (6 parameters) ...')
         slr_r = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:6],
@@ -786,7 +789,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[6] = 1.
 
         if verbose:
-            print(' Similarity (7 parameters) ...')
+            logger.info(' Similarity (7 parameters) ...')
         slr_s = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:7],
@@ -801,7 +804,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[6:] = np.array((x_similarity[6],) * 3)
 
         if verbose:
-            print(' Scaling (9 parameters) ...')
+            logger.info(' Scaling (9 parameters) ...')
 
         slr_c = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
@@ -817,7 +820,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[9:] = np.zeros(3)
 
         if verbose:
-            print(' Affine (12 parameters) ...')
+            logger.info(' Affine (12 parameters) ...')
 
         slr_a = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
@@ -919,8 +922,8 @@ def slr_with_qbx(static, moving,
         rng = np.random.RandomState()
 
     if verbose:
-        print('Static streamlines size {}'.format(len(static)))
-        print('Moving streamlines size {}'.format(len(moving)))
+        logger.info('Static streamlines size {}'.format(len(static)))
+        logger.info('Moving streamlines size {}'.format(len(moving)))
 
     def check_range(streamline, gt=greater_than, lt=less_than):
 
@@ -935,10 +938,9 @@ def slr_with_qbx(static, moving,
                                                 for s in moving])])
 
     if verbose:
-
-        print('Static streamlines after length reduction {}'
+        logger.info('Static streamlines after length reduction {}'
               .format(len(streamlines1)))
-        print('Moving streamlines after length reduction {}'
+        logger.info('Moving streamlines after length reduction {}'
               .format(len(streamlines2)))
 
     if select_random is not None:
@@ -985,12 +987,12 @@ def slr_with_qbx(static, moving,
                               bounds=bounds, num_threads=num_threads)
 
     if verbose:
-        print('QB static centroids size %d' % len(qb_centroids1,))
-        print('QB moving centroids size %d' % len(qb_centroids2,))
+        logger.info('QB static centroids size %d' % len(qb_centroids1,))
+        logger.info('QB moving centroids size %d' % len(qb_centroids2,))
         duration = time() - t
-        print('SLR finished in  %0.3f seconds.' % (duration,))
+        logger.info('SLR finished in  %0.3f seconds.' % (duration,))
         if slm.iterations is not None:
-            print('SLR iterations: %d ' % (slm.iterations,))
+            logger.info('SLR iterations: %d ' % (slm.iterations,))
 
     moved = slm.transform(moving)
 
