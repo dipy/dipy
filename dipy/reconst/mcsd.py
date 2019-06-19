@@ -29,7 +29,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     return B, m, n
 
 
-class MultiShellResponse():
+class MultiShellResponse(object):
 
     def __init__(self, response, sh_order, shells):
         """ Estimate Multi Shell response function for multiple tissues and
@@ -96,73 +96,8 @@ def _basic_delta(iso, m, n, theta, phi):
     return np.concatenate([iso_d, wm_d])
 
 
-def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
-    """
-    Delta function optimized to avoid negative lobes. Implements a Linear
-    Programming solver from `CVXPY` to impose this positivity constraint. The
-    default solver used is GLPK.
-
-    Parameters
-    ----------
-    iso: int
-        Number of tissue compartments for running the MSMT-CSD. Minimum
-        number of compartments required is 2.
-        Default: 2
-    m : int ``|m| <= n``
-        The order of the harmonic.
-    n : int ``>= 0``
-        The degree of the harmonic.
-    theta : array_like
-       inclination or polar angle
-    phi : array_like
-       azimuth angle
-    reg_sphere : Sphere (optional)
-        sphere used to build the regularization B matrix.
-        Default: 'symmetric362'.
-    """
-
-    x, y, z = geo.sphere2cart(1., theta, phi)
-
-    # Realign reg_sphere so that the first vertex is aligned with delta
-    # orientation (theta, phi).
-    M = geo.vec2vec_rotmat(reg_sphere.vertices[0], [x, y, z])
-    new_vertices = np.dot(reg_sphere.vertices, M.T)
-    _, t, p = geo.cart2sphere(*new_vertices.T)
-
-    B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
-    G_temp = np.ascontiguousarray(B[:, n != 0])
-    # c_temp samples the delta function at the delta orientation.
-    c_temp = G_temp[0][:, None]
-    a_temp, b_temp = G_temp.shape
-
-    c_int = cvx.Parameter((c_temp.shape[0], 1))
-    c_int.value = -c_temp
-    G = cvx.Parameter((a_temp, b_temp))
-    G.value = -G_temp
-    h = cvx.Parameter((a_temp, b_temp))
-    h_temp = np.full((a_temp, b_temp), SH_CONST ** 2)
-    h.value = h_temp
-
-    # n == 0 is set to sh_const to ensure a normalized delta function.
-    # n > 0 values are optimized so that delta > 0 on all points of the sphere
-    # and delta(theta, phi) is maximized.
-    lp_prob = cvx.Problem(cvx.Maximize(cvx.sum(c_temp)), [G*x <= h])
-    r = lp_prob.solve()
-    out = np.zeros(B.shape[1])
-    out[n == 0] = SH_CONST
-    out[n != 0] = r
-
-    iso_d = [SH_CONST] * iso
-    return np.concatenate([iso_d, out])
-
-
-delta_functions = {"basic": _basic_delta,
-                   "positivity_constrained": _pos_constrained_delta}
-
-
 class MultiShellDeconvModel(shm.SphHarmModel):
-    def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2,
-                 pos_constrained=False):
+    def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -194,9 +129,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
             Default: 2
-        pos_constrained: boolean (optional)
-            parameter that constrains positivity to avoid negative lobes.
-            Default: False
 
         References
         ----------
@@ -218,14 +150,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         super(MultiShellDeconvModel, self).__init__(gtab)
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
 
-        if pos_constrained is False:
-            delta_form = 'basic'
-
-        elif pos_constrained is True:
-            delta_form = 'positivity_constrained'
-
-        delta_f = delta_functions[delta_form]
-        delta = delta_f(response.iso, response.m, response.n, 0., 0.)
+        delta = _basic_delta(response.iso, response.m, response.n, 0., 0.)
         self.delta = delta
         multiplier_matrix = _inflate_response(response, gtab, n, delta)
 
