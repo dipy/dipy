@@ -58,7 +58,7 @@ def test_ba():
         os.mkdir(out_dir)
 
         bundle_analysis(mb, rb, ob, dt, group="patient", subject="10001",
-                        no_disks=100, out_dir=out_dir)
+                        nb_disks=100, out_dir=out_dir)
 
         assert_true(os.path.exists(os.path.join(out_dir, 'fa.h5')))
 

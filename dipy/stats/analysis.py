@@ -1,6 +1,9 @@
 from __future__ import division, print_function, absolute_import
 
+import logging
 import os
+import os.path as op
+
 import numpy as np
 from scipy import spatial
 from scipy.spatial import cKDTree
@@ -24,6 +27,8 @@ _, have_tables, _ = optional_package("tables")
 
 if have_pd:
     import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def _save_hdf5(fname, dt, col_name, col_size=5):
@@ -80,7 +85,7 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
     """
 
     dt["bundle"] = []
-    dt["disk#"] = []
+    dt["disk"] = []
     dt[pname] = []
     dt["subject"] = []
     dt["group"] = []
@@ -112,14 +117,14 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
                 d_val = dval[res.index(min(res))]
                 if d_val != 0.:
                     dt[pname].append(d_val)
-                    dt["disk#"].append(ind[point]+1)
+                    dt["disk"].append(ind[point]+1)
                     count += 1
 
         dt["bundle"].extend([bname]*count)
         dt["subject"].extend([subject]*count)
         dt["group"].extend([group]*count)
 
-    _save_hdf5(os.path.join(dir, pname), dt, col_name="bundle")
+    _save_hdf5(op.join(dir, pname), dt, col_name="bundle")
 
 
 def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
@@ -149,7 +154,7 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     """
 
     dt["bundle"] = []
-    dt["disk#"] = []
+    dt["disk"] = []
     dt["subject"] = []
     dt[pname] = []
     dt["group"] = []
@@ -157,17 +162,44 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     values = map_coordinates(metric, bundle._data.T,
                              order=1)
 
-    dt["disk#"].extend(ind[list(range(len(values)))]+1)
+    dt["disk"].extend(ind[list(range(len(values)))]+1)
     dt["bundle"].extend([bname]*len(values))
     dt["subject"].extend([subject]*len(values))
     dt["group"].extend([group]*len(values))
     dt[pname].extend(values)
 
-    _save_hdf5(os.path.join(dir, pname), dt, col_name="bundle")
+    _save_hdf5(op.join(dir, pname), dt, col_name="bundle")
+
+
+def process_bundle(mbundle, obundle, bundles, nb_disks,
+                   affine):
+    """
+    Process a single bundle based on file-names.
+
+    XXX Will need to be picked apart and renamed later on
+    """
+    mbundle_streamlines = set_number_of_points(mbundle,
+                                               nb_points=nb_disks)
+
+    metric = AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=25., metric=metric)
+    clusters = qb.cluster(mbundle_streamlines)
+    centroids = Streamlines(clusters.centroids)
+
+    print('Number of centroids ', len(centroids.data))
+
+    _, indx = cKDTree(centroids.data, 1,
+                      copy_data=True).query(bundles.data, k=1)
+
+    affine_r = np.linalg.inv(affine)
+    transformed_orig_bundles = transform_streamlines(obundle,
+                                                    affine_r)
+
+    return transformed_orig_bundles, np.array(indx)
 
 
 def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
-                    metric_folder, group, subject, no_disks=100,
+                    metric_folder, group, subject, nb_disks=100,
                     out_dir=''):
     """
     Applies statistical analysis on bundles and saves the results
@@ -191,7 +223,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         what group subject belongs to e.g. control or patient
     subject : string
         subject id e.g. 10001
-    no_disks : integer, optional
+    nb_disks : integer, optional
         Number of disks used for dividing bundle into disks. (Default 100)
     out_dir : string, optional
         Output directory (default input file directory)
@@ -216,57 +248,50 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     org_bd.sort()
     n = len(org_bd)
 
+    metric_files_names = os.listdir(metric_folder)
+    _, affine = load_nifti(op.join(metric_folder, "fa.nii.gz"))
+
     for io in range(n):
-        mbundles, _ = load_trk(os.path.join(model_bundle_folder, mb[io]))
-        bundles, _ = load_trk(os.path.join(bundle_folder, bd[io]))
-        orig_bundles, _ = load_trk(os.path.join(orig_bundle_folder,
-                                   org_bd[io]))
+        mbundle_fname = op.join(model_bundle_folder, mb[io])
+        obundle_fname = op.join(orig_bundle_folder, mb[io])
+        bundles_fname = op.join(bundle_folder, bd[io])
+        mbundles, _ = load_trk(mbundle_fname)
+        orig_bundles, _ = load_trk(obundle_fname)
+        bundles, _ = load_trk(bundles_fname)
 
-        mbundle_streamlines = set_number_of_points(mbundles,
-                                                   nb_points=no_disks)
+        logger.info('Model bundle ', mbundle_fname)
+        logger.info('Number of streamlines in bundle in common space ',
+                    len(bundles))
+        logger.info('Number of streamlines in bundle in original space ',
+                     len(orig_bundles))
 
-        metric = AveragePointwiseEuclideanMetric()
-        qb = QuickBundles(threshold=25., metric=metric)
-        clusters = qb.cluster(mbundle_streamlines)
-        centroids = Streamlines(clusters.centroids)
-
-        print('Number of centroids ', len(centroids.data))
-        print('Model bundle ', mb[io])
-        print('Number of streamlines in bundle in common space ',
-              len(bundles))
-        print('Number of streamlines in bundle in original space ',
-              len(orig_bundles))
-
-        _, indx = cKDTree(centroids.data, 1,
-                          copy_data=True).query(bundles.data, k=1)
-
-        metric_files_names = os.listdir(metric_folder)
-        _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
-
-        affine_r = np.linalg.inv(affine)
-        transformed_orig_bundles = transform_streamlines(orig_bundles,
-                                                         affine_r)
+        transformed_orig_bundles, indx = \
+            process_bundle(mbundles,
+                           orig_bundles,
+                           bundles,
+                           nb_disks=nb_disks,
+                           affine=affine)
 
         for mn in range(0, len(metric_files_names)):
-
-            ind = np.array(indx)
             fm = metric_files_names[mn][:2]
             bm = mb[io][:-4]
             dt = dict()
-            metric_name = os.path.join(metric_folder,
+            metric_name = op.join(metric_folder,
                                        metric_files_names[mn])
 
             if metric_files_names[mn][2:] == '.nii.gz':
                 metric, _ = load_nifti(metric_name)
 
                 dti_measures(transformed_orig_bundles, metric, dt, fm,
-                             bm, subject, group, ind, out_dir)
+                             bm, subject, group, indx, out_dir)
 
             else:
                 fm = metric_files_names[mn][:3]
                 metric = load_peaks(metric_name)
+
                 peak_values(bundles, metric, dt, fm, bm, subject, group,
-                            ind, out_dir)
+                            indx, out_dir)
+
 
 
 def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
