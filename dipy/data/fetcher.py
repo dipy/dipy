@@ -36,7 +36,6 @@ class FetcherError(Exception):
 
 def _log(msg):
     """Helper function to keep track of things.
-    For now, just prints the message
     """
     logger = logging.getLogger(__name__)
     logger.info(msg)
@@ -218,7 +217,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         fetch_data(files, folder, data_size)
 
         if msg is not None:
-            print(msg)
+            _log(msg)
         if unzip:
             for f in local_fnames:
                 split_ext = os.path.splitext(f)
@@ -775,17 +774,17 @@ def fetch_tissue_data():
                   'power_map.nii.gz']
 
     if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
+        _log('Creating new directory %s' % folder)
         os.makedirs(folder)
         msg = 'Downloading 3 Nifti1 images (9.3MB)...'
-        print(msg)
+        _log(msg)
 
         for i in range(len(md5_list)):
             _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
             check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
-        print('Done.')
-        print('Files copied in folder %s' % folder)
+        _log('Done.')
+        _log('Files copied in folder %s' % folder)
     else:
         _already_there_msg(folder)
 
