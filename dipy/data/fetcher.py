@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, print_function, absolute_import
 import os
 import sys
 import contextlib
+import logging
 
 from os.path import join as pjoin
 from hashlib import md5
@@ -38,7 +38,8 @@ def _log(msg):
     """Helper function to keep track of things.
     For now, just prints the message
     """
-    print(msg)
+    logger = logging.getLogger(__name__)
+    logger.info(msg)
 
 
 def update_progressbar(progress, total_length):
