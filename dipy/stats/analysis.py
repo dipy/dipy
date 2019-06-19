@@ -174,7 +174,7 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
 def process_bundle(mbundle, obundle, bundles, nb_disks,
                    affine):
     """
-    Process a single bundle based on file-names.
+    Process a single bundle
 
     XXX Will need to be picked apart and renamed later on
     """
@@ -193,7 +193,7 @@ def process_bundle(mbundle, obundle, bundles, nb_disks,
 
     affine_r = np.linalg.inv(affine)
     transformed_orig_bundles = transform_streamlines(obundle,
-                                                    affine_r)
+                                                     affine_r)
 
     return transformed_orig_bundles, np.array(indx)
 
@@ -277,7 +277,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
             bm = mb[io][:-4]
             dt = dict()
             metric_name = op.join(metric_folder,
-                                       metric_files_names[mn])
+                                  metric_files_names[mn])
 
             if metric_files_names[mn][2:] == '.nii.gz':
                 metric, _ = load_nifti(metric_name)
@@ -288,7 +288,6 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
             else:
                 fm = metric_files_names[mn][:3]
                 metric = load_peaks(metric_name)
-
                 peak_values(bundles, metric, dt, fm, bm, subject, group,
                             indx, out_dir)
 
