@@ -42,7 +42,7 @@ class MultiShellResponse(object):
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal.
-        sh_order : ndarray
+        sh_order : int
         shells : int
             Number of shells in the data
         """
@@ -207,8 +207,18 @@ class MSDeconvFit(shm.SphHarmFit):
 
     def __init__(self, model, coeff, mask):
         """
+        Abstract class which holds the fit result of MultiShellDeconvModel.
         Inherits the SphHarmFit which fits the diffusion data to a spherical
-        harmic model.
+        harmonic model.
+
+        Parameters
+        ----------
+        model: object
+            MultiShellDeconvModel
+        coeff : array
+            Spherical harmonic coefficients for the ODF.
+        mask: ndarray
+            Mask for fitting
         """
         self._shm_coef = coeff
         self.mask = mask
@@ -224,7 +234,7 @@ class MSDeconvFit(shm.SphHarmFit):
         return self._shm_coef[..., :tissue_classes] / SH_CONST
 
 
-def quadprog(P, Q, G, H):
+def solve_qp(P, Q, G, H):
     r"""
     Helper function to set up and solve the Quadratic Program (QP) in CVXPY.
     A QP problem has the following form:
@@ -232,6 +242,22 @@ def quadprog(P, Q, G, H):
     subject to    G x <= H
 
     Here the QP solver is based on CVXPY and uses OSQP.
+
+    Parameters
+    ----------
+    P : ndarray
+        n x n matrix for the primal QP objective function.
+    Q : ndarray
+        n x 1 matrix for the primal QP objective function.
+    G : ndarray
+        m x n matrix for the inequality constraint.
+    H : ndarray
+        m x 1 matrix for the inequality constraint.
+
+    Returns
+    -------
+    x : array
+        Optimal solution to the QP problem.
     """
     x = cvx.Variable(Q.shape[0])
     P = cvx.Constant(P)
@@ -264,5 +290,5 @@ class QpFitter(object):
     def __call__(self, signal):
         Q = np.dot(self._X.T, signal)
         Q_mat = np.array(-Q)
-        fodf_sh = quadprog(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
+        fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh

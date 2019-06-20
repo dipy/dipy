@@ -84,6 +84,15 @@ def test_mcsd_model_delta():
 
 
 @npt.dec.skipif(not mcsd.have_cvxpy)
+def test_compartments():
+    # test for failure if no. of compartments less than 2
+    gtab = get_3shell_gtab()
+    sh_order = 8
+    response = sim_response(sh_order, [0, 1000, 2000, 3500])
+    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
+
+
+@npt.dec.skipif(not mcsd.have_cvxpy)
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
