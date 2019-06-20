@@ -1062,7 +1062,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             logger.info('Applying zero mask: ' + str(self.mask0))
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            logger.info('Creating scale space from the moving image.',
+            logger.info('Creating scale space from the moving image.' +
                         ' Levels: %d. Sigma factor: %f.' %
                         (self.levels, self.ss_sigma_factor))
 
@@ -1071,7 +1071,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                     self.mask0)
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            logger.info('Creating scale space from the static image.'
+            logger.info('Creating scale space from the static image.' +
                         ' Levels: %d. Sigma factor: %f.' %
                         (self.levels, self.ss_sigma_factor))
 
