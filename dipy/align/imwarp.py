@@ -5,7 +5,6 @@ import abc
 
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
 import nibabel as nib
 
 from dipy.align import vector_fields as vfu
