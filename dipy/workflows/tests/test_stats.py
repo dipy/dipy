@@ -130,7 +130,7 @@ def test_bundle_analysis_population_flow():
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
-@pytes.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
