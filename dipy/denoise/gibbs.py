@@ -152,8 +152,8 @@ def _weights(shape):
     K1, K0 = np.meshgrid(k1[1:-1], k0[1:-1])
     cosk0 = 1.0 + np.cos(K0)
     cosk1 = 1.0 + np.cos(K1)
-    G1[1:-1, 1:-1] = cosk0 / (cosk0+cosk1)
-    G0[1:-1, 1:-1] = cosk1 / (cosk0+cosk1)
+    G1[1:-1, 1:-1] = cosk0 / (cosk0 + cosk1)
+    G0[1:-1, 1:-1] = cosk1 / (cosk0 + cosk1)
 
     # Boundaries
     G1[1:-1, 0] = G1[1:-1, -1] = 1
