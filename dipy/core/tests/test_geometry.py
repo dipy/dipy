@@ -326,11 +326,11 @@ def test_is_hemispherical():
     # Test on hemispherical input
     xyz = random_uniform_on_sphere(n=100, coords='xyz')
     xyz = xyz[xyz[:, 2] > 0]
-    assert is_hemispherical(xyz)[0]
+    assert_equal(is_hemispherical(xyz)[0], True)
 
     # Test on spherical input
     xyz = random_uniform_on_sphere(n=100, coords='xyz')
-    assert not is_hemispherical(xyz)[0]
+    assert_equal(is_hemispherical(xyz)[0], False)
 
     # Smoke test the ValueError for non unit-vectors
     assert_raises(ValueError, is_hemispherical, xyz * 2.0)
