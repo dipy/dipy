@@ -12,14 +12,14 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
-from numpy.testing.decorators import skipif
+import pytest
 
 try:
     from scipy.spatial import Delaunay
 except ImportError:
-    needs_delaunay = skipif(True, "Need scipy.spatial.Delaunay")
+    needs_delaunay = pytest.mark.skipif(True, "Need scipy.spatial.Delaunay")
 else:
-    needs_delaunay = skipif(False)
+    needs_delaunay = pytest.mark.skipif(False)
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges

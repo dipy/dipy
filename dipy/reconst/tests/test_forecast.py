@@ -8,19 +8,22 @@ from dipy.sims.voxel import multi_tensor
 
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
-                           run_module_suite,
-                           dec)
+                           run_module_suite)
+import pytest
+
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = dec.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
 
 
 # Object to hold module global data
 class _C(object):
     pass
+
+
 data = _C()
 
 

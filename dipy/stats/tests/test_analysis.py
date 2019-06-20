@@ -1,12 +1,12 @@
 import numpy as np
 import numpy.testing as npt
 import nibabel as nib
-from numpy.testing import assert_equal, run_module_suite
+from numpy.testing import run_module_suite
 from dipy.data import get_fnames
 from dipy.io.streamline import save_trk
 from dipy.tracking.streamline import Streamlines
 import os
-import numpy.testing as npt
+import pytest
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import save_nifti
 from nibabel.tmpdirs import TemporaryDirectory
@@ -17,7 +17,7 @@ _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
 
 
-@npt.dec.skipif(not have_pd or not have_smf or not have_tables)
+@pytest.mark.skipif(not have_pd or not have_smf or not have_tables)
 def test_ba():
 
     with TemporaryDirectory() as dirpath:

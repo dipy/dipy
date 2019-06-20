@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
 
+import pytest
 import numpy.testing as npt
 from dipy.core.optimize import Optimizer, sparse_nnls, spdot
 import dipy.core.optimize as opt

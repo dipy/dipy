@@ -5,6 +5,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 from dipy.reconst import mapmri
 
 from dipy.data import get_fnames
@@ -21,12 +22,12 @@ def test_reconst_mmri_none():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=False, pos=False)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 

@@ -1,6 +1,6 @@
-import os
 import numpy as np
-import numpy.testing as npt
+import pytest
+
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package
@@ -13,7 +13,7 @@ if have_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not have_fury)
+@pytest.mark.skipif(skip_it or not have_fury)
 @xvfb_it
 def test_horizon():
 

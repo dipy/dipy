@@ -1,6 +1,7 @@
 import numpy as np
 from dipy.viz import regtools
 import numpy.testing as npt
+import pytest
 from dipy.align.metrics import SSDMetric
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 
@@ -10,7 +11,7 @@ from dipy.utils.optpkg import optional_package
 _, have_matplotlib, _ = optional_package('matplotlib')
 
 
-@npt.dec.skipif(not have_matplotlib)
+@pytest.mark.skipif(not have_matplotlib)
 def test_plot_2d_diffeomorphic_map():
     # Test the regtools plotting interface (lightly).
     mv_shape = (11, 12)

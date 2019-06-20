@@ -3,7 +3,7 @@
 import os
 from os.path import join
 from dipy.utils.optpkg import optional_package
-import numpy.testing as npt
+import pytest
 from numpy.testing import run_module_suite, assert_raises
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
@@ -68,7 +68,7 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -130,7 +130,7 @@ def test_bundle_analysis_population_flow():
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytes.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
