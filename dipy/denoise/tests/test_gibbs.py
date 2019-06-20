@@ -156,3 +156,35 @@ def test_gibbs_subfunction():
     mean_tv0 = np.mean(abs(tv0_a1))
     mean_tv1 = np.mean(abs(tv1_a1))
     assert_(mean_tv0 > mean_tv1)
+
+
+def test_non_square_image():
+    # Produce non-square 2D image
+    Nori = 32
+    img = np.zeros((6 * Nori, 6 * Nori))
+    img[Nori: 2 * Nori, Nori: 2 * Nori] = 1
+    img[2 * Nori: 3 * Nori, Nori: 3 * Nori] = 1
+    img[3 * Nori: 4 * Nori, 2 * Nori: 3 * Nori] = 2
+    img[4 * Nori: 5 * Nori, 3 * Nori: 5 * Nori] = 3
+
+    # Corrupt image with gibbs ringing
+    c = np.fft.fft2(img)
+    c = np.fft.fftshift(c)
+    c_crop = c[48:144, :]
+    img_gibbs = abs(np.fft.ifft2(c_crop)/2)
+
+    # Produce ground truth
+    Nre = 16
+    img_gt = np.zeros((6 * Nre, 6 * Nori))
+    img_gt[Nre: 2 * Nre, Nori: 2 * Nori] = 1
+    img_gt[2 * Nre: 3 * Nre, Nori: 3 * Nori] = 1
+    img_gt[3 * Nre: 4 * Nre, 2 * Nori: 3 * Nori] = 2
+    img_gt[4 * Nre: 5 * Nre, 3 * Nori: 5 * Nori] = 3
+
+    # Suppressing gibbs artefacts
+    img_cor = gibbs_removal(img_gibbs)
+
+    # Correction of gibbs ringing have to be closer to gt than denoised image
+    diff_raw = np.mean(abs(img_gibbs - img_gt))
+    diff_cor = np.mean(abs(img_cor - img_gt))
+    assert_(diff_raw > diff_cor)

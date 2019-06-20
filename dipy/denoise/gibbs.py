@@ -145,14 +145,15 @@ def _weights(shape):
     """
     G0 = np.zeros(shape)
     G1 = np.zeros(shape)
-    k = np.linspace(-np.pi, np.pi, num=shape[0])
+    k0 = np.linspace(-np.pi, np.pi, num=shape[0])
+    k1 = np.linspace(-np.pi, np.pi, num=shape[1])
 
     # Middle points
-    K1, K0 = np.meshgrid(k[1:-1], k[1:-1])
+    K1, K0 = np.meshgrid(k1[1:-1], k0[1:-1])
     cosk0 = 1.0 + np.cos(K0)
     cosk1 = 1.0 + np.cos(K1)
-    G1[1:-1, 1:-1] = cosk0 / (cosk0 + cosk1)
-    G0[1:-1, 1:-1] = cosk1 / (cosk0 + cosk1)
+    G1[1:-1, 1:-1] = cosk0 / (cosk0+cosk1)
+    G0[1:-1, 1:-1] = cosk1 / (cosk0+cosk1)
 
     # Boundaries
     G1[1:-1, 0] = G1[1:-1, -1] = 1
