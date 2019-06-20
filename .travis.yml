@@ -24,7 +24,6 @@ env:
         - EXTRA_PIP_FLAGS="--timeout=60 --find-links=$EXTRA_WHEELS"
 
 python:
-    - 3.4
     - 3.5
     - 3.6
 
@@ -35,7 +34,7 @@ matrix:
       env:
         - DEPENDS="$DEPENDS scipy"
     # To test minimum dependencies for Python 3.6:
-    - python: 3.4
+    - python: 3.6
       env:
         # Check these values against requirements.txt and dipy/info.py
         - DEPENDS="cython==0.29 numpy==1.8.2 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
