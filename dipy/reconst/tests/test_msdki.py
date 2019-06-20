@@ -5,7 +5,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import random
 from numpy.testing import assert_array_almost_equal
-from nose.tools import assert_raises
+import pytest
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
@@ -109,17 +109,19 @@ def test_msdki_predict():
 def test_errors():
     # first error raises if MeanDiffusionKurtosisModel is called for
     # data will only one non-zero b-value
-    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab)
+    with pytest.raises(ValueError):
+        msdki.MeanDiffusionKurtosisModel(gtab)
 
     # second error raises if negative signal is given to MeanDiffusionKurtosis
     # model
-    assert_raises(ValueError, msdki.MeanDiffusionKurtosisModel, gtab_3s,
-                  min_signal=-1)
+    with pytest.raises(ValueError):
+        msdki.MeanDiffusionKurtosisModel(gtab_3s, min_signal=-1)
 
     # third error raises if wrong mask is given to fit
     mask_wrong = np.ones((2, 3, 1))
     msdki_model = msdki.MeanDiffusionKurtosisModel(gtab_3s)
-    assert_raises(ValueError, msdki_model.fit, DWI, mask=mask_wrong)
+    with pytest.raises(ValueError):
+        msdki_model.fit(DWI, mask=mask_wrong)
 
     # fourth error raises if an given index point to more dimensions that data
     # does not contain
@@ -130,7 +132,8 @@ def test_errors():
         return met
 
     mdkiF = msdki_model.fit(DWI)
-    assert_raises(IndexError, aux_test_fun, mdkiF, (0, 0, 0, 0))
+    with pytest.raises(IndexError):
+        aux_test_fun(mdkiF, (0, 0, 0, 0))
     # checking if aux_test_fun runs fine
     met = aux_test_fun(mdkiF, (0, 0, 0))
     assert_array_almost_equal(MKgt_multi[0, 0, 0], met)
