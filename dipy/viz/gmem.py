@@ -1,6 +1,8 @@
 class GlobalHorizon(object):
+    # window level sharing
     window_timer_cnt = 0
     
+    # slicer level sharing
     slicer_opacity = 1
     slicer_colormap = 'gray'
     slicer_colormaps = ['gray', 'magma', 'viridis', 'Pastel1', 'disting']
@@ -25,7 +27,11 @@ class GlobalHorizon(object):
 
     slicer_grid = False
     
+    # tractogram level sharing
     cluster_thr = 15
+    streamline_actors = []
+    centroid_actors = []
+    cluster_actors = []
     
 
 HORIZON = GlobalHorizon()

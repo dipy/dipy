@@ -9,7 +9,7 @@ fury, have_fury, setup_module = optional_package('fury')
 if have_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
-    from dipy.viz.panel import slicer_panel, build_label
+    from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from dipy.viz.gmem import HORIZON
 
 
@@ -164,6 +164,7 @@ class Horizon(object):
                                                       linewidth=linewidths[i],
                                                       lod=False)
                     scene.add(centroid_actor)
+                    HORIZON.centroid_actors.append(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -173,6 +174,7 @@ class Horizon(object):
                     cluster_actor.VisibilityOff()
 
                     scene.add(cluster_actor)
+                    HORIZON.cluster_actors.append(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -199,7 +201,117 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
+                HORIZON.streamline_actors.append(streamline_actor)
         return scene
+
+    def remove_actors(self, scene):
+
+        for ca_ in HORIZON.centroid_actors:
+            scene.rm(ca_)
+        for ca_ in HORIZON.cluster_actors:
+            scene.rm(ca_)
+
+    def add_actors(self, scene, tractograms, threshold):
+        """ Experimental
+        """
+        for (t, streamlines) in enumerate(tractograms):
+            if self.random_colors:
+                # TODO use distinguished colormap
+                colors = self.prng.random_sample(3)
+            else:
+                colors = None
+
+            if self.cluster:
+
+                print(' Clustering threshold {} \n'.format(threshold))
+                clusters = qbx_and_merge(streamlines,
+                                         [40, 30, 25, 20, threshold])
+                self.tractogram_clusters[t] = clusters
+                centroids = clusters.centroids
+                print(' Number of centroids is {}'.format(len(centroids)))
+                sizes = np.array([len(c) for c in clusters])
+                linewidths = np.interp(sizes,
+                                       [sizes.min(), sizes.max()], [0.1, 2.])
+                centroid_lengths = np.array([length(c) for c in centroids])
+
+                print(' Minimum number of streamlines in cluster {}'
+                      .format(sizes.min()))
+
+                print(' Maximum number of streamlines in cluster {}'
+                      .format(sizes.max()))
+
+                print(' Construct cluster actors')
+                for (i, c) in enumerate(centroids):
+
+                    centroid_actor = actor.streamtube([c], colors,
+                                                      linewidth=linewidths[i],
+                                                      lod=False)
+                    scene.add(centroid_actor)
+                    HORIZON.centroid_actors.append(centroid_actor)
+
+                    cluster_actor = actor.line(clusters[i],
+                                               lod=False)
+                    cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
+                    cluster_actor.GetProperty().SetLineWidth(6)
+                    cluster_actor.GetProperty().SetOpacity(1)
+                    cluster_actor.VisibilityOff()
+
+                    scene.add(cluster_actor)
+                    HORIZON.cluster_actors.append(cluster_actor)
+
+                    # Every centroid actor (cea) is paired to a cluster actor
+                    # (cla).
+
+                    self.cea[centroid_actor] = {
+                        'cluster_actor': cluster_actor,
+                        'cluster': i, 'tractogram': t,
+                        'size': sizes[i], 'length': centroid_lengths[i],
+                        'selected': 0, 'expanded': 0}
+
+                    self.cla[cluster_actor] = {
+                        'centroid_actor': centroid_actor,
+                        'cluster': i, 'tractogram': t,
+                        'size': sizes[i], 'length': centroid_lengths[i],
+                        'selected': 0}
+                    apply_shader(self, cluster_actor)
+                    apply_shader(self, centroid_actor)
+
+            else:
+
+                streamline_actor = actor.line(streamlines, colors=colors)
+                streamline_actor.GetProperty().SetEdgeVisibility(1)
+                streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
+                streamline_actor.GetProperty().SetLineWidth(6)
+                streamline_actor.GetProperty().SetOpacity(1)
+                scene.add(streamline_actor)
+                HORIZON.streamline_actors.append(streamline_actor)
+
+        def left_click_centroid_callback(obj, event):
+
+            self.cea[obj]['selected'] = not self.cea[obj]['selected']
+            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
+                self.cea[obj]['selected']
+            show_m.render()
+
+        def left_click_cluster_callback(obj, event):
+
+            if self.cla[obj]['selected']:
+                self.cla[obj]['centroid_actor'].VisibilityOn()
+                ca = self.cla[obj]['centroid_actor']
+                self.cea[ca]['selected'] = 0
+                obj.VisibilityOff()
+                self.cea[ca]['expanded'] = 0
+
+            show_m.render()
+
+        for cl in self.cla:
+            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
+                           1.0)
+            self.cla[cl]['centroid_actor'].AddObserver(
+                'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
+
+
+
 
     def build_show(self, scene):
 
@@ -216,11 +328,20 @@ class Horizon(object):
             sizes = np.array(szs)
 
             # global self.panel2, slider_length, slider_size
-            self.panel2 = ui.Panel2D(size=(300, 200),
-                                     position=(850, 320),
+            self.panel2 = ui.Panel2D(size=(400, 400),
+                                     position=(850, 520),
                                      color=(1, 1, 1),
                                      opacity=0.1,
                                      align="right")
+
+            slider_label_threshold = build_label(text="Threshold")
+            slider_threshold = ui.LineSlider2D(
+                    min_value=5,
+                    max_value=25,
+                    initial_value=15,
+                    text_template="{value:.0f}",
+                    length=140, shape='square')
+            _color_slider(slider_threshold)
 
             slider_label_length = build_label(text="Length")
             slider_length = ui.LineSlider2D(
@@ -229,6 +350,7 @@ class Horizon(object):
                     initial_value=np.percentile(lengths, 25),
                     text_template="{value:.0f}",
                     length=140)
+            _color_slider(slider_length)
 
             slider_label_size = build_label(text="Size")
             slider_size = ui.LineSlider2D(
@@ -237,11 +359,22 @@ class Horizon(object):
                     initial_value=np.percentile(sizes, 50),
                     text_template="{value:.0f}",
                     length=140)
+            _color_slider(slider_size)
 
             # global self.length_min, size_min
             self.size_min = sizes.min()
             self.length_min = lengths.min()
 
+            def change_threshold(istyle, obj, slider):
+                sv = np.round(slider.value,0)
+                print('Change threshold', sv)
+                self.remove_actors(scene)
+                self.add_actors(scene, self.tractograms, threshold=sv)
+                pass
+
+            slider_threshold.handle_events(slider_threshold.handle.actor)
+            slider_threshold.on_left_mouse_button_released = change_threshold
+            
             def hide_clusters_length(slider):
                 self.length_min = np.round(slider.value)
 
@@ -269,6 +402,9 @@ class Horizon(object):
                 show_m.render()
 
             slider_length.on_change = hide_clusters_length
+
+            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.133))
+            self.panel2.add_element(slider_threshold, coords=(0.4, 0.133))
 
             self.panel2.add_element(slider_label_length, coords=(0.1, 0.333))
             self.panel2.add_element(slider_length, coords=(0.4, 0.333))
@@ -474,7 +610,7 @@ class Horizon(object):
             #cnt = next(counter)
             HORIZON.window_timer_cnt += 1
             cnt = HORIZON.window_timer_cnt
-            print("Let's count up to 100 " + str(cnt))
+            # print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
             pass

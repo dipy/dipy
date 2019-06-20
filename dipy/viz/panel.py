@@ -99,7 +99,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     tmp_new = image_actor_z.get_numpy()
 
-    print('Resized to MNI shape ', tmp_new.shape)
+    print('Resized to MNI shape ', tmp_new.shape + (data.shape[-1],))
     shape = tmp_new.shape
 
     if pam is not None:
@@ -165,10 +165,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         x = int(np.round(slider.value))
         HORIZON.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                    shape[2] - 1) 
-        #change_volume.image_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-        #                                           shape[2] - 1)
-            
-        #change_slice_x.x = x
         HORIZON.slicer_curr_x = x
         HORIZON.window_timer_cnt+=100
 
@@ -188,10 +184,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                                    0, shape[2] - 1)
         HORIZON.slicer_curr_y = y
 
-        # change_volume.image_actor_y.display_extent(0, shape[0] - 1, y, y,
-        #                                            0, shape[2] - 1)
-        # change_slice_y.y = y
-
     double_slider = ui.LineDoubleSlider2D(length=140,
                                           initial_values=value_range,
                                           min_value=tmp.min(),
@@ -208,14 +200,15 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         r1, r2 = values
 
         if HORIZON.slicer_colormap == 'disting':
+            # use distinguishable colors
             rgb = colormap.distinguishable_colormap(nb_colors=256)
         else:
+            # use matplotlib colormaps
             rgb = colormap.create_colormap(np.linspace(r1, r2, 256),
                                            name=HORIZON.slicer_colormap,
                                            auto=True)
         N = rgb.shape[0]
 
-        # lut = colormap.colormap_lookup_table((r1, r2), (0, 0), (0, 0), (0, 1))
         lut = colormap.vtk.vtkLookupTable()
         lut.SetNumberOfTableValues(N)
         lut.SetRange(r1, r2)
@@ -227,9 +220,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
         HORIZON.slicer_curr_actor_z.output.SetLookupTable(lut)
         HORIZON.slicer_curr_actor_z.output.Update()
-        # image_actor_z.output.SetLookupTable(lut)
-        # image_actor_z.output.Update()        
-
+       
     double_slider.on_change = on_change_ds 
 
     opacity_slider = ui.LineSlider2D(min_value=0.0,
@@ -245,9 +236,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         HORIZON.slicer_curr_actor_x.opacity(slicer_opacity)
         HORIZON.slicer_curr_actor_y.opacity(slicer_opacity)
         HORIZON.slicer_curr_actor_z.opacity(slicer_opacity)
-        # change_volume.image_actor_z.opacity(slicer_opacity)
-        # change_volume.image_actor_x.opacity(slicer_opacity)
-        # change_volume.image_actor_y.opacity(slicer_opacity)
 
     volume_slider = ui.LineSlider2D(min_value=0,
                                     max_value=data.shape[-1] - 1,
@@ -260,15 +248,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
         HORIZON.slicer_vol_idx = vol_idx
-        # change_volume.vol_idx = vol_idx       
         
         renderer.rm(HORIZON.slicer_curr_actor_x)
         renderer.rm(HORIZON.slicer_curr_actor_y)
         renderer.rm(HORIZON.slicer_curr_actor_z)
-
-        # renderer.rm(change_volume.image_actor_z)
-        # renderer.rm(change_volume.image_actor_x)
-        # renderer.rm(change_volume.image_actor_y)
 
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
@@ -279,7 +262,6 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         
         tmp_new = image_actor_z.get_numpy()
         HORIZON.slicer_vol = tmp_new
-        # change_volume.tmp_new = tmp_new
 
         z = HORIZON.slicer_curr_z
         image_actor_z.display_extent(0, shape[0] - 1,
@@ -289,11 +271,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     
         HORIZON.slicer_curr_actor_z = image_actor_z
         HORIZON.slicer_curr_actor_x = image_actor_z.copy()
-        # change_volume.image_actor_z = image_actor_z
-        # change_volume.image_actor_x = image_actor_z.copy()
+
         if pam is not None:
             HORIZON.slicer_peaks_actor_z = peaks_actor_z
-            # change_volume.peaks_actor_z = peaks_actor_z
+
         x = HORIZON.slicer_curr_x
         HORIZON.slicer_curr_actor_x.display_extent(x,
                                                    x, 0,
@@ -335,13 +316,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
         i, j, k = obj.picker.GetPointIJK()        
         res = HORIZON.slicer_vol[i, j, k]
-        # res = change_volume.tmp_new[i, j, k]
         try:
             message = '%.3f' % res
         except:
             message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
         picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
-        
 
     HORIZON.slicer_vol_idx = 0
     HORIZON.slicer_vol = tmp_new
@@ -433,6 +412,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
             renderer.add(HORIZON.slicer_curr_actor_z)
         else:
             renderer.rm(HORIZON.slicer_curr_actor_z)
+
         iren.Render()
     
     line_slider_label_z.actor.AddObserver('LeftButtonPressEvent',
