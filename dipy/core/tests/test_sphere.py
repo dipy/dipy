@@ -135,7 +135,6 @@ def test_edges_faces():
                     array_to_set([[0, 1]]))
 
 
-@needs_delaunay
 def test_sphere_subdivide():
     sphere1 = unit_octahedron.subdivide(4)
     sphere2 = Sphere(xyz=sphere1.vertices)
@@ -167,7 +166,6 @@ def test_hemisphere_find_closest():
                         ii)
 
 
-@needs_delaunay
 def test_hemisphere_subdivide():
 
     def flip(vertices):
