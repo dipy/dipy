@@ -1,0 +1,6 @@
+scikit_learn
+pandas
+statsmodels==0.9.0
+tables
+vtk
+fury
