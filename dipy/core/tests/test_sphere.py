@@ -216,7 +216,7 @@ def test_hemisphere_constructor():
     nt.assert_array_almost_equal(s0.phi, phiU)
 
 
-@needs_delaunay
+
 def test_mirror():
     verts = [[0, 0, 1],
              [0, 1, 0],
@@ -245,7 +245,6 @@ def test_mirror():
         nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
 
 
-@needs_delaunay
 def test_hemisphere_faces():
 
     t = (1 + np.sqrt(5)) / 2
