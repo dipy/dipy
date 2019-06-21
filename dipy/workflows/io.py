@@ -125,7 +125,7 @@ class FetchFlow(Workflow):
             return importlib.import_module(module_path)
 
     def run(self, data_names, out_dir=''):
-        """Download files to folder and checks their md5 checksums.
+        """Download files to folder and check their md5 checksums.
 
         Parameters
         ----------

@@ -53,4 +53,4 @@ def test_io_fetch():
 
 if __name__ == '__main__':
     test_io_fetch()
-    # test_io_info()
+    test_io_info()
