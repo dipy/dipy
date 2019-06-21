@@ -11,7 +11,6 @@ from dipy.utils.omp import cpu_count, have_openmp
 from time import time
 
 
-
 def test_nlmeans_padding():
     S0 = 100 + 2 * np.random.standard_normal((50, 50, 50))
     S0 = S0.astype('f8')
@@ -90,6 +89,7 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = nlmeans(S0, sigma=np.ones((20, 20, 20)), mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
+
 
 @pytest.mark.skipif(not have_openmp,
                     reason='OpenMP does not appear to be available')
