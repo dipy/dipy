@@ -12,14 +12,6 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
-import pytest
-
-try:
-    from scipy.spatial import Delaunay
-except ImportError:
-    needs_delaunay = pytest.mark.skipif(True, "Need scipy.spatial.Delaunay")
-else:
-    needs_delaunay = pytest.mark.skipif(False)
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
@@ -111,7 +103,6 @@ def test_unique_sets():
     nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
-@needs_delaunay
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
@@ -127,7 +118,6 @@ def test_sphere_attrs():
     nt.assert_array_almost_equal(s.z, verts[:, 2])
 
 
-@needs_delaunay
 def test_edges_faces():
     s = Sphere(xyz=verts)
     faces = oct_faces
