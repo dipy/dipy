@@ -13,7 +13,8 @@ if have_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@pytest.mark.skipif(skip_it or not have_fury)
+@pytest.mark.skipif(skip_it or not have_fury,
+                    reason="FURY not available or environment set to skip viz")
 @xvfb_it
 def test_horizon():
 

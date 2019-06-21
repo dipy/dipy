@@ -68,7 +68,8 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
-@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+                    reason="Optional requirements not available")
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -130,7 +131,8 @@ def test_bundle_analysis_population_flow():
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
-@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+                    reason="Optional requirements not available")
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:

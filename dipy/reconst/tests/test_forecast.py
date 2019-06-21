@@ -16,7 +16,7 @@ from dipy.core.sphere_stats import angular_similarity
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="CVXPY not available")
 
 
 # Object to hold module global data

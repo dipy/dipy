@@ -17,7 +17,8 @@ _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
 
 
-@pytest.mark.skipif(not have_pd or not have_smf or not have_tables)
+@pytest.mark.skipif(not have_pd or not have_smf or not have_tables,
+                    reason="Optional requirements not available")
 def test_ba():
 
     with TemporaryDirectory() as dirpath:

@@ -11,7 +11,7 @@ from dipy.utils.optpkg import optional_package
 _, have_matplotlib, _ = optional_package('matplotlib')
 
 
-@pytest.mark.skipif(not have_matplotlib)
+@pytest.mark.skipif(not have_matplotlib, reason="MPL not available")
 def test_plot_2d_diffeomorphic_map():
     # Test the regtools plotting interface (lightly).
     mv_shape = (11, 12)

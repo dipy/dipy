@@ -21,7 +21,7 @@ def test_design_matrix():
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
 
-@pytest.mark.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="sklearn not available")
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = nib.load(fdata).get_data()
@@ -49,7 +49,7 @@ def test_sfm():
             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
-@pytest.mark.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="sklearn not available")
 def test_predict():
     SNR = 1000
     S0 = 100
@@ -130,7 +130,7 @@ def test_sfm_sklearnlinearsolver():
                       solver=EvenSillierSolver())
 
 
-@pytest.mark.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn, reason="sklearn not available")
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data_dti = nib.load(fdata).get_data()
