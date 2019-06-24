@@ -189,4 +189,7 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
+            # We load the module again so that if we run another one of these in 
+            # the same process, we don't have the env variable pointing to the 
+            # wrong place
             self.load_module('dipy.data.fetcher')
