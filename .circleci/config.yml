@@ -70,7 +70,6 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
-  build:
     macos:
       xcode: "10.0.0" # indicate our selected version of Xcode
     steps:
