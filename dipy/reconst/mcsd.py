@@ -316,7 +316,7 @@ class QpFitter(object):
         X : ndarray
             Matrix to be fit by the QP solver calculated in
             `MultiShellDeconvModel`
-        B : ndarray
+        reg : ndarray
             the regularization B matrix calculated in `MultiShellDeconvModel`
         """
         self._P = P = np.dot(X.T, X)
