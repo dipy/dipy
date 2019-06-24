@@ -51,8 +51,8 @@ jobs:
           command: |
             . venv/bin/activate
             pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
-        name: build docs
-        command: |
+          name: build docs
+          command: |
             . venv/bin/activate
             cd doc
             make html
