@@ -51,6 +51,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
+      - run:
           name: build docs
           command: |
             . venv/bin/activate
