@@ -12,9 +12,26 @@ SH_CONST = .5 / np.sqrt(np.pi)
 
 def multi_tissue_basis(gtab, sh_order, iso_comp):
     """
-    Builds a basis for multi-shell CSD model.
+    Builds a basis for multi-shell multi-tissue CSD model.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    sh_order : int
+    iso_comp: int
+        Number of tissue compartments for running the MSMT-CSD. Minimum
+        number of compartments required is 2.
+
+    Returns
+    -------
+    B : ndarray
+        Matrix of the spherical harmonics model used to fit the data
+    m : int ``|m| <= n``
+        The order of the harmonic.
+    n : int ``>= 0``
+        The degree of the harmonic.
     """
-    if iso_comp < 1:
+    if iso_comp < 2:
         msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
@@ -60,6 +77,21 @@ class MultiShellResponse(object):
 
 
 def _inflate_response(response, gtab, n, delta):
+    """Used to inflate the response for the `multiplier_matrix` in the
+    `MultiShellDeconvModel`.
+    Parameters
+    ----------
+    response : tuple or AxSymShResponse object
+        A tuple with two elements. The first is the eigen-values as an (3,)
+        ndarray and the second is the signal value for the response
+        function without diffusion weighting.  This is to be able to
+        generate a single fiber synthetic signal. The response function
+        will be used as deconvolution kernel ([1]_)
+    gtab : GradientTable
+    n : int ``>= 0``
+        The degree of the harmonic.
+    delta : Delta generated from `_basic_delta`
+    """
     if any((n % 2) != 0) or (n.max() // 2) >= response.sh_order:
         raise ValueError("Response and n do not match")
 
@@ -275,9 +307,17 @@ class QpFitter(object):
 
     def __init__(self, X, reg):
         r"""
-        Makes use of the quadratic programming solver `quadprog` to fit the
+        Makes use of the quadratic programming solver `solve_qp` to fit the
         model. The initialization for the model is done using the warm-start by
         default in `CVXPY`.
+
+        Parameters
+        ----------
+        X : ndarray
+            Matrix to be fit by the QP solver calculated in
+            `MultiShellDeconvModel`
+        B : ndarray
+            the regularization B matrix calculated in `MultiShellDeconvModel`
         """
         self._P = P = np.dot(X.T, X)
         self._X = X
