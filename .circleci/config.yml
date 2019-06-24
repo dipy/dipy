@@ -48,16 +48,23 @@ jobs:
       # https://pytest.org
       # https://nose.readthedocs.io
       - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
-      - run:
           name: build docs
           command: |
             . venv/bin/activate
             cd doc
             make html
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            export COVERAGE=1
+            export VTK=1
+            export TEST_WITH_XVFB=true
+            export MESA_GL_VERSION_OVERRIDE=3.3
+            export LIBGL_ALWAYS_INDIRECT=y
+
+            pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 
       - store_artifacts:
           path: test-reports
