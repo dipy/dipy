@@ -53,9 +53,9 @@ jobs:
             pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
         name: build docs
         command: |
-          . venv/bin/activate
-          cd doc
-          make html
+            . venv/bin/activate
+            cd doc
+            make html
 
       - store_artifacts:
           path: test-reports
