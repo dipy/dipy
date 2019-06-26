@@ -12,7 +12,8 @@ from dipy.direction import (DeterministicMaximumDirectionGetter,
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
 from dipy.tracking import utils
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking,
+from dipy.tracking.local import (BinaryTissueClassifier,
+                                 ThresholdTissueClassifier, LocalTracking,
                                  CmcTissueClassifier,
                                  ParticleFilteringTracking)
 from dipy.workflows.workflow import Workflow
@@ -77,12 +78,15 @@ class LocalFiberTrackingPAMFlow(Workflow):
         logging.info('{0} direction getter strategy selected'.format(msg))
         return dg
 
-    def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, step_size, direction_getter,
+    def _core_run(self, stopping_path, use_binary_mask, stopping_thr,
+                  seeding_path, seed_density, step_size, direction_getter,
                   out_tract, save_seeds):
 
         stop, affine = load_nifti(stopping_path)
-        classifier = ThresholdTissueClassifier(stop, stopping_thr)
+        if use_binary_mask:
+            classifier = BinaryTissueClassifier(stop > stopping_thr)
+        else:
+            classifier = ThresholdTissueClassifier(stop, stopping_thr)
         logging.info('classifier done')
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
@@ -112,6 +116,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, stopping_files, seeding_files,
+            use_binary_mask=False,
             stopping_thr=0.2,
             seed_density=1,
             step_size=0.5,
@@ -134,6 +139,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Path to images (e.g. FA) used for stopping criteria for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
+        use_binary_mask : bool, optional
+            If True, uses a binary tissue classifier.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
             tracking has to stop (default 0.2).
@@ -185,8 +192,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
                                             pmf_threshold=pmf_threshold,
                                             max_angle=max_angle)
 
-            self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, step_size, dg, out_tract, save_seeds)
+            self._core_run(stopping_path, use_binary_mask, stopping_thr,
+                           seeding_path, seed_density, step_size, dg,
+                           out_tract, save_seeds)
 
 
 class PFTrackingPAMFlow(Workflow):
