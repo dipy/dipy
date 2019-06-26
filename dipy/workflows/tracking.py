@@ -136,7 +136,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             A binary image showing where we need to seed for tracking.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-            tracking has to stop (default 0.25).
+            tracking has to stop (default 0.2).
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
              For example, seed_density of 2 means 8 regularly distributed
@@ -237,7 +237,7 @@ class PFTrackingPAMFlow(Workflow):
             default 20).
         pft_back : float, optional
             Distance in mm to back track before starting the particle filtering
-            tractography (defaul 2mm). The total particle filtering
+            tractography (default 2mm). The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
         pft_front : float, optional
