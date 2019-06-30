@@ -165,7 +165,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         References
         ----------
         .. [1] Jeurissen, B., et al. NeuroImage 2014. Multi-tissue constrained
-               spherical deconvolution for improved analysisof multi-shell
+               spherical deconvolution for improved analysis of multi-shell
                diffusion MRI data
         .. [2] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
                the fibre orientation distribution in diffusion MRI:

@@ -67,7 +67,7 @@ def test_boot_pmf():
     npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
     npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
 
-    # test model sherical harminic order different than bootstrap order
+    # test model spherical harmonic order different than bootstrap order
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)

@@ -12,7 +12,7 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 
 def get_level(lvl):
-    """ Transforms the loggin level passed on the commandline into a proper
+    """ Transforms the logging level passed on the commandline into a proper
     logging level name.
     """
     try:
@@ -47,7 +47,7 @@ def run_flow(flow):
                         help='Prepend mixed input names to output names.')
 
     # Add logging parameters common to all workflows
-    msg = 'Log messsages display level. Accepted options include CRITICAL,'
+    msg = 'Log messages display level. Accepted options include CRITICAL,'
     msg += ' ERROR, WARNING, INFO, DEBUG and NOTSET (default INFO).'
     parser.add_argument('--log_level', action='store', dest='log_level',
                         metavar='string', required=False, default='INFO',

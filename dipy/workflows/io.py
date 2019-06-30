@@ -71,8 +71,8 @@ class IoInfoFlow(Workflow):
 
             if os.path.basename(input_path).lower().find('bval') > -1:
                 bvals = np.loadtxt(input_path)
-                logging.info('Bvalues \n{0}'.format(bvals))
-                logging.info('Total number of bvalues {}'.format(len(bvals)))
+                logging.info('b-values \n{0}'.format(bvals))
+                logging.info('Total number of b-values {}'.format(len(bvals)))
                 shells = np.sum(np.diff(np.sort(bvals)) > bshell_thr)
                 logging.info('Number of gradient shells {0}'.format(shells))
                 logging.info('Number of b0s {0} (b0_thr {1})\n'

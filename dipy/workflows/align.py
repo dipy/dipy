@@ -178,7 +178,7 @@ class SlrWithQbxFlow(Workflow):
 
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
         bundles using local and global streamline-based registration
-        and clustering, Neuroimage, 2017.
+        and clustering, NeuroImage, 2017.
         """
         io_it = self.get_io_iterator()
 
@@ -855,7 +855,7 @@ class SynRegistrationFlow(Workflow):
             raise ValueError("Invalid similarity metric: Please"
                              " provide a valid metric like 'ssd', 'cc', 'em'")
 
-        logging.info("Starting Diffeormorphic Registration")
+        logging.info("Starting Diffeomorphic Registration")
         logging.info('Using {0} Metric'.format(metric.upper()))
 
         # Init parameter if they are not setup
@@ -928,5 +928,5 @@ class SynRegistrationFlow(Workflow):
             # Saving
             logging.info('Saving warped {0}'.format(owarped_file))
             save_nifti(owarped_file, warped_moving, static_grid2world)
-            logging.info('Saving Diffeormorphic map {0}'.format(omap_file))
+            logging.info('Saving Diffeomorphic map {0}'.format(omap_file))
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)

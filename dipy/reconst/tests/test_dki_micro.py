@@ -43,14 +43,14 @@ DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 # approximation components larger than the fourth order. Thus parameter
 # estimates are only equal to the ground truth values of the simulation
 # if signals taylor components larger than the fourth order are removed.
-# Signal whithout this taylor components can be generated using the
+# Signal without this taylor components can be generated using the
 # multi_tensor_dki simulations. Therefore we used this function to test the
 # expected estimates of the model.
 
 DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 
 # Signal with all taylor components can be simulated using the function
-# multi_tensor. Generating this signals will be usefull to test the prediction
+# multi_tensor. Generating this signals will be useful to test the prediction
 # procedures of DKI-based microstructural model.
 
 

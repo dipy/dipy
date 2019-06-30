@@ -134,7 +134,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     edt_all = np.zeros(shape + (6,))
     idt_all = np.zeros(shape + (6,))
 
-    # Generate matrix that converts apparant diffusion coefficients to tensors
+    # Generate matrix that converts apparent diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
     B[:, 0] = sphere.x * sphere.x  # Bxx
     B[:, 1] = sphere.x * sphere.y * 2.  # Bxy

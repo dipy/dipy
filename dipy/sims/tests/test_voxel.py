@@ -27,7 +27,7 @@ def setup_module():
     gtab_2s = gradient_table(bvals_2s, bvecs_2s)
 
 
-# Unused with missing refernces to basis
+# Unused with missing references to basis
 # def diff2eigenvectors(dx, dy, dz):
 #     """ numerical derivatives 2 eigenvectors
 #     """
@@ -214,7 +214,7 @@ def test_kurtosis_elements():
                     key = (i+1) * (j+1) * (k+1) * (l+1)
                     assert_almost_equal(kurtosis_element(mD, frac, i, k, j, l),
                                         kt_ref[key])
-                    # Testing optional funtion inputs
+                    # Testing optional function inputs
                     assert_almost_equal(kurtosis_element(mD, frac, i, k, j, l),
                                         kurtosis_element(mD, frac, i, k, j, l,
                                                          D, MD))

@@ -112,7 +112,7 @@ def quickbundles(streamlines, Metric metric, double threshold,
         if not streamline.flags.writeable or streamline.dtype != DTYPE:
             streamline = streamline.astype(DTYPE)
         cluster_id = qb.assignment_step(streamline, idx)
-        # The update step is performed right after the assignement step instead
+        # The update step is performed right after the assignment step instead
         # of after all streamlines have been assigned like k-means algorithm.
         qb.update_step(cluster_id)
 
