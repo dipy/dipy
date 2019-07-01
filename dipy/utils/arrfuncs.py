@@ -66,37 +66,3 @@ def pinv(a, rcond=1e-15):
     return np.einsum('...ij,...jk',
                      np.transpose(v, swap) * s[..., None, :],
                      np.transpose(u, swap))
-
-
-def eigh(a, UPLO='L'):
-    """Iterate over `np.linalg.eigh` if it doesn't support vectorized operation
-
-    Parameters
-    ----------
-    a : array_like (..., M, M)
-        Hermitian/Symmetric matrices whose eigenvalues and
-        eigenvectors are to be computed.
-    UPLO : {'L', 'U'}, optional
-        Specifies whether the calculation is done with the lower triangular
-        part of `a` ('L', default) or the upper triangular part ('U').
-
-    Returns
-    -------
-    w : ndarray (..., M)
-        The eigenvalues in ascending order, each repeated according to
-        its multiplicity.
-    v : ndarray (..., M, M)
-        The column ``v[..., :, i]`` is the normalized eigenvector corresponding
-        to the eigenvalue ``w[..., i]``.
-
-    Raises
-    ------
-    LinAlgError
-        If the eigenvalue computation does not converge.
-
-    See Also
-    --------
-    np.linalg.eigh
-    """
-    a = np.asarray(a)
-    return np.linalg.eigh(a, UPLO)
