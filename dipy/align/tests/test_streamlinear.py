@@ -324,13 +324,9 @@ def test_evolution_of_previous_iterations():
 
     slr = StreamlineLinearRegistration(evolution=True)
 
-    from dipy.core.optimize import SCIPY_LESS_0_12
+    slm = slr.optimize(static, moving)
 
-    if not SCIPY_LESS_0_12:
-
-        slm = slr.optimize(static, moving)
-
-        assert_equal(len(slm.matrix_history), slm.iterations)
+    assert_equal(len(slm.matrix_history), slm.iterations)
 
 
 def test_similarity_real_bundles():

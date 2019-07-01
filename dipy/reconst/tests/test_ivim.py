@@ -19,18 +19,12 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
-import scipy
 
-from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 needs_cvxpy = dec.skipif(not have_cvxpy)
 
-
-SCIPY_VERSION = LooseVersion(scipy.version.short_version)
-SCIPY_LESS_0_15 = (LooseVersion(scipy.version.short_version) <
-                   LooseVersion('0.15.1'))
 
 # Let us generate some data for testing.
 bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
@@ -157,21 +151,14 @@ def test_ivim_errors():
     and is not supported by the older versions. Initializing an IvimModel
     with bounds for older Scipy versions should raise an error.
     """
-    # Run the test for Scipy versions less than 0.17
-    if SCIPY_VERSION < LooseVersion('0.17'):
-        assert_raises(ValueError, IvimModel, gtab,
-                      bounds=([0., 0., 0., 0.], [np.inf, 1., 1., 1.]),
-                      fit_method='LM')
-    else:
-        ivim_model_LM = IvimModel(gtab,
-                                  bounds=([0., 0., 0., 0.],
-                                          [np.inf, 1., 1., 1.]),
-                                  fit_method='LM')
-        ivim_fit = ivim_model_LM.fit(data_multi)
-        est_signal = ivim_fit.predict(gtab, S0=1.)
-        assert_array_equal(est_signal.shape, data_multi.shape)
-        assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
-        assert_array_almost_equal(est_signal, data_multi)
+    ivim_model_LM = IvimModel(gtab, bounds=([0., 0., 0., 0.],
+                                            [np.inf, 1., 1., 1.]),
+                              fit_method='LM')
+    ivim_fit = ivim_model_LM.fit(data_multi)
+    est_signal = ivim_fit.predict(gtab, S0=1.)
+    assert_array_equal(est_signal.shape, data_multi.shape)
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
+    assert_array_almost_equal(est_signal, data_multi)
 
 
 def test_mask():
@@ -324,8 +311,6 @@ def test_no_b0():
     assert_raises(ValueError, IvimModel, gtab_no_b0)
 
 
-@dec.skipif(SCIPY_VERSION < LooseVersion('0.17'),
-            "Gives wrong value for f")
 def test_noisy_fit():
     """
     Test fitting for noisy signals. This tests whether the threshold condition
@@ -464,12 +449,9 @@ def test_perfusion_fraction_vp():
     """
     Test if the `IvimFit` class returns the correct f
     """
-    if SCIPY_LESS_0_15:
-        assert_raises(ValueError, ivim_model_VP.fit(data_single))
-    else:
-        ivim_fit_VP = ivim_model_VP.fit(data_single)
-        assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP,
-                                  decimal=2)
+    ivim_fit_VP = ivim_model_VP.fit(data_single)
+    assert_array_almost_equal(ivim_fit_VP.perfusion_fraction, f_VP,
+                              decimal=2)
 
 
 @needs_cvxpy
@@ -477,11 +459,8 @@ def test_D_star_vp():
     """
     Test if the `IvimFit` class returns the correct D_star
     """
-    if SCIPY_LESS_0_15:
-        assert_raises(ValueError, ivim_model_VP.fit(data_single))
-    else:
-        ivim_fit_VP = ivim_model_VP.fit(data_single)
-        assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
+    ivim_fit_VP = ivim_model_VP.fit(data_single)
+    assert_array_almost_equal(ivim_fit_VP.D_star, D_star_VP, decimal=4)
 
 
 @needs_cvxpy
@@ -489,11 +468,8 @@ def test_D_vp():
     """
     Test if the `IvimFit` class returns the correct D
     """
-    if SCIPY_LESS_0_15:
-        assert_array_equal(ValueError, ivim_model_VP.fit(data_single))
-    else:
-        ivim_fit_VP = ivim_model_VP.fit(data_single)
-        assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
+    ivim_fit_VP = ivim_model_VP.fit(data_single)
+    assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
 
 
 if __name__ == '__main__':
