@@ -46,7 +46,6 @@ import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
 from dipy.core.optimize import Optimizer
-from dipy.core.optimize import SCIPY_LESS_0_12
 from dipy.align import vector_fields as vf
 from dipy.align import VerbosityLevels
 from dipy.align.parzenhist import (ParzenJointHistogram,
@@ -1044,7 +1043,6 @@ class AffineRegistration(object):
             smooth_static = self.static_ss.get_image(level)
             current_static_shape = self.static_ss.get_domain_shape(level)
             current_static_grid2world = self.static_ss.get_affine(level)
-
             current_affine_map = AffineMap(None,
                                            current_static_shape,
                                            current_static_grid2world,
@@ -1056,7 +1054,6 @@ class AffineRegistration(object):
             current_moving_grid2world = original_moving_grid2world
 
             current_moving = self.moving_ss.get_image(level)
-
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
                               current_static_grid2world,
@@ -1072,17 +1069,10 @@ class AffineRegistration(object):
             else:
                 self.options['maxiter'] = max_iter
 
-            if SCIPY_LESS_0_12:
-                # Older versions don't expect value and gradient from
-                # the same function
-                opt = Optimizer(self.metric.distance, self.params0,
-                                method=self.method, jac=self.metric.gradient,
-                                options=self.options)
-            else:
-                opt = Optimizer(self.metric.distance_and_gradient,
-                                self.params0,
-                                method=self.method, jac=True,
-                                options=self.options)
+            opt = Optimizer(self.metric.distance_and_gradient,
+                            self.params0,
+                            method=self.method, jac=True,
+                            options=self.options)
             params = opt.xopt
 
             # Update starting_affine matrix with optimal parameters
