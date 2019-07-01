@@ -769,7 +769,7 @@ def test_affine_transformations():
     # TST - combined affines
     a5 = a1 + a2 + a3
     a5[3, 3] = 1
-    # TST - in vivo affine exemple
+    # TST - in vivo affine example
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
     fdata, _, _ = get_fnames('small_101D')
@@ -780,7 +780,7 @@ def test_affine_transformations():
         offset = affine[:3, 3]
         seeds_trans = [np.dot(lin, s) + offset for s in seeds]
 
-        # We compute the voxel size to ajust the step size to one voxel
+        # We compute the voxel size to adjust the step size to one voxel
         voxel_size = np.mean(np.sqrt(np.dot(lin, lin).diagonal()))
 
         streamlines = LocalTracking(direction_getter=dg,

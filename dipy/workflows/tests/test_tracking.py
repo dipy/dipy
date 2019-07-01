@@ -14,7 +14,7 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
 
 
-def test_particule_filtering_traking_workflows():
+def test_particle_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(dwi_path)
@@ -170,7 +170,7 @@ def test_local_fiber_tracking_workflow():
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
-        # Test tracking with pam with sh and closestpeaks getter
+        # Test tracking with pam with sh and closest peaks getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path,
@@ -223,4 +223,4 @@ def seeds_are_same_space_as_streamlines(tractogram_path):
 
 if __name__ == '__main__':
     test_local_fiber_tracking_workflow()
-    test_particule_filtering_traking_workflows()
+    test_particle_filtering_traking_workflows()

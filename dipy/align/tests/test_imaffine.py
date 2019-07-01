@@ -321,7 +321,7 @@ def test_mi_gradient():
         # Compute the gradient with the implementation under test
         actual = mi_metric.gradient(theta)
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite-differences
         n = transform.get_number_of_parameters()
         expected = np.empty(n, dtype=np.float64)
 

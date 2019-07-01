@@ -107,7 +107,7 @@ def test_diffeomorphic_map_2d():
 
         # Now test the nearest neighbor interpolation
         warped = diff_map.transform(moving_image, 'nearest')
-        # compare the images (now we dont have to worry about precision,
+        # compare the images (now we don't have to worry about precision,
         # it is n.n.)
         assert_array_almost_equal(warped, expected)
 
@@ -324,7 +324,7 @@ def test_optimizer_exceptions():
     # Verify the default iterations list
     assert_array_equal(optimizer.level_iters, [100, 100, 25])
 
-    # Verify exception thrown when attepting to fit the energy profile without
+    # Verify exception thrown when attempting to fit the energy profile without
     # enough data
     assert_raises(ValueError, optimizer._get_energy_derivative)
 

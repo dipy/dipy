@@ -295,7 +295,7 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
             SA = SI - FS*S0*SFW.T
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
-            # for inapropriate large volume fractions (given the current S0
+            # for inappropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
             SA[SA <= 0] = min_signal
@@ -471,7 +471,7 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         w = 1/(sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():

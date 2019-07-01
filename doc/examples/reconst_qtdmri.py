@@ -407,7 +407,7 @@ Aside from the estimation of :math:`q\tau`-space indices, :math:`q\tau`-dMRI
 also allows for the estimation of time-dependent ODFs. Once the Qtdmri model
 is fitted it can be simply called by qtdmri_fit.odf(sphere,
 s=sharpening_factor). This is identical to how the mapmri module functions,
-and allows to study the time-dependence of ODF directionallity.
+and allows to study the time-dependence of ODF directionality.
 
 This concludes the example on qt-dMRI. As we showed, approaches such as qt-dMRI
 can help in studying the (finite-:math:`\tau`) temporal properties of diffusion

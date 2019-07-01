@@ -27,7 +27,7 @@ def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
     for r in range(nrows):
         for c in range(ncols):
             sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
-            # This has to be done inside the neste loops because
+            # This has to be done inside the nested loops because
             # some d[...] may have been previously modified
             nn = 0
             y[:] = 0
@@ -212,12 +212,12 @@ def test_compute_residual_displacement_field_ssd_2d():
         else:
             expected = target.copy().astype(np.float64)
 
-        # Expected residuals when sigma != infinte
+        # Expected residuals when sigma != infinity
         expected[inf_sigma == 0, 0] -= grad_G[inf_sigma == 0, 0] * \
             dp[inf_sigma == 0] + sigma_field[inf_sigma == 0] * s[inf_sigma == 0, 0]
         expected[inf_sigma == 0, 1] -= grad_G[inf_sigma == 0, 1] * \
             dp[inf_sigma == 0] + sigma_field[inf_sigma == 0] * s[inf_sigma == 0, 1]
-        # Expected residuals when sigma == infinte
+        # Expected residuals when sigma == infinity
         expected[inf_sigma == 1] = -1.0 * s[inf_sigma == 1]
 
         # Test residual field computation starting with residual = None
@@ -355,11 +355,11 @@ def test_compute_residual_displacement_field_ssd_3d():
         else:
             expected = target.copy().astype(np.float64)
 
-        # Expected residuals when sigma != infinte
+        # Expected residuals when sigma != infinity
         for i in range(3):
             expected[inf_sigma == 0, i] -= grad_G[inf_sigma == 0, i] * \
                 dp[inf_sigma == 0] + sigma_field[inf_sigma == 0] * s[inf_sigma == 0, i]
-        # Expected residuals when sigma == infinte
+        # Expected residuals when sigma == infinity
         expected[inf_sigma == 1] = -1.0 * s[inf_sigma == 1]
 
         # Test residual field computation starting with residual = None

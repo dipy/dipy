@@ -319,12 +319,12 @@ class IvimModelLM(ReconstModel):
         -------
         IvimFit object
         """
-        # Get S0_prime and D - paramters assuming a single exponential decay
+        # Get S0_prime and D - parameters assuming a single exponential decay
         # for signals for bvals greater than `split_b_D`
         S0_prime, D = self.estimate_linear_fit(
             data, self.split_b_D, less_than=False)
 
-        # Get S0 and D_star_prime - paramters assuming a single exponential
+        # Get S0 and D_star_prime - parameters assuming a single exponential
         # decay for for signals for bvals greater than `split_b_S0`.
 
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
@@ -739,7 +739,7 @@ class IvimModelVP(ReconstModel):
                (2016).
 
         """
-        # moore-penrose
+        # Moore-Penrose
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
         f = np.dot(phi_mp, signal)
         yhat = np.dot(phi, f)  # - sigma

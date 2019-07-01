@@ -57,7 +57,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         reached if two subsequent estimates are smaller than eps.
 
     return_mask : bool
-        If True, return a mask identyfing all the pure noise voxel
+        If True, return a mask identifying all the pure noise voxel
         that were found.
 
     Returns
@@ -171,7 +171,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         Default: 1e-5.
 
     return_mask : bool (optional)
-        If True, return a mask identyfing all the pure noise voxel
+        If True, return a mask identifying all the pure noise voxel
         that were found. Default: False.
 
     initial_estimation : float (optional)

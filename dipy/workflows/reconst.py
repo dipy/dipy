@@ -50,7 +50,7 @@ class ReconstMAPMRIFlow(Workflow):
         files to an output directory specified by `out_dir`.
 
         In order for the MAPMRI workflow to work in the way
-        intended either the laplacian or positivity or both must
+        intended either the Laplacian or positivity or both must
         be set to True.
 
         Parameters
@@ -86,7 +86,7 @@ class ReconstMAPMRIFlow(Workflow):
             ng, perng, parng
             (default: [] (all))
         laplacian_weighting : float, optional
-            Weighting value used in fitting the MAPMRI model in the laplacian
+            Weighting value used in fitting the MAPMRI model in the Laplacian
             and both model types. (default: 0.05)
         radial_order : unsigned int, optional
             Even value used to set the order of the basis
@@ -96,7 +96,7 @@ class ReconstMAPMRIFlow(Workflow):
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
+            Name of the norm of Laplacian signal to be saved
         out_msd : string, optional
             Name of the msd to be saved
         out_qiv : string, optional
@@ -430,7 +430,7 @@ class ReconstCSDFlow(Workflow):
         frf : variable float, optional
             Fiber response function can be for example inputed as 15 4 4
             (from the command line) or [15, 4, 4] from a Python script to be
-            converted to float and mutiplied by 10**-4 . If None
+            converted to float and multiplied by 10**-4 . If None
             the fiber response function will be computed automatically
             (default: None).
         extract_pam_values : bool, optional

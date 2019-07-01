@@ -86,7 +86,7 @@ def test_quickbundles_2D():
     # plt.plot(*zip(*data[10:, 0]), linestyle='None', marker='*')
     # plt.show()
 
-    # Theorically using a threshold above the following value will not
+    # Theoretically, using a threshold above the following value will not
     # produce expected results.
     threshold = np.sqrt(2*(10**2))-np.sqrt(2)
     metric = dipymetric.SumPointwiseEuclideanMetric()

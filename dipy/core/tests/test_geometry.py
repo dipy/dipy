@@ -270,7 +270,7 @@ def test_perpendicular_directions():
     for vector_v in vectors_v:
         pd = perpendicular_directions(vector_v, num=num, half=False)
 
-        # see if length of pd is equal to the number of intendend samples
+        # see if length of pd is equal to the number of intended samples
         assert_equal(num, len(pd))
 
         # check if all directions are perpendicular to vector v

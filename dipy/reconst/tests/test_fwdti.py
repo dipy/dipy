@@ -142,7 +142,7 @@ def test_fwdti_multi_voxel():
     assert_almost_equal(Ffwe, GTF)
     assert_almost_equal(MDfwe, MDref)
 
-    # Test cholesky
+    # Test Cholesky
     fwdm = fwdti.FreeWaterTensorModel(gtab_2s, 'NLS', cholesky=True)
     fwefit = fwdm.fit(DWI)
     FAfwe = fwefit.fa
