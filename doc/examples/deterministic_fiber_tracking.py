@@ -70,7 +70,8 @@ from dipy.io.streamline import save_trk
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                              max_angle=30.,
                                                              sphere=default_sphere)
-streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
-
+streamline_generator = LocalTracking(detmax_dg, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
 save_trk("deterministic_maximum_shm_coeff.trk", streamlines, affine,
          labels.shape)

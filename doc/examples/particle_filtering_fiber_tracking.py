@@ -31,6 +31,7 @@ from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
+from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
 from dipy.viz import window, actor, colormap as cmap
 
@@ -68,7 +69,6 @@ be used in conjunction with PFT. In this example, we used CMC.
 """
 
 from dipy.tracking.local import CmcTissueClassifier
-from dipy.tracking.streamline import Streamlines
 
 voxel_size = np.average(img_pve_wm.get_header()['pixdim'][1:4])
 step_size = 0.2
@@ -97,10 +97,8 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
                                                      particle_count=15,
                                                      return_all=False)
 
-# streamlines = list(pft_streamline_generator)                                                     
 streamlines = Streamlines(pft_streamline_generator)
 save_trk("pft_streamline.trk", streamlines, affine, shape)
-
 
 renderer.clear()
 renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
@@ -122,7 +120,6 @@ prob_streamline_generator = LocalTracking(dg,
                                           step_size=step_size,
                                           maxlen=1000,
                                           return_all=False)
-# streamlines = list(pro)
 streamlines = Streamlines(prob_streamline_generator)
 save_trk("probabilistic_streamlines.trk", streamlines, affine, shape)
 
