@@ -66,6 +66,7 @@ is used.
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.streamline import save_trk
+from dipy.tracking.streamline import Streamlines
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                              max_angle=30.,
