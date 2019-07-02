@@ -1,5 +1,4 @@
  quick_start.py
- tracking_quick_start.py
  brain_extraction_dwi.py
  reconst_csa_parallel.py
  reconst_csa.py
@@ -25,9 +24,7 @@
  segment_clustering_metrics.py
  snr_in_cc.py
  streamline_formats.py
-# tracking_eudx_odf.py
-# tracking_eudx_tensor.py
- sfm_tracking.py
+
  sfm_reconst.py
  gradients_spheres.py
  simulate_multi_tensor.py
@@ -43,17 +40,19 @@
  denoise_gibbs.py
  fiber_to_bundle_coherence.py
 # denoise_ascm.py
- introduction_to_basic_tracking.py
- probabilistic_fiber_tracking.py
- deterministic_fiber_tracking.py
- particle_filtering_fiber_tracking.py
+ tracking_introduction.py
+ tracking_eudx.py
+ tracking_deterministic.py
+ tracking_probabilistic.py
+ tracking_bootstrap_peaks.py
+ tracking_tissue_classifier.py
+ tracking_pft.py
+ tracking_sfm.py
  affine_registration_3d.py
  syn_registration_2d.py
  syn_registration_3d.py
  tissue_classification.py
  bundle_registration.py
- tracking_tissue_classifier.py
- tracking_bootstrap_peaks.py
 # piesno.py
  viz_advanced.py
  viz_slice.py

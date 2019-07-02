@@ -146,13 +146,14 @@ Contextual enhancement
 Fiber tracking
 --------------
 
-- :ref:`example_introduction_to_basic_tracking`
-- :ref:`example_probabilistic_fiber_tracking`
-- :ref:`example_deterministic_fiber_tracking`
+- :ref:`example_tracking_introduction`
+- :ref:`example_tracking_eudx`
+- :ref:`example_tracking_deterministic`
+- :ref:`example_tracking_probabilistic`
 - :ref:`example_tracking_bootstrap_peaks`
 - :ref:`example_tracking_tissue_classifier`
-- :ref:`example_particle_filtering_fiber_tracking`
-- :ref:`example_sfm_tracking`
+- :ref:`example_tracking_pft`
+- :ref:`example_tracking_sfm`
 
 -------------------------
 Fiber tracking evaluation
