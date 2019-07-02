@@ -451,7 +451,7 @@ class ReconstCSDFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -463,7 +463,7 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
 
         References
@@ -618,7 +618,7 @@ class ReconstCSAFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -630,7 +630,7 @@ class ReconstCSAFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
         References
         ----------

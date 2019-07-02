@@ -351,7 +351,7 @@ def test_round_bvals():
     b = round_bvals(bvals, bmag=0)
     npt.assert_array_almost_equal(bvals, b)
 
-    # Case that b-value are in ms/um2
+    # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
     b = round_bvals(bvals)
