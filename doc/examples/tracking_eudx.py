@@ -1,7 +1,7 @@
 """
-====================
-Tracking Quick Start
-====================
+=========================================
+An introduction to the tracking with EuDX
+=========================================
 
 This example shows how to perform fast fiber tracking using DIPY_
 [Garyfallidis12]_.
@@ -25,8 +25,7 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.segment.mask import median_otsu
 from dipy.viz import actor, window
 from dipy.io.image import save_nifti
-from nibabel.streamlines import save as save_trk
-from nibabel.streamlines import Tractogram
+from dipy.io.streamline import save_trk
 from dipy.tracking.streamline import Streamlines
 
 """
@@ -165,15 +164,14 @@ else:
  **Deterministic streamlines using EuDX (new framework)**
 
 To learn more about this process you could start playing with the number of
-seed points or, even better, specify seeds to be in specific regions of interest
-in the brain.
+seed points or, even better, specify seeds to be in specific regions of
+interest in the brain.
 
 Save the resulting streamlines in a Trackvis (.trk) format and FA as
 Nifti (.nii.gz).
 """
 
-save_trk(Tractogram(streamlines, affine_to_rasmm=img.affine),
-         'det_streamlines.trk')
+save_trk('1eudx_streamlines.trk', streamlines, affine=img.affine)
 
 save_nifti('fa_map.nii.gz', fa, img.affine)
 
