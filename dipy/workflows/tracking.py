@@ -140,7 +140,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         use_binary_mask : bool, optional
-            If True, uses a binary tissue classifier.
+            If True, uses a binary tissue classifier. If the provided
+            `stopping_files` are not binary, `stopping_thr` will be used to
+            binarize the images.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
             tracking has to stop (default 0.2).
