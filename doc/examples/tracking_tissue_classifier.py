@@ -76,11 +76,15 @@ tracking position.
 - metric_map: numpy array [:, :, :]
 - threshold: float
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': metric_map < threshold,
-- 'OUTSIDEIMAGE': tracking point outside of metric_map,
-- 'TRACKPOINT': stop because no direction is available,
+- 'ENDPOINT': stops at a position where metric_map < threshold; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where metric_map >= threshold, but there is no valid
+direction to follow.
 - 'INVALIDPOINT': N/A.
 """
 
@@ -155,12 +159,16 @@ nearest-neighborhood interpolation at the tracking position.
 
 - mask: numpy array [:, :, :]
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': mask = 0
-- 'OUTSIDEIMAGE': tracking point outside of mask
-- 'TRACKPOINT': no direction is available
-- 'INVALIDPOINT': N/A
+- 'ENDPOINT': stops at a position where mask = 0; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where mask > 0, but there is no valid direction to
+follow.
+- 'INVALIDPOINT': N/A.
 """
 
 from dipy.tracking.local import BinaryTissueClassifier
@@ -230,12 +238,18 @@ at the tracking position.
 - ``include_map``: numpy array ``[:, :, :]``,
 - ``exclude_map``: numpy array ``[:, :, :]``,
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': ``include_map`` > 0.5,
-- 'OUTSIDEIMAGE': tracking point outside of ``include_map`` or ``exclude_map``,
-- 'TRACKPOINT': no direction is available,
-- 'INVALIDPOINT': ``exclude_map`` > 0.5.
+- 'ENDPOINT': stops at a position where ``include_map`` > 0.5; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of ``include_map`` or
+``exclude_map``; the streamline reached an area outside the image where no
+direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where ``include_map`` < 0.5 and ``exclude_map`` < 0.5,
+but there is no valid direction to follow.
+- 'INVALIDPOINT': ``exclude_map`` > 0.5; the streamline reach a position which
+is anatomically not plausible.
 """
 
 from dipy.tracking.local import ActTissueClassifier
