@@ -67,11 +67,10 @@ def test_PeaksAndMetricsDirectionGetter():
                 # id should be a (1, 3) array
                 npt.assert_array_almost_equal(id, [expected_dir])
 
-
     peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
-                             relative_peak_threshold=.5,
-                             min_separation_angle=25,
-                             npeaks=1)
+                              relative_peak_threshold=.5,
+                              min_separation_angle=25,
+                              npeaks=1)
     peaks1._initialize()
     point = np.array([1, 1, 1], dtype=float)
 
