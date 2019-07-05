@@ -68,5 +68,17 @@ def test_PeaksAndMetricsDirectionGetter():
                 npt.assert_array_almost_equal(id, [expected_dir])
 
 
+    peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
+                             relative_peak_threshold=.5,
+                             min_separation_angle=25,
+                             npeaks=1)
+    peaks1._initialize()
+    point = np.array([1, 1, 1], dtype=float)
+
+    # id should have one direction
+    npt.assert_array_almost_equal(len(peaks1.initial_direction(point)), 1)
+    npt.assert_array_almost_equal(len(peaks.initial_direction(point)), 1)
+
+
 if __name__ == "__main__":
     npt.run_module_suite()
