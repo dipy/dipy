@@ -162,10 +162,13 @@ class LocalTracking(object):
                     parts = (B[stepsB - 1:0:-1], F[:stepsF])
                     streamline = np.concatenate(parts, axis=0)
 
-                if self.save_seeds:
-                    yield streamline, s
-                else:
-                    yield streamline
+                # move to the next streamline if only the seed position
+                # and not return all
+                if len(streamline) > 1 or self.return_all:
+                    if self.save_seeds:
+                        yield streamline, s
+                    else:
+                        yield streamline
 
 
 class ParticleFilteringTracking(LocalTracking):
