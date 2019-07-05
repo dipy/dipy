@@ -2897,7 +2897,7 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
     d : array, shape (nrows, ncols, 2)
         the harmonic displacement field
     inv : array, shape (nrows, ncols, 2)
-        the analitical inverse of the harmonic displacement field
+        the analytical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
@@ -2949,7 +2949,7 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows,
     d : array, shape (nslices, nrows, ncols, 3)
         the harmonic displacement field
     inv : array, shape (nslices, nrows, ncols, 3)
-        the analitical inverse of the harmonic displacement field
+        the analytical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
