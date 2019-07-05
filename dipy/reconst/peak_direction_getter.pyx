@@ -75,8 +75,9 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
                 raise IndexError("point outside data")
 
         # Check to see how many peaks were found in the voxel
-        for numpeaks in range(self._ind.shape[3]):
-            if self._ind[ijk[0], ijk[1], ijk[2], numpeaks] < 0:
+        for numpeaks in range(self._ind.shape[3] + 1):
+            if (numpeaks >= self._ind.shape[3] or
+                self._ind[ijk[0], ijk[1], ijk[2], numpeaks] < 0):
                 break
 
         # Create directions array and copy peak directions from vertices
