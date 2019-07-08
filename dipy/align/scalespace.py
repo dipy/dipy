@@ -146,11 +146,11 @@ class ScaleSpace(object):
         level : int, 0 <= from_level < L, (L = number of resolutions)
             the scale space level to be printed
         """
-        logger.info('Domain shape: ' + self.get_domain_shape(level))
-        logger.info('Spacing: ' + self.get_spacing(level))
-        logger.info('Scaling: ' + self.get_scaling(level))
-        logger.info('Affine: ' + self.get_affine(level))
-        logger.info('Sigmas: ' + self.get_sigmas(level))
+        logger.info('Domain shape: ' + str(self.get_domain_shape(level)))
+        logger.info('Spacing: ' + str(self.get_spacing(level)))
+        logger.info('Scaling: ' + str(self.get_scaling(level)))
+        logger.info('Affine: ' + str(self.get_affine(level)))
+        logger.info('Sigmas: ' + str(self.get_sigmas(level)))
 
     def _get_attribute(self, attribute, level):
         r"""Returns an attribute from the Scale Space at a given level

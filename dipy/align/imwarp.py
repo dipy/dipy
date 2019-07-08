@@ -1487,7 +1487,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
             if prealign is not None:
-                logger.info("Pre-align: " + prealign)
+                logger.info("Pre-align: " + str(prealign))
 
         self._init_optimizer(static.astype(floating), moving.astype(floating),
                              static_grid2world, moving_grid2world, prealign)
