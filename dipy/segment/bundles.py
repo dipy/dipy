@@ -625,7 +625,6 @@ class RecoBundles(object):
             msg = ' Number of streamlines after pruning: %d'
             print(msg % (len(pruned_streamlines),))
 
-
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))
 
