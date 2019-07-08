@@ -95,10 +95,10 @@ def test_rb_slr_threads():
     rb_single = RecoBundles(f, greater_than=0, clust_thr=10,
                             rng=np.random.RandomState(42))
     rec_trans_single_thread, _ = rb_single.recognize(model_bundle=f2,
-                                              model_clust_thr=5.,
-                                              reduction_thr=10,
-                                              slr=True,
-                                              slr_num_threads=1)
+                                                     model_clust_thr=5.,
+                                                     reduction_thr=10,
+                                                     slr=True,
+                                                     slr_num_threads=1)
 
     D = bundles_distances_mam(rec_trans_multi_threads, rec_trans_single_thread)
 
