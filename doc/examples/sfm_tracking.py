@@ -98,9 +98,9 @@ execute the tracking
 
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
-streamlines_generator = LocalTracking(pnm, classifier, seeds, affine, step_size=.5)
-
-streamlines = Streamlines(streamlines_generator)
+streamline_generator = LocalTracking(pnm, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
 
 """
 Next, we will create a visualization of these streamlines, relative to this

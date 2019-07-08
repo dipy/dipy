@@ -116,19 +116,17 @@ fig.savefig('threshold_fa.png')
  **Thresholded fractional anisotropy map.**
 """
 
-all_streamlines_threshold_classifier = LocalTracking(dg,
-                                                     threshold_classifier,
-                                                     seeds,
-                                                     affine,
-                                                     step_size=.5,
-                                                     return_all=True)
-
-save_trk("deterministic_threshold_classifier_all.trk",
-         all_streamlines_threshold_classifier,
+all_streamline_threshold_tc_generator = LocalTracking(dg,
+                                                      threshold_classifier,
+                                                      seeds,
+                                                      affine,
+                                                      step_size=.5,
+                                                      return_all=True)
+streamlines = Streamlines(all_streamline_threshold_tc_generator)
+save_trk("all_streamlines_threshold_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
-
-streamlines = Streamlines(all_streamlines_threshold_classifier)
 
 if have_fury:
     window.clear(ren)
@@ -191,19 +189,17 @@ fig.savefig('white_matter_mask.png')
  **White matter binary mask.**
 """
 
-all_streamlines_binary_classifier = LocalTracking(dg,
-                                                  binary_classifier,
-                                                  seeds,
-                                                  affine,
-                                                  step_size=.5,
-                                                  return_all=True)
-
-save_trk("deterministic_binary_classifier_all.trk",
-         all_streamlines_binary_classifier,
+all_streamline_binary_tc_generator = LocalTracking(dg,
+                                                   binary_classifier,
+                                                   seeds,
+                                                   affine,
+                                                   step_size=.5,
+                                                   return_all=True)
+streamlines = Streamlines(all_streamline_binary_tc_generator)
+save_trk("all_streamlines_binary_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
-
-streamlines = Streamlines(all_streamlines_binary_classifier)
 
 if have_fury:
     window.clear(ren)
@@ -290,19 +286,17 @@ fig.savefig('act_maps.png')
  **Include (left) and exclude (right) maps for ACT.**
 """
 
-all_streamlines_act_classifier = LocalTracking(dg,
-                                               act_classifier,
-                                               seeds,
-                                               affine,
-                                               step_size=.5,
-                                               return_all=True)
-
-save_trk("deterministic_act_classifier_all.trk",
-         all_streamlines_act_classifier,
+all_streamline_act_tc_generator = LocalTracking(dg,
+                                                act_classifier,
+                                                seeds,
+                                                affine,
+                                                step_size=.5,
+                                                return_all=True)
+streamlines = Streamlines(all_streamline_act_tc_generator)
+save_trk("all_streamlines_act_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
-
-streamlines = Streamlines(all_streamlines_act_classifier)
 
 if have_fury:
     window.clear(ren)
@@ -319,19 +313,17 @@ if have_fury:
  **Deterministic tractography using ACT stopping criterion.**
 """
 
-valid_streamlines_act_classifier = LocalTracking(dg,
-                                                 act_classifier,
-                                                 seeds,
-                                                 affine,
-                                                 step_size=.5,
-                                                 return_all=False)
-
-save_trk("deterministic_act_classifier_valid.trk",
-         valid_streamlines_act_classifier,
+valid_streamline_act_tc_generator = LocalTracking(dg,
+                                                  act_classifier,
+                                                  seeds,
+                                                  affine,
+                                                  step_size=.5,
+                                                  return_all=False)
+streamlines = Streamlines(valid_streamline_act_tc_generator)
+save_trk("valid_streamlines_act_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
-
-streamlines = Streamlines(valid_streamlines_act_classifier)
 
 if have_fury:
     window.clear(ren)
