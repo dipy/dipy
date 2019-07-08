@@ -5,7 +5,8 @@ class GlobalHorizon(object):
     # slicer level sharing
     slicer_opacity = 1
     slicer_colormap = 'gray'
-    slicer_colormaps = ['gray', 'magma', 'viridis', 'Pastel1', 'disting']
+    slicer_colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
+    slicer_colormap_cnt = 0
     slicer_axes = ['x', 'y', 'z']
     
     slicer_curr_x = None

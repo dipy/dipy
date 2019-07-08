@@ -192,16 +192,14 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     _color_dslider(double_slider)
 
-    def on_change_ds(slider):
+    def apply_colormap(r1, r2):
         if HORIZON.slicer_rgb:
             return 
-
-        values = slider._values
-        r1, r2 = values
-
+        
         if HORIZON.slicer_colormap == 'disting':
             # use distinguishable colors
             rgb = colormap.distinguishable_colormap(nb_colors=256)
+            rgb = np.asarray(rgb)
         else:
             # use matplotlib colormaps
             rgb = colormap.create_colormap(np.linspace(r1, r2, 256),
@@ -220,6 +218,12 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
         HORIZON.slicer_curr_actor_z.output.SetLookupTable(lut)
         HORIZON.slicer_curr_actor_z.output.Update()
+    
+    def on_change_ds(slider):
+        
+        values = slider._values
+        r1, r2 = values
+        apply_colormap(r1, r2)
        
     double_slider.on_change = on_change_ds 
 
@@ -252,7 +256,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.rm(HORIZON.slicer_curr_actor_x)
         renderer.rm(HORIZON.slicer_curr_actor_y)
         renderer.rm(HORIZON.slicer_curr_actor_z)
-
+        
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
                                      affine=affine,
@@ -300,8 +304,13 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         renderer.add(HORIZON.slicer_curr_actor_z)
         renderer.add(HORIZON.slicer_curr_actor_x)
         renderer.add(HORIZON.slicer_curr_actor_y)
+
         if pam is not None:
             renderer.add(HORIZON.slicer_peaks_actor_z)
+
+        r1, r2 = double_slider._values
+        apply_colormap(r1, r2)
+
         istyle.force_render()
 
     def left_click_picker_callback(obj, ev):
@@ -423,7 +432,26 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     volume_slider_label = build_label(text="Volume")
     picker_label = build_label(text = '')
     double_slider_label = build_label(text='Colormap')
-    
+
+    def label_colormap_callback(obj, event):
+        
+        if HORIZON.slicer_colormap_cnt == len(HORIZON.slicer_colormaps): 
+            HORIZON.slicer_colormap_cnt = 0
+        else:
+            HORIZON.slicer_colormap_cnt += 1
+
+        cnt = HORIZON.slicer_colormap_cnt
+        HORIZON.slicer_colormap = HORIZON.slicer_colormaps[cnt]
+        double_slider_label.message = HORIZON.slicer_colormap
+        values = double_slider._values
+        r1, r2 = values
+        apply_colormap(r1, r2)
+        iren.Render()
+
+    double_slider_label.actor.AddObserver('LeftButtonPressEvent',
+                                          label_colormap_callback,
+                                          1.0)
+
     if data.ndim == 4:
         panel_size = (400, 400 + 100)
     if data.ndim == 3:
@@ -461,5 +489,9 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
     renderer.add(panel)
+
+    # initialize colormap
+    r1, r2 = value_range
+    apply_colormap(r1, r2)
 
     return panel
