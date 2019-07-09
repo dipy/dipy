@@ -63,9 +63,9 @@ def test_PeaksAndMetricsDirectionGetter():
 
                 # Check that points are rounded to get initial direction
                 point -= .5
-                id = peaks.initial_direction(point)
-                # id should be a (1, 3) array
-                npt.assert_array_almost_equal(id, [expected_dir])
+                initial_dir = peaks.initial_direction(point)
+                # It should be a (1, 3) array
+                npt.assert_array_almost_equal(initial_dir, [expected_dir])
 
     peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
                               relative_peak_threshold=.5,
