@@ -11,24 +11,20 @@ direction getter (a type of deterministic tracking).
 
 Let's load the necessary modules for executing this tutorial.
 """
+# Enables/disables interactive visualization
+interactive = False
 
 from dipy.data import read_stanford_labels
+from dipy.io.streamline import save_trk
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.io.streamline import save_trk
-from dipy.viz import window, actor, colormap as cmap
-
-renderer = window.Renderer()
+from dipy.viz import window, actor, colormap, have_fury
 
 """
-Now we import the CSD model
-"""
-
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-
-"""
-First we load our images and establish seeds. See the Introduction to Basic
-Tracking tutorial for more background on these steps.
+First we load our images and set the tracking seeds. See the ntroduction to
+tractography tutorial (:ref:`example_tracking_introduction_eudx`)
+for more background on these steps.
 """
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -41,16 +37,15 @@ white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
 
 """
-Next, we fit the CSD model
+Next, we fit the CSD model.
 """
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-
 """
 we use the CSA fit to calculate GFA, which will serve as our tissue
-classifier
+classifier.
 """
 
 from dipy.reconst.shm import CsaOdfModel
@@ -76,23 +71,25 @@ boot_streamline_generator = LocalTracking(boot_dg_csd, classifier, seeds,
                                           affine, step_size=.5)
 streamlines = Streamlines(boot_streamline_generator)
 
-renderer.clear()
-renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-window.record(renderer, out_path='bootstrap_dg_CSD.png', size=(600, 600))
+save_trk("tractogram_bootstrap_dg.trk", streamlines, affine, labels.shape)
+
+if have_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_bootstrap_dg.png', size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
-.. figure:: bootstrap_dg_CSD.png
+.. figure:: tractogram_bootstrap_dg.png
    :align: center
 
    **Corpus Callosum Bootstrap Probabilistic Direction Getter**
 
 We have created a bootstrapped probabilistic set of streamlines. If you repeat
 the fiber tracking (keeping all inputs the same) you will NOT get exactly the
-same set of streamlines. We can save the streamlines as a Trackvis file so it
-can be loaded into other software for visualization or further analysis.
+same set of streamlines.
 """
-
-save_trk("bootstrap_dg_CSD.trk", streamlines, affine, labels.shape)
 
 """
 Example #2: Closest peak direction getter with CSD Model
@@ -107,12 +104,18 @@ peak_streamline_generator = LocalTracking(peak_dg, classifier, seeds, affine,
                                           step_size=.5)
 streamlines = Streamlines(peak_streamline_generator)
 
-renderer.clear()
-renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-window.record(renderer, out_path='closest_peak_dg_CSD.png', size=(600, 600))
+save_trk("closest_peak_dg_CSD.trk", streamlines, affine, labels.shape)
+
+if have_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_closest_peak_dg.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
-.. figure:: closest_peak_dg_CSD.png
+.. figure:: tractogram_closest_peak_dg.png
    :align: center
 
    **Corpus Callosum Closest Peak Deterministic Direction Getter**
@@ -120,11 +123,8 @@ window.record(renderer, out_path='closest_peak_dg_CSD.png', size=(600, 600))
 We have created a set of streamlines using the closest peak direction getter,
 which is a type of deterministic tracking. If you repeat the fiber tracking
 (keeping all inputs the same) you will get exactly the same set of streamlines.
-We can save the streamlines as a Trackvis file so it can be loaded into other
-software for visualization or further analysis.
 """
 
-save_trk("closest_peak_dg_CSD.trk", streamlines, affine, labels.shape)
 
 """
 .. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
