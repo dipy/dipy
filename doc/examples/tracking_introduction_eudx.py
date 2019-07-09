@@ -82,7 +82,7 @@ if have_fury:
     window.record(ren, out_path='csa_direction_field.png', size=(900, 900))
 
     if interactive:
-        window.show(ren, size=(800, 800))
+        window.show(ren, size=(900, 900))
 
 """
 .. figure:: csa_direction_field.png

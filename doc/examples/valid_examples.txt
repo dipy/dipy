@@ -40,8 +40,7 @@
  denoise_gibbs.py
  fiber_to_bundle_coherence.py
 # denoise_ascm.py
- tracking_introduction.py
- tracking_eudx.py
+ tracking_introduction_eudx.py
  tracking_deterministic.py
  tracking_probabilistic.py
  tracking_bootstrap_peaks.py

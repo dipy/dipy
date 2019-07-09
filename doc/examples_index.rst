@@ -146,8 +146,7 @@ Contextual enhancement
 Fiber tracking
 --------------
 
-- :ref:`example_tracking_introduction`
-- :ref:`example_tracking_eudx`
+- :ref:`example_tracking_introduction_eudx`
 - :ref:`example_tracking_deterministic`
 - :ref:`example_tracking_probabilistic`
 - :ref:`example_tracking_bootstrap_peaks`
