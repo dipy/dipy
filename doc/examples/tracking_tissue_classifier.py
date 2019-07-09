@@ -23,6 +23,9 @@ fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
 
+# Enables/disables interactive visualization
+interactive = False
+
 import numpy as np
 
 from dipy.data import (read_stanford_labels,
@@ -35,12 +38,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor, colormap as cmap, have_fury
-
-# Enables/disables interactive visualization
-interactive = False
-
-ren = window.Renderer()
+from dipy.viz import window, actor, colormap, have_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 _, _, img_pve_wm = read_stanford_pve_maps()
@@ -49,8 +47,8 @@ labels = labels_img.get_data()
 affine = hardi_img.affine
 white_matter = img_pve_wm.get_data()
 
-seed_mask = np.logical_and(labels == 2, white_matter == 1)
-
+seed_mask = (labels == 2)
+seed_mask[img_pve_wm.get_data() < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
@@ -116,34 +114,33 @@ fig.savefig('threshold_fa.png')
  **Thresholded fractional anisotropy map.**
 """
 
-all_streamline_threshold_tc_generator = LocalTracking(dg,
-                                                      threshold_classifier,
-                                                      seeds,
-                                                      affine,
-                                                      step_size=.5,
-                                                      return_all=True)
-streamlines = Streamlines(all_streamline_threshold_tc_generator)
-save_trk("all_streamlines_threshold_classifier.trk",
+streamline_generator = LocalTracking(dg,
+                                     threshold_classifier,
+                                     seeds,
+                                     affine,
+                                     step_size=.5,
+                                     return_all=True)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_probabilistic_thresh_all.trk",
          streamlines,
          affine,
          labels.shape)
 
 if have_fury:
-    window.clear(ren)
-    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-    window.record(ren, out_path='all_streamlines_threshold_classifier.png',
-                  size=(600, 600))
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_deterministic_thresh_all.png',
+                  size=(800, 800))
     if interactive:
-        window.show(ren)
+        window.show(r)
 
 """
-.. figure:: all_streamlines_threshold_classifier.png
+.. figure:: tractogram_deterministic_thresh_all.png
  :align: center
 
- **Deterministic tractography using a thresholded fractional anisotropy.**
+ **Corpus Callosum using deterministic tractography with a thresholded
+ fractional anisotropy mask.**
 """
-
-
 """
 Binary Tissue Classifier
 ========================
@@ -189,31 +186,32 @@ fig.savefig('white_matter_mask.png')
  **White matter binary mask.**
 """
 
-all_streamline_binary_tc_generator = LocalTracking(dg,
-                                                   binary_classifier,
-                                                   seeds,
-                                                   affine,
-                                                   step_size=.5,
-                                                   return_all=True)
-streamlines = Streamlines(all_streamline_binary_tc_generator)
-save_trk("all_streamlines_binary_classifier.trk",
+streamline_generator = LocalTracking(dg,
+                                     binary_classifier,
+                                     seeds,
+                                     affine,
+                                     step_size=.5,
+                                     return_all=True)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_deterministic_binary_all.trk",
          streamlines,
          affine,
          labels.shape)
 
 if have_fury:
-    window.clear(ren)
-    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-    window.record(ren, out_path='all_streamlines_binary_classifier.png',
-                  size=(600, 600))
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_deterministic_binary_all.png',
+                  size=(800, 800))
     if interactive:
-        window.show(ren)
+        window.show(r)
 
 """
-.. figure:: all_streamlines_binary_classifier.png
+.. figure:: tractogram_deterministic_binary_all.png
  :align: center
 
- **Deterministic tractography using a binary white matter mask.**
+ **Corpus Callosum using deterministic tractography with a binary white
+ matter mask.**
 """
 
 """
@@ -286,59 +284,60 @@ fig.savefig('act_maps.png')
  **Include (left) and exclude (right) maps for ACT.**
 """
 
-all_streamline_act_tc_generator = LocalTracking(dg,
-                                                act_classifier,
-                                                seeds,
-                                                affine,
-                                                step_size=.5,
-                                                return_all=True)
-streamlines = Streamlines(all_streamline_act_tc_generator)
-save_trk("all_streamlines_act_classifier.trk",
+streamline_generator = LocalTracking(dg,
+                                     act_classifier,
+                                     seeds,
+                                     affine,
+                                     step_size=.5,
+                                     return_all=True)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_deterministic_act_all.trk",
          streamlines,
          affine,
          labels.shape)
 
 if have_fury:
-    window.clear(ren)
-    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-    window.record(ren, out_path='all_streamlines_act_classifier.png',
-                  size=(600, 600))
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_deterministic_act_all.png',
+                  size=(800, 800))
     if interactive:
-        window.show(ren)
+        window.show(r)
 
 """
-.. figure:: all_streamlines_act_classifier.png
+.. figure:: tractogram_deterministic_act_all.png
  :align: center
 
- **Deterministic tractography using ACT stopping criterion.**
+ **Corpus Callosum using deterministic tractography with ACT stopping
+ criterion.**
 """
 
-valid_streamline_act_tc_generator = LocalTracking(dg,
-                                                  act_classifier,
-                                                  seeds,
-                                                  affine,
-                                                  step_size=.5,
-                                                  return_all=False)
-streamlines = Streamlines(valid_streamline_act_tc_generator)
-save_trk("valid_streamlines_act_classifier.trk",
+streamline_generator = LocalTracking(dg,
+                                     act_classifier,
+                                     seeds,
+                                     affine,
+                                     step_size=.5,
+                                     return_all=False)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_deterministic_act_valid.trk",
          streamlines,
          affine,
          labels.shape)
 
 if have_fury:
-    window.clear(ren)
-    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-    window.record(ren, out_path='valid_streamlines_act_classifier.png',
-                  size=(600, 600))
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_deterministic_act_valid.png',
+                  size=(800, 800))
     if interactive:
-        window.show(ren)
+        window.show(r)
 
 """
-.. figure:: valid_streamlines_act_classifier.png
+.. figure:: tractogram_deterministic_act_valid.png
  :align: center
 
- **Deterministic tractography using a anatomically-constrained tractography
- stopping criterion. Streamlines ending in gray matter region only.**
+ **Corpus Callosum using deterministic tractography with ACT stopping
+ criterion. Streamlines ending in gray matter region only.**
 """
 
 """
@@ -351,9 +350,10 @@ streamlines stopping in those regions.
 
 Notes
 ------
-Currently in ACT the proposed method that cuts streamlines going through
-subcortical gray matter regions is not implemented. The backtracking technique
-for streamlines reaching INVALIDPOINT is not implemented either.
+Currently,the proposed method that cuts streamlines going through
+subcortical gray matter regions is not implemented [Smith2012]_. The
+backtracking technique for streamlines reaching INVALIDPOINT is not
+implemented either [Smith2012]_.
 
 
 References
@@ -363,4 +363,6 @@ References
     Anatomically-constrained tractography: Improved diffusion MRI
     streamlines tractography through effective use of anatomical
     information. NeuroImage, 63(3), 1924-1938, 2012.
+
+.. include:: ../links_names.inc
 """

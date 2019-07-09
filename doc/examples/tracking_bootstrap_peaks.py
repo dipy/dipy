@@ -9,8 +9,11 @@ probabilistic tracking, as described in [Berman2008]_) and the closest peak
 direction getter (a type of deterministic tracking).
 (Amirbekian, PhD thesis, 2016)
 
-Let's load the necessary modules for executing this tutorial.
+This example is an extension of the :ref:`tracking_introduction_eudx`
+example. Let's start by loading the necessary modules for executing this
+tutorial.
 """
+
 # Enables/disables interactive visualization
 interactive = False
 
@@ -32,7 +35,7 @@ data = hardi_img.get_data()
 labels = labels_img.get_data()
 affine = hardi_img.affine
 
-seed_mask = labels == 2
+seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
 
@@ -127,6 +130,8 @@ which is a type of deterministic tracking. If you repeat the fiber tracking
 
 
 """
+References
+----------
 .. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
 tractography using the residual bootstrap, NeuroImage, vol 39, no 1, 2008
 
