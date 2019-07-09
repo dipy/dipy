@@ -73,7 +73,7 @@ be used in conjunction with PFT. In this example, we used CMC.
 
 from dipy.tracking.local import CmcTissueClassifier
 
-voxel_size = np.average(img_pve_wm.header()['pixdim'][1:4])
+voxel_size = np.average(img_pve_wm.header['pixdim'][1:4])
 step_size = 0.2
 
 cmc_classifier = CmcTissueClassifier.from_pve(img_pve_wm.get_data(),
