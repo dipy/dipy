@@ -323,10 +323,7 @@ class ReconstDtiFlow(Workflow):
 
             if 'tensor' in save_metrics:
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
-                correct_order = [0, 1, 3, 2, 4, 5]
-                tensor_vals_reordered = tensor_vals[..., correct_order]
-
-                save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
+                save_nifti(otensor, tensor_vals.astype(np.float32),
                            affine)
 
             if 'fa' in save_metrics:
