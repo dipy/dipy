@@ -179,8 +179,7 @@ if have_fury:
     r.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(r, n_frames=1, out_path='tractogram_EuDX.png',
-                  size=(800, 800))
+    window.record(r, out_path='tractogram_EuDX.png', size=(800, 800))
     if interactive:
         window.show(r)
 
@@ -201,3 +200,11 @@ from dipy.io.streamline import save_trk
 
 save_trk("tractogram_EuDX.trk", streamlines, affine, shape=labels.shape,
          vox_size=labels_img.header.get_zooms())
+
+"""
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography",
+PhD thesis, University of Cambridge, 2012.
+
+.. include:: ../links_names.inc
+
+"""
