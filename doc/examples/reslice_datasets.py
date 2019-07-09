@@ -20,14 +20,14 @@ The function we need to use is called resample.
 """
 
 from dipy.align.reslice import reslice
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 """
 We use here a very small dataset to show the basic principles but you can
 replace the following line with the path of your image.
 """
 
-fimg = get_data('aniso_vox')
+fimg = get_fnames('aniso_vox')
 
 """
 We load the image and print the shape of the volume

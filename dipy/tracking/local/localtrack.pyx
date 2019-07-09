@@ -185,10 +185,8 @@ cdef int _local_tracker(DirectionGetter dg,
         if tissue_class[0] == TRACKPOINT:
             continue
         elif (tissue_class[0] == ENDPOINT or
-              tissue_class[0] == INVALIDPOINT):
-            i += 1
-            break
-        elif tissue_class[0] == OUTSIDEIMAGE:
+              tissue_class[0] == INVALIDPOINT or
+              tissue_class[0] == OUTSIDEIMAGE):
             break
     else:
         # maximum length of streamline has been reached, return everything
@@ -457,7 +455,7 @@ cdef _pft(np.float_t[:, :] streamline,
 
             # Resample the particles if the weights are too uneven.
             # Particles with negligible weights are replaced by duplicates of
-            # those with high weigths through resampling
+            # those with high weights through resampling
             N_effective = 1. / sum_squared
             if N_effective < particle_count / 10.:
                 # copy data in the temp arrays

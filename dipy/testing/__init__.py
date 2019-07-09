@@ -1,7 +1,7 @@
-''' Utilities for testing '''
+"""Utilities for testing."""
+import operator
+from functools import partial
 from os.path import dirname, abspath, join as pjoin
-from dipy.testing.spherepoints import sphere_points
-from dipy.testing.decorators import doctest_skip_parser
 from numpy.testing import assert_array_equal
 import numpy as np
 import scipy
@@ -11,14 +11,30 @@ from distutils.version import LooseVersion
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
-# Allow failed import of nose if not now running tests
-try:
-    import nose.tools as nt
-except ImportError:
-    pass
-else:
-    from nose.tools import (assert_equal, assert_not_equal,
-                            assert_true, assert_false, assert_raises)
+
+def assert_operator(value1, value2, msg="", op=operator.eq):
+    """Check Boolean statement."""
+    try:
+        if op == operator.is_:
+                value1 = bool(value1)
+        assert op(value1, value2)
+    except AssertionError:
+        raise AssertionError(msg.format(str(value2), str(value1)))
+
+
+assert_greater_equal = partial(assert_operator, op=operator.ge,
+                               msg="{0} >= {1}")
+assert_greater = partial(assert_operator, op=operator.gt,
+                         msg="{0} > {1}")
+assert_less_equal = partial(assert_operator, op=operator.le,
+                            msg="{0} =< {1}")
+assert_less = partial(assert_operator, op=operator.lt,
+                      msg="{0} < {1}")
+assert_true = partial(assert_operator, value2=True, op=operator.is_,
+                      msg="False is not true")
+assert_false = partial(assert_operator, value2=False, op=operator.is_,
+                       msg="True is not false")
+assert_not_equal = partial(assert_operator, op=operator.ne)
 
 
 def assert_arrays_equal(arrays1, arrays2):
@@ -29,7 +45,7 @@ def assert_arrays_equal(arrays1, arrays2):
 def setup_test():
     """ Set numpy print options to "legacy" for new versions of numpy
 
-    If imported into a file, nosetest will run this before any doctests.
+    If imported into a file, pytest will run this before any doctests.
 
     References
     -----------
@@ -47,4 +63,6 @@ def setup_test():
     if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
             LooseVersion(scipy.version.short_version) <= '1.1.0':
         import warnings
-        warnings.simplefilter("default")
+        warnings.simplefilter(action="default", category=FutureWarning)
+
+    warnings.simplefilter("always", category=UserWarning)

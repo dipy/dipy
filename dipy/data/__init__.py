@@ -26,14 +26,13 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell,
                                read_stanford_labels,
+                               fetch_stanford_labels,
                                fetch_syn_data,
                                read_syn_data,
                                fetch_stanford_t1,
                                read_stanford_t1,
                                fetch_stanford_pve_maps,
                                read_stanford_pve_maps,
-                               fetch_viz_icons,
-                               read_viz_icons,
                                fetch_bundles_2_subjects,
                                read_bundles_2_subjects,
                                fetch_cenir_multib,
@@ -46,7 +45,12 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_tissue_data,
                                fetch_cfin_multib,
                                read_cfin_dwi,
-                               read_cfin_t1)
+                               read_cfin_t1,
+                               fetch_target_tractogram_hcp,
+                               fetch_bundle_atlas_hcp842,
+                               get_bundle_atlas_hcp842,
+                               get_target_tractogram_hcp,
+                               fetch_bundle_fa_hcp)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
@@ -154,7 +158,7 @@ def get_skeleton(name='C1'):
 
 
 def get_sphere(name='symmetric362'):
-    ''' provide triangulated spheres
+    """ provide triangulated spheres
 
     Parameters
     ------------
@@ -185,7 +189,7 @@ def get_sphere(name='symmetric362'):
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"
-    '''
+    """
     fname = SPHERE_FILES.get(name)
     if fname is None:
         raise DataError('No sphere called "%s"' % name)
@@ -200,7 +204,7 @@ default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
 small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
-def get_data(name='small_64D'):
+def get_fnames(name='small_64D'):
     """ provides filenames of some test datasets or other useful parametrisations
 
     Parameters
@@ -228,8 +232,8 @@ def get_data(name='small_64D'):
     Examples
     ----------
     >>> import numpy as np
-    >>> from dipy.data import get_data
-    >>> fimg,fbvals,fbvecs=get_data('small_101D')
+    >>> from dipy.data import get_fnames
+    >>> fimg,fbvals,fbvecs=get_fnames('small_101D')
     >>> bvals=np.loadtxt(fbvals)
     >>> bvecs=np.loadtxt(fbvecs).T
     >>> import nibabel as nib
@@ -244,8 +248,8 @@ def get_data(name='small_64D'):
     """
 
     if name == 'small_64D':
-        fbvals = pjoin(DATA_DIR, 'small_64D.bvals.npy')
-        fbvecs = pjoin(DATA_DIR, 'small_64D.gradients.npy')
+        fbvals = pjoin(DATA_DIR, 'small_64D.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
         fimg = pjoin(DATA_DIR, 'small_64D.nii')
         return fimg, fbvals, fbvecs
     if name == '55dir_grad.bvec':
@@ -307,7 +311,7 @@ get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")
 
 
 def dsi_voxels():
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
     img = load(fimg)
@@ -317,7 +321,7 @@ def dsi_voxels():
 
 
 def dsi_deconv_voxels():
-    gtab = gradient_table(np.loadtxt(get_data('dsi515btable')))
+    gtab = gradient_table(np.loadtxt(get_fnames('dsi515btable')))
     data = np.zeros((2, 2, 2, 515))
     for ix in range(2):
         for iy in range(2):
@@ -366,12 +370,7 @@ dipy_cmaps = None
 
 
 def get_cmap(name):
-    """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
-    if name.lower() == "accent":
-        warnings.warn("The `Accent` colormap is deprecated as of version" +
-                      " 0.12 of Dipy and will be removed in a future " +
-                      "version. Please use another colormap",
-                      DeprecationWarning)
+    """Make a callable, similar to maptlotlib.pyplot.get_cmap."""
     global dipy_cmaps
     if dipy_cmaps is None:
         filename = pjoin(DATA_DIR, "dipy_colormaps.json")
@@ -398,7 +397,7 @@ def get_cmap(name):
 
 
 def two_cingulum_bundles():
-    fname = get_data('cb_2')
+    fname = get_fnames('cb_2')
     res = np.load(fname)
     cb1 = relist_streamlines(res['points'], res['offsets'])
     cb2 = relist_streamlines(res['points2'], res['offsets2'])

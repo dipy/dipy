@@ -4,8 +4,6 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from dipy.utils.six.moves import xrange
-
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, HemiSphere,
                               disperse_charges, _get_forces,
@@ -336,14 +334,14 @@ def test_disperse_charges():
                                  [1., 0, 0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .2)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
-    for ii in xrange(1, len(pot)):
+    for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
-    for ii in xrange(1, len(pot)):
+    for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
 
@@ -352,7 +350,7 @@ def test_disperse_charges():
     norms = np.sqrt((charges*charges).sum(-1))
     charges = charges / norms[:, None]
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .05)
-    for ii in xrange(1, len(pot)):
+    for ii in range(1, len(pot)):
         # check that the potential of the system is going down
         nt.assert_(pot[ii] - pot[ii-1] <= 0)
     # check that the resulting charges all lie on the unit sphere

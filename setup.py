@@ -50,13 +50,14 @@ if using_setuptools:
     # filenames to .c filenames, and we probably don't have the .c files.
     sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
     # Set setuptools extra arguments
+    # We need nosetests for numpy.testing<=1.15
     extra_setuptools_args = dict(
-        tests_require=['nose'],
+        tests_require=['pytest', 'nose'],
         test_suite='nose.collector',
         zip_safe=False,
         extras_require=dict(
             doc=['Sphinx>=1.0'],
-            test=['nose>=0.10.1']))
+            test=['pytest', 'nose>=0.10.1']))
 
 # Define extensions
 EXTS = []
@@ -217,6 +218,8 @@ def main(**extra_args):
                     'dipy.segment.tests',
                     'dipy.sims',
                     'dipy.sims.tests',
+                    'dipy.stats',
+                    'dipy.stats.tests',
                     'dipy.denoise',
                     'dipy.denoise.tests',
                     'dipy.workflows',

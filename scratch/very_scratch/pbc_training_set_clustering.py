@@ -99,10 +99,7 @@ for c in C: print c, C[c]['rep3']/C[c]['N']
 
 show_rep3(C,r,fos.red)
 
-
-
-
-'''
+"""
 
 #print 'Showing initial dataset.'
 r=fos.ren()
@@ -152,4 +149,4 @@ print 'singletons ',lens.count(1)
 print 'doubletons ',lens.count(2)
 print 'tripletons ',lens.count(3)
 
-'''
+"""

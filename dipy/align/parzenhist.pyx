@@ -7,8 +7,8 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 import numpy.random as random
-from .fused_types cimport floating
-from . import vector_fields as vf
+from dipy.align.fused_types cimport floating
+from dipy.align import vector_fields as vf
 
 from dipy.align.vector_fields cimport(_apply_affine_3d_x0,
                                       _apply_affine_3d_x1,
@@ -175,7 +175,7 @@ class ParzenJointHistogram(object):
         return _bin_index(xnorm, self.nbins, self.padding)
 
     def update_pdfs_dense(self, static, moving, smask=None, mmask=None):
-        r''' Computes the Probability Density Functions of two images
+        r""" Computes the Probability Density Functions of two images
 
         The joint PDF is stored in self.joint. The marginal distributions
         corresponding to the static and moving images are computed and
@@ -195,7 +195,7 @@ class ParzenJointHistogram(object):
             mask of moving object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             If None, ones_like(moving) is used as mask.
-        '''
+        """
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
@@ -218,7 +218,7 @@ class ParzenJointHistogram(object):
                                    self.smarginal, self.mmarginal)
 
     def update_pdfs_sparse(self, sval, mval):
-        r''' Computes the Probability Density Functions from a set of samples
+        r""" Computes the Probability Density Functions from a set of samples
 
         The list of intensities `sval` and `mval` are assumed to be sampled
         from the static and moving images, respectively, at the same
@@ -237,7 +237,7 @@ class ParzenJointHistogram(object):
             sampled intensities from the static image at sampled_points
         mval : array, shape (n,)
             sampled intensities from the moving image at sampled_points
-        '''
+        """
         if not self.setup_called:
             self.setup(sval, mval)
 
@@ -248,7 +248,7 @@ class ParzenJointHistogram(object):
 
     def update_gradient_dense(self, theta, transform, static, moving,
                               grid2world, mgradient, smask=None, mmask=None):
-        r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
+        r""" Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
         w.r.t. each transformation parameter.
@@ -289,7 +289,7 @@ class ParzenJointHistogram(object):
             mask of moving object being registered (a binary array with 1's
             inside the object of interest and 0's along the background).
             The default is None, indicating all voxels are considered.
-        '''
+        """
         if static.shape != moving.shape:
             raise ValueError("Images must have the same shape")
         dim = len(static.shape)
@@ -339,7 +339,7 @@ class ParzenJointHistogram(object):
 
     def update_gradient_sparse(self, theta, transform, sval, mval,
                                sample_points, mgradient):
-        r''' Computes the Gradient of the joint PDF w.r.t. transform parameters
+        r""" Computes the Gradient of the joint PDF w.r.t. transform parameters
 
         Computes the vector of partial derivatives of the joint histogram
         w.r.t. each transformation parameter.
@@ -369,7 +369,7 @@ class ParzenJointHistogram(object):
             sampled at
         mgradient : array, shape (m, 3)
             the gradient of the moving image at the sample points
-        '''
+        """
         dim = sample_points.shape[1]
         if mgradient.shape[1] != dim:
             raise ValueError('Dimensions of gradients and points are different')
@@ -422,7 +422,7 @@ class ParzenJointHistogram(object):
 
 
 cdef inline double _bin_normalize(double x, double mval, double delta) nogil:
-    r''' Normalizes intensity x to the range covered by the Parzen histogram
+    r""" Normalizes intensity x to the range covered by the Parzen histogram
     We assume that mval was computed as:
 
     (1) mval = xmin / delta - padding
@@ -448,13 +448,13 @@ cdef inline double _bin_normalize(double x, double mval, double delta) nogil:
     [padding, nbins-padding], which contains bins with indices
     padding, padding+1, ..., nbins - 1 - padding (i.e., nbins - 2*padding bins)
 
-    '''
+    """
     return x / delta - mval
 
 
 cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
                                     int padding) nogil:
-    r''' Index of the bin in which the normalized intensity `normalized` lies.
+    r""" Index of the bin in which the normalized intensity `normalized` lies.
 
     The intensity is assumed to have been normalized to the range of
     intensities covered by the histogram: the bin index is the integer part of
@@ -475,7 +475,7 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
     -------
     bin : int
         index of the bin in which the normalized intensity 'normalized' lies
-    '''
+    """
     cdef:
         cnp.npy_intp bin
 
@@ -488,13 +488,13 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
 
 
 def cubic_spline(double[:] x):
-    r''' Evaluates the cubic spline at a set of values
+    r""" Evaluates the cubic spline at a set of values
 
     Parameters
     ----------
     x : array, shape (n)
         input values
-    '''
+    """
     cdef:
         cnp.npy_intp i
         cnp.npy_intp n = x.shape[0]
@@ -506,7 +506,7 @@ def cubic_spline(double[:] x):
 
 
 cdef inline double _cubic_spline(double x) nogil:
-    r''' Cubic B-Spline evaluated at x
+    r""" Cubic B-Spline evaluated at x
     See eq. (3) of [Matttes03].
 
     References
@@ -515,7 +515,7 @@ cdef inline double _cubic_spline(double x) nogil:
                & Eubank, W. PET-CT image registration in the chest using
                free-form deformations. IEEE Transactions on Medical Imaging,
                22(1), 120-8, 2003.
-    '''
+    """
     cdef:
         double absx = -x if x < 0.0 else x
         double sqrx = x * x
@@ -528,13 +528,13 @@ cdef inline double _cubic_spline(double x) nogil:
 
 
 def cubic_spline_derivative(double[:] x):
-    r''' Evaluates the cubic spline derivative at a set of values
+    r""" Evaluates the cubic spline derivative at a set of values
 
     Parameters
     ----------
     x : array, shape (n)
         input values
-    '''
+    """
     cdef:
         cnp.npy_intp i
         cnp.npy_intp n = x.shape[0]
@@ -546,7 +546,7 @@ def cubic_spline_derivative(double[:] x):
 
 
 cdef inline double _cubic_spline_derivative(double x) nogil:
-    r''' Derivative of cubic B-Spline evaluated at x
+    r""" Derivative of cubic B-Spline evaluated at x
     See eq. (3) of [Mattes03].
 
     References
@@ -555,7 +555,7 @@ cdef inline double _cubic_spline_derivative(double x) nogil:
                & Eubank, W. PET-CT image registration in the chest using
                free-form deformations. IEEE Transactions on Medical Imaging,
                22(1), 120-8, 2003.
-    '''
+    """
     cdef:
         double absx = -x if x < 0.0 else x
     if absx < 1.0:
@@ -577,7 +577,7 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                             double mmin, double mdelta,
                             int nbins, int padding, double[:, :] joint,
                             double[:] smarginal, double[:] mmarginal):
-    r''' Joint Probability Density Function of intensities of two 2D images
+    r""" Joint Probability Density Function of intensities of two 2D images
 
     Parameters
     ----------
@@ -612,7 +612,7 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         the array to write the marginal PDF associated with the static image
     mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
-    '''
+    """
     cdef:
         cnp.npy_intp nrows = static.shape[0]
         cnp.npy_intp ncols = static.shape[1]
@@ -665,7 +665,7 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                             double mmin, double mdelta,
                             int nbins, int padding, double[:, :] joint,
                             double[:] smarginal, double[:] mmarginal):
-    r''' Joint Probability Density Function of intensities of two 3D images
+    r""" Joint Probability Density Function of intensities of two 3D images
 
     Parameters
     ----------
@@ -700,7 +700,7 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
         the array to write the marginal PDF associated with the static image
     mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
-    '''
+    """
     cdef:
         cnp.npy_intp nslices = static.shape[0]
         cnp.npy_intp nrows = static.shape[1]
@@ -754,7 +754,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
                           double sdelta, double mmin, double mdelta,
                           int nbins, int padding, double[:, :] joint,
                           double[:] smarginal, double[:] mmarginal):
-    r''' Probability Density Functions of paired intensities
+    r""" Probability Density Functions of paired intensities
 
     Parameters
     ----------
@@ -783,7 +783,7 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
         the array to write the marginal PDF associated with the static image
     mmarginal : array, shape (nbins,)
         the array to write the marginal PDF associated with the moving image
-    '''
+    """
     cdef:
         cnp.npy_intp n = sval.shape[0]
         cnp.npy_intp offset, valid_points
@@ -833,7 +833,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
                                   int[:, :] mmask, double smin, double sdelta,
                                   double mmin, double mdelta, int nbins,
                                   int padding, double[:, :, :] grad_pdf):
-    r''' Gradient of the joint PDF w.r.t. transform parameters theta
+    r""" Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
     each transformation parameter. The transformation itself is not necessary
@@ -878,7 +878,7 @@ cdef _joint_pdf_gradient_dense_2d(double[:] theta, Transform transform,
         sides of the histogram is actually 2*padding)
     grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
-    '''
+    """
     cdef:
         cnp.npy_intp nrows = static.shape[0]
         cnp.npy_intp ncols = static.shape[1]
@@ -943,7 +943,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
                                   double sdelta, double mmin, double mdelta,
                                   int nbins, int padding,
                                   double[:, :, :] grad_pdf):
-    r''' Gradient of the joint PDF w.r.t. transform parameters theta
+    r""" Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
     each transformation parameter. The transformation itself is not necessary
@@ -988,7 +988,7 @@ cdef _joint_pdf_gradient_dense_3d(double[:] theta, Transform transform,
         sides of the histogram is actually 2*padding)
     grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
-    '''
+    """
     cdef:
         cnp.npy_intp nslices = static.shape[0]
         cnp.npy_intp nrows = static.shape[1]
@@ -1053,7 +1053,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
                                    double sdelta, double mmin,
                                    double mdelta, int nbins, int padding,
                                    double[:, :, :] grad_pdf):
-    r''' Gradient of the joint PDF w.r.t. transform parameters theta
+    r""" Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
     each transformation parameter. The transformation itself is not necessary
@@ -1091,7 +1091,7 @@ cdef _joint_pdf_gradient_sparse_2d(double[:] theta, Transform transform,
         sides of the histogram is actually 2*padding)
     grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
-    '''
+    """
     cdef:
         cnp.npy_intp n = theta.shape[0]
         cnp.npy_intp m = sval.shape[0]
@@ -1143,7 +1143,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
                                    double sdelta, double mmin,
                                    double mdelta, int nbins, int padding,
                                    double[:, :, :] grad_pdf):
-    r''' Gradient of the joint PDF w.r.t. transform parameters theta
+    r""" Gradient of the joint PDF w.r.t. transform parameters theta
 
     Computes the vector of partial derivatives of the joint histogram w.r.t.
     each transformation parameter. The transformation itself is not necessary
@@ -1181,7 +1181,7 @@ cdef _joint_pdf_gradient_sparse_3d(double[:] theta, Transform transform,
         sides of the histogram is actually 2*padding)
     grad_pdf : array, shape (nbins, nbins, len(theta))
         the array to write the gradient to
-    '''
+    """
     cdef:
         cnp.npy_intp n = theta.shape[0]
         cnp.npy_intp m = sval.shape[0]

@@ -4,7 +4,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-from dipy.data import get_data, dsi_voxels
+from dipy.data import get_fnames, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
@@ -16,7 +16,6 @@ from numpy.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 
-from dipy.testing import setup_test
 
 def test_dsi():
     # load symmetric 724 sphere
@@ -24,7 +23,7 @@ def test_dsi():
 
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_data('dsi515btable'))
+    btable = np.loadtxt(get_fnames('dsi515btable'))
     gtab = gradient_table(btable[:, 0], btable[:, 1:])
     data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                             S0=100, angles=[(0, 0), (90, 0)],

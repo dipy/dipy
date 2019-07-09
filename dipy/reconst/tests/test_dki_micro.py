@@ -10,12 +10,12 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.reconst.dti import (eig_from_lo_tri)
 
 from dipy.data import get_sphere
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 gtab = gradient_table(bvals, bvecs)
 
@@ -43,14 +43,14 @@ DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 # approximation components larger than the fourth order. Thus parameter
 # estimates are only equal to the ground truth values of the simulation
 # if signals taylor components larger than the fourth order are removed.
-# Signal whithout this taylor components can be generated using the
+# Signal without this taylor components can be generated using the
 # multi_tensor_dki simulations. Therefore we used this function to test the
 # expected estimates of the model.
 
 DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 
 # Signal with all taylor components can be simulated using the function
-# multi_tensor. Generating this signals will be usefull to test the prediction
+# multi_tensor. Generating this signals will be useful to test the prediction
 # procedures of DKI-based microstructural model.
 
 

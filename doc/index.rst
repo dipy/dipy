@@ -13,18 +13,17 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 0.14.0** is now available. New features include:
+**DIPY 0.16.0** is now available. New features include:
 
-- RecoBundles: anatomically relevant segmentation of bundles
-- New super fast clustering algorithm: QuickBundlesX
-- New tracking algorithm: Particle Filtering Tracking.
-- New tracking algorithm: Probabilistic Residual Bootstrap Tracking.
-- Integration of the Streamlines API for reading, saving and processing tractograms.
-- Fiber ORientation Estimated using Continuous Axially Symmetric Tensors (Forecast).
-- New command line interfaces.
-- Deprecated fvtk (old visualization framework).
-- A range of new visualization improvements.
-- Large documentation update.
+- Horizon, medical visualization interface powered by QuickBundlesX.
+- New Tractometry tools: Bundle Analysis / Bundle Profiles.
+- New reconstruction model: IVIM MIX (Variable Projection).
+- New command line interface: Affine and Diffeomorphic Registration.
+- New command line interface: Probabilistic, Deterministic and PFT Tracking.
+- Integration of Cython Guidelines for developers.
+- Replacement of Nose by Pytest.
+- Documentation update.
+- Closed 103 issues and merged 41 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -32,10 +31,16 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- DIPY Workshop - Titanium Edition (March 11-15, 2019) is now open for registration:
+.. raw :: html
 
-- :ref:`DIPY 0.14 <release0.14>` released May 1, 2018.
-- :ref:`DIPY 0.13 <release0.13>` released October 24, 2017.
-- :ref:`DIPY 0.12 <release0.12>` released June 26, 2017.
+  <div style="width: 80% max-width=800px">
+    <a href="https://workshop.dipy.org/" target="_blank"><img alt=" " class="align-center" src="_static/dipy-ws-header.png" style="width: 90%;max-height: 90%"></a>
+  </div>
+- :ref:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
+- :ref:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
+- :ref:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
+- :ref:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.
 
 See some of our :ref:`Past Announcements <old_news>`
 
@@ -68,7 +73,7 @@ text files. Finally, we save our result as a Nifti file ::
     save_nifti('colorfa.nii.gz', tenfit.color_fa, affine)
 
 As an exercise, you can try to calculate `color FA` with your datasets. You will need
-to replace the filepaths `fimg`, `fbval` and `fbvec`. Here is what
+to replace the filepaths `fdwi`, `fbval` and `fbvec`. Here is what
 a slice should look like.
 
 .. image:: _static/colorfa.png
@@ -96,11 +101,15 @@ We acknowledge support from the following organizations:
 
 - The department of Intelligent Systems Engineering of Indiana University.
 
+- The National Institute of Biomedical Imaging and Bioengineering, NIH.
+
 - The Gordon and Betty Moore Foundation and the Alfred P. Sloan Foundation, through the
   University of Washington eScience Institute Data Science Environment.
 
 - Google supported DIPY through the Google Summer of Code Program during
-  Summer 2015 and 2016.
+  Summer 2015, 2016 and 2018.
+
+- The International Neuroinformatics Coordination Facility.
 
 
 

@@ -58,14 +58,12 @@ from numpy import ravel_multi_index
 from dipy.core.geometry import dist_to_corner
 
 from collections import defaultdict
-from dipy.utils.six.moves import xrange, map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
 from dipy.tracking import metrics
 from dipy.tracking.vox2track import _streamlines_in_mask
-from dipy.testing import setup_test
 
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
@@ -303,7 +301,7 @@ def subsegment(streamlines, max_segment_length):
         output_sl[0] = sl[0]
 
         count = 1
-        for ii in xrange(len(num_segments)):
+        for ii in range(len(num_segments)):
             ns = num_segments[ii]
             if ns == 1:
                 output_sl[count] = sl[ii+1]
@@ -311,7 +309,7 @@ def subsegment(streamlines, max_segment_length):
             elif ns > 1:
                 small_d = diff[ii]/ns
                 point = sl[ii]
-                for _ in xrange(ns):
+                for _ in range(ns):
                     point = point + small_d
                     output_sl[count] = point
                     count += 1
@@ -500,7 +498,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
             # seeds per voxel and the global random seed.
             if random_seed is not None:
                 s_random_seed = hash((np.sum(s) + 1) * i + random_seed) \
-                           % (2**32 - 1)
+                    % (2**32 - 1)
                 np.random.seed(s_random_seed)
             # Generate random triplet
             grid = np.random.random(3)
@@ -743,7 +741,7 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
     roi_coords = np.array(np.where(region_of_interest)).T
     x_roi_coords = apply_affine(affine, roi_coords)
 
-    # If it's already a list, we can save time by preallocating the output
+    # If it's already a list, we can save time by pre-allocating the output
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
@@ -922,7 +920,8 @@ def unique_rows(in_array, dtype='f4'):
 
 
 @_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
+def move_streamlines(streamlines, output_space, input_space=None,
+                     seeds=None):
     """Applies a linear transformation, given by affine, to streamlines.
 
     Parameters
@@ -937,11 +936,14 @@ def move_streamlines(streamlines, output_space, input_space=None):
         ``input_space`` is specified, it's assumed the streamlines are in the
         reference space. The reference space is the same as the space
         associated with the affine matrix ``np.eye(4)``.
+    seeds : np.array, optional
+        If set, seeds associated to streamlines will be also moved and returned
 
     Returns
     -------
     streamlines : generator
         A sequence of transformed streamlines.
+        If return_seeds is True, also return seeds
 
     """
     if input_space is None:
@@ -955,8 +957,12 @@ def move_streamlines(streamlines, output_space, input_space=None):
     yield
     # End of initialization
 
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
+    if seeds is not None:
+        for sl, seed in zip(streamlines, seeds):
+            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
+    else:
+        for sl in streamlines:
+            yield np.dot(sl, lin_T) + offset
 
 
 def reduce_rois(rois, include):
@@ -1023,7 +1029,7 @@ def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
     sl_ornt = orientation_from_string(str(sl_vox_order))
     grid_ornt = nib.io_orientation(grid_affine)
     reorder_grid = reorder_voxels_affine(
-        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1,1,1]))
+        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1, 1, 1]))
 
     tvis_aff = affine_for_trackvis(voxel_size)
 
@@ -1040,9 +1046,11 @@ def get_flexi_tvis_affine(tvis_hdr, nii_aff):
     ----------
     tvis_hdr : header from a trackvis file
     nii_aff : array (4, 4),
-        An affine matrix describing the current space of the grid in relation to RAS+ scanner space
+        An affine matrix describing the current space of the grid in relation
+        to RAS+ scanner space
     nii_data : nd array
-        3D array, each with shape (x, y, z) corresponding to the shape of the brain volume.
+        3D array, each with shape (x, y, z) corresponding to the shape of the
+        brain volume.
 
     Returns
     -------
@@ -1072,6 +1080,7 @@ def _min_at(a, index, value):
     value = value[uniq]
 
     a[tuple(index)] = np.minimum(a[tuple(index)], value)
+
 
 try:
     minimum_at = np.minimum.at

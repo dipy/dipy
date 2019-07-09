@@ -10,7 +10,7 @@ def test_denoise():
     """
 
     """
-    fdata, fbval, fbvec = dpd.get_data()
+    fdata, fbval, fbvec = dpd.get_fnames()
     # Test on 4D image:
     data = nib.load(fdata).get_data()
     sigma1 = estimate_sigma(data)

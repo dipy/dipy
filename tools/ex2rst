@@ -5,23 +5,22 @@
 # sources of the PyMVPA project - http://pymvpa.org.  It remains licensed as
 # the rest of PyMVPA (MIT license as of October 2010).
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See COPYING file distributed along with the PyMVPA package for the
 #   copyright and license terms.
 #
-### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+# ## ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 
 """Helper to automagically generate ReST versions of examples"""
-
-__docformat__ = 'restructuredtext'
-
-
 import os
 import sys
 import re
 import glob
+import io
 from optparse import OptionParser
+
+__docformat__ = 'restructuredtext'
 
 
 def auto_image(line):
@@ -39,13 +38,13 @@ def auto_image(line):
     ini_space = m.group(1)
     lines = [line,
              ini_space + '   :width: 500\n',
-             #ini_space + '   :height: 350\n'
+             # ini_space + '   :height: 350\n'
              ]
     fspec = m.group(2)
     if fspec.endswith('.*'):
         fspec = fspec.replace('.*', '.png')
     fspec = fspec.replace('fig/', '../_images/')
-    lines.append(ini_space + ('   :target: %s\n' % fspec) )
+    lines.append(ini_space + ('   :target: %s\n' % fspec))
     lines.append('\n')
     return ''.join(lines)
 
@@ -55,9 +54,9 @@ def exfile2rst(filename):
     """
     # output string
     s = ''
-
     # open source file
-    xfile = open(filename)
+    with io.open(filename, encoding="utf8") as f:
+        xfile = f.readlines()
 
     # parser status vars
     inheader = True
@@ -97,13 +96,12 @@ def exfile2rst(filename):
 
         # if we have something that should go into the text
         if indocs \
-          or (cleanline.startswith('"""') or cleanline.startswith("'''")):
+           or (cleanline.startswith('"""') or cleanline.startswith("'''")):
             # handle doc start
             if not indocs:
                 # guarenteed to start with """
                 if len(cleanline) > 3 \
-                  and (cleanline.endswith('"""') \
-                       or cleanline.endswith("'''")):
+                  and (cleanline.endswith('"""') or cleanline.endswith("'''")):
                     # single line doc
                     code2doc = True
                     doc2code = True
@@ -113,7 +111,7 @@ def exfile2rst(filename):
                     indocs = True
                     code2doc = True
                     # rescue what is left on the line
-                    proc_line = cleanline[3:] # strip """
+                    proc_line = cleanline[3:]  # strip """
             else:
                 # we are already in the docs
                 # handle doc end
@@ -138,7 +136,7 @@ def exfile2rst(filename):
                 s += '\n'
 
             proc_line = auto_image(proc_line)
-            
+
             if proc_line:
                 s += proc_line.rstrip() + '\n'
 
@@ -150,8 +148,6 @@ def exfile2rst(filename):
             # has to be code
             s += '  %s' % line
 
-    xfile.close()
-
     return s
 
 
@@ -162,38 +158,32 @@ def exfile2rstfile(filename, opts):
     dfilename = os.path.basename(filename[:-3]) + '.rst'
 
     # open dest file
-    dfile = open(os.path.join(opts.outdir, os.path.basename(dfilename)), 'w')
+    with io.open(os.path.join(opts.outdir,
+                              os.path.basename(dfilename)),
+                 'w', encoding="utf8") as dfile:
 
-    # place header
-    dfile.write('.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n')
-
-    # place cross-ref target
-    dfile.write('.. _example_' + dfilename[:-4] + ':\n\n')
-
-    # write converted ReST
-    dfile.write(exfile2rst(filename))
-
-    if opts.sourceref:
-        # write post example see also box
-        msg = """
-        
-.. admonition:: Example source code
-
-   You can download :download:`the full source code of this example <%s>`.
-   This same script is also included in the %s source distribution under the
-   :file:`doc/examples/` directory.
-
-"""    % (filename, opts.project)
+        # place header
+        dfile.write('.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n')
+        # place cross-ref target
+        dfile.write('.. _example_' + dfilename[:-4] + ':\n\n')
+        # write converted ReST
+        dfile.write(exfile2rst(filename))
+        if opts.sourceref:
+            # write post example see also box
+            msg = ("\n\n"
+                   ".. admonition:: Example source code\n\n"
+                   "   You can download :download:`the full source code of"
+                   " this example <{0}>`. This same script is also included in"
+                   " the {1} source distribution under the"
+                   " :file:`doc/examples/` directory."
+                   ).format(filename, opts.project)
 
         dfile.write(msg)
 
-    dfile.close()
-
-
 
 def main():
-    parser = OptionParser( \
-        usage="%prog [options] <filename|directory> [...]", \
+    parser = OptionParser(
+        usage="%prog [options] <filename|directory> [...]",
         version="%prog 0.1", description="""\
 %prog converts Python scripts into restructered text (ReST) format suitable for
 integration into the Sphinx documentation framework. Its key feature is that it
@@ -206,14 +196,14 @@ The detection of such docstrings is exclusively done by parsing the raw code so
 it is never actually imported into a running Python session. Docstrings have to
 be written using triple quotes (both forms " and ' are possible).
 
-It is recommend that such docstrings are preceded and followed by an empty line.
-Intended docstring can make use of the full linewidth from the second docstring
-line on. If the indentation of multiline docstring is maintained for all lines,
-the respective indentation is removed in the ReST output.
+It is recommend that such docstrings are preceded and followed by an empty
+line. Intended docstring can make use of the full linewidth from the second
+docstring line on. If the indentation of multiline docstring is maintained for
+all lines, the respective indentation is removed in the ReST output.
 
 The parser algorithm automatically excludes file headers and starts with the
 first (module-level) docstring instead.
-""" ) #'
+""")
 
     # define options
     parser.add_option('--verbose', action='store_true', dest='verbose',
@@ -239,7 +229,7 @@ Name of the project that contains the examples. This name is used in the
 """)
 
     # parse options
-    (opts, args) = parser.parse_args() # read sys.argv[1:] by default
+    (opts, args) = parser.parse_args()  # read sys.argv[1:] by default
 
     # check for required options
     if opts.outdir is None:
@@ -257,8 +247,8 @@ Name of the project that contains the examples. This name is used in the
             toparse.append(t)
 
     # filter parse list
-    if not opts.excluded is None:
-        toparse = [t for t in toparse if not t in opts.excluded]
+    if opts.excluded is not None:
+        toparse = [t for t in toparse if t not in opts.excluded]
 
     toparse_list = toparse
     toparse = set(toparse)

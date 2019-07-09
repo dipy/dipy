@@ -12,11 +12,11 @@ environment:
       EXTRA_PIP_FLAGS: "--timeout=60"
 
   matrix:
-    - PYTHON: C:\Python27-x64
     - PYTHON: C:\Python35-x64
     - PYTHON: C:\Python36
     - PYTHON: C:\Python36-x64
-    - PYTHON: C:\Python36-x64
+    - PYTHON: C:\Python37
+    - PYTHON: C:\Python37-x64
       INSTALL_TYPE: "pip"
       COVERAGE: 1
 
@@ -74,7 +74,7 @@ install:
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
-  - pip install nose coverage coveralls codecov
+  - pip install pytest nose coverage coveralls codecov
   - mkdir for_testing
   - cd for_testing
   - echo backend:Agg > matplotlibrc
@@ -82,10 +82,10 @@ test_script:
   - ps: |
         if ($env:COVERAGE)
         {
-          $env:COVER_ARGS = "--with-coverage --cover-package dipy"
+          $env:COVER_CMD = "coverage run -m "
         }
-  - cmd: echo %COVER_ARGS%
-  - nosetests --with-doctest --verbose %COVER_ARGS% dipy
+  - cmd: echo %COVER_CMD%
+  - "%COVER_CMD% pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy"
 
 cache:
   # Avoid re-downloading large packages

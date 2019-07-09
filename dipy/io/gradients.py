@@ -2,7 +2,6 @@ from __future__ import division, print_function, absolute_import
 
 from os.path import splitext
 import re
-from dipy.utils.six import string_types
 import numpy as np
 from nibabel.tmpdirs import InTemporaryDirectory
 
@@ -38,7 +37,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         if this_fname is None or not this_fname:
             vals.append(None)
         else:
-            if isinstance(this_fname, string_types):
+            if isinstance(this_fname, str):
                 base, ext = splitext(this_fname)
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
                     with open(this_fname, 'r') as f:

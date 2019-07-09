@@ -1,6 +1,5 @@
 import abc
 import numpy as np
-from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
                                   _bundle_minimum_distance_asymmetric,
@@ -10,16 +9,13 @@ from dipy.tracking.streamline import (transform_streamlines,
                                       center_streamlines,
                                       set_number_of_points,
                                       select_random_set_of_streamlines,
-                                      length)
-from dipy.segment.clustering import QuickBundles
+                                      length,
+                                      Streamlines)
+from dipy.segment.clustering import qbx_and_merge
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
-from dipy.utils.six import string_types
 from time import time
-
-MAX_DIST = 1e10
-LOG_MAX_DIST = np.log(MAX_DIST)
 
 DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-45, 45), (-45, 45), (-45, 45),
@@ -27,7 +23,7 @@ DEFAULT_BOUNDS = [(-35, 35), (-35, 35), (-35, 35),
                   (-10, 10), (-10, 10), (-10, 10)]
 
 
-class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
+class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
     def __init__(self, num_threads=None):
         """ An abstract class for the metric used for streamline registration
@@ -169,10 +165,20 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
 class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
     """ Asymmetric Bundle-based Minimum distance
+
+    This is a cost function that can be used by the
+    StreamlineLinearRegistration class.
+
     """
 
     def distance(self, xopt):
+        """ Distance calculated from this Metric
 
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector
+        """
         return bundle_min_distance_asymmetric_fast(xopt,
                                                    self.static_centered_pts,
                                                    self.moving_centered_pts,
@@ -282,14 +288,15 @@ class StreamlineLinearRegistration(object):
         References
         ----------
         .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-            registration of white-matter fascicles in the space of
-            streamlines", NeuroImage, 117, 124--140, 2015
+           registration of white-matter fascicles in the space of streamlines",
+           NeuroImage, 117, 124--140, 2015
+
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
-                            bundle alignment for group comparisons", ISMRM,
-                            2014.
+           bundle alignment for group comparisons", ISMRM, 2014.
+
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+           bundles using local and global streamline-based
+           registration and clustering, Neuroimage, 2017.
         """
 
         self.x0 = self._set_x0(x0)
@@ -411,7 +418,7 @@ class StreamlineLinearRegistration(object):
                 raise ValueError("Array should have only one dimension")
             return x0
 
-        if isinstance(x0, string_types):
+        if isinstance(x0, str):
 
             if x0.lower() == 'translation':
                 return np.zeros(3)
@@ -693,8 +700,13 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
 
 
 def remove_clusters_by_size(clusters, min_size=0):
-    by_size = lambda c: len(c) >= min_size
-    return filter(by_size, clusters)
+    ob = filter(lambda c: len(c) >= min_size, clusters)
+
+    centroids = Streamlines()
+    for cluster in ob:
+        centroids.append(cluster.centroid)
+
+    return centroids
 
 
 def progressive_slr(static, moving, metric, x0, bounds,
@@ -829,17 +841,17 @@ def progressive_slr(static, moving, metric, x0, bounds,
     return slm
 
 
-def slr_with_qb(static, moving,
-                x0='affine',
-                rm_small_clusters=50,
-                maxiter=100,
-                select_random=None,
-                verbose=False,
-                greater_than=50,
-                less_than=250,
-                qb_thr=15,
-                nb_pts=20,
-                progressive=True, num_threads=None):
+def slr_with_qbx(static, moving,
+                 x0='affine',
+                 rm_small_clusters=50,
+                 maxiter=100,
+                 select_random=None,
+                 verbose=False,
+                 greater_than=50,
+                 less_than=250,
+                 qbx_thr=[40, 30, 20, 15],
+                 nb_pts=20,
+                 progressive=True, rng=None, num_threads=None):
     """ Utility function for registering large tractograms.
 
     For efficiency we apply the registration on cluster centroids and remove
@@ -849,21 +861,38 @@ def slr_with_qb(static, moving,
     ----------
     static : Streamlines
     moving : Streamlines
+
     x0 : str
         rigid, similarity or affine transformation model (default affine)
 
     rm_small_clusters : int
         Remove clusters that have less than `rm_small_clusters` (default 50)
 
-    verbose : bool,
-        If True then information about the optimization is shown.
-
     select_random : int
         If not None select a random number of streamlines to apply clustering
         Default None.
 
-    options : None or dict,
-        Extra options to be used with the selected method.
+    verbose : bool,
+        If True then information about the optimization is shown.
+
+    greater_than : int, optional
+            Keep streamlines that have length greater than
+            this value (default 50)
+
+    less_than : int, optional
+            Keep streamlines have length less than this value (default 250)
+
+    qbx_thr : variable int
+            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+
+    np_pts : int, optional
+            Number of points for discretizing each streamline (default 20)
+
+    progressive : boolean, optional
+            (default True)
+
+    rng : RandomState
+        If None creates RandomState in function.
 
     num_threads : int
         Number of threads. If None (default) then all available threads
@@ -878,14 +907,17 @@ def slr_with_qb(static, moving,
     References
     ----------
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
-            registration of white-matter fascicles in the space of streamlines"
-            , NeuroImage, 117, 124--140, 2015
+    registration of white-matter fascicles in the space of streamlines",
+    NeuroImage, 117, 124--140, 2015
     .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
             bundle alignment for group comparisons", ISMRM, 2014.
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-            bundles using local and global streamline-based registration and
-            clustering, Neuroimage, 2017.
+    bundles using local and global streamline-based registration and
+    clustering, Neuroimage, 2017.
     """
+    if rng is None:
+        rng = np.random.RandomState()
+
     if verbose:
         print('Static streamlines size {}'.format(len(static)))
         print('Moving streamlines size {}'.format(len(moving)))
@@ -897,9 +929,10 @@ def slr_with_qb(static, moving,
         else:
             return False
 
-    # TODO change this to the new Streamlines API
-    streamlines1 = [s for s in static if check_range(s)]
-    streamlines2 = [s for s in moving if check_range(s)]
+    streamlines1 = Streamlines(static[np.array([check_range(s)
+                                                for s in static])])
+    streamlines2 = Streamlines(moving[np.array([check_range(s)
+                                                for s in moving])])
 
     if verbose:
 
@@ -910,29 +943,31 @@ def slr_with_qb(static, moving,
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,
-                                                         select_random)
+                                                         select_random,
+                                                         rng=rng)
     else:
         rstreamlines1 = streamlines1
 
     rstreamlines1 = set_number_of_points(rstreamlines1, nb_pts)
-    qb1 = QuickBundles(threshold=qb_thr)
-    rstreamlines1 = [s.astype('f4') for s in rstreamlines1]
-    cluster_map1 = qb1.cluster(rstreamlines1)
-    clusters1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
-    qb_centroids1 = [cluster.centroid for cluster in clusters1]
+
+    rstreamlines1._data.astype('f4')
+
+    cluster_map1 = qbx_and_merge(rstreamlines1, thresholds=qbx_thr, rng=rng)
+    qb_centroids1 = remove_clusters_by_size(cluster_map1, rm_small_clusters)
 
     if select_random is not None:
         rstreamlines2 = select_random_set_of_streamlines(streamlines2,
-                                                         select_random)
+                                                         select_random,
+                                                         rng=rng)
     else:
         rstreamlines2 = streamlines2
 
     rstreamlines2 = set_number_of_points(rstreamlines2, nb_pts)
-    qb2 = QuickBundles(threshold=qb_thr)
-    rstreamlines2 = [s.astype('f4') for s in rstreamlines2]
-    cluster_map2 = qb2.cluster(rstreamlines2)
-    clusters2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
-    qb_centroids2 = [cluster.centroid for cluster in clusters2]
+    rstreamlines2._data.astype('f4')
+
+    cluster_map2 = qbx_and_merge(rstreamlines2, thresholds=qbx_thr, rng=rng)
+
+    qb_centroids2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
 
     if verbose:
         t = time()
@@ -966,8 +1001,8 @@ def slr_with_qb(static, moving,
 # SLR on QuickBundles centroids and some thresholding see
 # Garyfallidis et al. Recognition of white matter
 # bundles using local and global streamline-based registration and
-# clustering, Neuroimage, 2017.
-whole_brain_slr = slr_with_qb
+# clustering, NeuroImage, 2017.
+whole_brain_slr = slr_with_qbx
 
 
 def _threshold(x, th):
@@ -1004,6 +1039,7 @@ def compose_matrix44(t, dtype=np.double):
     if size not in [3, 6, 7, 9, 12]:
         raise ValueError('Accepted number of parameters is 3, 6, 7, 9 and 12')
 
+    MAX_DIST = 1e10
     scale, shear, angles, translate = (None, ) * 4
     translate = _threshold(t[0:3], MAX_DIST)
     if size in [6, 7, 9, 12]:

@@ -71,7 +71,8 @@ the peaks and odf_vertices are the vertices of the input sphere.
 from dipy.tracking.eudx import EuDX
 from dipy.tracking.streamline import Streamlines
 
-eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000, odf_vertices = sphere.vertices, a_low=0.2)
+eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000,
+          odf_vertices=sphere.vertices, a_low=0.2)
 
 tensor_streamlines = Streamlines(eu)
 
@@ -101,7 +102,7 @@ lightweight `dipy.viz` module.
 try:
     from dipy.viz import window, actor
 except ImportError:
-    raise ImportError('Python vtk module is not installed')
+    raise ImportError('Python fury module is not installed')
     import sys
     sys.exit()
 
@@ -115,14 +116,15 @@ ren = window.Renderer()
 Every streamline will be coloured according to its orientation
 """
 
-from dipy.viz.colormap import line_colors
+from dipy.viz import colormap as cmap
 
 """
 `actor.line` creates a streamline actor for streamline visualization
 and `ren.add` adds this actor to the scene
 """
 
-ren.add(actor.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
+ren.add(actor.streamtube(tensor_streamlines,
+                         cmap.line_colors(tensor_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
 

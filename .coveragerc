@@ -5,5 +5,7 @@ include = */dipy/*
 omit =
     */setup.py
     */benchmarks/*
+disable_warnings = include-ignored
+
 [report]
 show_missing = True

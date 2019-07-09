@@ -8,7 +8,7 @@ from itertools import permutations
 
 
 def random_uniform_on_sphere(n=1, coords='xyz'):
-    r'''Random unit vectors from a uniform distribution on the sphere.
+    r"""Random unit vectors from a uniform distribution on the sphere.
 
     Parameters
     -----------
@@ -43,7 +43,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     >>> X = random_uniform_on_sphere(4, 'xyz')
     >>> X.shape == (4, 3)
     True
-    '''
+    """
     z = np.random.uniform(-1, 1, n)
     theta = np.arccos(z)
     phi = np.random.uniform(0, 2*np.pi, n)
@@ -58,7 +58,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
 
 
 def eigenstats(points, alpha=0.05):
-    r'''Principal direction and confidence ellipse
+    r"""Principal direction and confidence ellipse
 
     Implements equations in section 6.3.1(ii) of Fisher, Lewis and
     Embleton, supplemented by equations in section 3.2.5.
@@ -77,7 +77,7 @@ def eigenstats(points, alpha=0.05):
         centre of ellipsoid
     b1 : vector (2,)
         lengths of semi-axes of ellipsoid
-    '''
+    """
     n = points.shape[0]
     # the number of points
 
@@ -85,13 +85,13 @@ def eigenstats(points, alpha=0.05):
     # scale angles from radians to degrees
 
     # there is a problem with averaging and axis data.
-    '''
+    """
     centroid = np.sum(points, axis=0)/n
     normed_centroid = geometry.normalized_vector(centroid)
     x,y,z = normed_centroid
     #coordinates of normed centroid
     polar_centroid = np.array(geometry.cart2sphere(x,y,z))*rad2deg
-    '''
+    """
 
     cross = np.dot(points.T, points)/n
     # cross-covariance of points
@@ -158,7 +158,7 @@ def eigenstats(points, alpha=0.05):
 
 
 def compare_orientation_sets(S, T):
-    r'''Computes the mean cosine distance of the best match between
+    r"""Computes the mean cosine distance of the best match between
     points of two sets of vectors S and T (angular similarity)
 
     Parameters
@@ -190,7 +190,7 @@ def compare_orientation_sets(S, T):
     >>> compare_orientation_sets(S,T)
     1.0
 
-    '''
+    """
 
     m = len(S)
     n = len(T)
@@ -208,7 +208,7 @@ def compare_orientation_sets(S, T):
 
 
 def angular_similarity(S, T):
-    r'''Computes the cosine distance of the best match between
+    r"""Computes the cosine distance of the best match between
     points of two sets of vectors S and T
 
     Parameters
@@ -268,7 +268,7 @@ def angular_similarity(S, T):
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
     >>> print('%.12f' % angular_similarity(S,T))
     0.707106781187
-    '''
+    """
     m = len(S)
     n = len(T)
     if m < n:

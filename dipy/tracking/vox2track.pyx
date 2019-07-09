@@ -10,9 +10,7 @@ from libc.math cimport ceil, floor, fabs, sqrt
 
 import numpy as np
 cimport numpy as cnp
-from ._utils import _mapping_to_voxel, _to_voxel_coordinates
-
-from ..utils.six.moves import xrange
+from dipy.tracking._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 
 @cython.boundscheck(False)
@@ -146,7 +144,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
                      voxel_indices[j, 2])
             uniq_points.add(point)
 
-        # Add the index of this streamline for each uniq voxel
+        # Add the index of this streamline for each unique voxel
         for point in uniq_points:
             if point in mapping:
                 mapping[point].append(i)
@@ -324,7 +322,7 @@ cdef cnp.npy_intp _streamline_in_mask(
 @cython.wraparound(False)
 @cython.profile(False)
 def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
-    ''' Counts of points in `tracks` that pass through voxels in volume
+    """ Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm
     point values to voxels.  For a track that passes through a voxel more
@@ -390,7 +388,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     (5, 10, 15)
     >>> tcs[1,1,2], tcs[1,2,3]
     (1, 1)
-    '''
+    """
     vol_dims = np.asarray(vol_dims).astype(np.int)
     vox_sizes = np.asarray(vox_sizes).astype(np.double)
     n_voxels = np.prod(vol_dims)

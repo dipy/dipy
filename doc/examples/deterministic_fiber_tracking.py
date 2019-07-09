@@ -65,12 +65,14 @@ is used.
 
 from dipy.data import default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
+from dipy.tracking.streamline import Streamlines
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                              max_angle=30.,
                                                              sphere=default_sphere)
-streamlines = LocalTracking(detmax_dg, classifier, seeds, affine, step_size=.5)
-
+streamline_generator = LocalTracking(detmax_dg, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
 save_trk("deterministic_maximum_shm_coeff.trk", streamlines, affine,
          labels.shape)

@@ -101,11 +101,11 @@ for key in ['fy642']:
     print '%6.3f %6.3f %6.3f %6.3f' % (polar.min(), polar.mean(), polar.max(), np.sqrt(polar.var()))
 
 def spherical_statistics(vertices, north=np.array([0,0,1]), width=0.02):
-    '''
+    """
     function to evaluate a spherical triangulation by looking at the
     variability of numbers of vertices in 'vertices' in equatorial bands
     of width 'width' orthogonal to each point in 'vertices'
-    ''' 
+    """
 
     equatorial_counts = np.array([len(equatorial_zone_vertices(vertices, pole, width=width)) for pole in vertices if np.dot(pole,north) >= 0])
 

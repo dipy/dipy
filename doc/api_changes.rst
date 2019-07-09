@@ -5,6 +5,58 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.0 changes
+----------------
+Some of the changes introduced in the 1.0 release will break backwards
+compatibility with previous versions.
+
+**Segmentation**
+
+The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
+if you are providing a 4D volume, `vol_idx` is now a required argument.
+The order of parameters has also changed.
+
+
+DIPY 0.16 Changes
+-----------------
+
+**Stats**
+
+Welcome to the new module ``dipy.viz.stats``. This module will be used to integrate various analysis.
+
+**Tracking**
+
+- New option to adjust number of threads for SLR in Recobundles
+- The tracking algoritm excludes the stop point inside the mask during tracking process.
+
+**Notes**
+
+- Replacement of Nose by Pytest
+
+
+DIPY 0.15 Changes
+-----------------
+
+**IO**
+
+``load_tck`` and ``save_tck`` from ``dipy.io.streamline`` has been added. They are highly recommended for managing streamlines.
+
+**Gradient Table**
+
+The default value of ``b0_thresold`` has been changed(from 0 to 50). This change can impact your algorithm.
+If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument ``b0_threshold`` set to 0.
+
+**Visualization**
+
+``dipy.viz.fvtk`` module has been removed. Use ``dipy.viz.*`` instead. This implies the following important changes:
+- Use ``from dipy.viz import window, actor`` instead of ``from dipy.viz import fvtk`.
+- Use ``window.Renderer()`` instead of ``fvtk.ren()``.
+- All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
+- UI elements are available in ``dipy.viz.ui``.
+
+``dipy.viz`` depends on FURY package. To get more informations about FURY, go to https://fury.gl
+
+
 DIPY 0.14 Changes
 -----------------
 

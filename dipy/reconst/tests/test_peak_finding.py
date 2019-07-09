@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
-from dipy.data import get_sphere, get_data
+from dipy.data import get_sphere
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs
 
@@ -139,5 +139,4 @@ def test_search_descending():
 
 
 if __name__ == '__main__':
-    import nose
-    nose.runmodule()
+    npt.run_module_suite()

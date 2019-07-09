@@ -1,12 +1,10 @@
-import os
 import numpy as np
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from dipy.io.dpy import Dpy
+from dipy.io.dpy import Dpy, Streamlines
 
 import numpy.testing as npt
-from dipy.tracking.streamline import Streamlines
 
 
 def test_dpy():
@@ -36,5 +34,4 @@ def test_dpy():
 
 
 if __name__ == '__main__':
-
     npt.run_module_suite()

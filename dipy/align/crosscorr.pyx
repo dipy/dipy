@@ -1,7 +1,7 @@
 """ Utility functions used by the Cross Correlation (CC) metric """
 
 import numpy as np
-from fused_types cimport floating
+from dipy.align.fused_types cimport floating
 cimport cython
 cimport numpy as cnp
 

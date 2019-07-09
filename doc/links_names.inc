@@ -74,6 +74,7 @@
 .. _doctest-mode: http://www.cis.upenn.edu/~edloper/projects/doctestmode/
 .. _bazaar: http://bazaar-vcs.org/
 .. _nose: http://somethingaboutorange.com/mrl/projects/nose
+.. _pytest: https://docs.pytest.org
 .. _`python coverage tester`: http://nedbatchelder.com/code/modules/coverage.html
 .. _cython: http://cython.org
 .. _travis-ci: https://travis-ci.org/
@@ -99,6 +100,7 @@
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
 .. _pypi: https://pypi.python.org/pypi
+.. _FURY: https://fury.gl
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org

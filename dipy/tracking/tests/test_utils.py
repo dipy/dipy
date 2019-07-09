@@ -1,10 +1,8 @@
 from __future__ import division, print_function, absolute_import
 
-from dipy.utils.six.moves import xrange
+import warnings
 
 import numpy as np
-import nose
-
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
@@ -21,11 +19,10 @@ import dipy.tracking.metrics as metrix
 
 from dipy.tracking.vox2track import streamline_mapping
 import numpy.testing as npt
-from numpy.testing import assert_array_almost_equal, assert_array_equal
-from nose.tools import assert_equal, assert_raises, assert_true
+from dipy.testing import assert_true
 
 
-def make_streamlines():
+def make_streamlines(return_seeds=False):
     streamlines = [np.array([[0, 0, 0],
                              [1, 1, 1],
                              [2, 2, 2],
@@ -34,7 +31,12 @@ def make_streamlines():
                              [3, 2, 0],
                              [5, 20, 33],
                              [40, 80, 120]], 'float')]
-    return streamlines
+    seeds = [np.array([0., 0., 0.], 'float'),
+             np.array([1., 2., 3.], 'float')]
+    if return_seeds:
+        return streamlines, seeds
+    else:
+        return streamlines
 
 
 def test_density_map():
@@ -45,7 +47,7 @@ def test_density_map():
     expected = np.zeros(shape)
     expected[x, x, x] = 1.
     dm = density_map(streamlines, vol_dims=shape, voxel_size=(1, 1, 1))
-    assert_array_equal(dm, expected)
+    npt.assert_array_equal(dm, expected)
 
     # add streamline, make voxel_size smaller. Each streamline should only be
     # counted once, even if multiple points lie in a voxel
@@ -56,25 +58,25 @@ def test_density_map():
     expected[x, x, x] = 1.
     expected[0, 0, 0] += 1
     dm = density_map(streamlines, vol_dims=shape, voxel_size=(2, 2, 2))
-    assert_array_equal(dm, expected)
+    npt.assert_array_equal(dm, expected)
     # should work with a generator
     dm = density_map(iter(streamlines), vol_dims=shape, voxel_size=(2, 2, 2))
-    assert_array_equal(dm, expected)
+    npt.assert_array_equal(dm, expected)
 
     # Test passing affine
     affine = np.diag([2, 2, 2, 1.])
-    affine[:3, 3] = 1.
+    affine[: 3, 3] = 1.
     dm = density_map(streamlines, shape, affine=affine)
-    assert_array_equal(dm, expected)
+    npt.assert_array_equal(dm, expected)
 
     # Shift the image by 2 voxels, ie 4mm
-    affine[:3, 3] -= 4.
+    affine[: 3, 3] -= 4.
     expected_old = expected
     new_shape = [i + 2 for i in shape]
     expected = np.zeros(new_shape)
     expected[2:, 2:, 2:] = expected_old
     dm = density_map(streamlines, new_shape, affine=affine)
-    assert_array_equal(dm, expected)
+    npt.assert_array_equal(dm, expected)
 
 
 def test_to_voxel_coordinates_precision():
@@ -96,7 +98,7 @@ def test_to_voxel_coordinates_precision():
     indices = _to_voxel_coordinates(failing_strl, transfo, offset)
 
     expected_indices = np.array([[[0, 0, 0], [0, 1, 0]]])
-    assert_array_equal(indices, expected_indices)
+    npt.assert_array_equal(indices, expected_indices)
 
 
 def test_connectivity_matrix():
@@ -112,23 +114,23 @@ def test_connectivity_matrix():
     # Check basic Case
     matrix = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
                                  symmetric=False)
-    assert_array_equal(matrix, expected)
+    npt.assert_array_equal(matrix, expected)
     # Test mapping
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
                                           symmetric=False, return_mapping=True)
-    assert_array_equal(matrix, expected)
-    assert_equal(mapping[3, 4], [0, 1])
-    assert_equal(mapping[4, 3], [2])
-    assert_equal(mapping.get((0, 0)), None)
+    npt.assert_array_equal(matrix, expected)
+    npt.assert_equal(mapping[3, 4], [0, 1])
+    npt.assert_equal(mapping[4, 3], [2])
+    npt.assert_equal(mapping.get((0, 0)), None)
     # Test mapping and symmetric
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
                                           symmetric=True, return_mapping=True)
-    assert_equal(mapping[3, 4], [0, 1, 2])
+    npt.assert_equal(mapping[3, 4], [0, 1, 2])
     # When symmetric only (3,4) is a key, not (4, 3)
-    assert_equal(mapping.get((4, 3)), None)
+    npt.assert_equal(mapping.get((4, 3)), None)
     # expected output matrix is symmetric version of expected
     expected = expected + expected.T
-    assert_array_equal(matrix, expected)
+    npt.assert_array_equal(matrix, expected)
     # Test mapping_as_streamlines, mapping dict has lists of streamlines
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
                                           symmetric=False,
@@ -143,25 +145,25 @@ def test_connectivity_matrix():
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, label_volume, affine=affine)
     # In the symmetrical case, the matrix should be, well, symmetric:
-    assert_equal(matrix[4, 3], matrix[4, 3])
+    npt.assert_equal(matrix[4, 3], matrix[4, 3])
 
 
 def test_ndbincount():
     def check(expected):
-        assert_equal(bc[0, 0], expected[0])
-        assert_equal(bc[0, 1], expected[1])
-        assert_equal(bc[1, 0], expected[2])
-        assert_equal(bc[2, 2], expected[3])
+        npt.assert_equal(bc[0, 0], expected[0])
+        npt.assert_equal(bc[0, 1], expected[1])
+        npt.assert_equal(bc[1, 0], expected[2])
+        npt.assert_equal(bc[2, 2], expected[3])
 
     x = np.array([[0, 0], [0, 0], [0, 1], [0, 1], [1, 0], [2, 2]]).T
     expected = [2, 2, 1, 1]
     # count occurrences in x
     bc = ndbincount(x)
-    assert_equal(bc.shape, (3, 3))
+    npt.assert_equal(bc.shape, (3, 3))
     check(expected)
     # pass in shape
     bc = ndbincount(x, shape=(4, 5))
-    assert_equal(bc.shape, (4, 5))
+    npt.assert_equal(bc.shape, (4, 5))
     check(expected)
     # pass in weights
     weights = np.arange(6.)
@@ -170,7 +172,7 @@ def test_ndbincount():
     bc = ndbincount(x, weights=weights)
     check(expeceted)
     # raises an error if shape is too small
-    assert_raises(ValueError, ndbincount, x, None, (2, 2))
+    npt.assert_raises(ValueError, ndbincount, x, None, (2, 2))
 
 
 def test_reduce_labels():
@@ -179,34 +181,34 @@ def test_reduce_labels():
     labels = np.arange(100, np.prod(shape) + 100).reshape(shape)
     # new labels form 0 to 120, and lookup maps range(0,120) to range(100, 220)
     new_labels, lookup = reduce_labels(labels)
-    assert_array_equal(new_labels, labels - 100)
-    assert_array_equal(lookup, labels.ravel())
+    npt.assert_array_equal(new_labels, labels - 100)
+    npt.assert_array_equal(lookup, labels.ravel())
 
 
 def test_move_streamlines():
-    streamlines = make_streamlines()
+    streamlines, seeds = make_streamlines(True)
     affine = np.eye(4)
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
-        assert_array_equal(test_sl, streamlines[i])
+        npt.assert_array_equal(test_sl, streamlines[i])
 
     affine[:3, 3] += (4, 5, 6)
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
-        assert_array_equal(test_sl, streamlines[i] + (4, 5, 6))
+        npt.assert_array_equal(test_sl, streamlines[i] + (4, 5, 6))
 
     affine = np.eye(4)
     affine = affine[[2, 1, 0, 3]]
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
-        assert_array_equal(test_sl, streamlines[i][:, [2, 1, 0]])
+        npt.assert_array_equal(test_sl, streamlines[i][:, [2, 1, 0]])
 
     affine[:3, 3] += (4, 5, 6)
     new_streamlines = move_streamlines(streamlines, affine)
     undo_affine = move_streamlines(new_streamlines, np.eye(4),
                                    input_space=affine)
     for i, test_sl in enumerate(undo_affine):
-        assert_array_almost_equal(test_sl, streamlines[i])
+        npt.assert_array_almost_equal(test_sl, streamlines[i])
 
     # Test that changing affine does affect moving streamlines
     affineA = affine.copy()
@@ -215,7 +217,13 @@ def test_move_streamlines():
     streamlinesB = move_streamlines(streamlines, affineB)
     affineB[:] = 0
     for (a, b) in zip(streamlinesA, streamlinesB):
-        assert_array_equal(a, b)
+        npt.assert_array_equal(a, b)
+
+    # Test that seeds are also moved
+    streamlinesA, seedsA = zip(*move_streamlines(
+        streamlines, affineA, seeds=seeds))
+    for (seed, seedA) in zip(seeds, seedsA):
+        npt.assert_raises(AssertionError, npt.assert_array_equal, seed, seedA)
 
 
 def test_target():
@@ -245,38 +253,40 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
     # Both pass though
     mask[voxel_both_true] = True
     new = list(target_f(streamlines, mask, affine=affine))
-    assert_equal(len(new), 2)
+    npt.assert_equal(len(new), 2)
     new = list(target_f(streamlines, mask, affine=affine, include=False))
-    assert_equal(len(new), 0)
+    npt.assert_equal(len(new), 0)
 
     # only first
     mask[:] = False
     mask[voxel_one_true] = True
     new = list(target_f(streamlines, mask, affine=affine))
-    assert_equal(len(new), 1)
+    npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
     new = list(target_f(streamlines, mask, affine=affine, include=False))
-    assert_equal(len(new), 1)
+    npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
     # Test that bad points raise a value error
     if test_bad_points:
         bad_sl = streamlines + [np.array([[10.0, 10.0, 10.0]])]
         new = target_f(bad_sl, mask, affine=affine)
-        assert_raises(ValueError, list, new)
+        npt.assert_raises(ValueError, list, new)
         bad_sl = streamlines + [-np.array([[10.0, 10.0, 10.0]])]
         new = target_f(bad_sl, mask, affine=affine)
-        assert_raises(ValueError, list, new)
+        npt.assert_raises(ValueError, list, new)
 
     # Test smaller voxels
-    affine = np.random.random((4, 4)) - .5
-    affine[3] = [0, 0, 0, 1]
+    affine = np.array([[.3, 0, 0, 0],
+                       [0, .2, 0, 0],
+                       [0, 0, .4, 0],
+                       [0, 0, 0, 1]])
     streamlines = list(move_streamlines(streamlines, affine))
     new = list(target_f(streamlines, mask, affine=affine))
-    assert_equal(len(new), 1)
+    npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
     new = list(target_f(streamlines, mask, affine=affine, include=False))
-    assert_equal(len(new), 1)
+    npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
     # Test that changing mask or affine does not break target/target_line_based
@@ -286,9 +296,9 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
     mask[:] = False
     include = list(include)
     exclude = list(exclude)
-    assert_equal(len(include), 1)
+    npt.assert_equal(len(include), 1)
     assert_true(include[0] is streamlines[0])
-    assert_equal(len(exclude), 1)
+    npt.assert_equal(len(exclude), 1)
     assert_true(exclude[0] is streamlines[1])
 
 
@@ -307,65 +317,70 @@ def test_near_roi():
     mask[0, 0, 0] = True
     mask[1, 0, 0] = True
 
-    assert_array_equal(near_roi(streamlines, mask, tol=1),
-                       np.array([True, True, False]))
-    assert_array_equal(near_roi(streamlines, mask),
-                       np.array([False, True, False]))
+    npt.assert_array_equal(near_roi(streamlines, mask, tol=1),
+                           np.array([True, True, False]))
+    npt.assert_array_equal(near_roi(streamlines, mask),
+                           np.array([False, True, False]))
 
     # If there is an affine, we need to use it:
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
     x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=1),
-                       np.array([True, True, False]))
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
-                                tol=None),
-                       np.array([False, True, False]))
+    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=1),
+                           np.array([True, True, False]))
+    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                    tol=None),
+                           np.array([False, True, False]))
 
     # Test for use of the 'all' mode:
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=None,
-                                mode='all'), np.array([False, False, False]))
+    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                    tol=None, mode='all'),
+                           np.array([False, False, False]))
 
     mask[0, 1, 1] = True
     mask[0, 2, 2] = True
     # Test for use of the 'all' mode, also testing that setting the tolerance
     # to a very small number gets overridden:
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=0.1,
-                                mode='all'), np.array([False, True, False]))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        npt.assert_array_equal(near_roi(x_streamlines,
+                                        mask, affine=affine,
+                                        tol=0.1,
+                                        mode='all'),
+                               np.array([False, True, False]))
 
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True
-    assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
-                                tol=None,
-                                mode='all'),
-                       np.array([False, True, True]))
+    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+                                    tol=None, mode='all'),
+                           np.array([False, True, True]))
 
     # Test for use of endpoints as selection criteria:
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 1, 1] = True
     mask[3, 2, 2] = True
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87,
-                                mode="either_end"),
-                       np.array([True, False, False]))
+    npt.assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+                                    mode="either_end"),
+                           np.array([True, False, False]))
 
-    assert_array_equal(near_roi(streamlines, mask, tol=0.87,
-                                mode="both_end"),
-                       np.array([False, False, False]))
+    npt.assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+                                    mode="both_end"),
+                           np.array([False, False, False]))
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
-    assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
-                       np.array([False, True, False]))
+    npt.assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
+                           np.array([False, True, False]))
 
     # Test with a generator input:
     def generate_sl(streamlines):
         for sl in streamlines:
             yield sl
 
-    assert_array_equal(near_roi(generate_sl(streamlines),
-                                mask, mode="both_end"),
-                       np.array([False, True, False]))
+    npt.assert_array_equal(near_roi(generate_sl(streamlines),
+                                    mask, mode="both_end"),
+                           np.array([False, True, False]))
 
 
 def test_voxel_ornt():
@@ -379,43 +394,43 @@ def test_voxel_ornt():
     srp = orientation_from_string('srp')
 
     affine = reorder_voxels_affine(ras, ras, sh, sz)
-    assert_array_equal(affine, I4)
+    npt.assert_array_equal(affine, I4)
     affine = reorder_voxels_affine(sra, sra, sh, sz)
-    assert_array_equal(affine, I4)
+    npt.assert_array_equal(affine, I4)
     affine = reorder_voxels_affine(lpi, lpi, sh, sz)
-    assert_array_equal(affine, I4)
+    npt.assert_array_equal(affine, I4)
     affine = reorder_voxels_affine(srp, srp, sh, sz)
-    assert_array_equal(affine, I4)
+    npt.assert_array_equal(affine, I4)
 
     streamlines = make_streamlines()
     box = np.array(sh) * sz
 
     sra_affine = reorder_voxels_affine(ras, sra, sh, sz)
     toras_affine = reorder_voxels_affine(sra, ras, sh, sz)
-    assert_array_equal(np.dot(toras_affine, sra_affine), I4)
+    npt.assert_array_equal(np.dot(toras_affine, sra_affine), I4)
     expected_sl = (sl[:, [2, 0, 1]] for sl in streamlines)
     test_sl = move_streamlines(streamlines, sra_affine)
-    for _ in xrange(len(streamlines)):
-        assert_array_equal(next(test_sl), next(expected_sl))
+    for _ in range(len(streamlines)):
+        npt.assert_array_equal(next(test_sl), next(expected_sl))
 
     lpi_affine = reorder_voxels_affine(ras, lpi, sh, sz)
     toras_affine = reorder_voxels_affine(lpi, ras, sh, sz)
-    assert_array_equal(np.dot(toras_affine, lpi_affine), I4)
+    npt.assert_array_equal(np.dot(toras_affine, lpi_affine), I4)
     expected_sl = (box - sl for sl in streamlines)
     test_sl = move_streamlines(streamlines, lpi_affine)
-    for _ in xrange(len(streamlines)):
-        assert_array_equal(next(test_sl), next(expected_sl))
+    for _ in range(len(streamlines)):
+        npt.assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
     toras_affine = reorder_voxels_affine(srp, ras, (40, 40, 40), (3, 1, 2))
-    assert_array_equal(np.dot(toras_affine, srp_affine), I4)
+    npt.assert_array_equal(np.dot(toras_affine, srp_affine), I4)
     expected_sl = [sl.copy() for sl in streamlines]
     for sl in expected_sl:
         sl[:, 1] = box[1] - sl[:, 1]
     expected_sl = (sl[:, [2, 0, 1]] for sl in expected_sl)
     test_sl = move_streamlines(streamlines, srp_affine)
-    for _ in xrange(len(streamlines)):
-        assert_array_equal(next(test_sl), next(expected_sl))
+    for _ in range(len(streamlines)):
+        npt.assert_array_equal(next(test_sl), next(expected_sl))
 
 
 def test_streamline_mapping():
@@ -425,20 +440,20 @@ def test_streamline_mapping():
     mapping = streamline_mapping(streamlines, (1, 1, 1))
     expected = {(0, 0, 0): [0, 1, 2], (0, 2, 2): [0, 1, 2],
                 (0, 1, 1): [1, 2]}
-    assert_equal(mapping, expected)
+    npt.assert_equal(mapping, expected)
 
     mapping = streamline_mapping(streamlines, (1, 1, 1),
                                  mapping_as_streamlines=True)
     expected = dict((k, [streamlines[i] for i in indices])
                     for k, indices in expected.items())
-    assert_equal(mapping, expected)
+    npt.assert_equal(mapping, expected)
 
     # Test passing affine
     affine = np.eye(4)
     affine[:3, 3] = .5
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
-    assert_equal(mapping, expected)
+    npt.assert_equal(mapping, expected)
 
     # Make the voxel size smaller
     affine = np.diag([.5, .5, .5, 1.])
@@ -447,14 +462,14 @@ def test_streamline_mapping():
                     for key, value in expected.items())
     mapping = streamline_mapping(streamlines, affine=affine,
                                  mapping_as_streamlines=True)
-    assert_equal(mapping, expected)
+    npt.assert_equal(mapping, expected)
 
 
 def test_affine_for_trackvis():
     voxel_size = np.array([1., 2, 3.])
     affine = affine_for_trackvis(voxel_size)
     origin = np.dot(affine, [0, 0, 0, 1])
-    assert_array_almost_equal(origin[:3], voxel_size / 2)
+    npt.assert_array_almost_equal(origin[:3], voxel_size / 2)
 
 
 def test_length():
@@ -476,65 +491,65 @@ def test_length():
 
     bundle_lengths = length(bundle)
     for idx, this_length in enumerate(bundle_lengths):
-        assert_equal(this_length, metrix.length(bundle[idx]))
+        npt.assert_equal(this_length, metrix.length(bundle[idx]))
 
 
 def test_seeds_from_mask():
-    mask = np.random.random_integers(0, 1, size=(10, 10, 10))
+    mask = np.random.randint(0, 1, size=(10, 10, 10))
     seeds = seeds_from_mask(mask, density=1)
-    assert_equal(mask.sum(), len(seeds))
-    assert_array_equal(np.argwhere(mask), seeds)
+    npt.assert_equal(mask.sum(), len(seeds))
+    npt.assert_array_equal(np.argwhere(mask), seeds)
 
     mask[:] = False
     mask[3, 3, 3] = True
     seeds = seeds_from_mask(mask, density=[3, 4, 5])
-    assert_equal(len(seeds), 3 * 4 * 5)
+    npt.assert_equal(len(seeds), 3 * 4 * 5)
     assert_true(np.all((seeds > 2.5) & (seeds < 3.5)))
 
     mask[4, 4, 4] = True
     seeds = seeds_from_mask(mask, density=[3, 4, 5])
-    assert_equal(len(seeds), 2 * 3 * 4 * 5)
+    npt.assert_equal(len(seeds), 2 * 3 * 4 * 5)
     assert_true(np.all((seeds > 2.5) & (seeds < 4.5)))
     in_333 = ((seeds > 2.5) & (seeds < 3.5)).all(1)
-    assert_equal(in_333.sum(), 3 * 4 * 5)
+    npt.assert_equal(in_333.sum(), 3 * 4 * 5)
     in_444 = ((seeds > 3.5) & (seeds < 4.5)).all(1)
-    assert_equal(in_444.sum(), 3 * 4 * 5)
+    npt.assert_equal(in_444.sum(), 3 * 4 * 5)
 
 
 def test_random_seeds_from_mask():
-    mask = np.random.random_integers(0, 1, size=(4, 6, 3))
+    mask = np.random.randint(0, 1, size=(4, 6, 3))
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=24,
                                    seed_count_per_voxel=True)
-    assert_equal(mask.sum() * 24, len(seeds))
+    npt.assert_equal(mask.sum() * 24, len(seeds))
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=0,
                                    seed_count_per_voxel=True)
-    assert_equal(0, len(seeds))
+    npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=8,
                                    seed_count_per_voxel=True)
-    assert_equal(mask.sum() * 8, len(seeds))
+    npt.assert_equal(mask.sum() * 8, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=24,
                                    seed_count_per_voxel=False)
-    assert_equal(24, len(seeds))
+    npt.assert_equal(24, len(seeds))
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=0,
                                    seed_count_per_voxel=False)
-    assert_equal(0, len(seeds))
+    npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
     seeds = random_seeds_from_mask(mask,
                                    seeds_count=100,
                                    seed_count_per_voxel=False)
-    assert_equal(100, len(seeds))
+    npt.assert_equal(100, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
     mask = np.zeros((15, 15, 15))
@@ -569,7 +584,7 @@ def test_connectivity_matrix_shape():
                              [0., 1., 0.5],
                              [0., 1., 0.]])]
     matrix = connectivity_matrix(streamlines, labels, affine=np.eye(4))
-    assert_equal(matrix.shape, (3, 3))
+    npt.assert_equal(matrix.shape, (3, 3))
 
 
 def test_unique_rows():
@@ -578,12 +593,12 @@ def test_unique_rows():
     """
     arr = np.array([[1, 2, 3], [1, 2, 3], [2, 3, 4], [3, 4, 5]])
     arr_w_unique = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
-    assert_array_equal(unique_rows(arr), arr_w_unique)
+    npt.assert_array_equal(unique_rows(arr), arr_w_unique)
 
     # Should preserve order:
     arr = np.array([[2, 3, 4], [1, 2, 3], [1, 2, 3], [3, 4, 5]])
     arr_w_unique = np.array([[2, 3, 4], [1, 2, 3], [3, 4, 5]])
-    assert_array_equal(unique_rows(arr), arr_w_unique)
+    npt.assert_array_equal(unique_rows(arr), arr_w_unique)
 
     # Should work even with longer arrays:
     arr = np.array([[2, 3, 4], [1, 2, 3], [1, 2, 3], [3, 4, 5],
@@ -591,7 +606,7 @@ def test_unique_rows():
     arr_w_unique = np.array([[2, 3, 4], [1, 2, 3], [3, 4, 5],
                              [6, 7, 8], [0, 1, 0], [1, 0, 1]])
 
-    assert_array_equal(unique_rows(arr), arr_w_unique)
+    npt.assert_array_equal(unique_rows(arr), arr_w_unique)
 
 
 def test_reduce_rois():
@@ -624,8 +639,8 @@ def test_flexi_tvis_affine():
     affine = flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size)
 
     origin = np.dot(affine, [0, 0, 0, 1])
-    assert_array_almost_equal(origin[:3],
-                              np.multiply(dim, voxel_size) - voxel_size / 2)
+    npt.assert_array_almost_equal(origin[:3], np.multiply(dim, voxel_size) -
+                                  voxel_size / 2)
 
 
 def test_get_flexi_tvis_affine():
@@ -641,9 +656,8 @@ def test_get_flexi_tvis_affine():
 
     origin = np.dot(affine, [0, 0, 0, 1])
     vsz = np.array(tvis_hdr['voxel_size'])
-    assert_array_almost_equal(origin[:3],
-                              np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
-
+    npt.assert_array_almost_equal(origin[:3],
+                                  np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
 
     # grid_affine =
     tvis_hdr['voxel_order'] = 'ASL'
@@ -653,8 +667,8 @@ def test_get_flexi_tvis_affine():
     vox_point = np.array([9, 8, 7])
     trk_point = np.dot(affine, np.append(vox_point, 1))
 
-    assert_array_almost_equal(trk_point[:3],
-                              (vox_point[[1, 2, 0]] + 0.5) * vsz)
+    npt.assert_array_almost_equal(trk_point[:3],
+                                  (vox_point[[1, 2, 0]] + 0.5) * vsz)
 
 
 def test_path_length():
@@ -713,3 +727,7 @@ def test_min_at():
 
     _min_at(a, (i, j, k), values)
     npt.assert_array_equal(a, [[[100, 11, 1, 10]]])
+
+
+if __name__ == "__main__":
+    npt.run_module_suite()

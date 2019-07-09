@@ -27,7 +27,7 @@ ext: recspeed.so propspeed.so vox2track.so \
     mrf.so
 
 test: ext
-	nosetests .
+	pytest -s --verbose --doctest-modules .
 
 cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/cythonutils.html ${PKGDIR}/segment/featurespeed.html ${PKGDIR}/segment/metricspeed.html ${PKGDIR}/segment/clusteringspeed.html ${PKGDIR}/segment/clustering_algorithms.html
 

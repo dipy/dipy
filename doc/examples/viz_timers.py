@@ -45,7 +45,7 @@ counter = itertools.count()
 def timer_callback(obj, event):
     cnt = next(counter)
     tb.message = "Let's count up to 100 and exit :" + str(cnt)
-    showm.ren.azimuth(0.05 * cnt)
+    renderer.azimuth(0.05 * cnt)
     sphere_actor.GetProperty().SetOpacity(cnt/100.)
     showm.render()
     if cnt == 100:
@@ -59,7 +59,7 @@ showm.add_timer_callback(True, 200, timer_callback)
 
 showm.start()
 
-window.record(showm.ren, size=(900, 768), out_path="viz_timer.png")
+window.record(renderer, size=(900, 768), out_path="viz_timer.png")
 
 """
 .. figure:: viz_timer.png

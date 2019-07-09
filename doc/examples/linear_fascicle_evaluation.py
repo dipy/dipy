@@ -5,8 +5,8 @@ Linear fascicle evaluation (LiFE)
 
 Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography
-results is to use a forward model that predicts the signal from each of a set of
-streamlines, and then fit a linear model to these simultaneous predictions
+results is to use a forward model that predicts the signal from each of a set
+of streamlines, and then fit a linear model to these simultaneous predictions
 [Pestilli2014]_.
 
 We will use streamlines generated using probabilistic tracking on CSA
@@ -48,25 +48,25 @@ candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
 """
 
 The streamlines that are entered into the model are termed 'candidate
-streamliness' (or a 'candidate connectome'):
+streamlines' (or a 'candidate connectome'):
 
 """
 
 
 """
 
-Let's visualize the initial candidate group of streamlines in 3D, relative to the
-anatomical structure of this brain:
+Let's visualize the initial candidate group of streamlines in 3D, relative to
+the anatomical structure of this brain:
 
 """
 
-from dipy.viz.colormap import line_colors
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap as cmap
 
 # Enables/disables interactive visualization
 interactive = False
 
-candidate_streamlines_actor = actor.streamtube(candidate_sl, line_colors(candidate_sl))
+candidate_streamlines_actor = actor.streamtube(candidate_sl,
+                                               cmap.line_colors(candidate_sl))
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
                                       opacity=0.5)
 
@@ -82,7 +82,7 @@ ren.add(candidate_streamlines_actor)
 ren.add(cc_ROI_actor)
 ren.add(vol_actor)
 ren.add(vol_actor2)
-window.record(n_frames=1,
+window.record(ren, n_frames=1,
               out_path='life_candidates.png',
               size=(800, 800))
 if interactive:
@@ -182,7 +182,7 @@ optimized group of streamlines:
 
 optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
 ren = window.Renderer()
-ren.add(actor.streamtube(optimized_sl, line_colors(optimized_sl)))
+ren.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
 ren.add(cc_ROI_actor)
 ren.add(vol_actor)
 window.record(ren, n_frames=1, out_path='life_optimized.png',

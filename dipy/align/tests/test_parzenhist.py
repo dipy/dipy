@@ -3,7 +3,7 @@ import scipy as sp
 from functools import reduce
 from operator import mul
 from dipy.core.ndindex import ndindex
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.align import vector_fields as vf
 from dipy.align.transforms import regtransforms
 from dipy.align.parzenhist import (ParzenJointHistogram,
@@ -279,7 +279,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
     np.random.seed(3147702)
     zero_slices = nslices // 3
 
-    fname = get_data('t1_coronal_slice')
+    fname = get_fnames('t1_coronal_slice')
     moving_slice = np.load(fname)
     moving_slice = moving_slice[40:180, 50:210]
 

@@ -1,0 +1,174 @@
+"""
+========================================================
+Extracting AFQ tract profiles from segmented bundles.
+========================================================
+
+In this example, we will we will extract the values of a statistic from a
+volume, using the coordinates along the length of a bundle. These are called
+`tract profiles`
+
+One of the challenges of extracting tract profiles is that some of the
+streamlines in a bundle may diverge significantly from the bundle in some
+locations. To overcome this challenge, we will use a strategy similar to that
+described in [Yeatman2012]_: We will weight the contribution of each streamline
+to the bundle profile based on how far this streamline is from the mean
+trajectory of the bundle at that location.
+
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+import os.path as op
+
+"""
+
+To get started, we will grab the bundles that were extracted in the bundle
+extraction example. If the example hasn't been run yet, these files don't
+yet exist, and we'll need to run that example:
+
+"""
+
+if not (op.exists("CST_L.trk") and
+        op.exists("AF_L.trk") and
+        op.exists("slr_transform.npy")):
+    import bundle_extraction
+
+"""
+
+Either way, we can use the `dipy.io` API to read in the bundles from file.
+`load_trk` returns both the streamlines, as well as header information.
+
+"""
+
+from dipy.io.streamline import load_trk
+cst_l, hdr = load_trk("CST_L.trk")
+af_l, hdr = load_trk("AF_L.trk")
+
+transform = np.load("slr_transform.npy")
+
+"""
+
+In the next step, we need to make sure that all the streamlines in each bundle
+are oriented the same way. For example, for the CST, we want to make sure that
+all the bundles have their cortical termination at one end of the streamline.
+This is that when we later extract values from a volume, we won't have different
+streamlines going in opposite directions.
+
+To orient all the streamlines in each bundles, we will create standard
+streamlines, by finding the centroids of the left AF and CST bundle models.
+
+The advantage of using the model bundles is that we can use the same standard
+for different subjects, which means that we'll get roughly the same orientation
+"""
+
+import dipy.data as dpd
+from dipy.data.fetcher import get_two_hcp842_bundles
+model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
+
+model_af_l, hdr = load_trk(model_af_l_file)
+model_cst_l, hdr = load_trk(model_cst_l_file)
+
+
+from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
+                                 ResampleFeature)
+from dipy.segment.clustering import QuickBundles
+
+feature = ResampleFeature(nb_points=100)
+metric = AveragePointwiseEuclideanMetric(feature)
+
+"""
+Since we are going to include all of the streamlines in the single cluster
+from the streamlines, we set the threshold to `np.inf`. We pull out the
+centroid as the standard.
+"""
+
+qb = QuickBundles(np.inf, metric=metric)
+
+cluster_cst_l = qb.cluster(model_cst_l)
+standard_cst_l = cluster_cst_l.centroids[0]
+
+cluster_af_l = qb.cluster(model_af_l)
+standard_af_l = cluster_af_l.centroids[0]
+
+"""
+We use the centroid streamline for each atlas bundle as the standard to orient
+all of the streamlines in each bundle from the individual subject. Here, the
+affine used is the one from the transform between the atlas and individual
+tractogram. This is so that the orienting is done relative to the space of the
+individual, and not relative to the atlas space.
+"""
+
+import dipy.tracking.streamline as dts
+
+oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l,
+                                          affine=transform)
+oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
+                                         affine=transform)
+
+
+"""
+Read volumetric data from an image corresponding to this subject.
+
+For the purpose of this, we've extracted only the FA within the bundles in question,
+but in real use, this is where you would add the FA map of your subject.
+"""
+
+files, folder = dpd.fetch_bundle_fa_hcp()
+
+import nibabel as nib
+img = nib.load(op.join(folder, "hcp_bundle_fa.nii.gz"))
+fa = img.get_fdata()
+
+
+"""
+Calculate weights for each bundle:
+"""
+
+import dipy.stats.analysis as dsa
+
+w_cst_l = dsa.gaussian_weights(oriented_cst_l)
+w_af_l = dsa.gaussian_weights(oriented_af_l)
+
+"""
+And then use the weights to calculate the tract profiles for each bundle
+"""
+
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=img.affine,
+                                weights=w_cst_l)
+
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, affine=img.affine,
+                               weights=w_af_l)
+
+fig, (ax1, ax2) = plt.subplots(1, 2)
+
+ax1.plot(profile_cst_l)
+ax1.set_ylabel("Fractional anisotropy")
+ax1.set_xlabel("Node along CST")
+ax2.plot(profile_af_l)
+ax2.set_xlabel("Node along AF")
+fig.savefig("tract_profiles")
+
+"""
+.. figure:: tract_profiles.png
+   :align: center
+
+   Bundle profiles for the fractional anisotropy in left CST (left) and left
+   AF (right).
+"""
+
+"""
+References
+----------
+
+.. [Yeatman2012] Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
+    Brian A. Wandell, and Heidi M. Feldman. 2012. "Tract Profiles of White
+    Matter Properties: Automating Fiber-Tract Quantification" PloS One 7 (11):
+    e49790.
+
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles
+   using local and global streamline-based registration and clustering,
+   Neuroimage, 2017.
+
+.. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+   tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.
+"""

@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import abc
-from dipy.utils.six import with_metaclass
 import numpy as np
 import numpy.linalg as npl
 import scipy as sp
@@ -199,7 +198,7 @@ class DiffeomorphicMap(object):
         self.backward = None
 
     def interpret_matrix(self, obj):
-        ''' Try to interpret `obj` as a matrix
+        """ Try to interpret `obj` as a matrix
 
         Some operations are performed faster if we know in advance if a matrix
         is the identity (so we can skip the actual matrix-vector
@@ -217,7 +216,7 @@ class DiffeomorphicMap(object):
         obj : object
             the same object given as argument if `obj` is None or a numpy
             array. None if `obj` is the 'identity' string.
-        '''
+        """
         if (obj is None) or isinstance(obj, np.ndarray):
             return obj
         if isinstance(obj, str) and (obj == 'identity'):
@@ -830,7 +829,7 @@ class DiffeomorphicMap(object):
         return simplified
 
 
-class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
+class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
     def __init__(self, metric=None):
         r""" Diffeomorphic Registration
 

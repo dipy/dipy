@@ -152,7 +152,7 @@ print t2-t1,len(T)
 
 Tfinal=[]
 
-'''
+"""
 for (i,track) in enumerate(T):
     print i
     ntrack=np.dot(track,im2im[:3,:3].T)+im2im[:3,3]
@@ -161,7 +161,7 @@ for (i,track) in enumerate(T):
     mck=mc(dk,ntrack.T)
     wtrack=ntrack+np.vstack((mci,mcj,mck)).T
     Tfinal.append(np.dot(wtrack,daff[:3,:3].T)+daff[:3,3])
-'''
+"""
 
 lengths=[len(t) for t in T]
 lengths.insert(0,0)
@@ -188,12 +188,12 @@ imgref=nib.load(ref_fname)
 refdata=imgref.get_data()
 refaff=imgref.affine
 
-'''
+"""
 refI=np.array(np.where(refdata>5000)).T    
 wrefI=np.dot(refaff[:3,:3],refI.T).T+refaff[:3,3]
 print wrefI.shape
 wrefI=wrefI.astype('f4')
-'''
+"""
 
     
 from dipy.viz import fos
@@ -302,21 +302,21 @@ print daff
 #n1=cube_mni_grid_nearest[1,:]
 #n2=cube_mni_grid_nearest[2,:]
 
-'''
+"""
 n0 = np.min(np.max(cube_mni_grid_nearest[0,:],0),d0)
 n1 = np.min(np.max(cube_mni_grid_nearest[1,:],0),d1)
 n2 = np.min(np.max(cube_mni_grid_nearest[2,:],0),d2)
-'''
+"""
 
 
 #cube_mni_data=np.zeros(disdata.shape[:-1],dtype=np.float32)
 
 #cube_mni_data[n0,n1,n2]=1
 
-'''
+"""
 D=disdata[n0,n1,n2]
 
-'''
+"""
 
 #from dipy.viz import fos
 #r=fos.ren()
@@ -392,16 +392,16 @@ D=disdata[n0,n1,n2]
 
 def test_flirt2aff():
     from os.path import join as pjoin
-    from nose.tools import assert_true
+    from dipy.testing import assert_true
     import scipy.ndimage as ndi
     import nibabel as nib
     
-    '''
+    """
     matfile = pjoin('fa_data',
                     '1312211075232351192010092912092080924175865ep2dadvdiffDSI10125x25x25STs005a001_affine_transf.mat')
     in_fname = pjoin('fa_data',
                      '1312211075232351192010092912092080924175865ep2dadvdiffDSI10125x25x25STs005a001_bet_FA.nii.gz')
-    '''
+    """
     
     matfile=flirtaff
     in_fname = ffa

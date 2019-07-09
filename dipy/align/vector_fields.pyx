@@ -6,7 +6,7 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
-from .fused_types cimport floating, number
+from dipy.align.fused_types cimport floating, number
 
 
 cdef extern from "dpy_math.h" nogil:

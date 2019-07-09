@@ -236,7 +236,7 @@ class MapmriModel(ReconstModel, Cache):
             msg = "Laplacian Regularization weighting must be 'GCV', "
             msg += "a positive float or an array of positive floats."
             if isinstance(laplacian_weighting, str):
-                if laplacian_weighting is not 'GCV':
+                if not laplacian_weighting == 'GCV':
                     raise ValueError(msg)
             elif (isinstance(laplacian_weighting, float) or
                     isinstance(laplacian_weighting, np.ndarray)):
@@ -351,7 +351,7 @@ class MapmriModel(ReconstModel, Cache):
                     self.ind_mat, mu, self.S_mat, self.T_mat, self.U_mat)
             else:
                 laplacian_matrix = self.laplacian_matrix * mu[0]
-            if self.laplacian_weighting is 'GCV':
+            if self.laplacian_weighting == 'GCV':
                 try:
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)
@@ -396,10 +396,16 @@ class MapmriModel(ReconstModel, Cache):
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             c = cvxpy.Variable(M.shape[1])
             design_matrix = cvxpy.Constant(M)
-            objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
-                lopt * cvxpy.quad_form(c, laplacian_matrix)
-            )
+            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
+            # See https://github.com/cvxgrp/cvxpy/issues/672
+            if not lopt:
+                objective = cvxpy.Minimize(
+                    cvxpy.sum_squares(design_matrix * c - data_norm))
+            else:
+                objective = cvxpy.Minimize(
+                    cvxpy.sum_squares(design_matrix * c - data_norm) +
+                    lopt * cvxpy.quad_form(c, laplacian_matrix)
+                )
             M0 = M[self.gtab.b0s_mask, :]
             constraints = [(M0[0] * c) == 1,
                            (K * c) >= -0.1]
@@ -457,7 +463,6 @@ class MapmriFit(ReconstFit):
             that after positivity constraint failed, also matrix inversion
             failed.
         """
-
         self.model = model
         self._mapmri_coef = mapmri_coef
         self.gtab = model.gtab
@@ -1399,8 +1404,8 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
 
 
 def mapmri_isotropic_M_mu_dependent(radial_order, mu, qval):
-    '''Computed the mu dependent part of the signal design matrix.
-    '''
+    """Computed the mu dependent part of the signal design matrix.
+    """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
@@ -1491,8 +1496,8 @@ def mapmri_isotropic_radial_pdf_basis(j, l, mu, r):
 
 
 def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
-    '''Computes mu independent part of K. Same trick as with M.
-    '''
+    """Computes mu independent part of K. Same trick as with M.
+    """
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
                                 rgrad[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1517,8 +1522,8 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
 
 
 def mapmri_isotropic_K_mu_dependent(radial_order, mu, rgrad):
-    '''Computes mu dependent part of M. Same trick as with M.
-    '''
+    """Computes mu dependent part of M. Same trick as with M.
+    """
     r, theta, phi = cart2sphere(rgrad[:, 0], rgrad[:, 1],
                                 rgrad[:, 2])
     theta[np.isnan(theta)] = 0
@@ -1660,7 +1665,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
 
 
 def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
-    r''' Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    r""" Computes the Laplacian regularization matrix for MAP-MRI's isotropic
     implementation [1]_ eq. (C7).
 
     Parameters
@@ -1680,8 +1685,35 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
-    '''
+    """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
+    return mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
+        ind_mat, mu
+    )
+
+
+def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
+    r""" Computes the Laplacian regularization matrix for MAP-MRI's isotropic
+    implementation [1]_ eq. (C7).
+
+    Parameters
+    ----------
+    ind_mat : matrix (N_coef, 3),
+            Basis order matrix
+    mu : float,
+        isotropic scale factor of the isotropic MAP-MRI basis
+
+    Returns
+    -------
+    LR : Matrix, shape (N_coef, N_coef)
+        Laplacian regularization matrix
+
+    References
+    ----------
+    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    using Laplacian-regularized MAP-MRI and its application to HCP data."
+    NeuroImage (2016).
+    """
     n_elem = ind_mat.shape[0]
     LR = np.zeros((n_elem, n_elem))
 
@@ -1795,7 +1827,7 @@ def map_laplace_u(n, m):
     Returns
     -------
     U : float,
-        Analytical integral of $\phi_n(q) * \phi_m(q)$
+        Analytical integral of :math:`\phi_n(q) * \phi_m(q)`
 
     References
     ----------
@@ -1816,7 +1848,7 @@ def map_laplace_t(n, m):
     Returns
     -------
     T : float
-        Analytical integral of $\phi_n(q) * \phi_m''(q)$
+        Analytical integral of :math:`\phi_n(q) * \phi_m''(q)`
 
     References
     ----------
@@ -1840,7 +1872,7 @@ def map_laplace_s(n, m):
     Returns
     -------
     S : float
-        Analytical integral of $\phi_n''(q) * \phi_m''(q)$
+        Analytical integral of :math:`\phi_n''(q) * \phi_m''(q)`
 
     References
     ----------
@@ -1984,7 +2016,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
         gcvold = gcvnew
         i = i + 1
         S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
-        trS = np.matrix.trace(S)
+        trS = np.trace(S)
         normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
         gcvnew = normyytilde / (K - trS)
     lopt = lrange[i - 1]
@@ -2033,7 +2065,7 @@ def gcv_cost_function(weight, args):
     """
     data, M, MMt, K, LR = args
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
-    trS = np.matrix.trace(S)
+    trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
     return gcv_value

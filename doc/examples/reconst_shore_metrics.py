@@ -15,7 +15,7 @@ import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.data import get_data, dsi_voxels
+from dipy.data import dsi_voxels
 from dipy.reconst.shore import ShoreModel
 
 """

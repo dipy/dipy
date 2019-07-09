@@ -1,11 +1,12 @@
-"""Test spherical harmonic models and the tools associated with those models"""
+"""Test spherical harmonic models and the tools associated with those models.
+"""
 import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from nose.tools import assert_equal, assert_raises, assert_true
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-import numpy.testing as npt
+from dipy.testing import assert_true
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_equal, assert_raises, run_module_suite)
 from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
@@ -38,7 +39,7 @@ def test_order_from_ncoeff():
     for sh_order in [2, 4, 6, 8, 12, 24]:
         m, n = sph_harm_ind_list(sh_order)
         n_coef = m.shape[0]
-        npt.assert_equal(order_from_ncoef(n_coef), sh_order)
+        assert_equal(order_from_ncoef(n_coef), sh_order)
 
 
 def test_sph_harm_ind_list():
@@ -106,16 +107,16 @@ def test_real_sym_sh_mrtrix():
 
 def test_real_sym_sh_basis():
     # This test should do for now
-    # The mrtrix basis should be the same as re-ordering and re-scaling the
-    # fibernav basis
+    # The tournier07 basis should be the same as re-ordering and re-scaling the
+    # descoteaux07 basis
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
     sphere = hemi_icosahedron.subdivide(2)
     basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
     expected = basis[:, new_order]
     expected *= np.where(m == 0, 1., np.sqrt(2))
 
-    fibernav_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
-    assert_array_almost_equal(fibernav_basis, expected)
+    descoteaux07_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
+    assert_array_almost_equal(descoteaux07_basis, expected)
 
 
 def test_smooth_pinv():
@@ -264,6 +265,14 @@ class TestQballModel(object):
         fit = model.fit(signal, mask)
         assert_array_equal(fit.gfa, 0)
 
+    def test_min_signal_default(self):
+        signal, gtab, expected = make_fake_signal()
+        model_default = self.model(gtab, 4)
+        shm_default = model_default.fit(signal).shm_coeff
+        model_correct = self.model(gtab, 4, min_signal=1e-5)
+        shm_correct = model_correct.fit(signal).shm_coeff
+        assert_equal(shm_default, shm_correct)
+
 
 def test_SphHarmFit():
     coef = np.zeros((3, 4, 5, 45))
@@ -360,13 +369,33 @@ def test_sf_to_sh():
     odf2 = sh_to_sf(odf_sh, sphere, 8)
     assert_array_almost_equal(odf, odf2, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "mrtrix")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "mrtrix")
+    odf_sh = sf_to_sh(odf, sphere, 8, "tournier07")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "tournier07")
     assert_array_almost_equal(odf, odf2, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "fibernav")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "fibernav")
+    # Test the basis naming deprecation
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", DeprecationWarning)
+        odf_sh_mrtrix = sf_to_sh(odf, sphere, 8, "mrtrix")
+        odf2_mrtrix = sh_to_sf(odf_sh_mrtrix, sphere, 8, "mrtrix")
+        assert_array_almost_equal(odf, odf2_mrtrix, 2)
+        assert len(w) != 0
+        assert issubclass(w[-1].category, DeprecationWarning)
+        warnings.simplefilter("default", DeprecationWarning)
+
+    odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux07")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux07")
     assert_array_almost_equal(odf, odf2, 2)
+
+    # Test the basis naming deprecation
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", DeprecationWarning)
+        odf_sh_fibernav = sf_to_sh(odf, sphere, 8, "fibernav")
+        odf2_fibernav = sh_to_sf(odf_sh_fibernav, sphere, 8, "fibernav")
+        assert_array_almost_equal(odf, odf2_fibernav, 2)
+        assert len(w) != 0
+        assert issubclass(w[-1].category, DeprecationWarning)
+        warnings.simplefilter("default", DeprecationWarning)
 
     # 2D case
     odf2d = np.vstack((odf2, odf))
@@ -460,5 +489,4 @@ def test_calculate_max_order():
     assert_raises(ValueError, calculate_max_order, 29)
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    run_module_suite()

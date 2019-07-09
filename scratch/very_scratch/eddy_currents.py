@@ -8,7 +8,7 @@ dname = '/home/eg01/Data_Backup/Data/Eleftherios/CBU090133_METHODS/20090227_1454
 
 data,affine,bvals,gradients=dp.load_dcm_dir(dname)
 
-'''
+"""
 rot=np.array([[1,0,0,0],
               [0,np.cos(np.pi/2),-np.sin(np.pi/2),0],
               [0,np.sin(np.pi/2), np.cos(np.pi/2),0],
@@ -17,7 +17,7 @@ rot=np.array([[1,0,0,0],
 from scipy.ndimage import affine_transform as aff
 
 naffine=np.dot(affine,rot)
-'''
+"""
 
 data[:,:,:,1]
 

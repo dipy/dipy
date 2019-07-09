@@ -5,7 +5,7 @@ import numpy.testing as npt
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
-from dipy.data import get_data, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.direction import (BootDirectionGetter,
                             ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
@@ -75,26 +75,26 @@ def test_stop_conditions():
     # Check that the first streamline stops at 0 and 3 (ENDPOINT)
     y = 0
     sl = next(streamlines_not_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     # Check that the first streamline stops at 0 and 4 (ENDPOINT)
     y = 1
     sl = next(streamlines_not_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     # This streamline should be the same as above. This row does not have
     # ENDPOINTs, but the streamline should stop at the edge and not include
@@ -128,16 +128,16 @@ def test_stop_conditions():
     # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
     y = 4
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 4])
-    npt.assert_equal(len(sl), 5)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 3])
+    npt.assert_equal(len(sl), 3)
 
     # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
     y = 5
     sl = next(streamlines_all)
-    npt.assert_equal(sl[0], [0, y, 0])
-    npt.assert_equal(sl[-1], [0, y, 3])
-    npt.assert_equal(len(sl), 4)
+    npt.assert_equal(sl[0], [0, y, 1])
+    npt.assert_equal(sl[-1], [0, y, 2])
+    npt.assert_equal(len(sl), 2)
 
     # The last streamline should contain only one point, the seed point,
     # because no valid inital direction was returned.
@@ -146,6 +146,66 @@ def test_stop_conditions():
     npt.assert_equal(sl[0], seeds[y])
     npt.assert_equal(sl[-1], seeds[y])
     npt.assert_equal(len(sl), 1)
+
+
+def test_save_seeds():
+    tissue = np.array([[2, 1, 1, 2, 1],
+                       [2, 2, 1, 1, 2],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 2, 2],
+                       [0, 1, 1, 1, 2],
+                       [0, 1, 1, 0, 2],
+                       [1, 0, 1, 1, 1]])
+    tissue = tissue[None]
+
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf_lookup = np.array([[0., 0., 0., ],
+                           [0., 0., 1.]])
+    pmf = pmf_lookup[(tissue > 0).astype("int")]
+
+    # Create a seeds along
+    x = np.array([0., 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6])
+    z = np.array([1., 1, 1, 0, 1, 1, 1])
+    seeds = np.column_stack([x, y, z])
+
+    # Set up tracking
+    endpoint_mask = tissue == TissueTypes.ENDPOINT
+    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+
+    # valid streamlines only
+    streamlines_generator = LocalTracking(direction_getter=dg,
+                                          tissue_classifier=tc,
+                                          seeds=seeds,
+                                          affine=np.eye(4),
+                                          step_size=1.,
+                                          return_all=False,
+                                          save_seeds=True)
+
+    streamlines_not_all = iter(streamlines_generator)
+    # Verifiy that seeds are returned by the LocalTracker
+    _, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[0])
+    _, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[1])
+    # Verifiy that seeds are returned by the PFTTracker also
+    pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
+                                                tissue_classifier=tc,
+                                                seeds=seeds,
+                                                affine=np.eye(4),
+                                                step_size=1.,
+                                                max_cross=1,
+                                                return_all=False,
+                                                save_seeds=True)
+    streamlines = iter(pft_streamlines)
+    _, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[0])
+    _, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[1])
+
+
 
 
 def test_probabilistic_odf_weighted_tracker():
@@ -184,8 +244,7 @@ def test_probabilistic_odf_weighted_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]]),
+                          [2., 4., 0.]]),
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
@@ -227,7 +286,7 @@ def test_probabilistic_odf_weighted_tracker():
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
                                 return_all=True)
     streamlines = Streamlines(streamlines)
-    npt.assert_(len(streamlines[0]) == 3)  # INVALIDPOINT
+    npt.assert_(len(streamlines[0]) == 1)  # INVALIDPOINT
     npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
 
     # Test that all points are within the image volume
@@ -431,8 +490,7 @@ def test_maximum_deterministic_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]]),
+                          [2., 4., 0.]]),
                 np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],
@@ -518,8 +576,7 @@ def test_bootstap_peak_tracker():
                           [2., 1., 0.],
                           [3., 1., 0.],
                           [4., 1., 0.]]),
-                np.array([[2., 5., 0.],
-                          [2., 4., 0.],
+                np.array([[2., 4., 0.],
                           [2., 3., 0.],
                           [2., 2., 0.],
                           [2., 1., 0.],
@@ -575,8 +632,7 @@ def test_closest_peak_tracker():
                           [2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]])]
+                          [2., 4., 0.]])]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
@@ -674,17 +730,13 @@ def test_affine_transformations():
     seeds = [np.array([1., 1., 0.]),
              np.array([2., 4., 0.])]
 
-    expected = [np.array([[0., 1., 0.],
-                          [1., 1., 0.],
+    expected = [np.array([[1., 1., 0.],
                           [2., 1., 0.],
-                          [3., 1., 0.],
-                          [4., 1., 0.]]),
-                np.array([[2., 0., 0.],
-                          [2., 1., 0.],
+                          [3., 1., 0.]]),
+                np.array([[2., 1., 0.],
                           [2., 2., 0.],
                           [2., 3., 0.],
-                          [2., 4., 0.],
-                          [2., 5., 0.]])]
+                          [2., 4., 0.]])]
 
     mask = (simple_image > 0).astype(float)
     tc = BinaryTissueClassifier(mask)
@@ -717,10 +769,10 @@ def test_affine_transformations():
     # TST - combined affines
     a5 = a1 + a2 + a3
     a5[3, 3] = 1
-    # TST - in vivo affine exemple
+    # TST - in vivo affine example
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
-    fdata, _, _ = get_data('small_101D')
+    fdata, _, _ = get_fnames('small_101D')
     a6 = nib.load(fdata).affine
 
     for affine in [a0, a1, a2, a3, a4, a5, a6]:
@@ -728,7 +780,7 @@ def test_affine_transformations():
         offset = affine[:3, 3]
         seeds_trans = [np.dot(lin, s) + offset for s in seeds]
 
-        # We compute the voxel size to ajust the step size to one voxel
+        # We compute the voxel size to adjust the step size to one voxel
         voxel_size = np.mean(np.sqrt(np.dot(lin, lin).diagonal()))
 
         streamlines = LocalTracking(direction_getter=dg,

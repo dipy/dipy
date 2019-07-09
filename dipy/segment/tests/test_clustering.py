@@ -7,9 +7,9 @@ from dipy.segment.clustering import Cluster, ClusterCentroid
 from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
 from dipy.segment.clustering import Clustering
 
-from nose.tools import assert_equal, assert_true, assert_false
-from numpy.testing import assert_array_equal, assert_raises, run_module_suite
-from dipy.testing import assert_arrays_equal
+from dipy.testing import assert_true, assert_false, assert_arrays_equal
+from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
+                           assert_equal)
 
 
 features_shape = (1, 10)
@@ -117,7 +117,7 @@ def test_cluster_getitem():
 
     # Test advanced indexing
     assert_arrays_equal(cluster[advanced_indices],
-                       [data[indices[i]] for i in advanced_indices])
+                        [data[indices[i]] for i in advanced_indices])
 
     # Test index out of bounds
     assert_raises(IndexError, cluster.__getitem__, len(cluster))

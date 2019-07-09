@@ -20,7 +20,7 @@ We first import all relevant modules.
 import numpy as np
 import matplotlib.pyplot as plt
 from dipy.sims.voxel import (multi_tensor_dki, single_tensor)
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import (decompose_tensor, from_lower_triangular)
@@ -31,12 +31,12 @@ b-vectors. Here we use the GradientTable of the sample DIPY_ dataset
 ``small_64D``.
 """
 
-fimg, fbvals, fbvecs = get_data('small_64D')
+fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
 """
 DKI requires data from more than one non-zero b-value. Since the dataset
-``small_64D`` was acquired with one non-zero bvalue we artificialy produce a
+``small_64D`` was acquired with one non-zero b-value we artificially produce a
 second non-zero b-value.
 """
 
@@ -80,7 +80,7 @@ compartment, which is computed by multiplying the percentage of contribution
 of each fiber population and the water fraction of each different medium
 """
 
-fie = 0.49  # intra axonal water fraction
+fie = 0.49  # intra-axonal water fraction
 fractions = [fie*50, (1 - fie)*50, fie*50, (1 - fie)*50]
 
 """

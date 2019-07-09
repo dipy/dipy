@@ -17,7 +17,7 @@ import dipy.reconst.base as base
 
 
 # We'll set these globally:
-fdata, fbval, fbvec = dpd.get_data('small_64D')
+fdata, fbval, fbvec = dpd.get_fnames('small_64D')
 
 
 def test_coeff_of_determination():

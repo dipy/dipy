@@ -74,7 +74,7 @@ We can also create a sphere from the hemisphere and show it in the following way
 sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 
 window.rm_all(ren)
-ren.add(actor.point(sph.vertices, actor.colors.green, point_radius=0.05))
+ren.add(actor.point(sph.vertices, window.colors.green, point_radius=0.05))
 
 print('Saving illustration as full_sphere.png')
 window.record(ren, out_path='full_sphere.png', size=(300, 300))

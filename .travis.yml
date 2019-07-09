@@ -16,7 +16,7 @@ addons:
 
 env:
     global:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxpy"
+        - DEPENDS="cython numpy matplotlib h5py nibabel cvxpy"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
         - EXTRA_WHEELS="https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
@@ -24,65 +24,81 @@ env:
         - EXTRA_PIP_FLAGS="--timeout=60 --find-links=$EXTRA_WHEELS"
 
 python:
-    - 3.4
     - 3.5
     - 3.6
-    # - "3.7"  # TODO: Re-enable after https://github.com/travis-ci/travis-ci/issues/9815 is fixed
 
 matrix:
   include:
-    # TODO: Disable the local workaround
     - python: 3.7
       dist: xenial
-      sudo: true
-    - python: 2.7
-    # To test minimum dependencies
-    - python: 2.7
       env:
-        # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.25.1 numpy==1.7.1 scipy==0.9.0 nibabel==2.3.0 h5py==2.4.0"
-    - python: 2.7
-      env:
-        - DEPENDS="$DEPENDS scikit_learn"
+        - DEPENDS="$DEPENDS scipy"
+    # To test minimum dependencies for Python 3.5:
     - python: 3.5
       env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
+    # To test minimum dependencies for Python 3.7:
+    - python: 3.7
+      dist: xenial
+      env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==2.4.0 h5py==2.8.0"
+    - python: 3.7
+      dist: xenial
+      env:
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 "
+    - python: 3.7
+      dist: xenial
+      env:
         - COVERAGE=1
-        - DEPENDS="$DEPENDS scikit_learn"
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
     # To test vtk functionality
-    - python: 2.7
+    - python: 3.7
+      dist: xenial
       sudo: true   # This is set to true for apt-get
       env:
         - COVERAGE=1
         - VTK=1
-        - VTK_VER="python-vtk"
-        - LIBGL_ALWAYS_INDIRECT=y
-        - VENV_ARGS="--system-site-packages --python=/usr/bin/python2.7"
         - TEST_WITH_XVFB=true
-        - DEPENDS="$DEPENDS scikit_learn"
+        - MESA_GL_VERSION_OVERRIDE=3.3
+        - LIBGL_ALWAYS_INDIRECT=y
+        - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
 
-    - python: 2.7
+    - python: 3.7
+      dist: xenial
       env:
         - INSTALL_TYPE=sdist
-    - python: 2.7
+        - DEPENDS="$DEPENDS scipy"
+
+    - python: 3.7
+      dist: xenial
       env:
         - INSTALL_TYPE=pip
         # Dependency checking should get all needed dependencies
         - DEPENDS=""
-    - python: 2.7
+    - python: 3.7
+      dist: xenial
       env:
         - INSTALL_TYPE=wheel
-    - python: 2.7
+        - DEPENDS="$DEPENDS scipy"
+    - python: 3.7
+      dist: xenial
       env:
         - INSTALL_TYPE=requirements
         - DEPENDS=""
-    - python: 3.5
+    - python: 3.7
+      dist: xenial
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
   allow_failures:
-    - python: 3.5
+    - python: 3.7
+      dist: xenial
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"
@@ -95,7 +111,8 @@ before_install:
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
     - $PIPI --upgrade pip setuptools
-    - $PIPI nose;
+    # We need nose for numpy.testing<=1.15
+    - $PIPI pytest nose;
     - $PIPI numpy;
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
@@ -130,12 +147,15 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_testing
     - cd for_testing
+    # We need the setup.cfg for the pytest settings
+    - cp ../setup.cfg .
     # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
     - 'echo "backend : agg" > matplotlibrc'
     - if [ "${COVERAGE}" == "1" ]; then
       cp ../.coveragerc .;
-      COVER_ARGS="--with-coverage --cover-package dipy";
+      cp ../.codecov.yml .;
+      COVER_CMD="coverage run -m ";
       fi
-    - nosetests --with-doctest --verbose $COVER_ARGS dipy
+    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi

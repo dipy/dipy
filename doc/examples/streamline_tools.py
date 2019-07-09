@@ -19,7 +19,8 @@ modules and download the data we'll be using.
 """
 
 from dipy.tracking.eudx import EuDX
-from dipy.reconst import peaks, shm
+from dipy.reconst import shm
+from dipy.direction import peaks
 from dipy.tracking import utils
 from dipy.tracking.streamline import Streamlines
 
@@ -96,15 +97,15 @@ above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
 
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.viz import window, actor, colormap as cmap
 
 # Enables/disables interactive visualization
 interactive = False
 
 # Make display objects
-color = line_colors(cc_streamlines)
-cc_streamlines_actor = actor.line(cc_streamlines, line_colors(cc_streamlines))
+color = cmap.line_colors(cc_streamlines)
+cc_streamlines_actor = actor.line(cc_streamlines,
+                                  cmap.line_colors(cc_streamlines))
 cc_ROI_actor = actor.contour_from_roi(cc_slice, color=(1., 1., 0.),
                                       opacity=0.5)
 

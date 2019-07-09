@@ -19,7 +19,7 @@ def histeq(arr, num_bins=256):
         Histogram equalized image.
     """
     # get image histogram
-    histo, bins = np.histogram(arr.flatten(), num_bins, normed=True)
+    histo, bins = np.histogram(arr.flatten(), num_bins, density=True)
     cdf = histo.cumsum()
     cdf = 255 * cdf / cdf[-1]
 

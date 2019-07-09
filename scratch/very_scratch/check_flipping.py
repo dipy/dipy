@@ -35,7 +35,7 @@ for c in C:
     
 fos.show(r)
 
-'''
+"""
 
 print len(C)
 
@@ -52,7 +52,7 @@ for c in C:
 for c in C:    
     fos.add(r,fos.line(C[c]['rep3']/C[c]['N']+np.array([14.,0.,0.]),fos.white))
 fos.show(r)
-'''
+"""
 
 
 

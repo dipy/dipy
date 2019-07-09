@@ -10,9 +10,7 @@ several DIPY UI elements, then use a list box to toggle which element is shown.
 First, a bunch of imports.
 """
 
-import os
-
-from dipy.data import read_viz_icons, fetch_viz_icons
+from dipy.viz import read_viz_icons, fetch_viz_icons
 
 from dipy.viz import ui, window
 
@@ -111,6 +109,7 @@ def change_icon_callback(i_ren, obj, button):
     button.next_icon()
     i_ren.force_render()
 
+
 button_example.on_left_mouse_button_clicked = change_text_callback
 second_button_example.on_left_mouse_button_pressed = change_icon_callback
 
@@ -137,6 +136,7 @@ def cube_maker(color=(1, 1, 1), size=(0.2, 0.2, 0.2), center=(0, 0, 0)):
         cube_actor.GetProperty().SetColor(color)
     return cube_actor
 
+
 cube = cube_maker(color=(0, 0, 1), size=(20, 20, 20), center=(15, 0, 0))
 
 """
@@ -160,6 +160,7 @@ def rotate_cube(slider):
     rotation_angle = angle - previous_angle
     cube.RotateX(rotation_angle)
 
+
 ring_slider.on_change = rotate_cube
 
 """
@@ -170,6 +171,7 @@ Similarly, we can translate the cube with the line slider.
 def translate_cube(slider):
     value = slider.value
     cube.SetPosition(value, 0, 0)
+
 
 line_slider.on_change = translate_cube
 
@@ -213,6 +215,7 @@ def hide_all_examples():
             element.set_visibility(False)
     cube.SetVisibility(False)
 
+
 hide_all_examples()
 
 """
@@ -244,6 +247,7 @@ def display_element():
     if values.index(listbox.selected[0]) == 4:
         cube.SetVisibility(True)
 
+
 listbox.on_change = display_element
 
 """
@@ -255,17 +259,20 @@ manager.
 """
 
 current_size = (800, 800)
-show_manager = window.ShowManager(size=current_size, title="DIPY UI Example")
+renderer = window.Renderer()
+show_manager = window.ShowManager(renderer, size=current_size,
+                                  title="DIPY UI Example")
+show_manager.initialize()
 
-show_manager.ren.add(listbox)
+renderer.add(listbox)
 for example in examples:
     for element in example:
-        show_manager.ren.add(element)
-show_manager.ren.add(cube)
-show_manager.ren.reset_camera()
-show_manager.ren.set_camera(position=(0, 0, 200))
-show_manager.ren.reset_clipping_range()
-show_manager.ren.azimuth(30)
+        renderer.add(element)
+renderer.add(cube)
+renderer.reset_camera()
+renderer.set_camera(position=(0, 0, 200))
+renderer.reset_clipping_range()
+renderer.azimuth(30)
 
 interactive = False
 
@@ -273,7 +280,7 @@ if interactive:
     show_manager.start()
 
 else:
-    window.record(show_manager.ren, size=current_size, out_path="viz_ui.png")
+    window.record(renderer, size=current_size, out_path="viz_ui.png")
 
 """
 .. figure:: viz_ui.png

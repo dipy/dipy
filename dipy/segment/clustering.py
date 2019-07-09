@@ -439,11 +439,11 @@ class QuickBundles(Clustering):
     Examples
     --------
     >>> from dipy.segment.clustering import QuickBundles
-    >>> from dipy.data import get_data
+    >>> from dipy.data import get_fnames
     >>> from nibabel import trackvis as tv
-    >>> streams, hdr = tv.read(get_data('fornix'))
+    >>> streams, hdr = tv.read(get_fnames('fornix'))
     >>> streamlines = [i[0] for i in streams]
-    >>> # Segment fornix with a treshold of 10mm and streamlines resampled
+    >>> # Segment fornix with a threshold of 10mm and streamlines resampled
     >>> # to 12 points.
     >>> qb = QuickBundles(threshold=10.)
     >>> clusters = qb.cluster(streamlines)

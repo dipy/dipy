@@ -27,7 +27,7 @@ def rfiw_phantom(gtab, snr=None):
     slice_ind[3, 4:7, :] = 8
     slice_ind[3, 7, :] = 9
 
-    # Define tisse diffusion parameters
+    # Define tissue diffusion parameters
     # Restricted diffusion
     ADr = 0.99e-3
     RDr = 0.0
@@ -54,7 +54,7 @@ def rfiw_phantom(gtab, snr=None):
     # tissue volume fractions have to be adjusted to the measured f values when
     # constant S0 are assumed constant. Doing this correction, simulations will
     # be analogous to simulates that S0 are different for each media. (For more
-    # datails on this contact the phantom designer)
+    # details on this contact the phantom designer)
     f1 = f * S1 / S0
 
     mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh],
@@ -189,7 +189,7 @@ def test_phantom():
     gtab = gen_gtab()
     DWI_clean = rfiw_phantom(gtab, snr=None)
     DWI, sigma = rfiw_phantom(gtab, snr=30)
-    # To test without rician correction
+    # To test without Rician correction
     temp = (DWI_clean / sigma)**2
     DWI_clean_wrc = (sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) *
                      ((1 + 0.5 * temp) * sps.iv(0, 0.25 * temp) + 0.5 * temp *

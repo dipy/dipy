@@ -10,8 +10,9 @@ from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
 
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
+                           assert_raises,
                            run_module_suite)
-from dipy.data import get_data
+from dipy.data import get_fnames
 
 
 def test_mask():
@@ -83,7 +84,7 @@ def test_bounding_box():
 
 
 def test_median_otsu():
-    fname = get_data('S0_10')
+    fname = get_fnames('S0_10')
     img = nib.load(fname)
     data = img.get_data()
     data = np.squeeze(data.astype('f8'))
@@ -110,6 +111,9 @@ def test_median_otsu():
                            autocrop=False, vol_idx=[0, 1],
                            dilate=2)
     assert_equal(mask3.sum() < mask4.sum(), True)
+
+    # For 4D volumes, can't call without vol_idx input:
+    assert_raises(ValueError, median_otsu, data2)
 
 
 if __name__ == '__main__':

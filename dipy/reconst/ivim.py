@@ -1,24 +1,16 @@
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
 
-from distutils.version import LooseVersion
-
 import numpy as np
-import scipy
+from scipy.optimize import least_squares, differential_evolution
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
-
-SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
-                   LooseVersion('0.17'))
-
-if SCIPY_LESS_0_17:
-    from scipy.optimize import leastsq
-else:
-    from scipy.optimize import least_squares
+from dipy.utils.optpkg import optional_package
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
-def ivim_prediction(params, gtab, S0=1.):
+def ivim_prediction(params, gtab):
     """The Intravoxel incoherent motion (IVIM) model function.
 
     Parameters
@@ -39,9 +31,11 @@ def ivim_prediction(params, gtab, S0=1.):
     S : array
         An array containing the IVIM signal estimated using given parameters.
     """
-    S0, f, D_star, D = params
     b = gtab.bvals
+    S0, f, D_star, D = params
+
     S = S0 * (f * np.exp(-b * D_star) + (1 - f) * np.exp(-b * D))
+
     return S
 
 
@@ -126,20 +120,49 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-class IvimModel(ReconstModel):
-    """Ivim model
+def ivim_model_selector(gtab, fit_method='LM', **kwargs):
+    """
+    Selector function to switch between the 2-stage Levenberg-Marquardt based
+    NLLS fitting method (also containing the linear fit): `LM` and the Variable
+    Projections based fitting method: `VarPro`.
+
+    Parameters
+    ----------
+    fit_method : string, optional
+        The value fit_method can either be 'LM' or 'VarPro'.
+        default : LM
+
     """
 
+    if fit_method.lower() == 'lm':
+        return IvimModelLM(gtab, **kwargs)
+
+    elif fit_method.lower() == 'varpro':
+        return IvimModelVP(gtab, **kwargs)
+
+    else:
+        opt_msg = 'The fit_method option chosen was not correct. '
+        opt_msg += 'Using fit_method: LM instead...'
+        warnings.warn(opt_msg, UserWarning)
+        return IvimModelLM(gtab, **kwargs)
+
+
+IvimModel = ivim_model_selector
+
+
+class IvimModelLM(ReconstModel):
+    """Ivim model
+    """
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
                  two_stage=True, tol=1e-15,
                  x_scale=[1000., 0.1, 0.001, 0.0001],
-                 options={'gtol': 1e-15, 'ftol': 1e-15,
-                          'eps': 1e-15, 'maxiter': 1000}):
-        """
+                 gtol=1e-15, ftol=1e-15, eps=1e-15, maxiter=1000):
+
+        r"""
         Initialize an IVIM model.
 
         The IVIM model assumes that biological tissue includes a volume
-        fraction 'f' of water flowing with a pseudo-perfusion coefficient
+        fraction 'f' of water flowing with a pseudo-diffusion coefficient
         D* and a fraction (1-f) of static (diffusion only), intra and
         extracellular water, with a diffusion coefficient D. In this model
         the echo attenuation of a signal in a single voxel can be written as
@@ -195,11 +218,21 @@ class IvimModel(ReconstModel):
             is only available for Scipy version > 0.17.
             default: [1000, 0.01, 0.001, 0.0001]
 
-        options : dict, optional
-            Dictionary containing gtol, ftol, eps and maxiter. This is passed
-            to leastsq.
-            default : options={'gtol': 1e-15, 'ftol': 1e-15, 'eps': 1e-15,
-                      'maxiter': 1000}
+        gtol : float, optional
+            Tolerance for termination by the norm of the gradient.
+            default : 1e-15
+
+        ftol : float, optional
+            Tolerance for termination by the change of the cost function.
+            default : 1e-15
+
+        eps : float, optional
+            Step size used for numerical approximation of the jacobian.
+            default : 1e-15
+
+        maxiter : int, optional
+            Maximum number of iterations to perform.
+            default : 1000
 
         References
         ----------
@@ -215,27 +248,31 @@ class IvimModel(ReconstModel):
             e_s += "The IVIM model requires signal measured at 0 bvalue"
             raise ValueError(e_s)
 
+        if gtab.b0_threshold > 0:
+            b0_s = "The IVIM model requires a measurement at b==0. As of "
+            b0_s += "version 0.15, the default b0_threshold for the "
+            b0_s += "GradientTable object is set to 50, so if you used the "
+            b0_s += "default settings to initialize the gtab input to the "
+            b0_s += "IVIM model, you may have provided a gtab with "
+            b0_s += "b0_threshold larger than 0. Please initialize the gtab "
+            b0_s += "input with b0_threshold=0"
+            raise ValueError(b0_s)
+
         ReconstModel.__init__(self, gtab)
         self.split_b_D = split_b_D
         self.split_b_S0 = split_b_S0
         self.bounds = bounds
         self.two_stage = two_stage
         self.tol = tol
-        self.options = options
+        self.options = {'gtol': gtol, 'ftol': ftol,
+                        'eps': eps, 'maxiter': maxiter}
         self.x_scale = x_scale
 
-        if SCIPY_LESS_0_17 and self.bounds is not None:
-            e_s = "Scipy versions less than 0.17 do not support "
-            e_s += "bounds. Please update to Scipy 0.17 to use bounds"
-            raise ValueError(e_s)
-        elif self.bounds is None:
-            self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
-        else:
-            self.bounds = bounds
+        self.bounds = bounds or ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
 
     @multi_voxel_fit
-    def fit(self, data, mask=None):
-        """ Fit method of the Ivim model class.
+    def fit(self, data):
+        """ Fit method of the IvimModelLM class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
@@ -257,20 +294,17 @@ class IvimModel(ReconstModel):
             will be applied to this fit method to scale it and apply it
             to multiple voxels.
 
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[:-1]
 
         Returns
         -------
         IvimFit object
         """
-        # Get S0_prime and D - paramters assuming a single exponential decay
+        # Get S0_prime and D - parameters assuming a single exponential decay
         # for signals for bvals greater than `split_b_D`
         S0_prime, D = self.estimate_linear_fit(
             data, self.split_b_D, less_than=False)
 
-        # Get S0 and D_star_prime - paramters assuming a single exponential
+        # Get S0 and D_star_prime - parameters assuming a single exponential
         # decay for for signals for bvals greater than `split_b_S0`.
 
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
@@ -361,49 +395,28 @@ class IvimModel(ReconstModel):
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
         xtol = self.tol
-        epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
 
-        if SCIPY_LESS_0_17:
-            try:
-                res = leastsq(f_D_star_error,
-                              params_f_D_star,
-                              args=(self.gtab, data, S0, D),
-                              gtol=gtol,
-                              xtol=xtol,
-                              ftol=ftol,
-                              epsfcn=epsfcn,
-                              maxfev=maxfev)
-                f, D_star = res[0]
-                return f, D_star
-            except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile"
-                warningMsg += " as initial guess for leastsq. Parameters are"
-                warningMsg += " returned only from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D
-                return f, D_star
-        else:
-            try:
-                res = least_squares(f_D_star_error,
-                                    params_f_D_star,
-                                    bounds=((0., 0.), (self.bounds[1][1],
-                                                       self.bounds[1][2])),
-                                    args=(self.gtab, data, S0, D),
-                                    ftol=ftol,
-                                    xtol=xtol,
-                                    gtol=gtol,
-                                    max_nfev=maxfev)
-                f, D_star = res.x
-                return f, D_star
-            except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile"
-                warningMsg += " as initial guess for leastsq while estimating "
-                warningMsg += "f and D_star. Using parameters from the "
-                warningMsg += "linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D_star
-                return f, D_star
+        try:
+            res = least_squares(f_D_star_error,
+                                params_f_D_star,
+                                bounds=((0., 0.), (self.bounds[1][1],
+                                                   self.bounds[1][2])),
+                                args=(self.gtab, data, S0, D),
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev)
+            f, D_star = res.x
+            return f, D_star
+        except ValueError:
+            warningMsg = "x0 obtained from linear fitting is not feasibile"
+            warningMsg += " as initial guess for leastsq while estimating "
+            warningMsg += "f and D_star. Using parameters from the "
+            warningMsg += "linear fit."
+            warnings.warn(warningMsg, UserWarning)
+            f, D_star = params_f_D_star
+            return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
         """
@@ -454,49 +467,363 @@ class IvimModel(ReconstModel):
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
         xtol = self.tol
-        epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
         bounds = self.bounds
 
-        if SCIPY_LESS_0_17:
-            try:
-                res = leastsq(_ivim_error,
-                              x0,
-                              args=(self.gtab, data),
-                              gtol=gtol,
-                              xtol=xtol,
-                              ftol=ftol,
-                              epsfcn=epsfcn,
-                              maxfev=maxfev)
-                ivim_params = res[0]
-                if np.all(np.isnan(ivim_params)):
-                    return np.array([-1, -1, -1, -1])
-                return ivim_params
-            except ValueError:
-                warningMsg = "x0 is unfeasible for leastsq fitting."
-                warningMsg += " Returning x0 values from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                return x0
-        else:
-            try:
-                res = least_squares(_ivim_error,
-                                    x0,
-                                    bounds=bounds,
-                                    ftol=ftol,
-                                    xtol=xtol,
-                                    gtol=gtol,
-                                    max_nfev=maxfev,
-                                    args=(self.gtab, data),
-                                    x_scale=self.x_scale)
-                ivim_params = res.x
-                if np.all(np.isnan(ivim_params)):
-                    return np.array([-1, -1, -1, -1])
-                return ivim_params
-            except ValueError:
-                warningMsg = "x0 is unfeasible for leastsq fitting."
-                warningMsg += " Returning x0 values from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                return x0
+        try:
+            res = least_squares(_ivim_error,
+                                x0,
+                                bounds=bounds,
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev,
+                                args=(self.gtab, data),
+                                x_scale=self.x_scale)
+            ivim_params = res.x
+            if np.all(np.isnan(ivim_params)):
+                return np.array([-1, -1, -1, -1])
+            return ivim_params
+        except ValueError:
+            warningMsg = "x0 is unfeasible for leastsq fitting."
+            warningMsg += " Returning x0 values from the linear fit."
+            warnings.warn(warningMsg, UserWarning)
+            return x0
+
+
+class IvimModelVP(ReconstModel):
+
+    def __init__(self, gtab, maxiter=10, xtol=1e-8):
+        r""" Initialize an IvimModelVP class.
+
+        The IVIM model assumes that biological tissue includes a volume
+        fraction 'f' of water flowing with a pseudo-diffusion coefficient
+        D* and a fraction (1-f: treated as a separate fraction in the variable
+        projection method) of static (diffusion only), intra and
+        extracellular water, with a diffusion coefficient D. In this model
+        the echo attenuation of a signal in a single voxel can be written as
+
+            .. math::
+
+            S(b) = S_0*[f*e^{(-b*D\*)} + (1-f)e^{(-b*D)}]
+
+            Where:
+            .. math::
+
+            S_0, f, D\* and D are the IVIM parameters.
+
+
+        maxiter: int, optional
+            Maximum number of iterations for the Differential Evolution in
+            SciPy.
+            default : 10
+
+        xtol : float, optional
+            Tolerance for convergence of minimization.
+            default : 1e-8
+
+        References
+        ----------
+        .. [1] Le Bihan, Denis, et al. "Separation of diffusion and perfusion
+               in intravoxel incoherent motion MR imaging." Radiology 168.2
+               (1988): 497-505.
+        .. [2] Federau, Christian, et al. "Quantitative measurement of brain
+               perfusion with intravoxel incoherent motion MR imaging."
+               Radiology 265.3 (2012): 874-881.
+        .. [3] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        """
+
+        self.maxiter = maxiter
+        self.xtol = xtol
+        self.bvals = gtab.bvals
+        self.yhat_perfusion = np.zeros(self.bvals.shape[0])
+        self.yhat_diffusion = np.zeros(self.bvals.shape[0])
+        self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
+
+    @multi_voxel_fit
+    def fit(self, data, bounds_de=None):
+        r""" Fit method of the IvimModelVP model class
+
+        MicroLearn framework (VarPro)[1]_.
+
+        The VarPro computes the IVIM parameters using the MIX approach.
+        This algorithm uses three different optimizers. It starts with a
+        differential evolution algorithm and fits the parameters in the
+        power of exponentials. Then the fitted parameters in the first step are
+        utilized to make a linear convex problem. Using a convex optimization,
+        the volume fractions are determined. Then the last step is non linear
+        least square fitting on all the parameters. The results of the first
+        and second step are utilized as the initial values for the last step
+        of the algorithm. (see [1]_ and [2]_ for a comparison and a through
+        discussion).
+
+        References
+        ----------
+        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+
+        """
+        data_max = data.max()
+        data = data / data_max
+        b = self.bvals
+
+        # Setting up the bounds for differential_evolution
+        bounds_de = np.array([(0.005, 0.01), (10**-4, 0.001)])
+
+        # Optimizer #1: Differential Evolution
+        res_one = differential_evolution(self.stoc_search_cost, bounds_de,
+                                         maxiter=self.maxiter, args=(data,),
+                                         disp=False, polish=True, popsize=28)
+        x = res_one.x
+        phi = self.phi(x)
+
+        # Optimizer #2: Convex Optimizer
+        f = self.cvx_fit(data, phi)
+        x_f = self.x_and_f_to_x_f(x, f)
+
+        # Setting up the bounds for least_squares
+        bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
+
+        # Optimizer #3: Nonlinear-Least Squares
+        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
+                            xtol=self.xtol, args=(data,))
+        result = res.x
+        f_est = result[0]
+        D_star_est = result[1]
+        D_est = result[2]
+
+        S0 = data / (f_est * np.exp(-b * D_star_est) + (1 - f_est) *
+                     np.exp(-b * D_est))
+        S0_est = S0 * data_max
+
+        # final result containing the four fit parameters: S0, f, D* and D
+        result = np.insert(result, 0, np.mean(S0_est), axis=0)
+        return IvimFit(self, result)
+
+    def stoc_search_cost(self, x, signal):
+        """
+        Cost function for differential evolution algorithm. Performs a
+        stochastic search for the non-linear parameters 'x'. The objective
+        funtion is calculated in the :func: `ivim_mix_cost_one`. The function
+        constructs the parameters using :func: `phi`.
+
+        Parameters
+        ----------
+        x : array
+            input from the Differential Evolution optimizer.
+
+        signal : array
+            The signal values measured for this model.
+
+        Returns
+        -------
+        :func: `ivim_mix_cost_one`
+
+        """
+        phi = self.phi(x)
+        return self.ivim_mix_cost_one(phi, signal)
+
+    def ivim_mix_cost_one(self, phi, signal):
+        """
+        Constructs the objective for the :func: `stoc_search_cost`.
+
+        First calculates the Moore-Penrose inverse of the input `phi` and takes
+        a dot product with the measured signal. The result obtained is again
+        multiplied with `phi` to complete the projection of the variable into
+        a transformed space. (see [1]_ and [2]_ for thorough discussion on
+        Variable Projections and relevant cost functions).
+
+        Parameters
+        ----------
+        phi : array
+            Returns an array calculated from :func: `Phi`.
+
+        signal : array
+            The signal values measured for this model.
+
+        Returns
+        -------
+        (signal -  S)^T(signal -  S)
+
+        Notes
+        --------
+        to make cost function for Differential Evolution algorithm:
+        .. math::
+
+            (signal -  S)^T(signal -  S)
+
+        References
+        ----------
+        .. [1] Fadnavis, Shreyas et.al. "MicroLearn: Framework for machine
+               learning, reconstruction, optimization and microstructure
+               modeling, Proceedings of: International Society of Magnetic
+               Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+        .. [2] Farooq, Hamza, et al. "Microstructure Imaging of Crossing (MIX)
+               White Matter Fibers from diffusion MRI." Scientific reports 6
+               (2016).
+
+        """
+        # Moore-Penrose
+        phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
+        f = np.dot(phi_mp, signal)
+        yhat = np.dot(phi, f)  # - sigma
+        return np.dot((signal - yhat).T, signal - yhat)
+
+    def cvx_fit(self, signal, phi):
+        """
+        Performs the constrained search for the linear parameters `f` after
+        the estimation of `x` is done. Estimation of the linear parameters `f`
+        is a constrained linear least-squares optimization problem solved by
+        using a convex optimizer from cvxpy. The IVIM equation contains two
+        parameters that depend on the same volume fraction. Both are estimated
+        as separately in the convex optimizer.
+
+        Parameters
+        ----------
+        phi : array
+            Returns an array calculated from :func: `phi`.
+
+        signal : array
+            The signal values measured for this model.
+
+        Returns
+        -------
+        f1, f2 (volume fractions)
+
+        Notes
+        --------
+        cost function for differential evolution algorithm:
+
+        .. math::
+
+            minimize(norm((signal)- (phi*f)))
+        """
+
+        # Create four scalar optimization variables.
+        f = cvxpy.Variable(2)
+        # Create four constraints.
+        constraints = [cvxpy.sum(f) == 1,
+                       f[0] >= 0.011,
+                       f[1] >= 0.011,
+                       f[0] <= 0.29,
+                       f[1] <= 0.89]
+
+        # Form objective.
+        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
+
+        # Form and solve problem.
+        prob = cvxpy.Problem(obj, constraints)
+        prob.solve()  # Returns the optimal value.
+        return np.array(f.value)
+
+    def nlls_cost(self, x_f, signal):
+        """
+        Cost function for the least square problem. The cost function is used
+        in the Least Squares function of SciPy in :func: `fit`. It guarantees
+        that stopping point of the algorithm is at least a stationary point
+        with reduction in the the number of iterations required by the
+        differential evolution optimizer.
+
+        Parameters
+        ----------
+        x_f : array
+            Contains the parameters 'x' and 'f' combines in the same array.
+
+        signal : array
+            The signal values measured for this model.
+
+        Returns
+        -------
+        sum{(signal -  phi*f)^2}
+
+        Notes
+        --------
+        cost function for the least square problem.
+
+        .. math::
+
+            sum{(signal -  phi*f)^2}
+        """
+
+        x, f = self.x_f_to_x_and_f(x_f)
+        f1 = np.array([f, 1 - f])
+        phi = self.phi(x)
+        return np.sum((np.dot(phi, f1) - signal) ** 2)
+
+    def x_f_to_x_and_f(self, x_f):
+        """
+        Splits the array of parameters in x_f to 'x' and 'f' for performing
+        a search on the both of them independently using the Trust Region
+        Method.
+
+        Parameters
+        ----------
+        x_f : array
+            Combined array of parameters 'x' and 'f' parameters.
+
+        Returns
+        -------
+        x, f : array
+            Splitted parameters into two separate arrays
+
+        """
+        x = np.zeros(2)
+        f = x_f[0]
+        x = x_f[1:3]
+        return x, f
+
+    def x_and_f_to_x_f(self, x, f):
+        """
+        Combines the array of parameters 'x' and 'f' into x_f for performing
+        NLLS on the final stage of optimization.
+
+        Parameters
+        ----------
+         x, f : array
+            Splitted parameters into two separate arrays
+
+        Returns
+        -------
+        x_f : array
+            Combined array of parameters 'x' and 'f' parameters.
+
+        """
+        x_f = np.zeros(3)
+        x_f[0] = f[0]
+        x_f[1:3] = x
+        return x_f
+
+    def phi(self, x):
+        """
+        Creates a structure for the combining the diffusion and pseudo-
+        diffusion by multipling with the bvals and then exponentiating each of
+        the two components for fitting as per the IVIM- two compartment model.
+
+        Parameters
+        ----------
+         x : array
+            input from the Differential Evolution optimizer.
+
+        Returns
+        -------
+        exp_phi1 : array
+            Combined array of parameters perfusion/pseudo-diffusion
+            and diffusion parameters.
+
+        """
+        self.yhat_perfusion = self.bvals * x[0]
+        self.yhat_diffusion = self.bvals * x[1]
+        self.exp_phi1[:, 0] = np.exp(-self.yhat_perfusion)
+        self.exp_phi1[:, 1] = np.exp(-self.yhat_diffusion)
+        return self.exp_phi1
 
 
 class IvimFit(object):

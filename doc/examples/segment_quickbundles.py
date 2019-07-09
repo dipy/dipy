@@ -14,7 +14,7 @@ from nibabel import trackvis as tv
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.viz import window, actor
 
 """
@@ -22,7 +22,7 @@ For educational purposes we will try to cluster a small streamline bundle known
 from neuroanatomy as the fornix.
 """
 
-fname = get_data('fornix')
+fname = get_fnames('fornix')
 
 """
 Load fornix streamlines.

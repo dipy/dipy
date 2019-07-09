@@ -6,13 +6,13 @@ from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
 
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 
 
 def test_read_bvals_bvecs():
-    fimg, fbvals, fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_fnames('small_101D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bvals, gt.bvals)

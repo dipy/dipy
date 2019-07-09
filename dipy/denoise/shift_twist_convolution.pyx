@@ -179,7 +179,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
 
     with nogil:
 
-        # loop over ODFs cx,cy,cz,corient --> y and v
+        # loop over ODFs cx,cy,cz,orient --> y and v
         for corient in prange(OR1, schedule='guided'):
             for cx in range(nx):
                 for cy in range(ny):

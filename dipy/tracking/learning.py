@@ -1,10 +1,10 @@
-''' Learning algorithms for tractography'''
+""" Learning algorithms for tractography"""
 import numpy as np
 import dipy.tracking.distances as pf
 
 
 def detect_corresponding_tracks(indices, tracks1, tracks2):
-    ''' Detect corresponding tracks from list tracks1 to list tracks2
+    """ Detect corresponding tracks from list tracks1 to list tracks2
     where tracks1 & tracks2 are lists of tracks
 
     Parameters
@@ -42,7 +42,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     for every index. (See 3rd column of arr in the example given below.)
 
 
-    '''
+    """
     li = len(indices)
 
     track2track = np.zeros((li, 2))
@@ -57,7 +57,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
 
 
 def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
-    ''' Detect corresponding tracks from 1 to 2 where tracks1 & tracks2 are
+    """ Detect corresponding tracks from 1 to 2 where tracks1 & tracks2 are
     sequences of tracks
 
     Parameters
@@ -102,7 +102,7 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     ----------
     distances.mam_distances
 
-    '''
+    """
     li = len(indices)
     track2track = np.zeros((li, 2))
     cnt = 0

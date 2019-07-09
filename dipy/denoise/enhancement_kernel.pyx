@@ -102,13 +102,13 @@ cdef class EnhancementKernel:
         # if LUT exists, load
         if not force_recompute and os.path.isfile(kernellutpath):
             if verbose:
-                print "The kernel already exists. Loading from " + kernellutpath
+                print("The kernel already exists. Loading from " + kernellutpath)
             self.lookuptable = np.load(kernellutpath)
 
         # else, create
         else:
             if verbose:
-                print "The kernel doesn't exist yet. Computing..."
+                print("The kernel doesn't exist yet. Computing...")
             self.create_lookup_table(verbose)
             if self.sphere is not None:
                 np.save(kernellutpath, self.lookuptable)

@@ -1,10 +1,9 @@
 """ Load and save pickles """
-# Python 3 merged cPickle into pickle
-from dipy.utils.six.moves import cPickle
+import pickle
 
 
 def save_pickle(fname, dix):
-    ''' Save `dix` to `fname` as pickle
+    """Save `dix` to `fname` as pickle.
 
     Parameters
     ------------
@@ -31,14 +30,14 @@ def save_pickle(fname, dix):
     ----------
     dipy.io.pickles.load_pickle
 
-    '''
+    """
     out = open(fname, 'wb')
-    cPickle.dump(dix, out, protocol=cPickle.HIGHEST_PROTOCOL)
+    pickle.dump(dix, out, protocol=pickle.HIGHEST_PROTOCOL)
     out.close()
 
 
 def load_pickle(fname):
-    ''' Load object from pickle file `fname`
+    """Load object from pickle file `fname`.
 
     Parameters
     ------------
@@ -53,8 +52,9 @@ def load_pickle(fname):
     Examples
     ----------
     dipy.io.pickles.save_pickle
-    '''
+
+    """
     inp = open(fname, 'rb')
-    dix = cPickle.load(inp)
+    dix = pickle.load(inp)
     inp.close()
     return dix

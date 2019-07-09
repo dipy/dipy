@@ -91,10 +91,10 @@ cdef class FBCMeasures:
             3) the relative fiber to bundle coherence (RFBC)
         """
         if verbose:
-            print "median RFBC: " + str(np.median(self.streamlines_rfbc))
-            print "mean RFBC: " + str(np.mean(self.streamlines_rfbc))
-            print "min RFBC: " + str(np.min(self.streamlines_rfbc))
-            print "max RFBC: " + str(np.max(self.streamlines_rfbc))
+            print("median RFBC: " + str(np.median(self.streamlines_rfbc)))
+            print("mean RFBC: " + str(np.mean(self.streamlines_rfbc)))
+            print("min RFBC: " + str(np.min(self.streamlines_rfbc)))
+            print("max RFBC: " + str(np.max(self.streamlines_rfbc)))
 
         # logarithmic transform of color values to emphasize spurious fibers
         minval = np.nanmin(self.streamlines_lfbc)

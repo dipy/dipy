@@ -6,7 +6,10 @@ from scipy.ndimage import affine_transform
 
 
 def _affine_transform(kwargs):
-    return affine_transform(**kwargs)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*scipy.*18.*",
+                                category=UserWarning)
+        return affine_transform(**kwargs)
 
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
@@ -50,8 +53,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     --------
     >>> import nibabel as nib
     >>> from dipy.align.reslice import reslice
-    >>> from dipy.data import get_data
-    >>> fimg = get_data('aniso_vox')
+    >>> from dipy.data import get_fnames
+    >>> fimg = get_fnames('aniso_vox')
     >>> img = nib.load(fimg)
     >>> data = img.get_data()
     >>> data.shape == (58, 58, 24)
@@ -71,38 +74,38 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     # described in https://github.com/nipy/dipy/issues/1107.
     # These warnings are not relevant to us, as long as our offset
     # input to scipy's affine_transform is [0, 0, 0]
-    warnings.simplefilter("ignore")
-    new_zooms = np.array(new_zooms, dtype='f8')
-    zooms = np.array(zooms, dtype='f8')
-    R = new_zooms / zooms
-    new_shape = zooms / new_zooms * np.array(data.shape[:3])
-    new_shape = tuple(np.round(new_shape).astype('i8'))
-    kwargs = {'matrix': R, 'output_shape': new_shape, 'order': order,
-              'mode': mode, 'cval': cval}
-    if data.ndim == 3:
-        data2 = affine_transform(input=data, **kwargs)
-    if data.ndim == 4:
-        data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
-        if not num_processes:
-            num_processes = cpu_count()
-        if num_processes < 2:
-            for i in range(data.shape[-1]):
-                affine_transform(input=data[..., i], output=data2[..., i],
-                                 **kwargs)
-        else:
-            params = []
-            for i in range(data.shape[-1]):
-                _kwargs = {'input': data[..., i]}
-                _kwargs.update(kwargs)
-                params.append(_kwargs)
-            pool = Pool(num_processes)
-            for i, result in enumerate(pool.imap(_affine_transform, params)):
-                data2[..., i] = result
-            pool.close()
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*scipy.*18.*",
+                                category=UserWarning)
+        new_zooms = np.array(new_zooms, dtype='f8')
+        zooms = np.array(zooms, dtype='f8')
+        R = new_zooms / zooms
+        new_shape = zooms / new_zooms * np.array(data.shape[:3])
+        new_shape = tuple(np.round(new_shape).astype('i8'))
+        kwargs = {'matrix': R, 'output_shape': new_shape, 'order': order,
+                  'mode': mode, 'cval': cval}
+        if data.ndim == 3:
+            data2 = affine_transform(input=data, **kwargs)
+        if data.ndim == 4:
+            data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
+            if not num_processes:
+                num_processes = cpu_count()
+            if num_processes < 2:
+                for i in range(data.shape[-1]):
+                    affine_transform(input=data[..., i], output=data2[..., i],
+                                     **kwargs)
+            else:
+                params = []
+                for i in range(data.shape[-1]):
+                    _kwargs = {'input': data[..., i]}
+                    _kwargs.update(kwargs)
+                    params.append(_kwargs)
+                pool = Pool(num_processes)
+                for i, res in enumerate(pool.imap(_affine_transform, params)):
+                    data2[..., i] = res
+                pool.close()
 
-    Rx = np.eye(4)
-    Rx[:3, :3] = np.diag(R)
-    affine2 = np.dot(affine, Rx)
-    # Turn warnings back on:
-    warnings.filterwarnings('always')
+        Rx = np.eye(4)
+        Rx[:3, :3] = np.diag(R)
+        affine2 = np.dot(affine, Rx)
     return data2, affine2

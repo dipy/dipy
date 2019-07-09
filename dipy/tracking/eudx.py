@@ -7,7 +7,7 @@ from dipy.data import get_sphere
 
 class EuDX(object):
 
-    '''Euler Delta Crossings
+    """Euler Delta Crossings
 
     Generates tracks with termination criteria defined by a delta function [1]_
     and it has similarities with FACT algorithm [2]_ and Basser's method
@@ -43,7 +43,7 @@ class EuDX(object):
     center of the center of the first voxel of the volume and all i,j,k
     coordinates start from the center of the voxel they represent.
 
-    '''
+    """
 
     def __init__(self, a, ind,
                  seeds,
@@ -55,7 +55,7 @@ class EuDX(object):
                  total_weight=.5,
                  max_points=1000,
                  affine=None):
-        '''
+        """
         Euler integration with multiple stopping criteria and supporting
         multiple multiple fibres in crossings [1]_.
 
@@ -111,9 +111,9 @@ class EuDX(object):
         --------
         >>> import nibabel as nib
         >>> from dipy.reconst.dti import TensorModel, quantize_evecs
-        >>> from dipy.data import get_data, get_sphere
+        >>> from dipy.data import get_fnames, get_sphere
         >>> from dipy.core.gradients import gradient_table
-        >>> fimg,fbvals,fbvecs = get_data('small_101D')
+        >>> fimg,fbvals,fbvecs = get_fnames('small_101D')
         >>> img = nib.load(fimg)
         >>> affine = img.affine
         >>> data = img.get_data()
@@ -136,7 +136,7 @@ class EuDX(object):
         .. [1] E. Garyfallidis (2012), "Towards an accurate brain
                tractography", PhD thesis, University of Cambridge, UK.
 
-        '''
+        """
         self.a = np.array(a, dtype=np.float64, copy=True, order="C")
         self.ind = np.array(ind, dtype=np.float64, copy=True, order="C")
         self.a_low = a_low
@@ -172,7 +172,7 @@ class EuDX(object):
         return utils.move_streamlines(voxel_tracks, self.affine)
 
     def _voxel_tracks(self, seed_voxels):
-        ''' This is were all the fun starts '''
+        """ This is were all the fun starts """
         if seed_voxels is not None and seed_voxels.dtype != np.float64:
             # This is a private method so users should never see this error. If
             # you've reached this error, there is a bug somewhere.

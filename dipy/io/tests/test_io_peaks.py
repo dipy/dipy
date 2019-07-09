@@ -6,7 +6,7 @@ import numpy.testing as npt
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
-from dipy.reconst.peaks import PeaksAndMetrics
+from dipy.direction.peaks import PeaksAndMetrics
 from dipy.data import get_sphere
 from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
 

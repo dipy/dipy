@@ -117,6 +117,8 @@ class TissueClassifierHMRF(object):
         else:
             max_iter = 100
 
+            if tolerance is None:
+                tolerance = 1e-05
             for i in range(max_iter):
 
                 if self.verbose:
@@ -143,8 +145,6 @@ class TissueClassifierHMRF(object):
                     self.energies.append(energy)
                     self.energies_sum.append(energy[energy > -np.inf].sum())
 
-                if tolerance is None:
-                    tolerance = 1e-05
 
                 if i % 10 == 0 and i != 0:
 

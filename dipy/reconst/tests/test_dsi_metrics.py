@@ -1,17 +1,15 @@
 import numpy as np
 from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_almost_equal,
                            run_module_suite)
 from dipy.sims.voxel import (SticksAndBall,
                              MultiTensor)
 
-from dipy.testing import setup_test
-
 
 def test_dsi_metrics():
-    btable = np.loadtxt(get_data('dsi4169btable'))
+    btable = np.loadtxt(get_fnames('dsi4169btable'))
     gtab = gradient_table(btable[:, 0], btable[:, 1:])
     data, golden_directions = SticksAndBall(gtab, d=0.0015, S0=100,
                                             angles=[(0, 0), (60, 0)],

@@ -29,14 +29,13 @@ from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
 from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor
-from dipy.viz.colormap import line_colors
+from dipy.viz import window, actor, colormap as cmap, have_fury
 
 # Enables/disables interactive visualization
 interactive = False
@@ -77,11 +76,15 @@ tracking position.
 - metric_map: numpy array [:, :, :]
 - threshold: float
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': metric_map < threshold,
-- 'OUTSIDEIMAGE': tracking point outside of metric_map,
-- 'TRACKPOINT': stop because no direction is available,
+- 'ENDPOINT': stops at a position where metric_map < threshold; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where metric_map >= threshold, but there is no valid
+direction to follow.
 - 'INVALIDPOINT': N/A.
 """
 
@@ -113,23 +116,21 @@ fig.savefig('threshold_fa.png')
  **Thresholded fractional anisotropy map.**
 """
 
-all_streamlines_threshold_classifier = LocalTracking(dg,
-                                                     threshold_classifier,
-                                                     seeds,
-                                                     affine,
-                                                     step_size=.5,
-                                                     return_all=True)
-
-save_trk("deterministic_threshold_classifier_all.trk",
-         all_streamlines_threshold_classifier,
+all_streamline_threshold_tc_generator = LocalTracking(dg,
+                                                      threshold_classifier,
+                                                      seeds,
+                                                      affine,
+                                                      step_size=.5,
+                                                      return_all=True)
+streamlines = Streamlines(all_streamline_threshold_tc_generator)
+save_trk("all_streamlines_threshold_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
 
-streamlines = Streamlines(all_streamlines_threshold_classifier)
-
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_threshold_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -156,12 +157,16 @@ nearest-neighborhood interpolation at the tracking position.
 
 - mask: numpy array [:, :, :]
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': mask = 0
-- 'OUTSIDEIMAGE': tracking point outside of mask
-- 'TRACKPOINT': no direction is available
-- 'INVALIDPOINT': N/A
+- 'ENDPOINT': stops at a position where mask = 0; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where mask > 0, but there is no valid direction to
+follow.
+- 'INVALIDPOINT': N/A.
 """
 
 from dipy.tracking.local import BinaryTissueClassifier
@@ -172,8 +177,9 @@ fig = plt.figure()
 plt.xticks([])
 plt.yticks([])
 fig.tight_layout()
-plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(white_matter[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 fig.savefig('white_matter_mask.png')
 
 """
@@ -183,23 +189,21 @@ fig.savefig('white_matter_mask.png')
  **White matter binary mask.**
 """
 
-all_streamlines_binary_classifier = LocalTracking(dg,
-                                                  binary_classifier,
-                                                  seeds,
-                                                  affine,
-                                                  step_size=.5,
-                                                  return_all=True)
-
-save_trk("deterministic_binary_classifier_all.trk",
-         all_streamlines_binary_classifier,
+all_streamline_binary_tc_generator = LocalTracking(dg,
+                                                   binary_classifier,
+                                                   seeds,
+                                                   affine,
+                                                   step_size=.5,
+                                                   return_all=True)
+streamlines = Streamlines(all_streamline_binary_tc_generator)
+save_trk("all_streamlines_binary_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
 
-streamlines = Streamlines(all_streamlines_binary_classifier)
-
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_binary_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -218,9 +222,9 @@ ACT Tissue Classifier
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
 anatomical images to determine when the tractography stops. The ``include_map``
 defines when the streamline reached a 'valid' stopping region (e.g. gray
-matter partial volume estimation (PVE) map) and the ``exclude_map`` defines when
-the streamline reached an 'invalid' stopping region (e.g. corticospinal fluid
-PVE map). The background of the anatomical image should be added to the
+matter partial volume estimation (PVE) map) and the ``exclude_map`` defines
+when the streamline reached an 'invalid' stopping region (e.g. corticospinal
+fluid PVE map). The background of the anatomical image should be added to the
 ``include_map`` to keep streamlines exiting the brain (e.g. through the
 brain stem). The ACT tissue classifier uses a trilinear interpolation
 at the tracking position.
@@ -230,12 +234,18 @@ at the tracking position.
 - ``include_map``: numpy array ``[:, :, :]``,
 - ``exclude_map``: numpy array ``[:, :, :]``,
 
-**Stopping criterion**
+**Stopping States**
 
-- 'ENDPOINT': ``include_map`` > 0.5,
-- 'OUTSIDEIMAGE': tracking point outside of ``include_map`` or ``exclude_map``,
-- 'TRACKPOINT': no direction is available,
-- 'INVALIDPOINT': ``exclude_map`` > 0.5.
+- 'ENDPOINT': stops at a position where ``include_map`` > 0.5; the streamline
+reached the target stopping area.
+- 'OUTSIDEIMAGE': stops at a position outside of ``include_map`` or
+``exclude_map``; the streamline reached an area outside the image where no
+direction data is available.
+- 'TRACKPOINT': stops at a position because no direction is available; the
+streamline is stopping where ``include_map`` < 0.5 and ``exclude_map`` < 0.5,
+but there is no valid direction to follow.
+- 'INVALIDPOINT': ``exclude_map`` > 0.5; the streamline reach a position which
+is anatomically not plausible.
 """
 
 from dipy.tracking.local import ActTissueClassifier
@@ -257,13 +267,15 @@ fig = plt.figure()
 plt.subplot(121)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(include_map[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 plt.subplot(122)
 plt.xticks([])
 plt.yticks([])
-plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray', origin='lower',
-           interpolation='nearest')
+plt.imshow(exclude_map[:, :, data.shape[2] // 2].T, cmap='gray',
+           origin='lower', interpolation='nearest')
+
 fig.tight_layout()
 fig.savefig('act_maps.png')
 
@@ -274,23 +286,21 @@ fig.savefig('act_maps.png')
  **Include (left) and exclude (right) maps for ACT.**
 """
 
-all_streamlines_act_classifier = LocalTracking(dg,
-                                               act_classifier,
-                                               seeds,
-                                               affine,
-                                               step_size=.5,
-                                               return_all=True)
-
-save_trk("deterministic_act_classifier_all.trk",
-         all_streamlines_act_classifier,
+all_streamline_act_tc_generator = LocalTracking(dg,
+                                                act_classifier,
+                                                seeds,
+                                                affine,
+                                                step_size=.5,
+                                                return_all=True)
+streamlines = Streamlines(all_streamline_act_tc_generator)
+save_trk("all_streamlines_act_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
 
-streamlines = Streamlines(all_streamlines_act_classifier)
-
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='all_streamlines_act_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -303,23 +313,21 @@ if window.have_vtk:
  **Deterministic tractography using ACT stopping criterion.**
 """
 
-valid_streamlines_act_classifier = LocalTracking(dg,
-                                                 act_classifier,
-                                                 seeds,
-                                                 affine,
-                                                 step_size=.5,
-                                                 return_all=False)
-
-save_trk("deterministic_act_classifier_valid.trk",
-         valid_streamlines_act_classifier,
+valid_streamline_act_tc_generator = LocalTracking(dg,
+                                                  act_classifier,
+                                                  seeds,
+                                                  affine,
+                                                  step_size=.5,
+                                                  return_all=False)
+streamlines = Streamlines(valid_streamline_act_tc_generator)
+save_trk("valid_streamlines_act_classifier.trk",
+         streamlines,
          affine,
          labels.shape)
 
-streamlines = Streamlines(valid_streamlines_act_classifier)
-
-if window.have_vtk:
+if have_fury:
     window.clear(ren)
-    ren.add(actor.line(streamlines, line_colors(streamlines)))
+    ren.add(actor.line(streamlines, cmap.line_colors(streamlines)))
     window.record(ren, out_path='valid_streamlines_act_classifier.png',
                   size=(600, 600))
     if interactive:
@@ -336,10 +344,10 @@ if window.have_vtk:
 """
 The threshold and binary tissue classifiers use respectively a scalar map and a
 binary mask to stop the tracking. The ACT tissue classifier use partial volume
-fraction (PVE) maps from an anatomical image to stop the tracking. Additionally,
-the ACT tissue classifier determines if the tracking stopped in expected regions
-(e.g. gray matter) and allows the user to get only streamlines stopping in those
-regions.
+fraction (PVE) maps from an anatomical image to stop the tracking.
+Additionally, the ACT tissue classifier determines if the tracking stopped in
+expected regions (e.g. gray matter) and allows the user to get only
+streamlines stopping in those regions.
 
 Notes
 ------

@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.data import get_data, dsi_voxels
+from dipy.data import get_fnames, dsi_voxels
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
@@ -20,7 +20,7 @@ def test_gqi():
     sphere = get_sphere('symmetric724')
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_data('dsi515btable'))
+    btable = np.loadtxt(get_fnames('dsi515btable'))
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
     gtab = gradient_table(bvals, bvecs)

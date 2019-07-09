@@ -15,7 +15,7 @@ how to get going.
 
 Have a look at the `nipy development guidelines`_ for our coding habits.
 In summary, please follow the `numpy coding style`_ - and of course -
-PEP8_ .  Test everything!  We are using nose_ ; see the existing code
+PEP8_ .  Test everything!  We are using pytest_ ; see the existing code
 for example tests.  If you can please use our :ref:`commit-codes`.
 
 But - just pitch in - send us some code - we'll give you feedback if you

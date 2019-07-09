@@ -183,7 +183,7 @@ panel_picking.add_element(label_value, (0.1, 0.25))
 panel_picking.add_element(result_position, (0.45, 0.55))
 panel_picking.add_element(result_value, (0.45, 0.25))
 
-show_m.ren.add(panel_picking)
+renderer.add(panel_picking)
 
 """
 Add a left-click callback to the slicer. Also disable interpolation so you can
@@ -198,7 +198,7 @@ def left_click_callback(obj, ev):
     obj.picker.Pick(event_pos[0],
                     event_pos[1],
                     0,
-                    show_m.ren)
+                    renderer)
 
     i, j, k = obj.picker.GetPointIJK()
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
@@ -238,7 +238,7 @@ def left_click_callback_mosaic(obj, ev):
     obj.picker.Pick(event_pos[0],
                     event_pos[1],
                     0,
-                    show_m_mosaic.ren)
+                    renderer)
 
     i, j, k = obj.picker.GetPointIJK()
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))

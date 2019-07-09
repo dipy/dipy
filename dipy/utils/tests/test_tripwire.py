@@ -3,9 +3,8 @@
 
 from dipy.utils.tripwire import TripWire, is_tripwire, TripWireError
 
-from nose import SkipTest
-from nose.tools import (assert_true, assert_false, assert_raises,
-                        assert_equal, assert_not_equal)
+from dipy.testing import assert_true, assert_false, assert_not_equal
+from numpy.testing import assert_raises, assert_equal
 
 
 def test_is_tripwire():

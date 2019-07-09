@@ -5,8 +5,6 @@ from itertools import repeat
 from os import path
 from warnings import warn
 
-from dipy.utils.six.moves import xrange
-
 from nibabel.tmpdirs import InTemporaryDirectory
 
 import numpy as np
@@ -66,7 +64,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
     num_seeds = len(seeds)
     theta = np.empty(num_seeds)
     phi = np.empty(num_seeds)
-    for i in xrange(num_seeds):
+    for i in range(num_seeds):
         peak = opt.fmin(_helper, seeds[i], xtol=xtol, disp=False)
         theta[i], phi[i] = peak
 
@@ -423,10 +421,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
-    sh_basis_type : {None, 'mrtrix', 'fibernav'}
-        ``None`` for the default dipy basis which is the fibernav basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
+    sh_basis_type : {None, 'tournier07', 'descoteaux07'}
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [2]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        (``None`` defaults to ``descoteaux07``).
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
     npeaks : int
@@ -450,6 +449,17 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam : PeaksAndMetrics
         An object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
+
+    References
+    ----------
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
     """
     if return_sh and (B is None or invB is None):
         B, invB = sh_to_sf_matrix(

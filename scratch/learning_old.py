@@ -1,4 +1,4 @@
-''' Learning algorithms for tractography'''
+""" Learning algorithms for tractography"""
 
 import numpy as np
 from dipy.core import track_metrics as tm
@@ -14,7 +14,7 @@ def larch(tracks,
           split_thrs=[50.**2,20.**2,10.**2],
           ret_atracks=False,
           info=False):
-    ''' LocAl Rapid Clusters for tractograpHy
+    """ LocAl Rapid Clusters for tractograpHy
 
     Parameters
     ----------
@@ -33,10 +33,9 @@ def larch(tracks,
        a tree graph containing the clusters
     atracks : sequence
        of approximated tracks the approximation preserves initial shape.
-    '''
+    """
 
-
-    '''
+    """
     t1=time.clock()    
     print 'Reducing to 3-point approximate tracks...'
     tracks3=[tm.downsample(t,3) for t in tracks]
@@ -74,13 +73,13 @@ def larch(tracks,
     else:
         return C
     
-    '''
+    """
 
     return
 
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
-    ''' Detect corresponding tracks from 1 to 2
+    """ Detect corresponding tracks from 1 to 2
     
     Parameters
     ----------
@@ -95,7 +94,7 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
     -------
     track2track : array
        of int showing the correspondance
-    '''
+    """
     li=len(indices)
     
     track2track=np.zeros((li,3))
@@ -111,7 +110,7 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
     return track2track.astype(int)
 
 def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
-    ''' Detect corresponding tracks from 1 to 2
+    """ Detect corresponding tracks from 1 to 2
     
     Parameters:
     ----------------
@@ -132,7 +131,7 @@ def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
     track2track: array of int
             showing the correspondance
     
-    '''
+    """
     li=len(indices)
     
     track2track=np.zeros((li,3))
@@ -149,7 +148,7 @@ def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
 
 
 def rm_far_ends(ref,tracks,dist=25):
-    ''' rm tracks with far endpoints
+    """ rm tracks with far endpoints
     
     Parameters
     ----------
@@ -166,7 +165,7 @@ def rm_far_ends(ref,tracks,dist=25):
        reduced tracks
     indices : sequence
        indices of tracks
-    '''
+    """
     indices=[i for (i,t) in enumerate(tracks) if tm.max_end_distances(t,ref) <= dist]
     
     tracksr=[tracks[i] for i in indices]
@@ -175,8 +174,9 @@ def rm_far_ends(ref,tracks,dist=25):
  
 
 def rm_far_tracks(ref,tracks,dist=25,down=False):
-    ''' Remove tracks which are far away using as a distance metric the average euclidean distance of the 
-    following three points start point, midpoint and end point.
+    """ Remove tracks which are far away using as a distance metric the average
+    euclidean distance of the following three points start point, midpoint and
+    end point.
 
     Parameters
     ----------
@@ -196,7 +196,7 @@ def rm_far_tracks(ref,tracks,dist=25,down=False):
             reduced tracks
     indices : sequence
             indices of tracks
-    '''
+    """
 
     if down==False:
         
@@ -216,7 +216,7 @@ def rm_far_tracks(ref,tracks,dist=25,down=False):
  
 
 def missing_tracks(indices1,indices2):
-    ''' Missing tracks in bundle1 but not bundle2
+    """ Missing tracks in bundle1 but not bundle2
     
     Parameters:
     ------------------
@@ -241,12 +241,12 @@ def missing_tracks(indices1,indices2):
     >>> fornix_ind=G[5]['indices']
     >>> len(missing_tracks(fornix_ind, indar)) = 0
     
-    '''
+    """
     
     return list(set(indices1).difference(set(indices2)))    
 
 def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
-    ''' Filter out unnescessary tracks and keep only a few good ones.  
+    """ Filter out unnescessary tracks and keep only a few good ones.
     Aka the balls along a track method.  
     
     Parameters:
@@ -266,7 +266,7 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
             of indices of representative aka skeletal tracks. They should be <= rand_selected
     
     
-    '''
+    """
     trackno=len(tracks)
     #select 1000 random tracks
     random_indices=(trackno*np.random.rand(rand_selected)).astype(int)
@@ -324,7 +324,8 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     return representative
 
 def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atlas=0,use_preselected_tracks=0,ball_radius=5):
-    ''' Detect corpus callosum in a mni registered dataset of shape (181,217,181)   
+    """ Detect corpus callosum in a mni registered dataset of shape
+    (181,217,181)
     
     Parameters:
     ----------------
@@ -339,7 +340,7 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     left_indices: sequence
             with the indices of the rest of the brain
        
-    '''
+    """
 
     cc=[]
 
@@ -419,7 +420,7 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     imgl=imgl[0]
     
     #find the biggest objects the second biggest should be the cc the biggest should be the background
-    '''
+    """
     find_big=np.zeros(no_labels)
     
     for i in range(no_labels):
@@ -430,7 +431,7 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     print find_big
     
     find_bigi=np.argsort(find_big)
-    '''
+    """
     cc_label=imgl[p1max,p2max]
     
     imgl2=np.zeros((ysize,zsize))
@@ -548,7 +549,7 @@ def relabel_by_atlas_value_and_mam(atlas_tracks,atlas,tes,tracks,tracksd,zhang_t
 
 
 def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
-    ''' [1] Removes hits in hitdata which have divergence above threshold.
+    """ [1] Removes hits in hitdata which have divergence above threshold.
        [2] Removes fibres in hitdata whose fraction of remaining hits is below
         the required weight.
 
@@ -568,7 +569,7 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
     -----------    
     reduced_hitdata: array, shape (M, 5)
     light_weight_fibres: list of integer track indices
-    '''
+    """
     # first pass: remove hits with r>divergence_threshold
     firstpass = [[[x,y,z,r,f] for (x,y,z,r,f) in plane  if r<=divergence_threshold] for plane in hitdata]
 
@@ -591,9 +592,9 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
     return reduced_hitdata, heavy_weight_fibres
 
 def neck_finder(hitdata, ref):
-    '''
+    """
     To identify regions of concentration of fibres related by hitdata to a reference fibre
-    '''
+    """
     
     #typically len(hitdata) = len(ref)-2 at present, though it should ideally be
     # len(ref)-1 which is the number of segments in ref
@@ -630,9 +631,9 @@ def neck_finder(hitdata, ref):
         np.array(unweighted_mean_dist), np.array(weighted_mean_dist)
 
 def max_concentration(plane_hits,ref):
-    '''
+    """
     calculates the log determinant of the concentration matrix for the hits in planehits    
-    '''
+    """
     dispersions = [np.prod(np.sort(npla.eigvals(np.cov(p[:,0:3].T)))[1:2]) for p in plane_hits]
     index = np.argmin(dispersions)
     log_max_concentration = -np.log2(dispersions[index])
@@ -640,11 +641,11 @@ def max_concentration(plane_hits,ref):
     return index, centre, log_max_concentration
 
 def refconc(brain, ref, divergence_threshold=0.3, fibre_weight=0.7):
-    '''
+    """
     given a reference fibre locates the parallel fibres in brain (tracks)
     with threshold_hitdata applied to cut_planes output then follows
     with concentration to locate the locus of a neck
-    '''
+    """
     
     hitdata = pf.cut_plane(brain, ref)
     reduced_hitdata, heavy_weight_fibres = threshold_hitdata(hitdata, divergence_threshold, fibre_weight)
@@ -656,8 +657,8 @@ def refconc(brain, ref, divergence_threshold=0.3, fibre_weight=0.7):
     return heavy_weight_fibres, index, centre
 
 def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=0.7,far_thresh=25,zhang_thresh=15, end_thresh=10):
-    '''
-    '''
+    """
+    """
     bundle = set([])
     # centres = []
     # indices = []
@@ -693,7 +694,7 @@ def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=
 
 
 class FACT_Delta():
-    ''' Generates tracks with termination criteria defined by a
+    """ Generates tracks with termination criteria defined by a
     delta function [1]_ and it has similarities with FACT algorithm [2]_.
 
     Can be used with any reconstruction method as DTI,DSI,QBI,GQI which can
@@ -720,10 +721,10 @@ class FACT_Delta():
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
     
 
-    '''
+    """
 
     def __init__(self,qa,ind,seeds_no=1000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
-        '''
+        """
         Parameters
         ----------
 
@@ -749,7 +750,7 @@ class FACT_Delta():
 
         tracks: sequence of arrays
 
-        '''
+        """
 
         if len(qa.shape)==3:
             qa.shape=qa.shape+(1,)
@@ -788,7 +789,7 @@ class FACT_Delta():
 
 
     def trilinear_interpolation(self,X):
-        '''
+        """
         Parameters
         ----------
         X: array, shape(3,), a point
@@ -800,7 +801,7 @@ class FACT_Delta():
 
         IN: array, shape(8,2), the corners of the unit cube
 
-        '''
+        """
 
         Xf=np.floor(X)        
         #d holds the distance from the (floor) corner of the voxel
@@ -829,7 +830,7 @@ class FACT_Delta():
         return W,IN.astype(np.int)
 
     def nearest_direction(self,dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
-        ''' Give the nearest direction to a point
+        """ Give the nearest direction to a point
 
         Parameters
         ----------        
@@ -857,7 +858,7 @@ class FACT_Delta():
         direction: array, shape(3,), the fiber orientation to be
         consider in the interpolation
 
-        '''
+        """
 
         max_dot=0
         max_doti=0
@@ -884,8 +885,8 @@ class FACT_Delta():
 
         
     def propagation_direction(self,point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
-        ''' Find where you are moving next
-        '''
+        """ Find where you are moving next
+        """
         total_w = 0 # total weighting
         new_direction = np.array([0,0,0])
         w,index=self.trilinear_interpolation(point)
@@ -912,9 +913,9 @@ class FACT_Delta():
         return True, new_direction/np.sqrt(np.sum(new_direction**2))
     
     def initial_direction(self,seed,qa,ind,odf_vertices,qa_thr):
-        ''' First direction that we get from a seeding point
+        """ First direction that we get from a seeding point
 
-        '''
+        """
         #very tricky/cool addition/flooring that helps create a valid
         #neighborhood (grid) for the trilinear interpolation to run smoothly
         #seed+=0.5
@@ -930,7 +931,7 @@ class FACT_Delta():
 
 
     def propagation(self,seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz):
-        '''
+        """
         Parameters
         ----------
         seed: array, shape(3,), point where the tracking starts        
@@ -943,7 +944,7 @@ class FACT_Delta():
         d: bool, delta function result        
         idirection: array, shape(3,), index of the direction of the propagation
 
-        '''
+        """
         point_bak=seed.copy()
         point=seed.copy()
         #d is the delta function 

@@ -2,8 +2,8 @@
 """
 Script to generate documentation for command line utilities
 """
+import os
 from os.path import join as pjoin
-from os import listdir
 import re
 from subprocess import Popen, PIPE, CalledProcessError
 import sys
@@ -13,6 +13,8 @@ import inspect
 # version comparison
 from distutils.version import LooseVersion as V
 
+# List of workflows to ignore
+SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
 
 def sh3(cmd):
     """
@@ -60,18 +62,16 @@ def abort(error):
     exit()
 
 
-def get_rst_string(module_name, help_string):
-    """
-    Generate rst text for module
-    """
-    dashes = "========================\n"
+def get_help_string(class_obj):
+    # return inspect.getdoc(class_obj.run)
+    try:
+        ia_module = importlib.import_module("dipy.workflows.base")
+        parser = ia_module.IntrospectiveArgumentParser()
+        parser.add_workflow(class_obj())
+    except Exception as e:
+        abort("Error on {0}: {1}".format(class_obj.__name__, e))
 
-    rst_text = ""
-    rst_text += dashes
-    rst_text += module_name + "\n"
-    rst_text += dashes + "\n"
-    rst_text += help_string
-    return rst_text
+    return parser.format_help()
 
 
 if __name__ == '__main__':
@@ -108,43 +108,63 @@ if __name__ == '__main__':
     # generate docs
     command_list = []
 
-    workflows_folder = pjoin('..', 'dipy', 'workflows')
-    workflow_class = module = importlib.import_module(
-        "dipy.workflows.workflow")
+    workflows_folder = pjoin('..', 'bin')
+    workflow_module = importlib.import_module("dipy.workflows.workflow")
 
-    for f in listdir(workflows_folder):
-        fpath = pjoin(workflows_folder, f)
-        module_name = inspect.getmodulename(fpath)
-        if module_name is not None:
-            module = importlib.import_module(
-                "dipy.workflows." + module_name)
-            members = inspect.getmembers(module)
-            for member_name, member_obj in members:
-                if(inspect.isclass(member_obj)):
-                    if (issubclass(member_obj, workflow_class.Workflow) and
-                            not member_obj == workflow_class.Workflow):
-                        # member_obj is a workflow
-                        print("Generating docs for: ", member_name)
-                        if hasattr(member_obj, 'run'):
-                            help_string = inspect.getdoc(member_obj.run)
+    workflow_flist = [os.path.abspath(pjoin(workflows_folder, f))
+                      for f in os.listdir(workflows_folder)
+                      if os.path.isfile(pjoin(workflows_folder, f)) and
+                      f.lower().startswith("dipy_")]
 
-                            doc_string = get_rst_string(member_name,
-                                                        help_string)
-                            out_f = member_name + ".rst"
-                            output_file = open(pjoin(outdir, out_f), "w")
-                            output_file.write(doc_string)
-                            output_file.close()
-                            command_list.append(out_f)
-                            print("Done")
+    workflow_desc = {}
+    # We get all workflows class obj in a dictionary
+    for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
+        module_name = inspect.getmodulename(path_file)
+        if module_name is None:
+            continue
+
+        module = importlib.import_module("dipy.workflows." + module_name)
+        members = inspect.getmembers(module)
+        d_wkflw = {name: {"module": obj, "help": get_help_string(obj)}
+                   for name, obj in members
+                   if inspect.isclass(obj) and
+                   issubclass(obj, workflow_module.Workflow) and
+                   name not in SKIP_WORKFLOWS_LIST
+                   }
+
+        workflow_desc.update(d_wkflw)
+
+    cmd_list = []
+    for fpath in workflow_flist:
+        fname = os.path.basename(fpath)
+        with open(fpath) as file_object:
+            flow_name = set(re.findall(r"[A-Z]\w+Flow", file_object.read(),
+                                       re.X | re.M))
+
+        if not flow_name or len(flow_name) != 1:
+            continue
+
+        flow_name = list(flow_name)[-1]
+        print("Generating docs for: {0} ({1})".format(fname, flow_name))
+        out_fname = fname + ".rst"
+        with open(pjoin(outdir, out_fname), "w") as fp:
+            dashes = "========================"
+            fp.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
+            # Trick to avoid docgen_cmd.py as cmd line
+            help_txt = workflow_desc[flow_name]["help"]
+            help_txt = help_txt.replace("docgen_cmd.py", fname)
+            fp.write(help_txt)
+
+        cmd_list.append(out_fname)
+        print("Done")
 
     # generate index.rst
     print("Generating index.rst")
-    index = open(pjoin(outdir, "index.rst"), "w")
-    index.write("Command Line Utilities Reference\n")
-    index.write("================================\n\n")
-    index.write(".. toctree::\n\n")
-    for cmd in command_list:
-        index.write("   " + cmd)
-        index.write("\n")
-    index.close()
+    with open(pjoin(outdir, "index.rst"), "w") as index:
+        index.write("Command Line Utilities Reference\n")
+        index.write("================================\n\n")
+        index.write(".. toctree::\n\n")
+        for cmd in cmd_list:
+            index.write("   " + cmd)
+            index.write("\n")
     print("Done")

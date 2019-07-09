@@ -24,6 +24,31 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 0.16.0 (Sunday, 10 March 2019)
+
+- Horizon, medical visualization interface powered by QuickBundlesX.
+- New Tractometry tools: Bundle Analysis / Bundle Profiles.
+- New reconstruction model: IVIM MIX (Variable Projection).
+- New command line interface: Affine and Diffeomorphic Registration.
+- New command line interface: Probabilistic, Deterministic and PFT Tracking.
+- Integration of Cython Guidelines for developers.
+- Replacement of Nose by Pytest.
+- Documentation update.
+- Closed 103 issues and merged 41 pull requests.
+
+* 0.15 (Wednesday, 12 December 2018)
+
+- Updated RecoBundles for automatic anatomical bundle segmentation.
+- New Reconstruction Model: qtau-dMRI.
+- New command line interfaces (e.g. dipy_slr).
+- New continuous integration with AppVeyor CI.
+- Nibabel Streamlines API now used almost everywhere for better memory management.
+- Compatibility with Python 3.7.
+- Many tutorials added or updated (5 New).
+- Large documentation update.
+- Moved visualization module to a new library: FURY.
+- Closed 287 issues and merged 93 pull requests.   
+
 * 0.14 (Tuesday, 1 May 2018)
 
 - RecoBundles: anatomically relevant segmentation of bundles

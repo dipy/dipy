@@ -28,6 +28,7 @@ import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
+import warnings
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
@@ -308,8 +309,8 @@ def real_sym_sh_brainsuite(sh_order, theta, phi):
 
 def real_sym_sh_mrtrix(sh_order, theta, phi):
     """
-    Compute real spherical harmonics as in mrtrix, where the real harmonic
-    $Y^m_n$ is defined to be::
+    Compute real spherical harmonics as in Tournier 2007 [2]_, where the real
+    harmonic $Y^m_n$ is defined to be::
 
         Real($Y^m_n$)       if m > 0
         $Y^0_n$             if m = 0
@@ -331,12 +332,23 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
     --------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
-        implemented in mrtrix.  Warning: the basis is Tournier et al
-        2004 and 2007 is slightly different.
+        implemented in mrtrix. Warning: the basis is Tournier et al.
+        2007 [2]_; 2004 [1]_ is slightly different.
     m : array
         The order of the harmonics.
     n : array
         The degree of the harmonics.
+
+    References
+    ----------
+    .. [1] Tournier J.D., Calamante F., Gadian D.G. and Connelly A.
+           Direct estimation of the fibre orientation density function from
+           diffusion-weighted MRI data using spherical deconvolution.
+           NeuroImage. 2004;23:1176-1185.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
 
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -354,8 +366,8 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
     Samples the basis functions up to order `sh_order` at points on the sphere
     given by `theta` and `phi`. The basis functions are defined here the same
-    way as in fibernavigator [1]_ where the real harmonic $Y^m_n$ is defined to
-    be:
+    way as in Descoteaux et al. 2007 [1]_ where the real harmonic $Y^m_n$ is
+    defined to be:
 
         Imag($Y^m_n$) * sqrt(2)     if m > 0
         $Y^0_n$                     if m = 0
@@ -384,7 +396,9 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
     References
     ----------
-    .. [1] https://github.com/scilus/fibernavigator
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
 
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -398,7 +412,9 @@ def real_sym_sh_basis(sh_order, theta, phi):
 sph_harm_lookup = {None: real_sym_sh_basis,
                    "mrtrix": real_sym_sh_mrtrix,
                    "fibernav": real_sym_sh_basis,
-                   "brainsuite": real_sym_sh_brainsuite}
+                   "brainsuite": real_sym_sh_brainsuite,
+                   "tournier07": real_sym_sh_mrtrix,
+                   "descoteaux07": real_sym_sh_basis}
 
 
 def sph_harm_ind_list(sh_order):
@@ -559,7 +575,7 @@ class SphHarmModel(OdfModel, Cache):
 
 class QballBaseModel(SphHarmModel):
     """To be subclassed by Qball type models."""
-    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
+    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1e-5,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -668,11 +684,11 @@ class SphHarmFit(OdfFit):
 
         """
         B = self.model.sampling_matrix(sphere)
-        return dot(self._shm_coef, B.T)
+        return dot(self.shm_coeff, B.T)
 
     @auto_attr
     def gfa(self):
-        return _gfa_sh(self._shm_coef, 0)
+        return _gfa_sh(self.shm_coeff, 0)
 
     @property
     def shm_coeff(self):
@@ -700,7 +716,7 @@ class SphHarmFit(OdfFit):
         if not hasattr(self.model, 'predict'):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
-        return self.model.predict(self.shm_coeff, gtab, S0)
+        return self.model.predict(self._shm_coef, gtab, S0)
 
 
 class CsaOdfModel(QballBaseModel):
@@ -785,7 +801,7 @@ class QballModel(QballBaseModel):
         return dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
-def normalize_data(data, where_b0, min_signal=1., out=None):
+def normalize_data(data, where_b0, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0
     """
     if out is None:
@@ -877,7 +893,7 @@ class ResidualBootstrapWrapper(object):
     There wrapper than samples the residual boostrap distribution of signal and
     returns that sample.
     """
-    def __init__(self, signal_object, B, where_dwi, min_signal=1.):
+    def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):
         """Builds a ResidualBootstrapWapper
 
         Given some linear model described by B, the design matrix, and a
@@ -929,11 +945,11 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
-        ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
-        (default ``None``).
+    basis_type : {None, 'tournier07', 'descoteaux07'}
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [2]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        (``None`` defaults to ``descoteaux07``).
     smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
 
@@ -942,7 +958,29 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     sh : ndarray
         SH coefficients representing the input function.
 
+    References
+    ----------
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
     """
+
+    if basis_type == "fibernav":
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `descoteaux07` instead",
+                      DeprecationWarning)
+    if basis_type == "mrtrix":
+        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `tournier07` instead",
+                      DeprecationWarning)
+
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:
@@ -968,18 +1006,40 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
-        ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
-        (default ``None``).
+    basis_type : {None, 'tournier07', 'descoteaux07'}
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [2]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        (``None`` defaults to ``descoteaux07``).
 
     Returns
     -------
     sf : ndarray
          Spherical function values on the `sphere`.
 
+    References
+    ----------
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
     """
+
+    if basis_type == 'fibernav':
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `descoteaux07` instead",
+                      DeprecationWarning)
+    elif basis_type == 'mrtrix':
+        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `tournier07` instead",
+                      DeprecationWarning)
+
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:
@@ -1003,11 +1063,11 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-    basis_type : {None, 'mrtrix', 'fibernav'}
-        ``None`` for the default dipy basis,
-        ``mrtrix`` for the MRtrix basis, and
-        ``fibernav`` for the FiberNavigator basis
-        (default ``None``).
+    basis_type : {None, 'tournier07', 'descoteaux07'}
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [2]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        (``None`` defaults to ``descoteaux07``).
     return_inv : bool
         If True then the inverse of the matrix is also returned
     smooth : float, optional
@@ -1021,7 +1081,29 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
     invB : ndarray
         Inverse of B.
 
+    References
+    ----------
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
     """
+
+    if basis_type == 'fibernav':
+        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `descoteaux07` instead",
+                      DeprecationWarning)
+    elif basis_type == 'mrtrix':
+        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
+                      " 0.15 of DIPY and will be removed in a future " +
+                      "version. Please use `tournier07` instead",
+                      DeprecationWarning)
+
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:

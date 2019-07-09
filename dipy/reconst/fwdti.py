@@ -17,6 +17,7 @@ from dipy.reconst.dki import _positive_evals
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
+from dipy.core.gradients import check_multi_b
 from dipy.reconst.multi_voxel import multi_voxel_fit
 
 
@@ -128,12 +129,9 @@ class FreeWaterTensorModel(ReconstModel):
         self.kwargs = kwargs
 
         # Check if at least three b-values are given
-        bmag = int(np.log10(self.gtab.bvals.max()))
-        b = self.gtab.bvals.copy() / (10 ** (bmag-1))  # normalize b units
-        b = b.round()
-        uniqueb = np.unique(b)
-        if len(uniqueb) < 3:
-            mes = "fwdti fit requires data for at least 2 non zero b-values"
+        enough_b = check_multi_b(self.gtab, 3, non_zero=False)
+        if not enough_b:
+            mes = "fwDTI requires at least 3 b-values (which can include b=0)"
             raise ValueError(mes)
 
     @multi_voxel_fit
@@ -297,7 +295,7 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
             SA = SI - FS*S0*SFW.T
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
-            # for inapropriate large volume fractions (given the current S0
+            # for inappropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
             SA[SA <= 0] = min_signal
@@ -473,7 +471,7 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         w = 1/(sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():

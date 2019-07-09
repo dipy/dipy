@@ -8,14 +8,15 @@ Overview
 ========
 
 DIPY_ can read and write many different file formats. In this example
-we give a short introduction on how to use it for loading or saving streamlines.
+we give a short introduction on how to use it for loading or saving
+streamlines.
 
 Read :ref:`faq`
 
 """
 
 import numpy as np
-from dipy.data import get_data
+from dipy.data import get_fnames
 from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import Streamlines
 
@@ -23,7 +24,7 @@ from dipy.tracking.streamline import Streamlines
 1. Read/write streamline files with DIPY.
 """
 
-fname = get_data('fornix')
+fname = get_fnames('fornix')
 print(fname)
 
 # Read Streamlines
@@ -35,8 +36,9 @@ save_trk("my_streamlines.trk", streamlines=streamlines, affine=np.eye(4))
 
 
 """
-2. We also work on our HDF5 based file format which can read/write massive datasets
-   (as big as the size of you free disk space). With `Dpy` we can support
+2. We also work on our HDF5 based file format which can read/write massive
+   datasets (as big as the size of your free disk space). With `Dpy` we can
+   support
 
   * direct indexing from the disk
   * memory usage always low

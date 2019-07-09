@@ -1,9 +1,8 @@
 import numpy as np
 import itertools
 
-
-from nose.tools import assert_equal, assert_raises
-from numpy.testing import assert_array_equal, run_module_suite
+from numpy.testing import (assert_array_equal, run_module_suite,
+                           assert_equal, assert_raises)
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 
@@ -87,7 +86,7 @@ def test_quickbundles_2D():
     # plt.plot(*zip(*data[10:, 0]), linestyle='None', marker='*')
     # plt.show()
 
-    # Theorically using a threshold above the following value will not
+    # Theoretically, using a threshold above the following value will not
     # produce expected results.
     threshold = np.sqrt(2*(10**2))-np.sqrt(2)
     metric = dipymetric.SumPointwiseEuclideanMetric()

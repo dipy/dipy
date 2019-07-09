@@ -7,12 +7,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import logging
 
-from dipy.utils.six import iteritems
+from dipy import __version__ as dipy_version
 from dipy.workflows.base import IntrospectiveArgumentParser
 
 
 def get_level(lvl):
-    """ Transforms the loggin level passed on the commandline into a proper
+    """ Transforms the logging level passed on the commandline into a proper
     logging level name.
     """
     try:
@@ -35,6 +35,9 @@ def run_flow(flow):
                         action='store_true', default=False,
                         help='Force overwriting output files.')
 
+    parser.add_argument('--version', action='version',
+                        version='DIPY {}'.format(dipy_version))
+
     parser.add_argument('--out_strat', action='store', dest='out_strat',
                         metavar='string', required=False, default='absolute',
                         help='Strategy to manage output creation.')
@@ -44,7 +47,7 @@ def run_flow(flow):
                         help='Prepend mixed input names to output names.')
 
     # Add logging parameters common to all workflows
-    msg = 'Log messsages display level. Accepted options include CRITICAL,'
+    msg = 'Log messages display level. Accepted options include CRITICAL,'
     msg += ' ERROR, WARNING, INFO, DEBUG and NOTSET (default INFO).'
     parser.add_argument('--log_level', action='store', dest='log_level',
                         metavar='string', required=False, default='INFO',
@@ -73,8 +76,8 @@ def run_flow(flow):
     del args['mix_names']
 
     # Remove subflows related params
-    for sub_flow, params_dict in iteritems(sub_flows_dicts):
-        for key, _ in iteritems(params_dict):
+    for sub_flow, params_dict in sub_flows_dicts.items():
+        for key, _ in params_dict.items():
             if key in args.keys():
                 params_dict[key] = args.pop(key)
 
@@ -85,4 +88,3 @@ def run_flow(flow):
         flow.set_sub_flows_optionals(sub_flows_dicts)
 
     return flow.run(**args)
-

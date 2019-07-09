@@ -1,11 +1,11 @@
-''' Distutils / setuptools helpers for versioning
+""" Distutils / setuptools helpers for versioning
 
 This code started life in the nibabel package as nisexts/sexts.py
 
 Code transferred by Matthew Brett, who holds copyright.
 
 This version under the standard dipy BSD license.
-'''
+"""
 
 from os.path import join as pjoin
 try:
@@ -52,7 +52,7 @@ def get_comrec_build(pkg_dir, build_cmd=build_py):
     package for an example.
     """
     class MyBuildPy(build_cmd):
-        ''' Subclass to write commit data into installation tree '''
+        """ Subclass to write commit data into installation tree """
         def run(self):
             build_cmd.run(self)
             import subprocess

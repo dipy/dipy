@@ -60,7 +60,7 @@ Constrained Spherical Deconvolution
 
 - :ref:`example_reconst_csd`
 
-Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
+Fiber Orientation Estimated using Continuous Axially Symmetric Tensors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_forecast`
@@ -76,6 +76,11 @@ Mean Apparent Propagator (MAP)-MRI
 
 - :ref:`example_reconst_mapmri`
 
+Studying diffusion time-dependence using qt-dMRI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qtdmri`
+
 Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -87,6 +92,7 @@ Diffusion Tensor Imaging
 Diffusion Kurtosis Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - :ref:`example_reconst_dki`
+- :ref:`example_reconst_msdki`
 
 
 Q-Ball Constant Solid Angle
@@ -153,14 +159,15 @@ Fiber tracking evaluation
 
 - :ref:`example_linear_fascicle_evaluation`
 
-
 ------------------------------------
 Streamline analysis and connectivity
 ------------------------------------
 
 - :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
-
+- :ref:`example_cluster_confidence`
+- :ref:`example_path_length_map`
+- :ref:`example_afq_tract_profiles`
 
 ------------------
 Registration
@@ -171,7 +178,7 @@ Image-based Registration
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
-- :ref:`register_binary_fuzzy`
+- :ref:`example_register_binary_fuzzy`
 
 Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -198,6 +205,11 @@ Tissue Classification
 ~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_tissue_classification`
+
+Bundle Extraction
+~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_bundle_extraction`
 
 -----------
 Simulations
@@ -231,7 +243,6 @@ Visualization
 - :ref:`example_viz_roi_contour`
 - :ref:`example_viz_ui`
 - :ref:`example_viz_timers`
-
 
 ---------------
 Workflows

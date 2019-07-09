@@ -43,7 +43,7 @@ Please see the developers' list at
 https://mail.python.org/mailman/listinfo/neuroimaging
 
 Please see the users' forum at
-https://neurostars.org
+https://neurostars.org/tags/dipy
 
 Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
 
@@ -70,7 +70,7 @@ DIPY can be installed using `pip`::
 
 or using `conda`::
 
-    conda install -c conda-forge dipy vtk
+    conda install -c conda-forge dipy
 
 For detailed installation instructions, including instructions for installing
 from source, please read our `installation documentation <http://nipy.org/dipy/installation.html>`_.

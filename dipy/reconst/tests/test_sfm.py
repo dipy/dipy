@@ -7,6 +7,7 @@ import dipy.core.gradients as grad
 import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
+from dipy.io.gradients import read_bvals_bvecs
 
 
 def test_design_matrix():
@@ -21,7 +22,7 @@ def test_design_matrix():
 
 @npt.dec.skipif(not sfm.has_sklearn)
 def test_sfm():
-    fdata, fbvals, fbvecs = dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_fnames()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
     for iso in [sfm.ExponentialIsotropicModel, None]:
@@ -51,9 +52,8 @@ def test_sfm():
 def test_predict():
     SNR = 1000
     S0 = 100
-    _, fbvals, fbvecs = dpd.get_data('small_64D')
-    bvals = np.load(fbvals)
-    bvecs = np.load(fbvecs)
+    _, fbvals, fbvecs = dpd.get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = grad.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -73,7 +73,7 @@ def test_predict():
 
 
 def test_sfm_background():
-    fdata, fbvals, fbvecs = dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_fnames()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
     to_fit = data[0, 0, 0]
@@ -84,7 +84,7 @@ def test_sfm_background():
 
 
 def test_sfm_stick():
-    fdata, fbvals, fbvecs = dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_fnames()
     data = nib.load(fdata).get_data()
     gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS',
@@ -118,7 +118,7 @@ def test_sfm_sklearnlinearsolver():
         def fit(self, X, y):
             self.coef_ = np.ones(X.shape[-1])
 
-    fdata, fbvals, fbvecs = dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_fnames()
     gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver=SillySolver())
 
@@ -131,7 +131,7 @@ def test_sfm_sklearnlinearsolver():
 
 @npt.dec.skipif(not sfm.has_sklearn)
 def test_exponential_iso():
-    fdata, fbvals, fbvecs = dpd.get_data()
+    fdata, fbvals, fbvecs = dpd.get_fnames()
     data_dti = nib.load(fdata).get_data()
     gtab_dti = grad.gradient_table(fbvals, fbvecs)
     data_multi, gtab_multi = dpd.dsi_deconv_voxels()

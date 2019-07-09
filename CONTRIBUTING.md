@@ -25,7 +25,7 @@ of the documentation for the procedures we use in developing the code.
 
 ### Tests and test coverage
 
-We use [nosetests](https://nose.readthedocs.org/) to write tests of the code,
+We use [pytest](https://docs.pytest.org) to write tests of the code,
 and [Travis-CI](https://travis-ci.org/nipy/dipy) for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
@@ -39,12 +39,23 @@ branch points. To check how much coverage the tests have, you will need.
 
 When running:
 
-    nosetests --with-coverage --cover-package=dipy
+    coverage run -m pytest -s --doctest-modules --verbose dipy
 
-You will get the usual output of nose, but also a table that indicates the test
+You will get the usual output of pytest, but also a table that indicates the test
 coverage in each module: the percentage of coverage and also the lines of code
 that are not run in the tests. You can also see the test coverage in the Travis
 run corresponding to the PR (in the log for the machine with ``COVERAGE=1``).
+
+If your contributions are to a single module, you can see test and
+coverage results for only that module without running all of the DIPY
+tests. For example, if you are adding code to ``dipy/core/geometry.py``,
+you can use:
+
+    coverage run --source=dipy.core.geometry -m pytest -s --doctest-modules --verbose dipy/core/tests/test_geometry.py
+
+You can then use ``coverage report`` to view the results, or use
+``coverage html`` and open htmlcov/index.html in your browser for a
+nicely formatted interactive coverage report.
 
 Contributions to tests that extend test coverage in older modules that are not
 fully covered are very welcome!

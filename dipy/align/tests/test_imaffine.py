@@ -8,7 +8,6 @@ from numpy.testing import (assert_array_equal,
                            assert_equal,
                            assert_raises)
 from dipy.core import geometry as geometry
-from dipy.data import get_data
 from dipy.viz import regtools as rt
 from dipy.align import floating
 from dipy.align import vector_fields as vf
@@ -322,7 +321,7 @@ def test_mi_gradient():
         # Compute the gradient with the implementation under test
         actual = mi_metric.gradient(theta)
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite-differences
         n = transform.get_number_of_parameters()
         expected = np.empty(n, dtype=np.float64)
 
@@ -473,7 +472,7 @@ def test_affine_map():
                 # compatibility with previous versions
                 assert_array_equal(affine, affine_map.affine)
                 # new getter
-                new_copy_affine = affine_map.get_affine()
+                new_copy_affine = affine_map.affine
                 # value must be the same
                 assert_array_equal(affine, new_copy_affine)
                 # but not its reference
@@ -515,12 +514,12 @@ def test_affine_map():
             aff_map = AffineMap(affine_mat)
             if affine_mat is None:
                 continue
-            bad_aug = aff_map.get_affine()
+            bad_aug = aff_map.affine
             # no zeros in the first n-1 columns on last row
             bad_aug[-1,:] = 1
             assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
 
-            bad_aug = aff_map.get_affine()
+            bad_aug = aff_map.affine
             bad_aug[-1, -1] = 0  # lower right not 1
             assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
 

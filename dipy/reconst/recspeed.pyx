@@ -567,7 +567,10 @@ def argmax_from_countarrs(cnp.ndarray vals,
         int is_max
         cnp.float64_t *vals_ptr
         double val
-        cnp.uint32_t vert_ind, *vertinds_ptr, *counts_ptr, *adj_ptr, ind
+        cnp.uint32_t vert_ind, ind
+        cnp.uint32_t *vertinds_ptr
+        cnp.uint32_t *counts_ptr
+        cnp.uint32_t *adj_ptr
         cnp.uint32_t vals_size, vert_size
     if not (cnp.PyArray_ISCONTIGUOUS(cvals) and
             cnp.PyArray_ISCONTIGUOUS(cvertinds) and

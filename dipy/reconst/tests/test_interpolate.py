@@ -1,13 +1,12 @@
 from __future__ import division, print_function, absolute_import
 
-from dipy.utils.six.moves import xrange
-
-from nose.tools import assert_equal, assert_raises, assert_true, assert_false
+from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal)
+                           assert_equal, assert_raises)
 
 import numpy as np
-from dipy.reconst.interpolate import (NearestNeighborInterpolator, TriLinearInterpolator,
+from dipy.reconst.interpolate import (NearestNeighborInterpolator,
+                                      TriLinearInterpolator,
                                       OutsideImage)
 
 
@@ -18,7 +17,7 @@ def test_NearestNeighborInterpolator():
 
     nni = NearestNeighborInterpolator(data, (1, 1, 1))
     a, b, c = np.mgrid[.5:6.5:1.6, .5:6.5:2.7, .5:6.5:3.8]
-    for ii in xrange(a.size):
+    for ii in range(a.size):
         x = a.flat[ii]
         y = b.flat[ii]
         z = c.flat[ii]
@@ -38,7 +37,7 @@ def test_TriLinearInterpolator():
 
     tli = TriLinearInterpolator(data, (1, 1, 1))
     a, b, c = np.mgrid[.5:6.5:1.6, .5:6.5:2.7, .5:6.5:3.8]
-    for ii in xrange(a.size):
+    for ii in range(a.size):
         x = a.flat[ii]
         y = b.flat[ii]
         z = c.flat[ii]

@@ -1,5 +1,5 @@
-from cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
-from metricspeed cimport Metric
+from dipy.segment.cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
+from dipy.segment.metricspeed cimport Metric
 
 
 cdef struct QuickBundlesStats:

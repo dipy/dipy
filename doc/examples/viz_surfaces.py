@@ -19,8 +19,7 @@ Import useful functions from ``dipy.viz.utils``
 """
 
 import dipy.io.vtk as io_vtk
-import dipy.viz.utils as ut_vtk
-from dipy.viz import window
+from dipy.viz import window, utils as ut_vtk
 
 # Conditional import machinery for vtk
 # Allow import, but disable doctests if we don't have vtk
