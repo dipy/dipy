@@ -71,6 +71,7 @@ For quality assurance we can also visualize a slice from the direction field
 which we will use as the basis to perform the tracking. The visualization will
 be done using the ``fury`` python package
 """
+
 from dipy.viz import window, actor, have_fury
 
 if have_fury:
@@ -82,25 +83,51 @@ if have_fury:
     window.record(ren, out_path='csa_direction_field.png', size=(900, 900))
 
     if interactive:
-        window.show(ren, size=(900, 900))
+        window.show(ren, size=(800, 800))
 
 """
 .. figure:: csa_direction_field.png
  :align: center
 
  **Direction Field (peaks)**
+"""
 
-
+"""
 2. Next we need some way of restricting the fiber tracking to areas with good
 directionality information. We've already created the white matter mask,
 but we can go a step further and restrict fiber tracking to those areas where
 the ODF shows significant restricted diffusion by thresholding on
-the general fractional anisotropy (GFA).
+the generalized fractional anisotropy (GFA).
 """
 
 from dipy.tracking.local import ThresholdTissueClassifier
 
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+
+"""
+Again, for quality assurance we can also visualize a slice the GFA and the
+resulting tracking mask.
+"""
+
+import matplotlib.pyplot as plt
+
+sli = csa_peaks.gfa.shape[2] // 2
+plt.figure('GFA')
+plt.subplot(1, 2, 1).set_axis_off()
+plt.imshow(csa_peaks.gfa[:, :, sli].T, cmap='gray', origin='lower')
+
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow((csa_peaks.gfa[:, :, sli] > 0.25).T, cmap='gray', origin='lower')
+
+plt.savefig('gfa_tracking_mask.png')
+
+"""
+.. figure:: gfa_tracking_mask.png
+   :align: center
+
+   An example of tracking mask derived from the generalized fractional
+   anisotropy (GFA).
+"""
 
 """
 3. Before we can begin tracking is to specify where to "seed" (begin) the fiber
@@ -114,7 +141,7 @@ label value ``2`` in the labels image.
 from dipy.tracking import utils
 import numpy as np
 
-seed_mask = labels == 2
+seed_mask = (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=np.eye(4))
 
 """
@@ -127,7 +154,6 @@ in LocalTracking.
 
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
-
 
 # Initialization of LocalTracking. The computation happens in the next step.
 streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
@@ -170,6 +196,7 @@ all the inputs the same) you will get exactly the same set of streamlines.
 We can save the streamlines as a Trackvis file so it can be loaded into other
 software for visualization or further analysis.
 """
+
 from dipy.io.streamline import save_trk
 
 save_trk("tractogram_EuDX.trk", streamlines, affine, shape=labels.shape,
