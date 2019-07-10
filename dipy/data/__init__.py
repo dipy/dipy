@@ -200,7 +200,7 @@ def get_sphere(name='symmetric362'):
                   faces=as_native_array(res['faces']))
 
 
-default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+default_sphere = HemiSphere.from_sphere(get_sphere('repulsion724'))
 small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
