@@ -1,25 +1,22 @@
 from __future__ import division
-
-from warnings import warn
+import warnings
+from sklearn.linear_model import Lasso, LassoCV
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.metrics import r2_score
 from math import factorial
-
 import numpy as np
-
-from scipy.special import genlaguerre, gamma, hyp2f1, lpmv
-
+from scipy.special import genlaguerre, gamma, hyp2f1
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import real_sym_sh_brainsuite
+from .shm import real_sym_sh_brainsuite
 from dipy.core.geometry import cart2sphere
 
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-from sklearn.linear_model import Lasso, LassoCV
 
 
 class BrainSuiteShoreModel(Cache):
-
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
     (SHORE) [1]_ of the diffusion signal.
 
@@ -46,28 +43,28 @@ class BrainSuiteShoreModel(Cache):
     Notes
     -----
     The implementation of SHORE depends on CVXPY (http://www.cvxpy.org/).
+
     """
 
-    def __init__(self,
-                 gtab,
-                 regularization = "L1",
-                 radial_order=6,
-                 zeta=700,
-                 tau=1. / (4 * np.pi ** 2),
-                 # For L2 method
-                 lambdaN=1e-8,
-                 lambdaL=1e-8,
-                 # For L1 method
-                 regularization_weighting="CV",
-                 l1_positive_constraint=False,
-                 l1_cv = None,
-                 l1_maxiter=1000,
-                 l1_verbose=False,
-                 l1_alpha=1.0,
-
-                 pos_grid=11,
-                 pos_radius=20e-03
-                 ):
+    def __init__(
+            self,
+            gtab,
+            regularization="L1",
+            radial_order=6,
+            zeta=700,
+            tau=1. / (4 * np.pi**2),
+            # For L2 method
+            lambdaN=1e-8,
+            lambdaL=1e-8,
+            # For L1 method
+            regularization_weighting="CV",
+            l1_positive_constraint=False,
+            l1_cv=3,
+            l1_maxiter=1000,
+            l1_verbose=False,
+            l1_alpha=1.0,
+            pos_grid=11,
+            pos_radius=20e-03):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
         This implementation is a modification of SHORE presented in [1]_.
@@ -178,14 +175,13 @@ class BrainSuiteShoreModel(Cache):
         self.pos_grid = pos_grid
         self.pos_radius = pos_radius
 
-
     def _n_shore(self):
-        n = self.ind_mat[:,0]
-        return np.diag((n * (n+1))**2)
+        n = self.ind_mat[:, 0]
+        return np.diag((n * (n + 1))**2)
 
     def _l_shore(self):
-        l = self.ind_mat[:,1]
-        return np.diag((l * (l+1))**2)
+        ell = self.ind_mat[:, 1]
+        return np.diag((ell * (ell + 1))**2)
 
     @multi_voxel_fit
     def fit(self, data):
@@ -193,42 +189,62 @@ class BrainSuiteShoreModel(Cache):
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = brainsuite_shore_basis(
-                self.radial_order,  self.zeta, self.gtab, self.tau)
+            M = brainsuite_shore_basis(self.radial_order, self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
-
+        MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
+        if MpseudoInv is None:
+            MpseudoInv = np.linalg.solve(
+                np.dot(M.T, M) + self.lambdaN * self.Nshore + self.lambdaL * self.Lshore,
+                M.T)
+            self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
 
         # Compute the signal coefficients in SHORE basis
-        if self.regularization == "L2":
-            MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
-            if MpseudoInv is None:
-                MpseudoInv = np.linalg.solve(
-                    np.dot(M.T, M) + self.lambdaN * self.Nshore +
-                        self.lambdaL * self.Lshore,
-                    M.T)
-                self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
-            coef = np.dot(MpseudoInv, data)
-
-        elif self.regularization == "L1":
+        l2_fallback = False
+        if self.regularization == "L1":
+            regularization = 1
             if self.regularization_weighting == "CV":
-                lasso = LassoCV(fit_intercept=False,cv=self.l1_cv,
-                            positive=self.l1_positive_constraint,
-                            max_iter=self.l1_maxiter, verbose=self.l1_verbose)
+                lasso = LassoCV(
+                    fit_intercept=False,
+                    cv=self.l1_cv,
+                    positive=self.l1_positive_constraint,
+                    max_iter=self.l1_maxiter,
+                    verbose=self.l1_verbose)
             else:
-                lasso = Lasso(fit_intercept=False, alpha=self.l1_alpha,
-                            positive=self.l1_positive_constraint,
-                            max_iter=self.l1_maxiter)
-            lasso_fit = lasso.fit(M, data)
-            coef = lasso_fit.coef_
-            self.alpha = lasso_fit.alpha_
+                lasso = Lasso(
+                    fit_intercept=False,
+                    alpha=self.l1_alpha,
+                    positive=self.l1_positive_constraint,
+                    max_iter=self.l1_maxiter)
 
+            # Try the L1 fit
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error', category=ConvergenceWarning)
 
-        return BrainSuiteShoreFit(self, coef)
+                try:
+                    lasso_fit = lasso.fit(M, data)
+                    coef = lasso_fit.coef_
+                    alpha = lasso_fit.alpha_
+                    fitted = lasso_fit.predict(M)
+
+                except Warning as this_warning:
+                    if isinstance(this_warning, ConvergenceWarning):
+                        l2_fallback = True
+                    else:
+                        raise this_warning
+
+        if self.regularization == "L2" or l2_fallback:
+            regularization = 2
+            coef = np.dot(MpseudoInv, data)
+            fitted = np.dot(M, coef)
+            alpha = 0
+
+        r2 = r2_score(data, fitted)
+        cnr = np.nan_to_num(np.var(fitted) / np.var(fitted - data))
+        return BrainSuiteShoreFit(self, coef, regularization, alpha, r2, cnr)
 
 
 class BrainSuiteShoreFit():
-
-    def __init__(self, model, shore_coef):
+    def __init__(self, model, shore_coef, regularization=0, alpha=0., r2=0., cnr=0.):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -241,6 +257,10 @@ class BrainSuiteShoreFit():
 
         self.model = model
         self._shore_coef = shore_coef
+        self._alpha = alpha
+        self._r2 = r2
+        self._cnr = cnr
+        self._regularization = regularization
         self.gtab = model.gtab
         self.radial_order = model.radial_order
         self.zeta = model.zeta
@@ -264,25 +284,21 @@ class BrainSuiteShoreFit():
 
         """
         # Create the grid in which to compute the pdf
-        rgrid_rtab = self.model.cache_get(
-            'pdf_grid', key=(gridsize, radius_max))
+        rgrid_rtab = self.model.cache_get('pdf_grid', key=(gridsize, radius_max))
         if rgrid_rtab is None:
             rgrid_rtab = create_rspace(gridsize, radius_max)
-            self.model.cache_set(
-                'pdf_grid', (gridsize, radius_max), rgrid_rtab)
+            self.model.cache_set('pdf_grid', (gridsize, radius_max), rgrid_rtab)
         rgrid, rtab = rgrid_rtab
 
-        psi = self.model.cache_get(
-            'shore_matrix_pdf', key=(gridsize, radius_max))
+        psi = self.model.cache_get('shore_matrix_pdf', key=(gridsize, radius_max))
         if psi is None:
-            psi = shore_matrix_pdf(self.radial_order,  self.zeta, rtab)
-            self.model.cache_set(
-                'shore_matrix_pdf', (gridsize, radius_max), psi)
+            psi = brainsuite_shore_matrix_pdf(self.radial_order, self.zeta, rtab)
+            self.model.cache_set('shore_matrix_pdf', (gridsize, radius_max), psi)
 
         propagator = np.dot(psi, self._shore_coef)
         eap = np.empty((gridsize, gridsize, gridsize), dtype=float)
         eap[tuple(rgrid.astype(int).T)] = propagator
-        eap *= (2 * radius_max / (gridsize - 1)) ** 3
+        eap *= (2 * radius_max / (gridsize - 1))**3
 
         return eap
 
@@ -292,15 +308,13 @@ class BrainSuiteShoreFit():
             results are cached for faster recalculation
         """
         if not r_points.flags.writeable:
-            psi = self.model.cache_get(
-                'shore_matrix_pdf', key=hash(r_points.data))
+            psi = self.model.cache_get('shore_matrix_pdf', key=hash(r_points.data))
         else:
             psi = None
         if psi is None:
-            psi = brainsuite_shore_matrix_pdf(self.radial_order,  self.zeta, r_points)
+            psi = brainsuite_shore_matrix_pdf(self.radial_order, self.zeta, r_points)
             if not r_points.flags.writeable:
-                self.model.cache_set(
-                    'shore_matrix_pdf', hash(r_points.data), psi)
+                self.model.cache_set('shore_matrix_pdf', hash(r_points.data), psi)
 
         eap = np.dot(psi, self._shore_coef)
 
@@ -323,13 +337,11 @@ class BrainSuiteShoreFit():
 
                     j = int(l + m + (2 * np.array(range(0, l, 2)) + 1).sum())
 
-                    Cnl = (
-                        ((-1) ** (n - l / 2)) /
-                        (2.0 * (4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0)) *
-                        ((2.0 * (4.0 * np.pi ** 2 * self.zeta) ** (3.0 / 2.0) *
-                          factorial(n - l)) /
-                         (gamma(n + 3.0 / 2.0))) ** (1.0 / 2.0)
-                    )
+                    Cnl = (((-1)**(n - l / 2)) / (2.0 * (4.0 * np.pi**2 * self.zeta)**
+                                                  (3.0 / 2.0)) *
+                           ((2.0 * (4.0 * np.pi**2 * self.zeta)**
+                             (3.0 / 2.0) * factorial(n - l)) / (gamma(n + 3.0 / 2.0)))**
+                           (1.0 / 2.0))
                     Gnl = (gamma(l / 2 + 3.0 / 2.0) * gamma(3.0 / 2.0 + n)) / \
                         (gamma(l + 3.0 / 2.0) * factorial(n - l)) * \
                         (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
@@ -345,8 +357,7 @@ class BrainSuiteShoreFit():
         """
         upsilon = self.model.cache_get('shore_matrix_odf', key=sphere)
         if upsilon is None:
-            upsilon = shore_matrix_odf(
-                self.radial_order,  self.zeta, sphere.vertices)
+            upsilon = shore_matrix_odf(self.radial_order, self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
 
         odf = np.dot(upsilon, self._shore_coef)
@@ -435,48 +446,70 @@ class BrainSuiteShoreFit():
         qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
         q = qvals[:, None] * gtab.bvecs
 
-        M = brainsuite_shore_basis(self.radial_order,
-                self.zeta, gtab, self.model.tau)
+        M = brainsuite_shore_basis(self.radial_order, self.zeta, gtab, self.model.tau)
 
         E = S0 * np.dot(M, self._shore_coef)
         return E
 
-
     @property
     def shore_coeff(self):
-        """The SHORE coefficients
-        """
+        """The SHORE coefficients."""
         return self._shore_coef
 
+    @property
+    def alpha(self):
+        """The alpha used for the L1 fit."""
+        return self._alpha
+
+    @property
+    def cnr(self):
+        """Contrast to Noise ratio."""
+        return self._cnr
+
+    @property
+    def regularization(self):
+        """Regularization used for fitting coefficients."""
+        return self._regularization
+
+    @property
+    def r2(self):
+        """Model r^2."""
+        return self._r2
+
+
 def _kappa(zeta, n, l):
-    return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
+    return np.sqrt((2 * factorial(n - l)) / (zeta**1.5 * gamma(n + 1.5)))
 
 
-def brainsuite_shore_basis(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
-    qvals = np.sqrt(gtab.bvals / (4 * np.pi ** 2 * tau))
+def brainsuite_shore_basis(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
+    """Calculate the brainsuite shore basis functions."""
+
+    # If deltas are defined, use them
+    try:
+        qvals = gtab.qvals
+    except TypeError:
+        qvals = np.sqrt(gtab.bvals / (4 * np.pi**2 * tau))
+
     qvals[gtab.b0s_mask] = 0
     bvecs = gtab.bvecs
-
     qgradients = qvals[:, None] * bvecs
 
-    r, theta, phi = cart2sphere(qgradients[:, 0], qgradients[:, 1],
-                                qgradients[:, 2])
+    r, theta, phi = cart2sphere(qgradients[:, 0], qgradients[:, 1], qgradients[:, 2])
     theta[np.isnan(theta)] = 0
 
     # Angular part of the basis - Spherical harmonics
     S, Z, L = real_sym_sh_brainsuite(radial_order, theta, phi)
-    Snew=[]
-    ind = 0
+    Snew = []
     R = []
     for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
-            Snew.append(S[:,L==l])
+            Snew.append(S[:, L == l])
             for m in range(-l, l + 1):
                 # Radial part
-                R.append( genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
-                    np.exp(- r ** 2 / (2.0 * zeta)) * \
-                    _kappa(zeta, n, l) * \
-                    (r ** 2 / zeta) ** (l / 2))
+                R.append(
+                    genlaguerre(n - l, l + 0.5)(r**2 / zeta) * np.exp(
+                        -r**2 / (2.0 * zeta)) * _kappa(zeta, n, l) * (r**2 / zeta)**
+                    (l / 2))
     R = np.column_stack(R)
     Snew = np.column_stack(Snew)
     Sh = R * Snew
@@ -509,11 +542,11 @@ def brainsuite_shore_matrix_pdf(radial_order, zeta, rtab):
 
     # Angular part of the basis - Spherical harmonics
     S, Z, L = real_sym_sh_brainsuite(radial_order, theta, phi)
-    Snew=[]
+    Snew = []
 
     for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
-            Snew.append(S[:,L==l])
+            Snew.append(S[:, L == l])
             for m in range(-l, l + 1):
                 psi.append(
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
@@ -527,8 +560,7 @@ def brainsuite_shore_matrix_pdf(radial_order, zeta, rtab):
 
 
 def _kappa_pdf(zeta, n, l):
-    return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) /
-                   gamma(n + 1.5))
+    return np.sqrt((16 * np.pi**3 * zeta**1.5 * factorial(n - l)) / gamma(n + 1.5))
 
 
 def shore_matrix_odf(radial_order, zeta, sphere_vertices):
@@ -557,11 +589,11 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
     # Angular part of the basis - Spherical harmonics
     S, Z, L = real_sym_sh_brainsuite(radial_order, theta, phi)
-    Snew=[]
+    Snew = []
 
     for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
-            Snew.append(S[:,L==l])
+            Snew.append(S[:, L == l])
             for m in range(-l, l + 1):
                 upsilon.append( (-1) ** (n - l / 2.0) * \
                     _kappa_odf(zeta, n, l) * \
@@ -571,15 +603,13 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 
 
 def _kappa_odf(zeta, n, l):
-    return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 *
-                    gamma(n + 1.5) * 2 ** (l + 3)) /
-                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) *
-                    gamma(l + 1.5) ** 2))
+    return np.sqrt(
+        (gamma(l / 2.0 + 1.5)**2 * gamma(n + 1.5) * 2**
+         (l + 3)) / (16 * np.pi**3 * (zeta)**1.5 * factorial(n - l) * gamma(l + 1.5)**2))
 
 
 def create_rspace(gridsize, radius_max):
-    """ Create the real space table, that contains the points in which
-        to compute the pdf.
+    """ Create the real space table, that contains the points in which to compute the pdf.
 
     Parameters
     ----------
@@ -617,5 +647,5 @@ def shore_index_matrix(radial_order):
     for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                indices.append((n,l,m))
+                indices.append((n, l, m))
     return np.array(indices).astype(np.int)
