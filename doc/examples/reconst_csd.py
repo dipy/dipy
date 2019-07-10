@@ -27,7 +27,7 @@ with b-value 2000.
 
 import numpy as np
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -89,6 +89,7 @@ response function's ODF. Here is how you would do that:
 """
 
 from dipy.viz import window, actor
+from dipy.sims.voxel import single_tensor_odf
 
 # Enables/disables interactive visualization
 interactive = False
@@ -96,13 +97,13 @@ interactive = False
 ren = window.Renderer()
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
-from dipy.data import get_sphere
-sphere = get_sphere('repulsion724')
-from dipy.sims.voxel import single_tensor_odf
-response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
+
+
+response_odf = single_tensor_odf(default_sphere.vertices, evals, evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=sphere, colormap='plasma')
+response_actor = actor.odf_slicer(response_odf, sphere=default_sphere,
+                                  colormap='plasma')
 ren.add(response_actor)
 print('Saving illustration as csd_response.png')
 window.record(ren, out_path='csd_response.png', size=(200, 200))
@@ -162,10 +163,10 @@ We can check the shape of the signal of the response function, which should be
 like  a pancake:
 """
 
-response_signal = response.on_sphere(sphere)
+response_signal = response.on_sphere(default_sphere)
 # transform our data from 1D to 4D
 response_signal = response_signal[None, None, None, :]
-response_actor = actor.odf_slicer(response_signal, sphere=sphere,
+response_actor = actor.odf_slicer(response_signal, sphere=default_sphere,
                                   colormap='plasma')
 
 ren = window.Renderer()
@@ -208,13 +209,14 @@ csd_fit = csd_model.fit(data_small)
 Show the CSD-based ODFs also known as FODFs (fiber ODFs).
 """
 
-csd_odf = csd_fit.odf(sphere)
+csd_odf = csd_fit.odf(default_sphere)
 
 """
 Here we visualize only a 30x30 region.
 """
 
-fodf_spheres = actor.odf_slicer(csd_odf, sphere=sphere, scale=0.9, norm=False, colormap='plasma')
+fodf_spheres = actor.odf_slicer(csd_odf, sphere=default_sphere, scale=0.9,
+                                norm=False, colormap='plasma')
 
 ren.add(fodf_spheres)
 
@@ -237,7 +239,7 @@ from dipy.direction import peaks_from_model
 
 csd_peaks = peaks_from_model(model=csd_model,
                              data=data_small,
-                             sphere=sphere,
+                             sphere=default_sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
                              parallel=True)

@@ -98,14 +98,15 @@ fa1 = fit_wls.fa
 evals1 = fit_wls.evals
 evecs1 = fit_wls.evecs
 cfa1 = dti.color_fa(fa1, evecs1)
-sphere = dpd.get_sphere('repulsion724')
+sphere = dpd.default_sphere
 
 """
 We visualize the ODFs in the ROI using ``dipy.viz`` module:
 """
 
 ren = window.Renderer()
-ren.add(actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere, scale=0.3))
+ren.add(actor.tensor_slicer(evals1, evecs1, scalar_colors=cfa1, sphere=sphere,
+                            scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls.png')
 window.record(ren, out_path='tensor_ellipsoids_wls.png', size=(600, 600))
 if interactive:

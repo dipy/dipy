@@ -21,7 +21,7 @@ from dipy.reconst.dti import TensorModel
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.direction import peaks_from_model
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
 from dipy.segment.mask import median_otsu
 from dipy.viz import actor, window
 from dipy.io.image import save_nifti
@@ -67,11 +67,9 @@ Next, we use ``peaks_from_model`` to fit the data and calculated the fiber
 directions in all voxels.
 """
 
-sphere = get_sphere('repulsion724')
-
 csd_peaks = peaks_from_model(model=csd_model,
                              data=data,
-                             sphere=sphere,
+                             sphere=default_sphere,
                              mask=mask,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,

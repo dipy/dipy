@@ -79,7 +79,7 @@ spherical deconvolution is used to model the fiber orientations.
 """
 
 import numpy as np
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
 from dipy.sims.voxel import add_noise
 
 # Read data
@@ -147,7 +147,6 @@ Visualize the kernel
 """
 
 from dipy.viz import window, actor
-from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 ren = window.Renderer()
 
@@ -157,10 +156,9 @@ spike[3, 3, 3, 0] = 1
 spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k,
                           sh_order=8, test_mode=True)
 
-sphere = get_sphere('repulsion724')
-spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
+spike_sf_conv = sh_to_sf(spike_shm_conv, default_sphere, sh_order=8)
 model_kernel = actor.odf_slicer(spike_sf_conv * 6,
-                                sphere=sphere,
+                                sphere=default_sphere,
                                 norm=False,
                                 scale=0.4)
 model_kernel.display(x=3)
@@ -191,13 +189,13 @@ The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 
 # Sharpen via the Sharpening Deconvolution Transform
 from dipy.reconst.csdeconv import odf_sh_to_sharp
-csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, sphere,  sh_order=8, lambda_=0.1)
+csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8, lambda_=0.1)
 
 # Convert raw and enhanced data to discrete form
-csd_sf_orig = sh_to_sf(csd_shm_orig, sphere, sh_order=8)
-csd_sf_noisy = sh_to_sf(csd_shm_noisy, sphere, sh_order=8)
-csd_sf_enh = sh_to_sf(csd_shm_enh, sphere, sh_order=8)
-csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, sphere, sh_order=8)
+csd_sf_orig = sh_to_sf(csd_shm_orig, default_sphere, sh_order=8)
+csd_sf_noisy = sh_to_sf(csd_shm_noisy, default_sphere, sh_order=8)
+csd_sf_enh = sh_to_sf(csd_shm_enh, default_sphere, sh_order=8)
+csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, default_sphere, sh_order=8)
 
 # Normalize the sharpened ODFs
 csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp) * 1.25
