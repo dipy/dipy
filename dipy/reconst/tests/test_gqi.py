@@ -18,8 +18,8 @@ from numpy.testing import (assert_equal,
 
 
 def test_gqi():
-    # load symmetric 724 sphere
-    sphere = get_sphere('symmetric724')
+    # load repulsion 724 sphere
+    sphere = get_sphere('repulsion724')
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -31,7 +31,7 @@ def test_gqi():
                                               fractions=[50, 50], snr=None)
     gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
 
-    # symmetric724
+    # repulsion724
     gqfit = gq.fit(data)
     odf = gqfit.odf(sphere)
     directions, values, indices = peak_directions(odf, sphere, .35, 25)
@@ -60,7 +60,7 @@ def test_gqi():
 
 def test_mvoxel_gqi():
     data, gtab = dsi_voxels()
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     gq = GeneralizedQSamplingModel(gtab, 'standard')
     gqfit = gq.fit(data)

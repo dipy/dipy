@@ -16,8 +16,8 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 def test_shore_odf():
     gtab = get_isbi2013_2shell_gtab()
 
-    # load symmetric 724 sphere
-    sphere = get_sphere('symmetric724')
+    # load repulsion 724 sphere
+    sphere = get_sphere('repulsion724')
 
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
@@ -26,7 +26,7 @@ def test_shore_odf():
                                               fractions=[50, 50], snr=None)
     asm = ShoreModel(gtab, radial_order=6,
                      zeta=700, lambdaN=1e-8, lambdaL=1e-8)
-    # symmetric724
+    # repulsion724
     asmfit = asm.fit(data)
     odf = asmfit.odf(sphere)
     odf_sh = asmfit.odf_sh()

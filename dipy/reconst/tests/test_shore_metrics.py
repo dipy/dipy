@@ -76,7 +76,7 @@ def test_shore_metrics():
 
     # compare the shore pdf with the ground truth multi_tensor pdf
 
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     v = sphere.vertices
     radius = 10e-3
     pdf_shore = asmfit.pdf(v * radius)

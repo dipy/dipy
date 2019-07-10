@@ -10,7 +10,7 @@ from dipy.sims.voxel import all_tensor_evecs
 
 
 def test_local_maxima():
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     vertices, faces = sphere.vertices, sphere.faces
     edges = unique_edges(faces)
 

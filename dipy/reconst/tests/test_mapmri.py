@@ -320,7 +320,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3)
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     # test MAPMRI fitting
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -787,7 +787,7 @@ def test_mapmri_odf(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
 
     # load symmetric 724 sphere
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     # load icosahedron sphere
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -796,7 +796,7 @@ def test_mapmri_odf(radial_order=6):
     mapmod = MapmriModel(gtab, radial_order=radial_order,
                          laplacian_regularization=True,
                          laplacian_weighting=0.01)
-    # symmetric724
+    # repulsion724
     sphere2 = create_unit_sphere(5)
     mapfit = mapmod.fit(data)
     odf = mapfit.odf(sphere)

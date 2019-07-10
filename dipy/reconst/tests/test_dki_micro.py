@@ -97,7 +97,7 @@ def test_single_fiber_model():
     dkiF = dkiM.fit(signal)
 
     # Axonal Water Fraction
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     AWF = dki_micro.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
                                           gtol=1e-5)
     assert_almost_equal(AWF, fie)

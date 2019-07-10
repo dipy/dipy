@@ -153,7 +153,7 @@ class ShoreModel(Cache):
         ODF.
 
         from dipy.data import get_fnames,get_sphere
-        sphere = get_sphere('symmetric724')
+        sphere = get_sphere('repulsion724')
         fimg, fbvals, fbvecs = get_fnames('ISBI_testing_2shells_table')
         bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
         gtab = gradient_table(bvals, bvecs)

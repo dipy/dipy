@@ -215,7 +215,7 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 print('Computing tensor ellipsoids in a part of the splenium of the CC')
 
 from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 from dipy.viz import window, actor
 

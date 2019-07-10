@@ -226,7 +226,7 @@ class LifeSignalMaker(object):
             symmetric sphere with 724 vertices
         """
         if sphere is None:
-            self.sphere = dpd.get_sphere('symmetric724')
+            self.sphere = dpd.get_sphere('repulsion724')
         else:
             self.sphere = sphere
 

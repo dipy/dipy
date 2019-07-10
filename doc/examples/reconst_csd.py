@@ -97,7 +97,7 @@ ren = window.Renderer()
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 from dipy.sims.voxel import single_tensor_odf
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # transform our data from 1D to 4D

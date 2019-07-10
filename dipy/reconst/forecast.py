@@ -129,7 +129,7 @@ class ForecastModel(OdfModel, Cache):
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
-        >>> sphere = get_sphere('symmetric724')
+        >>> sphere = get_sphere('repulsion724')
         >>> fodf = f_fit.odf(sphere)
         """
         OdfModel.__init__(self, gtab)

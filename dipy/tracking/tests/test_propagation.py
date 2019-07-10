@@ -31,7 +31,7 @@ def test_offset():
 
 def test_eudx_both_directions_errors():
     # Test error conditions for both directions function
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     seed = np.zeros(3, np.float64)
     qa = np.zeros((4, 5, 6, 7), np.float64)
     ind = qa.copy()

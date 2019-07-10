@@ -157,7 +157,7 @@ spike[3, 3, 3, 0] = 1
 spike_shm_conv = convolve(sf_to_sh(spike, k.get_sphere(), sh_order=8), k,
                           sh_order=8, test_mode=True)
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 spike_sf_conv = sh_to_sf(spike_shm_conv, sphere, sh_order=8)
 model_kernel = actor.odf_slicer(spike_sf_conv * 6,
                                 sphere=sphere,

@@ -43,7 +43,7 @@ def test_recursive_response_calibration():
     _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     gtab = gradient_table(bvals, bvecs)
     evals = np.array([0.0015, 0.0003, 0.0003])
@@ -340,7 +340,7 @@ def test_odf_sh_to_sharp():
     S, _ = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
                         fractions=[50, 50], snr=SNR)
 
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     qb = QballModel(gtab, sh_order=8, assume_normed=True)
 
@@ -394,7 +394,7 @@ def test_r2_term_odf_sharp():
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))

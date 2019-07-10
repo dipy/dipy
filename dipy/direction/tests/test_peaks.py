@@ -161,7 +161,7 @@ def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
     S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=fractions, snr=SNR)
 
-    sphere = get_sphere('symmetric724').subdivide(2)
+    sphere = get_sphere('repulsion724').subdivide(2)
 
     if half_sphere:
 
@@ -399,7 +399,7 @@ def test_difference_with_minmax():
 
 def test_degenerative_cases():
 
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     # completely isotropic and degencase
     odf = np.zeros(sphere.vertices.shape[0])
@@ -531,7 +531,7 @@ def test_peaksFromModelParallel():
     data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
                            fractions=[50, 50], snr=SNR)
 
-    for sphere in [_sphere, get_sphere('symmetric724')]:
+    for sphere in [_sphere, get_sphere('repulsion724')]:
 
         # test equality with/without multiprocessing
         model = SimpleOdfModel(gtab)

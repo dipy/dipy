@@ -105,7 +105,7 @@ def test_single_tensor():
 
 
 def test_multi_tensor():
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     # vertices = sphere.vertices
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))

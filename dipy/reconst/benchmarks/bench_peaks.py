@@ -20,7 +20,7 @@ from numpy.testing import measure
 
 def bench_local_maxima():
     repeat = 10000
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
     vertices, faces = sphere.vertices, sphere.faces
     print('Timing peak finding')
     timed0 = measure("local_maxima(odf, edges)", repeat)

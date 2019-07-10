@@ -42,7 +42,7 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
 from dipy.data import get_sphere
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Compute the CSD-based ODFs using ``peaks_from_model``. This function has a

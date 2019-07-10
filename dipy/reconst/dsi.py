@@ -76,7 +76,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> import warnings
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
-        >>> sphere = get_sphere('symmetric724')
+        >>> sphere = get_sphere('repulsion724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> dsfit = ds.fit(data)

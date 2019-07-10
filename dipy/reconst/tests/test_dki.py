@@ -601,7 +601,7 @@ def test_kurtosis_maximum():
     R = dkiF.evecs
     evals = dkiF.evals
     dt = lower_triangular(np.dot(np.dot(R, np.diag(evals)), R.T))
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     # compute maxima
     k_max_cross, max_dir = dki._voxel_kurtosis_maximum(dt, MD, kt, sphere,
@@ -715,7 +715,7 @@ def test_multi_voxel_kurtosis_maximum():
     # prepare inputs
     dkiM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="WLS")
     dkiF = dkiM.fit(DWIsim)
-    sphere = get_sphere('symmetric724')
+    sphere = get_sphere('repulsion724')
 
     # TEST - when no sphere is given
     k_max = dki.kurtosis_maximum(dkiF.model_params)

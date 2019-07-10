@@ -98,7 +98,7 @@ fa1 = fit_wls.fa
 evals1 = fit_wls.evals
 evecs1 = fit_wls.evecs
 cfa1 = dti.color_fa(fa1, evecs1)
-sphere = dpd.get_sphere('symmetric724')
+sphere = dpd.get_sphere('repulsion724')
 
 """
 We visualize the ODFs in the ROI using ``dipy.viz`` module:

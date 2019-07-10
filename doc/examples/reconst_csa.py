@@ -59,7 +59,7 @@ sphere as input. The sphere is an object that represents the spherical discrete
 grid where the ODF values will be evaluated.
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 csapeaks = peaks_from_model(model=csamodel,
                             data=maskdata,
@@ -90,7 +90,7 @@ splenium of the corpus callosum (CC).
 data_small = maskdata[13:43, 44:74, 28:29]
 
 from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 from dipy.viz import window, actor
 
