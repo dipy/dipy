@@ -35,7 +35,7 @@ class FetcherError(Exception):
 
 
 def _log(msg):
-    """Helper function to keep track of things.
+    """Helper function used as short hand for logging.
     """
     logger = logging.getLogger(__name__)
     logger.info(msg)
