@@ -165,6 +165,7 @@ streamlines = Streamlines(streamlines_generator)
 We will then display the resulting streamlines using the ``fury``
 python package.
 """
+
 from dipy.viz import colormap
 
 if have_fury:
@@ -187,7 +188,7 @@ if have_fury:
 .. figure:: tractogram_EuDX.png
    :align: center
 
-   **Corpus Callosum EuDx**
+   **Corpus Callosum using EuDx**
 
 We've created a deterministic set of streamlines using the EuDX algorithm. This
 is so called deterministic because if you repeat the fiber tracking (keeping

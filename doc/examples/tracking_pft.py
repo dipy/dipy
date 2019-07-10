@@ -16,8 +16,8 @@ gray matter.
 PFT finds an alternative streamline segment whenever the tissue classifier
 returns a position classified as 'INVALIDPOINT'.
 
-This example is an extension of :ref:`tracking_probabilistic` and
-:ref:`tracking_tissue_classifier` examples. We begin by loading the
+This example is an extension of :ref:`example_tracking_probabilistic` and
+:ref:`example_tracking_tissue_classifier` examples. We begin by loading the
 data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model, creating the probabilistic direction getter and defining the seeds.
 """
@@ -109,7 +109,7 @@ if have_fury:
 .. figure:: tractogram_pft.png
  :align: center
 
- **Corpus Callosum Particle Filtering Tractography**
+ **Corpus Callosum using particle filtering tractography**
 """
 
 # Local Probabilistic Tractography
@@ -136,7 +136,7 @@ if have_fury:
 .. figure:: tractogram_probabilistic_cmc.png
  :align: center
 
- **Corpus Callosum Probabilistic Tractography**
+ **Corpus Callosum using probabilistic tractography**
 """
 
 """

@@ -14,10 +14,11 @@ the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
 'LocalTracking' generator can be set to output all generated streamlines
-or only the 'valid' ones.
+or only the 'valid' ones. See Girard et al. (2004) [Girard2014]_ and Smith et
+al.(2012) [Smith2012]_ for more details on these methods.
 
 This example is an extension of the
-:ref:`example_deterministic_fiber_tracking` example. We begin by loading the
+:ref:`example_tracking_deterministic` example. We begin by loading the
 data, creating a seeding mask from white matter voxels of the corpus callosum,
 fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
@@ -351,7 +352,7 @@ streamlines stopping in those regions.
 Notes
 ------
 Currently,the proposed method that cuts streamlines going through
-subcortical gray matter regions is not implemented [Smith2012]_. The
+subcortical gray matter regions is not implemented. The
 backtracking technique for streamlines reaching INVALIDPOINT is not
 implemented either [Smith2012]_.
 
@@ -363,6 +364,10 @@ References
     Anatomically-constrained tractography: Improved diffusion MRI
     streamlines tractography through effective use of anatomical
     information. NeuroImage, 63(3), 1924-1938, 2012.
+
+.. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
+    Towards quantitative connectivity analysis: reducing tractography biases.
+    NeuroImage, 98, 266-278, 2014.
 
 .. include:: ../links_names.inc
 """

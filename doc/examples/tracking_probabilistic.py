@@ -14,7 +14,7 @@ point can be represented as a probability mass function (PMF) if the possible
 tracking directions are restricted to discrete numbers of well distributed
 points on a sphere.
 
-This example is an extension of the :ref:`tracking_introduction_eudx`
+This example is an extension of the :ref:`example_tracking_introduction_eudx`
 example. We'll begin by repeating a few steps from that example, loading the
 data and fitting a Constrained Spherical Deconvolution (CSD) model.
 """
@@ -87,7 +87,7 @@ if have_fury:
 .. figure:: tractogram_probabilistic_dg_pmf.png
    :align: center
 
-   **Corpus Callosum Probabilistic Direction Getter from PMF**
+   **Corpus Callosum using probabilistic direction getter from PMF**
 """
 """
 One disadvantage of using a discrete PMF to represent possible tracking
@@ -124,7 +124,7 @@ if have_fury:
 .. figure:: tractogram_probabilistic_dg_sh.png
    :align: center
 
-   **Corpus Callosum Probabilistic Direction Getter from SH**
+   **Corpus Callosum using probabilistic direction getter from SH**
 """
 """
 Not all model fits have the ``shm_coeff`` attribute because not all models use
@@ -157,13 +157,10 @@ if have_fury:
 .. figure:: tractogram_probabilistic_dg_sh_pfm.png
    :align: center
 
-   **Corpus Callosum Probabilistic Direction Getter from SH (
-   ``peaks_from_model``)**
+   **Corpus Callosum using probabilistic direction getter from SH (
+   peaks_from_model)**
 """
 """
-References
-----------
-
 .. include:: ../links_names.inc
 
 """

@@ -17,10 +17,11 @@ Deterministic maximum fiber tracking is an alternative to EuDX deterministic
 tractography and unlike EuDX does not follow the peaks of the local models but
 uses the entire orientation distributions.
 
-This example is an extension of the :ref:`tracking_probabilistic` example.
-We begin by loading the data, fitting a Constrained Spherical Deconvolution (CSD)
-reconstruction model for the tractography and fitting the constant solid angle (CSA)
-reconstruction model to define the tracking mask (tissue classifier).
+This example is an extension of the :ref:`example_tracking_probabilistic`
+example. We begin by loading the data, fitting a Constrained Spherical
+Deconvolution (CSD) reconstruction model for the tractography and fitting
+the constant solid angle (CSA) reconstruction model to define the tracking
+mask (tissue classifier).
 """
 
 # Enables/disables interactive visualization
@@ -84,12 +85,9 @@ if have_fury:
 .. figure:: tractogram_deterministic_dg.png
    :align: center
 
-   **Corpus Callosum Deterministic Maximum Direction Getter**
+   **Corpus Callosum using deterministic maximum direction getter**
 """
 """
-References
-----------
-
 .. include:: ../links_names.inc
 
 """

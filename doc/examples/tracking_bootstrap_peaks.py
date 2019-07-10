@@ -5,11 +5,11 @@ Bootstrap and Closest Peak Direction Getters Example
 
 This example shows how choices in direction-getter impact fiber
 tracking results by demonstrating the bootstrap direction getter (a type of
-probabilistic tracking, as described in [Berman2008]_) and the closest peak
-direction getter (a type of deterministic tracking).
+probabilistic tracking, as described in Berman et al. (2008) [Berman2008]_ a
+nd the closest peak direction getter (a type of deterministic tracking).
 (Amirbekian, PhD thesis, 2016)
 
-This example is an extension of the :ref:`tracking_introduction_eudx`
+This example is an extension of the :ref:`example_tracking_introduction_eudx`
 example. Let's start by loading the necessary modules for executing this
 tutorial.
 """
@@ -23,12 +23,6 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.viz import window, actor, colormap, have_fury
-
-"""
-First we load our images and set the tracking seeds. See the ntroduction to
-tractography tutorial (:ref:`example_tracking_introduction_eudx`)
-for more background on these steps.
-"""
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
