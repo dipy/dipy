@@ -919,9 +919,9 @@ def slr_with_qbx(static, moving,
                                                 for s in moving])])
 
     logger.info('Static streamlines after length reduction {}'
-            .format(len(streamlines1)))
+                .format(len(streamlines1)))
     logger.info('Moving streamlines after length reduction {}'
-            .format(len(streamlines2)))
+                .format(len(streamlines2)))
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,

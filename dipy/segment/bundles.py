@@ -359,7 +359,7 @@ class RecoBundles(object):
             pruning_distance=pruning_distance)
 
         logger.info('Total duration of recognition time is %0.3f sec.\n'
-                      % (time()-t,))
+                    % (time()-t,))
 
         return pruned_streamlines, self.filtered_indices[labels]
 
@@ -466,7 +466,8 @@ class RecoBundles(object):
         nb_neighb_streamlines = len(neighb_streamlines)
 
         if nb_neighb_streamlines == 0:
-            logger.info(' You have no neighbor streamlines... No bundle recognition')
+            logger.info('You have no neighbor streamlines... ' +
+                        'No bundle recognition')
             return Streamlines([]), []
 
         logger.info(' Number of neighbor streamlines %d' %
