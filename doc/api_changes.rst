@@ -16,6 +16,9 @@ The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
 `tournier07` and `descoteaux07` after the deprecation cycle started in the
 0.15 release.
 
+We change ``dipy.data.default_sphere`` from symmetric724 to repulsion724. If you want to keep the
+previous behavior, make sure to initialize the sphere parameter on some functions.
+
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:

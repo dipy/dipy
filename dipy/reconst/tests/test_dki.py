@@ -18,7 +18,7 @@ from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
                               lower_triangular)
 
 from dipy.core.sphere import Sphere
-from dipy.data import get_sphere, default_sphere
+from dipy.data import default_sphere
 from dipy.core.geometry import (sphere2cart, perpendicular_directions)
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
