@@ -14,7 +14,6 @@ import dipy.tracking.utils as ut
 from dipy.core.geometry import dist_to_corner
 from dipy.core.interpolation import (interpolate_vector_3d,
                                      interpolate_scalar_3d)
-import dipy.align.vector_fields as vfu
 
 
 def unlist_streamlines(streamlines):

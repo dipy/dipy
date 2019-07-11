@@ -28,6 +28,10 @@ The order of parameters has also changed.
 ``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
 ``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
 
+**Interpolation**
+
+All interpolation functions has been moved to a new module name `dipy.core.interpolation`
+
 
 DIPY 0.16 Changes
 -----------------
