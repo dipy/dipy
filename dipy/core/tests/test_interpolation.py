@@ -13,7 +13,8 @@ from dipy.core.interpolation import (trilinear_interpolate4d,
                                      NearestNeighborInterpolator,
                                      TriLinearInterpolator,
                                      OutsideImage,
-                                     map_coordinates_trilinear_iso)
+                                     map_coordinates_trilinear_iso,
+                                     interp_rbf)
 from dipy.align import floating
 
 
@@ -376,6 +377,29 @@ def test_trilinear_interp_cubic_voxels():
                       A, points, stepped_1d(strides), 3, B)
     npt.assert_raises(ValueError, map_coordinates_trilinear_iso,
                       A, points, strides, 3, stepped_1d(B))
+
+
+def test_interp_rbf():
+    def data_func(s, a, b):
+        return a * np.cos(s.theta) + b * np.sin(s.phi)
+
+    s0 = create_unit_sphere(3)
+    s1 = create_unit_sphere(4)
+    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
+        data = data_func(s0, a, b)
+        expected = data_func(s1, a, b)
+        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
+        npt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+
+    # Test that using the euclidean norm raises a warning
+    # (following
+    # https://docs.python.org/2/library/warnings.html#testing-warnings)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        interp_rbf(data, s0, s1, norm="euclidean_norm")
+        npt.assert_(len(w) == 1)
+        npt.assert_(issubclass(w[-1].category, DeprecationWarning))
+        npt.assert_("deprecated" in str(w[-1].message))
 
 
 if __name__ == "__main__":
