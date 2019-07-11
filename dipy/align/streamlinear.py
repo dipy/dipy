@@ -219,8 +219,7 @@ class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
 class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
-                 bounds=None, verbose=False, options=None,
-                 evolution=False, num_threads=None):
+                 bounds=None, options=None, evolution=False, num_threads=None):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis15]_.
 
         Parameters
@@ -274,9 +273,6 @@ class StreamlineLinearRegistration(object):
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
-        verbose : bool,
-            If True then information about the optimization is shown.
-
         options : None or dict,
             Extra options to be used with the selected method.
 
@@ -308,7 +304,6 @@ class StreamlineLinearRegistration(object):
         if self.metric is None:
             self.metric = BundleMinDistanceMetric(num_threads=num_threads)
 
-        self.verbose = verbose
         self.method = method
         if self.method not in ['Powell', 'L-BFGS-B']:
             raise ValueError('Only Powell and L-BFGS-B can be used')
@@ -388,8 +383,7 @@ class StreamlineLinearRegistration(object):
                             bounds=self.bounds, options=self.options,
                             evolution=self.evolution)
 
-        if self.verbose:
-            opt.print_summary()
+        opt.print_summary()
 
         opt_mat = compose_matrix44(opt.xopt)
 
@@ -712,8 +706,8 @@ def remove_clusters_by_size(clusters, min_size=0):
     return centroids
 
 
-def progressive_slr(static, moving, metric, x0, bounds,
-                    method='L-BFGS-B', verbose=True, num_threads=None):
+def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
+                    num_threads=None):
     """ Progressive SLR
 
     This is an utility function that allows for example to do affine
@@ -738,8 +732,6 @@ def progressive_slr(static, moving, metric, x0, bounds,
         for example.
     method : string
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
-    verbose : bool
-        If True show messages in stdout (default True).
     num_threads : int
         Number of threads. If None (default) then all available threads
         will be used. Only metrics using OpenMP will use this variable.
@@ -751,14 +743,12 @@ def progressive_slr(static, moving, metric, x0, bounds,
         NeuroImage, 117, 124--140, 2015
     """
 
-    if verbose:
-        logger.info('Progressive Registration is Enabled')
+    logger.info('Progressive Registration is Enabled')
 
     if x0 == 'translation' or x0 == 'rigid' or \
        x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
 
-        if verbose:
-            logger.info(' Translation  (3 parameters)...')
+        logger.info(' Translation  (3 parameters)...')
         slr_t = StreamlineLinearRegistration(metric=metric,
                                              x0='translation',
                                              bounds=bounds[:3],
@@ -773,8 +763,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x = np.zeros(6)
         x[:3] = x_translation
 
-        if verbose:
-            logger.info(' Rigid  (6 parameters) ...')
+        logger.info(' Rigid  (6 parameters) ...')
         slr_r = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:6],
@@ -788,8 +777,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:6] = x_rigid
         x[6] = 1.
 
-        if verbose:
-            logger.info(' Similarity (7 parameters) ...')
+        logger.info(' Similarity (7 parameters) ...')
         slr_s = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
                                              bounds=bounds[:7],
@@ -803,8 +791,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:6] = x_similarity[:6]
         x[6:] = np.array((x_similarity[6],) * 3)
 
-        if verbose:
-            logger.info(' Scaling (9 parameters) ...')
+        logger.info(' Scaling (9 parameters) ...')
 
         slr_c = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
@@ -819,8 +806,7 @@ def progressive_slr(static, moving, metric, x0, bounds,
         x[:9] = x_scaling[:9]
         x[9:] = np.zeros(3)
 
-        if verbose:
-            logger.info(' Affine (12 parameters) ...')
+        logger.info(' Affine (12 parameters) ...')
 
         slr_a = StreamlineLinearRegistration(metric=metric,
                                              x0=x,
@@ -849,7 +835,6 @@ def slr_with_qbx(static, moving,
                  rm_small_clusters=50,
                  maxiter=100,
                  select_random=None,
-                 verbose=False,
                  greater_than=50,
                  less_than=250,
                  qbx_thr=[40, 30, 20, 15],
@@ -874,9 +859,6 @@ def slr_with_qbx(static, moving,
     select_random : int
         If not None select a random number of streamlines to apply clustering
         Default None.
-
-    verbose : bool,
-        If True then information about the optimization is shown.
 
     greater_than : int, optional
             Keep streamlines that have length greater than
@@ -921,9 +903,8 @@ def slr_with_qbx(static, moving,
     if rng is None:
         rng = np.random.RandomState()
 
-    if verbose:
-        logger.info('Static streamlines size {}'.format(len(static)))
-        logger.info('Moving streamlines size {}'.format(len(moving)))
+    logger.info('Static streamlines size {}'.format(len(static)))
+    logger.info('Moving streamlines size {}'.format(len(moving)))
 
     def check_range(streamline, gt=greater_than, lt=less_than):
 
@@ -937,11 +918,10 @@ def slr_with_qbx(static, moving,
     streamlines2 = Streamlines(moving[np.array([check_range(s)
                                                 for s in moving])])
 
-    if verbose:
-        logger.info('Static streamlines after length reduction {}'
-              .format(len(streamlines1)))
-        logger.info('Moving streamlines after length reduction {}'
-              .format(len(streamlines2)))
+    logger.info('Static streamlines after length reduction {}'
+            .format(len(streamlines1)))
+    logger.info('Moving streamlines after length reduction {}'
+            .format(len(streamlines2)))
 
     if select_random is not None:
         rstreamlines1 = select_random_set_of_streamlines(streamlines1,
@@ -971,8 +951,7 @@ def slr_with_qbx(static, moving,
 
     qb_centroids2 = remove_clusters_by_size(cluster_map2, rm_small_clusters)
 
-    if verbose:
-        t = time()
+    t = time()
 
     if not progressive:
         slr = StreamlineLinearRegistration(x0=x0,
@@ -986,13 +965,12 @@ def slr_with_qbx(static, moving,
                               x0=x0, metric=None,
                               bounds=bounds, num_threads=num_threads)
 
-    if verbose:
-        logger.info('QB static centroids size %d' % len(qb_centroids1,))
-        logger.info('QB moving centroids size %d' % len(qb_centroids2,))
-        duration = time() - t
-        logger.info('SLR finished in  %0.3f seconds.' % (duration,))
-        if slm.iterations is not None:
-            logger.info('SLR iterations: %d ' % (slm.iterations,))
+    logger.info('QB static centroids size %d' % len(qb_centroids1,))
+    logger.info('QB moving centroids size %d' % len(qb_centroids2,))
+    duration = time() - t
+    logger.info('SLR finished in  %0.3f seconds.' % (duration,))
+    if slm.iterations is not None:
+        logger.info('SLR iterations: %d ' % (slm.iterations,))
 
     moved = slm.transform(moving)
 
