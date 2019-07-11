@@ -2,12 +2,16 @@ import operator
 import numpy as np
 from time import time
 from abc import ABCMeta, abstractmethod
+import logging
 
 from dipy.segment.metric import Metric
 from dipy.segment.metric import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.segment.metric import MinimumAverageDirectFlipMetric
 from dipy.tracking.streamline import set_number_of_points, nbytes
+
+
+logger = logging.getLogger(__name__)
 
 
 class Identity:
@@ -665,7 +669,7 @@ class TreeClusterMap(ClusterMap):
 
 
 def qbx_and_merge(streamlines, thresholds,
-                  nb_pts=20, select_randomly=None, rng=None, verbose=True):
+                  nb_pts=20, select_randomly=None, rng=None):
     """ Run QuickBundlesX and then run again on the centroids of the last layer
 
     Running again QuickBundles at a layer has the effect of merging
@@ -686,8 +690,6 @@ def qbx_and_merge(streamlines, thresholds,
         streamlines are used.
     rng : RandomState
         If None then RandomState is initialized internally.
-    verbose : bool
-        If True print information in stdout.
 
     Returns
     -------
@@ -706,8 +708,7 @@ def qbx_and_merge(streamlines, thresholds,
                         of the, International Society of Magnetic Resonance
                         in Medicine (ISMRM). Singapore, 4187, 2016.
     """
-    if verbose:
-        t = time()
+    t = time()
     len_s = len(streamlines)
     if select_randomly is None:
         select_randomly = len_s
@@ -718,21 +719,18 @@ def qbx_and_merge(streamlines, thresholds,
                          replace=False)
     sample_streamlines = set_number_of_points(streamlines, nb_pts)
 
-    if verbose:
-        print(' Resampled to {} points'.format(nb_pts))
-        print(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-        print(' Duration of resampling is %0.3f sec.' % (time() - t,))
-        print(' QBX phase starting...')
+    logger.info(' Resampled to {} points'.format(nb_pts))
+    logger.info(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+    logger.info(' Duration of resampling is %0.3f sec.' % (time() - t,))
+    logger.info(' QBX phase starting...')
 
     qbx = QuickBundlesX(thresholds,
                         metric=AveragePointwiseEuclideanMetric())
 
-    if verbose:
-        t1 = time()
+    t1 = time()
     qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
 
-    if verbose:
-        print(' Merging phase starting ...')
+    logger.info(' Merging phase starting ...')
 
     qbx_merge = QuickBundlesX([thresholds[-1]],
                               metric=AveragePointwiseEuclideanMetric())
@@ -756,10 +754,9 @@ def qbx_and_merge(streamlines, thresholds,
 
     merged_cluster_map.refdata = streamlines
 
-    if verbose:
-        print(' QuickBundlesX time for %d random streamlines'
-              % (select_randomly,))
+    logger.info(' QuickBundlesX time for %d random streamlines'
+                % (select_randomly,))
 
-        print(' Duration %0.3f sec. \n' % (time() - t1,))
+    logger.info(' Duration %0.3f sec. \n' % (time() - t1,))
 
     return merged_cluster_map
