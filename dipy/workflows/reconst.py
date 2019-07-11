@@ -288,7 +288,9 @@ class ReconstDtiFlow(Workflow):
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
         fsl_format : bool, optional
-            Whether the tensor
+            Whether the tensor is saved in FSL format: a 4-dimensional volume
+            (shape (i, j, k, 6)) with the elements Dxx, Dxy, Dxz, Dyy, Dyz, Dzz
+            on the last dimension.
 
         References
         ----------
