@@ -27,3 +27,10 @@ cdef int _interpolate_scalar_3d(floating[:, :, :] volume,
 cdef int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
                                 double dii, double djj,
                                 floating* out) nogil
+cdef void _trilinear_interpolation_iso(double *X,
+                                       double *W,
+                                       cnp.npy_intp *IN) nogil
+cdef cnp.npy_intp offset(cnp.npy_intp *indices,
+                         cnp.npy_intp *strides,
+                         int lenind,
+                         int typesize) nogil

@@ -12,7 +12,8 @@ from dipy.core.interpolation import (trilinear_interpolate4d,
                                      interpolate_scalar_nn_3d,
                                      NearestNeighborInterpolator,
                                      TriLinearInterpolator,
-                                     OutsideImage)
+                                     OutsideImage,
+                                     map_coordinates_trilinear_iso)
 from dipy.align import floating
 
 
@@ -355,6 +356,26 @@ def test_TriLinearInterpolator():
 
     npt.assert_raises(OutsideImage, tli.__getitem__, (-.1, 0, 0))
     npt.assert_raises(OutsideImage, tli.__getitem__, (0, 7.01, 0))
+
+
+def test_trilinear_interp_cubic_voxels():
+    A = np.ones((17, 17, 17))
+    B = np.zeros(3)
+    strides = np.array(A.strides, np.intp)
+    A[7, 7, 7] = 2
+    points = np.array([[0, 0, 0], [7., 7.5, 7.], [3.5, 3.5, 3.5]])
+    map_coordinates_trilinear_iso(A, points, strides, 3, B)
+    npt.assert_array_almost_equal(B, np.array([1., 1.5, 1.]))
+    # All of the input array, points array, strides array and output array must
+    # be C-contiguous.  Check by passing in versions that aren't C contiguous
+    npt.assert_raises(ValueError, map_coordinates_trilinear_iso,
+                      A.copy(order='F'), points, strides, 3, B)
+    npt.assert_raises(ValueError, map_coordinates_trilinear_iso,
+                      A, points.copy(order='F'), strides, 3, B)
+    npt.assert_raises(ValueError, map_coordinates_trilinear_iso,
+                      A, points, stepped_1d(strides), 3, B)
+    npt.assert_raises(ValueError, map_coordinates_trilinear_iso,
+                      A, points, strides, 3, stepped_1d(B))
 
 
 if __name__ == "__main__":
