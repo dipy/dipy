@@ -11,10 +11,10 @@ from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
+from dipy.core.interpolation import NearestNeighborInterpolator
 from dipy.sims.voxel import single_tensor
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
-from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
