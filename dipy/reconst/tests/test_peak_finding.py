@@ -24,10 +24,10 @@ def test_local_maxima():
     odf = np.zeros(len(vertices))
     odf[1] = 1.
     odf[143] = 143.
-    odf[505] = 505.
+    odf[361] = 361.
     peak_values, peak_index = local_maxima(odf, edges)
-    npt.assert_array_equal(peak_values, [505, 143, 1])
-    npt.assert_array_equal(peak_index, [505, 143, 1])
+    npt.assert_array_equal(peak_values, [361, 143, 1])
+    npt.assert_array_equal(peak_index, [361, 143, 1])
 
     # Check that neighboring points can both be peaks
     odf = np.zeros(len(vertices))

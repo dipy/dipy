@@ -23,6 +23,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    recursive_response,
                                    response_from_mask)
 from dipy.direction.peaks import peak_directions
+from dipy.core.sphere import HemiSphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
@@ -586,8 +587,9 @@ def test_csd_superres():
 
     fit16 = model16.fit(S)
 
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
-    d, v, ind = peak_directions(fit16.odf(default_sphere), default_sphere,
+    d, v, ind = peak_directions(fit16.odf(sphere), sphere,
                                 relative_peak_threshold=.2,
                                 min_separation_angle=0)
 
@@ -617,5 +619,4 @@ def test_csd_convergence():
 
 
 if __name__ == '__main__':
-    # run_module_suite()
-    test_csdeconv()
+    run_module_suite()
