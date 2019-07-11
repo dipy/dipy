@@ -8,6 +8,71 @@ from libc.math cimport floor
 
 from dipy.align.fused_types cimport floating, number
 
+
+cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
+    """Splits a global offset into an integer index and a relative offset"""
+    offset[0] -= .5
+    if offset[0] <= 0:
+        index[0] = 0
+        offset[0] = 0.
+    elif offset[0] >= (shape - 1):
+        index[0] = shape - 2
+        offset[0] = 1.
+    else:
+        index[0] = <size_t> offset[0]
+        offset[0] = offset[0] - index[0]
+
+
+@cython.profile(False)
+cdef inline float wght(int i, float r) nogil:
+    if i:
+        return r
+    else:
+        return 1.-r
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def trilinear_interp(np.ndarray[np.float32_t, ndim=4, mode='strided'] data,
+                     np.ndarray[np.float_t, ndim=1, mode='strided'] index,
+                     np.ndarray[np.float_t, ndim=1, mode='c'] voxel_size):
+    """Interpolates vector from 4D `data` at 3D point given by `index`
+
+    Interpolates a vector of length T from a 4D volume of shape (I, J, K, T),
+    given point (x, y, z) where (x, y, z) are the coordinates of the point in
+    real units (not yet adjusted for voxel size).
+    """
+    cdef:
+        float x = index[0] / voxel_size[0]
+        float y = index[1] / voxel_size[1]
+        float z = index[2] / voxel_size[2]
+        float weight
+        size_t x_ind, y_ind, z_ind, ii, jj, kk, LL
+        size_t last_d = data.shape[3]
+        bint bounds_check
+        np.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+    bounds_check = (x < 0 or y < 0 or z < 0 or
+                    x > data.shape[0] or
+                    y > data.shape[1] or
+                    z > data.shape[2])
+    if bounds_check:
+        raise IndexError
+
+    splitoffset(&x, &x_ind, data.shape[0])
+    splitoffset(&y, &y_ind, data.shape[1])
+    splitoffset(&z, &z_ind, data.shape[2])
+
+    result = np.zeros(last_d, dtype='float32')
+    for ii from 0 <= ii <= 1:
+        for jj from 0 <= jj <= 1:
+            for kk from 0 <= kk <= 1:
+                weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
+                for LL from 0 <= LL < last_d:
+                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
+    return result
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int trilinear_interpolate4d_c(
@@ -810,3 +875,47 @@ cdef inline int _interpolate_vector_3d(floating[:, :, :, :] field, double dkk,
             out[2] += calpha * beta * cgamma * field[kk, ii, jj, 2]
             inside += 1
     return 1 if inside == 8 else 0
+
+
+class OutsideImage(Exception):
+    pass
+
+
+class Interpolator(object):
+    """Class to be subclassed by different interpolator types"""
+    def __init__(self, data, voxel_size):
+        self.data = data
+        self.voxel_size = np.array(voxel_size, dtype=float, copy=True)
+
+
+class NearestNeighborInterpolator(Interpolator):
+    """Interpolates data using nearest neighbor interpolation"""
+
+    def __getitem__(self, index):
+        index = tuple(index / self.voxel_size)
+        if min(index) < 0:
+            raise OutsideImage('Negative Index')
+        try:
+            return self.data[tuple(np.array(index).astype(int))]
+        except IndexError:
+            raise OutsideImage
+
+
+class TriLinearInterpolator(Interpolator):
+    """Interpolates data using trilinear interpolation
+
+    interpolate 4d diffusion volume using 3 indices, ie data[x, y, z]
+    """
+    def __init__(self, data, voxel_size):
+        super(TriLinearInterpolator, self).__init__(data, voxel_size)
+        if self.voxel_size.shape != (3,) or self.data.ndim != 4:
+            raise ValueError("Data should be 4d volume of diffusion data and "
+                             "voxel_size should have 3 values, ie the size "
+                             "of a 3d voxel")
+
+    def __getitem__(self, index):
+        index = np.array(index, copy=False, dtype="float")
+        try:
+            return trilinear_interp(self.data, index, self.voxel_size)
+        except IndexError:
+            raise OutsideImage
