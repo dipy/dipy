@@ -8,7 +8,7 @@ from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.shm import real_sph_harm
 from scipy.special import gamma, hyp1f1
 from dipy.core.geometry import cart2sphere
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.optimize import leastsq
 from dipy.utils.optpkg import optional_package
@@ -112,7 +112,7 @@ class ForecastModel(OdfModel, Cache):
         with respect to the FORECAST and compute the fODF, parallel and
         perpendicular diffusivity.
 
-        >>> from dipy.data import get_sphere, get_3shell_gtab
+        >>> from dipy.data import default_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
         >>> from dipy.sims.voxel import multi_tensor
         >>> mevals = np.array(([0.0017, 0.0003, 0.0003], 
@@ -129,8 +129,7 @@ class ForecastModel(OdfModel, Cache):
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
-        >>> sphere = get_sphere('repulsion724')
-        >>> fodf = f_fit.odf(sphere)
+        >>> fodf = f_fit.odf(default_sphere)
         """
         OdfModel.__init__(self, gtab)
 
@@ -146,7 +145,7 @@ class ForecastModel(OdfModel, Cache):
             raise ValueError(msg)
 
         if sphere is None:
-            sphere = get_sphere('repulsion724')
+            sphere = default_sphere
             self.vertices = sphere.vertices[
                 0:int(sphere.vertices.shape[0]/2), :]
 

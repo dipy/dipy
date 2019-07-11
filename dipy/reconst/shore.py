@@ -152,8 +152,7 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        from dipy.data import get_fnames,get_sphere
-        sphere = get_sphere('repulsion724')
+        from dipy.data import get_fnames, default_sphere
         fimg, fbvals, fbvecs = get_fnames('ISBI_testing_2shells_table')
         bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
         gtab = gradient_table(bvals, bvecs)
@@ -167,7 +166,7 @@ class ShoreModel(Cache):
         asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
                          lambdaN=1e-8, lambdaL=1e-8)
         asmfit = asm.fit(data)
-        odf= asmfit.odf(sphere)
+        odf= asmfit.odf(default_sphere)
         """
 
         self.bvals = gtab.bvals

@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.data import get_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
+from dipy.data import default_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import sh_to_sf
 from dipy.direction.peaks import peak_directions
@@ -17,7 +17,7 @@ def test_shore_odf():
     gtab = get_isbi2013_2shell_gtab()
 
     # load repulsion 724 sphere
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
 
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)

@@ -1,12 +1,13 @@
 import numpy as np
-from dipy.data import get_fnames, dsi_voxels, get_sphere
+
+from dipy.data import get_fnames, dsi_voxels, get_sphere, default_sphere
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
-from dipy.sims.voxel import sticks_and_ball
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.sims.voxel import sticks_and_ball
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
 
@@ -19,7 +20,7 @@ from numpy.testing import (assert_equal,
 
 def test_gqi():
     # load repulsion 724 sphere
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -60,7 +61,7 @@ def test_gqi():
 
 def test_mvoxel_gqi():
     data, gtab = dsi_voxels()
-    sphere = get_sphere('repulsion724')
+    sphere = get_sphere('symmetric724')
 
     gq = GeneralizedQSamplingModel(gtab, 'standard')
     gqfit = gq.fit(data)

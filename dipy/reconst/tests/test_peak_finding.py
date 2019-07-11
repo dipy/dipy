@@ -4,13 +4,13 @@ import numpy as np
 import numpy.testing as npt
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs
 
 
 def test_local_maxima():
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     vertices, faces = sphere.vertices, sphere.faces
     edges = unique_edges(faces)
 

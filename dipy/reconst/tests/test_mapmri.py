@@ -12,24 +12,24 @@ from numpy.testing import (assert_almost_equal,
                            run_module_suite,
                            assert_raises)
 
-from dipy.data import get_gtab_taiwan_dsi
+from dipy.core.sphere_stats import angular_similarity
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import get_gtab_taiwan_dsi, default_sphere
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
-from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf,
-                             single_tensor, cylinders_and_ball_soderman)
-from dipy.data import get_sphere
-from dipy.sims.voxel import add_noise
-from dipy.core.sphere_stats import angular_similarity
-from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.shm import sh_to_sf
+from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
+                             single_tensor, cylinders_and_ball_soderman)
+
 
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
     return f
+
 
 def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
@@ -245,7 +245,6 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 2)
 
 
-
 def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     D = 0.7e-3
@@ -320,7 +319,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3)
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     # test MAPMRI fitting
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -786,8 +785,8 @@ def test_laplacian_regularization(radial_order=6):
 def test_mapmri_odf(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
 
-    # load symmetric 724 sphere
-    sphere = get_sphere('repulsion724')
+    # load repulsion 724 sphere
+    sphere = default_sphere
 
     # load icosahedron sphere
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]

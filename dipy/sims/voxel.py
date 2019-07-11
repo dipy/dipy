@@ -752,9 +752,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
-    >>> from dipy.data import get_sphere
-    >>> sphere = get_sphere('repulsion724')
-    >>> vertices, faces = sphere.vertices, sphere.faces
+    >>> from dipy.data import default_sphere
+    >>> vertices, faces = default_sphere.vertices, default_sphere.faces
     >>> mevals = np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> angles = [(0, 0), (90, 0)]
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])

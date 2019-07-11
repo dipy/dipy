@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from dipy.data import get_sphere, get_3shell_gtab
+from dipy.data import get_sphere, default_sphere, get_3shell_gtab
 from dipy.reconst.forecast import ForecastModel
 from dipy.sims.voxel import multi_tensor
 
@@ -78,7 +78,7 @@ def test_forecast_odf():
     fm = ForecastModel(data.gtab, sh_order=4,
                        dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)

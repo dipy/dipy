@@ -1,7 +1,6 @@
 import numpy as np
 
-from dipy.data import get_sphere
-
+from dipy.data import default_sphere
 from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
 
 from numpy.testing import (assert_array_almost_equal, assert_equal,
@@ -29,9 +28,10 @@ def test_offset():
         assert_raises(ValueError, ndarray_offset,
                       index, stepped_1d(strides), 2, i_size)
 
+
 def test_eudx_both_directions_errors():
     # Test error conditions for both directions function
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     seed = np.zeros(3, np.float64)
     qa = np.zeros((4, 5, 6, 7), np.float64)
     ind = qa.copy()

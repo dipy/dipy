@@ -4,8 +4,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-
-from dipy.data import get_fnames, dsi_voxels, get_sphere
+from dipy.data import get_fnames, dsi_voxels, default_sphere
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
@@ -18,7 +17,7 @@ from dipy.core.sphere_stats import angular_similarity
 
 def test_dsi():
     # load repulsion 724 sphere
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
 
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
@@ -64,7 +63,6 @@ def test_dsi():
 def test_multivox_dsi():
     data, gtab = dsi_voxels()
     DS = DiffusionSpectrumModel(gtab)
-    get_sphere('repulsion724')
 
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()
@@ -80,10 +78,9 @@ def test_multib0_dsi():
     new_bvals = np.concatenate([gtab.bvals, [0]])
     new_gtab = gradient_table(new_bvals, new_bvecs)
     ds = DiffusionSpectrumModel(new_gtab)
-    sphere = get_sphere('repulsion724')
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()
-    dsfit.odf(sphere)
+    dsfit.odf(default_sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
 
@@ -95,7 +92,7 @@ def test_multib0_dsi():
     ds = DiffusionSpectrumModel(new_gtab)
     dsfit = ds.fit(new_data)
     pdf = dsfit.pdf()
-    dsfit.odf(sphere)
+    dsfit.odf(default_sphere)
     assert_equal(new_data.shape[:-1] + (17, 17, 17), pdf.shape)
     assert_equal(np.alltrue(np.isreal(pdf)), True)
 

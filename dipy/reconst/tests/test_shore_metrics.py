@@ -5,7 +5,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
 
-from dipy.data import get_gtab_taiwan_dsi, get_sphere
+from dipy.data import get_gtab_taiwan_dsi, default_sphere
 from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
@@ -13,7 +13,6 @@ from dipy.reconst.shore import (ShoreModel,
 from dipy.sims.voxel import (multi_tensor, all_tensor_evecs, multi_tensor_odf,
                              multi_tensor_rtop, multi_tensor_msd,
                              multi_tensor_pdf)
-
 
 
 def test_shore_metrics():
@@ -76,8 +75,7 @@ def test_shore_metrics():
 
     # compare the shore pdf with the ground truth multi_tensor pdf
 
-    sphere = get_sphere('repulsion724')
-    v = sphere.vertices
+    v = default_sphere.vertices
     radius = 10e-3
     pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,

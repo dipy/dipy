@@ -53,8 +53,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     Examples
     --------
-    >>> from dipy.data import get_sphere
-    >>> verts = get_sphere('repulsion724').vertices
+    >>> from dipy.data import default_sphere
+    >>> verts = default_sphere.vertices
     >>> ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
     """
     if ax is None:

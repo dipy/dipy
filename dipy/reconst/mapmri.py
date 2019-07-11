@@ -200,7 +200,7 @@ class MapmriModel(ReconstModel, Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> from dipy.data import dsi_voxels, default_sphere
         >>> from dipy.core.gradients import gradient_table
         >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
@@ -215,8 +215,7 @@ class MapmriModel(ReconstModel, Cache):
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
         >>> mapfit = map_model.fit(data)
-        >>> sphere = get_sphere('repulsion724')
-        >>> odf = mapfit.odf(sphere)
+        >>> odf = mapfit.odf(default_sphere)
         """
 
         if np.sum(gtab.b0s_mask) == 0:
