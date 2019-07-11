@@ -8,7 +8,7 @@ cimport numpy as np
 from dipy.core.geometry import cart2sphere
 from dipy.reconst import shm
 
-from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 
 cdef class PmfGen:
