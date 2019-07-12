@@ -1,17 +1,19 @@
 import numpy as np
-from dipy.data import get_gtab_taiwan_dsi
+import scipy.integrate as integrate
+
 from numpy.testing import (assert_,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            assert_raises,
                            run_module_suite)
-from dipy.reconst import qtdmri, mapmri
-from dipy.sims.voxel import MultiTensor
-from dipy.data import get_sphere
-from dipy.sims.voxel import add_noise
-import scipy.integrate as integrate
+
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
+from dipy.data import get_gtab_taiwan_dsi, get_sphere
+from dipy.reconst import qtdmri, mapmri
+from dipy.sims.voxel import multi_tensor, add_noise
+
+
 
 
 def generate_gtab4D(number_of_tau_shells=4, delta=0.01):
@@ -35,8 +37,8 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=1.0, angles=angl,
-                            fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(gtab, mevals, S0=1.0, angles=angl,
+                             fractions=[50, 50], snr=None)
     return S
 
 

@@ -1,17 +1,19 @@
 import numpy as np
-from dipy.data import get_gtab_taiwan_dsi
+from scipy.special import genlaguerre
+
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
+
+from dipy.data import get_gtab_taiwan_dsi, get_sphere
 from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
                                 shore_order)
-from dipy.sims.voxel import (
-    MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
-    multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
-from dipy.data import get_sphere
-from scipy.special import genlaguerre
+from dipy.sims.voxel import (multi_tensor, all_tensor_evecs, multi_tensor_odf,
+                             single_tensor_odf, multi_tensor_rtop,
+                             multi_tensor_msd, multi_tensor_pdf)
+
 
 
 def test_shore_metrics():
@@ -19,8 +21,8 @@ def test_shore_metrics():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angl = [(0, 0), (60, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
-                            fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(gtab, mevals, S0=100.0, angles=angl,
+                             fractions=[50, 50], snr=None)
 
     # test shore_indices
     n = 7
