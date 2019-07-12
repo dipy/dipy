@@ -362,6 +362,11 @@ def test_TriLinearInterpolator():
 
 
 def test_trilinear_interp_cubic_voxels():
+
+    def stepped_1d(arr_1d):
+        # Make a version of `arr_1d` which is not contiguous
+        return np.vstack((arr_1d, arr_1d)).ravel(order='F')[::2]
+
     A = np.ones((17, 17, 17))
     B = np.zeros(3)
     strides = np.array(A.strides, np.intp)
