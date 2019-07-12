@@ -9,7 +9,6 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               disperse_charges, _get_forces,
                               unit_octahedron, unit_icosahedron,
                               hemi_icosahedron)
-from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
 from numpy.testing.decorators import skipif
