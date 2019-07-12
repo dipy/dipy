@@ -8,17 +8,6 @@ from dipy.tracking.local.direction_getter cimport DirectionGetter
 cdef extern from "dpy_math.h" nogil:
     double dpy_rint(double x)
 
-def make_nd(array, N):
-    """Makes an array that's less than Nd - Nd
-
-    We need this because numpy 1.6 does not return a "c contiguous array"
-    when you call ``array(a, order='c', ndmin=N)``
-    """
-    if array.ndim > N:
-        raise ValueError()
-    new_shape = (1,) * (N - array.ndim) + array.shape
-    return array.reshape(new_shape)
-
 
 cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
     """Deterministic Direction Getter based on peak directions.
@@ -45,12 +34,10 @@ cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
         if self.peak_values.shape != self.peak_indices.shape:
             msg = "shapes of peak_values and peak_indices do not match"
             raise ValueError(msg)
-        self._qa = make_nd(np.array(self.peak_values, copy=False,
-                                   dtype='double', order='C'), 4)
-        self._ind = make_nd(np.array(self.peak_indices, copy=False,
-                                    dtype='double', order='C'), 4)
+        self._qa = np.ascontiguousarray(self.peak_values, dtype=np.double)
+        self._ind = np.ascontiguousarray(self.peak_indices, dtype=np.double)
         self._odf_vertices = np.array(self.sphere.vertices, copy=False,
-                                      dtype='double', order='C')
+                                      dtype=np.double, order='C')
 
         self.initialized = True
 
