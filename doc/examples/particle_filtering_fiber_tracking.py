@@ -7,8 +7,8 @@ volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
 It relies on a tissue classifier that identifies the tissue where the
 streamline stopped. If the streamline correctly stopped in the gray matter, the
-trajectory is kept. If the streamline incorrecly stopped in the white matter or
-in the corticospinal fluid, PFT uses anatomical information to find an
+trajectory is kept. If the streamline incorrectly stopped in the white matter
+or in the corticospinal fluid, PFT uses anatomical information to find an
 alternative streamline segment to extend the trajectory. When this segment is
 found, the tractography continues until the streamline correctly stops in the
 gray matter.

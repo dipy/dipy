@@ -61,7 +61,7 @@ signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
 evals_sph, evecs_sph = decompose_tensor(from_lower_triangular(dt_sph))
 params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
                              evecs_sph[2], kt_sph), axis=0)
-# Compute ground truth - since KT is spherical, appparent kurtosic coeficient
+# Compute ground truth - since KT is spherical, apparent kurtosis coefficient
 # for all gradient directions and mean kurtosis have to be equal to Kref_sph.
 f = 0.5
 Dg = f*Di + (1-f)*De
@@ -126,7 +126,7 @@ def test_dki_fits():
 
 
 def test_apparent_kurtosis_coef():
-    """ Apparent kurtosis coeficients are tested for a spherical kurtosis
+    """ Apparent kurtosis coefficients are tested for a spherical kurtosis
     tensor """
 
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])

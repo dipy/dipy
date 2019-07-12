@@ -200,7 +200,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
 
 
 def ndbincount(x, weights=None, shape=None):
-    """Like bincount, but for nd-indicies.
+    """Like bincount, but for nd-indices.
 
     Parameters
     ----------
@@ -761,10 +761,10 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear transformation equivalent to changing voxel order.
 
-    Calculates a linear tranformation A such that [a, b, c, 1] = A[x, y, z, 1].
-    where [x, y, z] is a point in the coordinate system defined by input_ornt
-    and [a, b, c] is the same point in the coordinate system defined by
-    output_ornt.
+    Calculates a linear transformation A such that [a, b, c, 1] =
+    A[x, y, z, 1], where [x, y, z] is a point in the coordinate system defined
+    by input_ornt and [a, b, c] is the same point in the coordinate system
+    defined by output_ornt.
 
     Parameters
     ----------
@@ -989,7 +989,7 @@ def reduce_rois(rois, include):
 
     Note
     ----
-    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    The include_roi and exclude_roi can be used to perform the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
     """
