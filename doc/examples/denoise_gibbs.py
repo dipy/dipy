@@ -12,20 +12,19 @@ different tissues types [1]_. Although this artefact affects MR images in
 general, in the context of diffusion-weighted imaging, Gibbs oscillations
 can be magnified in derived diffusion-based estimates [1]_, [2]_.
 
-In the following example, we show how to suppress Gibbs artefacts of MRI
-images. This algorithm is based on an adapted version of a sub-voxel
-Gibbs suppression procedure [3]_. Full details of the implemented algorithm
-can be found in the chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using
-this code).
+In the following example, we show how to suppress Gibbs artefacts of MR images.
+This algorithm is based on an adapted version of a sub-voxel Gibbs suppression
+procedure [3]_. Full details of the implemented algorithm can be found in
+chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using this code).
 
-In this example, we show how to suppress Gibbs of MR images. The algorithm to
-suppress Gibbs oscillations can be imported from the denoise module of dipy:
+The algorithm to suppress Gibbs oscillations can be imported from the denoise
+module of dipy:
 """
 
 from dipy.denoise.gibbs import gibbs_removal
 
 """ We first apply this algorithm to T1-weighted dataset which can be fetched
-using the following command lines.
+using the following code:
 """
 
 from dipy.data import fetch_tissue_data, read_tissue_data
@@ -128,7 +127,7 @@ fig1.savefig('Gibbs_suppression_structural.png')
    in the right panel.
 
 The image artificially corrupted with Gibb's artefacts is shown in the left
-panel. In this panels, the characteristic ringing profile of Gibbs artefacts
+panel. In this panel, the characteristic ringing profile of Gibbs artefacts
 can be visually appreciated (see intensity oscillations pointed by the red
 arrows). The corrected image is shown in the middle panel. One can appreciate
 that artefactual oscillations are visually suppressed without compromising
@@ -138,9 +137,8 @@ the right panel which highlights the suppressed Gibbs ringing profile.
 
 
 Now let's show how to use the Gibbs suppression algorithm in diffusion-weighted
-images. In this way, we fetch the multi-shell diffusion-weighted dataset which
-was kindly provided by Hansen and Jespersen [5]_:
-
+images. We fetch the multi-shell diffusion-weighted dataset which was kindly
+supplied by Valabregue Romain, CENIR, ICM, Paris [5]_.
 """
 
 from dipy.data import read_cenir_multib
@@ -162,8 +160,8 @@ can be performed in the following way:
 
 data_corrected = gibbs_removal(data_slices, slice_axis=2)
 
-""" Due to the high dimensionality of diffusion-weighted data, we recommend you
-to specify which is the axis of data matrix that corresponds to different
+""" Due to the high dimensionality of diffusion-weighted data, we recommend
+that you specify which is the axis of data matrix that corresponds to different
 slices in the above step. This is done by using the optional parameter
 'slice_axis'.
 
@@ -190,11 +188,11 @@ fig2.savefig('Gibbs_suppression_b0.png')
    :align: center
 
    Uncorrected (left panel) and corrected (middle panel) b-value=0 images. For
-   a reference, the difference between uncorrected and corrected images are
-   shown in the right panel.
+   reference, the difference between uncorrected and corrected images is shown
+   in the right panel.
 
-The above figure show that the benefits of suppressing Gibbs artefacts is hard
-to observed on b-value=0 data. Therefore, diffusion derived metrics for both
+The above figure shows that the benefits of suppressing Gibbs artefacts is hard
+to observe on b-value=0 data. Therefore, diffusion derived metrics for both
 uncorrected and corrected data are computed using the mean signal diffusion
 kurtosis image technique (:ref:`example_reconst_msdki`).
 
@@ -287,10 +285,9 @@ References
 .. [4] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
        Analysis and their Application to the Healthy Ageing Brain
        (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-.. [5] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast kurtosis
-       strategies, b-value optimization and exploration of diffusion MRI
-       contrast. Scientific Data 3: 160072.
-       https://doi.org/10.1038/sdata.2016.72
+.. [5] Romain, V. (2015). Diffusion MRI measured at multiple b-values.
+       Retrieved from:
+       https://digital.lib.washington.edu/researchworks/handle/1773/33311
 
 .. include:: ../links_names.inc
 """

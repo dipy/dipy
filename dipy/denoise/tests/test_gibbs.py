@@ -76,7 +76,7 @@ def test_gibbs_4d():
     assert_array_almost_equal(image4d_cor[:, :, 1, 1], image_cor)
 
 
-def test_swaped_gibbs_2d():
+def test_swapped_gibbs_2d():
     # 2D case: In this case slice_axis is a dummy variable. Since data is
     # already a single 2D image, to axis swapping is required
     image_cor0 = gibbs_removal(image_gibbs, slice_axis=0)
@@ -89,7 +89,7 @@ def test_swaped_gibbs_2d():
     assert_array_almost_equal(image_cor2, image_cor)
 
 
-def test_swaped_gibbs_3d():
+def test_swapped_gibbs_3d():
     image3d = np.zeros((6 * Nre, 2, 6 * Nre))
     image3d[:, 0, :] = image_gibbs
     image3d[:, 1, :] = image_gibbs
@@ -107,7 +107,7 @@ def test_swaped_gibbs_3d():
     assert_array_almost_equal(image3d_cor[1, :, :], image_cor)
 
 
-def test_swaped_gibbs_4d():
+def test_swapped_gibbs_4d():
     image4d = np.zeros((2, 6 * Nre, 6 * Nre, 2))
     image4d[0, :, :, 0] = image_gibbs
     image4d[1, :, :, 0] = image_gibbs

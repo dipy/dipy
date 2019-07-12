@@ -4,7 +4,7 @@ import numpy as np
 
 
 def _image_tv(x, axis=0, n_points=3):
-    """ Computes total variation (TV) of matrix x accross a given axis and
+    """ Computes total variation (TV) of matrix x across a given axis and
     along two directions.
 
     Parameters
@@ -19,9 +19,9 @@ def _image_tv(x, axis=0, n_points=3):
     Returns
     -------
     ptv : 2D ndarray
-        Total variation calculated from the right neighbours of each point
+        Total variation calculated from the right neighbours of each point.
     ntv : 2D ndarray
-        Total variation calculated from the left neighbours of each point
+        Total variation calculated from the left neighbours of each point.
     """
     xs = x.copy() if axis else x.T.copy()
 
@@ -53,11 +53,11 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     x : 2D ndarray
         Matrix x.
     axis : int (0 or 1)
-        Axis in which Gibbs oscillations will be suppressed. Default is set
-        to 0
+        Axis in which Gibbs oscillations will be suppressed.
+        Default is set to 0.
     n_points : int, optional
-        Number of neighbours to access local TV (see note). Default is set to
-        3.
+        Number of neighbours to access local TV (see note).
+        Default is set to 3.
 
     Returns
     -------
@@ -68,9 +68,9 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     ----
     This function suppresses the effects of Gibbs oscillations based on the
     analysis of local total variation (TV). Although artefact correction is
-    done based on two adjanced points for each voxel, total variation should be
-    accessed in a larger range of neighbours. The number of the neighbours to
-    be considered in TV calculation can be adjusted using parameter n_points.
+    done based on two adjacent points for each voxel, total variation should be
+    accessed in a larger range of neighbours. The number of neighbours to be
+    considered in TV calculation can be adjusted using the parameter n_points.
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
@@ -128,7 +128,7 @@ def _weights(shape):
     Parameters
     ----------
     shape : tuple
-        shape of the image
+        shape of the image.
 
     Returns
     -------
@@ -176,27 +176,24 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
         set to 3.
     G0 : 2D ndarray, optional.
         Weights for the image corrected along axis 0. If not given, the
-        function estimates them using function :func:`_weights`
+        function estimates them using the function :func:`_weights`.
     G1 : 2D ndarray
         Weights for the image corrected along axis 1. If not given, the
-        function estimates them using function :func:`_weights`
+        function estimates them using the function :func:`_weights`.
 
     Returns
     -------
     imagec : 2D ndarray
         Matrix with Gibbs oscillations reduced along axis a.
-    tv : 2D ndarray
-        Global TV which show variation not removed by the algorithm (edges,
-        anatomical variation, non-oscillatory component of Gibbs artefact
-        normally present in image background, etc.)
 
     Note
     ----
     This function suppresses the effects of Gibbs oscillations based on the
     analysis of local total variation (TV). Although artefact correction is
-    done based on two adjanced points for each voxel, total variation should be
-    accessed in a larger range of neighbours. The number of the neighbours to
-    be considered in TV calculation can be adjusted using parameter n_points.
+    done based on two adjacent points for each voxel, total variation should be
+    accessed in a larger range of neighbours. The number of neighbours to be
+    considered in TV calculation can be adjusted the using the parameter.
+    n_points.
 
     References
     ----------
@@ -229,11 +226,11 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     vol : ndarray ([X, Y]), ([X, Y, Z]) or ([X, Y, Z, g])
         Matrix containing one volume (3D) or multiple (4D) volumes of images.
     slice_axis : int (0, 1, or 2)
-        Data axis corresponding to the number of acquired slices. Default is
-        set to the third axis
+        Data axis corresponding to the number of acquired slices.
+        Default is set to the third axis.
     n_points : int, optional
-        Number of neighbour points to access local TV (see note). Default is
-        set to 3.
+        Number of neighbour points to access local TV (see note).
+        Default is set to 3.
 
     Returns
     -------
