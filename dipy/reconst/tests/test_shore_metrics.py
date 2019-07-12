@@ -11,8 +11,8 @@ from dipy.reconst.shore import (ShoreModel,
                                 shore_indices,
                                 shore_order)
 from dipy.sims.voxel import (multi_tensor, all_tensor_evecs, multi_tensor_odf,
-                             single_tensor_odf, multi_tensor_rtop,
-                             multi_tensor_msd, multi_tensor_pdf)
+                             multi_tensor_rtop, multi_tensor_msd,
+                             multi_tensor_pdf)
 
 
 
@@ -21,8 +21,8 @@ def test_shore_metrics():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angl = [(0, 0), (60, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0=100.0, angles=angl,
-                             fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, S0=100.0, angles=angl,
+                        fractions=[50, 50], snr=None)
 
     # test shore_indices
     n = 7

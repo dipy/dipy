@@ -37,8 +37,8 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = multi_tensor(gtab, mevals, S0=1.0, angles=angl,
-                             fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl,
+                        fractions=[50, 50], snr=None)
     return S
 
 

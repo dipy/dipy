@@ -185,12 +185,12 @@ def test_multivox_forecast():
     angl3 = [(0, 0), (90, 0)]
 
     S = np.zeros((3, 1, 1, len(gtab.bvals)))
-    S[0, 0, 0], sticks = multi_tensor(gtab, mevals, S0=1.0, angles=angl1,
-                                      fractions=[50, 50], snr=None)
-    S[1, 0, 0], sticks = multi_tensor(gtab, mevals, S0=1.0, angles=angl2,
-                                      fractions=[50, 50], snr=None)
-    S[2, 0, 0], sticks = multi_tensor(gtab, mevals, S0=1.0, angles=angl3,
-                                      fractions=[50, 50], snr=None)
+    S[0, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl1,
+                                 fractions=[50, 50], snr=None)
+    S[1, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl2,
+                                 fractions=[50, 50], snr=None)
+    S[2, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl3,
+                                 fractions=[50, 50], snr=None)
 
     fm = ForecastModel(gtab, sh_order=8,
                        dec_alg='CSD')

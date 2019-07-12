@@ -125,9 +125,9 @@ def test_multi_tensor():
 
     Ssingle = 0.5*s1 + 0.5*s2
 
-    S, sticks = multi_tensor(gtab, mevals, S0=100,
-                             angles=[(90, 45), (45, 90)],
-                             fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, S0=100,
+                        angles=[(90, 45), (45, 90)],
+                        fractions=[50, 50], snr=None)
 
     assert_array_almost_equal(S, Ssingle)
 
