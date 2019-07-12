@@ -1,6 +1,7 @@
 
 import numpy as np
 import numpy.testing as npt
+import warnings
 
 from scipy.ndimage.interpolation import map_coordinates
 from dipy.core.interpolation import (trilinear_interpolate4d,
