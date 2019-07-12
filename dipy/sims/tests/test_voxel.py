@@ -3,10 +3,9 @@ import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_, assert_almost_equal)
 
-from dipy.sims.voxel import (_check_directions, SingleTensor, MultiTensor,
-                             all_tensor_evecs, add_noise, single_tensor,
-                             sticks_and_ball, multi_tensor_dki,
-                             kurtosis_element, dki_signal)
+from dipy.sims.voxel import (_check_directions, all_tensor_evecs, add_noise,
+                             single_tensor, sticks_and_ball, multi_tensor_dki,
+                             kurtosis_element, dki_signal, multi_tensor)
 # from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
@@ -85,16 +84,16 @@ def test_sticks_and_ball():
     S, sticks = sticks_and_ball(gtab, d=d, S0=1, angles=[(0, 0), ],
                                 fractions=[100], snr=None)
     assert_array_equal(sticks, [[0, 0, 1]])
-    S_st = SingleTensor(gtab, 1, evals=[d, 0, 0], evecs=[[0, 0, 0],
-                                                         [0, 0, 0],
-                                                         [1, 0, 0]])
+    S_st = single_tensor(gtab, 1, evals=[d, 0, 0], evecs=[[0, 0, 0],
+                                                          [0, 0, 0],
+                                                          [1, 0, 0]])
     assert_array_almost_equal(S, S_st)
 
 
 def test_single_tensor():
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)
     evecs = np.eye(3)
-    S = SingleTensor(gtab, 100, evals, evecs, snr=None)
+    S = single_tensor(gtab, 100, evals, evecs, snr=None)
     assert_array_almost_equal(S[gtab.b0s_mask], 100)
     assert_(np.mean(S[~gtab.b0s_mask]) < 100)
 
@@ -126,8 +125,9 @@ def test_multi_tensor():
 
     Ssingle = 0.5*s1 + 0.5*s2
 
-    S, sticks = MultiTensor(gtab, mevals, S0=100, angles=[(90, 45), (45, 90)],
-                            fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(gtab, mevals, S0=100,
+                             angles=[(90, 45), (45, 90)],
+                             fractions=[50, 50], snr=None)
 
     assert_array_almost_equal(S, Ssingle)
 
