@@ -1,18 +1,20 @@
 import numpy as np
-from dipy.data import get_fnames, dsi_voxels
+from dipy.data import get_fnames, dsi_voxels, get_sphere
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
-from dipy.sims.voxel import SticksAndBall
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.core.sphere_stats import angular_similarity
+from dipy.sims.voxel import sticks_and_ball
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.data import get_sphere
+from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.reconst.odf import gfa
+from dipy.direction.peaks import peak_directions
+
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite)
-from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.odf import gfa
-from dipy.direction.peaks import peak_directions
+
+
 
 
 def test_gqi():
@@ -24,9 +26,9 @@ def test_gqi():
     bvals = btable[:, 0]
     bvecs = btable[:, 1:]
     gtab = gradient_table(bvals, bvecs)
-    data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                            S0=100, angles=[(0, 0), (90, 0)],
-                                            fractions=[50, 50], snr=None)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
     gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
 
     # symmetric724

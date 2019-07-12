@@ -205,11 +205,12 @@ class MapmriModel(ReconstModel, Cache):
         >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
-        >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(
-        ...                                     gtab, d=0.0015,
-        ...                                     S0=1, angles=[(0, 0), (90, 0)],
-        ...                                     fractions=[50, 50], snr=None)
+        >>> from dipy.sims.voxel import sticks_and_ball
+        >>> data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=1,
+        ...                                           angles=[(0, 0),
+        ...                                                   (90, 0)],
+        ...                                           fractions=[50, 50],
+        ...                                           snr=None)
         >>> from dipy.reconst.mapmri import MapmriModel
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
