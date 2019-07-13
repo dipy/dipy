@@ -19,7 +19,8 @@ def test_reconst_dti_nlls():
 
 
 def test_reconst_dti_fsl_tensor():
-    reconst_flow_core(ReconstDtiFlow, extra_args=[], extra_kwargs={'fsl_tensor': True})
+    reconst_flow_core(ReconstDtiFlow, extra_args=[],
+                      extra_kwargs={'fsl_tensor': True})
 
 
 def reconst_flow_core(flow, extra_args=[], extra_kwargs={}):
