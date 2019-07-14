@@ -1,8 +1,5 @@
 from __future__ import division
 import warnings
-from sklearn.linear_model import Lasso, LassoCV
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.metrics import r2_score
 from math import factorial
 import numpy as np
 from scipy.special import genlaguerre, gamma, hyp2f1
@@ -10,11 +7,14 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from .shm import real_sym_sh_brainsuite
 from dipy.core.geometry import cart2sphere
-
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-
+sklearn, have_sklearn, _ = optional_package("sklearn")
+if have_sklearn:
+    from sklearn.linear_model import Lasso, LassoCV
+    from sklearn.exceptions import ConvergenceWarning
+    from sklearn.metrics import r2_score
 
 class BrainSuiteShoreModel(Cache):
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
