@@ -189,12 +189,14 @@ class BrainSuiteShoreModel(Cache):
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = brainsuite_shore_basis(self.radial_order, self.zeta, self.gtab, self.tau)
+            M = brainsuite_shore_basis(
+                self.radial_order, self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
         MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
         if MpseudoInv is None:
             MpseudoInv = np.linalg.solve(
-                np.dot(M.T, M) + self.lambdaN * self.Nshore + self.lambdaL * self.Lshore,
+                np.dot(M.T, M) + self.lambdaN * self.Nshore
+                + self.lambdaL * self.Lshore,
                 M.T)
             self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
 
@@ -244,7 +246,8 @@ class BrainSuiteShoreModel(Cache):
 
 
 class BrainSuiteShoreFit():
-    def __init__(self, model, shore_coef, regularization=0, alpha=0., r2=0., cnr=0.):
+    def __init__(self, model, shore_coef, regularization=0,
+                 alpha=0., r2=0., cnr=0.):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -284,16 +287,20 @@ class BrainSuiteShoreFit():
 
         """
         # Create the grid in which to compute the pdf
-        rgrid_rtab = self.model.cache_get('pdf_grid', key=(gridsize, radius_max))
+        rgrid_rtab = self.model.cache_get(
+            'pdf_grid', key=(gridsize, radius_max))
         if rgrid_rtab is None:
             rgrid_rtab = create_rspace(gridsize, radius_max)
             self.model.cache_set('pdf_grid', (gridsize, radius_max), rgrid_rtab)
         rgrid, rtab = rgrid_rtab
 
-        psi = self.model.cache_get('shore_matrix_pdf', key=(gridsize, radius_max))
+        psi = self.model.cache_get(
+            'shore_matrix_pdf', key=(gridsize, radius_max))
         if psi is None:
-            psi = brainsuite_shore_matrix_pdf(self.radial_order, self.zeta, rtab)
-            self.model.cache_set('shore_matrix_pdf', (gridsize, radius_max), psi)
+            psi = brainsuite_shore_matrix_pdf(
+                self.radial_order, self.zeta, rtab)
+            self.model.cache_set(
+                'shore_matrix_pdf', (gridsize, radius_max), psi)
 
         propagator = np.dot(psi, self._shore_coef)
         eap = np.empty((gridsize, gridsize, gridsize), dtype=float)
@@ -308,44 +315,48 @@ class BrainSuiteShoreFit():
             results are cached for faster recalculation
         """
         if not r_points.flags.writeable:
-            psi = self.model.cache_get('shore_matrix_pdf', key=hash(r_points.data))
+            psi = self.model.cache_get(
+                'shore_matrix_pdf', key=hash(r_points.data))
         else:
             psi = None
         if psi is None:
-            psi = brainsuite_shore_matrix_pdf(self.radial_order, self.zeta, r_points)
+            psi = brainsuite_shore_matrix_pdf(
+                self.radial_order, self.zeta, r_points)
             if not r_points.flags.writeable:
-                self.model.cache_set('shore_matrix_pdf', hash(r_points.data), psi)
+                self.model.cache_set(
+                    'shore_matrix_pdf', hash(r_points.data), psi)
 
         eap = np.dot(psi, self._shore_coef)
 
         return np.clip(eap, 0, eap.max())
 
     def odf_sh(self):
-        r""" Calculates the real analytical ODF in terms of Spherical
-        Harmonics.
-        """
+        """ Calculates the real analytical ODF in
+        terms of Spherical Harmonics."""
         # Number of Spherical Harmonics involved in the estimation
         J = (self.radial_order + 1) * (self.radial_order + 2) // 2
 
         # Compute the Spherical Harmonics Coefficients
         c_sh = np.zeros(J)
         counter = 0
-
         for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
 
                     j = int(l + m + (2 * np.array(range(0, l, 2)) + 1).sum())
 
-                    Cnl = (((-1)**(n - l / 2)) / (2.0 * (4.0 * np.pi**2 * self.zeta)**
-                                                  (3.0 / 2.0)) *
-                           ((2.0 * (4.0 * np.pi**2 * self.zeta)**
-                             (3.0 / 2.0) * factorial(n - l)) / (gamma(n + 3.0 / 2.0)))**
-                           (1.0 / 2.0))
-                    Gnl = (gamma(l / 2 + 3.0 / 2.0) * gamma(3.0 / 2.0 + n)) / \
-                        (gamma(l + 3.0 / 2.0) * factorial(n - l)) * \
-                        (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
-                    Fnl = hyp2f1(-n + l, l / 2 + 3.0 / 2.0, l + 3.0 / 2.0, 2.0)
+                    Cnl = (
+                        ((-1)**(n - l / 2))
+                        / (2.0 * (4.0 * np.pi**2 * self.zeta) ** (3.0 / 2.0))
+                        * ((2.0 * (4.0 * np.pi**2 * self.zeta) ** (3.0 / 2.0)
+                            * factorial(n - l)) / (gamma(n + 3.0 / 2.0)))
+                        ** (1.0 / 2.0))
+                    Gnl = (
+                        gamma(l / 2 + 3.0 / 2.0) * gamma(3.0 / 2.0 + n)) \
+                        / (gamma(l + 3.0 / 2.0) * factorial(n - l)) \
+                        * (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
+                    Fnl = hyp2f1(
+                        -n + l, l / 2 + 3.0 / 2.0, l + 3.0 / 2.0, 2.0)
 
                     c_sh[j] += self._shore_coef[counter] * Cnl * Gnl * Fnl
                     counter += 1
@@ -357,7 +368,8 @@ class BrainSuiteShoreFit():
         """
         upsilon = self.model.cache_get('shore_matrix_odf', key=sphere)
         if upsilon is None:
-            upsilon = shore_matrix_odf(self.radial_order, self.zeta, sphere.vertices)
+            upsilon = shore_matrix_odf(
+                self.radial_order, self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
 
         odf = np.dot(upsilon, self._shore_coef)
@@ -396,10 +408,10 @@ class BrainSuiteShoreFit():
         rtop = 0
         c = self._shore_coef
         for n in range(int(self.radial_order / 2) + 1):
-            rtop += c[n] * (-1) ** n * \
-                ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) /
-                 (gamma(n + 1.5))) ** 0.5 * \
-                genlaguerre(n, 0.5)(0)
+            rtop += c[n] * (-1) ** n \
+                * ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n))
+                   / (gamma(n + 1.5))) ** 0.5 \
+                * genlaguerre(n, 0.5)(0)
 
         return np.clip(rtop, 0, rtop.max())
 
@@ -426,28 +438,25 @@ class BrainSuiteShoreFit():
         c = self._shore_coef
 
         for n in range(int(self.radial_order / 2) + 1):
-            msd += c[n] * (-1) ** n *\
-                (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6 * self.zeta ** 3.5 *
-                                         factorial(n))) ** 0.5 *\
-                hyp2f1(-n, 2.5, 1.5, 2)
+            msd += c[n] * (-1) ** n \
+                * (9 * (gamma(n + 1.5))
+                   / (8 * np.pi ** 6 * self.zeta ** 3.5
+                   * factorial(n))) ** 0.5 \
+                * hyp2f1(-n, 2.5, 1.5, 2)
 
         return np.clip(msd, 0, msd.max())
 
     def fitted_signal(self):
-        """ The fitted signal.
-        """
+        """ The fitted signal."""
         phi = self.model.cache_get('shore_matrix', key=self.model.gtab)
         return np.dot(phi, self._shore_coef)
 
     def predict(self, gtab, S0=100.):
-        r"""Recovers the reconstructed signal for any qvalue array or
-        gradient table.
-        """
+        """Recovers the reconstructed signal for any qvalue array or
+        gradient table."""
         qvals = np.sqrt(gtab.bvals / self.model.tau) / (2 * np.pi)
-        q = qvals[:, None] * gtab.bvecs
-
-        M = brainsuite_shore_basis(self.radial_order, self.zeta, gtab, self.model.tau)
-
+        M = brainsuite_shore_basis(
+            self.radial_order, self.zeta, gtab, self.model.tau)
         E = S0 * np.dot(M, self._shore_coef)
         return E
 
@@ -478,7 +487,8 @@ class BrainSuiteShoreFit():
 
 
 def _kappa(zeta, n, l):
-    return np.sqrt((2 * factorial(n - l)) / (zeta**1.5 * gamma(n + 1.5)))
+    return np.sqrt((2 * factorial(n - l))
+                   / (zeta**1.5 * gamma(n + 1.5)))
 
 
 def brainsuite_shore_basis(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
@@ -494,7 +504,8 @@ def brainsuite_shore_basis(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
     bvecs = gtab.bvecs
     qgradients = qvals[:, None] * bvecs
 
-    r, theta, phi = cart2sphere(qgradients[:, 0], qgradients[:, 1], qgradients[:, 2])
+    r, theta, phi = cart2sphere(
+        qgradients[:, 0], qgradients[:, 1], qgradients[:, 2])
     theta[np.isnan(theta)] = 0
 
     # Angular part of the basis - Spherical harmonics
@@ -507,9 +518,10 @@ def brainsuite_shore_basis(radial_order, zeta, gtab, tau=1 / (4 * np.pi**2)):
             for m in range(-l, l + 1):
                 # Radial part
                 R.append(
-                    genlaguerre(n - l, l + 0.5)(r**2 / zeta) * np.exp(
-                        -r**2 / (2.0 * zeta)) * _kappa(zeta, n, l) * (r**2 / zeta)**
-                    (l / 2))
+                    genlaguerre(n - l, l + 0.5)(r**2 / zeta)
+                    * np.exp(-r**2 / (2.0 * zeta))
+                    * _kappa(zeta, n, l)
+                    * (r**2 / zeta) ** (l / 2))
     R = np.column_stack(R)
     Snew = np.column_stack(Snew)
     Sh = R * Snew
@@ -537,7 +549,6 @@ def brainsuite_shore_matrix_pdf(radial_order, zeta, rtab):
 
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
     theta[np.isnan(theta)] = 0
-    F = radial_order / 2
     psi = []
 
     # Angular part of the basis - Spherical harmonics
@@ -549,18 +560,20 @@ def brainsuite_shore_matrix_pdf(radial_order, zeta, rtab):
             Snew.append(S[:, L == l])
             for m in range(-l, l + 1):
                 psi.append(
-                    genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
-                                                zeta * r ** 2) *\
-                    np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
-                    _kappa_pdf(zeta, n, l) * \
-                    (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
-                    (-1) ** (n - l / 2))
+                    genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2
+                                                * zeta * r ** 2)
+                    * np.exp(-2 * np.pi ** 2 * zeta * r ** 2)
+                    * _kappa_pdf(zeta, n, l)
+                    * (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2)
+                    * (-1) ** (n - l / 2))
 
     return np.column_stack(psi) * np.column_stack(Snew)
 
 
 def _kappa_pdf(zeta, n, l):
-    return np.sqrt((16 * np.pi**3 * zeta**1.5 * factorial(n - l)) / gamma(n + 1.5))
+    return np.sqrt(
+        (16 * np.pi**3 * zeta**1.5 * factorial(n - l))
+        / gamma(n + 1.5))
 
 
 def shore_matrix_odf(radial_order, zeta, sphere_vertices):
@@ -582,7 +595,8 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
     Image Analysis, 2013.
     """
 
-    r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1],
+    r, theta, phi = cart2sphere(sphere_vertices[:, 0],
+                                sphere_vertices[:, 1],
                                 sphere_vertices[:, 2])
     theta[np.isnan(theta)] = 0
     upsilon = []
@@ -595,21 +609,24 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
         for l in range(0, n + 1, 2):
             Snew.append(S[:, L == l])
             for m in range(-l, l + 1):
-                upsilon.append( (-1) ** (n - l / 2.0) * \
-                    _kappa_odf(zeta, n, l) * \
-                    hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0))
+                upsilon.append( (-1) ** (n - l / 2.0)
+                    * _kappa_odf(zeta, n, l) \
+                    * hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0))
 
     return np.column_stack(upsilon) * np.column_stack(Snew)
 
 
 def _kappa_odf(zeta, n, l):
     return np.sqrt(
-        (gamma(l / 2.0 + 1.5)**2 * gamma(n + 1.5) * 2**
-         (l + 3)) / (16 * np.pi**3 * (zeta)**1.5 * factorial(n - l) * gamma(l + 1.5)**2))
+        (gamma(l / 2.0 + 1.5)**2 * gamma(n + 1.5)
+         * 2 ** (l + 3))
+        / (16 * np.pi**3 * (zeta) ** 1.5
+           * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
 def create_rspace(gridsize, radius_max):
-    """ Create the real space table, that contains the points in which to compute the pdf.
+    """ Create the real space table, that contains the points in which
+    to compute the pdf.
 
     Parameters
     ----------

@@ -270,10 +270,10 @@ def real_sym_sh_brainsuite(sh_order, theta, phi):
           MRI of the brain", NeuroImage, 2013.
 
     """
-    def _legendre(n,X) :
+    def _legendre(n, X):
         res = []
         for m in range(n+1):
-            res.append(lpmv(m,n,X))
+            res.append(lpmv(m, n, X))
         return np.row_stack(res)
 
     # Original code used matlab conventions: convert dipy to matlab
@@ -281,27 +281,28 @@ def real_sym_sh_brainsuite(sh_order, theta, phi):
 
     # Adapted from BrainSuite's sph_harm_basis
     ndirs = len(phi)
-    nbases = int(1/2*(sh_order+1)*(sh_order+2))
-    S = np.zeros((ndirs,nbases))
-    S[:,0] = 1/np.sqrt(4*np.pi)
+    nbases = int(1 / 2 * (sh_order + 1) * (sh_order + 2))
+    S = np.zeros((ndirs, nbases))
+    S[:, 0] = 1 / np.sqrt(4 * np.pi)
     L = np.zeros(nbases)
     Z = np.zeros(nbases)
-    for ell in range(2, sh_order+1,2):
-        span = np.arange(ell+1)
-        Pell= (np.ones((ndirs,ell+1))*(np.sqrt((2*ell+1) \
-               / (4*np.pi)*factorial(ell-span) \
-               / factorial(ell+span)))) \
-              * _legendre(ell,np.cos(phi)).T \
-              * np.exp(np.complex(0,1)*theta*span[:,None]).T
-        span2 = np.arange(2,ell+2)
+    for ell in range(2, sh_order + 1, 2):
+        span = np.arange(ell + 1)
+        Pell = (np.ones((ndirs, ell + 1))
+                * (np.sqrt((2 * ell + 1)
+                           / (4 * np.pi) * factorial(ell - span)
+                           / factorial(ell + span)))) \
+                * _legendre(ell, np.cos(phi)).T \
+                * np.exp(np.complex(0, 1) * theta * span[:, None]).T
+        span2 = np.arange(2, ell + 2)
         Pell = np.column_stack([
-            np.sqrt(2)*np.real(Pell[:,1:])[:,::-1],
-            Pell[:,0],
-            np.sqrt(2)*(np.ones(ndirs)[:,None]*(-1)**span2) \
-            * np.imag(Pell[:,1:])])
-        start_index=int(ell*(ell-1)/2)
-        end_index = int((ell+1)*(ell+2)/2)
-        S[:,start_index:end_index] = Pell
+            np.sqrt(2) * np.real(Pell[:, 1:])[:, ::-1],
+            Pell[:, 0],
+            np.sqrt(2) * (np.ones(ndirs)[:, None]*(-1) ** span2)
+            * np.imag(Pell[:, 1:])])
+        start_index = int(ell * (ell - 1) / 2)
+        end_index = int((ell + 1) * (ell + 2) / 2)
+        S[:, start_index:end_index] = Pell
         L[start_index:end_index] = ell
         Z[start_index:end_index] = np.arange(-ell, ell+1)
     return S, Z, L
