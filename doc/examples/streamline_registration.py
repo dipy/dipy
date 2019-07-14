@@ -40,7 +40,7 @@ The second one will be the T2-contrast MNI template image.
 from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
 
 fetch_mni_template()
-img_t2_mni = read_mni_template("a", contrast = "T2")
+img_t2_mni = read_mni_template("a", contrast="T2")
 
 """
 We filter the diffusion data from the Stanford HARDI dataset to find the b0
@@ -60,9 +60,10 @@ We then remove the skull from the b0's.
 
 from dipy.segment.mask import median_otsu
 
-b0_masked_stanford, _ = median_otsu(b0_data_stanford,
-                                    vol_idx=[i for i in range(b0_data_stanford.shape[-1])],
-                                    median_radius=4, numpass=4)
+b0_masked_stanford, _ = \
+    median_otsu(b0_data_stanford,
+                vol_idx=[i for i in range(b0_data_stanford.shape[-1])],
+                median_radius=4, numpass=4)
 
 """
 And go on to compute the Stanford HARDI dataset mean b0 image.
@@ -225,6 +226,7 @@ from dipy.viz import window, actor, have_fury
 
 from time import sleep
 
+
 def show_both_bundles(bundles, colors=None, show=True, fname=None):
 
     renderer = window.Renderer()
@@ -239,6 +241,7 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
     if fname is not None:
         sleep(1)
         window.record(renderer, n_frames=1, out_path=fname, size=(900, 900))
+
 
 if have_fury:
     """
