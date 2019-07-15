@@ -16,6 +16,12 @@ The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
 if you are providing a 4D volume, `vol_idx` is now a required argument.
 The order of parameters has also changed.
 
+**Simulation**
+
+``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
+``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
+``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
+
 
 DIPY 0.16 Changes
 -----------------

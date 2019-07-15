@@ -114,16 +114,16 @@ class ForecastModel(OdfModel, Cache):
 
         >>> from dipy.data import get_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
-        >>> from dipy.sims.voxel import MultiTensor
+        >>> from dipy.sims.voxel import multi_tensor
         >>> mevals = np.array(([0.0017, 0.0003, 0.0003], 
         ...                    [0.0017, 0.0003, 0.0003]))
         >>> angl = [(0, 0), (60, 0)]
-        >>> data, sticks = MultiTensor(gtab,
-        ...                            mevals,
-        ...                            S0=100.0,
-        ...                            angles=angl,
-        ...                            fractions=[50, 50],
-        ...                            snr=None)
+        >>> data, sticks = multi_tensor(gtab,
+        ...                             mevals,
+        ...                             S0=100.0,
+        ...                             angles=angl,
+        ...                             fractions=[50, 50],
+        ...                             snr=None)
         >>> from dipy.reconst.forecast import ForecastModel
         >>> fm = ForecastModel(gtab, sh_order=6)
         >>> f_fit = fm.fit(data)

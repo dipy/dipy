@@ -4,15 +4,13 @@ from numpy.testing import (assert_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-from dipy.data import get_fnames, dsi_deconv_voxels
+from dipy.data import get_fnames, dsi_deconv_voxels, get_sphere
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
-from dipy.sims.voxel import SticksAndBall
+from dipy.sims.voxel import sticks_and_ball
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
-from dipy.data import get_sphere
-from numpy.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
@@ -25,9 +23,9 @@ def test_dsi():
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_fnames('dsi515btable'))
     gtab = gradient_table(btable[:, 0], btable[:, 1:])
-    data, golden_directions = SticksAndBall(gtab, d=0.0015,
-                                            S0=100, angles=[(0, 0), (90, 0)],
-                                            fractions=[50, 50], snr=None)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
 
     ds = DiffusionSpectrumDeconvModel(gtab)
 

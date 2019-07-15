@@ -7,7 +7,7 @@ from scipy.special import genlaguerre, gamma
 
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shore import ShoreModel
-from dipy.sims.voxel import MultiTensor
+from dipy.sims.voxel import multi_tensor
 
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
@@ -31,9 +31,9 @@ def setup():
     data.mevals = np.array(([0.0015, 0.0003, 0.0003],
                             [0.0015, 0.0003, 0.0003]))
     data.angl = [(0, 0), (60, 0)]
-    data.S, sticks = MultiTensor(
-        data.gtab, data.mevals, S0=100.0, angles=data.angl,
-        fractions=[50, 50], snr=None)
+    data.S, sticks = multi_tensor(data.gtab, data.mevals, S0=100.0,
+                                  angles=data.angl, fractions=[50, 50],
+                                  snr=None)
     data.radial_order = 6
     data.zeta = 700
     data.lambdaN = 1e-12
