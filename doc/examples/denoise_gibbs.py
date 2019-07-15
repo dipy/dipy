@@ -203,7 +203,8 @@ compute a brain mask.
 # Create a brain mask
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data_slices, 4, 2, False, vol_idx=[0, 1],
+maskdata, mask = median_otsu(data_slices, vol_idx=range(10, 50), 
+                             median_radius=3, numpass=1, autocrop=False,
                              dilate=1)
 
 # Define mean signal diffusion kurtosis model
