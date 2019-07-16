@@ -39,12 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-
 Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
+- :ref:`example_denoise_gibbs`
 
 Reslice
 ~~~~~~~
