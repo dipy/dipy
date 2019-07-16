@@ -11,7 +11,7 @@ from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
 
-is_big_endian = 'big' in sys.byteorder
+is_big_endian = 'big' in sys.byteorder.lower()
 
 
 def setup_module():
