@@ -4,9 +4,9 @@ from __future__ import division, print_function, absolute_import
 from dipy.utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have fury
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
-if have_fury:
+if has_fury:
     from dipy.viz import utils, vtk
 
 

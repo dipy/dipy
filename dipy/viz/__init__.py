@@ -10,7 +10,7 @@ fury, has_fury, _ = optional_package(
     "https://fury.gl/")
 
 
-if have_fury:
+if has_fury:
     from fury import actor, window, colormap, interactor, ui, utils
     from fury.window import vtk
     from fury.data import (fetch_viz_icons, read_viz_icons,
