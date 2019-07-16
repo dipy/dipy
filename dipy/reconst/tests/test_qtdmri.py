@@ -9,10 +9,9 @@ from numpy.testing import (assert_,
                            run_module_suite)
 import pytest
 from dipy.reconst import qtdmri, mapmri
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_gtab_taiwan_dsi
 from dipy.sims.voxel import multi_tensor, add_noise
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
-from dipy.data import get_gtab_taiwan_dsi, get_spher
 
 
 def generate_gtab4D(number_of_tau_shells=4, delta=0.01):

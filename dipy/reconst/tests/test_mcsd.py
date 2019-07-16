@@ -2,6 +2,7 @@ from dipy.reconst.mcsd import MultiShellDeconvModel, MultiShellResponse
 from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.sims.voxel import (multi_tensor, single_tensor)
 from dipy.reconst import shm
@@ -10,9 +11,6 @@ from dipy.core.gradients import GradientTable
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
-
-needs_cvxpy = npt.dec.skipif(not have_cvxpy)
-
 
 csf_md = 3e-3
 gm_md = .76e-3
@@ -54,7 +52,7 @@ def _expand(m, iso, coeff):
     return params
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="CVXPY not available")
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
@@ -83,7 +81,7 @@ def test_mcsd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="CVXPY not available")
 def test_compartments():
     # test for failure if no. of compartments less than 2
     gtab = get_3shell_gtab()
@@ -92,7 +90,7 @@ def test_compartments():
     npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="CVXPY not available")
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
