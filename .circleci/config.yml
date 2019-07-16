@@ -42,11 +42,6 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
-      # run tests!
-      # this example uses Django's built-in test-runner
-      # other common Python testing frameworks include pytest and nose
-      # https://pytest.org
-      # https://nose.readthedocs.io
       - run:
           name: build docs
           command: |
@@ -70,49 +65,3 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
-    macos:
-      xcode: "10.0.0" # indicate our selected version of Xcode
-    steps:
-      - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-      - run:
-          name: install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-            pip install -e .
-            pip install -r requirements-dev.txt
-            pip install -r requirements-optional.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      # run tests!
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            export COVERAGE=1
-            export VTK=1
-            export TEST_WITH_XVFB=true
-            export MESA_GL_VERSION_OVERRIDE=3.3
-            export LIBGL_ALWAYS_INDIRECT=y
-
-            pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
-          no_output_timeout: 1200
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
-
-
