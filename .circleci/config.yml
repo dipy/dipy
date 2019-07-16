@@ -42,12 +42,12 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
-      - run:
-          name: build docs
-          command: |
-            . venv/bin/activate
-            cd doc
-            make html
+      # - run:
+      #     name: build docs
+      #     command: |
+      #       . venv/bin/activate
+      #       cd doc
+      #       make html
 
       - run:
           name: run tests
