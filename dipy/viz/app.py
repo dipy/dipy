@@ -4,9 +4,9 @@ from dipy.tracking.streamline import length, Streamlines
 from dipy.io.streamline import save_trk
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
-if have_fury:
+if has_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label
