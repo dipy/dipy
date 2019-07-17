@@ -14,7 +14,10 @@ a spherical grid.
 
 The basic idea with this method is that if we could estimate the response
 function of a single fiber then we could deconvolve the measured signal and
-obtain the underlying fiber distribution.
+obtain the underlying fiber distribution. The reconstruction of the fiber
+orientation distribution function (fODF) in CSD involves, therefore, two steps:
+    1. Estimation of the fiber response function
+    2. Use the response function to reconstruct the fODF
 
 Let's first load the data. We will use a dataset with 10 b0s and 150 non-b0s
 with b-value 2000.
@@ -31,16 +34,22 @@ data = img.get_data()
 
 """
 You can verify the b-values of the datasets by looking at the attribute
-``gtab.bvals``.
+``gtab.bvals``. Now that we loaded a datasets with multiple gradient directions
+on a sphere, code to perform the two CSD steps is presented below:
 
-In CSD there is an important pre-processing step: the estimation of the fiber
-response function. In order to do this we look for regions of the brain where
-it is known that there are single coherent fiber populations. For example if we
-use an ROI at the center of the brain, we will find single fibers from the
-corpus callosum. The ``auto_response`` function will calculate FA for an ROI of
-radius equal to ``roi_radius`` in the center of the volume and return the
-response function estimated in that region for the voxels with FA higher than
-0.7.
+## Step 1. Estimation of the fiber response function.
+
+There are many strategies to estimate the fiber response function. Here two
+different strategies are presented.
+
+**Strategy 1 - response function from a local brain region** One simple
+way to estimate the fiber response function is to look for regions of the brain
+where it is known that there are single coherent fiber populations.
+For example, if we use an ROI at the center of the brain, we will find single
+fibers from the corpus callosum. The ``auto_response`` function will calculate
+FA for an ROI of radius equal to ``roi_radius`` in the center of the volume and
+return the response function estimated in that region for the voxels with FA
+higher than 0.7.
 """
 
 from dipy.reconst.csdeconv import auto_response
@@ -63,9 +72,9 @@ print(response)
 (array([ 0.0014,  0.00029,  0.00029]), 416.206)
 
 The tensor generated from the response must be prolate (two smaller eigenvalues
-should be equal) and look anisotropic with a ratio of second to first eigenvalue
-of about 0.2. Or in other words, the axial diffusivity of this tensor should
-be around 5 times larger than the radial diffusivity.
+should be equal) and look anisotropic with a ratio of second to first
+eigenvalue of about 0.2. Or in other words, the axial diffusivity of this
+tensor should be around 5 times larger than the radial diffusivity.
 """
 
 print(ratio)
@@ -109,8 +118,9 @@ if interactive:
 ren.rm(response_actor)
 
 """
-Depending on the dataset, FA threshold may not be the best way to find the
-best possible response function. For one, it depends on the diffusion tensor
+**Strategy 2 - response function from global brain** Depending
+on the dataset, FA threshold may not be the best way to find the best possible
+response function. For one, it depends on the diffusion tensor
 (FA and first eigenvector), which has lower accuracy at high
 b-values. Alternatively, the response function can be calibrated in a
 data-driven manner [Tax2014]_.
@@ -126,8 +136,8 @@ reached. Here we calibrate the response function on a small part of the data.
 from dipy.reconst.csdeconv import recursive_response
 
 """
-A WM mask can shorten computation time for the whole dataset. Here it is created
-based on the DTI fit.
+A WM mask can shorten computation time for the whole dataset. Here it is
+created based on the DTI fit.
 """
 
 import dipy.reconst.dti as dti
@@ -153,7 +163,8 @@ like  a pancake:
 response_signal = response.on_sphere(sphere)
 # transform our data from 1D to 4D
 response_signal = response_signal[None, None, None, :]
-response_actor = actor.odf_slicer(response_signal, sphere=sphere, colormap='plasma')
+response_actor = actor.odf_slicer(response_signal, sphere=sphere,
+                                  colormap='plasma')
 
 ren = window.Renderer()
 
@@ -174,8 +185,11 @@ if interactive:
 ren.rm(response_actor)
 
 """
-Now, that we have the response function, we are ready to start the deconvolution
-process. Let's import the CSD model and fit the datasets.
+## Step 2. fODF reconstruction
+
+After estimating a response function for one of the strategies shown above, 
+we are ready to start the deconvolution process. Let's import the CSD model
+and fit the datasets.
 """
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
