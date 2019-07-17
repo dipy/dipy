@@ -142,7 +142,8 @@ transformed = affine_map.transform(moving)
 
 """
 We now perform the non-rigid deformation using the Symmetric Diffeomorphic
-Registration (SyN) Algorithm:
+Registration (SyN) Algorithm proposed by Avants et al. [Avants09]_ (also
+implemented in the ANTs software [Avants11]_):
 
 """
 
@@ -269,3 +270,20 @@ from dipy.io.streamline import save_trk
 
 save_trk("warped-lr-superiorfrontal.trk", warped_streamlines,
          affine_map.affine)
+
+
+"""
+References
+----------
+
+.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+   Symmetric Diffeomorphic Image Registration with Cross-Correlation:
+   Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
+   26-41.
+
+.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
+   Normalization Tools (ANTS), 1-35.
+
+.. include:: ../links_names.inc
+
+"""
