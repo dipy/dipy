@@ -42,26 +42,27 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
-      # - run:
-      #     name: build docs
-      #     command: |
-      #       . venv/bin/activate
-      #       cd doc
-      #       make html
-
       - run:
-          name: run tests
+          no_output_timeout: 30m
+          name: build docs
           command: |
             . venv/bin/activate
-            export COVERAGE=1
-            export VTK=1
-            export TEST_WITH_XVFB=true
-            export MESA_GL_VERSION_OVERRIDE=3.3
-            export LIBGL_ALWAYS_INDIRECT=y
+            cd doc
+            make html
 
-            pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
-          no_output_timeout: 1200
+      # - run:
+      #     name: run tests
+      #     command: |
+      #       . venv/bin/activate
+      #       export COVERAGE=1
+      #       export VTK=1
+      #       export TEST_WITH_XVFB=true
+      #       export MESA_GL_VERSION_OVERRIDE=3.3
+      #       export LIBGL_ALWAYS_INDIRECT=y
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+      #       pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
+      #     no_output_timeout: 1200
+
+      # - store_artifacts:
+      #     path: test-reports
+      #     destination: test-reports
