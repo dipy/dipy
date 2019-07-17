@@ -28,10 +28,6 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 needs_cvxpy = dec.skipif(not have_cvxpy)
 
 
-pytestmark = pytest.mark.filterwarnings("always", message=".*",
-                                        category=UserWarning)
-
-
 def setup_module():
     global gtab, ivim_fit_single, ivim_model_LM, data_single, params_LM, \
         data_multi, ivim_params_LM, D_star, D, f, S0, gtab_with_multiple_b0, \
