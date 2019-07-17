@@ -63,7 +63,7 @@ dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
 
 """
 Threshold Tissue Classifier
----------------------------
+===========================
 A scalar map can be used to define where the tracking stops. The threshold
 tissue classifier uses a scalar map to stop the tracking whenever the
 interpolated scalar value is lower than a fixed threshold. Here, we show
@@ -146,7 +146,7 @@ if have_fury:
 
 """
 Binary Tissue Classifier
-------------------------
+========================
 A binary mask can be used to define where the tracking stops. The binary
 tissue classifier stops the tracking whenever the tracking position is outside
 the mask. Here, we show how to obtain the binary tissue classifier from
@@ -218,7 +218,7 @@ if have_fury:
 
 """
 ACT Tissue Classifier
----------------------
+=====================
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
 anatomical images to determine when the tractography stops. The ``include_map``
 defines when the streamline reached a 'valid' stopping region (e.g. gray

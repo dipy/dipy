@@ -1,8 +1,8 @@
 """
 
-=============================================
+============================================
 SNR estimation for Diffusion-Weighted Images
-=============================================
+============================================
 
 Computing the Signal-to-Noise-Ratio (SNR) of DW images is still an open
 question, as SNR depends on the white matter structure of interest as well as

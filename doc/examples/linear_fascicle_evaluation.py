@@ -1,7 +1,7 @@
 """
-=================================================
+=================================
 Linear fascicle evaluation (LiFE)
-=================================================
+=================================
 
 Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography

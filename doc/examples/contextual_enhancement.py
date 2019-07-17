@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-==============================================
+==========================================
 Crossing-preserving contextual enhancement
-==============================================
+==========================================
 
 This demo presents an example of crossing-preserving contextual enhancement of
 FOD/ODF fields [Meesters2016]_, implementing the contextual PDE framework

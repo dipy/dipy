@@ -1,9 +1,9 @@
 """
 .. _sfm-track:
 
-==================================================
+=======================================
 Tracking with the Sparse Fascicle Model
-==================================================
+=======================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
 Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
