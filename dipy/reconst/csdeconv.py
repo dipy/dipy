@@ -109,7 +109,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
                Probabilistic Tractography Based on Complex Fibre Orientation
                Distributions
-        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer:
+        .. [3] Côté, M-A., et al. Medical Image Analysis 2013. Tractometer:
                Towards validation of tractography pipelines
         .. [4] Tournier, J.D, et al. Imaging Systems and Technology
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions

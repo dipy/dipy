@@ -281,7 +281,7 @@ regtools.overlay_slices(static, transformed, None, 2,
               free-form deformations. IEEE Transactions on Medical Imaging,
               22(1), 120-8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-              Normalization Tools ( ANTS ), 1-35.
+              Normalization Tools (ANTS), 1-35.
 
 .. include:: ../links_names.inc
 
