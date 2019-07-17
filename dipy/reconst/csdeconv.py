@@ -61,7 +61,7 @@ class AxSymShResponse(object):
 class ConstrainedSphericalDeconvModel(SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
-                 tau=0.1):
+                 tau=0.1, convergence=50):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
         Spherical deconvolution computes a fiber orientation distribution
@@ -99,6 +99,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             zero. However, to improve the stability of the algorithm, tau is
             set to tau*100 % of the mean fODF amplitude (here, 10% by default)
             (see [1]_). Default: 0.1
+        convergence : int
+            Maximum number of iterations to allow the deconvolution to converge.
 
         References
         ----------
@@ -174,6 +176,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg *= lambda_
         self.sh_order = sh_order
         self.tau = tau
+        self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
         self._P = np.dot(X.T, X)
 
@@ -181,7 +184,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
     def fit(self, data):
         dwi_data = data[self._where_dwi]
         shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
-                                P=self._P)
+                                convergence=self.convergence, P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
     def predict(self, sh_coeff, gtab=None, S0=1.):
