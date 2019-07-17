@@ -169,7 +169,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
         Cross-Correlation: Evaluating Automated Labeling of Elderly and
         Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools ( ANTS ), 1-35.
+        Normalization Tools (ANTS), 1-35.
     """
     cdef:
         cnp.npy_intp ns = static.shape[0]
@@ -387,7 +387,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
         Cross-Correlation: Evaluating Automated Labeling of Elderly and
         Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools ( ANTS ), 1-35.
+        Normalization Tools (ANTS), 1-35.
     """
     cdef:
         cnp.npy_intp ns = grad_static.shape[0]
@@ -459,7 +459,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                Cross-Correlation: Evaluating Automated Labeling of Elderly and
                Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     [Avants11]_ Avants, B. B., Tustison, N., & Song, G. (2011).
-               Advanced Normalization Tools ( ANTS ), 1-35.
+               Advanced Normalization Tools (ANTS), 1-35.
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:
@@ -534,7 +534,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
         Cross-Correlation: Evaluating Automated Labeling of Elderly and
         Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools ( ANTS ), 1-35.
+        Normalization Tools (ANTS), 1-35.
     """
     ftype = np.asarray(static).dtype
     cdef:
@@ -709,7 +709,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
         Cross-Correlation: Evaluating Automated Labeling of Elderly and
         Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools ( ANTS ), 1-35.
+        Normalization Tools (ANTS), 1-35.
     """
     cdef:
         cnp.npy_intp nr = grad_static.shape[0]
@@ -775,7 +775,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
         Cross-Correlation: Evaluating Automated Labeling of Elderly and
         Neurodegenerative Brain, Med Image Anal. 12(1), 26-41.
     .. [Avants2011]_ Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-        Normalization Tools ( ANTS ), 1-35.
+        Normalization Tools (ANTS), 1-35.
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:
