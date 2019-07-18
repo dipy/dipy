@@ -57,10 +57,12 @@ def test_density_map():
     expected = np.zeros(shape)
     expected[x, x, x] = 1.
     expected[0, 0, 0] += 1
-    dm = density_map(streamlines, vol_dims=shape, affine=np.eye(4)*2)
+    affine = np.eye(4) * 2
+    affine[:3, 3] = 0.05
+    dm = density_map(streamlines, vol_dims=shape, affine=affine)
     npt.assert_array_equal(dm, expected)
     # should work with a generator
-    dm = density_map(iter(streamlines), vol_dims=shape, affine=np.eye(4)*2)
+    dm = density_map(iter(streamlines), vol_dims=shape, affine=affine)
     npt.assert_array_equal(dm, expected)
 
     # Test passing affine
