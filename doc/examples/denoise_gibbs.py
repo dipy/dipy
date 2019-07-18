@@ -138,7 +138,7 @@ the right panel which highlights the suppressed Gibbs ringing profile.
 
 Now let's show how to use the Gibbs suppression algorithm in diffusion-weighted
 images. We fetch the multi-shell diffusion-weighted dataset which was kindly
-supplied by Valabregue Romain, CENIR, ICM, Paris [5]_.
+supplied by Romain Valabrègue, CENIR, ICM, Paris [5]_.
 """
 
 from dipy.data import read_cenir_multib
@@ -286,7 +286,7 @@ References
 .. [4] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
        Analysis and their Application to the Healthy Ageing Brain
        (Doctoral thesis). https://doi.org/10.17863/CAM.29356
-.. [5] Romain, V. (2015). Diffusion MRI measured at multiple b-values.
+.. [5] Valabrègue, R. (2015). Diffusion MRI measured at multiple b-values.
        Retrieved from:
        https://digital.lib.washington.edu/researchworks/handle/1773/33311
 
