@@ -8,7 +8,8 @@ applying non-rigid deformations.
 
 At times we will be interested in bringing a set of streamlines into some
 common, reference space to compute statistics out of the registered
-streamlines.
+streamlines. For a discussion on the effects of spatial normalization
+approaches on tractography the work by Green et al. [Greene17]_ can be read.
 
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal
@@ -33,7 +34,7 @@ else:
     data = hardi_img.get_data()
 
 """
-The second one will be the T2-contrast MNI template image.
+The second one will be the template FA map from the HCP1065 dataset:
 
 """
 
@@ -74,9 +75,27 @@ mean_b0_masked_stanford = np.mean(b0_masked_stanford, axis=3,
                                   dtype=data.dtype)
 
 """
-We will register the mean b0 to the MNI T2 image template non-rigidly to
-obtain the deformation field that will be applied to the streamlines. We will
-first perform an affine registration to roughly align the two volumes:
+We use the mean b0 image, along with the HARDI data itself to estimate an FA
+image.
+
+"""
+
+from dipy.reconst.dti import TensorModel
+from dipy.reconst.dti import fractional_anisotropy
+
+print('Generating simple tensor FA image to use for registrations...')
+B0_mask_data = mean_b0_masked_stanford.astype('bool')
+hardi_img_affine = hardi_img.affine
+model = TensorModel(gtab)
+mod = model.fit(data, B0_mask_data)
+FA = fractional_anisotropy(mod.evals)
+FA[np.isnan(FA)] = 0
+
+
+"""
+We will register the mean b0 to the template FA map non-rigidly to obtain the
+deformation field that will be applied to the streamlines. We will first
+perform an affine registration to roughly align the two volumes:
 
 """
 
@@ -195,22 +214,18 @@ streamlines, hdr = load_trk('lr-superiorfrontal.trk')
 
 """
 We then apply the obtained deformation field to the streamlines. We first
-apply the computed affine transformation, and then the non-rigid warping:
+apply the non-rigid warping and then apply the computed affine transformation
+whose extents must be corrected to account for the different voxel grids of
+the moving and static images:
 
 """
 
-from dipy.tracking.streamline import deform_streamlines
+from dipy.tracking.streamline import deform_streamlines, Streamlines
 
 from dipy.tracking.utils import move_streamlines
 
-rotation, scale = np.linalg.qr(affine_map.affine)
-streams = move_streamlines(streamlines, rotation)
-scale[0:3, 0:3] = np.dot(scale[0:3, 0:3], np.diag(1. / hdr['voxel_sizes']))
-scale[0:3, 3] = abs(scale[0:3, 3])
-affine_streamlines = move_streamlines(streamlines, scale)
-
 warped_streamlines = \
-    deform_streamlines(affine_streamlines,
+    deform_streamlines(streamlines,
                        deform_field=mapping.get_forward_field(),
                        stream_to_current_grid=moving_affine,
                        current_grid_to_world=mapping.codomain_grid2world,
@@ -218,25 +233,36 @@ warped_streamlines = \
                        ref_grid_to_world=mapping.domain_grid2world)
 
 
+adjusted_affine = moving_affine.copy()
+adjusted_affine[0][3] = -adjusted_affine[0][3] - static_affine[0][3]
+adjusted_affine[1][3] = -adjusted_affine[1][3] + static_affine[1][3]
+adjusted_affine[2][3] = -adjusted_affine[2][3] + static_affine[2][3]
+
+rotation, scale = np.linalg.qr(affine_map.affine)
+streams = move_streamlines(streamlines, rotation)
+scale[0:3, 0:3] = np.dot(scale[0:3, 0:3], np.diag(1. / hdr['voxel_sizes']))
+scale[0:3, 3] = abs(scale[0:3, 3])*1. / hdr['voxel_sizes'][0]
+
+affine_streamlines = Streamlines(move_streamlines(warped_streamlines, scale))
+
+
 """
 We display the original streamlines and the registered streamlines:
 
 """
 
-from dipy.viz import window, actor, have_fury
+from dipy.viz import has_fury
 
-from time import sleep
-
-
-def show_both_bundles(bundles, colors=None, show=True, fname=None):
+def show_template_bundles(bundles, show=True, fname=None):
 
     renderer = window.Renderer()
-    for (i, bundle) in enumerate(bundles):
-        color = colors[i]
-        lines_actor = actor.streamtube(bundle, color, linewidth=0.3)
-        lines_actor.RotateX(-90)
-        lines_actor.RotateZ(90)
-        renderer.add(lines_actor)
+    template_img_data = img_t2_mni.get_data().astype('bool')
+    template_actor = actor.contour_from_roi(template_img_data,
+                                            color=(50, 50, 50), opacity=0.05)
+    renderer.add(template_actor)
+    lines_actor = actor.streamtube(bundles, window.colors.orange,
+                                   linewidth=0.3)
+    renderer.add(lines_actor)
     if show:
         window.show(renderer)
     if fname is not None:
@@ -244,7 +270,15 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
         window.record(renderer, n_frames=1, out_path=fname, size=(900, 900))
 
 
-if have_fury:
+if has_fury:
+
+    from dipy.viz import window, actor
+
+    from time import sleep
+
+    show_template_bundles(affine_streamlines, show=False,
+                          fname='streamline_registration.png')
+
     """
     .. figure:: streamline_registration.png
        :align: center
@@ -255,11 +289,6 @@ if have_fury:
     to the MNI template space.
 
     """
-
-    show_both_bundles([streamlines, warped_streamlines],
-                      colors=[window.colors.orange, window.colors.red],
-                      show=False,
-                      fname='streamline_registration.png')
 
 """
 Finally, we save the registered streamlines:
@@ -283,6 +312,10 @@ References
 
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
    Normalization Tools (ANTS), 1-35.
+
+.. [Greene17] Greene, C., Cieslak, M., & Grafton, S. T. (2017). Effect of
+   different spatial normalization approaches on tractography and structural
+   brain networks. Network Neuroscience, 1-19.
 
 .. include:: ../links_names.inc
 
