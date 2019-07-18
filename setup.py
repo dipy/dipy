@@ -226,15 +226,16 @@ def main(**extra_args):
                     'dipy.workflows.tests'],
 
           ext_modules=EXTS,
+          python_requires=">= 3.5"
           # The package_data spec has no effect for me (on python 2.6) -- even
-          # changing to data_files doesn't get this stuff included in the source
-          # distribution -- not sure if it has something to do with the magic
-          # above, but distutils is surely the worst piece of code in all of
-          # python -- duplicating things into MANIFEST.in but this is admittedly
-          # only a workaround to get things started -- not a solution
-          package_data={'dipy':
-                            [pjoin('data', 'files', '*')
-                             ]},
+          # changing to data_files doesn't get this stuff included in the
+          # source distribution -- not sure if it has something to do with the
+          # magic above, but distutils is surely the worst piece of code in
+          # all of python -- duplicating things into MANIFEST.in but this is
+          # admittedly only a workaround to get things started -- not a
+          # solution
+          package_data={'dipy': [pjoin('data', 'files', '*')],
+                        },
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc', 'examples', '*.py')))],
           scripts=glob(pjoin('bin', 'dipy_*')),
