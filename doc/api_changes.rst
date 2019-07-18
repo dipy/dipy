@@ -10,6 +10,12 @@ DIPY 1.0 changes
 Some of the changes introduced in the 1.0 release will break backwards
 compatibility with previous versions.
 
+**Reconstruction**
+
+The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
+`tournier07` and `descoteaux07` after the deprecation cycle started in the
+0.15 release.
+
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
