@@ -576,13 +576,13 @@ def test_csd_superres():
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
     with warnings.catch_warnings(record=True) as w:
-        warnings.filterwarnings(action="always", message="Number of parameters required.*",
+        warnings.filterwarnings(action="always",
+                                message="Number of parameters required.*",
                                 category=UserWarning)
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
                                                   sh_order=16)
         assert_greater_equal(len(w), 1)
         npt.assert_(issubclass(w[-1].category, UserWarning))
-
 
     fit16 = model16.fit(S)
 

@@ -66,14 +66,14 @@ def setup_module():
     ivim_fit_single = ivim_model_LM.fit(data_single)
     ivim_fit_multi = ivim_model_LM.fit(data_multi)
 
-    ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
-    ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
+    ivim_model_one_stage.fit(data_single)
+    ivim_model_one_stage.fit(data_multi)
 
     bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
                             120., 140., 160., 180., 200., 300., 400.,
                             500., 600., 700., 800., 900., 1000.])
 
-    bvecs_no_b0 = generate_bvecs(N)
+    _ = generate_bvecs(N)  # bvecs_no_b0
     gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
     bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
@@ -106,9 +106,6 @@ def setup_module():
     ivim_params_VP = np.zeros((2, 2, 1, 3))
     ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
     ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
-
-    test_vae = "Using the Variable Projection Method for " + \
-               "fitting needs SciPy >= 0.15.1"
 
 
 def single_exponential(S0, D, bvals):
