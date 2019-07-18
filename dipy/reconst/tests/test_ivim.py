@@ -36,7 +36,7 @@ gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
 
 S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
 # params for a single voxel
-params_LM = np.array([S0, f, D_star, D])
+params_trf = np.array([S0, f, D_star, D])
 
 mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
 # This gives an isotropic signal.
@@ -49,14 +49,14 @@ data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
 data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
     1, 0, 0] = data_multi[1, 1, 0] = data_single
 
-ivim_params_LM = np.zeros((2, 2, 1, 4))
-ivim_params_LM[0, 0, 0] = ivim_params_LM[0, 1, 0] = params_LM
-ivim_params_LM[1, 0, 0] = ivim_params_LM[1, 1, 0] = params_LM
+ivim_params_trf = np.zeros((2, 2, 1, 4))
+ivim_params_trf[0, 0, 0] = ivim_params_trf[0, 1, 0] = params_trf
+ivim_params_trf[1, 0, 0] = ivim_params_trf[1, 1, 0] = params_trf
 
-ivim_model_LM = IvimModel(gtab, fit_method='LM')
-ivim_model_one_stage = IvimModel(gtab, fit_method='LM')
-ivim_fit_single = ivim_model_LM.fit(data_single)
-ivim_fit_multi = ivim_model_LM.fit(data_multi)
+ivim_model_trf = IvimModel(gtab, fit_method='trf')
+ivim_model_one_stage = IvimModel(gtab, fit_method='trf')
+ivim_fit_single = ivim_model_trf.fit(data_single)
+ivim_fit_multi = ivim_model_trf.fit(data_multi)
 
 ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
 ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
@@ -119,7 +119,7 @@ def test_single_voxel_fit():
 
     assert_array_equal(est_signal.shape, data_single.shape)
 
-    assert_array_almost_equal(ivim_fit_single.model_params, params_LM)
+    assert_array_almost_equal(ivim_fit_single.model_params, params_trf)
     assert_array_almost_equal(est_signal, data_single)
 
     # Test predict function for single voxel
@@ -135,11 +135,11 @@ def test_multivoxel():
     This is to ensure that the fitting routine takes care of signals packed as
     1D, 2D or 3D arrays.
     """
-    ivim_fit_multi = ivim_model_LM.fit(data_multi)
+    ivim_fit_multi = ivim_model_trf.fit(data_multi)
 
     est_signal = ivim_fit_multi.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params_LM)
+    assert_array_almost_equal(ivim_fit_multi.model_params, ivim_params_trf)
     assert_array_almost_equal(est_signal, data_multi)
 
 
@@ -151,13 +151,13 @@ def test_ivim_errors():
     and is not supported by the older versions. Initializing an IvimModel
     with bounds for older Scipy versions should raise an error.
     """
-    ivim_model_LM = IvimModel(gtab, bounds=([0., 0., 0., 0.],
+    ivim_model_trf = IvimModel(gtab, bounds=([0., 0., 0., 0.],
                                             [np.inf, 1., 1., 1.]),
-                              fit_method='LM')
-    ivim_fit = ivim_model_LM.fit(data_multi)
+                              fit_method='trf')
+    ivim_fit = ivim_model_trf.fit(data_multi)
     est_signal = ivim_fit.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params_trf)
     assert_array_almost_equal(est_signal, data_multi)
 
 
@@ -168,12 +168,12 @@ def test_mask():
     mask_correct = data_multi[..., 0] > 0.2
     mask_not_correct = np.array([[False, True, False], [True, False]])
 
-    ivim_fit = ivim_model_LM.fit(data_multi, mask_correct)
+    ivim_fit = ivim_model_trf.fit(data_multi, mask_correct)
     est_signal = ivim_fit.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
     assert_array_almost_equal(est_signal, data_multi)
-    assert_array_almost_equal(ivim_fit.model_params, ivim_params_LM)
-    assert_raises(ValueError, ivim_model_LM.fit, data_multi,
+    assert_array_almost_equal(ivim_fit.model_params, ivim_params_trf)
+    assert_raises(ValueError, ivim_model_trf.fit, data_multi,
                   mask=mask_not_correct)
 
 
@@ -191,7 +191,7 @@ def test_with_higher_S0():
     # Single voxel data
     data_single2 = signal2[0]
 
-    ivim_fit = ivim_model_LM.fit(data_single2)
+    ivim_fit = ivim_model_trf.fit(data_single2)
 
     est_signal = ivim_fit.predict(gtab)
     assert_array_equal(est_signal.shape, data_single2.shape)
@@ -211,7 +211,7 @@ def test_b0_threshold_greater_than0():
     bvecs = generate_bvecs(N)
     gtab = gradient_table(bvals_b0t, bvecs.T)
     with assert_raises(ValueError) as vae:
-        _ = IvimModel(gtab, fit_method='LM')
+        _ = IvimModel(gtab, fit_method='trf')
         b0_s = "The IVIM model requires a measurement at b==0. As of "
         assert b0_s in vae.exception
 
@@ -236,7 +236,7 @@ def test_bounds_x0():
     x0_test = np.array([1., 0.13, 0.001, 0.0001])
     test_signal = ivim_prediction(x0_test, gtab)
 
-    ivim_fit = ivim_model_LM.fit(test_signal)
+    ivim_fit = ivim_model_trf.fit(test_signal)
 
     est_signal = ivim_fit.predict(gtab)
     assert_array_equal(est_signal.shape, test_signal.shape)
@@ -250,11 +250,11 @@ def test_predict():
     """
     assert_array_almost_equal(ivim_fit_single.predict(gtab),
                               data_single)
-    assert_array_almost_equal(ivim_model_LM.predict
+    assert_array_almost_equal(ivim_model_trf.predict
                               (ivim_fit_single.model_params, gtab),
                               data_single)
 
-    ivim_fit_multi = ivim_model_LM.fit(data_multi)
+    ivim_fit_multi = ivim_model_trf.fit(data_multi)
     assert_array_almost_equal(ivim_fit_multi.predict(gtab),
                               data_multi)
 
@@ -268,7 +268,7 @@ def test_fit_object():
     assert_array_almost_equal(
         ivim_fit_single.__getitem__(0).model_params, 1000.)
 
-    ivim_fit_multi = ivim_model_LM.fit(data_multi)
+    ivim_fit_multi = ivim_model_trf.fit(data_multi)
     # Should raise a TypeError if the arguments are not passed as tuple
     assert_raises(TypeError, ivim_fit_multi.__getitem__, -.1, 0)
     # Should return IndexError if invalid indices are passed
@@ -288,7 +288,7 @@ def test_shape():
     Test if `shape` in `IvimFit` class gives the correct output.
     """
     assert_array_equal(ivim_fit_single.shape, ())
-    ivim_fit_multi = ivim_model_LM.fit(data_multi)
+    ivim_fit_multi = ivim_model_trf.fit(data_multi)
     assert_array_equal(ivim_fit_multi.shape, (2, 2, 1))
 
 
@@ -301,7 +301,7 @@ def test_multiple_b0():
     # Single voxel data
     data_single = signal[0]
 
-    ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0, fit_method='LM')
+    ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0, fit_method='trf')
 
     ivim_model_multiple_b0.fit(data_single)
     # Test if all signals are positive
@@ -320,7 +320,7 @@ def test_noisy_fit():
     around 135 and D and D_star values are equal. Hence doing a test based on
     Scipy version.
     """
-    model_one_stage = IvimModel(gtab, fit_method='LM')
+    model_one_stage = IvimModel(gtab, fit_method='trf')
     fit_one_stage = model_one_stage.fit(noisy_single)
     assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
 
@@ -331,7 +331,7 @@ def test_S0():
     """
     assert_array_almost_equal(ivim_fit_single.S0_predicted, S0)
     assert_array_almost_equal(ivim_fit_multi.S0_predicted,
-                              ivim_params_LM[..., 0])
+                              ivim_params_trf[..., 0])
 
 
 def test_perfusion_fraction():
@@ -340,7 +340,7 @@ def test_perfusion_fraction():
     """
     assert_array_almost_equal(ivim_fit_single.perfusion_fraction, f)
     assert_array_almost_equal(
-        ivim_fit_multi.perfusion_fraction, ivim_params_LM[..., 1])
+        ivim_fit_multi.perfusion_fraction, ivim_params_trf[..., 1])
 
 
 def test_D_star():
@@ -348,7 +348,7 @@ def test_D_star():
     Test if the `IvimFit` class returns the correct D_star
     """
     assert_array_almost_equal(ivim_fit_single.D_star, D_star)
-    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params_LM[..., 2])
+    assert_array_almost_equal(ivim_fit_multi.D_star, ivim_params_trf[..., 2])
 
 
 def test_D():
@@ -356,7 +356,7 @@ def test_D():
     Test if the `IvimFit` class returns the correct D
     """
     assert_array_almost_equal(ivim_fit_single.D, D)
-    assert_array_almost_equal(ivim_fit_multi.D, ivim_params_LM[..., 3])
+    assert_array_almost_equal(ivim_fit_multi.D, ivim_params_trf[..., 3])
 
 
 def test_estimate_linear_fit():
@@ -364,13 +364,13 @@ def test_estimate_linear_fit():
     Test the linear estimates considering a single exponential fit.
     """
     data_single_exponential_D = single_exponential(S0, D, gtab.bvals)
-    assert_array_almost_equal(ivim_model_LM.estimate_linear_fit(
+    assert_array_almost_equal(ivim_model_trf.estimate_linear_fit(
         data_single_exponential_D,
         split_b=500.,
         less_than=False),
         (S0, D))
     data_single_exponential_D_star = single_exponential(S0, D_star, gtab.bvals)
-    assert_array_almost_equal(ivim_model_LM.estimate_linear_fit(
+    assert_array_almost_equal(ivim_model_trf.estimate_linear_fit(
         data_single_exponential_D_star,
         split_b=100.,
         less_than=True),
@@ -383,7 +383,7 @@ def test_estimate_f_D_star():
     non-linear fit.
     """
     params_f_D = f + 0.001, D + 0.0001
-    assert_array_almost_equal(ivim_model_LM.estimate_f_D_star(params_f_D,
+    assert_array_almost_equal(ivim_model_trf.estimate_f_D_star(params_f_D,
                                                               data_single, S0,
                                                               D),
                               (f, D_star))
@@ -415,7 +415,7 @@ def test_leastsq_failing():
     Test for cases where leastsq fitting fails and the results from a linear
     fit is returned.
     """
-    fit_single = ivim_model_LM.fit(noisy_single)
+    fit_single = ivim_model_trf.fit(noisy_single)
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
@@ -427,7 +427,7 @@ def test_leastsq_error():
     passed. If an unfeasible x0 value is passed using which leastsq fails, the
     x0 value is returned as it is.
     """
-    fit = ivim_model_LM._leastsq(data_single, [-1, -1, -1, -1])
+    fit = ivim_model_trf._leastsq(data_single, [-1, -1, -1, -1])
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
 
 

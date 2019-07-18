@@ -120,37 +120,37 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method='LM', **kwargs):
+def ivim_model_selector(gtab, fit_method='trf', **kwargs):
     """
-    Selector function to switch between the 2-stage Levenberg-Marquardt based
-    NLLS fitting method (also containing the linear fit): `LM` and the Variable
-    Projections based fitting method: `VarPro`.
+    Selector function to switch between the 2-stage Trust-Region Reflective
+    based NLLS fitting method (also containing the linear fit): `trf` and the
+    Variable Projections based fitting method: `varpro`.
 
     Parameters
     ----------
     fit_method : string, optional
-        The value fit_method can either be 'LM' or 'VarPro'.
-        default : LM
+        The value fit_method can either be 'trf' or 'varpro'.
+        default : trf
 
     """
 
-    if fit_method.lower() == 'lm':
-        return IvimModelLM(gtab, **kwargs)
+    if fit_method.lower() == 'trf':
+        return IvimModelTRF(gtab, **kwargs)
 
     elif fit_method.lower() == 'varpro':
         return IvimModelVP(gtab, **kwargs)
 
     else:
         opt_msg = 'The fit_method option chosen was not correct. '
-        opt_msg += 'Using fit_method: LM instead...'
+        opt_msg += 'Using fit_method: TRF instead...'
         warnings.warn(opt_msg, UserWarning)
-        return IvimModelLM(gtab, **kwargs)
+        return IvimModelTRF(gtab, **kwargs)
 
 
 IvimModel = ivim_model_selector
 
 
-class IvimModelLM(ReconstModel):
+class IvimModelTRF(ReconstModel):
     """Ivim model
     """
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
@@ -272,7 +272,7 @@ class IvimModelLM(ReconstModel):
 
     @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the IvimModelLM class.
+        """ Fit method of the IvimModelTRF class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
