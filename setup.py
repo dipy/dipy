@@ -26,8 +26,8 @@ if 'force_setuptools' not in globals():
 if force_setuptools:
     import setuptools
 
-# Import distutils _after_ potential setuptools import above, and after removing
-# MANIFEST
+# Import distutils _after_ potential setuptools import above, and after
+# removing MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
 
@@ -108,11 +108,11 @@ for modulename, other_sources, language in (
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
-# Do our own build and install time dependency checking. setup.py gets called in
-# many different ways, and may be called just to collect information (egg_info).
-# We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec We may
-# make tripwire versions of build_ext, build_py, install
+# Do our own build and install time dependency checking. setup.py gets called
+# in many different ways, and may be called just to collect information
+# (egg_info). We need to set up tripwires to raise errors when actually doing
+# things, like building, rather than unconditionally in the setup.py import or
+# exec We may make tripwire versions of build_ext, build_py, install
 need_cython = True
 pybuilder = get_comrec_build('dipy')
 # Cython is a dependency for building extensions, iff we don't have stamped
@@ -226,7 +226,7 @@ def main(**extra_args):
                     'dipy.workflows.tests'],
 
           ext_modules=EXTS,
-          python_requires=">= 3.5"
+          python_requires=">= 3.5",
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the
           # source distribution -- not sure if it has something to do with the
