@@ -206,8 +206,6 @@ def test_save_seeds():
     npt.assert_equal(seed, seeds[1])
 
 
-
-
 def test_probabilistic_odf_weighted_tracker():
     """This tests that the Probabalistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -659,7 +657,7 @@ def test_peak_direction_tracker():
                                      [0, -1],
                                      [1, -1],
                                      [0,  1]])
-    # PeaksAndMetricsDirectionGetter needs at 3 slices on each axis to work
+    # EuDXDirectionGetter needs at 3 slices on each axis to work
     simple_image = np.zeros([5, 6, 3], dtype=int)
     simple_image[:, :, 1] = np.array([[0, 1, 0, 1, 0, 0],
                                       [0, 1, 0, 1, 0, 0],
