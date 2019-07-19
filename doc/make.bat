@@ -84,6 +84,7 @@ if "%1" == "rstexamples" (
     :rstexamples
 	cd examples_built && %PYTHON% ..\\..\\tools\\make_examples.py
 	type nul > %*
+	cd ..
 	exit /B
 	)
 
