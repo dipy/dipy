@@ -42,7 +42,7 @@ data = img.get_data()
 affine = img.affine
 
 print('Computing brain mask...')
-b0_mask, mask = median_otsu(data)
+b0_mask, mask = median_otsu(data, vol_idx=[0])
 
 print('Computing tensors...')
 tenmodel = TensorModel(gtab)
