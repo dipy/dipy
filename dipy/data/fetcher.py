@@ -17,10 +17,7 @@ from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
