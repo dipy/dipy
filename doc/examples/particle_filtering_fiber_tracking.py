@@ -1,7 +1,7 @@
 """
-=================================================
+===============================
 Particle Filtering Tractography
-=================================================
+===============================
 Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
 volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
@@ -57,7 +57,7 @@ dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
 
 """
 CMC/ACT Tissue Classifiers
----------------------
+==========================
 Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
 tractography (ACT) [Smith2012]_ both uses PVEs information from
 anatomical images to determine when the tractography stops.

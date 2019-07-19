@@ -252,7 +252,7 @@ listbox.on_change = display_element
 
 """
 Show Manager
-==================================
+============
 
 Now that all the elements have been initialised, we add them to the show
 manager.

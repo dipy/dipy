@@ -1,7 +1,7 @@
 """
-==========================================================================
+=========================================================================
 Using the free water elimination model to remove free water contamination
-==========================================================================
+=========================================================================
 
 As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
 model is a simple way to characterize diffusion anisotropy. However, in regions

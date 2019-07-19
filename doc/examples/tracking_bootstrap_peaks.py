@@ -1,7 +1,7 @@
 """
-=================================================
+====================================================
 Bootstrap and Closest Peak Direction Getters Example
-=================================================
+====================================================
 
 This example shows how choices in direction-getter impact fiber
 tracking results by demonstrating the bootstrap direction getter (a type of

@@ -1,7 +1,7 @@
 """
-============================================================
+============================
 Intravoxel incoherent motion
-============================================================
+============================
 The intravoxel incoherent motion (IVIM) model describes diffusion
 and perfusion in the signal acquired with a diffusion MRI sequence
 that contains multiple low b-values. The IVIM model can be understood

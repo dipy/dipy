@@ -1,7 +1,7 @@
 """
-============================================================
-Creating a new combined workflow.
-============================================================
+================================
+Creating a new combined workflow
+================================
 
 A ``CombinedWorkflow`` is a series of DIPY_ workflows organized together in a
 way that the output of a workflow serves as input for the next one.

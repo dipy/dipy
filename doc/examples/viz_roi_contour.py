@@ -1,7 +1,7 @@
 """
-==================================
+======================================================
 Visualization of ROI Surface Rendered with Streamlines
-==================================
+======================================================
 
 Here is a simple tutorial following the probabilistic CSA Tracking Example in
 which we generate a dataset of streamlines from a corpus callosum ROI, and
