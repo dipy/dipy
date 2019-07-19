@@ -98,12 +98,8 @@
 .. _datapkg: http://okfn.org/projects/datapkg
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
-<<<<<<< HEAD
 .. _pypi: https://pypi.python.org/pypi
 .. _FURY: https://fury.gl
-=======
-.. _h5py: www.h5py.org
->>>>>>> * typo
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org

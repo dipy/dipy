@@ -1025,7 +1025,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     metrics : list
         Either ['fa'] or ['t1'] or ['fa', 't1']
     bundles : list
-        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        e.g. ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
 

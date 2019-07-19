@@ -353,7 +353,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
         The power to which the MDF distance for each streamline
         will be raised to determine how much it contributes to
         the cci. High values of power make the contribution value
-        degrade much faster. Example: a streamline with 5mm MDF
+        degrade much faster. E.g.: a streamline with 5mm MDF
         similarity contributes 1/5 to the cci if power is 1, but
         only contributes 1/5^2 = 1/25 if power is 2.
     override: bool, False by default

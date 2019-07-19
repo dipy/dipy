@@ -720,7 +720,7 @@ class TensorModel(ReconstModel):
         is advisable to keep an eye on memory consumption as this value is
         increased.
 
-        Example : In :func:`iter_fit_tensor` we have a default step value of
+        e.g.: In :func:`iter_fit_tensor` we have a default step value of
         1e4
 
         References

@@ -66,7 +66,7 @@ if interactive:
 .. figure:: initial_vs_updated.png
    :align: center
 
-   Example of electrostatic repulsion of red points which become green points.
+   Illustration of electrostatic repulsion of red points which become green points.
 
 We can also create a sphere from the hemisphere and show it in the following way.
 """
