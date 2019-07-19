@@ -53,7 +53,7 @@ fetch_cenir_multib(with_raw=False)
 """
 From the downloaded data, we read only the data acquired with b-values up to
 2000 $s/mm^2$ to decrease the influence of non-Gaussian diffusion
-effects of the tisse which are not taken into account by the free water
+effects of the tissue which are not taken into account by the free water
 elimination model [Hoy2014]_.
 """
 
