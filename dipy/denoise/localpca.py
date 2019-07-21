@@ -10,6 +10,43 @@ except ImportError:
 from scipy.linalg import eigh
 
 
+def pca_classifier(L, m):
+    """ Classifies which PCA eigenvalues are related to noise and estimates the
+    noise variance
+
+    Parameters
+    ----------
+    L : array (n,)
+        Array containing the PCA eigenvalues in ascending order.
+
+    Returns
+    -------
+    c : int
+        Number of eigenvalues related to noise
+    var : float
+        Estimation of the noise variance
+
+    Notes
+    -----
+    This is based on the algorithm described in [1]_.
+
+    References
+    ----------
+    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+           theory. Neuroimage 142:394-406.
+           doi: 10.1016/j.neuroimage.2016.08.016
+    """
+    var = np.mean(L)
+    c = L.size - 1
+    r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
+    while r > 0:
+        var = np.mean(L[:c])
+        c = c - 1
+        r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
+    return c, var
+
+
 def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
              tau_factor=2.3, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
