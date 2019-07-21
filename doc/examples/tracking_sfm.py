@@ -1,9 +1,6 @@
 """
-<<<<<<< c2cfaf314a381e520883eba2d965cd93fd5572e0
 .. _sfm-track:
 
-=======
->>>>>>> DOC - uniformized tracking examples
 =======================================
 Tracking with the Sparse Fascicle Model
 =======================================
@@ -13,10 +10,8 @@ Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
 signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 """
-
 # Enables/disables interactive visualization
 interactive = False
-
 """
 To begin, we read the Stanford HARDI data set into memory:
 """
@@ -45,6 +40,7 @@ that will be used to deconvolve the signal in every voxel
 
 from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+
 
 """
 We initialize an SFM model object, using this response function and using the
