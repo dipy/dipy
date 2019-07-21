@@ -72,9 +72,9 @@ which we will use as the basis to perform the tracking. The visualization will
 be done using the ``fury`` python package
 """
 
-from dipy.viz import window, actor, have_fury
+from dipy.viz import window, actor, has_fury
 
-if have_fury:
+if has_fury:
     ren = window.Renderer()
     ren.add(actor.peak_slicer(csa_peaks.peak_dirs,
                               csa_peaks.peak_values,
@@ -168,7 +168,7 @@ python package.
 
 from dipy.viz import colormap
 
-if have_fury:
+if has_fury:
     # Prepare the display objects.
     color = colormap.line_colors(streamlines)
 

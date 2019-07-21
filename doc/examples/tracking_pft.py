@@ -36,7 +36,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor, colormap, have_fury
+from dipy.viz import window, actor, colormap, has_fury
 
 img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -97,7 +97,7 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
 streamlines = Streamlines(pft_streamline_generator)
 save_trk("tractogram_pft.trk", streamlines, affine, shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_pft.png',
@@ -124,7 +124,7 @@ prob_streamline_generator = LocalTracking(dg,
 streamlines = Streamlines(prob_streamline_generator)
 save_trk("tractogram_probabilistic_cmc.trk", streamlines, affine, shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_probabilistic_cmc.png',

@@ -109,7 +109,7 @@ Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import window, actor, colormap, have_fury
+from dipy.viz import window, actor, colormap, has_fury
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
 from numpy.linalg import inv
@@ -128,7 +128,7 @@ demonstration purposes, we subselect 900 streamlines.
 from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
-if have_fury:
+if has_fury:
     streamlines_actor = actor.streamtube(
         list(move_streamlines(plot_streamlines, inv(t1_aff))),
         colormap.line_colors(streamlines), linewidth=0.1)

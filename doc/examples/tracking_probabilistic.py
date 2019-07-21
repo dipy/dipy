@@ -27,7 +27,7 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor, colormap, have_fury
+from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
@@ -76,7 +76,7 @@ streamlines = Streamlines(streamline_generator)
 save_trk("tractogram_probabilistic_dg_pmf.trk", streamlines, affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_probabilistic_dg_pmf.png',
@@ -113,7 +113,7 @@ streamlines = Streamlines(streamline_generator)
 save_trk("tractogram_probabilistic_dg_sh.trk", streamlines, affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_probabilistic_dg_sh.png',
@@ -146,7 +146,7 @@ streamlines = Streamlines(streamline_generator)
 save_trk("tractogram_probabilistic_dg_sh_pfm.trk", streamlines, affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_probabilistic_dg_sh_pfm.png',

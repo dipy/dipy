@@ -39,7 +39,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.tracking.local import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor, colormap, have_fury
+from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 _, _, img_pve_wm = read_stanford_pve_maps()
@@ -127,7 +127,7 @@ save_trk("tractogram_probabilistic_thresh_all.trk",
          affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_deterministic_thresh_all.png',
@@ -199,7 +199,7 @@ save_trk("tractogram_deterministic_binary_all.trk",
          affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_deterministic_binary_all.png',
@@ -297,7 +297,7 @@ save_trk("tractogram_deterministic_act_all.trk",
          affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_deterministic_act_all.png',
@@ -325,7 +325,7 @@ save_trk("tractogram_deterministic_act_valid.trk",
          affine,
          labels.shape)
 
-if have_fury:
+if has_fury:
     r = window.Renderer()
     r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
     window.record(r, out_path='tractogram_deterministic_act_valid.png',
