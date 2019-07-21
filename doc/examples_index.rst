@@ -18,7 +18,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
-- :ref:`example_tracking_quick_start`
+- :ref:`example_introduction_eudc`
 
 -------------
 Preprocessing
@@ -176,7 +176,10 @@ Registration
 
 Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~
+<<<<<<< d1e8cdb4c6c9476f84586cd45cb651c95d97a39d
 
+=======
+>>>>>>> DOC - fixed valid example list
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
@@ -184,7 +187,10 @@ Image-based Registration
 
 Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<<<<<<< d1e8cdb4c6c9476f84586cd45cb651c95d97a39d
 
+=======
+>>>>>>> DOC - fixed valid example list
 - :ref:`example_bundle_registration`
 
 ------------
@@ -250,6 +256,9 @@ Visualization
 ---------
 Workflows
 ---------
+<<<<<<< d1e8cdb4c6c9476f84586cd45cb651c95d97a39d
 
+=======
+>>>>>>> DOC - fixed valid example list
 - :ref:`example_workflow_creation`
 - :ref:`example_combined_workflow_creation`

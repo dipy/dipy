@@ -24,7 +24,6 @@
  segment_clustering_metrics.py
  snr_in_cc.py
  streamline_formats.py
-
  sfm_reconst.py
  gradients_spheres.py
  simulate_multi_tensor.py
