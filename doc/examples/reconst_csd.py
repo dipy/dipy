@@ -14,8 +14,10 @@ a spherical grid.
 
 The basic idea with this method is that if we could estimate the response
 function of a single fiber then we could deconvolve the measured signal and
-obtain the underlying fiber distribution. The reconstruction of the fiber
-orientation distribution function (fODF) in CSD involves, therefore, two steps:
+obtain the underlying fiber distribution.
+
+In this way, the reconstruction of the fiber orientation distribution function
+(fODF) in CSD involves two steps:
     1. Estimation of the fiber response function
     2. Use the response function to reconstruct the fODF
 
@@ -33,23 +35,23 @@ img, gtab = read_stanford_hardi()
 data = img.get_data()
 
 """
-You can verify the b-values of the datasets by looking at the attribute
-``gtab.bvals``. Now that we loaded a datasets with multiple gradient directions
-on a sphere, code to perform the two CSD steps is presented below:
+You can verify the b-values of the dataset by looking at the attribute
+``gtab.bvals``. Now that a datasets with multiple gradient directions is
+loaded, we can proceed with the two steps of CSD.
 
 ## Step 1. Estimation of the fiber response function.
 
 There are many strategies to estimate the fiber response function. Here two
 different strategies are presented.
 
-**Strategy 1 - response function from a local brain region** One simple
-way to estimate the fiber response function is to look for regions of the brain
-where it is known that there are single coherent fiber populations.
-For example, if we use an ROI at the center of the brain, we will find single
-fibers from the corpus callosum. The ``auto_response`` function will calculate
-FA for an ROI of radius equal to ``roi_radius`` in the center of the volume and
-return the response function estimated in that region for the voxels with FA
-higher than 0.7.
+**Strategy 1 - response function estimates from a local brain region**
+One simple way to estimate the fiber response function is to look for regions
+of the brain where it is known that there are single coherent fiber
+populations. For example, if we use an ROI at the center of the brain, we will
+find single fibers from the corpus callosum. The ``auto_response`` function
+will calculate FA for an ROI of radius equal to ``roi_radius`` in the center
+of the volume and return the response function estimated in that region for
+the voxels with FA higher than 0.7.
 """
 
 from dipy.reconst.csdeconv import auto_response
@@ -118,7 +120,7 @@ if interactive:
 ren.rm(response_actor)
 
 """
-**Strategy 2 - response function from global brain** Depending
+**Strategy 2 - data-driven calibration of response function** Depending
 on the dataset, FA threshold may not be the best way to find the best possible
 response function. For one, it depends on the diffusion tensor
 (FA and first eigenvector), which has lower accuracy at high
