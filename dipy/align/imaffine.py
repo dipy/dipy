@@ -449,7 +449,7 @@ class AffineMap(object):
 
 class MutualInformationMetric(object):
 
-    def __init__(self, nbins=32, sampling_proportion=None):
+    def __init__(self, nbins=32, sampling_proportion=None, num_threads=None):
         r""" Initializes an instance of the Mutual Information metric
 
         This class implements the methods required by Optimizer to drive the
@@ -469,6 +469,9 @@ class MutualInformationMetric(object):
             then sparse sampling is used, where `sampling_proportion`
             specifies the proportion of voxels to be used. The default is
             None.
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
         Notes
         -----
@@ -484,6 +487,7 @@ class MutualInformationMetric(object):
         self.sampling_proportion = sampling_proportion
         self.metric_val = None
         self.metric_grad = None
+        self.num_threads = num_threads
 
     def setup(self, transform, static, moving, static_grid2world=None,
               moving_grid2world=None, starting_affine=None):
@@ -662,7 +666,7 @@ class MutualInformationMetric(object):
                                             self.moving_world2grid,
                                             self.moving_spacing,
                                             self.static.shape,
-                                            grid_to_world)
+                                            grid_to_world, self.num_threads)
                 # The Jacobian must be evaluated at the pre-aligned points
                 H.update_gradient_dense(
                     params,
@@ -678,7 +682,7 @@ class MutualInformationMetric(object):
                 mgrad, inside = vf.sparse_gradient(self.moving,
                                                    self.moving_world2grid,
                                                    self.moving_spacing,
-                                                   pts)
+                                                   pts, self.num_threads)
                 # The Jacobian must be evaluated at the pre-aligned points
                 pts = self.samples_prealigned[..., :self.dim]
                 H.update_gradient_sparse(params, self.transform, static_values,
