@@ -153,10 +153,16 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
             e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
 
-    tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
+    if sigma is not None:
+        tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
+
+    dim = arr.shape[-1]
+
+    if return_sigma is True and sigma is None:
+        var = np.zeros(arr.shape, dtype=calc_dtype)
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius, arr.shape[2] - patch_radius):
@@ -173,7 +179,7 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
                 kx2 = k + patch_radius + 1
 
                 X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
-                                patch_size ** 3, arr.shape[-1])
+                                patch_size ** 3, dim)
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
                 # Upcast the dtype for precision in the SVD
@@ -196,19 +202,35 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
                     C = C / X.shape[0]
                     [d, W] = eigh(C, turbo=True)
 
-                # Threshold by tau:
-                W[:, d < tau] = 0
+                if sigma is None:
+                    # Random matrix theory
+                    c, this_var = pca_classifier(d, patch_size ** 3)
+                else:
+                    # Threshold by tau:
+                    c = np.sum(d < tau)
+                W[:, :c] = 0
+
                 # This is equations 1 and 2 in Manjon 2013:
                 Xest = X.dot(W).dot(W.T) + M
                 Xest = Xest.reshape(patch_size,
                                     patch_size,
-                                    patch_size, arr.shape[-1])
+                                    patch_size, dim)
                 # This is equation 3 in Manjon 2013:
-                this_theta = 1.0 / (1.0 + np.sum(d > 0))
+                this_theta = 1.0 / (1.0 + dim - c)
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
+                if return_sigma is True and sigma is None:
+                    var[ix1:ix2, jx1:jx2, kx1:kx2] += this_var * this_theta
 
     denoised_arr = thetax / theta
     denoised_arr.clip(min=0, out=denoised_arr)
     denoised_arr[~mask] = 0
-    return denoised_arr.astype(out_dtype)
+    if return_sigma is True:
+        if sigma is None:
+            var = var / theta
+            var[~mask] = 0
+            return denoised_arr.astype(out_dtype), np.sqrt(var)
+        else:
+            return denoised_arr.astype(out_dtype), sigma
+    else:
+        return denoised_arr.astype(out_dtype)
