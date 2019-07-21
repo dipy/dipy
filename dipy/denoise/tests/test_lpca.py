@@ -1,16 +1,13 @@
 import numpy as np
-import scipy as sp
 import scipy.special as sps
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.localpca import localpca
+from dipy.denoise.localpca import (localpca, pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
-from dipy.core.sphere import disperse_charges, HemiSphere
-from dipy.sims.voxel import multi_tensor
 
 
 def rfiw_phantom(gtab, snr=None):
@@ -33,7 +30,7 @@ def rfiw_phantom(gtab, snr=None):
     RDr = 0.0
     # Hindered diffusion
     ADh = 2.26e-3
-    RDh = 0.87
+    RDh = 0.87e-3
     # S0 value for tissue
     S1 = 50
     # Fraction between Restricted and Hindered diffusion
@@ -254,6 +251,44 @@ def test_lpca_sigma_wrong_shape():
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
     sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
     assert_raises(ValueError, localpca, DWI, sigma)
+
+
+def test_pca_classifier():
+    # Produce small phantom with well aligned single voxels and ground truth
+    # snr = 50, i.e signal std = 0.02 (Gaussian noise)
+    std_gt = 0.02
+    S0 = 1.0
+    gtab = gen_gtab()
+    ndir = gtab.bvals.size
+    signal_test = np.zeros((5, 5, 5, ndir))
+    mevals = np.array([[0.99e-3, 0.0, 0.0], [2.26e-3, 0.87e-3, 0.87e-3]])
+    sig, direction = multi_tensor(gtab, mevals, S0=S0,
+                                  angles=[(0, 0, 1), (0, 0, 1)],
+                                  fractions=(50, 50), snr=None)
+    signal_test[..., :] = sig
+    noise = std_gt*np.random.standard_normal((5, 5, 5, ndir))
+    dwi_test = signal_test + noise
+
+    # Compute eigenvalues
+    X = dwi_test.reshape(125, ndir)
+    M = np.mean(X, axis=0)
+    X = X - M
+    [L, W] = np.linalg.eigh(np.dot(X.T, X)/125)
+
+    # Find number of noise related eigenvalues
+    c, var = pca_classifier(L, 125)
+    std = np.sqrt(var)
+
+    # Expected number of signal components is 1 because phantom only has one
+    # voxel type. Therefore, expected noise components is (L.size - 1).
+    # To allow some margin of error let's assess if c is higher than
+    # L.size - 3. Note that algorithm is tuned to be conservative (i.e.
+    # preserve the signal information as much as posible).
+    assert_(c > L.size-3)
+
+    # Let's check if noise std estimate as an error less than 5%
+    std_error = abs(std - std_gt)/std_gt * 100
+    assert_(std_error < 10)
 
 
 if __name__ == '__main__':
