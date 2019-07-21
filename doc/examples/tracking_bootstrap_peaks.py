@@ -56,6 +56,7 @@ Next, we need to set up our two direction getters
 
 """
 Example #1: Bootstrap direction getter with CSD Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 from dipy.direction import BootDirectionGetter
@@ -90,6 +91,7 @@ same set of streamlines.
 
 """
 Example #2: Closest peak direction getter with CSD Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 """
 
 from dipy.direction import ClosestPeakDirectionGetter
