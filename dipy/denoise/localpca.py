@@ -47,8 +47,8 @@ def pca_classifier(L, m):
     return c, var
 
 
-def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
-             tau_factor=2.3, out_dtype=None):
+def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
+             tau_factor=2.3, out_dtype=None, return_sigma=False):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -56,21 +56,23 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    mask : 3D boolean array
+    mask : 3D boolean array (optional)
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    sigma : float or 3D array
-        Standard deviation of the noise estimated from the data.
-    pca_method : 'eig' or 'svd'
+    sigma : float or 3D array (optional)
+        Standard deviation of the noise estimated from the data. If no sigma
+        is given, this will be estimated based on random matrix theory
+        [1]_,[2]_
+    pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
-    patch_radius : int, optional
+    patch_radius : int (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
-    tau_factor : float, optional
+    tau_factor : float (optional)
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
 
@@ -78,10 +80,15 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
 
                 \tau = (\tau_{factor} \sigma)^2
 
-        Default: 2.3, based on the results described in [Manjon13]_.
-    out_dtype : str or dtype, optional
+        Default: 2.3, based on the results described in [3]_. Note that if
+        sigma is estimated using random matrix theory (i.e. sigma=None),
+        this threshold will be ignored.
+    out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
+    return_sigma : bool (optional)
+        If true, the Standard deviation of the noise will be returned
+        Default: False
 
     Returns
     -------
@@ -91,10 +98,17 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
 
     References
     ----------
-    .. [Manjon13] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
-                  Diffusion Weighted Image Denoising Using Overcomplete Local
-                  PCA. PLoS ONE 8(9): e73021.
-                  https://doi.org/10.1371/journal.pone.0073021
+    .. [1] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+           mapping using random matrix theory. Magnetic Resonance in Medicine.
+           doi: 10.1002/mrm.26059.
+    .. [2] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+           theory. Neuroimage 142:394-406.
+           doi: 10.1016/j.neuroimage.2016.08.016
+    .. [3] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
+           Diffusion Weighted Image Denoising Using Overcomplete Local
+           PCA. PLoS ONE 8(9): e73021.
+           https://doi.org/10.1371/journal.pone.0073021
     """
     if mask is None:
         # If mask is not specified, use the whole volume
