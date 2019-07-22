@@ -252,6 +252,9 @@ def get_fnames(name='small_64D'):
         fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
         fimg = pjoin(DATA_DIR, 'small_64D.nii')
         return fimg, fbvals, fbvecs
+    if name == 'small_64D_streamlines':
+        fstreamlines = pjoin(DATA_DIR, 'EuDX_small_64D.trk')
+        return fstreamlines
     if name == '55dir_grad.bvec':
         return pjoin(DATA_DIR, '55dir_grad.bvec')
     if name == 'small_101D':
