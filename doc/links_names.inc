@@ -55,7 +55,7 @@
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
-.. _python module path: http://docs.python.org/tutorial/modules.html#the-module-search-path
+.. _`python module path`: http://docs.python.org/tutorial/modules.html#the-module-search-path
 
 .. Code support stuff
 .. _pychecker: http://pychecker.sourceforge.net/

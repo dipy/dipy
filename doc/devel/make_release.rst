@@ -79,7 +79,7 @@ Release checklist
   ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
   Check all the links are still valid.
 
-* Check all the DIPY builds are green on the `nipy buildbots`_
+* Check all the DIPY builds are green on the nipy `buildbots`_
 
 * If you have travis-ci_ building set up you might want to push the code in its
   current state to a branch that will build, e.g.::

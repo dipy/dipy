@@ -54,8 +54,10 @@ interactive = False
 ren = window.Renderer()
 ren.SetBackground(1, 1, 1)
 
-ren.add(actor.point(hsph_initial.vertices, window.colors.red, point_radius=0.05))
-ren.add(actor.point(hsph_updated.vertices, window.colors.green, point_radius=0.05))
+ren.add(actor.point(hsph_initial.vertices, window.colors.red,
+                    point_radius=0.05))
+ren.add(actor.point(hsph_updated.vertices, window.colors.green,
+                    point_radius=0.05))
 
 print('Saving illustration as initial_vs_updated.png')
 window.record(ren, out_path='initial_vs_updated.png', size=(300, 300))
@@ -66,9 +68,12 @@ if interactive:
 .. figure:: initial_vs_updated.png
    :align: center
 
-   Illustration of electrostatic repulsion of red points which become green points.
+   Illustration of electrostatic repulsion of red points which become
+   green points.
 
-We can also create a sphere from the hemisphere and show it in the following way.
+We can also create a sphere from the hemisphere and show it in the
+following way.
+
 """
 
 sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))

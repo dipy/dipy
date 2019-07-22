@@ -306,8 +306,8 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     profiles. Consider using :func:`piesno` to estimate sigma instead if visual
     inaccuracies are apparent in the denoised result.
 
-    Reference
-    -------
+    References
+    ----------
     .. [1] Koay, C. G., & Basser, P. J. (2006). Analytically exact correction
     scheme for signal extraction from noisy magnitude MR signals.
     Journal of Magnetic Resonance), 179(2), 317-22.
@@ -315,6 +315,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
     .. [2] Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot,
     C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
     magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.
+
     """
     k = np.zeros((3, 3, 3), dtype=np.int8)
 
