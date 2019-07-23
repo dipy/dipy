@@ -184,7 +184,7 @@ cdef void _trilinear_interpolation_iso(double *X,
         d[i] = X[i] - Xf[i]
         nd[i] = 1 - d[i]
     # weights
-    # the weights are actualy the volumes of the 8 smaller boxes that define
+    # the weights are actually the volumes of the 8 smaller boxes that define
     # the initial rectangular box for more on trilinear have a look here
     # http://en.wikipedia.org/wiki/Trilinear_interpolation
     # http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
@@ -385,7 +385,7 @@ cdef cnp.npy_intp _initial_direction(double* seed,double *qa,
     for i from 0 <= i < 3:
         point[i] = <cnp.npy_intp>floor(seed[i] + .5)
     point[3] = ref
-    # Find the offcet in memory to access the qa value
+    # Find the offset in memory to access the qa value
     off = offset(<cnp.npy_intp*>point,strides, 4, 8)
     qa_tmp = qa[off]
     # Check for scalar threshold

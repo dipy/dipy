@@ -10,7 +10,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.utils.arrfuncs import pinv, eigh
+from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
@@ -1945,7 +1945,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     """
     # outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = eigh(tensor)
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
     # need to sort the eigenvalues and associated eigenvectors
     if eigenvals.ndim == 1:

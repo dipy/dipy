@@ -22,7 +22,7 @@ import numpy.testing as npt
 from dipy.testing import assert_true
 
 
-def make_streamlines():
+def make_streamlines(return_seeds=False):
     streamlines = [np.array([[0, 0, 0],
                              [1, 1, 1],
                              [2, 2, 2],
@@ -31,7 +31,12 @@ def make_streamlines():
                              [3, 2, 0],
                              [5, 20, 33],
                              [40, 80, 120]], 'float')]
-    return streamlines
+    seeds = [np.array([0., 0., 0.], 'float'),
+             np.array([1., 2., 3.], 'float')]
+    if return_seeds:
+        return streamlines, seeds
+    else:
+        return streamlines
 
 
 def test_density_map():
@@ -181,7 +186,7 @@ def test_reduce_labels():
 
 
 def test_move_streamlines():
-    streamlines = make_streamlines()
+    streamlines, seeds = make_streamlines(True)
     affine = np.eye(4)
     new_streamlines = move_streamlines(streamlines, affine)
     for i, test_sl in enumerate(new_streamlines):
@@ -213,6 +218,12 @@ def test_move_streamlines():
     affineB[:] = 0
     for (a, b) in zip(streamlinesA, streamlinesB):
         npt.assert_array_equal(a, b)
+
+    # Test that seeds are also moved
+    streamlinesA, seedsA = zip(*move_streamlines(
+        streamlines, affineA, seeds=seeds))
+    for (seed, seedA) in zip(seeds, seedsA):
+        npt.assert_raises(AssertionError, npt.assert_array_equal, seed, seedA)
 
 
 def test_target():
@@ -332,9 +343,10 @@ def test_near_roi():
     # to a very small number gets overridden:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
-                                    tol=0.1,
-                                    mode='all'),
+        npt.assert_array_equal(near_roi(x_streamlines,
+                                        mask, affine=affine,
+                                        tol=0.1,
+                                        mode='all'),
                                np.array([False, True, False]))
 
     mask[2, 2, 2] = True
@@ -715,3 +727,7 @@ def test_min_at():
 
     _min_at(a, (i, j, k), values)
     npt.assert_array_equal(a, [[[100, 11, 1, 10]]])
+
+
+if __name__ == "__main__":
+    npt.run_module_suite()

@@ -10,6 +10,8 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
 from dipy.sims.voxel import single_tensor
 
+response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
+
 
 def test_pmf_from_sh():
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -44,6 +46,7 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1))
 
+
 def test_boot_pmf():
     """This tests the local model used for the bootstrapping.
     """
@@ -67,10 +70,11 @@ def test_boot_pmf():
     npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
     npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
 
-    # test model sherical harminic order different than bootstrap order
+    # test model spherical harmonic order different than bootstrap order
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    sh_order=6)
         assert_greater(len([lw for lw in w if issubclass(lw.category,
                                                          UserWarning)]), 0)
 

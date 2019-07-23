@@ -1,7 +1,7 @@
 """
-==================================
+=====================================================
 Calculation of Outliers with Cluster Confidence Index
-==================================
+=====================================================
 
 This is an outlier scoring method that compares the pathways of each streamline
 in a bundle (pairwise) and scores each streamline by how many other streamlines

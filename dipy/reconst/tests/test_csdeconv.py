@@ -25,12 +25,10 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
+from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-from dipy.core.geometry import cart2sphere
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import fractional_anisotropy
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -522,6 +520,7 @@ def test_sphere_scaling_csdmodel():
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
 
+
 expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
 
 
@@ -575,6 +574,23 @@ def test_csd_superres():
     # Check that peaks line up with sticks
     cos_sim = abs((d * sticks).sum(1)) ** .5
     assert_(all(cos_sim > .99))
+
+
+def test_csd_convergence():
+    """ Check existence of `convergence` keyword in CSD model """
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
+    S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
+
+    model_w_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                   sh_order=8, convergence=50)
+    model_wo_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                    sh_order=8)
+
+    assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)
 
 
 if __name__ == '__main__':

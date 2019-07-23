@@ -47,10 +47,10 @@ crossing_ref = np.concatenate((evals_cross, evecs_cross[0], evecs_cross[1],
                                evecs_cross[2], kt_cross), axis=0)
 
 # Simulation 2. Spherical kurtosis tensor.- for white matter, this can be a
-# biological implaussible scenario, however this simulation is usefull for
+# biological implausible scenario, however this simulation is useful for
 # testing the estimation of directional apparent kurtosis and the mean
 # kurtosis, since its directional and mean kurtosis ground truth are a constant
-# which can be easly mathematicaly calculated.
+# which can be calculated easily mathematically.
 Di = 0.00099
 De = 0.00226
 mevals_sph = np.array([[Di, Di, Di], [De, De, De]])
@@ -61,7 +61,7 @@ signal_sph, dt_sph, kt_sph = multi_tensor_dki(gtab_2s, mevals_sph, S0=100,
 evals_sph, evecs_sph = decompose_tensor(from_lower_triangular(dt_sph))
 params_sph = np.concatenate((evals_sph, evecs_sph[0], evecs_sph[1],
                              evecs_sph[2], kt_sph), axis=0)
-# Compute ground truth - since KT is spherical, appparent kurtosic coeficient
+# Compute ground truth - since KT is spherical, apparent kurtosis coefficient
 # for all gradient directions and mean kurtosis have to be equal to Kref_sph.
 f = 0.5
 Dg = f*Di + (1-f)*De
@@ -69,7 +69,7 @@ Kref_sphere = 3 * f * (1-f) * ((Di-De) / Dg) ** 2
 
 # Simulation 3. Multi-voxel simulations - dataset of four voxels is simulated.
 # Since the objective of this simulation is to see if procedures are able to
-# work with multi-dimentional data all voxels contains the same crossing signal
+# work with multi-dimensional data all voxels contains the same crossing signal
 # produced in simulation 1.
 
 DWI = np.zeros((2, 2, 1, len(gtab_2s.bvals)))
@@ -126,7 +126,7 @@ def test_dki_fits():
 
 
 def test_apparent_kurtosis_coef():
-    """ Apparent kurtosis coeficients are tested for a spherical kurtosis
+    """ Apparent kurtosis coefficients are tested for a spherical kurtosis
     tensor """
 
     sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
@@ -182,7 +182,7 @@ def test_carlson_rf():
     y = np.array([[2.0, 1.0], [3.0, 3.0]])
     z = np.array([[0.0, 0.0], [4.0, 4.0]])
 
-    # Defene reference outputs
+    # Define reference outputs
     RF_ref = np.array([[1.3110287771461, 1.8540746773014],
                        [0.58408284167715, 0.58408284167715]])
 
@@ -197,7 +197,7 @@ def test_carlson_rf():
     y = np.array([-1j, 1j, -1j, 1j])
     z = np.array([0.0, 0.0, 2, 1 - 1j])
 
-    # Defene reference outputs
+    # Define reference outputs
     RF_ref = np.array([1.8540746773014, 0.79612586584234 - 1.2138566698365j,
                        1.0441445654064, 0.93912050218619 - 0.53296252018635j])
     # Compute integrals
@@ -312,7 +312,7 @@ def test_Wrotate_crossing_fibers():
 
 def test_Wcons():
 
-    # Construct the 4D kurtosis tensor manualy from the crossing fiber kt
+    # Construct the 4D kurtosis tensor manually from the crossing fiber kt
     # simulate
     Wfit = np.zeros([3, 3, 3, 3])
 
@@ -528,10 +528,10 @@ def test_MK_singularities():
 
         # test singularity L1 == L3 and L1 != L2
         # since L1 is defined as the larger eigenvalue and L3 the smallest
-        # eigenvalue, this singularity teoretically will never be called,
+        # eigenvalue, this singularity theoretically will never be called,
         # because for L1 == L3, L2 have also to be  = L1 and L2.
         # Nevertheless, I decided to include this test since this singularity
-        # is revelant for cases that eigenvalues are not ordered
+        # is relevant for cases that eigenvalues are not ordered
 
         # artificially revert the eigenvalue and eigenvector order
         dki_params = dkiF.model_params.copy()
@@ -584,7 +584,7 @@ def test_dki_errors():
 
 def test_kurtosis_maximum():
     # TEST 1
-    # simulate a crossing fibers interserting at 70 degrees. The first fiber
+    # simulate a crossing fibers intersecting at 70 degrees. The first fiber
     # is aligned to the x-axis while the second fiber is aligned to the x-z
     # plane with an angular deviation of 70 degrees from the first one.
     # According to Neto Henriques et al, 2015 (NeuroImage 111: 85-99), the

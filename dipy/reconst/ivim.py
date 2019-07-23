@@ -1,26 +1,13 @@
 """ Classes and functions for fitting ivim model """
 from __future__ import division, print_function, absolute_import
 
-from distutils.version import LooseVersion
-
 import numpy as np
-import scipy
+from scipy.optimize import least_squares, differential_evolution
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-
-SCIPY_LESS_0_17 = (LooseVersion(scipy.version.short_version) <
-                   LooseVersion('0.17'))
-
-SCIPY_LESS_0_15 = (LooseVersion(scipy.version.short_version) <
-                   LooseVersion('0.15.1'))
-
-if SCIPY_LESS_0_17:
-    from scipy.optimize import leastsq
-else:
-    from scipy.optimize import least_squares
 
 
 def ivim_prediction(params, gtab):
@@ -281,14 +268,7 @@ class IvimModelLM(ReconstModel):
                         'eps': eps, 'maxiter': maxiter}
         self.x_scale = x_scale
 
-        if SCIPY_LESS_0_17 and self.bounds is not None:
-            e_s = "Scipy versions less than 0.17 do not support "
-            e_s += "bounds. Please update to Scipy 0.17 to use bounds"
-            raise ValueError(e_s)
-        elif self.bounds is None:
-            self.bounds = ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
-        else:
-            self.bounds = bounds
+        self.bounds = bounds or ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
 
     @multi_voxel_fit
     def fit(self, data):
@@ -319,12 +299,12 @@ class IvimModelLM(ReconstModel):
         -------
         IvimFit object
         """
-        # Get S0_prime and D - paramters assuming a single exponential decay
+        # Get S0_prime and D - parameters assuming a single exponential decay
         # for signals for bvals greater than `split_b_D`
         S0_prime, D = self.estimate_linear_fit(
             data, self.split_b_D, less_than=False)
 
-        # Get S0 and D_star_prime - paramters assuming a single exponential
+        # Get S0 and D_star_prime - parameters assuming a single exponential
         # decay for for signals for bvals greater than `split_b_S0`.
 
         S0, D_star_prime = self.estimate_linear_fit(data, self.split_b_S0,
@@ -415,49 +395,28 @@ class IvimModelLM(ReconstModel):
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
         xtol = self.tol
-        epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
 
-        if SCIPY_LESS_0_17:
-            try:
-                res = leastsq(f_D_star_error,
-                              params_f_D_star,
-                              args=(self.gtab, data, S0, D),
-                              gtol=gtol,
-                              xtol=xtol,
-                              ftol=ftol,
-                              epsfcn=epsfcn,
-                              maxfev=maxfev)
-                f, D_star = res[0]
-                return f, D_star
-            except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile"
-                warningMsg += " as initial guess for leastsq. Parameters are"
-                warningMsg += " returned only from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D_star
-                return f, D_star
-        else:
-            try:
-                res = least_squares(f_D_star_error,
-                                    params_f_D_star,
-                                    bounds=((0., 0.), (self.bounds[1][1],
-                                                       self.bounds[1][2])),
-                                    args=(self.gtab, data, S0, D),
-                                    ftol=ftol,
-                                    xtol=xtol,
-                                    gtol=gtol,
-                                    max_nfev=maxfev)
-                f, D_star = res.x
-                return f, D_star
-            except ValueError:
-                warningMsg = "x0 obtained from linear fitting is not feasibile"
-                warningMsg += " as initial guess for leastsq while estimating "
-                warningMsg += "f and D_star. Using parameters from the "
-                warningMsg += "linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                f, D_star = params_f_D_star
-                return f, D_star
+        try:
+            res = least_squares(f_D_star_error,
+                                params_f_D_star,
+                                bounds=((0., 0.), (self.bounds[1][1],
+                                                   self.bounds[1][2])),
+                                args=(self.gtab, data, S0, D),
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev)
+            f, D_star = res.x
+            return f, D_star
+        except ValueError:
+            warningMsg = "x0 obtained from linear fitting is not feasibile"
+            warningMsg += " as initial guess for leastsq while estimating "
+            warningMsg += "f and D_star. Using parameters from the "
+            warningMsg += "linear fit."
+            warnings.warn(warningMsg, UserWarning)
+            f, D_star = params_f_D_star
+            return f, D_star
 
     def predict(self, ivim_params, gtab, S0=1.):
         """
@@ -508,49 +467,28 @@ class IvimModelLM(ReconstModel):
         gtol = self.options["gtol"]
         ftol = self.options["ftol"]
         xtol = self.tol
-        epsfcn = self.options["eps"]
         maxfev = self.options["maxiter"]
         bounds = self.bounds
 
-        if SCIPY_LESS_0_17:
-            try:
-                res = leastsq(_ivim_error,
-                              x0,
-                              args=(self.gtab, data),
-                              gtol=gtol,
-                              xtol=xtol,
-                              ftol=ftol,
-                              epsfcn=epsfcn,
-                              maxfev=maxfev)
-                ivim_params = res[0]
-                if np.all(np.isnan(ivim_params)):
-                    return np.array([-1, -1, -1, -1])
-                return ivim_params
-            except ValueError:
-                warningMsg = "x0 is unfeasible for leastsq fitting."
-                warningMsg += " Returning x0 values from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                return x0
-        else:
-            try:
-                res = least_squares(_ivim_error,
-                                    x0,
-                                    bounds=bounds,
-                                    ftol=ftol,
-                                    xtol=xtol,
-                                    gtol=gtol,
-                                    max_nfev=maxfev,
-                                    args=(self.gtab, data),
-                                    x_scale=self.x_scale)
-                ivim_params = res.x
-                if np.all(np.isnan(ivim_params)):
-                    return np.array([-1, -1, -1, -1])
-                return ivim_params
-            except ValueError:
-                warningMsg = "x0 is unfeasible for leastsq fitting."
-                warningMsg += " Returning x0 values from the linear fit."
-                warnings.warn(warningMsg, UserWarning)
-                return x0
+        try:
+            res = least_squares(_ivim_error,
+                                x0,
+                                bounds=bounds,
+                                ftol=ftol,
+                                xtol=xtol,
+                                gtol=gtol,
+                                max_nfev=maxfev,
+                                args=(self.gtab, data),
+                                x_scale=self.x_scale)
+            ivim_params = res.x
+            if np.all(np.isnan(ivim_params)):
+                return np.array([-1, -1, -1, -1])
+            return ivim_params
+        except ValueError:
+            warningMsg = "x0 is unfeasible for leastsq fitting."
+            warningMsg += " Returning x0 values from the linear fit."
+            warnings.warn(warningMsg, UserWarning)
+            return x0
 
 
 class IvimModelVP(ReconstModel):
@@ -633,12 +571,6 @@ class IvimModelVP(ReconstModel):
                (2016).
 
         """
-        if SCIPY_LESS_0_15:
-            raise ValueError("Using the Variable Projection Method for " +
-                             "fitting needs SciPy >= 0.15.1")
-        else:
-            from scipy.optimize import differential_evolution
-
         data_max = data.max()
         data = data / data_max
         b = self.bvals
@@ -739,7 +671,7 @@ class IvimModelVP(ReconstModel):
                (2016).
 
         """
-        # moore-penrose
+        # Moore-Penrose
         phi_mp = np.dot(np.linalg.inv(np.dot(phi.T, phi)), phi.T)
         f = np.dot(phi_mp, signal)
         yhat = np.dot(phi, f)  # - sigma

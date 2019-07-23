@@ -9,9 +9,9 @@ from dipy.io.image import save_nifti
 from dipy.io.streamline import save_tractogram
 
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
-if have_fury:
+if has_fury:
     from dipy.workflows.viz import HorizonFlow
     from dipy.viz.app import horizon
 
@@ -19,7 +19,7 @@ if have_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not have_fury)
+@npt.dec.skipif(skip_it or not has_fury)
 @xvfb_it
 def test_horizon_flow():
 

@@ -14,6 +14,7 @@ from dipy.sims.voxel import single_tensor, multi_tensor
 
 
 DEFAULT_SH = 4
+response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
 def test_bdg_initial_direction():
@@ -114,7 +115,7 @@ def test_bdg_residual():
     voxel = np.concatenate((np.zeros(1), sphere_func))
     data = np.tile(voxel, (3, 3, 3, 1))
 
-    csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
     boot_pmf_gen = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
                               sh_order=6)
 
@@ -134,8 +135,9 @@ def test_bdg_residual():
     # test with a gtab with two shells and assert you get an error
     bvals[-1] = 2000
     gtab = gradient_table(bvals, bvecs)
-    csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
     npt.assert_raises(ValueError, BootPmfGen, data, csd_model, hsph_updated, 6)
+
 
 if __name__ == '__main__':
     npt.run_module_suite()

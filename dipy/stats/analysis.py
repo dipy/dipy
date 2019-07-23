@@ -310,7 +310,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         # This is a 3-by-3 array:
         node_coords = bundle.data[node::n_points]
         c = np.cov(node_coords.T, ddof=0)
-        # Reorganize as an upper diagonal matrix for expected Mahalnobis input:
+        # Reorganize as an upper diagonal matrix for expected Mahalanobis input:
         c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
                       [0, c[1, 1], c[1, 2]],
                       [0, 0, c[2, 2]]])
@@ -321,7 +321,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         for fn in range(len(bundle)):
             # In the special case where all the streamlines have the exact same
             # coordinate in this node, the covariance matrix is all zeros, so
-            # we can't calculate the Mahalnobis distance, we will instead give
+            # we can't calculate the Mahalanobis distance, we will instead give
             # each streamline an identical weight, equal to the number of
             # streamlines:
             if np.allclose(c, 0):

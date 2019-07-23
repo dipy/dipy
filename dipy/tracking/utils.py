@@ -200,7 +200,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
 
 
 def ndbincount(x, weights=None, shape=None):
-    """Like bincount, but for nd-indicies.
+    """Like bincount, but for nd-indices.
 
     Parameters
     ----------
@@ -741,7 +741,7 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
     roi_coords = np.array(np.where(region_of_interest)).T
     x_roi_coords = apply_affine(affine, roi_coords)
 
-    # If it's already a list, we can save time by preallocating the output
+    # If it's already a list, we can save time by pre-allocating the output
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
@@ -761,10 +761,10 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear transformation equivalent to changing voxel order.
 
-    Calculates a linear tranformation A such that [a, b, c, 1] = A[x, y, z, 1].
-    where [x, y, z] is a point in the coordinate system defined by input_ornt
-    and [a, b, c] is the same point in the coordinate system defined by
-    output_ornt.
+    Calculates a linear transformation A such that [a, b, c, 1] =
+    A[x, y, z, 1], where [x, y, z] is a point in the coordinate system defined
+    by input_ornt and [a, b, c] is the same point in the coordinate system
+    defined by output_ornt.
 
     Parameters
     ----------
@@ -920,7 +920,8 @@ def unique_rows(in_array, dtype='f4'):
 
 
 @_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
+def move_streamlines(streamlines, output_space, input_space=None,
+                     seeds=None):
     """Applies a linear transformation, given by affine, to streamlines.
 
     Parameters
@@ -935,11 +936,14 @@ def move_streamlines(streamlines, output_space, input_space=None):
         ``input_space`` is specified, it's assumed the streamlines are in the
         reference space. The reference space is the same as the space
         associated with the affine matrix ``np.eye(4)``.
+    seeds : np.array, optional
+        If set, seeds associated to streamlines will be also moved and returned
 
     Returns
     -------
     streamlines : generator
         A sequence of transformed streamlines.
+        If return_seeds is True, also return seeds
 
     """
     if input_space is None:
@@ -953,8 +957,12 @@ def move_streamlines(streamlines, output_space, input_space=None):
     yield
     # End of initialization
 
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
+    if seeds is not None:
+        for sl, seed in zip(streamlines, seeds):
+            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
+    else:
+        for sl in streamlines:
+            yield np.dot(sl, lin_T) + offset
 
 
 def reduce_rois(rois, include):
@@ -981,7 +989,7 @@ def reduce_rois(rois, include):
 
     Note
     ----
-    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    The include_roi and exclude_roi can be used to perform the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
     """

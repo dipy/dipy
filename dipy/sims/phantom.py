@@ -1,7 +1,7 @@
 import numpy as np
 # import scipy.stats as stats
 
-from dipy.sims.voxel import SingleTensor, diffusion_evals
+from dipy.sims.voxel import single_tensor, diffusion_evals
 import dipy.sims.voxel as vox
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_fnames
@@ -173,7 +173,7 @@ def orbital_phantom(gtab=None,
 
     for i in range(len(dx)):
         evecs, R = diff2eigenvectors(dx[i], dy[i], dz[i])
-        S = SingleTensor(gtab, S0, evals, evecs, snr=None)
+        S = single_tensor(gtab, S0, evals, evecs, snr=None)
 
         vol[int(x[i]), int(y[i]), int(z[i]), :] += S
 

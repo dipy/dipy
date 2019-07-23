@@ -28,7 +28,6 @@ import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
-import warnings
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
@@ -343,8 +342,6 @@ def real_sym_sh_basis(sh_order, theta, phi):
 
 
 sph_harm_lookup = {None: real_sym_sh_basis,
-                   "mrtrix": real_sym_sh_mrtrix,
-                   "fibernav": real_sym_sh_basis,
                    "tournier07": real_sym_sh_mrtrix,
                    "descoteaux07": real_sym_sh_basis}
 
@@ -616,11 +613,11 @@ class SphHarmFit(OdfFit):
 
         """
         B = self.model.sampling_matrix(sphere)
-        return dot(self._shm_coef, B.T)
+        return dot(self.shm_coeff, B.T)
 
     @auto_attr
     def gfa(self):
-        return _gfa_sh(self._shm_coef, 0)
+        return _gfa_sh(self.shm_coeff, 0)
 
     @property
     def shm_coeff(self):
@@ -648,7 +645,7 @@ class SphHarmFit(OdfFit):
         if not hasattr(self.model, 'predict'):
             msg = "This model does not have prediction implemented yet"
             raise NotImplementedError(msg)
-        return self.model.predict(self.shm_coeff, gtab, S0)
+        return self.model.predict(self._shm_coef, gtab, S0)
 
 
 class CsaOdfModel(QballBaseModel):
@@ -902,17 +899,6 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
 
     """
 
-    if basis_type == "fibernav":
-        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `descoteaux07` instead",
-                      DeprecationWarning)
-    if basis_type == "mrtrix":
-        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `tournier07` instead",
-                      DeprecationWarning)
-
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:
@@ -960,17 +946,6 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
            NeuroImage. 2007;35(4):1459-1472.
 
     """
-
-    if basis_type == 'fibernav':
-        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `descoteaux07` instead",
-                      DeprecationWarning)
-    elif basis_type == 'mrtrix':
-        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `tournier07` instead",
-                      DeprecationWarning)
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
@@ -1024,17 +999,6 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
            NeuroImage. 2007;35(4):1459-1472.
 
     """
-
-    if basis_type == 'fibernav':
-        warnings.warn("sh basis type `fibernav` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `descoteaux07` instead",
-                      DeprecationWarning)
-    elif basis_type == 'mrtrix':
-        warnings.warn("sh basis type `mrtrix` is deprecated as of version" +
-                      " 0.15 of DIPY and will be removed in a future " +
-                      "version. Please use `tournier07` instead",
-                      DeprecationWarning)
 
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 

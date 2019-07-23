@@ -1,7 +1,7 @@
 """
-=========================================================
+=======================================================
 Diffeomorphic Registration with binary and fuzzy images
-=========================================================
+=======================================================
 
 This example demonstrates registration of a binary and a fuzzy image.
 This could be seen as aligning a fuzzy (sensed) image to a binary

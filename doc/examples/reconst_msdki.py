@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-===============================================================================
+==============================================
 Mean signal diffusion kurtosis imaging (MSDKI)
-===============================================================================
+==============================================
 
 Several microstructural models have been proposed to increase the specificity
 of diffusion-weighted data; however, improper model assumptions are known to
@@ -53,9 +53,8 @@ from dipy.data import read_cfin_dwi
 from dipy.segment.mask import median_otsu
 
 """
-===============================================================================
 Testing MSDKI in synthetic data
-===============================================================================
+===============================
 
 We simulate representative diffusion-weighted signals using MultiTensor
 simulations (for more information on this type of simulations see
@@ -211,9 +210,8 @@ intersection angle.
 """
 
 """
-===============================================================================
 Reconstructing diffusion data using MSDKI
-===============================================================================
+=========================================
 
 Now that the properties of MSDKI were illustrated, let's apply MSDKI to in-vivo
 diffusion-weighted data. As the example for the standard DKI
@@ -240,7 +238,8 @@ For example, some state of the art denoising algorithms are available in DIPY_
 local pca :ref:`example-denoise-localpca`).
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+                             autocrop=False, dilate=1)
 
 """
 Now that we have loaded and pre-processed the data we can go forward

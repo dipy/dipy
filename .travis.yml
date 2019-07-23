@@ -16,7 +16,7 @@ addons:
 
 env:
     global:
-        - DEPENDS="cython numpy scipy matplotlib h5py nibabel cvxpy"
+        - DEPENDS="cython numpy matplotlib h5py nibabel cvxpy"
         - VENV_ARGS="--python=python"
         - INSTALL_TYPE="setup"
         - EXTRA_WHEELS="https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
@@ -24,7 +24,6 @@ env:
         - EXTRA_PIP_FLAGS="--timeout=60 --find-links=$EXTRA_WHEELS"
 
 python:
-    - 3.4
     - 3.5
     - 3.6
 
@@ -32,11 +31,13 @@ matrix:
   include:
     - python: 3.7
       dist: xenial
-    # To test minimum dependencies for Python 3.6:
-    - python: 3.4
+      env:
+        - DEPENDS="$DEPENDS scipy"
+    # To test minimum dependencies for Python 3.5:
+    - python: 3.5
       env:
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.29 numpy==1.8.2 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
+        - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
     # To test minimum dependencies for Python 3.7:
     - python: 3.7
       dist: xenial
@@ -46,12 +47,12 @@ matrix:
     - python: 3.7
       dist: xenial
       env:
-        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables"
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 "
     - python: 3.7
       dist: xenial
       env:
         - COVERAGE=1
-        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables"
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
     # To test vtk functionality
     - python: 3.7
       dist: xenial
@@ -62,12 +63,14 @@ matrix:
         - TEST_WITH_XVFB=true
         - MESA_GL_VERSION_OVERRIDE=3.3
         - LIBGL_ALWAYS_INDIRECT=y
-        - DEPENDS="$DEPENDS scikit_learn vtk fury"
+        - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
 
     - python: 3.7
       dist: xenial
       env:
         - INSTALL_TYPE=sdist
+        - DEPENDS="$DEPENDS scipy"
+
     - python: 3.7
       dist: xenial
       env:
@@ -78,6 +81,7 @@ matrix:
       dist: xenial
       env:
         - INSTALL_TYPE=wheel
+        - DEPENDS="$DEPENDS scipy"
     - python: 3.7
       dist: xenial
       env:
@@ -88,11 +92,13 @@ matrix:
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
   allow_failures:
     - python: 3.7
       dist: xenial
       env:
         - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"

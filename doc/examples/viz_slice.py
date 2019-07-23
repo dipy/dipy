@@ -212,7 +212,7 @@ fa_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
 
 """
 Create a mosaic
-================
+===============
 
 By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
 easy and efficient to create a mosaic of all the slices.

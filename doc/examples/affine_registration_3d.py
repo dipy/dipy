@@ -1,7 +1,7 @@
 """
-==========================================
+=========================
 Affine Registration in 3D
-==========================================
+=========================
 This example explains how to compute an affine transformation to register two
 3D volumes by maximization of their Mutual Information [Mattes03]_. The
 optimization strategy is similar to that implemented in ANTS [Avants11]_.
@@ -281,7 +281,7 @@ regtools.overlay_slices(static, transformed, None, 2,
               free-form deformations. IEEE Transactions on Medical Imaging,
               22(1), 120-8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-              Normalization Tools ( ANTS ), 1-35.
+              Normalization Tools (ANTS), 1-35.
 
 .. include:: ../links_names.inc
 

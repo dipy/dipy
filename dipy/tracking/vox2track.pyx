@@ -144,7 +144,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
                      voxel_indices[j, 2])
             uniq_points.add(point)
 
-        # Add the index of this streamline for each uniq voxel
+        # Add the index of this streamline for each unique voxel
         for point in uniq_points:
             if point in mapping:
                 mapping[point].append(i)

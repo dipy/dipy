@@ -14,10 +14,8 @@ from numpy.testing import (assert_almost_equal,
 from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
-from dipy.sims.voxel import (MultiTensor,
-                             multi_tensor_pdf,
-                             single_tensor,
-                             cylinders_and_ball_soderman)
+from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf,
+                             single_tensor, cylinders_and_ball_soderman)
 from dipy.data import get_sphere
 from dipy.sims.voxel import add_noise
 from dipy.core.sphere_stats import angular_similarity
@@ -36,8 +34,8 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
-                            fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(gtab, mevals, S0=100.0, angles=angl,
+                             fractions=[50, 50], snr=None)
     return S, sticks
 
 

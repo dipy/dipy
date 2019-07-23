@@ -4,13 +4,11 @@ import numpy as np
 
 from dipy.tracking.streamline import transform_streamlines
 
-
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
 
 if have_fury:
-    import vtk
-    from dipy.viz import utils
+    from dipy.viz import utils, vtk
     import vtk.util.numpy_support as ns
 
 

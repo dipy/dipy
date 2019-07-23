@@ -77,7 +77,7 @@ def test_gaussian_weights():
     w = gaussian_weights(bundle, n_points=10)
     npt.assert_almost_equal(w, np.ones((len(bundle), 10)) * 0.5)
 
-    # Test when asked to return Mahalnobis, instead of weights
+    # Test when asked to return Mahalanobis, instead of weights
     w = gaussian_weights(bundle, n_points=10, return_mahalnobis=True)
     npt.assert_almost_equal(w, np.ones((len(bundle), 10)))
 

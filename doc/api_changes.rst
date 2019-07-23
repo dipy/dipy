@@ -10,6 +10,12 @@ DIPY 1.0 changes
 Some of the changes introduced in the 1.0 release will break backwards
 compatibility with previous versions.s
 
+**Reconstruction**
+
+The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
+`tournier07` and `descoteaux07` after the deprecation cycle started in the
+0.15 release.
+
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
@@ -22,6 +28,12 @@ The API of ``dipy.io.streamlines.load_tractogram`` and
 ``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
 When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
 guarantee proper spatial transformation handling.
+
+**Simulation**
+
+``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
+``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
+``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
 
 
 DIPY 0.16 Changes

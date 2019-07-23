@@ -33,7 +33,7 @@ class NLMeansFlow(Workflow):
         out_dir : string, optional
             Output directory (default input file directory)
         out_denoised : string, optional
-            Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
+            Name of the resulting denoised volume (default: dwi_nlmeans.nii.gz)
         """
         io_it = self.get_io_iterator()
         for fpath, odenoised in io_it:
