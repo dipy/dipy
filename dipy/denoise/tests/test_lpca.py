@@ -291,5 +291,19 @@ def test_pca_classifier():
     assert_(std_error < 10)
 
 
+def test_mpPCA_in_phantom():
+    gtab = gen_gtab()
+    DWIgt = rfiw_phantom(gtab, snr=None)
+    std_gt = 0.02
+    noise = std_gt*np.random.standard_normal(DWIgt.shape)
+    DWInoise = DWIgt + noise
+    DWIden = localpca(DWInoise, patch_radius=2)
+
+    # Test if denoised data is closer to ground truth than noisy data
+    rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
+    rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
+    assert_(rmse_den < rmse_noisy)
+
+
 if __name__ == '__main__':
     run_module_suite()
