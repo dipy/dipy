@@ -7,10 +7,8 @@ import numpy.testing as npt
 from numpy.testing import assert_allclose
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.stateful_tractogram import (StatefulTractogram,
-                                         save_tractogram,
-                                         load_tractogram,
-                                         Space)
+from dipy.io.stateful_tractogram import StatefulTractogram, Space
+from dipy.io.streamline import load_tractogram, save_tractogram
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')

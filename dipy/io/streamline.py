@@ -1,120 +1,159 @@
+from copy import deepcopy
+import logging
 import os
-from functools import partial
+import time
+
 import nibabel as nib
-from nibabel.streamlines import (Field, TrkFile, TckFile,
-                                 Tractogram, LazyTractogram,
-                                 detect_format)
-from nibabel.orientations import aff2axcodes
-from dipy.io.dpy import Dpy, Streamlines
+from nibabel.streamlines import detect_format
+from nibabel.streamlines.tractogram import Tractogram
+import numpy as np
+
+from dipy.io.stateful_tractogram import (create_tractogram_header,
+                                         is_header_compatible,
+                                         StatefulTractogram, Space)
+from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
+from dipy.io.dpy import Dpy
 
 
-def save_tractogram(fname, streamlines, affine, vox_size=None, shape=None,
-                    header=None, reduce_memory_usage=False,
-                    tractogram_file=None):
-    """ Saves tractogram files (*.trk or *.tck or *.dpy)
-
-    Parameters
-    ----------
-    fname : str
-        output trk filename
-    streamlines : list of 2D arrays, generator or ArraySequence
-        Each 2D array represents a sequence of 3D points (points, 3).
-    affine : array_like (4, 4)
-        The mapping from voxel coordinates to streamline points.
-    vox_size : array_like (3,), optional
-        The sizes of the voxels in the reference image (default: None)
-    shape : array, shape (dim,), optional
-        The shape of the reference image (default: None)
-    header : dict, optional
-        Metadata associated to the tractogram file(*.trk). (default: None)
-    reduce_memory_usage : {False, True}, optional
-        If True, save streamlines in a lazy manner i.e. they will not be kept
-        in memory. Otherwise, keep all streamlines in memory until saving.
-    tractogram_file : class TractogramFile, optional
-        Define tractogram class type (TrkFile vs TckFile)
-        Default is None which means auto detect format
-    """
-    if 'dpy' in os.path.splitext(fname)[1].lower():
-        dpw = Dpy(fname, 'w')
-        dpw.write_tracks(Streamlines(streamlines))
-        dpw.close()
-        return
-
-    tractogram_file = tractogram_file or detect_format(fname)
-    if tractogram_file is None:
-        raise ValueError("Unknown format for 'fname': {}".format(fname))
-
-    if vox_size is not None and shape is not None:
-        if not isinstance(header, dict):
-            header = {}
-        header[Field.VOXEL_TO_RASMM] = affine.copy()
-        header[Field.VOXEL_SIZES] = vox_size
-        header[Field.DIMENSIONS] = shape
-        header[Field.VOXEL_ORDER] = "".join(aff2axcodes(affine))
-
-    if reduce_memory_usage and not callable(streamlines):
-        sg = lambda: (s for s in streamlines)
-    else:
-        sg = streamlines
-
-    tractogram_loader = LazyTractogram if reduce_memory_usage else Tractogram
-    tractogram = tractogram_loader(sg)
-    tractogram.affine_to_rasmm = affine
-    track_file = tractogram_file(tractogram, header=header)
-    nib.streamlines.save(track_file, fname)
-
-
-def load_tractogram(filename, lazy_load=False):
-    """ Loads tractogram files (*.trk or *.tck or *.dpy)
+def save_tractogram(sft, filename, bbox_valid_check=True):
+    """ Save the stateful tractogram in any format (trk, tck, vtk, fib, dpy)
 
     Parameters
     ----------
-    filename : str
-        input trk filename
-    lazy_load : {False, True}, optional
-        If True, load streamlines in a lazy manner i.e. they will not be kept
-        in memory and only be loaded when needed.
-        Otherwise, load all streamlines in memory.
+    sft : StatefulTractogram
+        The stateful tractogram to save
+    filename : string
+        Filename with valid extension
 
     Returns
     -------
-    streamlines : list of 2D arrays
-        Each 2D array represents a sequence of 3D points (points, 3).
-    hdr : dict
-        header from a trk file
+    output : bool
+        Did the saving work properly
     """
-    if 'dpy' in os.path.splitext(filename)[1].lower():
-        dpw = Dpy(filename, 'r')
-        streamlines = dpw.read_tracks()
-        dpw.close()
-        return streamlines, {}
 
-    trk_file = nib.streamlines.load(filename, lazy_load)
-    return trk_file.streamlines, trk_file.header
+    _, extension = os.path.splitext(filename)
+    if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
+        TypeError('Output filename is not one of the supported format')
+
+    if bbox_valid_check and not sft.is_bbox_in_vox_valid():
+        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
+                         'save a valid file if some coordinates are invalid')
+
+    old_space = deepcopy(sft.get_current_space())
+    old_shift = deepcopy(sft.get_current_shift())
+
+    sft.to_rasmm()
+    sft.to_center()
+
+    timer = time.time()
+    if extension in ['.trk', '.tck']:
+        tractogram_type = detect_format(filename)
+        header = create_tractogram_header(tractogram_type,
+                                          *sft.get_space_attribute())
+        new_tractogram = Tractogram(sft.get_streamlines(),
+                                    affine_to_rasmm=np.eye(4))
+
+        if extension == '.trk':
+            new_tractogram.data_per_point = sft.get_data_per_point()
+            new_tractogram.data_per_streamline = sft.get_data_per_streamline()
+
+        fileobj = tractogram_type(new_tractogram, header=header)
+        nib.streamlines.save(fileobj, filename)
+
+    elif extension in ['.vtk', '.fib']:
+        save_vtk_streamlines(sft.get_streamlines(), filename, binary=True)
+    elif extension in ['.dpy']:
+        dpy_obj = Dpy(filename, mode='w')
+        dpy_obj.write_tracks(sft.get_streamlines())
+        dpy_obj.close()
+
+    logging.debug('Save %s with %s streamlines in %s seconds',
+                  filename, len(sft), round(time.time() - timer, 3))
+
+    if old_space == Space.VOX:
+        sft.to_vox()
+    elif old_space == Space.VOXMM:
+        sft.to_voxmm()
+
+    if old_shift:
+        sft.to_corner()
+
+    return True
 
 
-load_tck = load_tractogram
-load_tck.__doc__ = load_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.tck)")
+def load_tractogram(filename, reference, to_space=Space.RASMM,
+                    shifted_origin=False, bbox_valid_check=True,
+                    trk_header_check=True):
+    """ Load the stateful tractogram from any format (trk, tck, fib, dpy)
 
+    Parameters
+    ----------
+    filename : string
+        Filename with valid extension
+    reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
+        trk.header (dict)
+        Reference that provides the spatial attribute.
+        Typically a nifti-related object from the native diffusion used for
+        streamlines generation
+    space : string
+        Space in which the streamlines will be transformed after loading
+        (vox, voxmm or rasmm)
+    shifted_origin : bool
+        Information on the position of the origin,
+        False is Trackvis standard, default (center of the voxel)
+        True is NIFTI standard (corner of the voxel)
 
-load_trk = load_tractogram
-load_trk.__doc__ = load_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.trk)")
+    Returns
+    -------
+    output : StatefulTractogram
+        The tractogram to load (must have been saved properly)
+    """
+    _, extension = os.path.splitext(filename)
+    if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
+        logging.error('Output filename is not one of the supported format')
+        return False
 
-load_dpy = load_tractogram
-load_dpy.__doc__ = load_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.dpy)")
+    if to_space not in Space:
+        logging.error('Space MUST be one of the 3 choices (Enum)')
+        return False
 
-save_tck = partial(save_tractogram, tractogram_file=TckFile)
-save_tck.__doc__ = save_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.tck)")
+    if trk_header_check and extension == '.trk':
+        if not is_header_compatible(filename, reference):
+            logging.error('Trk file header does not match the provided ' +
+                          'reference')
+            return False
 
+    timer = time.time()
+    data_per_point = None
+    data_per_streamline = None
+    if extension in ['.trk', '.tck']:
+        tractogram_obj = nib.streamlines.load(filename).tractogram
+        streamlines = tractogram_obj.streamlines
+        if extension == '.trk':
+            data_per_point = tractogram_obj.data_per_point
+            data_per_streamline = tractogram_obj.data_per_streamline
 
-save_trk = partial(save_tractogram, tractogram_file=TrkFile)
-save_trk.__doc__ = save_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.trk)")
+    elif extension in ['.vtk', '.fib']:
+        streamlines = load_vtk_streamlines(filename)
+    elif extension in ['.dpy']:
+        dpy_obj = Dpy(filename, mode='r')
+        streamlines = list(dpy_obj.read_tracks())
+        dpy_obj.close()
+    logging.debug('Load %s with %s streamlines in %s seconds',
+                  filename, len(streamlines), round(time.time() - timer, 3))
 
-save_dpy = partial(save_tractogram, affine=None)
-save_dpy.__doc__ = save_tractogram.__doc__.replace("(*.trk or *.tck or *.dpy)",
-                                                   "(*.dpy)")
+    sft = StatefulTractogram(streamlines, reference, Space.RASMM,
+                             shifted_origin=shifted_origin,
+                             data_per_point=data_per_point,
+                             data_per_streamline=data_per_streamline)
+
+    if to_space == Space.VOX:
+        sft.to_vox()
+    elif to_space == Space.VOXMM:
+        sft.to_voxmm()
+
+    if bbox_valid_check and not sft.is_bbox_in_vox_valid():
+        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
+                         'load a valid file if some coordinates are invalid')
+
+    return sft

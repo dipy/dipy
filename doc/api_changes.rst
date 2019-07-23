@@ -8,13 +8,20 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.0 changes
 ----------------
 Some of the changes introduced in the 1.0 release will break backwards
-compatibility with previous versions.
+compatibility with previous versions.s
 
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
 if you are providing a 4D volume, `vol_idx` is now a required argument.
 The order of parameters has also changed.
+
+**Tractogram loading and saving**
+
+The API of ``dipy.io.streamlines.load_tractogram`` and 
+``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
+When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
+guarantee proper spatial transformation handling.
 
 
 DIPY 0.16 Changes
