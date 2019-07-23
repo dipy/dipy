@@ -1,7 +1,8 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import length, Streamlines
-from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 
 fury, has_fury, setup_module = optional_package('fury')
@@ -221,19 +222,19 @@ class Horizon(object):
 
             slider_label_length = build_label(text="Length")
             slider_length = ui.LineSlider2D(
-                    min_value=lengths.min(),
-                    max_value=np.percentile(lengths, 98),
-                    initial_value=np.percentile(lengths, 25),
-                    text_template="{value:.0f}",
-                    length=140)
+                min_value=lengths.min(),
+                max_value=np.percentile(lengths, 98),
+                initial_value=np.percentile(lengths, 25),
+                text_template="{value:.0f}",
+                length=140)
 
             slider_label_size = build_label(text="Size")
             slider_size = ui.LineSlider2D(
-                    min_value=sizes.min(),
-                    max_value=np.percentile(sizes, 98),
-                    initial_value=np.percentile(sizes, 50),
-                    text_template="{value:.0f}",
-                    length=140)
+                min_value=sizes.min(),
+                max_value=np.percentile(sizes, 98),
+                initial_value=np.percentile(sizes, 50),
+                text_template="{value:.0f}",
+                length=140)
 
             # global self.length_min, size_min
             self.size_min = sizes.min()
@@ -382,7 +383,9 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
-                    save_trk('tmp.trk', saving_streamlines, np.eye(4))
+                    sft = StatefulTractogram(saving_streamlines, 'same',
+                                             Space.RASMM)
+                    save_tractogram(sft, tmp.trk, bbox_valid_check=False)
 
                 if key == 'y' or key == 'Y':
                     active_streamlines = Streamlines()

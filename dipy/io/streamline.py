@@ -91,7 +91,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     filename : string
         Filename with valid extension
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
-        trk.header (dict)
+        trk.header (dict), or 'same' if the input is a trk file.
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
         streamlines generation
@@ -116,6 +116,9 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     if to_space not in Space:
         logging.error('Space MUST be one of the 3 choices (Enum)')
         return False
+
+    if extension == '.trk' and reference == 'same':
+        reference = filename
 
     if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):

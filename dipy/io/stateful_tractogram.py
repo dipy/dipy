@@ -4,8 +4,6 @@ import enum
 from itertools import product
 import logging
 from operator import itemgetter
-import os
-import time
 import six
 
 import nibabel as nib

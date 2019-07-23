@@ -9,7 +9,7 @@ from scipy.spatial.distance import mahalanobis
 
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.io.peaks import load_peaks
@@ -97,7 +97,7 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
             index = st[ip].astype(int)
 
             if (index[0] < shape[0] and index[1] < shape[1] and
-               index[2] < shape[2]):
+                    index[2] < shape[2]):
 
                 dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
                 dval = peaks.peak_values[index[0]][index[1]][index[2]]
@@ -217,10 +217,12 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     n = len(org_bd)
 
     for io in range(n):
-        mbundles, _ = load_trk(os.path.join(model_bundle_folder, mb[io]))
-        bundles, _ = load_trk(os.path.join(bundle_folder, bd[io]))
-        orig_bundles, _ = load_trk(os.path.join(orig_bundle_folder,
-                                   org_bd[io]))
+        mbundles = load_tractogram(os.path.join(model_bundle_folder, mb[io]),
+                                   'same', bbox_valid_check=False).get_streamlines()
+        bundles = load_tractogram(os.path.join(bundle_folder, bd[io]),
+                                  'same', bbox_valid_check=False).get_streamlines()
+        orig_bundles = load_tractogram(os.path.join(orig_bundle_folder, org_bd[io]),
+                                       'same', bbox_valid_check=False).get_streamlines()
 
         mbundle_streamlines = set_number_of_points(mbundles,
                                                    nb_points=no_disks)

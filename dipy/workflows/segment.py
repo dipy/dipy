@@ -3,10 +3,10 @@ from __future__ import division, print_function, absolute_import
 import logging
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
+import nibabel as nib
 import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
-from dipy.io.streamline import load_trk, save_trk
 from dipy.segment.bundles import RecoBundles
 
 
@@ -206,7 +206,8 @@ class RecoBundlesFlow(Workflow):
 
         t = time()
         logging.info(streamline_files)
-        streamlines, header = load_trk(streamline_files)
+        input_obj = nib.streamlines.load(streamline_files)
+        streamlines = input_obj.get_streamlines()
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
 
@@ -216,7 +217,8 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle, _ = load_trk(mb)
+            model_bundle = load_tractogram(mb, 'same',
+                                           bbox_valid_check=False).get_streamlines()
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -265,14 +267,16 @@ class RecoBundlesFlow(Workflow):
 
             if len(labels) > 0:
                 ba, bmd = rb.evaluate_results(
-                             model_bundle, recognized_bundle,
-                             slr_select)
+                    model_bundle, recognized_bundle,
+                    slr_select)
 
                 logging.info("Bundle adjacency Metric {0}".format(ba))
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
-            save_trk(out_rec, recognized_bundle, np.eye(4))
-
+            new_tractogram = nib.streamlines.Tractogram(recognized_bundle,
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, out_rec,
+                                 header=input_obj.header)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
@@ -314,9 +318,13 @@ class LabelsBundlesFlow(Workflow):
         for sf, lb, out_bundle in io_it:
 
             logging.info(sf)
-            streamlines, header = load_trk(sf)
+            sft = load_tractogram(sf, 'same', bbox_valid_check=False)
+            streamlines = sft.get_streamlines()
             logging.info(lb)
             location = np.load(lb)
             logging.info('Saving output files ...')
-            save_trk(out_bundle, streamlines[location], np.eye(4))
+            sft.set_data_per_point({})
+            sft.set_data_per_streamline({})
+            sft.set_streamlines(streamlines[location])
+            save_tractogram(sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)

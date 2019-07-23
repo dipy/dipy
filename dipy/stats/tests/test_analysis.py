@@ -3,7 +3,8 @@ import numpy.testing as npt
 import nibabel as nib
 from numpy.testing import assert_equal, run_module_suite
 from dipy.data import get_fnames
-from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 import os
 import numpy.testing as npt
@@ -21,9 +22,9 @@ _, have_tables, _ = optional_package("tables")
 def test_ba():
 
     with TemporaryDirectory() as dirpath:
-
-        streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-        fornix = [s[0] for s in streams]
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                  bbox_valid_check=False).get_streamlines()
 
         f = Streamlines(fornix)
 
@@ -31,20 +32,23 @@ def test_ba():
 
         os.mkdir(mb)
 
-        save_trk(os.path.join(mb, "temp.trk"),
-                 f, affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
 
         rb = os.path.join(dirpath, "rec_bundles")
         os.mkdir(rb)
 
-        save_trk(os.path.join(rb, "temp.trk"), f,
-                 affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(rb, "temp.trk"),
+                        bbox_valid_check=False)
 
         ob = os.path.join(dirpath, "org_bundles")
         os.mkdir(ob)
 
-        save_trk(os.path.join(ob, "temp.trk"), f,
-                 affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(ob, "temp.trk"),
+                        bbox_valid_check=False)
 
         dt = os.path.join(dirpath, "dti_measures")
         os.mkdir(dt)

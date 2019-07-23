@@ -8,7 +8,8 @@ from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
-from dipy.io.streamline import load_trk, save_trk
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from os.path import join as pjoin
 from dipy.tracking.streamline import (set_number_of_points,
                                       select_random_set_of_streamlines)
@@ -50,6 +51,7 @@ def test_median_otsu_flow():
 def test_recobundles_flow():
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames('fornix')
+        print(data_path)
         streams, hdr = nib.trackvis.read(data_path)
         fornix = [s[0] for s in streams]
 
@@ -62,10 +64,12 @@ def test_recobundles_flow():
         f.extend(f2)
 
         f2_path = pjoin(out_dir, "f2.trk")
-        save_trk(f2_path, f2, affine=np.eye(4))
+        sft = StatefulTractogram(f2, data_path, Space.RASMM)
+        save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         f1_path = pjoin(out_dir, "f1.trk")
-        save_trk(f1_path, f, affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, f1_path, bbox_valid_check=False)
 
         rb_flow = RecoBundlesFlow(force=True)
         rb_flow.run(f1_path, f2_path, greater_than=0, clust_thr=10,
@@ -74,14 +78,16 @@ def test_recobundles_flow():
         labels = rb_flow.last_generated_outputs['out_recognized_labels']
         recog_trk = rb_flow.last_generated_outputs['out_recognized_transf']
 
-        rec_bundle, _ = load_trk(recog_trk)
+        rec_bundle = load_tractogram(recog_trk, 'same',
+                                     bbox_valid_check=False).get_streamlines()
         npt.assert_equal(len(rec_bundle) == len(f2), True)
 
         label_flow = LabelsBundlesFlow(force=True)
         label_flow.run(f1_path, labels)
 
         recog_bundle = label_flow.last_generated_outputs['out_bundle']
-        rec_bundle_org, _ = load_trk(recog_bundle)
+        rec_bundle_org = load_tractogram(recog_bundle, 'same',
+                                         bbox_valid_check=False).get_streamlines()
 
         BMD = BundleMinDistanceMetric()
         nb_pts = 20

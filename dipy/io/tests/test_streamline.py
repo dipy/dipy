@@ -4,11 +4,11 @@ import numpy as np
 import numpy.testing as npt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
-from dipy.io.streamline import (save_trk, load_trk, save_tractogram,
-                                save_tck, load_tck, load_tractogram,
-                                save_dpy, load_dpy)
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.stateful_tractogram import (create_nifti_header,
+                                         StatefulTractogram,
+                                         Space)
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
-from dipy.io.trackvis import save_trk as trackvis_save_trk
 from dipy.tracking.streamline import Streamlines
 
 from dipy.utils.optpkg import optional_package
@@ -139,111 +139,49 @@ streamlines = Streamlines([streamline[[0, 10]], streamline,
                            streamline[::5], streamline[::6]])
 
 
-def test_io_streamline():
-    with InTemporaryDirectory():
-        fname = 'test.trk'
-        affine = np.eye(4)
-
-        # Test save
-        save_tractogram(fname, streamlines, affine,
-                        vox_size=np.array([2, 1.5, 1.5]),
-                        shape=np.array([50, 50, 50]))
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        npt.assert_array_equal(np.array([2, 1.5, 1.5]),
-                               tfile.header.get('voxel_sizes'))
-        npt.assert_array_equal(np.array([50, 50, 50]),
-                               tfile.header.get('dimensions'))
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
-                                      decimal=4)
-
-        # Test basic save
-        save_tractogram(fname, streamlines, affine)
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
-                                      decimal=5)
-
-        # Test Load
-        local_streamlines, hdr = load_tractogram(fname)
-        npt.assert_equal(len(local_streamlines), len(streamlines))
-        for arr1, arr2 in zip(local_streamlines, streamlines):
-            npt.assert_allclose(arr1, arr2)
-
-
-def io_tractogram(load_fn, save_fn, extension):
+def io_tractogram(extension):
     with InTemporaryDirectory():
         fname = 'test.{}'.format(extension)
-        affine = np.eye(4)
 
-        # Test save
-        save_fn(fname, streamlines, affine, vox_size=np.array([2, 1.5, 1.5]),
-                shape=np.array([50, 50, 50]))
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        vox_size = tfile.header.get('voxel_sizes')
-        dims = tfile.header.get('dimensions')
-        if isinstance(vox_size, str):
-            vox_size = vox_size.replace('[', '').replace(']', '')
-            vox_size = np.fromstring(vox_size, sep=" ", dtype=np.float)
-        if isinstance(dims, str):
-            dims = dims.replace('[', '').replace(']', '')
-            dims = np.fromstring(dims, sep=" ", dtype=np.int)
-        npt.assert_array_equal(np.array([2, 1.5, 1.5]), vox_size)
-        npt.assert_array_equal(np.array([50, 50, 50]), dims)
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
+        in_affine = np.eye(4)
+        in_dimensions = np.array([50, 50, 50])
+        in_voxel_sizes = np.array([2, 1.5, 1.5])
+        nii_header = create_nifti_header(in_affine, in_dimensions,
+                                         in_voxel_sizes)
+        sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
+
+        save_tractogram(sft, fname, bbox_valid_check=False)
+
+        if extension == 'trk':
+            reference = 'same'
+        else:
+            reference = nii_header
+
+        sft = load_tractogram(fname, reference, bbox_valid_check=False)
+        affine, dimensions, voxel_sizes, _ = sft.get_space_attribute()
+
+        npt.assert_array_equal(in_affine, affine)
+        npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
+        npt.assert_array_equal(in_dimensions, dimensions)
+        npt.assert_equal(len(sft), len(streamlines))
+        npt.assert_array_almost_equal(sft.get_streamlines()[1], streamline,
                                       decimal=4)
-
-        # Test basic save
-        save_fn(fname, streamlines, affine)
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
-                                      decimal=5)
-
-        # Test lazy save
-        save_fn(fname, streamlines, affine, vox_size=np.array([2, 1.5, 1.5]),
-                shape=np.array([50, 50, 50]), reduce_memory_usage=True)
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
-                                      decimal=4)
-
-        # Test Load
-        local_streamlines, hdr = load_fn(fname)
-        npt.assert_equal(len(local_streamlines), len(streamlines))
-        for arr1, arr2 in zip(local_streamlines, streamlines):
-            npt.assert_allclose(arr1, arr2, rtol=1e4)
-
-        # Test lazy Load
-        local_streamlines, hdr = load_fn(fname, lazy_load=True)
-        for arr1, arr2 in zip(local_streamlines, streamlines):
-            npt.assert_allclose(arr1, arr2, rtol=1e4)
-
-
-def test_io_trk():
-    io_tractogram(load_trk, save_trk, "trk")
 
 
 def test_io_tck():
-    io_tractogram(load_tck, save_tck, "tck")
+    io_tractogram('trk')
 
 
-def test_io_dpy():
-    with InTemporaryDirectory():
-        fname = 'test.dpy'
+def test_io_tck():
+    io_tractogram('tck')
 
-        # Test save
-        save_dpy(fname, streamlines)
-        tracks, _ = load_dpy(fname)
-        npt.assert_equal(len(tracks), len(streamlines))
-        npt.assert_array_almost_equal(tracks[1], streamline,
-                                      decimal=4)
+
+def test_io_tck():
+    io_tractogram('vtk')
+
+
+def test_io_tck():
+    io_tractogram('dpy')
 
 
 @npt.dec.skipif(not have_fury)
@@ -256,28 +194,6 @@ def test_io_vtk():
         tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(streamlines))
         npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
-
-
-def test_trackvis():
-    with InTemporaryDirectory():
-        fname = 'trackvis_test.trk'
-        affine = np.eye(4)
-
-        # Test save
-        trackvis_save_trk(fname, streamlines, affine, np.array([50, 50, 50]))
-        tfile = nib.streamlines.load(fname)
-        npt.assert_array_equal(affine, tfile.affine)
-        npt.assert_array_equal(np.array([1., 1., 1.]),
-                               tfile.header.get('voxel_sizes'))
-        npt.assert_array_equal(np.array([50, 50, 50]),
-                               tfile.header.get('dimensions'))
-        npt.assert_equal(len(tfile.streamlines), len(streamlines))
-        npt.assert_array_almost_equal(tfile.streamlines[1], streamline,
-                                      decimal=4)
-
-        # Test Deprecations
-        npt.assert_warns(DeprecationWarning, trackvis_save_trk, fname,
-                         streamlines, affine, np.array([50, 50, 50]))
 
 
 if __name__ == '__main__':
