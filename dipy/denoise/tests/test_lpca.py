@@ -10,6 +10,25 @@ from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
 
+def gen_gtab():
+    global gtab
+
+    # generate a gradient table for phantom data
+    directions8 = generate_bvecs(8)
+    directions30 = generate_bvecs(30)
+    directions60 = generate_bvecs(60)
+    # Create full dataset parameters
+    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
+    # 1000 and 60 directions for b-value 2000)
+    bvals = np.hstack((np.zeros(6),
+                       300 * np.ones(8),
+                       1000 * np.ones(30),
+                       2000 * np.ones(60)))
+    bvecs = np.vstack((np.zeros((6, 3)),
+                       directions8, directions30, directions60))
+    gtab = gradient_table(bvals, bvecs)
+
+
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
     # define voxel index
@@ -73,24 +92,6 @@ def rfiw_phantom(gtab, snr=None):
         n2 = np.random.normal(0, sigma, size=DWI.shape)
         return [np.sqrt((DWI / np.sqrt(2) + n1)**2 +
                         (DWI / np.sqrt(2) + n2)**2), sigma]
-
-
-def gen_gtab():
-    # generate a gradient table for phantom data
-    directions8 = generate_bvecs(8)
-    directions30 = generate_bvecs(30)
-    directions60 = generate_bvecs(60)
-    # Create full dataset parameters
-    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
-    # 1000 and 60 directions for b-value 2000)
-    bvals = np.hstack((np.zeros(6),
-                       300 * np.ones(8),
-                       1000 * np.ones(30),
-                       2000 * np.ones(60)))
-    bvecs = np.vstack((np.zeros((6, 3)),
-                       directions8, directions30, directions60))
-    gtab = gradient_table(bvals, bvecs)
-    return gtab
 
 
 def test_lpca_static():
@@ -183,7 +184,6 @@ def test_lpca_wrong():
 
 
 def test_phantom():
-    gtab = gen_gtab()
     DWI_clean = rfiw_phantom(gtab, snr=None)
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     # To test without Rician correction
@@ -240,13 +240,11 @@ def test_phantom():
 
 
 def test_lpca_ill_conditioned():
-    gtab = gen_gtab()
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
 
 
 def test_lpca_sigma_wrong_shape():
-    gtab = gen_gtab()
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
     sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
@@ -258,7 +256,6 @@ def test_pca_classifier():
     # snr = 50, i.e signal std = 0.02 (Gaussian noise)
     std_gt = 0.02
     S0 = 1.0
-    gtab = gen_gtab()
     ndir = gtab.bvals.size
     signal_test = np.zeros((5, 5, 5, ndir))
     mevals = np.array([[0.99e-3, 0.0, 0.0], [2.26e-3, 0.87e-3, 0.87e-3]])
@@ -292,7 +289,6 @@ def test_pca_classifier():
 
 
 def test_mpPCA_in_phantom():
-    gtab = gen_gtab()
     DWIgt = rfiw_phantom(gtab, snr=None)
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
