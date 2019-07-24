@@ -5,7 +5,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.localpca import (localpca, pca_classifier)
+from dipy.denoise.localpca import (localpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
@@ -273,14 +273,14 @@ def test_pca_classifier():
     [L, W] = np.linalg.eigh(np.dot(X.T, X)/125)
 
     # Find number of noise related eigenvalues
-    c, var = pca_classifier(L, 125)
+    var, c = _pca_classifier(L, 125)
     std = np.sqrt(var)
 
-    # Expected number of signal components is 1 because phantom only has one
-    # voxel type. Therefore, expected noise components is (L.size - 1).
+    # Expected number of signal components is 0 because phantom only has one
+    # voxel type and that information is campured by the mean of X.
+    # Therefore, expected noise components should be equal to size of L.
     # To allow some margin of error let's assess if c is higher than
-    # L.size - 3. Note that algorithm is tuned to be conservative (i.e.
-    # preserve the signal information as much as posible).
+    # L.size - 3.
     assert_(c > L.size-3)
 
     # Let's check if noise std estimate as an error less than 5%

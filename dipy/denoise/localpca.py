@@ -10,7 +10,7 @@ except ImportError:
 from scipy.linalg import eigh
 
 
-def pca_classifier(L, m):
+def _pca_classifier(L, m):
     """ Classifies which PCA eigenvalues are related to noise and estimates the
     noise variance
 
@@ -21,10 +21,10 @@ def pca_classifier(L, m):
 
     Returns
     -------
-    c : int
-        Number of eigenvalues related to noise
     var : float
         Estimation of the noise variance
+    c : int
+        Number of eigenvalues related to noise
 
     Notes
     -----
@@ -44,7 +44,7 @@ def pca_classifier(L, m):
         var = np.mean(L[:c])
         c = c - 1
         r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
-    return c, var
+    return var, c + 1
 
 
 def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
@@ -205,7 +205,7 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
                 if sigma is None:
                     # Random matrix theory
-                    c, this_var = pca_classifier(d, patch_size ** 3)
+                    this_var, c = _pca_classifier(d, patch_size ** 3)
                 else:
                     # Threshold by tau:
                     c = np.sum(d < tau)
