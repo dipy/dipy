@@ -87,7 +87,7 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
         The dtype for the output array. Default: output has the same dtype as
         the input.
     return_sigma : bool (optional)
-        If true, the Standard deviation of the noise will be returned
+        If true, the Standard deviation of the noise will be returned.
         Default: False
 
     Returns
@@ -162,7 +162,8 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
     dim = arr.shape[-1]
 
     if return_sigma is True and sigma is None:
-        var = np.zeros(arr.shape, dtype=calc_dtype)
+        var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
+        thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius, arr.shape[2] - patch_radius):
@@ -221,13 +222,14 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
                 if return_sigma is True and sigma is None:
                     var[ix1:ix2, jx1:jx2, kx1:kx2] += this_var * this_theta
+                    thetavar[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
 
     denoised_arr = thetax / theta
     denoised_arr.clip(min=0, out=denoised_arr)
     denoised_arr[~mask] = 0
     if return_sigma is True:
         if sigma is None:
-            var = var / theta
+            var = var / thetavar
             var[~mask] = 0
             return denoised_arr.astype(out_dtype), np.sqrt(var)
         else:

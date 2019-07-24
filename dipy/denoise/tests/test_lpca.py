@@ -10,7 +10,7 @@ from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
 
-def gen_gtab():
+def setup_module():
     global gtab
 
     # generate a gradient table for phantom data
@@ -285,7 +285,7 @@ def test_pca_classifier():
 
     # Let's check if noise std estimate as an error less than 5%
     std_error = abs(std - std_gt)/std_gt * 100
-    assert_(std_error < 10)
+    assert_(std_error < 5)
 
 
 def test_mpPCA_in_phantom():
@@ -299,6 +299,25 @@ def test_mpPCA_in_phantom():
     rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
     rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
     assert_(rmse_den < rmse_noisy)
+
+
+def test_lpca_returned_sigma():
+    DWIgt = rfiw_phantom(gtab, snr=None)
+    std_gt = 0.02
+    noise = std_gt*np.random.standard_normal(DWIgt.shape)
+    DWInoise = DWIgt + noise
+    DWIden = localpca(DWInoise, patch_radius=2)
+
+    # Case that sigma is estimated using mpPCA
+    DWIden, sigma = localpca(DWInoise, patch_radius=2, return_sigma=True)
+    msigma = np.mean(sigma)
+    std_error = abs(msigma - std_gt)/std_gt * 100
+    assert_(std_error < 5)
+
+    # Case that sigma is inputed (sigma outputed should be the same)
+    DWIden, rsigma = localpca(DWInoise, sigma=sigma,
+                              patch_radius=2, return_sigma=True)
+    assert_array_almost_equal(rsigma, sigma)
 
 
 if __name__ == '__main__':
