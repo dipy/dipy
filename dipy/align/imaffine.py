@@ -46,6 +46,8 @@ import numpy as np
 import numpy.linalg as npl
 import scipy.ndimage as ndimage
 from dipy.core.optimize import Optimizer
+from dipy.core.interpolation import (interpolate_scalar_2d,
+                                     interpolate_scalar_3d)
 from dipy.align import vector_fields as vf
 from dipy.align import VerbosityLevels
 from dipy.align.parzenhist import (ParzenJointHistogram,
@@ -546,9 +548,9 @@ class MutualInformationMetric(object):
                                     moving.shape, moving_grid2world)
 
         if self.dim == 2:
-            self.interp_method = vf.interpolate_scalar_2d
+            self.interp_method = interpolate_scalar_2d
         else:
-            self.interp_method = vf.interpolate_scalar_3d
+            self.interp_method = interpolate_scalar_3d
 
         if self.sampling_proportion is None:
             self.samples = None

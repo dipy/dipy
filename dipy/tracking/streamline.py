@@ -12,7 +12,8 @@ from dipy.tracking.streamlinespeed import (set_number_of_points, length,
 from dipy.tracking.distances import bundles_distances_mdf
 import dipy.tracking.utils as ut
 from dipy.core.geometry import dist_to_corner
-import dipy.align.vector_fields as vfu
+from dipy.core.interpolation import (interpolate_vector_3d,
+                                     interpolate_scalar_3d)
 
 
 def unlist_streamlines(streamlines):
@@ -618,9 +619,9 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
 
     threedvec : bool
         Whether the last dimension has length 3. This is a special case in
-        which we can use :func:`vfu.interpolate_vector_3d` for the
-        interploation of 4D volumes without looping over the elements of the
-        last dimension.
+        which we can use :func:`dipy.core.interpolate.interpolate_vector_3d`
+        for the interploation of 4D volumes without looping over the elements
+        of the last dimension.
 
     Return
     ------
@@ -638,10 +639,10 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         vals = []
         for sl in streamlines:
             if threedvec:
-                vals.append(list(vfu.interpolate_vector_3d(
+                vals.append(list(interpolate_vector_3d(
                     data, sl.astype(np.float))[0]))
             else:
-                vals.append(list(vfu.interpolate_scalar_3d(
+                vals.append(list(interpolate_scalar_3d(
                     data, sl.astype(np.float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
@@ -656,9 +657,9 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
 
         # So that we can index in one operation:
         if threedvec:
-            vals = np.array(vfu.interpolate_vector_3d(data, sl_cat)[0])
+            vals = np.array(interpolate_vector_3d(data, sl_cat)[0])
         else:
-            vals = np.array(vfu.interpolate_scalar_3d(data, sl_cat)[0])
+            vals = np.array(interpolate_scalar_3d(data, sl_cat)[0])
         vals = np.reshape(vals, (sl_shape[0], sl_shape[1], -1))
         if vals.shape[-1] == 1:
             vals = np.reshape(vals, vals.shape[:-1])

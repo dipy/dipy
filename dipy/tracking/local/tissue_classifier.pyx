@@ -9,7 +9,7 @@ cimport numpy as np
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 
-from .interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
 

@@ -3,6 +3,8 @@ import scipy as sp
 from functools import reduce
 from operator import mul
 from dipy.core.ndindex import ndindex
+from dipy.core.interpolation import (interpolate_scalar_2d,
+                                     interpolate_scalar_3d)
 from dipy.data import get_fnames
 from dipy.align import vector_fields as vf
 from dipy.align.transforms import regtransforms
@@ -422,10 +424,10 @@ def test_joint_pdf_gradients_sparse():
         dim = ttype[1]
         if dim == 2:
             nslices = 1
-            interp_method = vf.interpolate_scalar_2d
+            interp_method = interpolate_scalar_2d
         else:
             nslices = 45
-            interp_method = vf.interpolate_scalar_3d
+            interp_method = interpolate_scalar_3d
 
         transform = regtransforms[ttype]
         factor = factors[ttype]

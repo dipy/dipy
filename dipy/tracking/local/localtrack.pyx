@@ -8,7 +8,7 @@ from .direction_getter cimport DirectionGetter
 from .tissue_classifier cimport(
     TissueClass, TissueClassifier, ConstrainedTissueClassifier,
     TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
-from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 
 
