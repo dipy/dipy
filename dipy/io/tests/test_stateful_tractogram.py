@@ -480,30 +480,43 @@ def test_shifting_corner():
 
 def test_replace_streamlines():
     # First two is expected to fail
-    assert subsample_streamlines()
-    assert replace_streamlines()
-    assert reassign_both_data_sep()
-    assert reassign_both_data_sep_to_empty()
+    if not subsample_streamlines():
+        raise AssertionError()
+    if not replace_streamlines():
+        raise AssertionError()
+    if not reassign_both_data_sep():
+        raise AssertionError()
+    if not reassign_both_data_sep_to_empty():
+        raise AssertionError()
 
 
 def test_bounding_box():
     # First is expected to fail
-    assert bounding_bbox_valid(False)
-    assert not bounding_bbox_valid(True)
+    if not bounding_bbox_valid(False):
+        raise AssertionError()
+    if bounding_bbox_valid(True):
+        raise AssertionError()
     # Last two are expected to fail
-    assert not out_of_grid(100)
-    assert not out_of_grid(-100)
+    if out_of_grid(100):
+        raise AssertionError()
+    if out_of_grid(-100):
+        raise AssertionError()
 
 
 def test_invalid_streamlines():
-    assert remove_invalid_streamlines(True) == 5
-    assert remove_invalid_streamlines(False) == 13
+    if not remove_invalid_streamlines(True) == 5:
+        raise AssertionError()
+    if not remove_invalid_streamlines(False) == 13:
+        raise AssertionError()
 
 
 def test_trk_coloring():
-    assert random_streamline_color()
-    assert random_point_gray()
-    assert random_point_color()
+    if not random_streamline_color():
+        raise AssertionError()
+    if not random_point_gray():
+        raise AssertionError()
+    if not random_point_color():
+        raise AssertionError()
 
 
 if __name__ == '__main__':
