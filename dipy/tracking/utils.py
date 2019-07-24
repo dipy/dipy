@@ -71,7 +71,7 @@ from dipy.io.bvectxt import orientation_from_string
 import nibabel as nib
 
 
-def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
+def density_map(streamlines, vol_dims, affine=None):
     """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
@@ -82,8 +82,6 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     vol_dims : 3 ints
         The shape of the volume to be returned containing the streamlines
         counts
-    voxel_size :
-        This argument is deprecated.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
 
@@ -105,7 +103,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+    lin_T, offset = _mapping_to_voxel(affine)
     counts = np.zeros(vol_dims, 'int')
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin_T, offset)
@@ -116,8 +114,8 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     return counts
 
 
-def connectivity_matrix(streamlines, label_volume, voxel_size=None,
-                        affine=None, symmetric=True, return_mapping=False,
+def connectivity_matrix(streamlines, label_volume, affine=None,
+                        symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair.
 
@@ -128,8 +126,6 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     label_volume : ndarray
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
-    voxel_size :
-        This argument is deprecated.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline coordinates.
     symmetric : bool, True by default
@@ -170,7 +166,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+    lin_T, offset = _mapping_to_voxel(affine)
     endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
 
     # get labels for label_volume
@@ -568,7 +564,7 @@ def target(streamlines, target_mask, affine, include=True):
 
     """
     target_mask = np.array(target_mask, dtype=bool, copy=True)
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    lin_T, offset = _mapping_to_voxel(affine)
     yield
     # End of initialization
 
@@ -624,7 +620,7 @@ def target_line_based(streamlines, target_mask, affine=None, include=True):
     dipy.tracking.streamline.compress_streamlines
     """
     target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    lin_T, offset = _mapping_to_voxel(affine)
     streamline_index = _streamlines_in_mask(
         streamlines, target_mask, lin_T, offset)
     yield
@@ -1116,7 +1112,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
     # path length map
     plm = np.empty(aoi.shape, dtype=float)
     plm[:] = np.inf
-    lin_T, offset = _mapping_to_voxel(affine, None)
+    lin_T, offset = _mapping_to_voxel(affine)
     for sl in streamlines:
         seg_ind = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = seg_ind.T
