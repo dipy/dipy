@@ -1,18 +1,18 @@
+import os
+
 import numpy as np
 import numpy.testing as npt
-import nibabel as nib
-from numpy.testing import assert_equal, run_module_suite
+
 from dipy.data import get_fnames
+from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.tracking.streamline import Streamlines
-import os
-import numpy.testing as npt
-from dipy.utils.optpkg import optional_package
-from dipy.io.image import save_nifti
-from nibabel.tmpdirs import TemporaryDirectory
 from dipy.stats.analysis import bundle_analysis, gaussian_weights, afq_profile
 from dipy.testing import assert_true
+from dipy.tracking.streamline import Streamlines
+from dipy.utils.optpkg import optional_package
+from nibabel.tmpdirs import TemporaryDirectory
+
 _, have_pd, _ = optional_package("pandas")
 _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
@@ -24,7 +24,7 @@ def test_ba():
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
         fornix = load_tractogram(data_path, 'same',
-                                  bbox_valid_check=False).get_streamlines()
+                                 bbox_valid_check=False).get_streamlines()
 
         f = Streamlines(fornix)
 
@@ -135,11 +135,11 @@ def test_afq_profile():
     data = np.ones((10, 10, 10))
     bundle = Streamlines()
     bundle.extend(np.array([[[0, 0., 0],
-                            [1, 0., 0.],
-                            [2, 0., 0.]]]))
+                             [1, 0., 0.],
+                             [2, 0., 0.]]]))
     bundle.extend(np.array([[[0, 0., 0.],
-                            [1, 0., 0],
-                            [2, 0,  0.]]]))
+                             [1, 0., 0],
+                             [2, 0,  0.]]]))
 
     profile = afq_profile(data, bundle)
     npt.assert_equal(profile, np.ones(100))
@@ -190,5 +190,4 @@ def test_afq_profile():
 
 
 if __name__ == '__main__':
-
-    run_module_suite()
+    npt.run_module_suite()

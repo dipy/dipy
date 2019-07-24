@@ -207,7 +207,7 @@ class RecoBundlesFlow(Workflow):
         t = time()
         logging.info(streamline_files)
         input_obj = nib.streamlines.load(streamline_files)
-        streamlines = input_obj.get_streamlines()
+        streamlines = input_obj.streamlines
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
 
@@ -217,8 +217,7 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = load_tractogram(mb, 'same',
-                                           bbox_valid_check=False).get_streamlines()
+            model_bundle = nib.streamlines.load(mb).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -318,13 +317,14 @@ class LabelsBundlesFlow(Workflow):
         for sf, lb, out_bundle in io_it:
 
             logging.info(sf)
-            sft = load_tractogram(sf, 'same', bbox_valid_check=False)
-            streamlines = sft.get_streamlines()
+            tractogram_obj = nib.streamlines.load(sf)
+            streamlines = tractogram_obj.streamlines
+
             logging.info(lb)
             location = np.load(lb)
             logging.info('Saving output files ...')
-            sft.set_data_per_point({})
-            sft.set_data_per_streamline({})
-            sft.set_streamlines(streamlines[location])
-            save_tractogram(sft, out_bundle, bbox_valid_check=False)
+            new_tractogram = nib.streamlines.Tractogram(streamlines[location],
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, out_bundle,
+                                 header=tractogram_obj.header)
             logging.info(out_bundle)

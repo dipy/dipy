@@ -75,7 +75,7 @@ def test_bundle_analysis_population_flow():
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
         fornix = load_tractogram(data_path, 'same',
-                                  bbox_valid_check=False).get_streamlines()
+                                 bbox_valid_check=False).get_streamlines()
 
         f = Streamlines(fornix)
 
@@ -105,12 +105,12 @@ def test_bundle_analysis_population_flow():
 
             sft = StatefulTractogram(f, data_path, Space.RASMM)
             save_tractogram(sft, os.path.join(pre, "rec_bundles", "temp.trk"),
-                        bbox_valid_check=False)
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "org_bundles"))
 
             sft = StatefulTractogram(f, data_path, Space.RASMM)
             save_tractogram(sft, os.path.join(pre, "org_bundles", "temp.trk"),
-                        bbox_valid_check=False)
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "measures"))
 
             fa = np.random.rand(255, 255, 255)

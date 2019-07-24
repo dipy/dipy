@@ -8,11 +8,10 @@ from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
-from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from os.path import join as pjoin
-from dipy.tracking.streamline import (set_number_of_points,
-                                      select_random_set_of_streamlines)
+from dipy.tracking.streamline import set_number_of_points
 from dipy.align.streamlinear import BundleMinDistanceMetric
 
 

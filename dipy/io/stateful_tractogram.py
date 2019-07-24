@@ -4,17 +4,15 @@ import enum
 from itertools import product
 import logging
 from operator import itemgetter
-import six
 
-import nibabel as nib
 from nibabel.affines import apply_affine
-from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import (Tractogram,
                                             PerArraySequenceDict,
                                             PerArrayDict)
 import numpy as np
 
 from dipy.io.dpy import Streamlines
+from dipy.io.utils import get_reference_info
 
 
 class Space(enum.Enum):
@@ -441,143 +439,6 @@ class StatefulTractogram(object):
             logging.info('Origin moved to the corner of voxel')
 
         self._shifted_origin = not self._shifted_origin
-
-
-def get_reference_info(reference):
-    """ Will compare the spatial attribute of 2 references
-
-    Parameters
-    ----------
-    reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
-        trk.header (dict)
-        Reference that provides the spatial attribute.
-
-    Returns
-    -------
-    output : tuple
-        - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
-        - dimensions list (3), int, volume shape for each axis
-        - voxel_sizes  list (3), float, size of voxel for each axis
-        - voxel_order, string, Typically 'RAS' or 'LPS'
-    """
-
-    is_nifti = False
-    is_trk = False
-    if isinstance(reference, six.string_types):
-        try:
-            header = nib.load(reference).header
-            is_nifti = True
-        except nib.filebasedimages.ImageFileError:
-            pass
-        try:
-            header = nib.streamlines.load(reference, lazy_load=True).header
-            is_trk = True
-        except ValueError:
-            pass
-    elif isinstance(reference, nib.nifti1.Nifti1Image):
-        header = reference.header
-        is_nifti = True
-    elif isinstance(reference, nib.streamlines.trk.TrkFile):
-        header = reference.header
-        is_trk = True
-    elif isinstance(reference, nib.nifti1.Nifti1Header):
-        header = reference
-        is_nifti = True
-    elif isinstance(reference, dict) and 'magic_number' in reference:
-        header = reference
-        is_trk = True
-
-    if is_nifti:
-        affine = np.eye(4).astype(np.float32)
-        affine[0, 0:4] = header['srow_x']
-        affine[1, 0:4] = header['srow_y']
-        affine[2, 0:4] = header['srow_z']
-        dimensions = header['dim'][1:4]
-        voxel_sizes = header['pixdim'][1:4]
-        print(header)
-        voxel_order = ''.join(nib.aff2axcodes(affine))
-    elif is_trk:
-        affine = header['voxel_to_rasmm']
-        dimensions = header['dimensions']
-        voxel_sizes = header['voxel_sizes']
-        voxel_order = header['voxel_order']
-    else:
-        raise TypeError('Input reference is not one of the supported format')
-
-    if isinstance(voxel_order, np.bytes_):
-        voxel_order = voxel_order.decode('utf-8')
-
-    return affine, dimensions, voxel_sizes, voxel_order
-
-
-def is_header_compatible(reference_1, reference_2):
-    """ Will compare the spatial attribute of 2 references
-
-    Parameters
-    ----------
-    reference_1 : Nifti or Trk filename, Nifti1Image or TrkFile,
-        Nifti1Header or trk.header (dict)
-        Reference that provides the spatial attribute.
-    reference_2 : Nifti or Trk filename, Nifti1Image or TrkFile,
-        Nifti1Header or trk.header (dict)
-        Reference that provides the spatial attribute.
-
-    Returns
-    -------
-    output : bool
-        Does all the spatial attribute match
-    """
-
-    affine_1, dimensions_1, voxel_sizes_1, voxel_order_1 = get_reference_info(
-        reference_1)
-    affine_2, dimensions_2, voxel_sizes_2, voxel_order_2 = get_reference_info(
-        reference_2)
-
-    identical_header = True
-    if not np.allclose(affine_1, affine_2):
-        logging.error('Affine not equal')
-        identical_header = False
-
-    if not np.array_equal(dimensions_1, dimensions_2):
-        logging.error('Dimensions not equal')
-        identical_header = False
-
-    if not np.allclose(voxel_sizes_1, voxel_sizes_2):
-        logging.error('Voxel_size not equal')
-        identical_header = False
-
-    if voxel_order_1 != voxel_order_2:
-        logging.error('Voxel_order not equal')
-        identical_header = False
-
-    return identical_header
-
-
-def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
-                             voxel_order):
-    """ Write a standard trk/tck header from spatial attribute """
-    if isinstance(tractogram_type, six.string_types):
-        tractogram_type = detect_format(tractogram_type)
-
-    new_header = tractogram_type.create_empty_header()
-    new_header[nib.streamlines.Field.VOXEL_SIZES] = tuple(voxel_sizes)
-    new_header[nib.streamlines.Field.DIMENSIONS] = tuple(dimensions)
-    new_header[nib.streamlines.Field.VOXEL_TO_RASMM] = affine
-    new_header[nib.streamlines.Field.VOXEL_ORDER] = voxel_order
-
-    return new_header
-
-
-def create_nifti_header(affine, dimensions, voxel_sizes):
-    """ Write a standard nifti header from spatial attribute """
-    new_header = nib.Nifti1Header()
-    new_header['srow_x'] = affine[0, 0:4]
-    new_header['srow_y'] = affine[1, 0:4]
-    new_header['srow_z'] = affine[2, 0:4]
-    new_header['dim'][1:4] = dimensions
-    new_header['pixdim'][1:4] = voxel_sizes
-
-    return new_header
 
 
 def _is_data_per_point_valid(streamlines, data):

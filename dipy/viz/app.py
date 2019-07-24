@@ -385,7 +385,7 @@ class Horizon(object):
                     print('Saving result in tmp.trk')
                     sft = StatefulTractogram(saving_streamlines, 'same',
                                              Space.RASMM)
-                    save_tractogram(sft, tmp.trk, bbox_valid_check=False)
+                    save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
 
                 if key == 'y' or key == 'Y':
                     active_streamlines = Streamlines()

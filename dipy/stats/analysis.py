@@ -218,11 +218,14 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
     for io in range(n):
         mbundles = load_tractogram(os.path.join(model_bundle_folder, mb[io]),
-                                   'same', bbox_valid_check=False).get_streamlines()
+                                   'same',
+                                   bbox_valid_check=False).get_streamlines()
         bundles = load_tractogram(os.path.join(bundle_folder, bd[io]),
-                                  'same', bbox_valid_check=False).get_streamlines()
-        orig_bundles = load_tractogram(os.path.join(orig_bundle_folder, org_bd[io]),
-                                       'same', bbox_valid_check=False).get_streamlines()
+                                  'same',
+                                  bbox_valid_check=False).get_streamlines()
+        orig_bundles = load_tractogram(os.path.join(orig_bundle_folder,
+                                                    org_bd[io]), 'same',
+                                       bbox_valid_check=False).get_streamlines()
 
         mbundle_streamlines = set_number_of_points(mbundles,
                                                    nb_points=no_disks)

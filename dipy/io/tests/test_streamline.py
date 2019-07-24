@@ -1,15 +1,13 @@
 from __future__ import division, print_function, absolute_import
 
-import numpy as np
-import numpy.testing as npt
-import nibabel as nib
-from nibabel.tmpdirs import InTemporaryDirectory
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.stateful_tractogram import (create_nifti_header,
-                                         StatefulTractogram,
-                                         Space)
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.utils import create_nifti_header
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
+import numpy as np
+import numpy.testing as npt
+from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
@@ -168,7 +166,7 @@ def io_tractogram(extension):
                                       decimal=4)
 
 
-def test_io_tck():
+def test_io_trk():
     io_tractogram('trk')
 
 
@@ -176,16 +174,17 @@ def test_io_tck():
     io_tractogram('tck')
 
 
-def test_io_tck():
+@npt.dec.skipif(not have_fury)
+def test_io_vtk():
     io_tractogram('vtk')
 
 
-def test_io_tck():
+def test_io_dpy():
     io_tractogram('dpy')
 
 
 @npt.dec.skipif(not have_fury)
-def test_io_vtk():
+def test_low_io_vtk():
     with InTemporaryDirectory():
         fname = 'test.fib'
 

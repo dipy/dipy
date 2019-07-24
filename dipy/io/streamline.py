@@ -8,11 +8,11 @@ from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
 
-from dipy.io.stateful_tractogram import (create_tractogram_header,
-                                         is_header_compatible,
-                                         StatefulTractogram, Space)
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.io.dpy import Dpy
+from dipy.io.utils import (create_tractogram_header,
+                           is_header_compatible)
 
 
 def save_tractogram(sft, filename, bbox_valid_check=True):
@@ -160,3 +160,128 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                          'load a valid file if some coordinates are invalid')
 
     return sft
+
+
+def load_trk(filename, reference, to_space=Space.RASMM,
+             shifted_origin=False, bbox_valid_check=True,
+             trk_header_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.trk':
+        raise ValueError('This function can only load trk file, for more'
+                         ' generability use load_tractogram instead.')
+
+    sft = load_tractogram(filename, reference,
+                          to_space=Space.RASMM,
+                          shifted_origin=shifted_origin,
+                          bbox_valid_check=bbox_valid_check,
+                          trk_header_check=trk_header_check)
+    return sft
+
+
+def load_tck(filename, reference, to_space=Space.RASMM,
+             shifted_origin=False, bbox_valid_check=True,
+             trk_header_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.tck':
+        raise ValueError('This function can only load tck file, for more'
+                         ' generability use load_tractogram instead.')
+
+    sft = load_tractogram(filename, reference,
+                          to_space=Space.RASMM,
+                          shifted_origin=shifted_origin,
+                          bbox_valid_check=bbox_valid_check,
+                          trk_header_check=trk_header_check)
+    return sft
+
+
+def load_vtk(filename, reference, to_space=Space.RASMM,
+             shifted_origin=False, bbox_valid_check=True,
+             trk_header_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.vtk':
+        raise ValueError('This function can only load vtk file, for more'
+                         ' generability use load_tractogram instead.')
+
+    sft = load_tractogram(filename, reference,
+                          to_space=Space.RASMM,
+                          shifted_origin=shifted_origin,
+                          bbox_valid_check=bbox_valid_check,
+                          trk_header_check=trk_header_check)
+    return sft
+
+
+def load_fib(filename, reference, to_space=Space.RASMM,
+             shifted_origin=False, bbox_valid_check=True,
+             trk_header_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.fib':
+        raise ValueError('This function can only load fib file, for more'
+                         ' generability use load_tractogram instead.')
+
+    sft = load_tractogram(filename, reference,
+                          to_space=Space.RASMM,
+                          shifted_origin=shifted_origin,
+                          bbox_valid_check=bbox_valid_check,
+                          trk_header_check=trk_header_check)
+    return sft
+
+
+def load_dpy(filename, reference, to_space=Space.RASMM,
+             shifted_origin=False, bbox_valid_check=True,
+             trk_header_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.dpy':
+        raise ValueError('This function can only load dpy file, for more'
+                         ' generability use load_tractogram instead.')
+
+    sft = load_tractogram(filename, reference,
+                          to_space=Space.RASMM,
+                          shifted_origin=shifted_origin,
+                          bbox_valid_check=bbox_valid_check,
+                          trk_header_check=trk_header_check)
+    return sft
+
+
+def save_trk(sft, filename, bbox_valid_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.trk':
+        raise ValueError('This function can only save trk file, for more'
+                         ' generability use save_tractogram instead.')
+
+    save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
+
+
+def save_tck(sft, filename, bbox_valid_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.tck':
+        raise ValueError('This function can only save tck file, for more'
+                         ' generability use save_tractogram instead.')
+
+    save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
+
+
+def save_vtk(sft, filename, bbox_valid_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.vtk':
+        raise ValueError('This function can only save vtk file, for more'
+                         ' generability use save_tractogram instead.')
+
+    save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
+
+
+def save_fib(sft, filename, bbox_valid_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.fib':
+        raise ValueError('This function can only save fib file, for more'
+                         ' generability use save_tractogram instead.')
+
+    save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
+
+
+def save_dpy(sft, filename, bbox_valid_check=True):
+    _, extension = os.path.splitext(filename)
+    if not extension == '.dpy':
+        raise ValueError('This function can only save dpy file, for more'
+                         ' generability use save_tractogram instead.')
+
+    save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)

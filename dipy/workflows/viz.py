@@ -73,7 +73,7 @@ class HorizonFlow(Workflow):
                 tractograms.append(streamlines)
             elif ends('dpy'):
 
-                dpy_obj = Dpy(filename, mode='r')
+                dpy_obj = Dpy(fname, mode='r')
                 streamlines = list(dpy_obj.read_tracks())
                 dpy_obj.close()
 

@@ -7,7 +7,7 @@ import numpy.testing as npt
 from numpy.testing import assert_allclose
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.stateful_tractogram import StatefulTractogram, Space
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 
 from dipy.utils.optpkg import optional_package
