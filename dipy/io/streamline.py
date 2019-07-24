@@ -285,3 +285,35 @@ def save_dpy(sft, filename, bbox_valid_check=True):
                          ' generability use save_tractogram instead.')
 
     save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
+
+
+load_trk.__doc__ = load_tractogram.__doc__.replace(
+    'from any format (trk, tck, fib, dpy)',
+    'of the trk format')
+load_tck.__doc__ = load_tractogram.__doc__.replace(
+    'from any format (trk, tck, fib, dpy)',
+    'of the tck format')
+load_vtk.__doc__ = load_tractogram.__doc__.replace(
+    'from any format (trk, tck, fib, dpy)',
+    'of the vtk format')
+load_fib.__doc__ = load_tractogram.__doc__.replace(
+    'from any format (trk, tck, fib, dpy)',
+    'of the fib format')
+load_dpy.__doc__ = load_tractogram.__doc__.replace(
+    'from any format (trk, tck, fib, dpy)',
+    'of the dpy format')
+save_trk.__doc__ = save_tractogram.__doc__.replace(
+    'any format (trk, tck, vtk, fib, dpy)',
+    'trk format')
+save_tck.__doc__ = save_tractogram.__doc__.replace(
+    'any format (trk, tck, vtk, fib, dpy)',
+    'tck format')
+save_vtk.__doc__ = save_tractogram.__doc__.replace(
+    'any format (trk, tck, vtk, fib, dpy)',
+    'vtk format')
+save_fib.__doc__ = save_tractogram.__doc__.replace(
+    'any format (trk, tck, vtk, fib, dpy)',
+    'fib format')
+save_dpy.__doc__ = save_tractogram.__doc__.replace(
+    'any format (trk, tck, vtk, fib, dpy)',
+    'dpy format')

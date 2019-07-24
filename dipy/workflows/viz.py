@@ -75,7 +75,7 @@ class HorizonFlow(Workflow):
 
                 dpy_obj = Dpy(fname, mode='r')
                 streamlines = list(dpy_obj.read_tracks())
-                dpy_obj.close()sss
+                dpy_obj.close()
 
             if ends('.nii.gz') or ends('.nii'):
 
