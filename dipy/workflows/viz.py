@@ -75,14 +75,14 @@ class HorizonFlow(Workflow):
 
                 dpy_obj = Dpy(fname, mode='r')
                 streamlines = list(dpy_obj.read_tracks())
-                dpy_obj.close()
+                dpy_obj.close()sss
 
-                if ends('.nii.gz') or ends('.nii'):
+            if ends('.nii.gz') or ends('.nii'):
 
-                    data, affine = load_nifti(fname)
-                    images.append((data, affine))
-                    if verbose:
-                        print(affine)
+                data, affine = load_nifti(fname)
+                images.append((data, affine))
+                if verbose:
+                    print(affine)
 
         horizon(tractograms, images, cluster, cluster_thr,
                 random_colors, length_lt, length_gt, clusters_lt,
