@@ -1,15 +1,18 @@
 """
 .. _sfm-track:
 
-==================================================
+=======================================
 Tracking with the Sparse Fascicle Model
-==================================================
+=======================================
 
 Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
 Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
 signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
-
+"""
+# Enables/disables interactive visualization
+interactive = False
+"""
 To begin, we read the Stanford HARDI data set into memory:
 """
 
@@ -63,8 +66,7 @@ pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,
                        min_separation_angle=25,
                        mask=white_matter,
-                       parallel=True
-                       )
+                       parallel=True)
 
 """
 A ThresholdTissueClassifier object is used to segment the data to track only
@@ -107,17 +109,14 @@ Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import window, actor, colormap as cmap
+from dipy.viz import window, actor, colormap, has_fury
 from dipy.data import read_stanford_t1
 from dipy.tracking.utils import move_streamlines
 from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
 t1_aff = t1.affine
-color = cmap.line_colors(streamlines)
-
-# Enables/disables interactive visualization
-interactive = False
+color = colormap.line_colors(streamlines)
 
 """
 To speed up visualization, we will select a random sub-set of streamlines to
@@ -129,27 +128,28 @@ demonstration purposes, we subselect 900 streamlines.
 from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
-streamlines_actor = actor.streamtube(
-    list(move_streamlines(plot_streamlines, inv(t1_aff))),
-         cmap.line_colors(streamlines), linewidth=0.1)
+if has_fury:
+    streamlines_actor = actor.streamtube(
+        list(move_streamlines(plot_streamlines, inv(t1_aff))),
+        colormap.line_colors(streamlines), linewidth=0.1)
 
-vol_actor = actor.slicer(t1_data)
+    vol_actor = actor.slicer(t1_data)
 
-vol_actor.display(40, None, None)
-vol_actor2 = vol_actor.copy()
-vol_actor2.display(None, None, 35)
+    vol_actor.display(40, None, None)
+    vol_actor2 = vol_actor.copy()
+    vol_actor2.display(None, None, 35)
 
-ren = window.Renderer()
-ren.add(streamlines_actor)
-ren.add(vol_actor)
-ren.add(vol_actor2)
+    ren = window.Renderer()
+    ren.add(streamlines_actor)
+    ren.add(vol_actor)
+    ren.add(vol_actor2)
 
-window.record(ren, out_path='sfm_streamlines.png', size=(800, 800))
-if interactive:
-    window.show(ren)
+    window.record(ren, out_path='tractogram_sfm.png', size=(800, 800))
+    if interactive:
+        window.show(ren)
 
 """
-.. figure:: sfm_streamlines.png
+.. figure:: tractogram_sfm.png
    :align: center
 
    **Sparse Fascicle Model tracks**
@@ -159,7 +159,7 @@ software, or for further analysis.
 """
 
 from dipy.io.trackvis import save_trk
-save_trk("sfm_detr.trk", streamlines, affine, labels.shape)
+save_trk("tractogram_sfm_detr.trk", streamlines, affine, labels.shape)
 
 """
 References
@@ -169,5 +169,7 @@ References
    N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015). Evaluating
    the accuracy of diffusion MRI models in white matter. PLoS ONE 10(4):
    e0123272. doi:10.1371/journal.pone.0123272
+
+.. include:: ../links_names.inc
 
 """

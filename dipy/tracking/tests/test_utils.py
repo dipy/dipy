@@ -46,7 +46,7 @@ def test_density_map():
     x = np.arange(10)
     expected = np.zeros(shape)
     expected[x, x, x] = 1.
-    dm = density_map(streamlines, vol_dims=shape, voxel_size=(1, 1, 1))
+    dm = density_map(streamlines, vol_dims=shape, affine=np.eye(4))
     npt.assert_array_equal(dm, expected)
 
     # add streamline, make voxel_size smaller. Each streamline should only be
@@ -57,10 +57,12 @@ def test_density_map():
     expected = np.zeros(shape)
     expected[x, x, x] = 1.
     expected[0, 0, 0] += 1
-    dm = density_map(streamlines, vol_dims=shape, voxel_size=(2, 2, 2))
+    affine = np.eye(4) * 2
+    affine[:3, 3] = 0.05
+    dm = density_map(streamlines, vol_dims=shape, affine=affine)
     npt.assert_array_equal(dm, expected)
     # should work with a generator
-    dm = density_map(iter(streamlines), vol_dims=shape, voxel_size=(2, 2, 2))
+    dm = density_map(iter(streamlines), vol_dims=shape, affine=affine)
     npt.assert_array_equal(dm, expected)
 
     # Test passing affine
@@ -112,18 +114,21 @@ def test_connectivity_matrix():
     expected[3, 4] = 2
     expected[4, 3] = 1
     # Check basic Case
-    matrix = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+    matrix = connectivity_matrix(streamlines, label_volume, affine=np.eye(4),
                                  symmetric=False)
     npt.assert_array_equal(matrix, expected)
     # Test mapping
-    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
-                                          symmetric=False, return_mapping=True)
+    matrix, mapping = connectivity_matrix(streamlines, label_volume,
+                                          affine=np.eye(4),
+                                          symmetric=False,
+                                          return_mapping=True)
     npt.assert_array_equal(matrix, expected)
     npt.assert_equal(mapping[3, 4], [0, 1])
     npt.assert_equal(mapping[4, 3], [2])
     npt.assert_equal(mapping.get((0, 0)), None)
     # Test mapping and symmetric
-    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+    matrix, mapping = connectivity_matrix(streamlines, label_volume,
+                                          affine=np.eye(4),
                                           symmetric=True, return_mapping=True)
     npt.assert_equal(mapping[3, 4], [0, 1, 2])
     # When symmetric only (3,4) is a key, not (4, 3)
@@ -132,7 +137,8 @@ def test_connectivity_matrix():
     expected = expected + expected.T
     npt.assert_array_equal(matrix, expected)
     # Test mapping_as_streamlines, mapping dict has lists of streamlines
-    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+    matrix, mapping = connectivity_matrix(streamlines, label_volume,
+                                          affine=np.eye(4),
                                           symmetric=False,
                                           return_mapping=True,
                                           mapping_as_streamlines=True)
@@ -437,12 +443,12 @@ def test_streamline_mapping():
     streamlines = [np.array([[0, 0, 0], [0, 0, 0], [0, 2, 2]], 'float'),
                    np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], 'float'),
                    np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], 'float')]
-    mapping = streamline_mapping(streamlines, (1, 1, 1))
+    mapping = streamline_mapping(streamlines, affine=np.eye(4))
     expected = {(0, 0, 0): [0, 1, 2], (0, 2, 2): [0, 1, 2],
                 (0, 1, 1): [1, 2]}
     npt.assert_equal(mapping, expected)
 
-    mapping = streamline_mapping(streamlines, (1, 1, 1),
+    mapping = streamline_mapping(streamlines, affine=np.eye(4),
                                  mapping_as_streamlines=True)
     expected = dict((k, [streamlines[i] for i in indices])
                     for k, indices in expected.items())

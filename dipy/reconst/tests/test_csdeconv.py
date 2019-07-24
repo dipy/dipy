@@ -25,12 +25,10 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
+from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-from dipy.core.geometry import cart2sphere
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import fractional_anisotropy
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -521,6 +519,7 @@ def test_sphere_scaling_csdmodel():
     csd_fit_hemi = model_hemi.fit(S)
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
+
 
 expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
 

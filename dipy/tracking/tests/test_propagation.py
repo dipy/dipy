@@ -3,7 +3,6 @@ import numpy as np
 from dipy.data import get_sphere
 
 from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
-from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 
 from numpy.testing import (assert_array_almost_equal, assert_equal,
                            assert_raises, run_module_suite)
@@ -29,27 +28,6 @@ def test_offset():
                       stepped_1d(index), strides, 2, i_size)
         assert_raises(ValueError, ndarray_offset,
                       index, stepped_1d(strides), 2, i_size)
-
-
-def test_trilinear_interp_cubic_voxels():
-    A = np.ones((17, 17, 17))
-    B = np.zeros(3)
-    strides = np.array(A.strides, np.intp)
-    A[7, 7, 7] = 2
-    points = np.array([[0, 0, 0], [7., 7.5, 7.], [3.5, 3.5, 3.5]])
-    map_coordinates_trilinear_iso(A, points, strides, 3, B)
-    assert_array_almost_equal(B, np.array([1., 1.5, 1.]))
-    # All of the input array, points array, strides array and output array must
-    # be C-contiguous.  Check by passing in versions that aren't C contiguous
-    assert_raises(ValueError, map_coordinates_trilinear_iso,
-                  A.copy(order='F'), points, strides, 3, B)
-    assert_raises(ValueError, map_coordinates_trilinear_iso,
-                  A, points.copy(order='F'), strides, 3, B)
-    assert_raises(ValueError, map_coordinates_trilinear_iso,
-                  A, points, stepped_1d(strides), 3, B)
-    assert_raises(ValueError, map_coordinates_trilinear_iso,
-                  A, points, strides, 3, stepped_1d(B))
-
 
 def test_eudx_both_directions_errors():
     # Test error conditions for both directions function

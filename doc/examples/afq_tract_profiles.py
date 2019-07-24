@@ -1,7 +1,7 @@
 """
-========================================================
-Extracting AFQ tract profiles from segmented bundles.
-========================================================
+====================================================
+Extracting AFQ tract profiles from segmented bundles
+====================================================
 
 In this example, we will we will extract the values of a statistic from a
 volume, using the coordinates along the length of a bundle. These are called

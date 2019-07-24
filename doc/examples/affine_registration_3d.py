@@ -1,7 +1,7 @@
 """
-==========================================
+=========================
 Affine Registration in 3D
-==========================================
+=========================
 This example explains how to compute an affine transformation to register two
 3D volumes by maximization of their Mutual Information [Mattes03]_. The
 optimization strategy is similar to that implemented in ANTS [Avants11]_.

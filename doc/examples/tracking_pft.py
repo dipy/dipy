@@ -1,7 +1,7 @@
 """
-=================================================
+===============================
 Particle Filtering Tractography
-=================================================
+===============================
 Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
 volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
@@ -16,11 +16,14 @@ gray matter.
 PFT finds an alternative streamline segment whenever the tissue classifier
 returns a position classified as 'INVALIDPOINT'.
 
-This example is an extension of the
-:ref:`probabilistic_fiber_tracking` example. We begin by loading the
+This example is an extension of :ref:`example_tracking_probabilistic` and
+:ref:`example_tracking_tissue_classifier` examples. We begin by loading the
 data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
-model and creating the probabilistic direction getter.
+model, creating the probabilistic direction getter and defining the seeds.
 """
+
+# Enables/disables interactive visualization
+interactive = False
 
 import numpy as np
 
@@ -33,10 +36,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
-from dipy.viz import window, actor, colormap as cmap
-
-
-renderer = window.Renderer()
+from dipy.viz import window, actor, colormap, has_fury
 
 img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -54,10 +54,13 @@ dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                max_angle=20.,
                                                sphere=default_sphere)
 
+seed_mask = (labels == 2)
+seed_mask[img_pve_wm.get_data() < 0.5] = 0
+seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 """
 CMC/ACT Tissue Classifiers
----------------------
+==========================
 Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
 tractography (ACT) [Smith2012]_ both uses PVEs information from
 anatomical images to determine when the tractography stops.
@@ -70,7 +73,7 @@ be used in conjunction with PFT. In this example, we used CMC.
 
 from dipy.tracking.local import CmcTissueClassifier
 
-voxel_size = np.average(img_pve_wm.get_header()['pixdim'][1:4])
+voxel_size = np.average(img_pve_wm.header['pixdim'][1:4])
 step_size = 0.2
 
 cmc_classifier = CmcTissueClassifier.from_pve(img_pve_wm.get_data(),
@@ -78,11 +81,6 @@ cmc_classifier = CmcTissueClassifier.from_pve(img_pve_wm.get_data(),
                                               img_pve_csf.get_data(),
                                               step_size=step_size,
                                               average_voxel_size=voxel_size)
-
-# seeds are place in voxel of the corpus callosum containing only white matter
-seed_mask = labels == 2
-seed_mask[img_pve_wm.get_data() < 0.5] = 0
-seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 # Particle Filtering Tractography
 pft_streamline_generator = ParticleFilteringTracking(dg,
@@ -96,19 +94,22 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
                                                      pft_front_tracking_dist=1,
                                                      particle_count=15,
                                                      return_all=False)
-
 streamlines = Streamlines(pft_streamline_generator)
-save_trk("pft_streamline.trk", streamlines, affine, shape)
+save_trk("tractogram_pft.trk", streamlines, affine, shape)
 
-renderer.clear()
-renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-window.record(renderer, out_path='pft_streamlines.png', size=(600, 600))
+if has_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_pft.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
-.. figure:: pft_streamlines.png
+.. figure:: tractogram_pft.png
  :align: center
 
- **Particle Filtering Tractography**
+ **Corpus Callosum using particle filtering tractography**
 """
 
 # Local Probabilistic Tractography
@@ -121,18 +122,21 @@ prob_streamline_generator = LocalTracking(dg,
                                           maxlen=1000,
                                           return_all=False)
 streamlines = Streamlines(prob_streamline_generator)
-save_trk("probabilistic_streamlines.trk", streamlines, affine, shape)
+save_trk("tractogram_probabilistic_cmc.trk", streamlines, affine, shape)
 
-renderer.clear()
-renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))
-window.record(renderer, out_path='probabilistic_streamlines.png',
-              size=(600, 600))
+if has_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_probabilistic_cmc.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
 
 """
-.. figure:: probabilistic_streamlines.png
+.. figure:: tractogram_probabilistic_cmc.png
  :align: center
 
- **Probabilistic Tractography**
+ **Corpus Callosum using probabilistic tractography**
 """
 
 """
@@ -146,4 +150,6 @@ References
     Anatomically-constrained tractography: Improved diffusion MRI
     streamlines tractography through effective use of anatomical
     information. NeuroImage, 63(3), 1924-1938, 2012.
+
+.. include:: ../links_names.inc
 """
