@@ -28,7 +28,6 @@ import numpy as np
 from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
-import warnings
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere

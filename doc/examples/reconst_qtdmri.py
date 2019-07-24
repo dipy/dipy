@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-================================================================
+=================================================================
 Estimating diffusion time dependent q-space indices using qt-dMRI
-================================================================
+=================================================================
 Effective representation of the four-dimensional diffusion MRI signal --
 varying over three-dimensional q-space and diffusion time -- is a sought-after
 and still unsolved challenge in diffusion MRI (dMRI). We propose a functional

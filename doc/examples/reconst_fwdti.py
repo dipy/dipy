@@ -1,7 +1,7 @@
 """
-==========================================================================
+=========================================================================
 Using the free water elimination model to remove free water contamination
-==========================================================================
+=========================================================================
 
 As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
 model is a simple way to characterize diffusion anisotropy. However, in regions
@@ -53,7 +53,7 @@ fetch_cenir_multib(with_raw=False)
 """
 From the downloaded data, we read only the data acquired with b-values up to
 2000 $s/mm^2$ to decrease the influence of non-Gaussian diffusion
-effects of the tisse which are not taken into account by the free water
+effects of the tissue which are not taken into account by the free water
 elimination model [Hoy2014]_.
 """
 

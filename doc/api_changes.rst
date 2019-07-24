@@ -24,14 +24,21 @@ The order of parameters has also changed.
 
 **Simulation**
 
-``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
-``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
-``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
+- ``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
+- ``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
+- ``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
 
 **Interpolation**
 
 All interpolation functions has been moved to a new module name `dipy.core.interpolation`
 
+**Tracking**
+
+The `voxel_size` parameter has been removed from the following function:
+- ``dipy.tracking.utils.connectivity_matrix``
+- ``dipy.tracking.utils.density_map``
+- ``dipy.tracking.utils.stremline_mapping``
+- ``dipy.tracking._util._mapping_to_voxel``
 
 DIPY 0.16 Changes
 -----------------

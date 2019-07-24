@@ -1,7 +1,7 @@
 """
-=====================================
+====================================
 Streamline length and size reduction
-=====================================
+====================================
 
 This example shows how to calculate the lengths of a set of streamlines and
 also how to compress the streamlines without considerably reducing their

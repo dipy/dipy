@@ -18,19 +18,20 @@ EuDX along with the CsaOdfModel to make some streamlines. Let's import the
 modules and download the data we'll be using.
 """
 
-from dipy.tracking.eudx import EuDX
-from dipy.reconst import shm
-from dipy.direction import peaks
-from dipy.tracking import utils
-from dipy.tracking.streamline import Streamlines
+import numpy as np
+from scipy.ndimage.morphology import binary_dilation
 
-from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
+from dipy.data import read_stanford_labels, read_stanford_t1
+from dipy.direction import peaks
+from dipy.reconst import shm
+from dipy.tracking import utils
+from dipy.tracking.local import LocalTracking, BinaryTissueClassifier
+from dipy.tracking.streamline import Streamlines
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
 
-fetch_stanford_t1()
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
 
@@ -40,10 +41,11 @@ that every integer value in the array ``labels`` represents an anatomical
 structure or tissue type [#]_. For this example, the image was created so that
 white matter voxels have values of either 1 or 2. We'll use
 ``peaks_from_model`` to apply the ``CsaOdfModel`` to each white matter voxel
-and estimate fiber orientations which we can use for tracking.
+and estimate fiber orientations which we can use for tracking. We will also
+dilate this mask by 1 voxel to ensure streamlines reach the grey matter.
 """
 
-white_matter = (labels == 1) | (labels == 2)
+white_matter = binary_dilation((labels == 1) | (labels == 2))
 csamodel = shm.CsaOdfModel(gtab, 6)
 csapeaks = peaks.peaks_from_model(model=csamodel,
                                   data=data,
@@ -54,19 +56,18 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 
 """
 Now we can use EuDX to track all of the white matter. To keep things reasonably
-fast we use ``density=2`` which will result in 8 seeds per voxel. We'll set
-``a_low`` (the parameter which determines the threshold of FA/QA under which
-tracking stops) to be very low because we've already applied a white matter
-mask.
+fast we use ``density=1`` which will result in 1 seeds per voxel. The tissue
+classifier, determining when the tracking stops, is set to stop when the
+tracking exit the white matter.
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=2)
-streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
-                            odf_vertices=peaks.default_sphere.vertices,
-                            a_low=.05, step_sz=.5, seeds=seeds)
-affine = streamline_generator.affine
+seeds = utils.seeds_from_mask(white_matter, density=1)
+tissue_classifier = BinaryTissueClassifier(white_matter)
+affine = np.eye(4)
 
-streamlines = Streamlines(streamline_generator, buffer_size=512)
+streamline_generator = LocalTracking(csapeaks, tissue_classifier, seeds,
+                                     affine=affine, step_size=0.5)
+streamlines = Streamlines(streamline_generator)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
