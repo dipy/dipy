@@ -128,6 +128,7 @@ class NumpyDocString(object):
             'Parameters': [],
             'Outputs': [],
             'Returns': [],
+            'Yields': [],
             'Raises': [],
             'Warns': [],
             'Other Parameters': [],
