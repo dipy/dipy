@@ -306,18 +306,23 @@ def test_lpca_returned_sigma():
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
-    DWIden = localpca(DWInoise, patch_radius=2)
 
     # Case that sigma is estimated using mpPCA
-    DWIden, sigma = localpca(DWInoise, patch_radius=2, return_sigma=True)
+    DWIden0, sigma = localpca(DWInoise, patch_radius=2, return_sigma=True)
     msigma = np.mean(sigma)
     std_error = abs(msigma - std_gt)/std_gt * 100
     assert_(std_error < 5)
 
-    # Case that sigma is inputed (sigma outputed should be the same)
-    DWIden, rsigma = localpca(DWInoise, sigma=sigma,
-                              patch_radius=2, return_sigma=True)
+    # Case that sigma is inputed (sigma outputed should be the same as the one
+    # inputed)
+    DWIden1, rsigma = localpca(DWInoise, sigma=sigma,
+                               patch_radius=2, return_sigma=True)
     assert_array_almost_equal(rsigma, sigma)
+
+    # DWIden1 should be very similar to DWIden0
+    rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
+    rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
+    assert_(rmse_den < rmse_ref)
 
 
 if __name__ == '__main__':
