@@ -23,7 +23,7 @@ def _pca_classifier(L, m):
     -------
     var : float
         Estimation of the noise variance
-    c : int
+    ncomps : int
         Number of eigenvalues related to noise
 
     Notes
@@ -44,11 +44,12 @@ def _pca_classifier(L, m):
         var = np.mean(L[:c])
         c = c - 1
         r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
-    return var, c + 1
+    ncomps = c + 1
+    return var, ncomps
 
 
 def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
-             tau_factor=2.3, out_dtype=None, return_sigma=False):
+             tau_factor=None, return_sigma=False, out_dtype=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -80,15 +81,17 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
                 \tau = (\tau_{factor} \sigma)^2
 
-        Default: 2.3, based on the results described in [3]_. Note that if
-        sigma is estimated using random matrix theory (i.e. sigma=None),
-        this threshold will be ignored.
+        \tau_{factor} can be set to a predefined values (e.g. \tau_{factor} =
+        2.3 [3]_), or automatically calculated using random matrix theory
+        (optimal value). The optimal value is used if \tau_{factor} is set to
+        None.
+        Default: None.
+    return_sigma : bool (optional)
+        If true, the Standard deviation of the noise will be returned.
+        Default: False.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
-    return_sigma : bool (optional)
-        If true, the Standard deviation of the noise will be returned.
-        Default: False
 
     Returns
     -------
@@ -146,20 +149,22 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
         raise ValueError(e_s)
 
     if isinstance(sigma, np.ndarray):
+        var = sigma ** 2
         if not sigma.shape == arr.shape[:-1]:
             e_s = "You provided a sigma array with a shape"
             e_s += "{0} for data with".format(sigma.shape)
             e_s += "shape {0}. Please provide a sigma array".format(arr.shape)
             e_s += " that matches the spatial dimensions of the data."
             raise ValueError(e_s)
+    elif isinstance(sigma, (int, float)):
+        var = sigma ** 2 * np.ones(arr.shape[:-1])
 
-    if sigma is not None:
-        tau = np.median(np.ones(arr.shape[:-1]) * ((tau_factor * sigma) ** 2))
+    dim = arr.shape[-1]
+    if tau_factor is None:
+        tau_factor = 1 + np.sqrt(dim / (patch_size ** 3))
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
-
-    dim = arr.shape[-1]
 
     if return_sigma is True and sigma is None:
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
@@ -205,11 +210,17 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
                 if sigma is None:
                     # Random matrix theory
-                    this_var, c = _pca_classifier(d, patch_size ** 3)
+                    this_var, ncomps = _pca_classifier(d, patch_size ** 3)
                 else:
-                    # Threshold by tau:
-                    c = np.sum(d < tau)
-                W[:, :c] = 0
+                    # Predefined variance
+                    this_var = var[i, j, k]
+
+                # Threshold by tau:
+                tau = tau_factor ** 2 * this_var
+
+                # Update ncomps according to tau_factor
+                ncomps = np.sum(d < tau)
+                W[:, :ncomps] = 0
 
                 # This is equations 1 and 2 in Manjon 2013:
                 Xest = X.dot(W).dot(W.T) + M
@@ -217,7 +228,7 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
                                     patch_size,
                                     patch_size, dim)
                 # This is equation 3 in Manjon 2013:
-                this_theta = 1.0 / (1.0 + dim - c)
+                this_theta = 1.0 / (1.0 + dim - ncomps)
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
                 if return_sigma is True and sigma is None:
