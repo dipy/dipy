@@ -8,7 +8,7 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.0 changes
 ----------------
 Some of the changes introduced in the 1.0 release will break backwards
-compatibility with previous versions.s
+compatibility with previous versions.
 
 **Reconstruction**
 

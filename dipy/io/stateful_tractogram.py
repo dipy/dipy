@@ -114,9 +114,9 @@ class StatefulTractogram(object):
         text += '\nstreamline_count: {}'.format(self._get_streamline_count())
         text += '\npoint_count: {}'.format(self._get_point_count())
         text += '\ndata_per_streamline keys: {}'.format(
-            self.get_data_per_point().keys())
+            self.data_per_point.keys())
         text += '\ndata_per_point keys: {}'.format(
-            self.get_data_per_streamline().keys())
+            self.data_per_streamline.keys())
 
         return text
 
@@ -124,28 +124,33 @@ class StatefulTractogram(object):
         """ Define the length of the object """
         return self._get_streamline_count()
 
-    def get_space_attribute(self):
+    @property
+    def space_attribute(self):
         """ Getter for spatial attribute """
         return self._affine, self._dimensions, self._voxel_sizes, \
             self._voxel_order
 
-    def get_current_space(self):
+    @property
+    def space(self):
         """ Getter for the current space """
         return self._space
 
-    def get_current_shift(self):
+    @property
+    def shifted_origin(self):
         """ Getter for shift """
         return self._shifted_origin
 
-    def get_streamlines(self):
+    @property
+    def streamlines(self):
         """ Partially safe getter for streamlines """
         return self._tractogram.streamlines
 
     def get_streamlines_copy(self):
         """ Safe getter for streamlines (for slicing) """
-        return deepcopy(list(self._tractogram.streamlines))
+        return self._tractogram.streamlines.copy()
 
-    def set_streamlines(self, streamlines):
+    @streamlines.setter
+    def streamlines(self, streamlines):
         """ Modify streamlines. Creating a new object would be less risky.
 
         Parameters
@@ -154,15 +159,17 @@ class StatefulTractogram(object):
             Streamlines of the tractogram
         """
         self._tractogram._streamlines = Streamlines(streamlines)
-        self.set_data_per_point(self.get_data_per_point())
-        self.set_data_per_streamline(self.get_data_per_streamline())
+        self.data_per_point = self.data_per_point
+        self.data_per_streamline = self.data_per_streamline
         logging.warning('Streamlines has been modified')
 
-    def get_data_per_point(self):
+    @property
+    def data_per_point(self):
         """ Getter for data_per_point """
         return self._tractogram.data_per_point
 
-    def set_data_per_point(self, data):
+    @data_per_point.setter
+    def data_per_point(self, data):
         """ Modify point data . Creating a new object would be less risky.
 
         Parameters
@@ -175,11 +182,13 @@ class StatefulTractogram(object):
         self._tractogram.data_per_point = data
         logging.warning('Data_per_point has been modified')
 
-    def get_data_per_streamline(self):
+    @property
+    def data_per_streamline(self):
         """ Getter for data_per_streamline """
         return self._tractogram.data_per_streamline
 
-    def set_data_per_streamline(self, data):
+    @data_per_streamline.setter
+    def data_per_streamline(self, data):
         """ Modify point data . Creating a new object would be less risky.
 
         Parameters
@@ -249,8 +258,8 @@ class StatefulTractogram(object):
         output : bool
             Are the streamlines within the volume of the associated reference
         """
-        old_space = deepcopy(self.get_current_space())
-        old_shift = deepcopy(self.get_current_shift())
+        old_space = deepcopy(self.space)
+        old_shift = deepcopy(self.shifted_origin)
 
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
@@ -289,8 +298,8 @@ class StatefulTractogram(object):
         output : tuple
             Tuple of two list, indices_to_remove, indices_to_keep
         """
-        old_space = deepcopy(self.get_current_space())
-        old_shift = deepcopy(self.get_current_shift())
+        old_space = deepcopy(self.space)
+        old_shift = deepcopy(self.shifted_origin)
 
         self.to_vox()
         self.to_corner()

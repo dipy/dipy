@@ -24,7 +24,7 @@ def test_ba():
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
         fornix = load_tractogram(data_path, 'same',
-                                 bbox_valid_check=False).get_streamlines()
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
 

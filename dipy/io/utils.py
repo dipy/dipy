@@ -1,9 +1,9 @@
 """ Utility functions for file formats """
-from __future__ import division, print_function, absolute_import
-import six
+import logging
 
 import numpy as np
 import nibabel as nib
+from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
 
 
@@ -154,7 +154,7 @@ def get_reference_info(reference):
 
     is_nifti = False
     is_trk = False
-    if isinstance(reference, six.string_types):
+    if isinstance(reference, str):
         try:
             header = nib.load(reference).header
             is_nifti = True
@@ -185,7 +185,6 @@ def get_reference_info(reference):
         affine[2, 0:4] = header['srow_z']
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
-        print(header)
         voxel_order = ''.join(nib.aff2axcodes(affine))
     elif is_trk:
         affine = header['voxel_to_rasmm']
@@ -247,7 +246,7 @@ def is_header_compatible(reference_1, reference_2):
 def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
                              voxel_order):
     """ Write a standard trk/tck header from spatial attribute """
-    if isinstance(tractogram_type, six.string_types):
+    if isinstance(tractogram_type, str):
         tractogram_type = detect_format(tractogram_type)
 
     new_header = tractogram_type.create_empty_header()

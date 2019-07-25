@@ -156,13 +156,13 @@ def io_tractogram(extension):
             reference = nii_header
 
         sft = load_tractogram(fname, reference, bbox_valid_check=False)
-        affine, dimensions, voxel_sizes, _ = sft.get_space_attribute()
+        affine, dimensions, voxel_sizes, _ = sft.space_attribute
 
         npt.assert_array_equal(in_affine, affine)
         npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
         npt.assert_array_equal(in_dimensions, dimensions)
         npt.assert_equal(len(sft), len(streamlines))
-        npt.assert_array_almost_equal(sft.get_streamlines()[1], streamline,
+        npt.assert_array_almost_equal(sft.streamlines[1], streamline,
                                       decimal=4)
 
 

@@ -31,7 +31,7 @@ def trk_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_vox_space():
@@ -39,7 +39,7 @@ def tck_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 @npt.dec.skipif(not have_fury)
@@ -48,7 +48,7 @@ def fib_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_vox_space():
@@ -56,7 +56,7 @@ def dpy_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def trk_equal_in_rasmm_space():
@@ -64,7 +64,7 @@ def trk_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_rasmm_space():
@@ -72,7 +72,7 @@ def tck_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 @npt.dec.skipif(not have_fury)
@@ -81,7 +81,7 @@ def fib_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_rasmm_space():
@@ -89,7 +89,7 @@ def dpy_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def trk_equal_in_voxmm_space():
@@ -97,7 +97,7 @@ def trk_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_voxmm_space():
@@ -105,7 +105,7 @@ def tck_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 @npt.dec.skipif(not have_fury)
@@ -114,7 +114,7 @@ def fib_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_voxmm_space():
@@ -122,13 +122,13 @@ def dpy_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def switch_voxel_sizes_from_rasmm():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
-    sft_switch = StatefulTractogram(sft.get_streamlines(),
+    sft_switch = StatefulTractogram(sft.streamlines,
                                     filepath_dix['gs_3mm.nii'],
                                     Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
@@ -136,17 +136,17 @@ def switch_voxel_sizes_from_rasmm():
 
     sft_switch.to_rasmm()
     assert_allclose(tmp_points_rasmm,
-                    sft_switch.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.data, atol=1e-3, rtol=1e-6)
 
     sft_switch.to_voxmm()
     assert_allclose(tmp_points_voxmm,
-                    sft_switch.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def switch_voxel_sizes_from_voxmm():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
-    sft_switch = StatefulTractogram(sft.get_streamlines(),
+    sft_switch = StatefulTractogram(sft.streamlines,
                                     filepath_dix['gs_3mm.nii'],
                                     Space.VOXMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
@@ -154,11 +154,11 @@ def switch_voxel_sizes_from_voxmm():
 
     sft_switch.to_rasmm()
     assert_allclose(tmp_points_rasmm,
-                    sft_switch.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.data, atol=1e-3, rtol=1e-6)
 
     sft_switch.to_voxmm()
     assert_allclose(tmp_points_voxmm,
-                    sft_switch.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def trk_iterative_saving_loading():
@@ -172,7 +172,7 @@ def trk_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.trk', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.get_streamlines().data,
+                            sft_iter.streamlines.data,
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.trk')
 
@@ -188,7 +188,7 @@ def tck_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.tck', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.get_streamlines().data,
+                            sft_iter.streamlines.data,
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.tck')
 
@@ -205,7 +205,7 @@ def fib_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.fib', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.get_streamlines().data,
+                            sft_iter.streamlines.data,
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.fib')
 
@@ -221,7 +221,7 @@ def dpy_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.dpy', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.get_streamlines().data,
+                            sft_iter.streamlines.data,
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.dpy')
 
@@ -234,7 +234,7 @@ def iterative_to_vox_transformation():
         sft.to_vox()
         sft.to_rasmm()
         assert_allclose(tmp_points_rasmm,
-                        sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                        sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def iterative_to_voxmm_transformation():
@@ -245,7 +245,7 @@ def iterative_to_voxmm_transformation():
         sft.to_voxmm()
         sft.to_rasmm()
         assert_allclose(tmp_points_rasmm,
-                        sft.get_streamlines().data, atol=1e-3, rtol=1e-6)
+                        sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def shift_corner_from_rasmm():
@@ -296,7 +296,7 @@ def replace_streamlines():
     tmp_streamlines = sft.get_streamlines_copy()[::-1]
 
     try:
-        sft.set_streamlines(tmp_streamlines)
+        sft.streamlines = tmp_streamlines
         return True
     except (TypeError, ValueError):
         return False
@@ -308,7 +308,7 @@ def subsample_streamlines():
     tmp_streamlines = sft.get_streamlines_copy()[0:8]
 
     try:
-        sft.set_streamlines(tmp_streamlines)
+        sft.streamlines = tmp_streamlines
         return False
     except (TypeError, ValueError):
         return True
@@ -319,13 +319,13 @@ def reassign_both_data_sep_to_empty():
                           to_space=Space.RASMM)
 
     try:
-        sft.set_data_per_point({})
-        sft.set_data_per_streamline({})
+        sft.data_per_point = {}
+        sft.data_per_streamline = {}
     except (TypeError, ValueError):
         return False
 
-    return sft.get_data_per_point() == {} and \
-        sft.get_data_per_streamline() == {}
+    return sft.data_per_point == {} and \
+        sft.data_per_streamline == {}
 
 
 def reassign_both_data_sep():
@@ -333,8 +333,8 @@ def reassign_both_data_sep():
                           to_space=Space.RASMM)
 
     try:
-        sft.set_data_per_point(points_data)
-        sft.set_data_per_streamline(streamlines_data)
+        sft.data_per_point = points_data
+        sft.data_per_streamline = streamlines_data
     except (TypeError, ValueError):
         return False
 
@@ -366,7 +366,7 @@ def random_point_color():
     coloring_dict['colors'] = random_colors
 
     try:
-        sft.set_data_per_point(coloring_dict)
+        sft.data_per_point = coloring_dict
         with InTemporaryDirectory():
             save_tractogram(sft, 'random_points_color.trk')
         return True
@@ -385,7 +385,7 @@ def random_point_gray():
     coloring_dict['color_z'] = random_colors
 
     try:
-        sft.set_data_per_point(coloring_dict)
+        sft.data_per_point = coloring_dict
         with InTemporaryDirectory():
             save_tractogram(sft, 'random_points_gray.trk')
         return True
@@ -413,7 +413,7 @@ def random_streamline_color():
     coloring_dict['color_z'] = uniform_colors_z
 
     try:
-        sft.set_data_per_point(coloring_dict)
+        sft.data_per_point = coloring_dict
         with InTemporaryDirectory():
             save_tractogram(sft, 'random_streamlines_color.trk')
         return True
@@ -424,11 +424,11 @@ def random_streamline_color():
 def out_of_grid(value):
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
     sft.to_vox()
-    tmp_streamlines = sft.get_streamlines_copy()
+    tmp_streamlines = list(sft.get_streamlines_copy())
     tmp_streamlines[0] += value
 
     try:
-        sft.set_streamlines(tmp_streamlines)
+        sft.streamlines = tmp_streamlines
         return sft.is_bbox_in_vox_valid()
     except (TypeError, ValueError):
         return True

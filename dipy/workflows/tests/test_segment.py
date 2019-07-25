@@ -50,9 +50,9 @@ def test_median_otsu_flow():
 def test_recobundles_flow():
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames('fornix')
-        print(data_path)
-        streams, hdr = nib.trackvis.read(data_path)
-        fornix = [s[0] for s in streams]
+
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
         f1 = f.copy()
@@ -78,7 +78,7 @@ def test_recobundles_flow():
         recog_trk = rb_flow.last_generated_outputs['out_recognized_transf']
 
         rec_bundle = load_tractogram(recog_trk, 'same',
-                                     bbox_valid_check=False).get_streamlines()
+                                     bbox_valid_check=False).streamlines
         npt.assert_equal(len(rec_bundle) == len(f2), True)
 
         label_flow = LabelsBundlesFlow(force=True)
@@ -86,7 +86,7 @@ def test_recobundles_flow():
 
         recog_bundle = label_flow.last_generated_outputs['out_bundle']
         rec_bundle_org = load_tractogram(recog_bundle, 'same',
-                                         bbox_valid_check=False).get_streamlines()
+                                         bbox_valid_check=False).streamlines
 
         BMD = BundleMinDistanceMetric()
         nb_pts = 20

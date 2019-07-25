@@ -44,9 +44,8 @@ def test_slr_flow():
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames('fornix')
 
-        data_path = get_fnames('fornix')
         fornix = load_tractogram(data_path, 'same',
-                                  bbox_valid_check=False).get_streamlines()
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
         f1 = f.copy()
@@ -306,6 +305,7 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_path), True)
         warped_map_path = syn_flow.last_generated_outputs['out_field']
         npt.assert_equal(os.path.isfile(warped_map_path), True)
+
 
 if __name__ == "__main__":
     npt.run_module_suite()

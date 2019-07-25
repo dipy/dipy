@@ -219,13 +219,13 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     for io in range(n):
         mbundles = load_tractogram(os.path.join(model_bundle_folder, mb[io]),
                                    'same',
-                                   bbox_valid_check=False).get_streamlines()
+                                   bbox_valid_check=False).streamlines
         bundles = load_tractogram(os.path.join(bundle_folder, bd[io]),
                                   'same',
-                                  bbox_valid_check=False).get_streamlines()
+                                  bbox_valid_check=False).streamlines
         orig_bundles = load_tractogram(os.path.join(orig_bundle_folder,
                                                     org_bd[io]), 'same',
-                                       bbox_valid_check=False).get_streamlines()
+                                       bbox_valid_check=False).streamlines
 
         mbundle_streamlines = set_number_of_points(mbundles,
                                                    nb_points=no_disks)
@@ -315,7 +315,8 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         # This is a 3-by-3 array:
         node_coords = bundle.data[node::n_points]
         c = np.cov(node_coords.T, ddof=0)
-        # Reorganize as an upper diagonal matrix for expected Mahalanobis input:
+        # Reorganize as an upper diagonal matrix for expected Mahalanobis
+        # input:
         c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
                       [0, c[1, 1], c[1, 2]],
                       [0, 0, c[2, 2]]])

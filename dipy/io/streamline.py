@@ -39,8 +39,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
                          'save a valid file if some coordinates are invalid')
 
-    old_space = deepcopy(sft.get_current_space())
-    old_shift = deepcopy(sft.get_current_shift())
+    old_space = deepcopy(sft.space)
+    old_shift = deepcopy(sft.shifted_origin)
 
     sft.to_rasmm()
     sft.to_center()
@@ -49,22 +49,22 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     if extension in ['.trk', '.tck']:
         tractogram_type = detect_format(filename)
         header = create_tractogram_header(tractogram_type,
-                                          *sft.get_space_attribute())
-        new_tractogram = Tractogram(sft.get_streamlines(),
+                                          *sft.space_attribute)
+        new_tractogram = Tractogram(sft.streamlines,
                                     affine_to_rasmm=np.eye(4))
 
         if extension == '.trk':
-            new_tractogram.data_per_point = sft.get_data_per_point()
-            new_tractogram.data_per_streamline = sft.get_data_per_streamline()
+            new_tractogram.data_per_point = sft.data_per_point
+            new_tractogram.data_per_streamline = sft.data_per_streamline
 
         fileobj = tractogram_type(new_tractogram, header=header)
         nib.streamlines.save(fileobj, filename)
 
     elif extension in ['.vtk', '.fib']:
-        save_vtk_streamlines(sft.get_streamlines(), filename, binary=True)
+        save_vtk_streamlines(sft.streamlines, filename, binary=True)
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='w')
-        dpy_obj.write_tracks(sft.get_streamlines())
+        dpy_obj.write_tracks(sft.streamlines)
         dpy_obj.close()
 
     logging.debug('Save %s with %s streamlines in %s seconds',
