@@ -17,10 +17,7 @@ from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
@@ -95,8 +92,8 @@ def check_md5(filename, stored_md5=None):
     Computes the md5 of filename and check if it matches with the supplied
     string md5
 
-    Input
-    -----
+    Parameters
+    -----------
     filename : string
         Path to a file.
     md5 : string
@@ -1025,7 +1022,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     metrics : list
         Either ['fa'] or ['t1'] or ['fa', 't1']
     bundles : list
-        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
 

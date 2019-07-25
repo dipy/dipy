@@ -720,7 +720,7 @@ class TensorModel(ReconstModel):
         is advisable to keep an eye on memory consumption as this value is
         increased.
 
-        Example : In :func:`iter_fit_tensor` we have a default step value of
+        E.g., in :func:`iter_fit_tensor` we have a default step value of
         1e4
 
         References
@@ -1460,8 +1460,8 @@ def _ols_fit_matrix(design_matrix):
     ---------
     wls_fit_tensor, ols_fit_tensor
 
-    Example:
-    --------
+    Examples
+    ---------
     ols_fit = _ols_fit_matrix(design_mat)
     ols_data = np.dot(ols_fit, data)
     """

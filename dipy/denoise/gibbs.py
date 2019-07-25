@@ -22,6 +22,7 @@ def _image_tv(x, axis=0, n_points=3):
         Total variation calculated from the right neighbours of each point.
     ntv : 2D ndarray
         Total variation calculated from the left neighbours of each point.
+
     """
     xs = x.copy() if axis else x.T.copy()
 
@@ -46,7 +47,7 @@ def _image_tv(x, axis=0, n_points=3):
 
 
 def _gibbs_removal_1d(x, axis=0, n_points=3):
-    """ Suppresses Gibbs ringing along a given axis using fourier sub-shifts.
+    """Suppresses Gibbs ringing along a given axis using fourier sub-shifts.
 
     Parameters
     ----------
@@ -64,13 +65,14 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     xc : 2D ndarray
         Matrix with suppressed Gibbs oscillations along the given axis.
 
-    Note
-    ----
+    Notes
+    -----
     This function suppresses the effects of Gibbs oscillations based on the
     analysis of local total variation (TV). Although artefact correction is
     done based on two adjacent points for each voxel, total variation should be
     accessed in a larger range of neighbours. The number of neighbours to be
     considered in TV calculation can be adjusted using the parameter n_points.
+
     """
     ssamp = np.linspace(0.02, 0.9, num=45)
 
@@ -142,6 +144,7 @@ def _weights(shape):
     .. [1] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
            removal based on local subvoxel-shifts. Magn Reson Med. 2016
            doi: 10.1002/mrm.26054.
+
     """
     G0 = np.zeros(shape)
     G1 = np.zeros(shape)
@@ -186,8 +189,8 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     imagec : 2D ndarray
         Matrix with Gibbs oscillations reduced along axis a.
 
-    Note
-    ----
+    Notes
+    -----
     This function suppresses the effects of Gibbs oscillations based on the
     analysis of local total variation (TV). Although artefact correction is
     done based on two adjacent points for each voxel, total variation should be
@@ -204,6 +207,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
            removal based on local subvoxel-shifts. Magn Reson Med. 2016
            doi: 10.1002/mrm.26054.
+
     """
     if np.any(G0) is None or np.any(G1) is None:
         G0, G1 = _weights(image.shape)
@@ -219,7 +223,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
 
 
 def gibbs_removal(vol, slice_axis=2, n_points=3):
-    """ Suppresses Gibbs ringing artefacts of images volumes.
+    """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
     ----------
@@ -252,6 +256,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
            removal based on local subvoxel-shifts. Magn Reson Med. 2016
            doi: 10.1002/mrm.26054.
+
     """
     nd = vol.ndim
 

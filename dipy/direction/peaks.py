@@ -565,12 +565,12 @@ def reshape_peaks_for_visualization(peaks):
     Reshape and convert to float32 a set of peaks for visualisation with mrtrix
     or the fibernavigator.
 
-    Parameters:
+    Parameters
     -----------
     peaks: nd array (..., N, 3) or PeaksAndMetrics object
         The peaks to be reshaped and converted to float32.
 
-    Returns:
+    Returns
     --------
     peaks : nd array (..., 3*N)
     """

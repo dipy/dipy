@@ -4,8 +4,8 @@ This module provides tools for targeting streamlines using ROIs, for making
 connectivity matrices from whole brain fiber tracking and some other tools that
 allow streamlines to interact with image data.
 
-Important Note:
----------------
+Important Notes
+-----------------
 Dipy uses affine matrices to represent the relationship between streamline
 points, which are defined as points in a continuous 3d space, and image voxels,
 which are typically arranged in a discrete 3d grid. Dipy uses a convention
@@ -962,7 +962,7 @@ def move_streamlines(streamlines, output_space, input_space=None,
 
 
 def reduce_rois(rois, include):
-    """Reduce multiple ROIs to one inclusion and one exclusion ROI
+    """Reduce multiple ROIs to one inclusion and one exclusion ROI.
 
     Parameters
     ----------
@@ -983,11 +983,12 @@ def reduce_rois(rois, include):
     exclude_roi : boolean 3D array
         An array marking the exclusion mask
 
-    Note
-    ----
-    The include_roi and exclude_roi can be used to perform the operation: "(A
+    Notes
+    -----
+    The include_roi and exclude_roi can be used to perfom the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
+
     """
     include_roi = np.zeros(rois[0].shape, dtype=bool)
     exclude_roi = np.zeros(rois[0].shape, dtype=bool)

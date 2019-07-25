@@ -28,7 +28,7 @@ class AxSymShResponse(object):
     """A simple wrapper for response functions represented using only axially
     symmetric, even spherical harmonic functions (ie, m == 0 and n even).
 
-    Parameters:
+    Parameters
     -----------
     S0 : float
         Signal with no diffusion weighting.

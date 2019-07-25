@@ -38,8 +38,8 @@ def optional_package(name, trip_msg=None):
         callable usually set as ``setup_module`` in calling namespace, to allow
         skipping tests.
 
-    Example
-    -------
+    Examples
+    --------
     Typical use would be something like this at the top of a module using an
     optional package:
 

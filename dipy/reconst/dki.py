@@ -72,8 +72,8 @@ def carlson_rf(x, y, z, errtol=3e-4):
     RF : ndarray
         Value of the incomplete first order elliptic integral
 
-    Note
-    -----
+    Notes
+    ------
     x, y, and z have to be nonnegative and at most one of them is zero.
 
     References
@@ -141,8 +141,8 @@ def carlson_rd(x, y, z, errtol=1e-4):
     RD : ndarray
         Value of the incomplete second order elliptic integral
 
-    Note
-    -----
+    Notes
+    ------
     x, y, and z have to be nonnegative and at most x or y is zero.
     """
     xn = x.copy()
@@ -1924,7 +1924,8 @@ def Wrotate(kt, Basis):
         Vector with the m independent elements of the rotated kurtosis tensor.
         If 'indices' is not specified all 15 elements of the rotated kurtosis
         tensor are computed.
-    Note
+
+    Notes
     ------
     KT elements are assumed to be ordered as follows:
 
@@ -1994,8 +1995,8 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
     Wre : float
           rotated kurtosis tensor element of index ind_i, ind_j, ind_k, ind_l
 
-    Note
-    -----
+    Notes
+    ------
     It is assumed that initial kurtosis tensor elementes are defined on the
     Cartesian coordinate system.
 

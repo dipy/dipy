@@ -6,7 +6,7 @@ Fiber to bundle coherence measures
 
 This demo presents the fiber to bundle coherence (FBC) quantitative
 measure of the alignment of each fiber with the surrounding fiber bundles
-[Meesters2016]_. These measures are useful in “cleaning” the results of
+[Meesters2016]_. These measures are useful in 'cleaning' the results of
 tractography algorithms, since low FBCs indicate which fibers are isolated and
 poorly aligned with their neighbors, as shown in the figure below.
 

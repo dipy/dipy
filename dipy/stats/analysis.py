@@ -382,8 +382,8 @@ def afq_profile(data, bundle, affine=None, n_points=100,
     ndarray : a 1D array with the profile of `data` along the length of
         `bundle`
 
-    Note
-    ----
+    Notes
+    -----
     Before providing a bundle as input to this function, you will need to make
     sure that the streamlines in the bundle are all oriented in the same
     orientation relative to the bundle (use :func:`orient_by_streamline`).
@@ -394,6 +394,7 @@ def afq_profile(data, bundle, affine=None, n_points=100,
        Nathaniel J. Myall, Brian A. Wandell, and Heidi M. Feldman. 2012.
        "Tract Profiles of White Matter Properties: Automating Fiber-Tract
        Quantification" PloS One 7 (11): e49790.
+
     """
     if orient_by is not None:
         bundle = orient_by_streamline(bundle, orient_by, affine=affine)

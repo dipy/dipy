@@ -16,8 +16,8 @@ def _mapping_to_voxel(affine):
         The mapping from voxel indices, [i, j, k], to real world coordinates.
         The inverse of this mapping is used unless `affine` is None.
 
-    Return
-    ------
+    Returns
+    --------
     lin_T : array (3, 3)
         Transpose of the linear part of the mapping to voxel space, (ie
         ``inv(affine)[:3, :3].T``)

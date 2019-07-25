@@ -40,6 +40,7 @@
                & Eubank, W. PET-CT image registration in the chest using
                free-form deformations. IEEE Transactions on Medical
                Imaging, 22(1), 120-8, 2003.
+
 """
 
 import numpy as np
@@ -129,6 +130,7 @@ class AffineMap(object):
             the grid-to-world transform associated with the co-domain grid.
             If None (the default), then the grid-to-world transform is assumed
             to be the identity.
+
         """
         self.set_affine(affine)
         self.domain_shape = domain_grid_shape
@@ -137,20 +139,20 @@ class AffineMap(object):
         self.codomain_grid2world = codomain_grid2world
 
     def get_affine(self):
-        """
-        Returns the value of the transformation, not a reference!
+        """Return the value of the transformation, not a reference.
 
         Returns
         -------
         affine : ndarray
             Copy of the transform, not a reference.
+
         """
 
         # returning a copy to insulate it from changes outside object
         return self.affine.copy()
 
     def set_affine(self, affine):
-        """ Sets the affine transform (operating in physical space)
+        """Set the affine transform (operating in physical space).
 
         Also sets `self.affine_inv` - the inverse of `affine`, or None if
         there is no inverse.
@@ -162,6 +164,7 @@ class AffineMap(object):
             physical space. The domain and co-domain information
             remains unchanged. If None, then `self` represents the identity
             transformation.
+
         """
 
         if affine is None:
@@ -245,7 +248,7 @@ class AffineMap(object):
     def _apply_transform(self, image, interp='linear', image_grid2world=None,
                          sampling_grid_shape=None, sampling_grid2world=None,
                          resample_only=False, apply_inverse=False):
-        """ Transforms the input image applying this affine transform
+        """Transform the input image applying this affine transform.
 
         This is a generic function to transform images using either this
         (direct) transform or its inverse.
@@ -291,10 +294,12 @@ class AffineMap(object):
             transform. Otherwise, the image is transformed from the domain
             of this transform to its codomain using the (inverse) affine
             transform.
+
         Returns
         -------
         transformed : array, shape `sampling_grid_shape` or `self.domain_shape`
             the transformed image, sampled at the requested grid
+
         """
         # Verify valid interpolation requested
         if interp not in _interp_options:
@@ -357,7 +362,7 @@ class AffineMap(object):
     def transform(self, image, interp='linear', image_grid2world=None,
                   sampling_grid_shape=None, sampling_grid2world=None,
                   resample_only=False):
-        """ Transforms the input image from co-domain to domain space
+        """Transform the input image from co-domain to domain space.
 
         By default, the transformed image is sampled at a grid defined by
         `self.domain_shape` and `self.domain_grid2world`. If such
@@ -388,11 +393,13 @@ class AffineMap(object):
             If False (the default) the affine transform is applied normally.
             If True, then the affine transform is not applied, and the input
             image is just re-sampled on the domain grid of this transform.
+
         Returns
         -------
         transformed : array, shape `sampling_grid_shape` or
                       `self.codomain_shape`
             the transformed image, sampled at the requested grid
+
         """
         transformed = self._apply_transform(image, interp, image_grid2world,
                                             sampling_grid_shape,
@@ -404,7 +411,7 @@ class AffineMap(object):
     def transform_inverse(self, image, interp='linear', image_grid2world=None,
                           sampling_grid_shape=None, sampling_grid2world=None,
                           resample_only=False):
-        """ Transforms the input image from domain to co-domain space
+        """Transform the input image from domain to co-domain space.
 
         By default, the transformed image is sampled at a grid defined by
         `self.codomain_shape` and `self.codomain_grid2world`. If such
@@ -435,11 +442,13 @@ class AffineMap(object):
             If False (the default) the affine transform is applied normally.
             If True, then the affine transform is not applied, and the input
             image is just re-sampled on the domain grid of this transform.
+
         Returns
         -------
         transformed : array, shape `sampling_grid_shape` or
                       `self.codomain_shape`
             the transformed image, sampled at the requested grid
+
         """
         transformed = self._apply_transform(image, interp, image_grid2world,
                                             sampling_grid_shape,
@@ -452,7 +461,7 @@ class AffineMap(object):
 class MutualInformationMetric(object):
 
     def __init__(self, nbins=32, sampling_proportion=None):
-        r""" Initializes an instance of the Mutual Information metric
+        r"""Initialize an instance of the Mutual Information metric.
 
         This class implements the methods required by Optimizer to drive the
         registration process.
@@ -481,6 +490,7 @@ class MutualInformationMetric(object):
         voxel to prevent sampling points from being located exactly at voxel
         coordinates. When using dense sampling, this random displacement is
         not applied.
+
         """
         self.histogram = ParzenJointHistogram(nbins)
         self.sampling_proportion = sampling_proportion
@@ -489,7 +499,7 @@ class MutualInformationMetric(object):
 
     def setup(self, transform, static, moving, static_grid2world=None,
               moving_grid2world=None, starting_affine=None):
-        r""" Prepares the metric to compute intensity densities and gradients
+        r"""Prepare the metric to compute intensity densities and gradients.
 
         The histograms will be setup to compute probability densities of
         intensities within the minimum and maximum values of `static` and
@@ -519,6 +529,7 @@ class MutualInformationMetric(object):
             instead of manually transforming the moving image to reduce
             interpolation artifacts. The default is None, implying no
             pre-alignment is performed.
+
         """
         n = transform.get_number_of_parameters()
         self.metric_grad = np.zeros(n, dtype=np.float64)
@@ -576,7 +587,7 @@ class MutualInformationMetric(object):
         self.histogram.setup(self.static, self.moving)
 
     def _update_histogram(self):
-        r""" Updates the histogram according to the current affine transform
+        r"""Update the histogram according to the current affine transform.
 
         The current affine transform is given by `self.affine_map`, which
         must be set before calling this method.
@@ -601,6 +612,7 @@ class MutualInformationMetric(object):
             then the intensities are given by the moving imaged linearly
             transformed towards the static image by the current affine, which
             results in an image of the same shape as the static image.
+
         """
         if self.sampling_proportion is None:  # Dense case
             static_values = self.static
@@ -618,7 +630,7 @@ class MutualInformationMetric(object):
         return static_values, moving_values
 
     def _update_mutual_information(self, params, update_gradient=True):
-        r""" Updates marginal and joint distributions and the joint gradient
+        r"""Update marginal and joint distributions and the joint gradient.
 
         The distributions are updated according to the static and transformed
         images. The transformed image is precisely the moving image after
@@ -637,6 +649,7 @@ class MutualInformationMetric(object):
             if True, the gradient of the joint PDF will also be computed,
             otherwise, only the marginal and joint PDFs will be computed.
             The default is True.
+
         """
         # Get the matrix associated with the `params` parameter vector
         current_affine = self.transform.param_to_matrix(params)
@@ -692,7 +705,7 @@ class MutualInformationMetric(object):
                                             grad)
 
     def distance(self, params):
-        r""" Numeric value of the negative Mutual Information
+        r"""Numeric value of the negative Mutual Information.
 
         We need to change the sign so we can use standard minimization
         algorithms.
@@ -710,6 +723,7 @@ class MutualInformationMetric(object):
             the negative mutual information of the input images after
             transforming the moving image by the currently set transform
             with `params` parameters
+
         """
         try:
             self._update_mutual_information(params, False)
@@ -718,7 +732,7 @@ class MutualInformationMetric(object):
         return -1 * self.metric_val
 
     def gradient(self, params):
-        r""" Numeric value of the metric's gradient at the given parameters
+        r"""Numeric value of the metric's gradient at the given parameters.
 
         Parameters
         ----------
@@ -731,6 +745,7 @@ class MutualInformationMetric(object):
         -------
         grad : array, shape (n,)
             the gradient of the negative Mutual Information
+
         """
         try:
             self._update_mutual_information(params, True)
@@ -739,7 +754,7 @@ class MutualInformationMetric(object):
         return -1 * self.metric_grad
 
     def distance_and_gradient(self, params):
-        r""" Numeric value of the metric and its gradient at given parameters
+        r"""Numeric value of the metric and its gradient at given parameters.
 
         Parameters
         ----------
@@ -756,6 +771,7 @@ class MutualInformationMetric(object):
             with `params` parameters
         neg_mi_grad : array, shape (n,)
             the gradient of the negative Mutual Information
+
         """
         try:
             self._update_mutual_information(params, True)
@@ -775,7 +791,7 @@ class AffineRegistration(object):
                  ss_sigma_factor=None,
                  options=None,
                  verbosity=VerbosityLevels.STATUS):
-        """ Initializes an instance of the AffineRegistration class
+        """Initialize an instance of the AffineRegistration class.
 
         Parameters
         ----------
@@ -815,6 +831,7 @@ class AffineRegistration(object):
         options : dict, optional
             extra optimization options. The default is None, implying
             no extra options are passed to the optimizer.
+
         """
         self.metric = metric
 
@@ -864,7 +881,7 @@ class AffineRegistration(object):
     def _init_optimizer(self, static, moving, transform, params0,
                         static_grid2world, moving_grid2world,
                         starting_affine):
-        r"""Initializes the registration optimizer
+        r"""Initialize the registration optimizer.
 
         Initializes the optimizer by computing the scale space of the input
         images
@@ -897,6 +914,7 @@ class AffineRegistration(object):
                 array, shape (dim+1, dim+1)
             If None:
                 Start from identity
+
         """
         self.dim = len(static.shape)
         self.transform = transform
@@ -966,7 +984,7 @@ class AffineRegistration(object):
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
                  starting_affine=None, ret_metric=False):
-        r""" Starts the optimization process
+        r""" Start the optimization process.
 
         Parameters
         ----------
@@ -1018,6 +1036,7 @@ class AffineRegistration(object):
             the optimal parameters (translation, rotation shear etc.)
         fopt : Similarity metric
             the value of the function at the optimal parameters.
+
         """
         self._init_optimizer(static, moving, transform, params0,
                              static_grid2world, moving_grid2world,
@@ -1119,7 +1138,7 @@ def align_origins(static, static_grid2world,
 
 def transform_centers_of_mass(static, static_grid2world,
                               moving, moving_grid2world):
-    r""" Transformation to align the center of mass of the input images
+    r""" Transformation to align the center of mass of the input images.
 
     Parameters
     ----------
@@ -1138,6 +1157,7 @@ def transform_centers_of_mass(static, static_grid2world,
         the affine transformation (translation only, in this case) aligning
         the center of mass of the moving image towards the one of the static
         image
+
     """
     dim = len(static.shape)
     if static_grid2world is None:
@@ -1158,7 +1178,7 @@ def transform_centers_of_mass(static, static_grid2world,
 
 def transform_geometric_centers(static, static_grid2world,
                                 moving, moving_grid2world):
-    r""" Transformation to align the geometric center of the input images
+    r""" Transformation to align the geometric center of the input images.
 
     With "geometric center" of a volume we mean the physical coordinates of
     its central voxel
@@ -1180,6 +1200,7 @@ def transform_geometric_centers(static, static_grid2world,
         the affine transformation (translation only, in this case) aligning
         the geometric center of the moving image towards the one of the static
         image
+
     """
     dim = len(static.shape)
     if static_grid2world is None:
@@ -1200,7 +1221,7 @@ def transform_geometric_centers(static, static_grid2world,
 
 def transform_origins(static, static_grid2world,
                       moving, moving_grid2world):
-    r""" Transformation to align the origins of the input images
+    r""" Transformation to align the origins of the input images.
 
     With "origin" of a volume we mean the physical coordinates of
     voxel (0,0,0)
@@ -1222,6 +1243,7 @@ def transform_origins(static, static_grid2world,
         the affine transformation (translation only, in this case) aligning
         the origin of the moving image towards the one of the static
         image
+
     """
     dim = len(static.shape)
     if static_grid2world is None:

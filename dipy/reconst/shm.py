@@ -508,8 +508,8 @@ class QballBaseModel(SphHarmModel):
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
-        Arguments
-        ---------
+        Parameters
+        ------------
         gtab : GradientTable
             Diffusion gradients used to acquire data
         sh_order : even int >= 0

@@ -223,8 +223,8 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
         Indices of maximum points. Sorted in the same order as `peak_values` so
         `odf[peak_indices[i]] == peak_values[i]`.
 
-    Note
-    ----
+    Notes
+    -----
     A point is a local maximum if it is > at least one neighbor and >= all
     neighbors. If no points meet the above criteria, 1 maximum is returned such
     that `odf[maximum] == max(odf)`.
@@ -232,6 +232,7 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
     See Also
     --------
     dipy.core.sphere
+
     """
     cdef:
         cnp.ndarray[cnp.npy_intp] wpeak
