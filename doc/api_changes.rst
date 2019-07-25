@@ -35,10 +35,18 @@ All interpolation functions has been moved to a new module name `dipy.core.inter
 **Tracking**
 
 The `voxel_size` parameter has been removed from the following function:
+
 - ``dipy.tracking.utils.connectivity_matrix``
 - ``dipy.tracking.utils.density_map``
 - ``dipy.tracking.utils.stremline_mapping``
 - ``dipy.tracking._util._mapping_to_voxel``
+
+The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
+been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
+
+The `EuDX` tracking function has been removed. EuDX tractography can be
+performed using ``dipy.tracking.local.LocalTracking`` using
+``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
 DIPY 0.16 Changes
 -----------------
