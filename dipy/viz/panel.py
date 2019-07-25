@@ -67,7 +67,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     peaks : PeaksAndMetrics
         Default None
-    
+
     Returns
     -------
     panel : Panel
@@ -93,17 +93,24 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         affine = np.eye(4)
 
     # renderer.add(actor.axes(scale=(50, 50, 50)))
-    
+
     image_actor_z = actor.slicer(tmp, affine=affine, value_range=value_range,
                                  interpolation='nearest', picking_tol=0.025)
 
     tmp_new = image_actor_z.get_numpy()
 
-    print('Resized to MNI shape ', tmp_new.shape + (data.shape[-1],))
+    if len(data.shape) == 4:
+        if data.shape[-1] == 3:
+            print('Resized to RAS shape ', tmp_new.shape)
+        else:
+            print('Resized to RAS shape ', tmp_new.shape + (data.shape[-1],))
+    else:
+        print('Resized to RAS shape ', tmp_new.shape)
+
     shape = tmp_new.shape
 
     if pam is not None:
-        
+
         peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None,
                                           mask=mask, affine=affine,
                                           colors=None)
@@ -164,7 +171,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         HORIZON.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                                   shape[2] - 1) 
+                                                   shape[2] - 1)
         HORIZON.slicer_curr_x = x
         HORIZON.window_timer_cnt+=100
 
@@ -187,15 +194,15 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     double_slider = ui.LineDoubleSlider2D(length=140,
                                           initial_values=value_range,
                                           min_value=tmp.min(),
-                                          max_value=tmp.max(), 
+                                          max_value=tmp.max(),
                                           shape='square')
 
     _color_dslider(double_slider)
 
     def apply_colormap(r1, r2):
         if HORIZON.slicer_rgb:
-            return 
-        
+            return
+
         if HORIZON.slicer_colormap == 'disting':
             # use distinguishable colors
             rgb = colormap.distinguishable_colormap(nb_colors=256)
@@ -218,14 +225,14 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
         HORIZON.slicer_curr_actor_z.output.SetLookupTable(lut)
         HORIZON.slicer_curr_actor_z.output.Update()
-    
+
     def on_change_ds(slider):
-        
+
         values = slider._values
         r1, r2 = values
         apply_colormap(r1, r2)
-       
-    double_slider.on_change = on_change_ds 
+
+    double_slider.on_change = on_change_ds
 
     opacity_slider = ui.LineSlider2D(min_value=0.0,
                                      max_value=1.0,
@@ -248,22 +255,22 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                     text_template="{value:.0f}", shape='square')
 
     _color_slider(volume_slider)
-    
+
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
         HORIZON.slicer_vol_idx = vol_idx
-        
+
         renderer.rm(HORIZON.slicer_curr_actor_x)
         renderer.rm(HORIZON.slicer_curr_actor_y)
         renderer.rm(HORIZON.slicer_curr_actor_z)
-        
+
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
                                      affine=affine,
                                      value_range=value_range,
                                      interpolation='nearest',
                                      picking_tol=0.025)
-        
+
         tmp_new = image_actor_z.get_numpy()
         HORIZON.slicer_vol = tmp_new
 
@@ -272,7 +279,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                      0, shape[1] - 1,
                                      z,
                                      z)
-    
+
         HORIZON.slicer_curr_actor_z = image_actor_z
         HORIZON.slicer_curr_actor_x = image_actor_z.copy()
 
@@ -284,7 +291,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                                    x, 0,
                                                    shape[1] - 1, 0,
                                                    shape[2] - 1)
-        
+
         HORIZON.slicer_curr_actor_y = image_actor_z.copy()
         y = HORIZON.slicer_curr_y
         HORIZON.slicer_curr_actor_y.display_extent(0, shape[0] - 1,
@@ -315,15 +322,15 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     def left_click_picker_callback(obj, ev):
         ''' Get the value of the clicked voxel and show it in the panel.'''
-       
+
         event_pos = iren.GetEventPosition()
-        
+
         obj.picker.Pick(event_pos[0],
                         event_pos[1],
                         0,
                         renderer)
 
-        i, j, k = obj.picker.GetPointIJK()        
+        i, j, k = obj.picker.GetPointIJK()
         res = HORIZON.slicer_vol[i, j, k]
         try:
             message = '%.3f' % res
@@ -359,17 +366,17 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     HORIZON.slicer_curr_x = int(np.round(shape[0] / 2))
     HORIZON.slicer_curr_y = int(np.round(shape[1] / 2))
     HORIZON.slicer_curr_z = int(np.round(shape[2] / 2))
-    
+
     line_slider_x.on_change = change_slice_x
     line_slider_y.on_change = change_slice_y
     line_slider_z.on_change = change_slice_z
 
     double_slider.on_change = on_change_ds
-    
+
     opacity_slider.on_change = change_opacity
-    
+
     volume_slider.handle_events(volume_slider.handle.actor)
-    volume_slider.on_left_mouse_button_released = change_volume    
+    volume_slider.on_left_mouse_button_released = change_volume
 
     # volume_slider.on_right_mouse_button_released = change_volume2
 
@@ -386,7 +393,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         else:
             renderer.rm(HORIZON.slicer_curr_actor_x)
         iren.Render()
-    
+
     line_slider_label_x.actor.AddObserver('LeftButtonPressEvent',
                                           label_callback_x,
                                           1.0)
@@ -404,7 +411,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         else:
             renderer.rm(HORIZON.slicer_curr_actor_y)
         iren.Render()
-    
+
     line_slider_label_y.actor.AddObserver('LeftButtonPressEvent',
                                           label_callback_y,
                                           1.0)
@@ -423,19 +430,19 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
             renderer.rm(HORIZON.slicer_curr_actor_z)
 
         iren.Render()
-    
+
     line_slider_label_z.actor.AddObserver('LeftButtonPressEvent',
                                           label_callback_z,
                                           1.0)
-    
+
     opacity_slider_label = build_label(text="Opacity")
     volume_slider_label = build_label(text="Volume")
     picker_label = build_label(text = '')
     double_slider_label = build_label(text='Colormap')
 
     def label_colormap_callback(obj, event):
-        
-        if HORIZON.slicer_colormap_cnt == len(HORIZON.slicer_colormaps): 
+
+        if HORIZON.slicer_colormap_cnt == len(HORIZON.slicer_colormaps):
             HORIZON.slicer_colormap_cnt = 0
         else:
             HORIZON.slicer_colormap_cnt += 1
@@ -456,7 +463,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         panel_size = (400, 400 + 100)
     if data.ndim == 3:
         panel_size = (400, 300 + 100)
-    
+
     panel = ui.Panel2D(size=panel_size,
                        position=(850, 110),
                        color=(1, 1, 1),
@@ -470,11 +477,11 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(line_slider_x, coords=(0.4, ys[3]))
     panel.add_element(opacity_slider, coords=(0.4, ys[4]))
     panel.add_element(double_slider, coords=(0.4, (ys[7] + ys[8])/2.))
-    
-    if data.ndim == 4: 
-        if data.shape[-1] > 3 :   
+
+    if data.ndim == 4:
+        if data.shape[-1] > 3 :
             panel.add_element(volume_slider, coords=(0.4, ys[6]))
-        
+
     panel.add_element(line_slider_label_z, coords=(0.1, ys[1]))
     panel.add_element(line_slider_label_y, coords=(0.1, ys[2]))
     panel.add_element(line_slider_label_x, coords=(0.1, ys[3]))
@@ -482,10 +489,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     panel.add_element(double_slider_label, coords=(0.1, (ys[7] + ys[8])/2.))
 
     if data.ndim == 4:
-        if data.shape[-1] > 3 :      
+        if data.shape[-1] > 3 :
             panel.add_element(volume_slider_label,
                               coords=(0.1, ys[6]))
-    
+
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
     renderer.add(panel)
