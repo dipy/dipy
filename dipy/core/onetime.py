@@ -202,13 +202,6 @@ def auto_attr(func):
     99
     >>> 'a' in x.__dict__
     True
+
     """
     return OneTimeProperty(func)
-
-
-#-----------------------------------------------------------------------------
-# Deprecated API
-#-----------------------------------------------------------------------------
-
-# For backwards compatibility
-setattr_on_read = auto_attr
