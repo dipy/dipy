@@ -9,7 +9,7 @@ cdef extern from "dpy_math.h" nogil:
     double dpy_rint(double x)
 
 
-cdef class PeaksAndMetricsDirectionGetter(DirectionGetter):
+cdef class EuDXDirectionGetter(DirectionGetter):
     """Deterministic Direction Getter based on peak directions.
 
     This class contains the cython portion of the code for PeaksAndMetrics and

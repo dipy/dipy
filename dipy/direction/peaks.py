@@ -17,7 +17,7 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.reconst.peak_direction_getter import PeaksAndMetricsDirectionGetter
+from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -206,7 +206,7 @@ def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
     return this_pam
 
 
-class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
+class PeaksAndMetrics(EuDXDirectionGetter):
     def __reduce__(self): return _pam_from_attrs, (self.__class__,
                                                    self.sphere,
                                                    self.peak_indices,

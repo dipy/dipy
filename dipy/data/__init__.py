@@ -278,6 +278,9 @@ def get_fnames(name='small_64D'):
         fbvecs = pjoin(DATA_DIR, 'small_25.bvec')
         fimg = pjoin(DATA_DIR, 'small_25.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == 'small_25_streamlines':
+        fstreamlines = pjoin(DATA_DIR, 'EuDX_small_25.trk')
+        return fstreamlines
     if name == "S0_10":
         fimg = pjoin(DATA_DIR, 'S0_10slices.nii.gz')
         return fimg

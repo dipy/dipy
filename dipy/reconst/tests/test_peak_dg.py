@@ -4,7 +4,7 @@ import numpy.testing as npt
 from dipy.direction.peaks import default_sphere, peaks_from_model
 
 
-def test_PeaksAndMetricsDirectionGetter():
+def test_EuDXDirectionGetter():
 
     class SillyModel(object):
         def fit(self, data, mask=None):
