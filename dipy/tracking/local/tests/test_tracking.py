@@ -34,7 +34,8 @@ def test_stop_conditions():
                        [1, 1, 1, 2, 2],
                        [0, 1, 1, 1, 2],
                        [0, 1, 1, 0, 2],
-                       [1, 0, 1, 1, 1]])
+                       [1, 0, 1, 1, 1],
+                       [2, 1, 2, 0, 0]])
     tissue = tissue[None]
 
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -43,9 +44,9 @@ def test_stop_conditions():
     pmf = pmf_lookup[(tissue > 0).astype("int")]
 
     # Create a seeds along
-    x = np.array([0., 0, 0, 0, 0, 0, 0])
-    y = np.array([0., 1, 2, 3, 4, 5, 6])
-    z = np.array([1., 1, 1, 0, 1, 1, 1])
+    x = np.array([0., 0, 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6, 7])
+    z = np.array([1., 1, 1, 0, 1, 1, 1, 1])
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
@@ -72,7 +73,7 @@ def test_stop_conditions():
                                               return_all=True)
     streamlines_all = iter(streamlines_all_generator)
 
-    # Check that the first streamline stops at 0 and 3 (ENDPOINT)
+    # Check that the first streamline stops at 1 and 2 (ENDPOINT)
     y = 0
     sl = next(streamlines_not_all)
     npt.assert_equal(sl[0], [0, y, 1])
@@ -84,7 +85,7 @@ def test_stop_conditions():
     npt.assert_equal(sl[-1], [0, y, 2])
     npt.assert_equal(len(sl), 2)
 
-    # Check that the first streamline stops at 0 and 4 (ENDPOINT)
+    # Check that the next streamline stops at 1 and 3 (ENDPOINT)
     y = 1
     sl = next(streamlines_not_all)
     npt.assert_equal(sl[0], [0, y, 1])
@@ -125,23 +126,31 @@ def test_stop_conditions():
 
     # The last 3 seeds should produce invalid streamlines,
     # INVALIDPOINT streamlines are kept (return_all=True).
-    # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
+    # The streamline stops at 1 (INVALIDPOINT) and 3 (ENDPOINT)
     y = 4
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 1])
     npt.assert_equal(sl[-1], [0, y, 3])
     npt.assert_equal(len(sl), 3)
 
-    # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
+    # The streamline stops at 0 (INVALIDPOINT) and 2 (INVALIDPOINT)
     y = 5
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 1])
     npt.assert_equal(sl[-1], [0, y, 2])
     npt.assert_equal(len(sl), 2)
 
-    # The last streamline should contain only one point, the seed point,
+    # The streamline should contain only one point, the seed point,
     # because no valid inital direction was returned.
     y = 6
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], seeds[y])
+    npt.assert_equal(sl[-1], seeds[y])
+    npt.assert_equal(len(sl), 1)
+
+    # The streamline should contain only one point, the seed point,
+    # because no valid neighboring voxel (ENDPOINT)
+    y = 7
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], seeds[y])
     npt.assert_equal(sl[-1], seeds[y])
