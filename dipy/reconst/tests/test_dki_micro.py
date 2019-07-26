@@ -13,7 +13,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.reconst.dti import (eig_from_lo_tri)
 
-from dipy.data import get_sphere
+from dipy.data import default_sphere, get_sphere
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -97,13 +97,13 @@ def test_single_fiber_model():
     dkiF = dkiM.fit(signal)
 
     # Axonal Water Fraction
-    sphere = get_sphere('symmetric724')
-    AWF = dki_micro.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
-                                          gtol=1e-5)
+    AWF = dki_micro.axonal_water_fraction(dkiF.model_params, default_sphere,
+                                          mask=None, gtol=1e-5)
     assert_almost_equal(AWF, fie)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params,
+                                              default_sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 

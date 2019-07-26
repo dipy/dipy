@@ -23,6 +23,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    recursive_response,
                                    response_from_mask)
 from dipy.direction.peaks import peak_directions
+from dipy.core.sphere import HemiSphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
@@ -43,7 +44,7 @@ def test_recursive_response_calibration():
     _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
 
     gtab = gradient_table(bvals, bvecs)
     evals = np.array([0.0015, 0.0003, 0.0003])
@@ -340,7 +341,7 @@ def test_odf_sh_to_sharp():
     S, _ = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
                         fractions=[50, 50], snr=SNR)
 
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
 
     qb = QballModel(gtab, sh_order=8, assume_normed=True)
 
@@ -394,7 +395,7 @@ def test_r2_term_odf_sharp():
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -586,8 +587,9 @@ def test_csd_superres():
 
     fit16 = model16.fit(S)
 
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
-    d, v, ind = peak_directions(fit16.odf(default_sphere), default_sphere,
+    d, v, ind = peak_directions(fit16.odf(sphere), sphere,
                                 relative_peak_threshold=.2,
                                 min_separation_angle=0)
 
@@ -617,5 +619,4 @@ def test_csd_convergence():
 
 
 if __name__ == '__main__':
-    # run_module_suite()
-    test_csdeconv()
+    run_module_suite()

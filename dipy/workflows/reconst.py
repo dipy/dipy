@@ -9,7 +9,7 @@ from warnings import warn
 import nibabel as nib
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
 from dipy.io.image import load_nifti, save_nifti
@@ -529,7 +529,7 @@ class ReconstCSDFlow(Workflow):
             logging.info('Ratio for smallest to largest eigen value is {0}'
                          .format(ratio))
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
@@ -654,7 +654,7 @@ class ReconstCSAFlow(Workflow):
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('Starting CSA computations {0}'.format(dwi))
 

@@ -77,7 +77,7 @@ resolution. We generate that by subdividing the triangles of one of DIPY_'s
 cached spheres, which we can read in the following way.
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 sphere = sphere.subdivide(2)
 
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)

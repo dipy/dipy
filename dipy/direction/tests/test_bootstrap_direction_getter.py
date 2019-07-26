@@ -5,6 +5,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_icosahedron
 
+from dipy.data import get_sphere
 from dipy.direction.bootstrap_direction_getter import BootDirectionGetter
 from dipy.direction.pmf import BootPmfGen, SimplePmfGen
 from dipy.reconst import shm
@@ -30,9 +31,11 @@ def test_bdg_initial_direction():
     gtab = gradient_table(bvals, bvecs)
 
     # test that we get one direction when we have a single tensor
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     voxel = single_tensor(gtab).reshape([1, 1, 1, -1])
     dti_model = dti.TensorModel(gtab)
-    boot_dg = BootDirectionGetter.from_data(voxel, dti_model, 30, sh_order=6)
+    boot_dg = BootDirectionGetter.from_data(voxel, dti_model, 30,
+                                            sphere=sphere, sh_order=6)
     initial_direction = boot_dg.initial_direction(np.zeros(3))
     npt.assert_equal(len(initial_direction), 1)
     npt.assert_allclose(initial_direction[0], [1, 0, 0], atol=0.1)
@@ -46,7 +49,8 @@ def test_bdg_initial_direction():
     response = (np.array([0.0015, 0.0004, 0.0004]), 1)
     csd_model = ConstrainedSphericalDeconvModel(gtab, response=response,
                                                 sh_order=4)
-    boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30)
+    boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30,
+                                            sphere=sphere,)
     initial_direction = boot_dg.initial_direction(np.zeros(3))
 
     npt.assert_equal(len(initial_direction), 2)

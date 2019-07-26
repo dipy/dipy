@@ -71,7 +71,7 @@ gqfit = gqmodel.fit(dataslice, mask=mask)
 Load an ODF reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Calculate the ODFs with this specific sphere
