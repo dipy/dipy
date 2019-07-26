@@ -483,7 +483,7 @@ def slicer_panel(renderer, iren,
     panel.add_element(double_slider, coords=(0.4, (ys[7] + ys[8])/2.))
 
     if data.ndim == 4:
-        if data.shape[-1] > 3 :
+        if data.shape[-1] > 3:
             panel.add_element(volume_slider, coords=(0.4, ys[6]))
 
     panel.add_element(line_slider_label_z, coords=(0.1, ys[1]))
