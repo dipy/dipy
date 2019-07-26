@@ -15,7 +15,7 @@ class HorizonFlow(Workflow):
         return 'horizon'
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
-            random_colors=False, length_gt=0,  length_lt=1000,
+            random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, out_dir='', out_stealth_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!

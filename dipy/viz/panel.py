@@ -176,7 +176,7 @@ def slicer_panel(renderer, iren,
         HORIZON.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                    shape[2] - 1)
         HORIZON.slicer_curr_x = x
-        HORIZON.window_timer_cnt+=100
+        HORIZON.window_timer_cnt += 100
 
 
     line_slider_y = ui.LineSlider2D(min_value=0,
@@ -392,7 +392,7 @@ def slicer_panel(renderer, iren,
         line_slider_label_x.visibility = not line_slider_label_x.visibility
         line_slider_x.set_visibility(line_slider_label_x.visibility)
         cnt = next(x_counter)
-        if line_slider_label_x.visibility and cnt > 0 :
+        if line_slider_label_x.visibility and cnt > 0:
             renderer.add(HORIZON.slicer_curr_actor_x)
         else:
             renderer.rm(HORIZON.slicer_curr_actor_x)
@@ -410,7 +410,7 @@ def slicer_panel(renderer, iren,
         line_slider_label_y.visibility = not line_slider_label_y.visibility
         line_slider_y.set_visibility(line_slider_label_y.visibility)
         cnt = next(y_counter)
-        if line_slider_label_y.visibility and cnt > 0 :
+        if line_slider_label_y.visibility and cnt > 0:
             renderer.add(HORIZON.slicer_curr_actor_y)
         else:
             renderer.rm(HORIZON.slicer_curr_actor_y)
@@ -428,7 +428,7 @@ def slicer_panel(renderer, iren,
         line_slider_label_z.visibility = not line_slider_label_z.visibility
         line_slider_z.set_visibility(line_slider_label_z.visibility)
         cnt = next(z_counter)
-        if line_slider_label_z.visibility and cnt > 0 :
+        if line_slider_label_z.visibility and cnt > 0:
             renderer.add(HORIZON.slicer_curr_actor_z)
         else:
             renderer.rm(HORIZON.slicer_curr_actor_z)
@@ -493,7 +493,7 @@ def slicer_panel(renderer, iren,
     panel.add_element(double_slider_label, coords=(0.1, (ys[7] + ys[8])/2.))
 
     if data.ndim == 4:
-        if data.shape[-1] > 3 :
+        if data.shape[-1] > 3:
             panel.add_element(volume_slider_label,
                               coords=(0.1, ys[6]))
 

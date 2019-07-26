@@ -77,7 +77,7 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-    def __init__(self, tractograms=[], images=[], pams=[],
+    def __init__(self, tractograms=None, images=None, pams=None,
                  cluster=False, cluster_thr=15.0,
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
@@ -87,11 +87,11 @@ class Horizon(object):
 
         Parameters
         ----------
-        tractograms : sequence
+        tractograms : sequence of Streamlines
             Sequence of Streamlines objects
         images : sequence of tuples
             Each tuple contains data and affine
-        pams : PeakAndMetrics files
+        pams : sequence of PeakAndMetrics
         cluster : bool
             Enable QuickBundlesX clustering
         cluster_thr : float
@@ -124,7 +124,7 @@ class Horizon(object):
         self.world_coords = world_coords
         self.interactive = interactive
         self.prng = np.random.RandomState(27)
-        self.tractograms = tractograms
+        self.tractograms = tractograms or []
         self.out_png = out_png
         self.images = images or []
         self.pams = pams or []
@@ -313,9 +313,6 @@ class Horizon(object):
                            1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
-
-
-
 
     def build_show(self, scene):
 
@@ -610,8 +607,8 @@ class Horizon(object):
         def timer_callback(obj, event):
 
             HORIZON.window_timer_cnt += 1
-            cnt = HORIZON.window_timer_cnt
             # TODO possibly add automatic rotation option
+            # cnt = HORIZON.window_timer_cnt
             # print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
@@ -635,7 +632,7 @@ class Horizon(object):
                           reset_camera=False)
 
 
-def horizon(tractograms=[], images=[], pams=[],
+def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10000,
