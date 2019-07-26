@@ -408,6 +408,20 @@ fetch_cfin_multib = _make_fetcher(
          " More details about the data are available in their paper: " +
          " https://www.nature.com/articles/sdata201672"))
 
+fetch_file_formats = _make_fetcher(
+    "bundle_file_formats_example",
+    pjoin(dipy_home, 'bundle_file_formats_example'),
+    'https://zenodo.org/record/3352379/files/',
+    ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+     'raf_m_sub.vtk', 'rpt_m_sub.dpy', 'template0.nii.gz'],
+    ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+     'raf_m_sub.vtk', 'rpt_m_sub.dpy', 'template0.nii.gz'],
+    ['78ed7bead3e129fb4b4edd6da1d7e2d2', '20009796ccd43dc8d2d5403b25dff717',
+     '8afa8419e2efe04ede75cce1f53c77d8', '9edcbea30c7a83b467c3cdae6ce963c8',
+     '42bff2538a650a7ff1e57bfd9ed90ad6', '99c37a2134026d2c4bbb7add5088ddc6'],
+    doc="Download 5 bundles in various file formats and their reference",
+    data_size="25MB")
+
 fetch_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_bundle_atlas_hcp842",
     pjoin(dipy_home, 'bundle_atlas_hcp842'),
@@ -1149,6 +1163,25 @@ def read_cfin_t1():
     return img  # , gtab
 
 
+def get_file_formats():
+    """
+    Returns
+    -------
+    bundles_list : all bundles (list)
+    ref_anat : reference
+    """
+    ref_anat = pjoin(dipy_home,
+                     'bundle_file_formats_example', 'template0.nii.gz')
+    bundles_list = []
+    for filename in ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+                'raf_m_sub.vtk', 'rpt_m_sub.dpy']:
+        bundles_list.append(pjoin(dipy_home,
+                                  'bundle_file_formats_example',
+                                  filename))
+
+    return bundles_list, ref_anat
+
+
 def get_bundle_atlas_hcp842():
     """
     Returns
@@ -1156,13 +1189,13 @@ def get_bundle_atlas_hcp842():
     file1 : string
     file2 : string
     """
-    file1 = pjoin(dipy_home,
+    file1=pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
-    file2 = pjoin(dipy_home,
+    file2=pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
@@ -1178,13 +1211,13 @@ def get_two_hcp842_bundles():
     file1 : string
     file2 : string
     """
-    file1 = pjoin(dipy_home,
+    file1=pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
                   'AF_L.trk')
 
-    file2 = pjoin(dipy_home,
+    file2=pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
@@ -1199,7 +1232,7 @@ def get_target_tractogram_hcp():
     -------
     file1 : string
     """
-    file1 = pjoin(dipy_home,
+    file1=pjoin(dipy_home,
                   'target_tractogram_hcp',
                   'hcp_tractogram',
                   'streamlines.trk')

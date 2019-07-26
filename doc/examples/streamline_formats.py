@@ -15,72 +15,79 @@ Read :ref:`faq`
 
 """
 
+import os
+
+import nibabel as nib
 import numpy as np
 from dipy.data import get_fnames
-from dipy.io.streamline import load_trk, save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.utils import (create_nifti_header, create_tractogram_header,
+                           get_reference_info, is_header_compatible)
 from dipy.tracking.streamline import Streamlines
 
-"""
-1. Read/write streamline files with DIPY.
-"""
+from dipy.data.fetcher import (fetch_file_formats,
+                               get_file_formats)
 
-fname = get_fnames('fornix')
-print(fname)
+fetch_file_formats()
+bundles_filename, ref_anat_filename = get_file_formats()
+for filename in bundles_filename:
+    print(os.path.basename(filename))
 
-# Read Streamlines
-streams, hdr = load_trk(fname)
-streamlines = Streamlines(streams)
+# Loading a Nifti1Image using nibabel
+reference_anatomy = nib.load(ref_anat_filename)
 
-# Save Streamlines
-save_trk("my_streamlines.trk", streamlines=streamlines, affine=np.eye(4))
+# Load tractogram will support 5 file formats, function like load_trk or
+# load_tck will simply be restricted to one file format
+cc_trk = load_tractogram(bundles_filename[0], reference_anatomy)
 
+# TRK files contain their own header (when writen properly), so they
+# technically do not need a reference. (See how below)
+# cc_trk = load_tractogram(bundles_filename[0], 'same')
 
-"""
-2. We also work on our HDF5 based file format which can read/write massive
-   datasets (as big as the size of your free disk space). With `Dpy` we can
-   support
+laf_tck = load_tractogram(bundles_filename[1], reference_anatomy)
+raf_vtk = load_tractogram(bundles_filename[3], reference_anatomy)
 
-  * direct indexing from the disk
-  * memory usage always low
-  * extensions to include different arrays in the same file
-
-Here is a simple example.
-"""
-
-from dipy.io.dpy import Dpy
-dpw = Dpy('fornix.dpy', 'w')
-
-"""
-Write many streamlines at once.
-"""
-
-dpw.write_tracks(streamlines)
+# These file contains invalid streamlines (negative values once in voxel space)
+# This is not considered a valid tractography file, but it is possible to load
+# it anyway
+lpt_fib = load_tractogram(bundles_filename[2], reference_anatomy,
+                          bbox_valid_check=False)
+rpt_dpy = load_tractogram(bundles_filename[4], reference_anatomy, 
+    bbox_valid_check=False)
 
 """
-Write one track
+The function load_tractogram requires a reference, any of the following input
+is considered valid:
+- Nifti filename
+- Trk filename
+- nib.nifti1.Nifti1Image
+- nib.streamlines.trk.TrkFile
+- nib.nifti1.Nifti1Header
+- Trk header (dict)
+
+The reason why this parameters is required is to be sure all information
+related to space attribute are always present.
 """
 
-dpw.write_track(streamlines[0])
+affine, dimensions, voxel_sizes, voxel_order = get_reference_info(
+    reference_anatomy)
+print(affine)
+print(dimensions)
+print(voxel_sizes)
+print(voxel_order)
 
 """
-or one track each time.
+If you have a TRK file that was generated using a particular anatomy,
+to be considered valid all fields must correspond in the header.
+It can be easily verified using this function, which also accept
+the same variety of input as 
 """
-
-for t in streamlines:
-    dpw.write_track(t)
-
-dpw.close()
+print(is_header_compatible(reference_anatomy, bundles_filename[1]))
 
 """
-Read streamlines directly from the disk using their indices
-
-.. include:: ../links_names.inc
+If a TRK was generated with a valid header, but the reference NIFTI was lost
+an header can be generated to then generate a fake NIFTI file.
 """
-
-dpr = Dpy('fornix.dpy', 'r')
-some_streamlines = dpr.read_tracksi([0, 10, 20, 30, 100])
-dpr.close()
-
-
-print(len(streamlines))
-print(len(some_streamlines))
+header = create_nifti_header(affine, dimension, voxel_size)
+nib.save(nib.Nifti1Image(np.zeros(dimensions), affine, header), 'fake.nii.gz')
