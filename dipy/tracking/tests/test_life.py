@@ -11,7 +11,6 @@ import dipy.reconst.dti as dti
 import dipy.tracking.life as life
 
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.streamline import load_tractogram
 from dipy.tracking.utils import move_streamlines
 
 THIS_DIR = op.dirname(__file__)
