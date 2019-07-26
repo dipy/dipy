@@ -92,17 +92,16 @@ class HorizonFlow(Workflow):
 
                 pam = load_peaks(fname)
                 pams.append(pam)
-                
+
                 if verbose:
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
         horizon(tractograms=tractograms, images=images, pams=pams,
                 cluster=cluster, cluster_thr=cluster_thr,
-                random_colors=random_colors, 
+                random_colors=random_colors,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive,
                 out_png=pjoin(out_dir, out_stealth_png))
-
