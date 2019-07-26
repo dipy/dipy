@@ -345,7 +345,7 @@ def test_wls_and_ls_fit():
     npt.assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    # Testing WLS Fit on Single Voxel
+    # Testing WLS Fit on single voxel
     # If you do something wonky (passing min_signal<0), you should get an
     # error:
     npt.assert_raises(ValueError, TensorModel, gtab, fit_method='WLS',

@@ -229,9 +229,9 @@ def test_invalid_transform():
     # Note: users should not attempt to use the base class Transform:
     # they should get an instance of one of its derived classes from the
     # regtransforms dictionary (the base class is not contained there)
-    # If for some reason the user instanciates it and attempts to use it,
+    # If for some reason the user instantiates it and attempts to use it,
     # however, it will raise exceptions when attempting to retrieve its
-    # jacobian, identity parameters or its matrix representation. It will
+    # Jacobian, identity parameters or its matrix representation. It will
     # return -1 if queried about its dimension or number of parameters
     transform = Transform()
     theta = np.ndarray(3)

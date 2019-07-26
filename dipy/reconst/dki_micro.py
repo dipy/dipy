@@ -96,8 +96,8 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     idt : ndarray (x, y, z, 6) or (n, 6)
         Parameters of the restricted diffusion tensor.
 
-    Note
-    ----
+    Notes
+    -----
     In the original article of DKI microstructural model [1]_, the hindered and
     restricted tensors were definde as the intra-cellular and extra-cellular
     diffusion compartments respectively.
@@ -134,7 +134,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
     edt_all = np.zeros(shape + (6,))
     idt_all = np.zeros(shape + (6,))
 
-    # Generate matrix that converts apparant diffusion coefficients to tensors
+    # Generate matrix that converts apparent diffusion coefficients to tensors
     B = np.zeros((sphere.x.size, 6))
     B[:, 0] = sphere.x * sphere.x  # Bxx
     B[:, 1] = sphere.x * sphere.y * 2.  # Bxy
@@ -255,8 +255,8 @@ def tortuosity(hindered_ad, hindered_rd):
     hindered_rd: ndarray
         Array containing the values of the hindered radial diffusivity.
 
-    Return
-    ------
+    Returns
+    --------
     Tortuosity of the hindered diffusion compartment
     """
     if not isinstance(hindered_rd, np.ndarray):
@@ -422,7 +422,7 @@ class KurtosisMicrostructureModel(DiffusionKurtosisModel):
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
 
-        Note
+        Notes
         -----
         In the original article of DKI microstructural model [1]_, the hindered
         and restricted tensors were definde as the intra-cellular and
@@ -459,8 +459,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                 5) Six elements of the restricted diffusion tensor
                 6) Axonal water fraction
 
-        Note
-        -----
+        Notes
+        ------
         In the original article of DKI microstructural model [1]_, the hindered
         and restricted tensors were definde as the intra-cellular and
         extra-cellular diffusion compartments respectively.
@@ -478,8 +478,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the volume fraction of the restricted diffusion compartment
         also known as axonal water fraction.
 
-        Note
-        ----
+        Notes
+        ------
         The volume fraction of the restricted diffusion compartment can be seem
         as the volume fraction of the intra-cellular compartment [1]_.
 
@@ -495,8 +495,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def restricted_evals(self):
         """ Returns the eigenvalues of the restricted diffusion compartment.
 
-        Note
-        -----
+        Notes
+        ------
         The restricted diffusion tensor can be seem as the tissue's
         intra-cellular diffusion compartment [1]_.
 
@@ -513,8 +513,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def hindered_evals(self):
         """ Returns the eigenvalues of the hindered diffusion compartment.
 
-        Note
-        -----
+        Notes
+        ------
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -544,8 +544,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def hindered_ad(self):
         """ Returns the axial diffusivity of the hindered compartment.
 
-        Note
-        -----
+        Notes
+        ------
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -561,8 +561,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
     def hindered_rd(self):
         """ Returns the radial diffusivity of the hindered compartment.
 
-        Note
-        -----
+        Notes
+        ------
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -580,8 +580,8 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         by ADe / RDe, where ADe and RDe are the axial and radial diffusivities
         of the hindered compartment [1]_.
 
-        Note
-        -----
+        Notes
+        ------
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 

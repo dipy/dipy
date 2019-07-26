@@ -4,7 +4,7 @@ Symmetric Diffeomorphic Registration in 3D
 ==========================================
 This example explains how to register 3D volumes using the Symmetric Normalization 
 (SyN) algorithm proposed by Avants et al. [Avants09]_ (also implemented in
-the ANTS software [Avants11]_)
+the ANTs software [Avants11]_)
 
 We will register two 3D volumes from the same modality using SyN with the Cross
 Correlation (CC) metric.
@@ -42,8 +42,9 @@ We first remove the skull from the b0's
 """
 
 from dipy.segment.mask import median_otsu
-stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, 4, 4)
-syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, 4, 4)
+stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, median_radius=4,
+                                                   numpass=4)
+syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, median_radius=4, numpass=4)
 
 static = stanford_b0_masked
 static_affine = nib_stanford.affine
@@ -154,12 +155,12 @@ References
 ----------
 
 .. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
-   Symmetric Diffeomorphic Image Registration with Cross- Correlation:
+   Symmetric Diffeomorphic Image Registration with Cross-Correlation:
    Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
    26-41.
 
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-   Normalization Tools ( ANTS ), 1-35.
+   Normalization Tools (ANTS), 1-35.
 
 .. include:: ../links_names.inc
 

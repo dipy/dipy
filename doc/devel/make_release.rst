@@ -79,7 +79,7 @@ Release checklist
   ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
   Check all the links are still valid.
 
-* Check all the DIPY builds are green on the `nipy buildbots`_
+* Check all the DIPY builds are green on the nipy `buildbots`_
 
 * If you have travis-ci_ building set up you might want to push the code in its
   current state to a branch that will build, e.g.::
@@ -184,7 +184,7 @@ Doing the release! This has two steps:
 The trick here is to get all the testing, pushing to upstream done *before* you
 do the final release commit.  There should be only one commit with the release
 version number, so you might want to make the release commit on your local
-machine, push to pypi_, review, fix, rebase, until all is good.  Then and only
+machine, push to `dipy pypi`_, review, fix, rebase, until all is good.  Then and only
 then do you push to upstream on github.
 
 * Make the release commit.  Edit :file:`dipy/info.py` to set

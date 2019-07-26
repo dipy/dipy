@@ -14,23 +14,27 @@ point can be represented as a probability mass function (PMF) if the possible
 tracking directions are restricted to discrete numbers of well distributed
 points on a sphere.
 
-This example is an extension of the :ref:`intro_basic_tracking` example. We'll
-begin by repeating a few steps from that example, loading the data and fitting
-a Constrained Spherical Deconvolution (CSD) model.
+This example is an extension of the :ref:`example_tracking_introduction_eudx`
+example. We'll begin by repeating a few steps from that example, loading the
+data and fitting a Constrained Spherical Deconvolution (CSD) model.
 """
+
+# Enables/disables interactive visualization
+interactive = False
 
 from dipy.data import read_stanford_labels
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.tracking.streamline import Streamlines
+from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
 affine = hardi_img.affine
 
-seed_mask = labels == 2
+seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
 
@@ -66,9 +70,25 @@ fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
 prob_dg = ProbabilisticDirectionGetter.from_pmf(pmf, max_angle=30.,
                                                 sphere=small_sphere)
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
-save_trk("probabilistic_small_sphere.trk", streamlines_generator, affine, labels.shape)
+streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_probabilistic_dg_pmf.trk", streamlines, affine,
+         labels.shape)
 
+if has_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_probabilistic_dg_pmf.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
+"""
+.. figure:: tractogram_probabilistic_dg_pmf.png
+   :align: center
+
+   **Corpus Callosum using probabilistic direction getter from PMF**
+"""
 """
 One disadvantage of using a discrete PMF to represent possible tracking
 directions is that it tends to take up a lot of memory (RAM). The size of the
@@ -77,9 +97,9 @@ directions on the hemisphere, and every voxel has a unique PMF. In this case
 the data is ``(81, 106, 76)`` and ``small_sphere`` has 181 directions so the
 FOD is ``(81, 106, 76, 181)``. One way to avoid sampling the PMF and holding it
 in memory is to build the direction getter directly from the spherical harmonic
-representation of the FOD. By using this approach, we can also use a larger
-sphere, like ``default_sphere`` which has 362 directions on the hemisphere,
-without having to worry about memory limitations.
+(SH) representation of the FOD. By using this approach, we can also use a
+larger sphere, like ``default_sphere`` which has 362 directions on the
+hemisphere, without having to worry about memory limitations.
 """
 
 from dipy.data import default_sphere
@@ -87,10 +107,25 @@ from dipy.data import default_sphere
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     max_angle=30.,
                                                     sphere=default_sphere)
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_probabilistic_dg_sh.trk", streamlines, affine,
+         labels.shape)
 
-save_trk("probabilistic_shm_coeff.trk", streamlines_generator, affine, labels.shape)
+if has_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_probabilistic_dg_sh.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
+"""
+.. figure:: tractogram_probabilistic_dg_sh.png
+   :align: center
 
+   **Corpus Callosum using probabilistic direction getter from SH**
+"""
 """
 Not all model fits have the ``shm_coeff`` attribute because not all models use
 this basis to represent the data internally. However we can fit the ODF of any
@@ -102,8 +137,30 @@ from dipy.direction import peaks_from_model
 peaks = peaks_from_model(csd_model, data, default_sphere, .5, 25,
                          mask=white_matter, return_sh=True, parallel=True)
 fod_coeff = peaks.shm_coeff
+
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
                                                     sphere=default_sphere)
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
-save_trk("probabilistic_peaks_from_model.trk", streamlines_generator, affine,
+streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
+                                     step_size=.5)
+streamlines = Streamlines(streamline_generator)
+save_trk("tractogram_probabilistic_dg_sh_pfm.trk", streamlines, affine,
          labels.shape)
+
+if has_fury:
+    r = window.Renderer()
+    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(r, out_path='tractogram_probabilistic_dg_sh_pfm.png',
+                  size=(800, 800))
+    if interactive:
+        window.show(r)
+"""
+.. figure:: tractogram_probabilistic_dg_sh_pfm.png
+   :align: center
+
+   **Corpus Callosum using probabilistic direction getter from SH (
+   peaks_from_model)**
+"""
+"""
+.. include:: ../links_names.inc
+
+"""

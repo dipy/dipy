@@ -87,7 +87,7 @@ Pull Requests (84):
 * :ghpull:`206`: DOC: update the docs to say that we support python 3
 * :ghpull:`205`: RF: Minor corrections in index.rst and CSD example
 * :ghpull:`173`: Constrained Spherical Deconvolution and the Spherical Deconvolution Transform
-* :ghpull:`203`: RF: Rename tensor statistics to remove "tensor_" from them.
+* :ghpull:`203`: RF: Rename tensor statistics to remove "tensor\_" from them.
 * :ghpull:`202`: Typos
 * :ghpull:`201`: Bago's Rename sph basis functions corrected after rebasing and other minor lateral fixes
 * :ghpull:`191`: DOC - clarify docs for SphHarmModel

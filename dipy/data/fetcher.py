@@ -17,10 +17,7 @@ from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
@@ -50,16 +47,8 @@ def update_progressbar(progress, total_length):
     Takes a number between 0 and 1 to indicate progress from 0 to 100%.
 
     """
-    # Try to set the bar_length according to the console size
-    try:
-        with os.popen('tput cols', 'r') as f:
-            columns = f.read()
-            bar_length = int(columns) - 46
-            if(not (bar_length > 1)):
-                bar_length = 20
-    except Exception:
-        # Default value if determination of console size fails
-        bar_length = 20
+    # TODO: To improve bar management, https://gist.github.com/jtriley/1108174
+    bar_length = 40
     block = int(round(bar_length * progress))
     size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
@@ -103,8 +92,8 @@ def check_md5(filename, stored_md5=None):
     Computes the md5 of filename and check if it matches with the supplied
     string md5
 
-    Input
-    -----
+    Parameters
+    -----------
     filename : string
         Path to a file.
     md5 : string
@@ -450,7 +439,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
     ['hcp_bundle_fa.nii.gz'],
     ['2d5c0036b0575597378ddf39191028ea'],
     doc=("Download map of FA within two bundles in one" +
-        "of the hcp dataset subjects"),
+         "of the hcp dataset subjects"),
     data_size="230kb")
 
 
@@ -484,6 +473,20 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
      '5540c0c9bd635c29fc88dd599cbbf5e6'],
     doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 mice.",
     data_size="298.2MB")
+
+
+fetch_gold_standard_io = _make_fetcher(
+    "fetch_gold_standard_io",
+    pjoin(dipy_home, 'gold_standard_io'),
+    'https://zenodo.org/record/2651349/files/',
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.txt', 'streamlines_data.txt'],
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.json', 'streamlines_data.json'],
+    doc="Downloads the gold standard for streamlines io testing.",
+    data_size="47.KB")
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -1033,7 +1036,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     metrics : list
         Either ['fa'] or ['t1'] or ['fa', 't1']
     bundles : list
-        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
 

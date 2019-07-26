@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Script to build dmgs for buildbot builds
 
-Example
--------
+Examples
+--------
 %(prog)s "dipy-dist/dipy*-0.6.0-py*mpkg"
 
 Note quotes around the globber first argument to protect it from shell

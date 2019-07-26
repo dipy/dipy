@@ -152,13 +152,12 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        from dipy.data import get_fnames,get_sphere
-        sphere = get_sphere('symmetric724')
+        from dipy.data import get_fnames, default_sphere
         fimg, fbvals, fbvecs = get_fnames('ISBI_testing_2shells_table')
         bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
         gtab = gradient_table(bvals, bvecs)
-        from dipy.sims.voxel import SticksAndBall
-        data, golden_directions = SticksAndBall(
+        from dipy.sims.voxel import sticks_and_ball
+        data, golden_directions = sticks_and_ball(
             gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
             fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
@@ -167,7 +166,7 @@ class ShoreModel(Cache):
         asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
                          lambdaN=1e-8, lambdaL=1e-8)
         asmfit = asm.fit(data)
-        odf= asmfit.odf(sphere)
+        odf= asmfit.odf(default_sphere)
         """
 
         self.bvals = gtab.bvals

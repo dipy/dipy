@@ -1,17 +1,18 @@
+import os
+
 import numpy as np
 import numpy.testing as npt
-import nibabel as nib
-from numpy.testing import assert_equal, run_module_suite
+
 from dipy.data import get_fnames
-from dipy.io.streamline import save_trk
-from dipy.tracking.streamline import Streamlines
-import os
-import numpy.testing as npt
-from dipy.utils.optpkg import optional_package
 from dipy.io.image import save_nifti
-from nibabel.tmpdirs import TemporaryDirectory
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.stats.analysis import bundle_analysis, gaussian_weights, afq_profile
 from dipy.testing import assert_true
+from dipy.tracking.streamline import Streamlines
+from dipy.utils.optpkg import optional_package
+from nibabel.tmpdirs import TemporaryDirectory
+
 _, have_pd, _ = optional_package("pandas")
 _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
@@ -21,9 +22,9 @@ _, have_tables, _ = optional_package("tables")
 def test_ba():
 
     with TemporaryDirectory() as dirpath:
-
-        streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-        fornix = [s[0] for s in streams]
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
 
@@ -31,20 +32,23 @@ def test_ba():
 
         os.mkdir(mb)
 
-        save_trk(os.path.join(mb, "temp.trk"),
-                 f, affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
 
         rb = os.path.join(dirpath, "rec_bundles")
         os.mkdir(rb)
 
-        save_trk(os.path.join(rb, "temp.trk"), f,
-                 affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(rb, "temp.trk"),
+                        bbox_valid_check=False)
 
         ob = os.path.join(dirpath, "org_bundles")
         os.mkdir(ob)
 
-        save_trk(os.path.join(ob, "temp.trk"), f,
-                 affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(ob, "temp.trk"),
+                        bbox_valid_check=False)
 
         dt = os.path.join(dirpath, "dti_measures")
         os.mkdir(dt)
@@ -77,7 +81,7 @@ def test_gaussian_weights():
     w = gaussian_weights(bundle, n_points=10)
     npt.assert_almost_equal(w, np.ones((len(bundle), 10)) * 0.5)
 
-    # Test when asked to return Mahalnobis, instead of weights
+    # Test when asked to return Mahalanobis, instead of weights
     w = gaussian_weights(bundle, n_points=10, return_mahalnobis=True)
     npt.assert_almost_equal(w, np.ones((len(bundle), 10)))
 
@@ -131,11 +135,11 @@ def test_afq_profile():
     data = np.ones((10, 10, 10))
     bundle = Streamlines()
     bundle.extend(np.array([[[0, 0., 0],
-                            [1, 0., 0.],
-                            [2, 0., 0.]]]))
+                             [1, 0., 0.],
+                             [2, 0., 0.]]]))
     bundle.extend(np.array([[[0, 0., 0.],
-                            [1, 0., 0],
-                            [2, 0,  0.]]]))
+                             [1, 0., 0],
+                             [2, 0,  0.]]]))
 
     profile = afq_profile(data, bundle)
     npt.assert_equal(profile, np.ones(100))
@@ -186,5 +190,4 @@ def test_afq_profile():
 
 
 if __name__ == '__main__':
-
-    run_module_suite()
+    npt.run_module_suite()

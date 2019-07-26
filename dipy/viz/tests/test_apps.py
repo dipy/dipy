@@ -5,15 +5,15 @@ from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
-if have_fury:
+if has_fury:
     from dipy.viz.app import horizon
 
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not have_fury)
+@npt.dec.skipif(skip_it or not has_fury)
 @xvfb_it
 def test_horizon():
 

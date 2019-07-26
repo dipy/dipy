@@ -72,8 +72,8 @@ def carlson_rf(x, y, z, errtol=3e-4):
     RF : ndarray
         Value of the incomplete first order elliptic integral
 
-    Note
-    -----
+    Notes
+    ------
     x, y, and z have to be nonnegative and at most one of them is zero.
 
     References
@@ -141,8 +141,8 @@ def carlson_rd(x, y, z, errtol=1e-4):
     RD : ndarray
         Value of the incomplete second order elliptic integral
 
-    Note
-    -----
+    Notes
+    ------
     x, y, and z have to be nonnegative and at most x or y is zero.
     """
     xn = x.copy()
@@ -240,7 +240,7 @@ def _F1m(a, b, c):
     # Only computes F1 in voxels that have all eigenvalues larger than zero
     cond0 = _positive_evals(a, b, c)
 
-    # Apply formula for non problematic plaussible cases, i.e. a!=b and a!=c
+    # Apply formula for non problematic plausible cases, i.e. a!=b and a!=c
     cond1 = np.logical_and(cond0, np.logical_and(abs(a - b) >= a * er,
                                                  abs(a - c) >= a * er))
     if np.sum(cond1) != 0:
@@ -254,7 +254,7 @@ def _F1m(a, b, c):
                      (3 * L1**2 - L1 * L2 - L1 * L3 - L2 * L3) /
                      (3 * L1 * np.sqrt(L2 * L3)) * RDm - 1)
 
-    # Resolve possible sigularity a==b
+    # Resolve possible singularity a==b
     cond2 = np.logical_and(cond0, np.logical_and(abs(a - b) < a * er,
                                                  abs(a - c) > a * er))
     if np.sum(cond2) != 0:
@@ -262,7 +262,7 @@ def _F1m(a, b, c):
         L3 = c[cond2]
         F1[cond2] = _F2m(L3, L1, L1) / 2.
 
-    # Resolve possible sigularity a==c
+    # Resolve possible singularity a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
                                                  abs(a - b) > a * er))
     if np.sum(cond3) != 0:
@@ -270,7 +270,7 @@ def _F1m(a, b, c):
         L2 = b[cond3]
         F1[cond3] = _F2m(L2, L1, L1) / 2
 
-    # Resolve possible sigularity a==b and a==c
+    # Resolve possible singularity a==b and a==c
     cond4 = np.logical_and(cond0, np.logical_and(abs(a - c) < a * er,
                                                  abs(a - b) < a * er))
     if np.sum(cond4) != 0:
@@ -328,7 +328,7 @@ def _F2m(a, b, c):
     # Only computes F2 in voxels that have all eigenvalues larger than zero
     cond0 = _positive_evals(a, b, c)
 
-    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    # Apply formula for non problematic plausible cases, i.e. b!=c
     cond1 = np.logical_and(cond0, (abs(b - c) > b * er))
     if np.sum(cond1) != 0:
         L1 = a[cond1]
@@ -340,14 +340,14 @@ def _F2m(a, b, c):
                     (((L2 + L3) / (np.sqrt(L2 * L3))) * RF +
                      ((2. * L1 - L2 - L3) / (3. * np.sqrt(L2 * L3))) * RD - 2.)
 
-    # Resolve possible sigularity b==c
+    # Resolve possible singularity b==c
     cond2 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
                                                  abs(a - b) > b * er))
     if np.sum(cond2) != 0:
         L1 = a[cond2]
         L3 = (c[cond2] + b[cond2]) / 2.
 
-        # Cumpute alfa [1]_
+        # Compute alfa [1]_
         x = 1. - (L1 / L3)
         alpha = np.zeros(len(L1))
         for i in range(len(x)):
@@ -360,7 +360,7 @@ def _F2m(a, b, c):
             6. * ((L1 + 2. * L3)**2) / (144. * L3**2 * (L1 - L3)**2) * \
             (L3 * (L1 + 2. * L3) + L1 * (L1 - 4. * L3) * alpha)
 
-    # Resolve possible sigularity a==b and a==c
+    # Resolve possible singularity a==b and a==c
     cond3 = np.logical_and(cond0, np.logical_and(abs(b - c) < b * er,
                                                  abs(a - b) < b * er))
     if np.sum(cond3) != 0:
@@ -794,7 +794,7 @@ def _G1m(a, b, c):
     # Only computes G1 in voxels that have all eigenvalues larger than zero
     cond0 = _positive_evals(a, b, c)
 
-    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    # Apply formula for non problematic plausible cases, i.e. b!=c
     cond1 = np.logical_and(cond0, (abs(b - c) > er))
     if np.sum(cond1) != 0:
         L1 = a[cond1]
@@ -804,7 +804,7 @@ def _G1m(a, b, c):
             (L1 + L2 + L3)**2 / (18 * L2 * (L2 - L3)**2) * \
             (2. * L2 + (L3**2 - 3 * L2 * L3) / np.sqrt(L2 * L3))
 
-    # Resolve possible sigularity b==c
+    # Resolve possible singularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
@@ -849,7 +849,7 @@ def _G2m(a, b, c):
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
     """
     # Float error used to compare two floats, abs(l1 - l2) < er for l1 = l2
-    # Error is defined as five order of magnitude larger than system's epslon
+    # Error is defined as five order of magnitude larger than system's epsilon
     er = np.finfo(a.ravel()[0]).eps * 1e5
 
     # Initialize G2
@@ -858,7 +858,7 @@ def _G2m(a, b, c):
     # Only computes G2 in voxels that have all eigenvalues larger than zero
     cond0 = _positive_evals(a, b, c)
 
-    # Apply formula for non problematic plaussible cases, i.e. b!=c
+    # Apply formula for non problematic plausible cases, i.e. b!=c
     cond1 = np.logical_and(cond0, (abs(b - c) > er))
     if np.sum(cond1) != 0:
         L1 = a[cond1]
@@ -868,7 +868,7 @@ def _G2m(a, b, c):
             (L1 + L2 + L3)**2 / (3 * (L2 - L3)**2) * \
             ((L2 + L3) / np.sqrt(L2 * L3) - 2)
 
-    # Resolve possible sigularity b==c
+    # Resolve possible singularity b==c
     cond2 = np.logical_and(cond0, abs(b - c) < er)
     if np.sum(cond2) != 0:
         L1 = a[cond2]
@@ -1824,7 +1824,7 @@ def wls_fit_dki(design_matrix, data):
 
     tol = 1e-6
 
-    # preparing data and initializing parametres
+    # preparing data and initializing parameters
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dki_params = np.empty((len(data_flat), 27))
@@ -1924,7 +1924,8 @@ def Wrotate(kt, Basis):
         Vector with the m independent elements of the rotated kurtosis tensor.
         If 'indices' is not specified all 15 elements of the rotated kurtosis
         tensor are computed.
-    Note
+
+    Notes
     ------
     KT elements are assumed to be ordered as follows:
 
@@ -1994,8 +1995,8 @@ def Wrotate_element(kt, indi, indj, indk, indl, B):
     Wre : float
           rotated kurtosis tensor element of index ind_i, ind_j, ind_k, ind_l
 
-    Note
-    -----
+    Notes
+    ------
     It is assumed that initial kurtosis tensor elementes are defined on the
     Cartesian coordinate system.
 

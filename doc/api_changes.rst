@@ -10,12 +10,53 @@ DIPY 1.0 changes
 Some of the changes introduced in the 1.0 release will break backwards
 compatibility with previous versions.
 
+**Reconstruction**
+
+The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
+`tournier07` and `descoteaux07` after the deprecation cycle started in the
+0.15 release.
+
+We change ``dipy.data.default_sphere`` from symmetric724 to repulsion724. If you want to keep the
+previous behavior, make sure to initialize the sphere parameter on some functions.
+
 **Segmentation**
 
 The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
 if you are providing a 4D volume, `vol_idx` is now a required argument.
 The order of parameters has also changed.
 
+**Tractogram loading and saving**
+
+The API of ``dipy.io.streamlines.load_tractogram`` and 
+``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
+When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
+guarantee proper spatial transformation handling.
+
+**Simulation**
+
+- ``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
+- ``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
+- ``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
+
+**Interpolation**
+
+All interpolation functions has been moved to a new module name `dipy.core.interpolation`
+
+**Tracking**
+
+The `voxel_size` parameter has been removed from the following function:
+
+- ``dipy.tracking.utils.connectivity_matrix``
+- ``dipy.tracking.utils.density_map``
+- ``dipy.tracking.utils.stremline_mapping``
+- ``dipy.tracking._util._mapping_to_voxel``
+
+The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
+been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
+
+The `EuDX` tracking function has been removed. EuDX tractography can be
+performed using ``dipy.tracking.local.LocalTracking`` using
+``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
 DIPY 0.16 Changes
 -----------------

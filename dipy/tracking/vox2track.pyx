@@ -74,7 +74,7 @@ def _voxel2streamline(sl,
     return v2f ,v2fn
 
 
-def streamline_mapping(streamlines, voxel_size=None, affine=None,
+def streamline_mapping(streamlines, affine=None,
                        mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines.
 
@@ -85,14 +85,11 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     ----------
     streamlines : sequence
         A sequence of streamlines.
-    voxel_size : array_like (3,), optional
-        The size of the voxels in the image volume. This is ignored if affine
-        is set.
     affine : array_like (4, 4), optional
-        The mapping from voxel coordinates to streamline coordinates. If
-        neither `affine` or `voxel_size` is set, the streamline values are
-        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
-        the first voxel and the voxel size is ``[1, 1, 1]``.
+        The mapping from voxel coordinates to streamline coordinates.
+        The streamline values are assumed to be in voxel coordinates.
+        IE ``[0, 0, 0]`` is the center of the first voxel and the voxel size
+        is ``[1, 1, 1]``.
     mapping_as_streamlines : bool, optional, False by default
         If True voxel indices map to lists of streamline objects. Otherwise
         voxel indices map to lists of integers.
@@ -110,7 +107,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     ...                          [2., 3., 4.]]),
     ...                np.array([[0., 0., 0.],
     ...                          [1., 2., 3.]])]
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1))
+    >>> mapping = streamline_mapping(streamlines, affine=np.eye(4))
     >>> mapping[0, 0, 0]
     [0, 1]
     >>> mapping[1, 1, 1]
@@ -119,7 +116,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     [1]
     >>> mapping.get((3, 2, 1), 'no streamlines')
     'no streamlines'
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1),
+    >>> mapping = streamline_mapping(streamlines, affine=np.eye(4),
     ...                              mapping_as_streamlines=True)
     >>> mapping[1, 2, 3][0] is streamlines[1]
     True
@@ -128,7 +125,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     cdef:
         cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
 
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
         streamlines = list(streamlines)
     mapping = {}
@@ -144,7 +141,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
                      voxel_indices[j, 2])
             uniq_points.add(point)
 
-        # Add the index of this streamline for each uniq voxel
+        # Add the index of this streamline for each unique voxel
         for point in uniq_points:
             if point in mapping:
                 mapping[point].append(i)

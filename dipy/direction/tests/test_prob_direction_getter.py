@@ -59,7 +59,7 @@ def test_ProbabilisticDirectionGetter():
         # Check basis_type keyword
         dg = ProbabilisticDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
                                                        unit_octahedron,
-                                                       basis_type="mrtrix")
+                                                       basis_type="tournier07")
 
         npt.assert_raises(ValueError,
                           ProbabilisticDirectionGetter.from_shcoeff,

@@ -1,8 +1,8 @@
 """
 
-=============================================
+============================================
 SNR estimation for Diffusion-Weighted Images
-=============================================
+============================================
 
 Computing the Signal-to-Noise-Ratio (SNR) of DW images is still an open
 question, as SNR depends on the white matter structure of interest as well as
@@ -42,21 +42,25 @@ data = img.get_data()
 affine = img.affine
 
 print('Computing brain mask...')
-b0_mask, mask = median_otsu(data)
+b0_mask, mask = median_otsu(data, vol_idx=[0])
 
 print('Computing tensors...')
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
-"""Next, we set our red-green-blue thresholds to (0.6, 1) in the x axis
-and (0, 0.1) in the y and z axes respectively.
-These values work well in practice to isolate the very RED voxels of the cfa map.
+"""
+Next, we set our red-green-blue thresholds to (0.6, 1) in the x axis and
+(0, 0.1) in the y and z axes respectively. These values work well in practice
+to isolate the very RED voxels of the cfa map.
 
-Then, as assurance, we want just RED voxels in the CC (there could be
-noisy red voxels around the brain mask and we don't want those). Unless the brain
-acquisition was badly aligned, the CC is always close to the mid-sagittal slice.
+Then, as assurance, we want just RED voxels in the CC (there could be noisy
+red voxels around the brain mask and we don't want those). Unless the brain
+acquisition was badly aligned, the CC is always close to the mid-sagittal
+slice.
 
-The following lines perform these two operations and then saves the computed mask.
+The following lines perform these two operations and then saves the
+computed mask.
+
 """
 
 print('Computing worst-case/best-case SNR using the corpus callosum...')
@@ -78,7 +82,7 @@ CC_box[bounds_min[0]:bounds_max[0],
        bounds_min[2]:bounds_max[2]] = 1
 
 mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
-    return_cfa=True)
+                                     return_cfa=True)
 
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
@@ -105,8 +109,9 @@ fig.savefig("CC_segmentation.png", bbox_inches='tight')
 
 """
 
-"""Now that we are happy with our crude CC mask that selected voxels in the x-direction,
-we can use all the voxels to estimate the mean signal in this region.
+"""Now that we are happy with our crude CC mask that selected voxels in the
+x-direction, we can use all the voxels to estimate the mean signal in this
+region.
 
 """
 
@@ -143,10 +148,11 @@ axis_Z = np.argmin(np.sum((gtab.bvecs-np.array([0, 0, 1]))**2, axis=-1))
 
 for direction in [0, axis_X, axis_Y, axis_Z]:
     SNR = mean_signal[direction]/noise_std
-    if direction == 0 :
+    if direction == 0:
         print("SNR for the b=0 image is :", SNR)
-    else :
-        print("SNR for direction", direction, " ", gtab.bvecs[direction], "is :", SNR)
+    else:
+        print("SNR for direction", direction, " ",
+              gtab.bvecs[direction], "is :", SNR)
 
 """SNR for the b=0 image is : ''42.0695455758''"""
 """SNR for direction 58  [ 0.98875  0.1177  -0.09229] is : ''5.46995373635''"""

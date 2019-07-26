@@ -2,7 +2,7 @@ import numpy as np
 from dipy.utils.optpkg import optional_package
 import itertools
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
 if have_fury:
     from dipy.viz import actor, ui, colormap

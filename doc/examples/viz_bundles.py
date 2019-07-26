@@ -192,7 +192,8 @@ window.record(renderer, out_path='bundle5.png', size=(600, 600))
 """
 .. figure:: bundle5.png
    :align: center
-   **Color every streamline by the length of the streamline **
+
+   Color every streamline by the length of the streamline
 
 
 Show every point of every streamline with a different color

@@ -13,7 +13,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.reconst.dti import (eig_from_lo_tri)
 
-from dipy.data import get_sphere
+from dipy.data import default_sphere, get_sphere
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -43,14 +43,14 @@ DWIsim = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 # approximation components larger than the fourth order. Thus parameter
 # estimates are only equal to the ground truth values of the simulation
 # if signals taylor components larger than the fourth order are removed.
-# Signal whithout this taylor components can be generated using the
+# Signal without this taylor components can be generated using the
 # multi_tensor_dki simulations. Therefore we used this function to test the
 # expected estimates of the model.
 
 DWIsim_all_taylor = np.zeros((2, 2, 2, gtab_2s.bvals.size))
 
 # Signal with all taylor components can be simulated using the function
-# multi_tensor. Generating this signals will be usefull to test the prediction
+# multi_tensor. Generating this signals will be useful to test the prediction
 # procedures of DKI-based microstructural model.
 
 
@@ -97,13 +97,13 @@ def test_single_fiber_model():
     dkiF = dkiM.fit(signal)
 
     # Axonal Water Fraction
-    sphere = get_sphere('symmetric724')
-    AWF = dki_micro.axonal_water_fraction(dkiF.model_params, sphere, mask=None,
-                                          gtol=1e-5)
+    AWF = dki_micro.axonal_water_fraction(dkiF.model_params, default_sphere,
+                                          mask=None, gtol=1e-5)
     assert_almost_equal(AWF, fie)
 
     # Extra-cellular and intra-cellular components
-    edt, idt = dki_micro.diffusion_components(dkiF.model_params, sphere)
+    edt, idt = dki_micro.diffusion_components(dkiF.model_params,
+                                              default_sphere)
     EDT = eig_from_lo_tri(edt)
     IDT = eig_from_lo_tri(idt)
 

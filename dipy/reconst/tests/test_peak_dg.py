@@ -4,7 +4,7 @@ import numpy.testing as npt
 from dipy.direction.peaks import default_sphere, peaks_from_model
 
 
-def test_PeaksAndMetricsDirectionGetter():
+def test_EuDXDirectionGetter():
 
     class SillyModel(object):
         def fit(self, data, mask=None):
@@ -63,9 +63,20 @@ def test_PeaksAndMetricsDirectionGetter():
 
                 # Check that points are rounded to get initial direction
                 point -= .5
-                id = peaks.initial_direction(point)
-                # id should be a (1, 3) array
-                npt.assert_array_almost_equal(id, [expected_dir])
+                initial_dir = peaks.initial_direction(point)
+                # It should be a (1, 3) array
+                npt.assert_array_almost_equal(initial_dir, [expected_dir])
+
+    peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
+                              relative_peak_threshold=.5,
+                              min_separation_angle=25,
+                              npeaks=1)
+    peaks1._initialize()
+    point = np.array([1, 1, 1], dtype=float)
+
+    # it should have one direction
+    npt.assert_array_almost_equal(len(peaks1.initial_direction(point)), 1)
+    npt.assert_array_almost_equal(len(peaks.initial_direction(point)), 1)
 
 
 if __name__ == "__main__":

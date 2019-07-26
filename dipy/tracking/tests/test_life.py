@@ -1,26 +1,20 @@
-import os
 import os.path as op
 
 import numpy as np
 import numpy.testing as npt
-import numpy.testing.decorators as dec
-import scipy.sparse as sps
 import scipy.linalg as la
-
 import nibabel as nib
-
-import dipy.tracking.life as life
-import dipy.tracking.eudx as edx
-import dipy.core.sphere as dps
-import dipy.core.gradients as dpg
-import dipy.data as dpd
-import dipy.core.optimize as opt
-import dipy.core.ndindex as nd
 import dipy.core.gradients as grad
+import dipy.core.optimize as opt
+import dipy.data as dpd
 import dipy.reconst.dti as dti
+import dipy.tracking.life as life
+
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.tracking.utils import move_streamlines
 
 THIS_DIR = op.dirname(__file__)
+
 
 def test_streamline_gradients():
     streamline = [[1, 2, 3], [4, 5, 6], [5, 6, 7], [8, 9, 10]]
@@ -67,7 +61,7 @@ def test_streamline_tensors():
 
 def test_streamline_signal():
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
-    gtab = dpg.gradient_table(bval_file, bvec_file)
+    gtab = grad.gradient_table(bval_file, bvec_file)
     evals = [0.0015, 0.0005, 0.0005]
     streamline1 = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                    [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
@@ -104,9 +98,8 @@ def test_voxel2streamline():
 def test_FiberModel_init():
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
-    data_ni = nib.load(data_file)
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
-    gtab = dpg.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
 
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
@@ -128,9 +121,8 @@ def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     data_ni = nib.load(data_file)
     data = data_ni.get_data()
-    data_aff = data_ni.affine
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
-    gtab = dpg.gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
     evals = [0.0015, 0.0005, 0.0005]
 
@@ -162,19 +154,16 @@ def test_FiberFit():
         this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]],
         fit.data)
 
+
 def test_fit_data():
     fdata, fbval, fbvec = dpd.get_fnames('small_25')
+    fstreamlines = dpd.get_fnames('small_25_streamlines')
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()
-    dtmodel = dti.TensorModel(gtab)
-    dtfit = dtmodel.fit(data)
-    sphere = dpd.get_sphere()
-    peak_idx = dti.quantize_evecs(dtfit.evecs, sphere.vertices)
-    eu = edx.EuDX(dtfit.fa.astype('f8'), peak_idx,
-                  seeds=list(nd.ndindex(data.shape[:-1])),
-                  odf_vertices=sphere.vertices, a_low=0)
-    tensor_streamlines = [streamline for streamline in eu]
+    tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
+    tensor_streamlines = move_streamlines(tensor_streamlines, np.eye(4),
+                                          ni_data.affine)
     life_model = life.FiberModel(gtab)
     life_fit = life_model.fit(data, tensor_streamlines)
     model_error = life_fit.predict() - life_fit.data

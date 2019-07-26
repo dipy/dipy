@@ -1,7 +1,7 @@
 """
-=================================================
+==============================================
 Reconstruct with Constant Solid Angle (Q-Ball)
-=================================================
+==============================================
 
 We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et
 al. [Aganj2010]_ to your datasets.
@@ -10,9 +10,10 @@ First import the necessary modules:
 """
 
 import numpy as np
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
 from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
+from dipy.segment.mask import median_otsu
 
 """
 Download and read the data for this tutorial.
@@ -22,9 +23,9 @@ fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 
 """
-img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
-it is possible to write print(gtab.bvals).
+img contains a nibabel Nifti1Image object (data) and gtab contains a
+GradientTable object (gradient information e.g. b-values). For example to
+read the b-values it is possible to write print(gtab.bvals).
 
 Load the raw diffusion data and the affine.
 """
@@ -38,11 +39,8 @@ data.shape ``(81, 106, 76, 160)``
 Remove most of the background using DIPY's mask module.
 """
 
-from dipy.segment.mask import median_otsu
-
-
-maskdata, mask = median_otsu(data, 3, 1, True,
-                             vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=True, dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
@@ -59,11 +57,9 @@ sphere as input. The sphere is an object that represents the spherical discrete
 grid where the ODF values will be evaluated.
 """
 
-sphere = get_sphere('symmetric724')
-
 csapeaks = peaks_from_model(model=csamodel,
                             data=maskdata,
-                            sphere=sphere,
+                            sphere=default_sphere,
                             relative_peak_threshold=.5,
                             min_separation_angle=25,
                             mask=mask,
@@ -89,31 +85,29 @@ splenium of the corpus callosum (CC).
 
 data_small = maskdata[13:43, 44:74, 28:29]
 
-from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
-
 from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
 
-r = window.Renderer()
+ren = window.Renderer()
 
-csaodfs = csamodel.fit(data_small).odf(sphere)
+csaodfs = csamodel.fit(data_small).odf(default_sphere)
 
 """
 It is common with CSA ODFs to produce negative values, we can remove those using ``np.clip``
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
-csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=sphere, colormap='plasma', scale=0.4)
+csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=default_sphere,
+                                  colormap='plasma', scale=0.4)
 csa_odfs_actor.display(z=0)
 
-r.add(csa_odfs_actor)
+ren.add(csa_odfs_actor)
 print('Saving illustration as csa_odfs.png')
-window.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+window.record(ren, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 if interactive:
-    window.show(r)
+    window.show(ren)
 
 """
 .. figure:: csa_odfs.png

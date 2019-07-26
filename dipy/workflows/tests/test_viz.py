@@ -1,17 +1,19 @@
 import os
-import numpy as np
-import numpy.testing as npt
+
+from dipy.io.image import save_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
+from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.io.image import save_nifti
-from dipy.io.streamline import save_tractogram
+import numpy as np
+import numpy.testing as npt
 
+fury, has_fury, setup_module = optional_package('fury')
 
-fury, have_fury, setup_module = optional_package('fury')
-
-if have_fury:
+if has_fury:
     from dipy.workflows.viz import HorizonFlow
     from dipy.viz.app import horizon
 
@@ -19,7 +21,7 @@ if have_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not have_fury)
+@npt.dec.skipif(skip_it or not has_fury)
 @xvfb_it
 def test_horizon_flow():
 
@@ -75,7 +77,11 @@ def test_horizon_flow():
         ftrk = os.path.join(out_dir, 'test.trk')
 
         save_nifti(fimg, data, affine)
-        save_tractogram(ftrk, streamlines, affine)
+        dimensions = data.shape
+        voxel_sizes = np.array([2, 1.0, 1.0])
+        nii_header = create_nifti_header(affine, dimensions, voxel_sizes)
+        sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
+        save_tractogram(sft, ftrk, bbox_valid_check=False)
 
         input_files = [ftrk, fimg]
 

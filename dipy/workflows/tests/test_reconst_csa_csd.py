@@ -96,10 +96,6 @@ def reconst_flow_core(flow):
             np.savetxt(tmp_bval_path, bvals)
             np.savetxt(tmp_bvec_path, bvecs.T)
             reconst_flow._force_overwrite = True
-            with npt.assert_raises(BaseException):
-                npt.assert_warns(UserWarning, reconst_flow.run, data_path,
-                                 tmp_bval_path, tmp_bvec_path, mask_path,
-                                 out_dir=out_dir, extract_pam_values=True)
 
             if flow.get_short_name() == 'csd':
 
@@ -120,6 +116,11 @@ def reconst_flow_core(flow):
                 reconst_flow2.run(data_path, bval_path, bvec_path, mask_path,
                                   out_dir=out_dir, frf=None,
                                   roi_center=[10, 10, 10])
+            else:
+                with npt.assert_raises(BaseException):
+                    npt.assert_warns(UserWarning, reconst_flow.run, data_path,
+                                    tmp_bval_path, tmp_bvec_path, mask_path,
+                                    out_dir=out_dir, extract_pam_values=True)
 
             # test parallel implementation
             reconst_flow = flow()

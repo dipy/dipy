@@ -9,7 +9,6 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               disperse_charges, _get_forces,
                               unit_octahedron, unit_icosahedron,
                               hemi_icosahedron)
-from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
 from numpy.testing.decorators import skipif
@@ -357,31 +356,6 @@ def test_disperse_charges():
     d_charges = d_sphere.vertices
     norms = np.sqrt((d_charges*d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
-
-
-def test_interp_rbf():
-    def data_func(s, a, b):
-        return a * np.cos(s.theta) + b * np.sin(s.phi)
-
-    from dipy.core.sphere import Sphere, interp_rbf
-    import numpy as np
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
-    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
-        data = data_func(s0, a, b)
-        expected = data_func(s1, a, b)
-        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-        nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
-
-    # Test that using the euclidean norm raises a warning
-    # (following
-    # https://docs.python.org/2/library/warnings.html#testing-warnings)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        interp_rbf(data, s0, s1, norm="euclidean_norm")
-        nt.assert_(len(w) == 1)
-        nt.assert_(issubclass(w[-1].category, DeprecationWarning))
-        nt.assert_("deprecated" in str(w[-1].message))
 
 
 if __name__ == "__main__":

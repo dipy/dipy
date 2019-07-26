@@ -1,24 +1,20 @@
 import numpy as np
 from numpy.testing import assert_equal
-from dipy.testing import assert_false
+from dipy.testing import assert_false, assert_true
 from os.path import join
 
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.data import (fetch_stanford_hardi, fetch_stanford_pve_maps,
-                       fetch_stanford_labels, get_fnames)
+from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
-from dipy.direction import (DeterministicMaximumDirectionGetter,
-                            ProbabilisticDirectionGetter,
-                            ClosestPeakDirectionGetter)
 
 
-def test_particule_filtering_traking_workflows():
+def test_particle_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(dwi_path)
@@ -96,6 +92,20 @@ def test_particule_filtering_traking_workflows():
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
+        # Test that tracking returns seeds
+        pf_track_pam = PFTrackingPAMFlow()
+        pf_track_pam._force_overwrite = True
+        pf_track_pam.run(pam_path,
+                         wm_path,
+                         gm_path,
+                         csf_path,
+                         seeds_path,
+                         save_seeds=True)
+        tractogram_path = \
+            pf_track_pam.last_generated_outputs['out_tractogram']
+        assert_true(tractogram_has_seeds(tractogram_path))
+        assert_true(seeds_are_same_space_as_streamlines(tractogram_path))
+
 
 def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
@@ -118,6 +128,7 @@ def test_local_fiber_tracking_workflow():
         mask_flow = MaskFlow()
         mask_flow.run(gfa_path, 0.8, out_dir=out_dir)
         seeds_path = mask_flow.last_generated_outputs['out_mask']
+        mask_path = mask_flow.last_generated_outputs['out_mask']
 
         # Put identity in gfa path to prevent impossible to use
         # local tracking because of affine containing shearing.
@@ -129,6 +140,16 @@ def test_local_fiber_tracking_workflow():
         lf_track_pam._force_overwrite = True
         assert_equal(lf_track_pam.get_short_name(), 'track_local')
         lf_track_pam.run(pam_path, gfa_path, seeds_path)
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test tracking with binary tissue classifier
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
+        lf_track_pam.run(pam_path, mask_path, seeds_path,
+                         use_binary_mask=True)
+
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -160,7 +181,7 @@ def test_local_fiber_tracking_workflow():
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
-        # Test tracking with pam with sh and closestpeaks getter
+        # Test tracking with pam with sh and closest peaks getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, gfa_path, seeds_path,
@@ -168,6 +189,17 @@ def test_local_fiber_tracking_workflow():
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
+
+        # Test that tracking returns seeds
+        lf_track_pam = LocalFiberTrackingPAMFlow()
+        lf_track_pam._force_overwrite = True
+        lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                         tracking_method="deterministic",
+                         save_seeds=True)
+        tractogram_path = \
+            lf_track_pam.last_generated_outputs['out_tractogram']
+        assert_true(tractogram_has_seeds(tractogram_path))
+        assert_true(seeds_are_same_space_as_streamlines(tractogram_path))
 
 
 def is_tractogram_empty(tractogram_path):
@@ -177,6 +209,29 @@ def is_tractogram_empty(tractogram_path):
     return len(tractogram_file.tractogram) == 0
 
 
+def tractogram_has_seeds(tractogram_path):
+    tractogram = \
+        nib.streamlines.load(tractogram_path).tractogram
+
+    return len(tractogram.data_per_streamline['seeds']) > 0
+
+
+def seeds_are_same_space_as_streamlines(tractogram_path):
+    tractogram = \
+       nib.streamlines.load(tractogram_path).tractogram
+    seeds = tractogram.data_per_streamline['seeds']
+    streamlines = tractogram.streamlines
+
+    for seed, streamline in zip(seeds, streamlines):
+        map_res = list(map(lambda x: np.allclose(seed, x), streamline))
+        # If no point is close to the seed, it likely means that the seed is
+        # not in the same space as the streamline
+        if not np.any(map_res):
+            return False
+
+    return True
+
+
 if __name__ == '__main__':
     test_local_fiber_tracking_workflow()
-    # test_particule_filtering_traking_workflows()
+    test_particle_filtering_traking_workflows()

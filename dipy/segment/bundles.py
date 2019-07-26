@@ -64,15 +64,6 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     return res
 
 
-def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
-
-    recognized_bundle = set_number_of_points(recognized_bundle, 20)
-
-    expert_bundle = set_number_of_points(expert_bundle, 20)
-
-    return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
-
-
 class RecoBundles(object):
 
     def __init__(self, streamlines,  greater_than=50, less_than=1000000,
@@ -385,7 +376,7 @@ class RecoBundles(object):
         return pruned_streamlines, self.filtered_indices[labels]
 
     def evaluate_results(self, model_bundle, pruned_streamlines, slr_select):
-        """ Comapare the similiarity between two given bundles, model bundle,
+        """ Compare the similiarity between two given bundles, model bundle,
         and extracted bundle.
 
         Parameters
@@ -399,7 +390,7 @@ class RecoBundles(object):
         Returns
         -------
         ba_value : float
-            bundle analytics value between model bundle and pruned bundle
+            bundle adjacency value between model bundle and pruned bundle
         bmd_value : float
             bundle minimum distance value between model bundle and
             pruned bundle
@@ -414,7 +405,9 @@ class RecoBundles(object):
             model_clust_thr=1.25)
         recog_centroids = Streamlines(recog_centroids)
         model_centroids = Streamlines(mod_centroids)
-        ba_value = ba_analysis(recog_centroids, model_centroids, threshold=10)
+        ba_value = bundle_adjacency(set_number_of_points(recog_centroids, 20),
+                                    set_number_of_points(model_centroids, 20),
+                                    threshold=10)
 
         BMD = BundleMinDistanceMetric()
         static = select_random_set_of_streamlines(model_bundle,
@@ -615,7 +608,12 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
-        pruned_streamlines = transf_streamlines[np.array(pruned_indices)]
+        idx = np.array(pruned_indices)
+        if len(idx) == 0:
+            print(' You have removed all streamlines')
+            return Streamlines([]), []
+
+        pruned_streamlines = transf_streamlines[idx]
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
@@ -626,10 +624,6 @@ class RecoBundles(object):
             print(msg % (len(rtransf_centroids),))
             msg = ' Number of streamlines after pruning: %d'
             print(msg % (len(pruned_streamlines),))
-
-        if len(pruned_streamlines) == 0:
-            print(' You have removed all streamlines')
-            return Streamlines([]), []
 
         if self.verbose:
             print(' Duration %0.3f sec. \n' % (time() - t, ))

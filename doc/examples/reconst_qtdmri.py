@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-================================================================
+=================================================================
 Estimating diffusion time dependent q-space indices using qt-dMRI
-================================================================
+=================================================================
 Effective representation of the four-dimensional diffusion MRI signal --
 varying over three-dimensional q-space and diffusion time -- is a sought-after
 and still unsolved challenge in diffusion MRI (dMRI). We propose a functional
@@ -407,7 +407,7 @@ Aside from the estimation of :math:`q\tau`-space indices, :math:`q\tau`-dMRI
 also allows for the estimation of time-dependent ODFs. Once the Qtdmri model
 is fitted it can be simply called by qtdmri_fit.odf(sphere,
 s=sharpening_factor). This is identical to how the mapmri module functions,
-and allows to study the time-dependence of ODF directionallity.
+and allows to study the time-dependence of ODF directionality.
 
 This concludes the example on qt-dMRI. As we showed, approaches such as qt-dMRI
 can help in studying the (finite-:math:`\tau`) temporal properties of diffusion

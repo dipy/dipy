@@ -556,7 +556,7 @@ def test_deform_streamlines():
     # Put orig_streamlines_world into voxmm
     orig_streamlines = transform_streamlines(orig_streamlines_world,
                                              np.linalg.inv(stream2world))
-    # All close because of floating pt inprecision
+    # All close because of floating pt imprecision
     for o, s in zip(orig_streamlines, streamlines):
         assert_allclose(s, o, rtol=1e-10, atol=0)
 
@@ -644,7 +644,7 @@ def compress_streamlines_python(streamline, tol_error=0.01,
 
 def test_compress_streamlines():
     for compress_func in [compress_streamlines_python, compress_streamlines]:
-        # Small streamlines (less than two points) are uncompressable.
+        # Small streamlines (less than two points) are incompressible.
         for small_streamline in [np.array([[]]),
                                  np.array([[1, 1, 1]]),
                                  np.array([[1, 1, 1], [2, 2, 2]])]:
@@ -682,7 +682,7 @@ def test_compress_streamlines():
         # (like the C++ version)
         compress_func(streamline, max_segment_length=np.inf)
 
-        # Uncompressable streamline when `tol_error` == 1.
+        # Incompressable streamline when `tol_error` == 1.
         simple_streamline = np.array([[0, 0, 0],
                                       [1, 1, 0],
                                       [1.5, np.inf, 0],
@@ -696,7 +696,7 @@ def test_compress_streamlines():
             assert_array_equal(c_streamline, simple_streamline)
 
     # Create a special streamline where every other point is increasingly
-    # farther from a straigth line formed by the streamline endpoints.
+    # farther from a straight line formed by the streamline endpoints.
     tol_errors = np.linspace(0, 10, 21)
     orthogonal_line = np.array([[-np.sqrt(2)/2, np.sqrt(2)/2, 0]],
                                dtype=np.float32)
