@@ -11,7 +11,6 @@ import dipy.reconst.dti as dti
 import dipy.tracking.life as life
 
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.streamline import load_tractogram
 from dipy.tracking.utils import move_streamlines
 
 THIS_DIR = op.dirname(__file__)
@@ -162,7 +161,7 @@ def test_fit_data():
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()
-    tensor_streamlines, _ = load_tractogram(fstreamlines)
+    tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
     tensor_streamlines = move_streamlines(tensor_streamlines, np.eye(4),
                                           ni_data.affine)
     life_model = life.FiberModel(gtab)
