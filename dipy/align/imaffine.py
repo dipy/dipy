@@ -1109,33 +1109,6 @@ class AffineRegistration(object):
         return affine_map
 
 
-def align_centers_of_mass(static, static_grid2world,
-                          moving, moving_grid2world):
-    msg = "This function is deprecated please use"
-    msg += " dipy.align.imaffine.transform_centers_of_mass instead."
-    warn(msg)
-    return transform_centers_of_mass(static, static_grid2world,
-                                     moving, moving_grid2world)
-
-
-def align_geometric_centers(static, static_grid2world,
-                            moving, moving_grid2world):
-    msg = "This function is deprecated please use"
-    msg += " dipy.align.imaffine.transform_geometric_centers instead."
-    warn(msg)
-    return transform_geometric_centers(static, static_grid2world,
-                                       moving, moving_grid2world)
-
-
-def align_origins(static, static_grid2world,
-                  moving, moving_grid2world):
-    msg = "This function is deprecated please use"
-    msg += " dipy.align.imaffine.transform_origins instead."
-    warn(msg)
-    return transform_origins(static, static_grid2world,
-                             moving, moving_grid2world)
-
-
 def transform_centers_of_mass(static, static_grid2world,
                               moving, moving_grid2world):
     r""" Transformation to align the center of mass of the input images.
