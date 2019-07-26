@@ -53,7 +53,10 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
-def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam=None, mask=None):
+def slicer_panel(renderer, iren,
+                 data=None, affine=None,
+                 world_coords=False,
+                 pam=None, mask=None):
     """ Slicer panel with slicer included
 
     Parameters
@@ -334,9 +337,10 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
         res = HORIZON.slicer_vol[i, j, k]
         try:
             message = '%.3f' % res
-        except:
+        except TypeError:
             message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
-        picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) + ' ' + message
+        picker_label.message = '({}, {}, {})'
+            .format(str(i), str(j), str(k)) + ' ' + message
 
     HORIZON.slicer_vol_idx = 0
     HORIZON.slicer_vol = tmp_new
@@ -437,7 +441,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
 
     opacity_slider_label = build_label(text="Opacity")
     volume_slider_label = build_label(text="Volume")
-    picker_label = build_label(text = '')
+    picker_label = build_label(text='')
     double_slider_label = build_label(text='Colormap')
 
     def label_colormap_callback(obj, event):
