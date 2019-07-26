@@ -77,9 +77,12 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-    def __init__(self, tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
-                 random_colors=False, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
-                 world_coords=True, interactive=True, out_png='tmp.png'):
+    def __init__(self, tractograms=[], images=[], pams=[],
+                 cluster=False, cluster_thr=15.0,
+                 random_colors=False, length_gt=0, length_lt=1000,
+                 clusters_gt=0, clusters_lt=10000,
+                 world_coords=True, interactive=True,
+                 out_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
         Parameters
@@ -368,10 +371,8 @@ class Horizon(object):
 
             def change_threshold(istyle, obj, slider):
                 sv = np.round(slider.value,0)
-                print('Change threshold', sv)
                 self.remove_actors(scene)
                 self.add_actors(scene, self.tractograms, threshold=sv)
-                pass
 
             slider_threshold.handle_events(slider_threshold.handle.actor)
             slider_threshold.on_left_mouse_button_released = change_threshold
@@ -435,7 +436,8 @@ class Horizon(object):
                 pam = self.pams[0]
             else:
                 pam = None
-            self.panel = slicer_panel(scene, show_m.iren, data, affine, self.world_coords, pam=pam)
+            self.panel = slicer_panel(scene, show_m.iren, data, affine,
+                                      self.world_coords, pam=pam)
         else:
             data = None
             affine = None
@@ -604,20 +606,16 @@ class Horizon(object):
                 show_m.render()
 
 
-        #import itertools
-        #counter = itertools.count()
         HORIZON.window_timer_cnt = 0
 
         def timer_callback(obj, event):
 
-            #cnt = next(counter)
             HORIZON.window_timer_cnt += 1
             cnt = HORIZON.window_timer_cnt
+            # TODO possibly add automatic rotation option
             # print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
-            pass
-
 
         scene.reset_camera()
         scene.zoom(1.5)
@@ -638,8 +636,10 @@ class Horizon(object):
                           reset_camera=False)
 
 
-def horizon(tractograms=[], images=[], pams=[], cluster=False, cluster_thr=15.0,
-            random_colors=False, length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
+def horizon(tractograms=[], images=[], pams=[],
+            cluster=False, cluster_thr=15.0,
+            random_colors=False, length_gt=0, length_lt=1000,
+            clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png'):
     """Highly interactive visualization - invert the Horizon!
 
