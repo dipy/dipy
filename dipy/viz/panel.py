@@ -97,7 +97,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
     image_actor_z = actor.slicer(tmp, affine=affine, value_range=value_range,
                                  interpolation='nearest', picking_tol=0.025)
 
-    tmp_new = image_actor_z.get_numpy()
+    tmp_new = image_actor_z.resliced_array()
 
     if len(data.shape) == 4:
         if data.shape[-1] == 3:
@@ -271,7 +271,7 @@ def slicer_panel(renderer, iren, data=None, affine=None, world_coords=False, pam
                                      interpolation='nearest',
                                      picking_tol=0.025)
 
-        tmp_new = image_actor_z.get_numpy()
+        tmp_new = image_actor_z.resliced_array()
         HORIZON.slicer_vol = tmp_new
 
         z = HORIZON.slicer_curr_z
