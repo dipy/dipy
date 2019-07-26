@@ -39,11 +39,11 @@ else:
     t1 = read_stanford_t1()
     t1_data = t1.get_data()
     data = hardi_img.get_data()
+    
 # Read the candidates from file in voxel space:
-
-candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
-# candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
-#                                                  points_space='voxel')[0]]
+candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
+candidate_sl_sft.to_vox()
+candidate_sl = candidate_sl_sft.streamlines
 
 """
 

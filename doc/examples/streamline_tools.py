@@ -224,55 +224,19 @@ To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
 import nibabel as nib
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
 # Save density map
 dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
 dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 
-# Move streamlines to "trackvis space"
-voxel_size = labels_img.header.get_zooms()
-trackvis_point_space = utils.affine_for_trackvis(voxel_size)
-# lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
-#                                   trackvis_point_space, input_space=affine)
-
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
+sft = StatefulTractogram(lr_sf_trk, dm_img, Space.RASMM)
+save_trk(sft, "lr-superiorfrontal.trk")
 
-"""
-Let's take a moment here to consider the representation of streamlines used in
-DIPY. Streamlines are a path though the 3D space of an image represented by a
-set of points. For these points to have a meaningful interpretation, these
-points must be given in a known coordinate system. The ``affine`` attribute of
-the ``streamline_generator`` object specifies the coordinate system of the
-points with respect to the voxel indices of the input data.
-``trackvis_point_space`` specifies the trackvis coordinate system with respect
-to the same indices. The ``move_streamlines`` function returns a new set of
-streamlines from an existing set of streamlines in the target space. The
-target space and the input space must be specified as affine transformations
-with respect to the same reference [#]_. If no input space is given, the input
-space will be the same as the current representation of the streamlines, in
-other words the input space is assumed to be ``np.eye(4)``, the 4-by-4 identity
-matrix.
-
-All of the functions above that allow streamlines to interact with volumes take
-an affine argument. This argument allows these functions to work with
-streamlines regardless of their coordinate system. For example even though we
-moved our streamlines to "trackvis space", we can still compute the density map
-as long as we specify the right coordinate system.
-"""
-
-dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=np.eye(4))
-assert np.all(dm == dm_trackvis)
-
-"""
-This means that streamlines can interact with any image volume, for example a
-high resolution structural image, as long as one can register that image to
-the diffusion images and calculate the coordinate system with respect to that
-image.
-"""
 """
 .. rubric:: Footnotes
 
