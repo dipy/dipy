@@ -1,5 +1,6 @@
 import os.path as op
 
+import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 import scipy.linalg as la
@@ -11,8 +12,8 @@ import dipy.reconst.dti as dti
 import dipy.tracking.life as life
 
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram
-from dipy.tracking.utils import move_streamlines
 
 THIS_DIR = op.dirname(__file__)
 
@@ -162,11 +163,13 @@ def test_fit_data():
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()
-    tensor_streamlines, _ = load_tractogram(fstreamlines)
-    tensor_streamlines = move_streamlines(tensor_streamlines, np.eye(4),
-                                          ni_data.affine)
+    tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
+    sft = StatefulTractogram(tensor_streamlines, ni_data, Space.RASMM)
+    sft.to_vox()
+    tensor_streamlines_vox = sft.streamlines
+
     life_model = life.FiberModel(gtab)
-    life_fit = life_model.fit(data, tensor_streamlines)
+    life_fit = life_model.fit(data, tensor_streamlines_vox)
     model_error = life_fit.predict() - life_fit.data
     model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
     matlab_rmse, matlab_weights = dpd.matlab_life_results()
