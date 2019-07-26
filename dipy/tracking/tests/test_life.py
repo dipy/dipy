@@ -162,7 +162,7 @@ def test_fit_data():
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()
-    tensor_streamlines, _ = load_tractogram(fstreamlines)
+    tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
     tensor_streamlines = move_streamlines(tensor_streamlines, np.eye(4),
                                           ni_data.affine)
     life_model = life.FiberModel(gtab)
