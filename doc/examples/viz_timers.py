@@ -1,7 +1,7 @@
 """
-===============
+=============
 Using a timer
-===============
+=============
 
 This example shows how to create a simple animation using a timer callback.
 

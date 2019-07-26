@@ -1,7 +1,7 @@
 """
-==================================
+=========================
 Calculate Path Length Map
-==================================
+=========================
 
 We show how to calculate a Path Length Map for Anisotropic Radiation Therapy
 Contours given a set of streamlines and a region of interest (ROI).

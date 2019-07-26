@@ -23,7 +23,7 @@ bvecs_3s = np.concatenate((bvecs, bvecs, bvecs), axis=0)
 gtab_3s = gradient_table(bvals_3s, bvecs_3s)
 
 # Simulation 1. Spherical kurtosis tensor - MSK and MSD from the MSDKI model
-# should be equa to the MK and MD of the DKI tensor for cases of
+# should be equal to the MK and MD of the DKI tensor for cases of
 # spherical kurtosis tensors
 Di = 0.00099
 De = 0.00226
@@ -124,7 +124,7 @@ def test_errors():
     # fourth error raises if an given index point to more dimensions that data
     # does not contain
 
-    # define auxiliar function for the assert raises
+    # define auxiliary function for the assert raises
     def aux_test_fun(ob, ind):
         met = ob[ind].msk
         return met

@@ -7,11 +7,12 @@ import numpy.testing as npt
 from numpy.testing import run_module_suite, assert_raises
 import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.io.streamline import save_trk
 import numpy as np
 from dipy.tracking.streamline import Streamlines
 from dipy.testing import assert_true
 from dipy.io.image import save_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisPopulationFlow
@@ -72,9 +73,9 @@ def test_stats():
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
-
-        streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-        fornix = [s[0] for s in streams]
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
 
@@ -82,7 +83,9 @@ def test_bundle_analysis_population_flow():
         sub = os.path.join(dirpath, "subjects")
 
         os.mkdir(mb)
-        save_trk(os.path.join(mb, "temp.trk"), f, affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
 
         os.mkdir(sub)
 
@@ -100,13 +103,14 @@ def test_bundle_analysis_population_flow():
 
             os.mkdir(os.path.join(pre, "rec_bundles"))
 
-            save_trk(os.path.join(pre, "rec_bundles", "temp.trk"), f,
-                     affine=np.eye(4))
-
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "rec_bundles", "temp.trk"),
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "org_bundles"))
 
-            save_trk(os.path.join(pre, "org_bundles", "temp.trk"), f,
-                     affine=np.eye(4))
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "org_bundles", "temp.trk"),
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "measures"))
 
             fa = np.random.rand(255, 255, 255)

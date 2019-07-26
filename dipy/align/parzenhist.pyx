@@ -1308,8 +1308,8 @@ def sample_domain_regular(int k, int[:] shape, double[:, :] grid2world,
     samples : array, shape (total_pixels//k, dim)
         the matrix whose rows are the sampled points
 
-    Example
-    -------
+    Examples
+    --------
     >>> from dipy.align.parzenhist import sample_domain_regular
     >>> import dipy.align.vector_fields as vf
     >>> shape = np.array((10, 10), dtype=np.int32)

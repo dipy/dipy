@@ -14,7 +14,7 @@ import gzip
 import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
-from dipy.sims.voxel import SticksAndBall
+from dipy.sims.voxel import sticks_and_ball
 from dipy.data.fetcher import (fetch_scil_b0,
                                read_scil_b0,
                                fetch_stanford_hardi,
@@ -50,7 +50,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_bundle_atlas_hcp842,
                                get_bundle_atlas_hcp842,
                                get_target_tractogram_hcp,
-                               fetch_bundle_fa_hcp)
+                               fetch_bundle_fa_hcp,
+                               fetch_gold_standard_io)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
@@ -200,7 +201,7 @@ def get_sphere(name='symmetric362'):
                   faces=as_native_array(res['faces']))
 
 
-default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+default_sphere = HemiSphere.from_sphere(get_sphere('repulsion724'))
 small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
@@ -278,6 +279,9 @@ def get_fnames(name='small_64D'):
         fbvecs = pjoin(DATA_DIR, 'small_25.bvec')
         fimg = pjoin(DATA_DIR, 'small_25.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == 'small_25_streamlines':
+        fstreamlines = pjoin(DATA_DIR, 'EuDX_small_25.trk')
+        return fstreamlines
     if name == "S0_10":
         fimg = pjoin(DATA_DIR, 'S0_10slices.nii.gz')
         return fimg
@@ -326,13 +330,13 @@ def dsi_deconv_voxels():
     for ix in range(2):
         for iy in range(2):
             for iz in range(2):
-                data[ix, iy, iz], dirs = SticksAndBall(gtab,
-                                                       d=0.0015,
-                                                       S0=1.,
-                                                       angles=[(0, 0),
-                                                               (90, 0)],
-                                                       fractions=[50, 50],
-                                                       snr=None)
+                data[ix, iy, iz], _ = sticks_and_ball(gtab,
+                                                      d=0.0015,
+                                                      S0=1.,
+                                                      angles=[(0, 0),
+                                                              (90, 0)],
+                                                      fractions=[50, 50],
+                                                      snr=None)
     return data, gtab
 
 

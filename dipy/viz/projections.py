@@ -53,8 +53,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     Examples
     --------
-    >>> from dipy.data import get_sphere
-    >>> verts = get_sphere('symmetric724').vertices
+    >>> from dipy.data import default_sphere
+    >>> verts = default_sphere.vertices
     >>> ax = sph_project(verts.T, np.random.rand(len(verts.T))) # skip if not has_basemap
     """
     if ax is None:
@@ -82,7 +82,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     # positive:
     neg_idx = np.where(verts_rot[0] > 0)
 
-    # rotate the entire bvector around to point in the other direction:
+    # rotate the entire b-vector around to point in the other direction:
     verts_rot[:, neg_idx] *= -1
 
     _, theta, phi = geo.cart2sphere(verts_rot[0], verts_rot[1], verts_rot[2])
@@ -109,7 +109,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
         r = (val - my_min) / float(my_max - my_min)
 
-        # Enforce the maximum and minumum boundaries, if there are values
+        # Enforce the maximum and minimum boundaries, if there are values
         # outside those boundaries:
         r[r < 0] = 0
         r[r > 1] = 1

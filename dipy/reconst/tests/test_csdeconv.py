@@ -5,7 +5,7 @@ import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
                            assert_array_equal)
-from dipy.testing import assert_greater
+from dipy.testing import assert_greater, assert_greater_equal
 from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -23,14 +23,13 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    recursive_response,
                                    response_from_mask)
 from dipy.direction.peaks import peak_directions
+from dipy.core.sphere import HemiSphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
+from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-from dipy.core.geometry import cart2sphere
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import fractional_anisotropy
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -45,7 +44,7 @@ def test_recursive_response_calibration():
     _, fbvals, fbvecs = get_fnames('small_64D')
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
 
     gtab = gradient_table(bvals, bvecs)
     evals = np.array([0.0015, 0.0003, 0.0003])
@@ -97,7 +96,11 @@ def test_recursive_response_calibration():
     assert_equal(directions_single.shape[0], 1)
     assert_equal(directions_gt_single.shape[0], 1)
 
-    sphere = Sphere(xyz=gtab.gradients[where_dwi])
+    with warnings.catch_warnings(record=True) as w:
+        sphere = Sphere(xyz=gtab.gradients[where_dwi])
+        npt.assert_equal(len(w), 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("Vertices are not on the unit sphere" in str(w[0].message))
     sf = response.on_sphere(sphere)
     S = np.concatenate(([response.S0], sf))
 
@@ -256,9 +259,15 @@ def test_csdeconv():
                                   roi_radius=30, fa_thr=0.5,
                                   return_number_of_voxels=True)
     assert_equal(nvoxels, 1000)
-    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=1,
-                                  return_number_of_voxels=True)
+    with warnings.catch_warnings(record=True) as w:
+        _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+                                      roi_radius=30, fa_thr=1,
+                                      return_number_of_voxels=True)
+        npt.assert_equal(len(w), 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("No voxel with a FA higher than 1 were found" in
+                    str(w[0].message))
+
     assert_equal(nvoxels, 0)
 
 
@@ -332,7 +341,7 @@ def test_odf_sh_to_sharp():
     S, _ = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
                         fractions=[50, 50], snr=SNR)
 
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
 
     qb = QballModel(gtab, sh_order=8, assume_normed=True)
 
@@ -386,7 +395,7 @@ def test_r2_term_odf_sharp():
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -522,14 +531,14 @@ def test_sphere_scaling_csdmodel():
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
 
-expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
-
 
 def test_default_lambda_csdmodel():
     """We check that the default value of lambda is the expected value with
     the symmetric362 sphere. This value has empirically been found to work well
     and changes to this default value should be discussed with the dipy team.
     """
+    expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
+    expected_warnings = {4: 0, 8: 0, 16: 1}
     sphere = default_sphere
 
     # Create gradient table
@@ -540,14 +549,21 @@ def test_default_lambda_csdmodel():
     # Some response function
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
 
-    with warnings.catch_warnings():
-        for sh_order, expected in expected_lambda.items():
+    for sh_order, expected, e_warn in zip(expected_lambda.keys(),
+                                          expected_lambda.values(),
+                                          expected_warnings.values()):
+        with warnings.catch_warnings(record=True) as w:
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
                                                          sh_order=sh_order,
                                                          reg_sphere=sphere)
-            B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta,
-                                            sphere.phi)
-            npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
+            npt.assert_equal(len(w), e_warn)
+            if e_warn:
+                npt.assert_(issubclass(w[0].category, UserWarning))
+                npt.assert_("Number of parameters required " in str(w[0].
+                                                                    message))
+
+        B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
+        npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
 def test_csd_superres():
@@ -560,12 +576,20 @@ def test_csd_superres():
     evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
-    model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
-                                              sh_order=16)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.filterwarnings(action="always",
+                                message="Number of parameters required.*",
+                                category=UserWarning)
+        model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                  sh_order=16)
+        assert_greater_equal(len(w), 1)
+        npt.assert_(issubclass(w[-1].category, UserWarning))
+
     fit16 = model16.fit(S)
 
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
-    d, v, ind = peak_directions(fit16.odf(default_sphere), default_sphere,
+    d, v, ind = peak_directions(fit16.odf(sphere), sphere,
                                 relative_peak_threshold=.2,
                                 min_separation_angle=0)
 
@@ -577,6 +601,22 @@ def test_csd_superres():
     assert_(all(cos_sim > .99))
 
 
+def test_csd_convergence():
+    """ Check existence of `convergence` keyword in CSD model """
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
+    S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
+
+    model_w_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                   sh_order=8, convergence=50)
+    model_wo_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                    sh_order=8)
+
+    assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)
+
+
 if __name__ == '__main__':
-    # run_module_suite()
-    test_csdeconv()
+    run_module_suite()

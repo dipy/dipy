@@ -10,7 +10,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.utils.arrfuncs import pinv, eigh
+from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
@@ -720,7 +720,7 @@ class TensorModel(ReconstModel):
         is advisable to keep an eye on memory consumption as this value is
         increased.
 
-        Example : In :func:`iter_fit_tensor` we have a default step value of
+        E.g., in :func:`iter_fit_tensor` we have a default step value of
         1e4
 
         References
@@ -1460,8 +1460,8 @@ def _ols_fit_matrix(design_matrix):
     ---------
     wls_fit_tensor, ols_fit_tensor
 
-    Example:
-    --------
+    Examples
+    ---------
     ols_fit = _ols_fit_matrix(design_mat)
     ols_data = np.dot(ols_fit, data)
     """
@@ -1945,7 +1945,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
     """
     # outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = eigh(tensor)
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
     # need to sort the eigenvalues and associated eigenvectors
     if eigenvals.ndim == 1:

@@ -8,7 +8,7 @@ from .direction_getter cimport DirectionGetter
 from .tissue_classifier cimport(
     TissueClass, TissueClassifier, ConstrainedTissueClassifier,
     TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
-from dipy.tracking.local.interpolation cimport trilinear_interpolate4d_c
+from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 
 
@@ -455,7 +455,7 @@ cdef _pft(np.float_t[:, :] streamline,
 
             # Resample the particles if the weights are too uneven.
             # Particles with negligible weights are replaced by duplicates of
-            # those with high weigths through resampling
+            # those with high weights through resampling
             N_effective = 1. / sum_squared
             if N_effective < particle_count / 10.:
                 # copy data in the temp arrays

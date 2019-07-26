@@ -9,7 +9,7 @@ from warnings import warn
 import nibabel as nib
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
 from dipy.io.image import load_nifti, save_nifti
@@ -50,7 +50,7 @@ class ReconstMAPMRIFlow(Workflow):
         files to an output directory specified by `out_dir`.
 
         In order for the MAPMRI workflow to work in the way
-        intended either the laplacian or positivity or both must
+        intended either the Laplacian or positivity or both must
         be set to True.
 
         Parameters
@@ -86,7 +86,7 @@ class ReconstMAPMRIFlow(Workflow):
             ng, perng, parng
             (default: [] (all))
         laplacian_weighting : float, optional
-            Weighting value used in fitting the MAPMRI model in the laplacian
+            Weighting value used in fitting the MAPMRI model in the Laplacian
             and both model types. (default: 0.05)
         radial_order : unsigned int, optional
             Even value used to set the order of the basis
@@ -96,7 +96,7 @@ class ReconstMAPMRIFlow(Workflow):
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
+            Name of the norm of Laplacian signal to be saved
         out_msd : string, optional
             Name of the msd to be saved
         out_qiv : string, optional
@@ -242,7 +242,7 @@ class ReconstDtiFlow(Workflow):
             multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
-            multiple masks at once. (default: No mask used)
+            multiple masks at once.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bvecs_tol : float, optional
@@ -430,7 +430,7 @@ class ReconstCSDFlow(Workflow):
         frf : variable float, optional
             Fiber response function can be for example inputed as 15 4 4
             (from the command line) or [15, 4, 4] from a Python script to be
-            converted to float and mutiplied by 10**-4 . If None
+            converted to float and multiplied by 10**-4 . If None
             the fiber response function will be computed automatically
             (default: None).
         extract_pam_values : bool, optional
@@ -451,7 +451,7 @@ class ReconstCSDFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -463,7 +463,7 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
 
         References
@@ -529,7 +529,7 @@ class ReconstCSDFlow(Workflow):
             logging.info('Ratio for smallest to largest eigen value is {0}'
                          .format(ratio))
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
@@ -618,7 +618,7 @@ class ReconstCSAFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -630,7 +630,7 @@ class ReconstCSAFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
         References
         ----------
@@ -654,7 +654,7 @@ class ReconstCSAFlow(Workflow):
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
             mask_vol = nib.load(maskfile).get_data().astype(np.bool)
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('Starting CSA computations {0}'.format(dwi))
 

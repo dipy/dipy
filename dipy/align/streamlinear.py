@@ -1001,7 +1001,7 @@ def slr_with_qbx(static, moving,
 # SLR on QuickBundles centroids and some thresholding see
 # Garyfallidis et al. Recognition of white matter
 # bundles using local and global streamline-based registration and
-# clustering, Neuroimage, 2017.
+# clustering, NeuroImage, 2017.
 whole_brain_slr = slr_with_qbx
 
 

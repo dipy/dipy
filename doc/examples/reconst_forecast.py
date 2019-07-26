@@ -102,7 +102,7 @@ plt.savefig('FORECAST_indices.png', dpi=300, bbox_inches='tight')
 Load an ODF reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Compute the fODFs.

@@ -34,7 +34,8 @@ def test_stop_conditions():
                        [1, 1, 1, 2, 2],
                        [0, 1, 1, 1, 2],
                        [0, 1, 1, 0, 2],
-                       [1, 0, 1, 1, 1]])
+                       [1, 0, 1, 1, 1],
+                       [2, 1, 2, 0, 0]])
     tissue = tissue[None]
 
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -43,9 +44,9 @@ def test_stop_conditions():
     pmf = pmf_lookup[(tissue > 0).astype("int")]
 
     # Create a seeds along
-    x = np.array([0., 0, 0, 0, 0, 0, 0])
-    y = np.array([0., 1, 2, 3, 4, 5, 6])
-    z = np.array([1., 1, 1, 0, 1, 1, 1])
+    x = np.array([0., 0, 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6, 7])
+    z = np.array([1., 1, 1, 0, 1, 1, 1, 1])
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
@@ -72,7 +73,7 @@ def test_stop_conditions():
                                               return_all=True)
     streamlines_all = iter(streamlines_all_generator)
 
-    # Check that the first streamline stops at 0 and 3 (ENDPOINT)
+    # Check that the first streamline stops at 1 and 2 (ENDPOINT)
     y = 0
     sl = next(streamlines_not_all)
     npt.assert_equal(sl[0], [0, y, 1])
@@ -84,7 +85,7 @@ def test_stop_conditions():
     npt.assert_equal(sl[-1], [0, y, 2])
     npt.assert_equal(len(sl), 2)
 
-    # Check that the first streamline stops at 0 and 4 (ENDPOINT)
+    # Check that the next streamline stops at 1 and 3 (ENDPOINT)
     y = 1
     sl = next(streamlines_not_all)
     npt.assert_equal(sl[0], [0, y, 1])
@@ -125,27 +126,93 @@ def test_stop_conditions():
 
     # The last 3 seeds should produce invalid streamlines,
     # INVALIDPOINT streamlines are kept (return_all=True).
-    # The streamline stops at 0 (INVALIDPOINT) and 4 (ENDPOINT)
+    # The streamline stops at 1 (INVALIDPOINT) and 3 (ENDPOINT)
     y = 4
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 1])
     npt.assert_equal(sl[-1], [0, y, 3])
     npt.assert_equal(len(sl), 3)
 
-    # The streamline stops at 0 (INVALIDPOINT) and 4 (INVALIDPOINT)
+    # The streamline stops at 0 (INVALIDPOINT) and 2 (INVALIDPOINT)
     y = 5
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], [0, y, 1])
     npt.assert_equal(sl[-1], [0, y, 2])
     npt.assert_equal(len(sl), 2)
 
-    # The last streamline should contain only one point, the seed point,
+    # The streamline should contain only one point, the seed point,
     # because no valid inital direction was returned.
     y = 6
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], seeds[y])
     npt.assert_equal(sl[-1], seeds[y])
     npt.assert_equal(len(sl), 1)
+
+    # The streamline should contain only one point, the seed point,
+    # because no valid neighboring voxel (ENDPOINT)
+    y = 7
+    sl = next(streamlines_all)
+    npt.assert_equal(sl[0], seeds[y])
+    npt.assert_equal(sl[-1], seeds[y])
+    npt.assert_equal(len(sl), 1)
+
+
+def test_save_seeds():
+    tissue = np.array([[2, 1, 1, 2, 1],
+                       [2, 2, 1, 1, 2],
+                       [1, 1, 1, 1, 1],
+                       [1, 1, 1, 2, 2],
+                       [0, 1, 1, 1, 2],
+                       [0, 1, 1, 0, 2],
+                       [1, 0, 1, 1, 1]])
+    tissue = tissue[None]
+
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+    pmf_lookup = np.array([[0., 0., 0., ],
+                           [0., 0., 1.]])
+    pmf = pmf_lookup[(tissue > 0).astype("int")]
+
+    # Create a seeds along
+    x = np.array([0., 0, 0, 0, 0, 0, 0])
+    y = np.array([0., 1, 2, 3, 4, 5, 6])
+    z = np.array([1., 1, 1, 0, 1, 1, 1])
+    seeds = np.column_stack([x, y, z])
+
+    # Set up tracking
+    endpoint_mask = tissue == TissueTypes.ENDPOINT
+    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+
+    # valid streamlines only
+    streamlines_generator = LocalTracking(direction_getter=dg,
+                                          tissue_classifier=tc,
+                                          seeds=seeds,
+                                          affine=np.eye(4),
+                                          step_size=1.,
+                                          return_all=False,
+                                          save_seeds=True)
+
+    streamlines_not_all = iter(streamlines_generator)
+    # Verifiy that seeds are returned by the LocalTracker
+    _, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[0])
+    _, seed = next(streamlines_not_all)
+    npt.assert_equal(seed, seeds[1])
+    # Verifiy that seeds are returned by the PFTTracker also
+    pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
+                                                tissue_classifier=tc,
+                                                seeds=seeds,
+                                                affine=np.eye(4),
+                                                step_size=1.,
+                                                max_cross=1,
+                                                return_all=False,
+                                                save_seeds=True)
+    streamlines = iter(pft_streamlines)
+    _, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[0])
+    _, seed = next(streamlines)
+    npt.assert_equal(seed, seeds[1])
 
 
 def test_probabilistic_odf_weighted_tracker():
@@ -507,7 +574,9 @@ def test_bootstap_peak_tracker():
     seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
 
     tc = BinaryTissueClassifier((simple_image > 0).astype(float))
-    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60)
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
+                                            sphere=sphere)
 
     streamlines_generator = LocalTracking(boot_dg, tc, seeds, np.eye(4), 1.)
     streamlines = Streamlines(streamlines_generator)
@@ -599,7 +668,7 @@ def test_peak_direction_tracker():
                                      [0, -1],
                                      [1, -1],
                                      [0,  1]])
-    # PeaksAndMetricsDirectionGetter needs at 3 slices on each axis to work
+    # EuDXDirectionGetter needs at 3 slices on each axis to work
     simple_image = np.zeros([5, 6, 3], dtype=int)
     simple_image[:, :, 1] = np.array([[0, 1, 0, 1, 0, 0],
                                       [0, 1, 0, 1, 0, 0],
@@ -709,7 +778,7 @@ def test_affine_transformations():
     # TST - combined affines
     a5 = a1 + a2 + a3
     a5[3, 3] = 1
-    # TST - in vivo affine exemple
+    # TST - in vivo affine example
     # Sometimes data have affines with tiny shear components.
     # For example, the small_101D data-set has some of that:
     fdata, _, _ = get_fnames('small_101D')
@@ -720,7 +789,7 @@ def test_affine_transformations():
         offset = affine[:3, 3]
         seeds_trans = [np.dot(lin, s) + offset for s in seeds]
 
-        # We compute the voxel size to ajust the step size to one voxel
+        # We compute the voxel size to adjust the step size to one voxel
         voxel_size = np.mean(np.sqrt(np.dot(lin, lin).diagonal()))
 
         streamlines = LocalTracking(direction_getter=dg,

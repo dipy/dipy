@@ -102,8 +102,8 @@ calculating Tensors on the background of the image. This is done using DIPY_'s
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 1, True,
-                             vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=True, dilate=2)
 print('maskdata.shape (%d, %d, %d, %d)' % maskdata.shape)
 
 """
@@ -215,7 +215,7 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 print('Computing tensor ellipsoids in a part of the splenium of the CC')
 
 from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 from dipy.viz import window, actor
 

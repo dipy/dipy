@@ -752,9 +752,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
-    >>> from dipy.data import get_sphere
-    >>> sphere = get_sphere('symmetric724')
-    >>> vertices, faces = sphere.vertices, sphere.faces
+    >>> from dipy.data import default_sphere
+    >>> vertices, faces = default_sphere.vertices, default_sphere.faces
     >>> mevals = np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> angles = [(0, 0), (90, 0)]
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
@@ -996,10 +995,3 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     for j, f in enumerate(mf):
         msd += f * single_tensor_msd(mevals[j], tau=tau)
     return msd
-
-
-# Use standard naming convention, but keep old names
-# for backward compatibility
-SticksAndBall = sticks_and_ball
-SingleTensor = single_tensor
-MultiTensor = multi_tensor

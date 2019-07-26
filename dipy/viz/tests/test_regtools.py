@@ -26,7 +26,7 @@ def test_plot_2d_diffeomorphic_map():
     mapping = sdr.optimize(static, moving)
     # Smoke testing of plots
     ff = regtools.plot_2d_diffeomorphic_map(mapping, 10)
-    # Defualt shape is static shape, moving shape
+    # Default shape is static shape, moving shape
     npt.assert_equal(ff[0].shape, st_shape)
     npt.assert_equal(ff[1].shape, mv_shape)
     # Can specify shape

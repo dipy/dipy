@@ -4,8 +4,8 @@ This module provides tools for targeting streamlines using ROIs, for making
 connectivity matrices from whole brain fiber tracking and some other tools that
 allow streamlines to interact with image data.
 
-Important Note:
----------------
+Important Notes
+-----------------
 Dipy uses affine matrices to represent the relationship between streamline
 points, which are defined as points in a continuous 3d space, and image voxels,
 which are typically arranged in a discrete 3d grid. Dipy uses a convention
@@ -71,7 +71,7 @@ from dipy.io.bvectxt import orientation_from_string
 import nibabel as nib
 
 
-def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
+def density_map(streamlines, vol_dims, affine=None):
     """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
@@ -82,8 +82,6 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     vol_dims : 3 ints
         The shape of the volume to be returned containing the streamlines
         counts
-    voxel_size :
-        This argument is deprecated.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
 
@@ -105,7 +103,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+    lin_T, offset = _mapping_to_voxel(affine)
     counts = np.zeros(vol_dims, 'int')
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin_T, offset)
@@ -116,8 +114,8 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     return counts
 
 
-def connectivity_matrix(streamlines, label_volume, voxel_size=None,
-                        affine=None, symmetric=True, return_mapping=False,
+def connectivity_matrix(streamlines, label_volume, affine=None,
+                        symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair.
 
@@ -128,8 +126,6 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     label_volume : ndarray
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
-    voxel_size :
-        This argument is deprecated.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline coordinates.
     symmetric : bool, True by default
@@ -170,7 +166,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+    lin_T, offset = _mapping_to_voxel(affine)
     endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
 
     # get labels for label_volume
@@ -200,7 +196,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
 
 
 def ndbincount(x, weights=None, shape=None):
-    """Like bincount, but for nd-indicies.
+    """Like bincount, but for nd-indices.
 
     Parameters
     ----------
@@ -568,7 +564,7 @@ def target(streamlines, target_mask, affine, include=True):
 
     """
     target_mask = np.array(target_mask, dtype=bool, copy=True)
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    lin_T, offset = _mapping_to_voxel(affine)
     yield
     # End of initialization
 
@@ -624,7 +620,7 @@ def target_line_based(streamlines, target_mask, affine=None, include=True):
     dipy.tracking.streamline.compress_streamlines
     """
     target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
-    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    lin_T, offset = _mapping_to_voxel(affine)
     streamline_index = _streamlines_in_mask(
         streamlines, target_mask, lin_T, offset)
     yield
@@ -741,7 +737,7 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
     roi_coords = np.array(np.where(region_of_interest)).T
     x_roi_coords = apply_affine(affine, roi_coords)
 
-    # If it's already a list, we can save time by preallocating the output
+    # If it's already a list, we can save time by pre-allocating the output
     if isinstance(streamlines, list):
         out = np.zeros(len(streamlines), dtype=bool)
         for ii, sl in enumerate(streamlines):
@@ -761,10 +757,10 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear transformation equivalent to changing voxel order.
 
-    Calculates a linear tranformation A such that [a, b, c, 1] = A[x, y, z, 1].
-    where [x, y, z] is a point in the coordinate system defined by input_ornt
-    and [a, b, c] is the same point in the coordinate system defined by
-    output_ornt.
+    Calculates a linear transformation A such that [a, b, c, 1] =
+    A[x, y, z, 1], where [x, y, z] is a point in the coordinate system defined
+    by input_ornt and [a, b, c] is the same point in the coordinate system
+    defined by output_ornt.
 
     Parameters
     ----------
@@ -920,7 +916,8 @@ def unique_rows(in_array, dtype='f4'):
 
 
 @_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
+def move_streamlines(streamlines, output_space, input_space=None,
+                     seeds=None):
     """Applies a linear transformation, given by affine, to streamlines.
 
     Parameters
@@ -935,11 +932,14 @@ def move_streamlines(streamlines, output_space, input_space=None):
         ``input_space`` is specified, it's assumed the streamlines are in the
         reference space. The reference space is the same as the space
         associated with the affine matrix ``np.eye(4)``.
+    seeds : np.array, optional
+        If set, seeds associated to streamlines will be also moved and returned
 
     Returns
     -------
     streamlines : generator
         A sequence of transformed streamlines.
+        If return_seeds is True, also return seeds
 
     """
     if input_space is None:
@@ -953,12 +953,16 @@ def move_streamlines(streamlines, output_space, input_space=None):
     yield
     # End of initialization
 
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
+    if seeds is not None:
+        for sl, seed in zip(streamlines, seeds):
+            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
+    else:
+        for sl in streamlines:
+            yield np.dot(sl, lin_T) + offset
 
 
 def reduce_rois(rois, include):
-    """Reduce multiple ROIs to one inclusion and one exclusion ROI
+    """Reduce multiple ROIs to one inclusion and one exclusion ROI.
 
     Parameters
     ----------
@@ -979,11 +983,12 @@ def reduce_rois(rois, include):
     exclude_roi : boolean 3D array
         An array marking the exclusion mask
 
-    Note
-    ----
+    Notes
+    -----
     The include_roi and exclude_roi can be used to perfom the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
+
     """
     include_roi = np.zeros(rois[0].shape, dtype=bool)
     exclude_roi = np.zeros(rois[0].shape, dtype=bool)
@@ -1108,7 +1113,7 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
     # path length map
     plm = np.empty(aoi.shape, dtype=float)
     plm[:] = np.inf
-    lin_T, offset = _mapping_to_voxel(affine, None)
+    lin_T, offset = _mapping_to_voxel(affine)
     for sl in streamlines:
         seg_ind = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = seg_ind.T

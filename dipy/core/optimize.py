@@ -1,21 +1,10 @@
-""" A unified interface for performing and debugging optimization problems.
+"""A unified interface for performing and debugging optimization problems."""
 
-Only L-BFGS-B and Powell is supported in this class for versions of
-Scipy < 0.12. All optimizers are available for scipy >= 0.12.
-"""
 import abc
-from distutils.version import LooseVersion
 import numpy as np
-import scipy
 import scipy.sparse as sps
 import scipy.optimize as opt
-
-SCIPY_LESS_0_12 = LooseVersion(scipy.version.short_version) < '0.12'
-
-if not SCIPY_LESS_0_12:
-    from scipy.optimize import minimize
-else:
-    from scipy.optimize import fmin_l_bfgs_b, fmin_powell
+from scipy.optimize import minimize
 
 
 class Optimizer(object):
@@ -120,113 +109,25 @@ class Optimizer(object):
         See also
         ---------
         scipy.optimize.minimize
-        """
 
+        """
         self.size_of_x = len(x0)
         self._evol_kx = None
 
-        _eps = np.finfo(float).eps
+        if evolution is True:
 
-        if SCIPY_LESS_0_12:
+            self._evol_kx = []
 
-            if evolution is True:
-                print('Saving history is available only with Scipy >= 0.12.')
+            def history_of_x(kx):
+                self._evol_kx.append(kx)
+            res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
+                           constraints, tol, callback=history_of_x,
+                           options=options)
 
-            if method == 'L-BFGS-B':
-                default_options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5,
-                                   'eps': 1e-8, 'maxiter': 1000}
+        else:
 
-                if jac is None:
-                    approx_grad = True
-                else:
-                    approx_grad = False
-
-                if options is None:
-                    options = default_options
-
-                if options is not None:
-                    for key in options:
-                        default_options[key] = options[key]
-                    options = default_options
-
-                try:
-                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
-                                        approx_grad=approx_grad,
-                                        bounds=bounds,
-                                        m=options['maxcor'],
-                                        factr=options['ftol']/_eps,
-                                        pgtol=options['gtol'],
-                                        epsilon=options['eps'],
-                                        maxiter=options['maxiter'])
-                except TypeError:
-
-                    msg = 'In Scipy ' + scipy.__version__ + ' `maxiter` '
-                    msg += 'parameter is not available for L-BFGS-B. \n Using '
-                    msg += '`maxfun` instead with value twice of maxiter.'
-
-                    print(msg)
-                    out = fmin_l_bfgs_b(fun, x0, fprime=jac, args=args,
-                                        approx_grad=approx_grad,
-                                        bounds=bounds,
-                                        m=options['maxcor'],
-                                        factr=options['ftol']/_eps,
-                                        pgtol=options['gtol'],
-                                        epsilon=options['eps'],
-                                        maxfun=options['maxiter'] * 2)
-
-                res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
-                try:
-                    res['nit'] = out[2]['nit']
-                except KeyError:
-                    res['nit'] = None
-
-            elif method == 'Powell':
-
-                default_options = {'xtol': 0.0001, 'ftol': 0.0001,
-                                   'maxiter': None}
-
-                if options is None:
-                    options = default_options
-
-                if options is not None:
-                    for key in options:
-                        default_options[key] = options[key]
-                    options = default_options
-
-                out = fmin_powell(fun, x0, args,
-                                  xtol=options['xtol'],
-                                  ftol=options['ftol'],
-                                  maxiter=options['maxiter'],
-                                  full_output=True,
-                                  disp=False,
-                                  retall=True)
-
-                xopt, fopt, direc, iterations, funcs, warnflag, allvecs = out
-                res = {'x': xopt, 'fun': fopt,
-                       'nfev': funcs, 'nit': iterations}
-
-            else:
-
-                msg = 'Only L-BFGS-B and Powell is supported in this class '
-                msg += 'for versions of Scipy < 0.12.'
-                raise ValueError(msg)
-
-        if not SCIPY_LESS_0_12:
-
-            if evolution is True:
-
-                self._evol_kx = []
-
-                def history_of_x(kx):
-                    self._evol_kx.append(kx)
-                res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                               constraints, tol, callback=history_of_x,
-                               options=options)
-
-            else:
-
-                res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                               constraints, tol, callback, options)
+            res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
+                           constraints, tol, callback, options)
 
         self.res = res
 
@@ -282,6 +183,7 @@ def spdot(A, B):
 
     See discussion here:
     http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
+
     """
     if sps.issparse(A) and sps.issparse(B):
         return A * B
@@ -301,12 +203,10 @@ def sparse_nnls(y, X,
                 max_error_checks=10,
                 converge_on_sse=0.99):
     """
-
-    Solve y=Xh for h, using gradient descent, with X a sparse matrix
+    Solve y=Xh for h, using gradient descent, with X a sparse matrix.
 
     Parameters
     ----------
-
     y : 1-d array of shape (N)
         The data. Needs to be dense.
 

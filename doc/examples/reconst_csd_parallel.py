@@ -14,7 +14,7 @@ function.
 
 import multiprocessing
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -22,8 +22,8 @@ data = img.get_data()
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 1, False,
-                             vol_idx=range(10, 50), dilate=2)
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=False, dilate=2)
 
 from dipy.reconst.csdeconv import auto_response
 
@@ -40,10 +40,6 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
-from dipy.data import get_sphere
-
-sphere = get_sphere('symmetric724')
-
 """
 Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
 parameter called ``parallel`` which allows for the voxels to be processed in
@@ -59,7 +55,7 @@ from dipy.direction import peaks_from_model
 start_time = time.time()
 csd_peaks_parallel = peaks_from_model(model=csd_model,
                                       data=data,
-                                      sphere=sphere,
+                                      sphere=default_sphere,
                                       relative_peak_threshold=.5,
                                       min_separation_angle=25,
                                       mask=mask,
@@ -81,7 +77,7 @@ print("peaks_from_model using " + str(multiprocessing.cpu_count())
 start_time = time.time()
 csd_peaks = peaks_from_model(model=csd_model,
                              data=data,
-                             sphere=sphere,
+                             sphere=default_sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
                              mask=mask,

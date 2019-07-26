@@ -28,7 +28,7 @@ class AxSymShResponse(object):
     """A simple wrapper for response functions represented using only axially
     symmetric, even spherical harmonic functions (ie, m == 0 and n even).
 
-    Parameters:
+    Parameters
     -----------
     S0 : float
         Signal with no diffusion weighting.
@@ -60,8 +60,8 @@ class AxSymShResponse(object):
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
 
-    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
-                 tau=0.1):
+    def __init__(self, gtab, response, reg_sphere=None, sh_order=8,
+                 lambda_=1, tau=0.1, convergence=50):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
         Spherical deconvolution computes a fiber orientation distribution
@@ -82,9 +82,9 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as an (3,)
             ndarray and the second is the signal value for the response
-            function without diffusion weighting.  This is to be able to
-            generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_)
+            function without diffusion weighting (i.e. S0).  This is to be able
+            to generate a single fiber synthetic signal. The response function
+            will be used as deconvolution kernel ([1]_).
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
@@ -99,6 +99,9 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             zero. However, to improve the stability of the algorithm, tau is
             set to tau*100 % of the mean fODF amplitude (here, 10% by default)
             (see [1]_). Default: 0.1
+        convergence : int
+            Maximum number of iterations to allow the deconvolution to
+            converge.
 
         References
         ----------
@@ -109,7 +112,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
                Probabilistic Tractography Based on Complex Fibre Orientation
                Distributions
-        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer:
+        .. [3] Côté, M-A., et al. Medical Image Analysis 2013. Tractometer:
                Towards validation of tractography pipelines
         .. [4] Tournier, J.D, et al. Imaging Systems and Technology
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
@@ -134,10 +137,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         # for the sphere used in the regularization positivity constraint
-        if reg_sphere is None:
-            self.sphere = small_sphere
-        else:
-            self.sphere = reg_sphere
+        self.sphere = reg_sphere or small_sphere
 
         r, theta, phi = cart2sphere(
             self.sphere.x,
@@ -145,9 +145,6 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             self.sphere.z
         )
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        if response is None:
-            response = (np.array([0.0015, 0.0003, 0.0003]), 1)
 
         self.response = response
         if isinstance(response, AxSymShResponse):
@@ -174,6 +171,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg *= lambda_
         self.sh_order = sh_order
         self.tau = tau
+        self.convergence = convergence
         self._X = X = self.R.diagonal() * self.B_dwi
         self._P = np.dot(X.T, X)
 
@@ -181,7 +179,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
     def fit(self, data):
         dwi_data = data[self._where_dwi]
         shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
-                                P=self._P)
+                                convergence=self.convergence, P=self._P)
         return SphHarmFit(self, shm_coeff, None)
 
     def predict(self, sh_coeff, gtab=None, S0=1.):
@@ -380,6 +378,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     .. [1] Descoteaux, M. PhD Thesis. INRIA Sophia-Antipolis. 2008.
 
     """
+
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     n_degrees = n.max() // 2 + 1
@@ -598,9 +597,11 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     odf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          ndarray of SH coefficients for the ODF spherical function to be
          deconvolved
-    R : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
+    R : ndarray (``(sh_order + 1)(sh_order + 2)/2``,
+         ``(sh_order + 1)(sh_order + 2)/2``)
          SDT matrix in SH basis
-    B_reg : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
+    B_reg : ndarray (``(sh_order + 1)(sh_order + 2)/2``,
+         ``(sh_order + 1)(sh_order + 2)/2``)
          SH basis matrix used for deconvolution
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
@@ -781,7 +782,8 @@ def fa_superior(FA, fa_thr):
 
         Returns
         -------
-        True when the FA value is greater than the FA threshold, otherwise False.
+        True when the FA value is greater than the FA threshold, otherwise
+        False.
     """
     return FA > fa_thr
 
@@ -945,8 +947,13 @@ def response_from_mask(gtab, data, mask):
 
 
 def _get_response(S0s, lambdas):
-    S0 = np.mean(S0s)
-    l01 = np.mean(lambdas, axis=0)
+    S0 = np.mean(S0s) if S0s.size else 0
+    # Check if lambdas is empty
+    if not lambdas.size:
+        response = (np.zeros(3), S0)
+        ratio = 0
+        return response, ratio
+    l01 = np.mean(lambdas, axis=0) if S0s.size else 0
     evals = np.array([l01[0], l01[1], l01[1]])
     response = (evals, S0)
     ratio = evals[1] / evals[0]

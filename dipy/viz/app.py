@@ -1,12 +1,13 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import length, Streamlines
-from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 
-fury, have_fury, setup_module = optional_package('fury')
+fury, has_fury, setup_module = optional_package('fury')
 
-if have_fury:
+if has_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
@@ -526,7 +527,9 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
-                    save_trk('tmp.trk', saving_streamlines, np.eye(4))
+                    sft = StatefulTractogram(saving_streamlines, 'same',
+                                             Space.RASMM)
+                    save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
 
                 if key == 'y' or key == 'Y':
                     active_streamlines = Streamlines()

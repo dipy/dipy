@@ -42,7 +42,7 @@ fractions = [50, 50]
 signal, _ = multi_tensor(gtab, evals, 100, angles=directions,
                          fractions=fractions, snr=None)
 
-sphere = get_sphere('symmetric724').subdivide(1)
+sphere = get_sphere('repulsion724').subdivide(1)
 
 odf_gt = multi_tensor_odf(sphere.vertices, evals, angles=directions,
                           fractions=fractions)

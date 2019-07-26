@@ -210,8 +210,8 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         the moving image.  Shape will be `inverse_grid_shape` if specified,
         otherwise the shape of the moving image.
 
-    Note
-    ----
+    Notes
+    ------
     The default value for the affine transformation is "-1" to handle the case
     in which the user provides "None" as input meaning "identity". If we used
     None as default, we wouldn't know if the user specifically wants to use

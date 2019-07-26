@@ -117,7 +117,7 @@ if __name__ == '__main__':
                       f.lower().startswith("dipy_")]
 
     workflow_desc = {}
-    # We get all workflows class obj in a dictionnary
+    # We get all workflows class obj in a dictionary
     for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
         module_name = inspect.getmodulename(path_file)
         if module_name is None:

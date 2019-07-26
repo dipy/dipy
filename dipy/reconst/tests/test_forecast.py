@@ -2,9 +2,9 @@
 
 import numpy as np
 
-from dipy.data import get_sphere, get_3shell_gtab
+from dipy.data import get_sphere, default_sphere, get_3shell_gtab
 from dipy.reconst.forecast import ForecastModel
-from dipy.sims.voxel import MultiTensor
+from dipy.sims.voxel import multi_tensor
 
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
@@ -29,9 +29,9 @@ def setup():
     data.mevals = np.array(([0.0017, 0.0003, 0.0003],
                             [0.0017, 0.0003, 0.0003]))
     data.angl = [(0, 0), (60, 0)]
-    data.S, data.sticks = MultiTensor(
-        data.gtab, data.mevals, S0=100.0, angles=data.angl,
-        fractions=[50, 50], snr=None)
+    data.S, data.sticks = multi_tensor(data.gtab, data.mevals, S0=100.0,
+                                       angles=data.angl, fractions=[50, 50],
+                                       snr=None)
     data.sh_order = 6
     data.lambda_lb = 1e-8
     data.lambda_csd = 1.0
@@ -78,7 +78,7 @@ def test_forecast_odf():
     fm = ForecastModel(data.gtab, sh_order=4,
                        dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
     fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
@@ -146,9 +146,8 @@ def test_forecast_indices():
     mevals = np.array(([0.003, 0.003, 0.003],
                        [0.003, 0.003, 0.003]))
     data.angl = [(0, 0), (60, 0)]
-    S, sticks = MultiTensor(
-        data.gtab, mevals, S0=100.0, angles=data.angl,
-        fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(data.gtab, mevals, S0=100.0, angles=data.angl,
+                             fractions=[50, 50], snr=None)
 
     fm = ForecastModel(data.gtab, sh_order=data.sh_order,
                        lambda_lb=data.lambda_lb, dec_alg='WLS')
@@ -186,15 +185,12 @@ def test_multivox_forecast():
     angl3 = [(0, 0), (90, 0)]
 
     S = np.zeros((3, 1, 1, len(gtab.bvals)))
-    S[0, 0, 0], sticks = MultiTensor(
-        gtab, mevals, S0=1.0, angles=angl1,
-        fractions=[50, 50], snr=None)
-    S[1, 0, 0], sticks = MultiTensor(
-        gtab, mevals, S0=1.0, angles=angl2,
-        fractions=[50, 50], snr=None)
-    S[2, 0, 0], sticks = MultiTensor(
-        gtab, mevals, S0=1.0, angles=angl3,
-        fractions=[50, 50], snr=None)
+    S[0, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl1,
+                                 fractions=[50, 50], snr=None)
+    S[1, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl2,
+                                 fractions=[50, 50], snr=None)
+    S[2, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl3,
+                                 fractions=[50, 50], snr=None)
 
     fm = ForecastModel(gtab, sh_order=8,
                        dec_alg='CSD')

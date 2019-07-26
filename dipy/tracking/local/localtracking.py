@@ -38,7 +38,7 @@ class LocalTracking(object):
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
-                 return_all=True, random_seed=None):
+                 return_all=True, random_seed=None, save_seeds=False):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -74,6 +74,8 @@ class LocalTracking(object):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        save_seeds : bool
+            If True, return seeds alongside streamlines
         """
 
         self.direction_getter = direction_getter
@@ -94,6 +96,7 @@ class LocalTracking(object):
         self.max_length = maxlen
         self.return_all = return_all
         self.random_seed = random_seed
+        self.save_seeds = save_seeds
 
     def _tracker(self, seed, first_step, streamline):
         return local_tracker(self.direction_getter,
@@ -108,7 +111,12 @@ class LocalTracking(object):
     def __iter__(self):
         # Make tracks, move them to point space and return
         track = self._generate_streamlines()
-        return utils.move_streamlines(track, self.affine)
+        seeds = None
+        if self.save_seeds:
+            track, seeds = zip(*track)
+        return utils.move_streamlines(track,
+                                      self.affine,
+                                      seeds=seeds)
 
     def _generate_streamlines(self):
         """A streamline generator"""
@@ -131,7 +139,10 @@ class LocalTracking(object):
             directions = self.direction_getter.initial_direction(s)
             if directions.size == 0 and self.return_all:
                 # only the seed position
-                yield [s]
+                if self.save_seeds:
+                    yield [s], s
+                else:
+                    yield [s]
             directions = directions[:self.max_cross]
             for first_step in directions:
                 stepsF, tissue_class = self._tracker(s, first_step, F)
@@ -150,7 +161,14 @@ class LocalTracking(object):
                 else:
                     parts = (B[stepsB - 1:0:-1], F[:stepsF])
                     streamline = np.concatenate(parts, axis=0)
-                yield streamline
+
+                # move to the next streamline if only the seed position
+                # and not return all
+                if len(streamline) > 1 or self.return_all:
+                    if self.save_seeds:
+                        yield streamline, s
+                    else:
+                        yield streamline
 
 
 class ParticleFilteringTracking(LocalTracking):
@@ -159,7 +177,7 @@ class ParticleFilteringTracking(LocalTracking):
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
-                 random_seed=None):
+                 random_seed=None, save_seeds=False):
         r"""A streamline generator using the particle filtering tractography
         method [1]_.
 
@@ -208,6 +226,9 @@ class ParticleFilteringTracking(LocalTracking):
         random_seed : int
             The seed for the random seed generator (numpy.random.seed and
             random.seed).
+        save_seeds : bool
+            If True, return seeds alongside streamlines
+
 
         References
         ----------
@@ -256,7 +277,8 @@ class ParticleFilteringTracking(LocalTracking):
                                                         maxlen,
                                                         True,
                                                         return_all,
-                                                        random_seed)
+                                                        random_seed,
+                                                        save_seeds)
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,

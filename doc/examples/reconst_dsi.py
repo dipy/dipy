@@ -62,7 +62,7 @@ dsfit = dsmodel.fit(dataslice)
 Load an odf reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Calculate the ODFs with this specific sphere

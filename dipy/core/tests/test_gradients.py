@@ -152,7 +152,7 @@ def test_gradient_table_from_bvals_bvecs():
     gt = gradient_table_from_bvals_bvecs(bvals, new_bvecs, b0_threshold=0)
     npt.assert_array_equal(gt.bvecs, bvecs)
 
-    # Bvalue > 0 for non-unit vector
+    # b-value > 0 for non-unit vector
     bad_bvals = [2, 1, 2, 3, 4, 5, 6, 0]
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bad_bvals,
                       bvecs, b0_threshold=0.)
@@ -326,7 +326,7 @@ def test_nan_bvecs():
 def test_generate_bvecs():
     """Tests whether we have properly generated bvecs.
     """
-    # Test if the generated bvectors are unit vectors
+    # Test if the generated b-vectors are unit vectors
     bvecs = generate_bvecs(100)
     norm = [np.linalg.norm(v) for v in bvecs]
     npt.assert_almost_equal(norm, np.ones(100))
@@ -351,7 +351,7 @@ def test_round_bvals():
     b = round_bvals(bvals, bmag=0)
     npt.assert_array_almost_equal(bvals, b)
 
-    # Case that b-valuea are in ms/um2
+    # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
     b = round_bvals(bvals)

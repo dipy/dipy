@@ -173,7 +173,7 @@ def test_cmc_tissue_classifier():
                                                    step_size=1,
                                                    average_voxel_size=1)
 
-    # Test contructors
+    # Test constructors
     for idx in np.ndindex(wm.shape):
         idx = np.asarray(idx, dtype="float64")
         npt.assert_almost_equal(cmc_tc.get_include(idx),
