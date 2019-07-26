@@ -374,7 +374,7 @@ class Horizon(object):
 
             slider_threshold.handle_events(slider_threshold.handle.actor)
             slider_threshold.on_left_mouse_button_released = change_threshold
-            
+
             def hide_clusters_length(slider):
                 self.length_min = np.round(slider.value)
 
@@ -600,7 +600,7 @@ class Horizon(object):
 
                 show_m.render()
 
-        
+
         #import itertools
         #counter = itertools.count()
         HORIZON.window_timer_cnt = 0
@@ -614,8 +614,8 @@ class Horizon(object):
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
             pass
-    
-    
+
+
         scene.reset_camera()
         scene.zoom(1.5)
         scene.reset_clipping_range()
