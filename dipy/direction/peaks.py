@@ -89,7 +89,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 
 def peak_directions(odf, sphere, relative_peak_threshold=.5,
-                    min_separation_angle=25, minmax_norm=True):
+                    min_separation_angle=25):
     """Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
