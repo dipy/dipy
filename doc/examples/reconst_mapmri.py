@@ -386,7 +386,7 @@ mapfit_both_iso = map_model_both_iso.fit(data_small)
 Load an ODF reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Compute the ODFs.

@@ -225,10 +225,7 @@ class LifeSignalMaker(object):
             provided, we will use this object. Default: the :mod:`dipy.data`
             symmetric sphere with 724 vertices
         """
-        if sphere is None:
-            self.sphere = dpd.get_sphere('symmetric724')
-        else:
-            self.sphere = sphere
+        self.sphere = sphere or dpd.default_sphere
 
         self.gtab = gtab
         self.evals = evals

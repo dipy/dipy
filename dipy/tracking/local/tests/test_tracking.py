@@ -574,7 +574,9 @@ def test_bootstap_peak_tracker():
     seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
 
     tc = BinaryTissueClassifier((simple_image > 0).astype(float))
-    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60)
+    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
+                                            sphere=sphere)
 
     streamlines_generator = LocalTracking(boot_dg, tc, seeds, np.eye(4), 1.)
     streamlines = Streamlines(streamlines_generator)

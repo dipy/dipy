@@ -38,7 +38,7 @@ sphere as input. The sphere is an object that represents the spherical discrete
 grid where the ODF values will be evaluated.
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 start_time = time.time()
 

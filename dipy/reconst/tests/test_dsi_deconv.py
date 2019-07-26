@@ -4,7 +4,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-from dipy.data import get_fnames, dsi_deconv_voxels, get_sphere
+from dipy.data import get_fnames, dsi_deconv_voxels, default_sphere
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
@@ -17,8 +17,8 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 
 
 def test_dsi():
-    # load symmetric 724 sphere
-    sphere = get_sphere('symmetric724')
+    # load repulsion 724 sphere
+    sphere = default_sphere
     # load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -29,7 +29,7 @@ def test_dsi():
 
     ds = DiffusionSpectrumDeconvModel(gtab)
 
-    # symmetric724
+    # repulsion724
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
     directions, _, _ = peak_directions(odf, sphere, .35, 25)
@@ -62,7 +62,6 @@ def test_dsi():
 def test_multivox_dsi():
     data, gtab = dsi_deconv_voxels()
     DS = DiffusionSpectrumDeconvModel(gtab)
-    get_sphere('symmetric724')
 
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()

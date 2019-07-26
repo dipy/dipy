@@ -7,7 +7,7 @@ from dipy.sims.voxel import (_check_directions, all_tensor_evecs, add_noise,
                              single_tensor, sticks_and_ball, multi_tensor_dki,
                              kurtosis_element, dki_signal, multi_tensor)
 # from dipy.core.geometry import vec2vec_rotmat
-from dipy.data import get_fnames, get_sphere
+from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -105,8 +105,6 @@ def test_single_tensor():
 
 
 def test_multi_tensor():
-    sphere = get_sphere('symmetric724')
-    # vertices = sphere.vertices
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     e0 = np.array([np.sqrt(2) / 2., np.sqrt(2) / 2., 0])

@@ -137,10 +137,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         # for the sphere used in the regularization positivity constraint
-        if reg_sphere is None:
-            self.sphere = small_sphere
-        else:
-            self.sphere = reg_sphere
+        self.sphere = reg_sphere or small_sphere
 
         r, theta, phi = cart2sphere(
             self.sphere.x,

@@ -69,7 +69,7 @@ asmfit = asm.fit(data_small)
 Load an odf reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Compute the ODFs

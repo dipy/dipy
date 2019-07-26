@@ -15,7 +15,6 @@ from dipy.sims.voxel import (multi_tensor, all_tensor_evecs, multi_tensor_odf,
                              multi_tensor_pdf)
 
 
-
 def test_shore_metrics():
     gtab = get_gtab_taiwan_dsi()
     mevals = np.array(([0.0015, 0.0003, 0.0003],

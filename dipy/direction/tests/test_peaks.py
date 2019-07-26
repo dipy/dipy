@@ -16,7 +16,7 @@ from dipy.direction.peaks import (peaks_from_model,
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_fnames, get_sphere
+from dipy.data import get_fnames, get_sphere, default_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
@@ -399,7 +399,7 @@ def test_difference_with_minmax():
 
 def test_degenerative_cases():
 
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
 
     # completely isotropic and degencase
     odf = np.zeros(sphere.vertices.shape[0])
@@ -531,7 +531,7 @@ def test_peaksFromModelParallel():
     data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
                            fractions=[50, 50], snr=SNR)
 
-    for sphere in [_sphere, get_sphere('symmetric724')]:
+    for sphere in [_sphere, default_sphere]:
 
         # test equality with/without multiprocessing
         model = SimpleOdfModel(gtab)
@@ -604,9 +604,7 @@ def test_peaks_shm_coeff():
 
     _, fbvals, fbvecs = get_fnames('small_64D')
 
-    from dipy.data import get_sphere
-
-    sphere = get_sphere('repulsion724')
+    sphere = default_sphere
 
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 
