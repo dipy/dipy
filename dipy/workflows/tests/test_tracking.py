@@ -8,6 +8,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti
+from dipy.io.streamline import load_tractogram
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
@@ -217,13 +218,14 @@ def tractogram_has_seeds(tractogram_path):
 
 
 def seeds_are_same_space_as_streamlines(tractogram_path):
-    tractogram = \
-       nib.streamlines.load(tractogram_path).tractogram
-    seeds = tractogram.data_per_streamline['seeds']
-    streamlines = tractogram.streamlines
+    sft = load_tractogram(tractogram_path, 'same', bbox_valid_check=False)
+    seeds = sft.data_per_streamline['seeds']
+    streamlines = sft.streamlines
 
     for seed, streamline in zip(seeds, streamlines):
-        map_res = list(map(lambda x: np.allclose(seed, x), streamline))
+        map_res = list(map(lambda x: np.allclose(seed, x,
+                                                 atol=1e-2,
+                                                 rtol=1e-4), streamline))
         # If no point is close to the seed, it likely means that the seed is
         # not in the same space as the streamline
         if not np.any(map_res):

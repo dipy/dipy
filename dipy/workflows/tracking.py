@@ -4,13 +4,13 @@ from __future__ import division
 import logging
 import numpy as np
 
-from nibabel.streamlines import save, Tractogram
-
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter,
                             ClosestPeakDirectionGetter)
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
 from dipy.tracking.local import (BinaryTissueClassifier,
                                  ThresholdTissueClassifier, LocalTracking,
@@ -107,12 +107,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         if save_seeds:
             streamlines, seeds = zip(*tracking_result)
-            tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-            tractogram.data_per_streamline['seeds'] = seeds
+            seeds = {'seeds': seeds}
         else:
-            tractogram = Tractogram(tracking_result, affine_to_rasmm=np.eye(4))
+            streamlines = list(tracking_result)
+            seeds = {}
 
-        save(tractogram, out_tract)
+        sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+                                data_per_streamline=seeds)
+        save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, stopping_files, seeding_files,
@@ -319,12 +321,12 @@ class PFTrackingPAMFlow(Workflow):
 
             if save_seeds:
                 streamlines, seeds = zip(*tracking_result)
-                tractogram = Tractogram(streamlines, affine_to_rasmm=np.eye(4))
-                tractogram.data_per_streamline['seeds'] = seeds
+                seeds = {'seeds': seeds}
             else:
-                tractogram = Tractogram(tracking_result,
-                                        affine_to_rasmm=np.eye(4))
+                streamlines = list(tracking_result)
+                seeds = {}
 
-            save(tractogram, out_tract)
-
+            sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+                                    data_per_streamline=seeds)
+            save_tractogram(sft, out_tract, bbox_valid_check=False)
             logging.info('Saved {0}'.format(out_tract))
