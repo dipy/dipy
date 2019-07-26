@@ -16,6 +16,15 @@ trajectory of the bundle at that location.
 
 """
 
+import dipy.stats.analysis as dsa
+import nibabel as nib
+import dipy.tracking.streamline as dts
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
+                                 ResampleFeature)
+from dipy.data.fetcher import get_two_hcp842_bundles
+import dipy.data as dpd
+from dipy.io.streamline import load_trk
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as op
@@ -40,9 +49,8 @@ Either way, we can use the `dipy.io` API to read in the bundles from file.
 
 """
 
-from dipy.io.streamline import load_trk
-cst_l, hdr = load_trk("CST_L.trk")
-af_l, hdr = load_trk("AF_L.trk")
+cst_l = load_trk("CST_L.trk", "same", bbox_valid_check=False).streamlines
+af_l = load_trk("AF_L.trk", "same", bbox_valid_check=False).streamlines
 
 transform = np.load("slr_transform.npy")
 
@@ -61,17 +69,13 @@ The advantage of using the model bundles is that we can use the same standard
 for different subjects, which means that we'll get roughly the same orientation
 """
 
-import dipy.data as dpd
-from dipy.data.fetcher import get_two_hcp842_bundles
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_af_l, hdr = load_trk(model_af_l_file)
-model_cst_l, hdr = load_trk(model_cst_l_file)
+model_af_l = load_trk(model_af_l_file, "same",
+                      bbox_valid_check=False).streamlines
+model_cst_l = load_trk(model_cst_l_file, "same",
+                       bbox_valid_check=False).streamlines
 
-
-from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
-                                 ResampleFeature)
-from dipy.segment.clustering import QuickBundles
 
 feature = ResampleFeature(nb_points=100)
 metric = AveragePointwiseEuclideanMetric(feature)
@@ -98,7 +102,6 @@ tractogram. This is so that the orienting is done relative to the space of the
 individual, and not relative to the atlas space.
 """
 
-import dipy.tracking.streamline as dts
 
 oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l,
                                           affine=transform)
@@ -115,7 +118,6 @@ but in real use, this is where you would add the FA map of your subject.
 
 files, folder = dpd.fetch_bundle_fa_hcp()
 
-import nibabel as nib
 img = nib.load(op.join(folder, "hcp_bundle_fa.nii.gz"))
 fa = img.get_fdata()
 
@@ -124,7 +126,6 @@ fa = img.get_fdata()
 Calculate weights for each bundle:
 """
 
-import dipy.stats.analysis as dsa
 
 w_cst_l = dsa.gaussian_weights(oriented_cst_l)
 w_af_l = dsa.gaussian_weights(oriented_af_l)
