@@ -339,8 +339,8 @@ def slicer_panel(renderer, iren,
             message = '%.3f' % res
         except TypeError:
             message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
-        picker_label.message = '({}, {}, {})'
-            .format(str(i), str(j), str(k)) + ' ' + message
+        picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) \
+            + ' ' + message
 
     HORIZON.slicer_vol_idx = 0
     HORIZON.slicer_vol = tmp_new

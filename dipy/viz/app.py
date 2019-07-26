@@ -370,7 +370,7 @@ class Horizon(object):
             self.length_min = lengths.min()
 
             def change_threshold(istyle, obj, slider):
-                sv = np.round(slider.value,0)
+                sv = np.round(slider.value, 0)
                 self.remove_actors(scene)
                 self.add_actors(scene, self.tractograms, threshold=sv)
 
@@ -604,7 +604,6 @@ class Horizon(object):
                             self.cea[c]['expanded'] = 0
 
                 show_m.render()
-
 
         HORIZON.window_timer_cnt = 0
 
