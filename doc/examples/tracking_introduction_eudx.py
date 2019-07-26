@@ -141,7 +141,6 @@ label value ``2`` in the labels image.
 """
 
 from dipy.tracking import utils
-import numpy as np
 
 seed_mask = (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)

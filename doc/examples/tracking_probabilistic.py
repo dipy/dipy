@@ -47,7 +47,6 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 We use the GFA of the CSA model to build a tissue classifier.
 """
 
-from dipy.reconst.csdeconv import auto_response
 from dipy.reconst.shm import CsaOdfModel
 
 csa_model = CsaOdfModel(gtab, sh_order=6)

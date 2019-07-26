@@ -11,7 +11,7 @@ signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 """
 # Enables/disables interactive visualization
-from dipy.io.trackvis import save_trk
+from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.tracking.streamline import select_random_set_of_streamlines
 from numpy.linalg import inv
