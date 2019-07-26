@@ -1,6 +1,7 @@
 from os.path import join as pjoin
+import nibabel as nib
 from dipy.workflows.workflow import Workflow
-from dipy.io.streamline import load_tractogram
+from dipy.io.streamline import Dpy
 from dipy.io.image import load_nifti
 from dipy.viz.app import horizon
 
@@ -15,7 +16,6 @@ class HorizonFlow(Workflow):
             random_colors=False, length_lt=1000, length_gt=0,
             clusters_lt=10**8, clusters_gt=0, native_coords=False,
             stealth=False, out_dir='', out_stealth_png='tmp.png'):
-
         """ Highly interactive visualization - invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -67,10 +67,15 @@ class HorizonFlow(Workflow):
             fl = fname.lower()
             ends = fl.endswith
 
-            if ends('.trk') or ends('.tck') or ends('.dpy'):
+            if ends('.trk') or ends('.tck'):
 
-                streamlines, hdr = load_tractogram(fname, lazy_load=False)
+                streamlines = nib.streamlines.load(fname).streamlines
                 tractograms.append(streamlines)
+            elif ends('dpy'):
+
+                dpy_obj = Dpy(fname, mode='r')
+                streamlines = list(dpy_obj.read_tracks())
+                dpy_obj.close()
 
             if ends('.nii.gz') or ends('.nii'):
 

@@ -439,7 +439,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
     ['hcp_bundle_fa.nii.gz'],
     ['2d5c0036b0575597378ddf39191028ea'],
     doc=("Download map of FA within two bundles in one" +
-        "of the hcp dataset subjects"),
+         "of the hcp dataset subjects"),
     data_size="230kb")
 
 
@@ -473,6 +473,20 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
      '5540c0c9bd635c29fc88dd599cbbf5e6'],
     doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 mice.",
     data_size="298.2MB")
+
+
+fetch_gold_standard_io = _make_fetcher(
+    "fetch_gold_standard_io",
+    pjoin(dipy_home, 'gold_standard_io'),
+    'https://zenodo.org/record/2651349/files/',
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.txt', 'streamlines_data.txt'],
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.json', 'streamlines_data.json'],
+    doc="Downloads the gold standard for streamlines io testing.",
+    data_size="47.KB")
 
 
 def read_qtdMRI_test_retest_2subjects():

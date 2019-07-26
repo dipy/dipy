@@ -14,7 +14,6 @@ from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
-from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 from dipy.workflows.workflow import Workflow
 
@@ -192,8 +191,11 @@ class SlrWithQbxFlow(Workflow):
             logging.info('Loading static file {0}'.format(static_file))
             logging.info('Loading moving file {0}'.format(moving_file))
 
-            static, static_header = load_trk(static_file)
-            moving, moving_header = load_trk(moving_file)
+            static_obj = nib.streamlines.load(static_file)
+            moving_obj = nib.streamlines.load(moving_file)
+
+            static, static_header = static_obj.streamlines, static_obj.header
+            moving, moving_header = moving_obj.streamlines, moving_obj.header
 
             moved, affine, centroids_static, centroids_moving = \
                 slr_with_qbx(
@@ -202,29 +204,37 @@ class SlrWithQbxFlow(Workflow):
                     qbx_thr=qbx_thr)
 
             logging.info('Saving output file {0}'.format(out_moved_file))
-            save_trk(out_moved_file, moved, affine=np.eye(4),
-                     header=static_header)
+            new_tractogram = nib.streamlines.Tractogram(moved,
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, out_moved_file,
+                                 header=moving_header)
 
             logging.info('Saving output file {0}'.format(out_affine_file))
             np.savetxt(out_affine_file, affine)
 
             logging.info('Saving output file {0}'
                          .format(static_centroids_file))
-            save_trk(static_centroids_file, centroids_static, affine=np.eye(4),
-                     header=static_header)
+            new_tractogram = nib.streamlines.Tractogram(centroids_static,
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, static_centroids_file,
+                                 header=static_header)
 
             logging.info('Saving output file {0}'
                          .format(moving_centroids_file))
-            save_trk(moving_centroids_file, centroids_moving,
-                     affine=np.eye(4),
-                     header=static_header)
+            new_tractogram = nib.streamlines.Tractogram(centroids_moving,
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, moving_centroids_file,
+                                 header=moving_header)
 
             centroids_moved = transform_streamlines(centroids_moving, affine)
 
             logging.info('Saving output file {0}'
                          .format(moved_centroids_file))
-            save_trk(moved_centroids_file, centroids_moved, affine=np.eye(4),
-                     header=static_header)
+
+            new_tractogram = nib.streamlines.Tractogram(centroids_moved,
+                                                        affine_to_rasmm=np.eye(4))
+            nib.streamlines.save(new_tractogram, moved_centroids_file,
+                                 header=moving_header)
 
 
 class ImageRegistrationFlow(Workflow):
@@ -246,7 +256,6 @@ class ImageRegistrationFlow(Workflow):
     def perform_transformation(self, static, static_grid2world, moving,
                                moving_grid2world,
                                affreg, params0, transform, affine):
-
         """ Function to apply the transformation.
 
         Parameters
@@ -294,7 +303,6 @@ class ImageRegistrationFlow(Workflow):
 
     def center_of_mass(self, static, static_grid2world,
                        moving, moving_grid2world):
-
         """ Function for the center of mass based image registration.
 
         Parameters
@@ -332,7 +340,6 @@ class ImageRegistrationFlow(Workflow):
 
     def translate(self, static, static_grid2world, moving,
                   moving_grid2world, affreg, params0):
-
         """ Function for translation based registration.
 
         Parameters
@@ -377,7 +384,6 @@ class ImageRegistrationFlow(Workflow):
 
     def rigid(self, static, static_grid2world, moving, moving_grid2world,
               affreg, params0, progressive):
-
         """ Function for rigid body based image registration.
 
         Parameters
@@ -433,7 +439,6 @@ class ImageRegistrationFlow(Workflow):
 
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
-
         """ Function for full affine registration.
 
         Parameters
@@ -491,7 +496,6 @@ class ImageRegistrationFlow(Workflow):
             factors=[4, 2, 1], progressive=True, save_metric=False,
             out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt'):
-
         """
         Parameters
         ----------
@@ -742,7 +746,6 @@ class SynRegistrationFlow(Workflow):
             inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
             out_inv_static='inc_static.nii.gz',
             out_field='displacement_field.nii.gz'):
-
         """
         Parameters
         ----------
@@ -916,7 +919,7 @@ class SynRegistrationFlow(Workflow):
                 opt_tol=opt_tol,
                 inv_iter=inv_iter,
                 inv_tol=inv_tol
-                )
+            )
 
             mapping = sdr.optimize(static_image, moving_image,
                                    static_grid2world, moving_grid2world,
