@@ -56,7 +56,7 @@ class IoInfoFlow(Workflow):
                     return_coords=True)
                 logging.info('Data size {0}'.format(data.shape))
                 logging.info('Data type {0}'.format(data.dtype))
-                
+
                 if data.ndim == 3:
                     logging.info('Data min {0} max {1} avg {2}'
                                  .format(data.min(), data.max(), data.mean()))
@@ -201,7 +201,7 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
-            # We load the module again so that if we run another one of these in 
-            # the same process, we don't have the env variable pointing to the 
+            # We load the module again so that if we run another one of these in
+            # the same process, we don't have the env variable pointing to the
             # wrong place
             self.load_module('dipy.data.fetcher')
