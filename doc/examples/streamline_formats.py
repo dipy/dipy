@@ -54,7 +54,7 @@ load_tck will simply be restricted to one file format
 
 TRK files contain their own header (when writen properly), so they
 technically do not need a reference. (See how below)
-cc_trk = load_tractogram(bundles_filename[0], 'same')
+cc_trk = ``load_tractogram``(bundles_filename[0], 'same')
 """
 
 cc_sft = load_tractogram(bundles_filename[0], reference_anatomy)
@@ -74,7 +74,7 @@ rpt_sft = load_tractogram(bundles_filename[4], reference_anatomy,
                           bbox_valid_check=False)
 
 """
-The function load_tractogram requires a reference, any of the following input
+The function ``load_tractogram`` requires a reference, any of the following input
 is considered valid (as long as they are in the same share space)
 - Nifti filename
 - Trk filename
@@ -99,7 +99,7 @@ print(voxel_order)
 If you have a Trk file that was generated using a particular anatomy,
 to be considered valid all fields must correspond between the headers.
 It can be easily verified using this function, which also accept
-the same variety of input as get_reference_info
+the same variety of input as ``get_reference_info``
 """
 
 print(is_header_compatible(reference_anatomy, bundles_filename[0]))
@@ -202,8 +202,8 @@ look the function StatefulTractogram.remove_invalid_streamlines() for more
 details
 
 It is important to mention that once the object is created in a consistent state
-the save_tractogram function will save a valid file. And then the function
-load_tractogram will load them in a valid state.
+the ``save_tractogram`` function will save a valid file. And then the function
+``load_tractogram`` will load them in a valid state.
 """
 
 cc_sft = StatefulTractogram(cc_streamlines_vox, reference_anatomy, Space.VOX)
