@@ -28,11 +28,11 @@ def test_binary_tissue_classifier():
         state_boolean = btc_boolean.check_point(pts)
         state_float64 = btc_float64.check_point(pts)
         if mask[ind] > 0:
-            npt.assert_equal(state_boolean, TissueTypes.TRACKPOINT)
-            npt.assert_equal(state_float64, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state_boolean, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state_float64, int(TissueTypes.TRACKPOINT))
         else:
-            npt.assert_equal(state_boolean, TissueTypes.ENDPOINT)
-            npt.assert_equal(state_float64, TissueTypes.ENDPOINT)
+            npt.assert_equal(state_boolean, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state_float64, int(TissueTypes.ENDPOINT))
 
     # Test random points in voxel
     for ind in ndindex(mask.shape):
@@ -41,11 +41,11 @@ def test_binary_tissue_classifier():
             state_boolean = btc_boolean.check_point(pts)
             state_float64 = btc_float64.check_point(pts)
             if mask[ind] > 0:
-                npt.assert_equal(state_boolean, TissueTypes.TRACKPOINT)
-                npt.assert_equal(state_float64, TissueTypes.TRACKPOINT)
+                npt.assert_equal(state_boolean, int(TissueTypes.TRACKPOINT))
+                npt.assert_equal(state_float64, int(TissueTypes.TRACKPOINT))
             else:
-                npt.assert_equal(state_boolean, TissueTypes.ENDPOINT)
-                npt.assert_equal(state_float64, TissueTypes.ENDPOINT)
+                npt.assert_equal(state_boolean, int(TissueTypes.ENDPOINT))
+                npt.assert_equal(state_float64, int(TissueTypes.ENDPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -54,8 +54,8 @@ def test_binary_tissue_classifier():
         pts = np.array(pts, dtype='float64')
         state_boolean = btc_boolean.check_point(pts)
         state_float64 = btc_float64.check_point(pts)
-        npt.assert_equal(state_boolean, TissueTypes.OUTSIDEIMAGE)
-        npt.assert_equal(state_float64, TissueTypes.OUTSIDEIMAGE)
+        npt.assert_equal(state_boolean, int(TissueTypes.OUTSIDEIMAGE))
+        npt.assert_equal(state_float64, int(TissueTypes.OUTSIDEIMAGE))
 
 
 def test_threshold_tissue_classifier():
