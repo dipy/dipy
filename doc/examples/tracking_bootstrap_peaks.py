@@ -14,7 +14,6 @@ example. Let's start by loading the necessary modules for executing this
 tutorial.
 """
 
-# Enables/disables interactive visualization
 from dipy.direction import ClosestPeakDirectionGetter
 from dipy.data import small_sphere
 from dipy.tracking.streamline import Streamlines
@@ -28,6 +27,8 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.data import read_stanford_labels
+
+# Enables/disables interactive visualization
 interactive = False
 
 
