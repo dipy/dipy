@@ -6,6 +6,7 @@ from numpy.testing import assert_array_equal
 import numpy as np
 import scipy
 from distutils.version import LooseVersion
+import warnings
 
 # set path to example data
 IO_DATA_PATH = abspath(pjoin(dirname(__file__),
@@ -62,7 +63,6 @@ def setup_test():
     # (module + line number) where the warning is issued
     if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
             LooseVersion(scipy.version.short_version) <= '1.1.0':
-        import warnings
         warnings.simplefilter(action="default", category=FutureWarning)
 
     warnings.simplefilter("always", category=UserWarning)
