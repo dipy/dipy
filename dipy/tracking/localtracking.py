@@ -137,16 +137,16 @@ class LocalTracking(object):
                     yield [s]
             directions = directions[:self.max_cross]
             for first_step in directions:
-                stepsF, tissue_class = self._tracker(s, first_step, F)
+                stepsF, tissue_type = self._tracker(s, first_step, F)
                 if not (self.return_all or
-                        tissue_class == TissueTypes.ENDPOINT or
-                        tissue_class == TissueTypes.OUTSIDEIMAGE):
+                        tissue_type == TissueTypes.ENDPOINT or
+                        tissue_type == TissueTypes.OUTSIDEIMAGE):
                     continue
                 first_step = -first_step
-                stepsB, tissue_class = self._tracker(s, first_step, B)
+                stepsB, tissue_type = self._tracker(s, first_step, B)
                 if not (self.return_all or
-                        tissue_class == TissueTypes.ENDPOINT or
-                        tissue_class == TissueTypes.OUTSIDEIMAGE):
+                        tissue_type == TissueTypes.ENDPOINT or
+                        tissue_type == TissueTypes.OUTSIDEIMAGE):
                     continue
                 if stepsB == 1:
                     streamline = F[:stepsF].copy()
@@ -258,8 +258,8 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_dirs = np.empty((2, self.particle_count,
                                        pft_max_steps + 1, 3), dtype=float)
         self.particle_steps = np.empty((2, self.particle_count), dtype=int)
-        self.particle_tissue_classes = np.empty((2, self.particle_count),
-                                                dtype=int)
+        self.particle_tissue_types = np.empty((2, self.particle_count),
+                                              dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
                                                         tissue_classifier,
                                                         seeds,
@@ -289,4 +289,4 @@ class ParticleFilteringTracking(LocalTracking):
                            self.particle_dirs,
                            self.particle_weights,
                            self.particle_steps,
-                           self.particle_tissue_classes)
+                           self.particle_tissue_types)
