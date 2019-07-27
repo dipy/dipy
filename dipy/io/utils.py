@@ -1,6 +1,8 @@
 """ Utility functions for file formats """
 import logging
+import os
 
+import dipy
 import numpy as np
 import nibabel as nib
 from nibabel.streamlines import detect_format
@@ -154,6 +156,7 @@ def get_reference_info(reference):
 
     is_nifti = False
     is_trk = False
+    is_sft = False
     if isinstance(reference, str):
         try:
             header = nib.load(reference).header
@@ -162,7 +165,9 @@ def get_reference_info(reference):
             pass
         try:
             header = nib.streamlines.load(reference, lazy_load=True).header
-            is_trk = True
+            _, extension = os.path.splitext(reference)
+            if extension == '.trk':
+                is_trk = True
         except ValueError:
             pass
     elif isinstance(reference, nib.nifti1.Nifti1Image):
@@ -177,6 +182,8 @@ def get_reference_info(reference):
     elif isinstance(reference, dict) and 'magic_number' in reference:
         header = reference
         is_trk = True
+    elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
+        is_sft = True
 
     if is_nifti:
         affine = np.eye(4).astype(np.float32)
@@ -191,6 +198,8 @@ def get_reference_info(reference):
         dimensions = header['dimensions']
         voxel_sizes = header['voxel_sizes']
         voxel_order = header['voxel_order']
+    elif is_sft:
+        affine, dimensions, voxel_sizes, voxel_order = reference.space_attribute
     else:
         raise TypeError('Input reference is not one of the supported format')
 

@@ -39,7 +39,7 @@ class StatefulTractogram(object):
         streamlines : list or ArraySequence
             Streamlines of the tractogram
         reference : Nifti or Trk filename, Nifti1Image or TrkFile,
-            Nifti1Header or trk.header (dict)
+            Nifti1Header, trk.header (dict) or another Stateful Tractogram
             Reference that provides the spatial attribute.
             Typically a nifti-related object from the native diffusion used for
             streamlines generation
@@ -293,7 +293,8 @@ class StatefulTractogram(object):
         """ Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamlines.
         Invalid coordinates are any X,Y,Z values above the reference
-        dimensions or below zero         Returns
+        dimensions or below zero
+        Returns
         -------
         output : tuple
             Tuple of two list, indices_to_remove, indices_to_keep
