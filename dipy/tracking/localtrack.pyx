@@ -6,7 +6,7 @@ cimport numpy as np
 import numpy as np
 from .direction_getter cimport DirectionGetter
 from .tissue_classifier cimport(
-    TissueClass, TissueClassifier, ConstrainedTissueClassifier,
+    TissueTypes, TissueClassifier, ConstrainedTissueClassifier,
     TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
@@ -123,12 +123,12 @@ def local_tracker(
     -------
     end : int
         Length of the tracked streamline
-    tissue_class : TissueClass
+    tissue_class : TissueTypes
         Ending state of the streamlines as determined by the TissueClassifier.
     """
     cdef:
         size_t i
-        TissueClass tissue_class
+        TissueTypes tissue_class
         double dir[3]
         double vs[3]
         double seed[3]
@@ -158,7 +158,7 @@ cdef int _local_tracker(DirectionGetter dg,
                         np.float_t[:, :] streamline,
                         double step_size,
                         int fixedstep,
-                        TissueClass* tissue_class):
+                        TissueTypes* tissue_class):
     cdef:
         size_t i
         double point[3]
@@ -264,13 +264,13 @@ def pft_tracker(
     -------
     end : int
         Length of the tracked streamline
-    tissue_class : TissueClass
+    tissue_class : TissueTypes
         Ending state of the streamlines as determined by the TissueClassifier.
 
     """
     cdef:
         size_t i
-        TissueClass tissue_class
+        TissueTypes tissue_class
         double dir[3]
         double vs[3]
         double seed[3]
@@ -303,7 +303,7 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:, :] streamline,
                   np.float_t[:, :] directions,
                   double step_size,
-                  TissueClass * tissue_class,
+                  TissueTypes * tissue_class,
                   int pft_max_nbr_back_steps,
                   int pft_max_nbr_front_steps,
                   int pft_max_trials,
@@ -389,7 +389,7 @@ cdef _pft(np.float_t[:, :] streamline,
           ConstrainedTissueClassifier tc,
           double* voxel_size,
           double step_size,
-          TissueClass * tissue_class,
+          TissueTypes * tissue_class,
           int pft_nbr_steps,
           int particle_count,
           np.float_t[:, :, :, :] particle_paths,
@@ -503,5 +503,5 @@ cdef _pft(np.float_t[:, :] streamline,
         copy_point(&particle_paths[0, p, s, 0],
                    &streamline[streamline_i + s, 0])
         copy_point(&particle_dirs[0, p, s, 0], &directions[streamline_i + s, 0])
-    tissue_class[0] = <TissueClass> particle_tissue_classes[0, p]
+    tissue_class[0] = <TissueTypes> particle_tissue_classes[0, p]
     return streamline_i + particle_steps[0, p]
