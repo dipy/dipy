@@ -72,9 +72,9 @@ def test_threshold_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = ttc.check_point(pts)
         if tissue_map[ind] > 0.5:
-            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
         else:
-            npt.assert_equal(state, TissueTypes.ENDPOINT)
+            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
 
     # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
@@ -86,9 +86,9 @@ def test_threshold_tissue_classifier():
         res = scipy.ndimage.map_coordinates(
             tissue_map, np.reshape(pts, (3, 1)), order=1, mode='nearest')
         if res > 0.5:
-            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
         else:
-            npt.assert_equal(state, TissueTypes.ENDPOINT)
+            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -96,7 +96,7 @@ def test_threshold_tissue_classifier():
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         state = ttc.check_point(pts)
-        npt.assert_equal(state, TissueTypes.OUTSIDEIMAGE)
+        npt.assert_equal(state, int(TissueTypes.OUTSIDEIMAGE))
 
 
 def test_act_tissue_classifier():
@@ -119,11 +119,11 @@ def test_act_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = act_tc.check_point(pts)
         if csf[ind] > 0.5:
-            npt.assert_equal(state, TissueTypes.INVALIDPOINT)
+            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
         elif gm[ind] > 0.5:
-            npt.assert_equal(state, TissueTypes.ENDPOINT)
+            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
         else:
-            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
 
     # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
@@ -137,11 +137,11 @@ def test_act_tissue_classifier():
         csf_res = scipy.ndimage.map_coordinates(
             csf, np.reshape(pts, (3, 1)), order=1, mode='nearest')
         if csf_res > 0.5:
-            npt.assert_equal(state, TissueTypes.INVALIDPOINT)
+            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
         elif gm_res > 0.5:
-            npt.assert_equal(state, TissueTypes.ENDPOINT)
+            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
         else:
-            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -149,7 +149,7 @@ def test_act_tissue_classifier():
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         state = act_tc.check_point(pts)
-        npt.assert_equal(state, TissueTypes.OUTSIDEIMAGE)
+        npt.assert_equal(state, int(TissueTypes.OUTSIDEIMAGE))
 
 
 def test_cmc_tissue_classifier():
@@ -186,18 +186,19 @@ def test_cmc_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = cmc_tc.check_point(pts)
         if csf[ind] == 1:
-            npt.assert_equal(state, TissueTypes.INVALIDPOINT)
+            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
         elif gm[ind] == 1:
-            npt.assert_equal(state, TissueTypes.ENDPOINT)
+            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
         else:
-            npt.assert_equal(state, TissueTypes.TRACKPOINT)
+            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
                    [0, 0.5, -0.51], [0, -0.51, 0.1]]
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
-        npt.assert_equal(cmc_tc.check_point(pts), TissueTypes.OUTSIDEIMAGE)
+        npt.assert_equal(cmc_tc.check_point(pts),
+                         int(TissueTypes.OUTSIDEIMAGE))
         npt.assert_equal(cmc_tc.get_exclude(pts), 0)
         npt.assert_equal(cmc_tc.get_include(pts), 0)
 
