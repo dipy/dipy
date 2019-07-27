@@ -14,13 +14,13 @@ from dipy.core.interpolation cimport trilinear_interpolate4d_c
 import numpy as np
 
 cdef class TissueClassifier:
-    cpdef TissueClass check_point(self, double[::1] point):
+    cpdef TissueTypes check_point(self, double[::1] point):
         if point.shape[0] != 3:
             raise ValueError("Point has wrong shape")
 
         return self.check_point_c(&point[0])
 
-    cdef TissueClass check_point_c(self, double* point):
+    cdef TissueTypes check_point_c(self, double* point):
          pass
 
 
@@ -34,7 +34,7 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         self.interp_out_view = self.interp_out_double
         self.mask = (mask > 0).astype('uint8')
 
-    cdef TissueClass check_point_c(self, double* point):
+    cdef TissueTypes check_point_c(self, double* point):
         cdef:
             unsigned char result
             int err
@@ -71,7 +71,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
         self.metric_map = np.asarray(metric_map, 'float64')
         self.threshold = threshold
 
-    cdef TissueClass check_point_c(self, double* point):
+    cdef TissueTypes check_point_c(self, double* point):
         cdef:
             double result
             int err
@@ -191,7 +191,7 @@ cdef class ActTissueClassifier(ConstrainedTissueClassifier):
         self.include_map = np.asarray(include_map, 'float64')
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
-    cdef TissueClass check_point_c(self, double* point):
+    cdef TissueTypes check_point_c(self, double* point):
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err
@@ -253,7 +253,7 @@ cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
         self.average_voxel_size = average_voxel_size
         self.correction_factor = step_size / average_voxel_size
 
-    cdef TissueClass check_point_c(self, double* point):
+    cdef TissueTypes check_point_c(self, double* point):
         cdef:
             double include_result, exclude_result
             int include_err, exclude_err

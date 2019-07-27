@@ -1,5 +1,5 @@
 
-cdef enum TissueClass:
+cpdef enum TissueTypes:
     PYERROR = -2
     OUTSIDEIMAGE = -1
     INVALIDPOINT = 0
@@ -11,8 +11,8 @@ cdef class TissueClassifier:
     cdef:
         double interp_out_double[1]
         double[::1] interp_out_view
-    cpdef TissueClass check_point(self, double[::1] point)
-    cdef TissueClass check_point_c(self, double* point)
+    cpdef TissueTypes check_point(self, double[::1] point)
+    cdef TissueTypes check_point_c(self, double* point)
 
 
 cdef class BinaryTissueClassifier(TissueClassifier):

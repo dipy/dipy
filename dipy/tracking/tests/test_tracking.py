@@ -13,12 +13,12 @@ from dipy.direction import (BootDirectionGetter,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking.localtracking import (LocalTracking,
-                                         ParticleFilteringTracking,
-                                         TissueTypes)
+                                         ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tissue_classifier import (ActTissueClassifier,
                                              BinaryTissueClassifier,
-                                             ThresholdTissueClassifier)
+                                             ThresholdTissueClassifier,
+                                             TissueTypes)
 from dipy.tracking.utils import seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
 
