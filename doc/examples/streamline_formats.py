@@ -20,11 +20,10 @@ import os
 
 import nibabel as nib
 import numpy as np
-from dipy.data import get_fnames
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.utils import (create_nifti_header, create_tractogram_header,
-                           get_reference_info, is_header_compatible)
+from dipy.io.utils import (create_nifti_header, get_reference_info,
+                           is_header_compatible)
 from dipy.tracking.streamline import select_random_set_of_streamlines
 from dipy.tracking.utils import density_map
 
@@ -120,7 +119,7 @@ nib.save(nib.Nifti1Image(np.zeros(dimensions), affine, nifti_header),
 nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
 
 """
-Once loaded, no matter the original file format, the stateful tractogram is 
+Once loaded, no matter the original file format, the stateful tractogram is
 self contained and maintain a valid state and can be easily be manipulated
 Let's save all file as TRK to visualize in TrackVis for example.
 However, when loaded the lpt and rpt files contains invalid streamlines and
@@ -146,7 +145,7 @@ Some functions in dipy require streamlines to be in voxel space so computation
 can be perfomed on a grid (connectivity matrix, ROIs masking, density map).
 The stateful tractogram class provided safe function for such manipulation.
 These function can be called safely over and over, by knowing in which state
-the tractogram is the operation is computed only necessary. 
+the tractogram is the operation is computed only necessary.
 
 No matter the state, function such as saving or removing invalid coordinate
 can be called safely and the transformation are handle internally if needed.
@@ -203,7 +202,7 @@ look the function StatefulTractogram.remove_invalid_streamlines() for more
 details
 
 It is important to mention that once the object is created in a consistent state
-the save_tractogram function will save a valid file. And then the function 
+the save_tractogram function will save a valid file. And then the function
 load_tractogram will load them in a valid state.
 """
 

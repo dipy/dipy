@@ -1174,7 +1174,7 @@ def get_file_formats():
                      'bundle_file_formats_example', 'template0.nii.gz')
     bundles_list = []
     for filename in ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
-                'raf_m_sub.vtk', 'rpt_m_sub.dpy']:
+                     'raf_m_sub.vtk', 'rpt_m_sub.dpy']:
         bundles_list.append(pjoin(dipy_home,
                                   'bundle_file_formats_example',
                                   filename))
@@ -1189,13 +1189,13 @@ def get_bundle_atlas_hcp842():
     file1 : string
     file2 : string
     """
-    file1=pjoin(dipy_home,
+    file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'whole_brain',
                   'whole_brain_MNI.trk')
 
-    file2=pjoin(dipy_home,
+    file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
@@ -1211,13 +1211,13 @@ def get_two_hcp842_bundles():
     file1 : string
     file2 : string
     """
-    file1=pjoin(dipy_home,
+    file1 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
                   'AF_L.trk')
 
-    file2=pjoin(dipy_home,
+    file2 = pjoin(dipy_home,
                   'bundle_atlas_hcp842',
                   'Atlas_80_Bundles',
                   'bundles',
@@ -1232,7 +1232,7 @@ def get_target_tractogram_hcp():
     -------
     file1 : string
     """
-    file1=pjoin(dipy_home,
+    file1 = pjoin(dipy_home,
                   'target_tractogram_hcp',
                   'hcp_tractogram',
                   'streamlines.trk')
