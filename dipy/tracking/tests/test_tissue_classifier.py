@@ -4,11 +4,11 @@ import numpy.testing as npt
 import scipy.ndimage
 
 from dipy.core.ndindex import ndindex
-from dipy.tracking.local import (BinaryTissueClassifier,
-                                 ThresholdTissueClassifier,
-                                 ActTissueClassifier,
-                                 CmcTissueClassifier)
-from dipy.tracking.local.localtracking import TissueTypes
+from dipy.tracking.localtracking import TissueTypes
+from dipy.tracking.tissue_classifier import (ActTissueClassifier,
+                                             BinaryTissueClassifier,
+                                             CmcTissueClassifier,
+                                             ThresholdTissueClassifier)
 
 
 def test_binary_tissue_classifier():

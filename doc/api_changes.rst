@@ -27,7 +27,7 @@ The order of parameters has also changed.
 
 **Tractogram loading and saving**
 
-The API of ``dipy.io.streamlines.load_tractogram`` and 
+The API of ``dipy.io.streamlines.load_tractogram`` and
 ``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
 When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
 guarantee proper spatial transformation handling.
@@ -54,8 +54,16 @@ The `voxel_size` parameter has been removed from the following function:
 The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
+The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
+``dipy.tracking.local.localtracking`` to ``dipy.tracking.localtracking``.
+They now need to be imported from ``dipy.tracking.localtracking``.
+
+The `TissueClassifiers` were moved from ``dipy.tracking.local.tissue_classifier``
+to ``dipy.tracking.tissue_classifier``.
+They now need to be imported from ``dipy.tracking.tissue_classifier``.
+
 The `EuDX` tracking function has been removed. EuDX tractography can be
-performed using ``dipy.tracking.local.LocalTracking`` using
+performed using ``dipy.tracking.LocalTracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
 DIPY 0.16 Changes

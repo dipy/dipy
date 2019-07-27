@@ -23,10 +23,10 @@ data and fitting a Constrained Spherical Deconvolution (CSD) model.
 interactive = False
 
 from dipy.data import read_stanford_labels
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.tracking import utils
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.tracking import utilsThresholdTissueClassifier
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import window, actor, colormap, has_fury
 
@@ -43,7 +43,7 @@ response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-"""
+"""ThresholdTissueClassifier
 We use the GFA of the CSA model to build a tissue classifier.
 """
 

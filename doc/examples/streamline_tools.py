@@ -25,7 +25,8 @@ from dipy.data import read_stanford_labels, read_stanford_t1
 from dipy.direction import peaks
 from dipy.reconst import shm
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking, BinaryTissueClassifier
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.tissue_classifier import BinaryTissueClassifier
 from dipy.tracking.streamline import Streamlines
 
 hardi_img, gtab, labels_img = read_stanford_labels()

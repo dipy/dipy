@@ -86,7 +86,7 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              mask=selectionmask)
 
 # Tissue classifier
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, 0.25)
 
@@ -138,7 +138,7 @@ direction getter along with the classifier and seeds as input.
 """
 
 # Perform tracking using Local Tracking
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.localtracking import LocalTracking
 
 streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 

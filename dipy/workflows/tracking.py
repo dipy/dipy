@@ -12,10 +12,11 @@ from dipy.io.peaks import load_peaks
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
-from dipy.tracking.local import (BinaryTissueClassifier,
-                                 ThresholdTissueClassifier, LocalTracking,
-                                 CmcTissueClassifier,
-                                 ParticleFilteringTracking)
+from dipy.tracking.localtracking import (LocalTracking,
+                                         ParticleFilteringTracking)
+from dipy.tracking.tissue_classifier import (BinaryTissueClassifier,
+                                             CmcTissueClassifier,
+                                             ThresholdTissueClassifier)
 from dipy.workflows.workflow import Workflow
 
 

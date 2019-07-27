@@ -2,8 +2,8 @@ import random
 
 import numpy as np
 
-from dipy.tracking.local.localtrack import local_tracker, pft_tracker
-from dipy.tracking.local.tissue_classifier import ConstrainedTissueClassifier
+from dipy.tracking.localtrack import local_tracker, pft_tracker
+from dipy.tracking.tissue_classifier import ConstrainedTissueClassifier
 
 from dipy.align import Bunch
 from dipy.tracking import utils

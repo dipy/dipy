@@ -24,7 +24,7 @@ fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
 
-# Enables/disables interactive visualization
+
 from dipy.tracking.local import ActTissueClassifier
 from dipy.tracking.local import BinaryTissueClassifier
 from dipy.tracking.local import ThresholdTissueClassifier
@@ -44,6 +44,8 @@ from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
 import numpy as np
+
+# Enables/disables interactive visualization
 interactive = False
 
 

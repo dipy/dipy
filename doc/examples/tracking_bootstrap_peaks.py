@@ -14,19 +14,18 @@ example. Let's start by loading the necessary modules for executing this
 tutorial.
 """
 
-from dipy.direction import ClosestPeakDirectionGetter
-from dipy.data import small_sphere
-from dipy.tracking.streamline import Streamlines
-from dipy.direction import BootDirectionGetter
-from dipy.reconst.csdeconv import auto_response
-from dipy.reconst.shm import CsaOdfModel
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.tracking import utils
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.data import read_stanford_labels, small_sphere
+from dipy.direction import BootDirectionGetter, ClosestPeakDirectionGetter
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
-from dipy.data import read_stanford_labels
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.reconst.shm import CsaOdfModel
+from dipy.tracking import utils
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.viz import window, actor, colormap, has_fury
 
 # Enables/disables interactive visualization
 interactive = False

@@ -19,9 +19,9 @@ from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.localtracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 from dipy.tracking.utils import path_length

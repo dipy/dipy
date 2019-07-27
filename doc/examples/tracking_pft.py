@@ -34,7 +34,8 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
-from dipy.tracking.local import LocalTracking, ParticleFilteringTracking
+from dipy.tracking.localtracking import (LocalTracking,
+                                          ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils
 from dipy.viz import window, actor, colormap, has_fury
@@ -72,7 +73,7 @@ region. ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can
 be used in conjunction with PFT. In this example, we used CMC.
 """
 
-from dipy.tracking.local import CmcTissueClassifier
+from dipy.tracking.tissue_classifier import CmcTissueClassifier
 
 voxel_size = np.average(img_pve_wm.header['pixdim'][1:4])
 step_size = 0.2
