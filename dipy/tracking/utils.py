@@ -352,14 +352,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], affine=None):
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], np.eye(4))
-    array([[ 0.5,  0.5,  0.5]])
-    >>> seeds_from_mask(mask, [1,2,3], np.eye(4))
-    array([[ 0.5       ,  0.25      ,  0.16666667],
-           [ 0.5       ,  0.75      ,  0.16666667],
-           [ 0.5       ,  0.25      ,  0.5       ],
-           [ 0.5       ,  0.75      ,  0.5       ],
-           [ 0.5       ,  0.25      ,  0.83333333],
-           [ 0.5       ,  0.75      ,  0.83333333]])
+    array([[ 0.,  0.,  0.]])
 
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
