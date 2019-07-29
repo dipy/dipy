@@ -4,14 +4,13 @@ import warnings
 
 import numpy as np
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
+from dipy.tracking.utils import (connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
-                                 reduce_rois, path_length, flexi_tvis_affine,
-                                 get_flexi_tvis_affine, _min_at)
+                                 reduce_rois, path_length, _min_at)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 
@@ -186,47 +185,6 @@ def test_reduce_labels():
     new_labels, lookup = reduce_labels(labels)
     npt.assert_array_equal(new_labels, labels - 100)
     npt.assert_array_equal(lookup, labels.ravel())
-
-
-def test_move_streamlines():
-    streamlines, seeds = make_streamlines(True)
-    affine = np.eye(4)
-    new_streamlines = move_streamlines(streamlines, affine)
-    for i, test_sl in enumerate(new_streamlines):
-        npt.assert_array_equal(test_sl, streamlines[i])
-
-    affine[:3, 3] += (4, 5, 6)
-    new_streamlines = move_streamlines(streamlines, affine)
-    for i, test_sl in enumerate(new_streamlines):
-        npt.assert_array_equal(test_sl, streamlines[i] + (4, 5, 6))
-
-    affine = np.eye(4)
-    affine = affine[[2, 1, 0, 3]]
-    new_streamlines = move_streamlines(streamlines, affine)
-    for i, test_sl in enumerate(new_streamlines):
-        npt.assert_array_equal(test_sl, streamlines[i][:, [2, 1, 0]])
-
-    affine[:3, 3] += (4, 5, 6)
-    new_streamlines = move_streamlines(streamlines, affine)
-    undo_affine = move_streamlines(new_streamlines, np.eye(4),
-                                   input_space=affine)
-    for i, test_sl in enumerate(undo_affine):
-        npt.assert_array_almost_equal(test_sl, streamlines[i])
-
-    # Test that changing affine does affect moving streamlines
-    affineA = affine.copy()
-    affineB = affine.copy()
-    streamlinesA = move_streamlines(streamlines, affineA)
-    streamlinesB = move_streamlines(streamlines, affineB)
-    affineB[:] = 0
-    for (a, b) in zip(streamlinesA, streamlinesB):
-        npt.assert_array_equal(a, b)
-
-    # Test that seeds are also moved
-    streamlinesA, seedsA = zip(*move_streamlines(
-        streamlines, affineA, seeds=seeds))
-    for (seed, seedA) in zip(seeds, seedsA):
-        npt.assert_raises(AssertionError, npt.assert_array_equal, seed, seedA)
 
 
 def test_target():
@@ -468,13 +426,6 @@ def test_streamline_mapping():
     npt.assert_equal(mapping, expected)
 
 
-def test_affine_for_trackvis():
-    voxel_size = np.array([1., 2, 3.])
-    affine = affine_for_trackvis(voxel_size)
-    origin = np.dot(affine, [0, 0, 0, 1])
-    npt.assert_array_almost_equal(origin[:3], voxel_size / 2)
-
-
 def test_length():
     # Generate a simulated bundle of fibers:
     n_streamlines = 50
@@ -628,50 +579,6 @@ def test_reduce_rois():
                                            [True, True])
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
-
-
-def test_flexi_tvis_affine():
-    sl_vox_order = 'RPI'
-    grid_affine = np.array(
-        [[-1.08566022e+00, 1.42664334e-03, 2.43463114e-01, 1.34783203e+02],
-         [2.43251352e-03, 1.09376717e+00, 1.48301506e-02, -1.07367630e+02],
-         [1.33170187e-01, -8.34854878e-03, 1.98454463e+00, -9.98151169e+01],
-         [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
-    dim = (256, 256, 86)
-    voxel_size = np.array([1.09379995, 1.09379995, 1.99947774])
-    affine = flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size)
-
-    origin = np.dot(affine, [0, 0, 0, 1])
-    npt.assert_array_almost_equal(origin[:3], np.multiply(dim, voxel_size) -
-                                  voxel_size / 2)
-
-
-def test_get_flexi_tvis_affine():
-    tvis_hdr = {'voxel_order': 'RPI', 'dim': (30, 40, 50),
-                'voxel_size': [2, 3, 4]}
-
-    grid_affine = np.array([[-2, 0, 0, 0],
-                            [0, 3, 0, 0],
-                            [0, 0, 4, 0],
-                            [0, 0, 0, 1.]])
-
-    affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
-
-    origin = np.dot(affine, [0, 0, 0, 1])
-    vsz = np.array(tvis_hdr['voxel_size'])
-    npt.assert_array_almost_equal(origin[:3],
-                                  np.multiply(tvis_hdr['dim'], vsz) - vsz / 2)
-
-    # grid_affine =
-    tvis_hdr['voxel_order'] = 'ASL'
-    vsz = tvis_hdr['voxel_size'] = np.array([3, 4, 2.])
-    affine = get_flexi_tvis_affine(tvis_hdr, grid_affine)
-
-    vox_point = np.array([9, 8, 7])
-    trk_point = np.dot(affine, np.append(vox_point, 1))
-
-    npt.assert_array_almost_equal(trk_point[:3],
-                                  (vox_point[[1, 2, 0]] + 0.5) * vsz)
 
 
 def test_path_length():

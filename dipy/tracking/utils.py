@@ -810,8 +810,46 @@ def unique_rows(in_array, dtype='f4'):
     diff_in_array = diff_x[un_order]
     return in_array[diff_in_array]
 
-# affine_for_trackvis
-# move_streamlines
+
+@_with_initialize
+def transform_tracking_output(tracking_output, affine, seeding_activated=False):
+    """Applies a linear transformation, given by affine, to streamlines.
+    Parameters
+    ----------
+    streamlines : sequence
+        A set of streamlines to be transformed.
+    affine : array (4, 4)
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
+    input_space : array (4, 4), optional
+        An affine matrix describing the current space of the streamlines, if no
+        ``input_space`` is specified, it's assumed the streamlines are in the
+        reference space. The reference space is the same as the space
+        associated with the affine matrix ``np.eye(4)``.
+    seeds : np.array, optional
+        If set, seeds associated to streamlines will be also moved and returned
+    Returns
+    -------
+    streamlines : generator
+        A sequence of transformed streamlines.
+        If return_seeds is True, also return seeds
+    """
+    if seeding_activated:
+        streamlines, seeds = zip(*tracking_output)
+    else:
+        streamlines = tracking_output
+
+    lin_T = affine[:3, :3].T.copy()
+    offset = affine[:3, 3].copy()
+    yield
+    # End of initialization
+
+    if seeds is not None:
+        for sl, seed in zip(streamlines, seeds):
+            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
+    else:
+        for sl in streamlines:
+            yield np.dot(sl, lin_T) + offset
 
 def reduce_rois(rois, include):
     """Reduce multiple ROIs to one inclusion and one exclusion ROI.
@@ -852,11 +890,6 @@ def reduce_rois(rois, include):
             exclude_roi |= rois[i]
 
     return include_roi, exclude_roi
-
-
-# flexi_tvis_affine
-
-# get_flexi_tvis_affine
 
 
 def _min_at(a, index, value):
