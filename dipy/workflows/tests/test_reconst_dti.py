@@ -52,10 +52,10 @@ def reconst_flow_core(flow, extra_args=[], extra_kwargs={}):
         # dimension, except if nifti_tensor is set to False:
         if extra_kwargs.get('nifti_tensor', True):
             assert_equal(tensor_data.shape[-1], 6)
-            assert_equal(tensor_data.shape[:-1], volume.shape[:-1])
+            assert_equal(tensor_data.shape[:-2], volume.shape[:-1])
         else:
             assert_equal(tensor_data.shape[-1], 6)
-            assert_equal(tensor_data.shape[:-2], volume.shape[:-1])
+            assert_equal(tensor_data.shape[:-1], volume.shape[:-1])
 
         ga_path = dti_flow.last_generated_outputs['out_ga']
         ga_data = nib.load(ga_path).get_data()
