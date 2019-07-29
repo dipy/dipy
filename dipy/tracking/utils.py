@@ -103,6 +103,9 @@ def density_map(streamlines, affine, vol_dims):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
+    if affine is None:
+        affine = np.eye(4)
+
     lin_T, offset = _mapping_to_voxel(affine)
     counts = np.zeros(vol_dims, 'int')
     for sl in streamlines:

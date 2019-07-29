@@ -117,8 +117,13 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         logging.error('Space MUST be one of the 3 choices (Enum)')
         return False
 
-    if extension == '.trk' and reference == 'same':
-        reference = filename
+    if reference == 'same':
+        if extension == '.trk':
+            reference = filename
+        else:
+            logging.error('Reference must be provided, "same" is only ' +
+                          'available for Trk file.')
+            return False
 
     if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):
