@@ -255,28 +255,28 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
 
     # Both pass though
     mask[voxel_both_true] = True
-    new = list(target_f(streamlines, mask, affine=affine))
+    new = list(target_f(streamlines, affine, mask))
     npt.assert_equal(len(new), 2)
-    new = list(target_f(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, affine, mask, include=False))
     npt.assert_equal(len(new), 0)
 
     # only first
     mask[:] = False
     mask[voxel_one_true] = True
-    new = list(target_f(streamlines, mask, affine=affine))
+    new = list(target_f(streamlines, affine, mask))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
-    new = list(target_f(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, affine, mask, include=False))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
     # Test that bad points raise a value error
     if test_bad_points:
         bad_sl = streamlines + [np.array([[10.0, 10.0, 10.0]])]
-        new = target_f(bad_sl, mask, affine=affine)
+        new = target_f(bad_sl, affine, mask)
         npt.assert_raises(ValueError, list, new)
         bad_sl = streamlines + [-np.array([[10.0, 10.0, 10.0]])]
-        new = target_f(bad_sl, mask, affine=affine)
+        new = target_f(bad_sl, affine, mask)
         npt.assert_raises(ValueError, list, new)
 
     # Test smaller voxels
@@ -285,16 +285,16 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
                        [0, 0, .4, 0],
                        [0, 0, 0, 1]])
     streamlines = list(move_streamlines(streamlines, affine))
-    new = list(target_f(streamlines, mask, affine=affine))
+    new = list(target_f(streamlines, affine, mask))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
-    new = list(target_f(streamlines, mask, affine=affine, include=False))
+    new = list(target_f(streamlines, affine, mask, include=False))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[1])
 
     # Test that changing mask or affine does not break target/target_line_based
-    include = target_f(streamlines, mask, affine=affine)
-    exclude = target_f(streamlines, mask, affine=affine, include=False)
+    include = target_f(streamlines, affine, mask)
+    exclude = target_f(streamlines, affine, mask, include=False)
     affine[:] = np.eye(4)
     mask[:] = False
     include = list(include)
@@ -320,23 +320,23 @@ def test_near_roi():
     mask[0, 0, 0] = True
     mask[1, 0, 0] = True
 
-    npt.assert_array_equal(near_roi(streamlines, mask, tol=1),
+    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=1),
                            np.array([True, True, False]))
-    npt.assert_array_equal(near_roi(streamlines, mask),
+    npt.assert_array_equal(near_roi(streamlines, affine, mask),
                            np.array([False, True, False]))
 
     # If there is an affine, we need to use it:
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
     x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
-    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine, tol=1),
+    npt.assert_array_equal(near_roi(x_streamlines, affine, mask, tol=1),
                            np.array([True, True, False]))
-    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+    npt.assert_array_equal(near_roi(x_streamlines, affine, mask,
                                     tol=None),
                            np.array([False, True, False]))
 
     # Test for use of the 'all' mode:
-    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+    npt.assert_array_equal(near_roi(x_streamlines, affine, mask,
                                     tol=None, mode='all'),
                            np.array([False, False, False]))
 
@@ -346,15 +346,15 @@ def test_near_roi():
     # to a very small number gets overridden:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        npt.assert_array_equal(near_roi(x_streamlines,
-                                        mask, affine=affine,
+        npt.assert_array_equal(near_roi(x_streamlines, affine,
+                                        mask,
                                         tol=0.1,
                                         mode='all'),
                                np.array([False, True, False]))
 
     mask[2, 2, 2] = True
     mask[3, 3, 3] = True
-    npt.assert_array_equal(near_roi(x_streamlines, mask, affine=affine,
+    npt.assert_array_equal(near_roi(x_streamlines, affine, mask,
                                     tol=None, mode='all'),
                            np.array([False, True, True]))
 
@@ -363,17 +363,17 @@ def test_near_roi():
     mask[0, 1, 1] = True
     mask[3, 2, 2] = True
 
-    npt.assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=0.87,
                                     mode="either_end"),
                            np.array([True, False, False]))
 
-    npt.assert_array_equal(near_roi(streamlines, mask, tol=0.87,
+    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=0.87,
                                     mode="both_end"),
                            np.array([False, False, False]))
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
-    npt.assert_array_equal(near_roi(streamlines, mask, mode="both_end"),
+    npt.assert_array_equal(near_roi(streamlines, affine, mask, mode="both_end"),
                            np.array([False, True, False]))
 
     # Test with a generator input:
@@ -381,7 +381,7 @@ def test_near_roi():
         for sl in streamlines:
             yield sl
 
-    npt.assert_array_equal(near_roi(generate_sl(streamlines),
+    npt.assert_array_equal(near_roi(generate_sl(streamlines), affine,
                                     mask, mode="both_end"),
                            np.array([False, True, False]))
 
@@ -681,26 +681,26 @@ def test_path_length():
     # A few tests for basic usage
     x = np.arange(20)
     streamlines = [np.array([x, x, x]).T]
-    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    pl = path_length(streamlines, np.eye(4), aoi)
     expected = x.copy() * np.sqrt(3)
     # expected[0] = np.inf
     npt.assert_array_almost_equal(pl[x, x, x], expected)
 
     aoi[19, 19, 19] = 1
-    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    pl = path_length(streamlines, np.eye(4), aoi)
     expected = np.minimum(expected, expected[::-1])
     npt.assert_array_almost_equal(pl[x, x, x], expected)
 
     aoi[19, 19, 19] = 0
     aoi[1, 1, 1] = 1
-    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    pl = path_length(streamlines, np.eye(4), aoi)
     expected = (x - 1) * np.sqrt(3)
     expected[0] = 0
     npt.assert_array_almost_equal(pl[x, x, x], expected)
 
     z = np.zeros(x.shape, x.dtype)
     streamlines.append(np.array([x, z, z]).T)
-    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    pl = path_length(streamlines, np.eye(4), aoi)
     npt.assert_array_almost_equal(pl[x, x, x], expected)
     npt.assert_array_almost_equal(pl[x, 0, 0], x)
 
@@ -714,10 +714,10 @@ def test_path_length():
         assert (rando > .5).all()
         assert (rando < 19.5).all()
         streamlines.append(rando)
-    pl = path_length(streamlines, aoi, affine=np.eye(4))
+    pl = path_length(streamlines, np.eye(4), aoi)
     npt.assert_array_almost_equal(pl, -1)
 
-    pl = path_length(streamlines, aoi, affine=np.eye(4), fill_value=-12.)
+    pl = path_length(streamlines, np.eye(4), aoi, fill_value=-12.)
     npt.assert_array_almost_equal(pl, -12.)
 
 

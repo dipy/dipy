@@ -118,8 +118,7 @@ Path Length Map base ROI to restrict the analysis to the CST)
 path_length_map_base_roi = seed_mask
 
 # calculate the WMPL
-
-wmpl = path_length(streamlines, path_length_map_base_roi, affine)
+wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 
 # save the WMPL as a nifti
 path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)

@@ -84,10 +84,10 @@ with the ROI and those that don't.
 """
 
 cc_slice = labels == 2
-cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
+cc_streamlines = utils.target(streamlines, affine, cc_slice)
 cc_streamlines = Streamlines(cc_streamlines)
 
-other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
+other_streamlines = utils.target(streamlines, affine, cc_slice,
                                  include=False)
 other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)

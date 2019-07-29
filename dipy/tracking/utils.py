@@ -530,7 +530,7 @@ def _with_initialize(generator):
 
 
 @_with_initialize
-def target(streamlines, target_mask, affine, include=True):
+def target(streamlines, affine, target_mask, include=True):
     """Filters streamlines based on whether or not they pass through an ROI.
 
     Parameters
@@ -538,12 +538,12 @@ def target(streamlines, target_mask, affine, include=True):
     streamlines : iterable
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    target_mask : array-like
-        A mask used as a target. Non-zero values are considered to be within
-        the target region.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
     include : bool, default True
         If True, streamlines passing through `target_mask` are kept. If False,
         the streamlines not passing through `target_mask` are kept.
@@ -580,7 +580,7 @@ def target(streamlines, target_mask, affine, include=True):
 
 
 @_with_initialize
-def target_line_based(streamlines, target_mask, affine, include=True):
+def target_line_based(streamlines, affine, target_mask, include=True):
     """Filters streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
@@ -593,12 +593,12 @@ def target_line_based(streamlines, target_mask, affine, include=True):
     streamlines : iterable
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    target_mask : array-like
-        A mask used as a target. Non-zero values are considered to be within
-        the target region.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    target_mask : array-like
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
     include : bool, default True
         If True, streamlines passing through `target_mask` are kept. If False,
         the streamlines not passing through `target_mask` are kept.
@@ -683,7 +683,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1) <= tol)
 
 
-def near_roi(streamlines, region_of_interest, affine, tol=None,
+def near_roi(streamlines, affine, region_of_interest, tol=None,
              mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
     they fall within a tolerance distance from an ROI
@@ -693,12 +693,12 @@ def near_roi(streamlines, region_of_interest, affine, tol=None,
     streamlines : list or generator
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
-    region_of_interest : ndarray
-        A mask used as a target. Non-zero values are considered to be within
-        the target region.
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    region_of_interest : ndarray
+        A mask used as a target. Non-zero values are considered to be within
+        the target region.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
@@ -880,7 +880,7 @@ except AttributeError:
     minimum_at = _min_at
 
 
-def path_length(streamlines, aoi, affine, fill_value=-1):
+def path_length(streamlines, affine, aoi, fill_value=-1):
     """ Computes the shortest path, along any streamline, between aoi and
     each voxel.
 
