@@ -4,10 +4,9 @@ import warnings
 
 import numpy as np
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import (connectivity_matrix,
-                                 density_map, length, move_streamlines,
-                                 ndbincount, reduce_labels,
-                                 reorder_voxels_affine, seeds_from_mask,
+from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.utils import (connectivity_matrix, density_map, length,
+                                 ndbincount, reduce_labels, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, _min_at)
@@ -242,7 +241,7 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
                        [0, .2, 0, 0],
                        [0, 0, .4, 0],
                        [0, 0, 0, 1]])
-    streamlines = list(move_streamlines(streamlines, affine))
+    streamlines = list(transform_streamlines(streamlines, affine))
     new = list(target_f(streamlines, affine, mask))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
@@ -273,17 +272,17 @@ def test_near_roi():
                    np.array([[2, 2, 2],
                              [3, 3, 3]])]
 
-    affine = np.eye(4)
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 0, 0] = True
     mask[1, 0, 0] = True
 
-    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=1),
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=1),
                            np.array([True, True, False]))
-    npt.assert_array_equal(near_roi(streamlines, affine, mask),
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask),
                            np.array([False, True, False]))
 
     # If there is an affine, we need to use it:
+    affine = np.eye(4)
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
     x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
@@ -304,8 +303,7 @@ def test_near_roi():
     # to a very small number gets overridden:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        npt.assert_array_equal(near_roi(x_streamlines, affine,
-                                        mask,
+        npt.assert_array_equal(near_roi(x_streamlines, affine, mask,
                                         tol=0.1,
                                         mode='all'),
                                np.array([False, True, False]))
@@ -321,17 +319,17 @@ def test_near_roi():
     mask[0, 1, 1] = True
     mask[3, 2, 2] = True
 
-    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=0.87,
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=0.87,
                                     mode="either_end"),
                            np.array([True, False, False]))
 
-    npt.assert_array_equal(near_roi(streamlines, affine, mask, tol=0.87,
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=0.87,
                                     mode="both_end"),
                            np.array([False, False, False]))
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
-    npt.assert_array_equal(near_roi(streamlines, affine, mask, mode="both_end"),
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, mode="both_end"),
                            np.array([False, True, False]))
 
     # Test with a generator input:
@@ -339,59 +337,9 @@ def test_near_roi():
         for sl in streamlines:
             yield sl
 
-    npt.assert_array_equal(near_roi(generate_sl(streamlines), affine,
+    npt.assert_array_equal(near_roi(generate_sl(streamlines), np.eye(4),
                                     mask, mode="both_end"),
                            np.array([False, True, False]))
-
-
-def test_voxel_ornt():
-    sh = (40, 40, 40)
-    sz = (1, 2, 3)
-    I4 = np.eye(4)
-
-    ras = orientation_from_string('ras')
-    sra = orientation_from_string('sra')
-    lpi = orientation_from_string('lpi')
-    srp = orientation_from_string('srp')
-
-    affine = reorder_voxels_affine(ras, ras, sh, sz)
-    npt.assert_array_equal(affine, I4)
-    affine = reorder_voxels_affine(sra, sra, sh, sz)
-    npt.assert_array_equal(affine, I4)
-    affine = reorder_voxels_affine(lpi, lpi, sh, sz)
-    npt.assert_array_equal(affine, I4)
-    affine = reorder_voxels_affine(srp, srp, sh, sz)
-    npt.assert_array_equal(affine, I4)
-
-    streamlines = make_streamlines()
-    box = np.array(sh) * sz
-
-    sra_affine = reorder_voxels_affine(ras, sra, sh, sz)
-    toras_affine = reorder_voxels_affine(sra, ras, sh, sz)
-    npt.assert_array_equal(np.dot(toras_affine, sra_affine), I4)
-    expected_sl = (sl[:, [2, 0, 1]] for sl in streamlines)
-    test_sl = move_streamlines(streamlines, sra_affine)
-    for _ in range(len(streamlines)):
-        npt.assert_array_equal(next(test_sl), next(expected_sl))
-
-    lpi_affine = reorder_voxels_affine(ras, lpi, sh, sz)
-    toras_affine = reorder_voxels_affine(lpi, ras, sh, sz)
-    npt.assert_array_equal(np.dot(toras_affine, lpi_affine), I4)
-    expected_sl = (box - sl for sl in streamlines)
-    test_sl = move_streamlines(streamlines, lpi_affine)
-    for _ in range(len(streamlines)):
-        npt.assert_array_equal(next(test_sl), next(expected_sl))
-
-    srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
-    toras_affine = reorder_voxels_affine(srp, ras, (40, 40, 40), (3, 1, 2))
-    npt.assert_array_equal(np.dot(toras_affine, srp_affine), I4)
-    expected_sl = [sl.copy() for sl in streamlines]
-    for sl in expected_sl:
-        sl[:, 1] = box[1] - sl[:, 1]
-    expected_sl = (sl[:, [2, 0, 1]] for sl in expected_sl)
-    test_sl = move_streamlines(streamlines, srp_affine)
-    for _ in range(len(streamlines)):
-        npt.assert_array_equal(next(test_sl), next(expected_sl))
 
 
 def test_streamline_mapping():

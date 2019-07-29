@@ -71,7 +71,7 @@ from dipy.io.bvectxt import orientation_from_string
 import nibabel as nib
 
 
-def density_map(streamlines, vol_dims, affine):
+def density_map(streamlines, affine, vol_dims):
     """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
@@ -395,7 +395,7 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     seeds = seeds.reshape((-1, 3))
 
     # Apply the spatial transform
-    if seeds is not None:
+    if seeds.any():
         # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
@@ -506,7 +506,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
         seeds = seeds[:seeds_count]
 
     # Apply the spatial transform
-    if seeds is not None:
+    if seeds.any():
         # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
@@ -816,17 +816,13 @@ def transform_tracking_output(tracking_output, affine, seeding_activated=False):
     """Applies a linear transformation, given by affine, to streamlines.
     Parameters
     ----------
-    streamlines : sequence
-        A set of streamlines to be transformed.
+    streamlines : Streamlines generator
+        Either streamlines (list, ArraySequence) or a tuple with streamlines
+        and seeds together
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
-    input_space : array (4, 4), optional
-        An affine matrix describing the current space of the streamlines, if no
-        ``input_space`` is specified, it's assumed the streamlines are in the
-        reference space. The reference space is the same as the space
-        associated with the affine matrix ``np.eye(4)``.
-    seeds : np.array, optional
+    seeding_activated : bool, optional
         If set, seeds associated to streamlines will be also moved and returned
     Returns
     -------
@@ -838,6 +834,7 @@ def transform_tracking_output(tracking_output, affine, seeding_activated=False):
         streamlines, seeds = zip(*tracking_output)
     else:
         streamlines = tracking_output
+        seeds = None
 
     lin_T = affine[:3, :3].T.copy()
     offset = affine[:3, 3].copy()

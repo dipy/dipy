@@ -112,7 +112,7 @@ class LocalTracking(object):
         # Make tracks, move them to point space and return
         track = self._generate_streamlines()
 
-        return utils.transform_tracking_output(track, affine,
+        return utils.transform_tracking_output(track, self.affine,
                                       seeding_activated=self.save_seeds)
 
     def _generate_streamlines(self):
