@@ -30,6 +30,7 @@ import numpy as np
 from dipy.data import (read_stanford_labels, default_sphere,
                        read_stanford_pve_maps)
 from dipy.direction import ProbabilisticDirectionGetter
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
@@ -95,7 +96,8 @@ pft_streamline_generator = ParticleFilteringTracking(dg,
                                                      particle_count=15,
                                                      return_all=False)
 streamlines = Streamlines(pft_streamline_generator)
-save_trk("tractogram_pft.trk", streamlines, affine, shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_pft.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -122,7 +124,8 @@ prob_streamline_generator = LocalTracking(dg,
                                           maxlen=1000,
                                           return_all=False)
 streamlines = Streamlines(prob_streamline_generator)
-save_trk("tractogram_probabilistic_cmc.trk", streamlines, affine, shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_cmc.trk")
 
 if has_fury:
     r = window.Renderer()

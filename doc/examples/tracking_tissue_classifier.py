@@ -25,21 +25,27 @@ model and creating the maximum deterministic direction getter.
 """
 
 # Enables/disables interactive visualization
-interactive = False
-
-import numpy as np
-
+from dipy.tracking.local import ActTissueClassifier
+from dipy.tracking.local import BinaryTissueClassifier
+from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.reconst.dti import fractional_anisotropy
+import dipy.reconst.dti as dti
+import matplotlib.pyplot as plt
+from dipy.viz import window, actor, colormap, has_fury
+from dipy.tracking import utils
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.local import LocalTracking
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
-from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.streamline import save_trk
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.tracking.local import LocalTracking
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking import utils
-from dipy.viz import window, actor, colormap, has_fury
+import numpy as np
+interactive = False
+
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 _, _, img_pve_wm = read_stanford_pve_maps()
@@ -87,10 +93,6 @@ direction to follow.
 - 'INVALIDPOINT': N/A.
 """
 
-import matplotlib.pyplot as plt
-import dipy.reconst.dti as dti
-from dipy.reconst.dti import fractional_anisotropy
-from dipy.tracking.local import ThresholdTissueClassifier
 
 tensor_model = dti.TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
@@ -122,10 +124,8 @@ streamline_generator = LocalTracking(dg,
                                      step_size=.5,
                                      return_all=True)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_probabilistic_thresh_all.trk",
-         streamlines,
-         affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_thresh_all.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -167,7 +167,6 @@ follow.
 - 'INVALIDPOINT': N/A.
 """
 
-from dipy.tracking.local import BinaryTissueClassifier
 
 binary_classifier = BinaryTissueClassifier(white_matter == 1)
 
@@ -194,10 +193,8 @@ streamline_generator = LocalTracking(dg,
                                      step_size=.5,
                                      return_all=True)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_deterministic_binary_all.trk",
-         streamlines,
-         affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_deterministic_binary_all.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -247,7 +244,6 @@ but there is no valid direction to follow.
 is anatomically not plausible.
 """
 
-from dipy.tracking.local import ActTissueClassifier
 
 img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()
 
@@ -292,10 +288,8 @@ streamline_generator = LocalTracking(dg,
                                      step_size=.5,
                                      return_all=True)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_deterministic_act_all.trk",
-         streamlines,
-         affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_deterministic_act_all.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -320,10 +314,8 @@ streamline_generator = LocalTracking(dg,
                                      step_size=.5,
                                      return_all=False)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_deterministic_act_valid.trk",
-         streamlines,
-         affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_deterministic_act_valid.trk")
 
 if has_fury:
     r = window.Renderer()

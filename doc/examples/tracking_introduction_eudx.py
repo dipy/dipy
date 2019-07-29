@@ -56,10 +56,12 @@ image. Here, we use ``peaks_from_model`` to fit the data and calculated the
 fiber directions in all voxels of the white matter.
 """
 
+from dipy.reconst.csdeconv import auto_response
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
 
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csa_model = CsaOdfModel(gtab, sh_order=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              relative_peak_threshold=.8,
@@ -139,10 +141,9 @@ label value ``2`` in the labels image.
 """
 
 from dipy.tracking import utils
-import numpy as np
 
 seed_mask = (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, np.eye(4), density=[2, 2, 2])
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 """
 Finally, we can bring it all together using ``LocalTracking``, performing Using
@@ -157,7 +158,7 @@ from dipy.tracking.streamline import Streamlines
 
 # Initialization of LocalTracking. The computation happens in the next step.
 streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
-                                      affine=np.eye(4), step_size=.5)
+                                      affine=affine, step_size=.5)
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)
 
@@ -197,10 +198,11 @@ We can save the streamlines as a Trackvis file so it can be loaded into other
 software for visualization or further analysis.
 """
 
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
-save_trk("tractogram_EuDX.trk", streamlines, affine, shape=labels.shape,
-         vox_size=labels_img.header.get_zooms())
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_EuDX.trk", streamlines)
 
 """
 References

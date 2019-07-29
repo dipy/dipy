@@ -23,7 +23,8 @@ data and fitting a Constrained Spherical Deconvolution (CSD) model.
 interactive = False
 
 from dipy.data import read_stanford_labels
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.tracking import utils
 from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
 from dipy.tracking.streamline import Streamlines
@@ -38,7 +39,8 @@ seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 """
@@ -64,6 +66,7 @@ and/or model failures sometimes it can have negative values.
 
 from dipy.direction import ProbabilisticDirectionGetter
 from dipy.data import small_sphere
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
 fod = csd_fit.odf(small_sphere)
@@ -73,8 +76,8 @@ prob_dg = ProbabilisticDirectionGetter.from_pmf(pmf, max_angle=30.,
 streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_probabilistic_dg_pmf.trk", streamlines, affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_dg_pmf.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -110,8 +113,8 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
 streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_probabilistic_dg_sh.trk", streamlines, affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_dg_sh.trk")
 
 if has_fury:
     r = window.Renderer()
@@ -143,8 +146,8 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
 streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
-save_trk("tractogram_probabilistic_dg_sh_pfm.trk", streamlines, affine,
-         labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_dg_sh_pfm.trk")
 
 if has_fury:
     r = window.Renderer()
