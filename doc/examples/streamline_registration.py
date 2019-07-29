@@ -1,7 +1,7 @@
 """
-=======================
-Streamline Registration
-=======================
+===============================
+Direct Streamline Normalization
+===============================
 
 This example shows how to register streamlines into a template space by
 applying non-rigid deformations.
@@ -19,8 +19,13 @@ run, we can read the streamlines from file. Otherwise, we'll run that example
 first, by importing it. This provides us with all of the variables that were
 created in that example.
 
-In order to get the deformation field, we will first use two b0 volumes. The
-first one will be the b0 from the Stanford HARDI dataset:
+In order to get the deformation field, we will first generate a mean b0 volume
+(to restrict brain boundaries) and an FA map (to yield a high-contrast wm tissue
+image that is ideal for optimizing subcortical registration). To accomplish
+this, we will use the Stanford HARDI dataset, and an mni-space FA template from
+HCP. Since this process can be sensitive to image orientation and voxel resolution,
+we will demonstrate it using a moving image and a template image that are uniformly
+in 2mm isotropic resolution and in RAS+ orientation.
 
 """
 
@@ -32,16 +37,15 @@ else:
     from dipy.data import read_stanford_hardi
     hardi_img, gtab = read_stanford_hardi()
     data = hardi_img.get_data()
+    vox_size = hardi_img.header.get_zooms()[0]
 
 """
 The second one will be the template FA map from the HCP1065 dataset:
 
 """
 
-from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
-
-fetch_mni_template()
-img_t2_mni = read_mni_template("a", contrast="T2")
+template_path = '/Users/derekpisner/Applications/PyNets/pynets/templates/FSL_HCP1065_FA_2mm.nii.gz'
+template_img = nib.load(template_path)
 
 """
 We filter the diffusion data from the Stanford HARDI dataset to find the b0
@@ -61,10 +65,10 @@ We then remove the skull from the b0's.
 
 from dipy.segment.mask import median_otsu
 
-b0_masked_stanford, _ = \
-    median_otsu(b0_data_stanford,
+b0_masked_stanford, _ = median_otsu(b0_data_stanford,
                 vol_idx=[i for i in range(b0_data_stanford.shape[-1])],
                 median_radius=4, numpass=4)
+
 
 """
 And go on to compute the Stanford HARDI dataset mean b0 image.
@@ -83,7 +87,6 @@ image.
 from dipy.reconst.dti import TensorModel
 from dipy.reconst.dti import fractional_anisotropy
 
-print('Generating simple tensor FA image to use for registrations...')
 B0_mask_data = mean_b0_masked_stanford.astype('bool')
 hardi_img_affine = hardi_img.affine
 model = TensorModel(gtab)
@@ -93,26 +96,29 @@ FA[np.isnan(FA)] = 0
 
 
 """
-We will register the mean b0 to the template FA map non-rigidly to obtain the
+We will register the mean b0-masked FA map to the template FA map non-rigidly to obtain the
 deformation field that will be applied to the streamlines. We will first
 perform an affine registration to roughly align the two volumes:
 
 """
 
 from dipy.align.imaffine import (AffineMap, MutualInformationMetric,
-                                 AffineRegistration)
+                                 AffineRegistration, transform_origins)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 
-static = img_t2_mni.get_data()
-static_affine = img_t2_mni.affine
+static = template_img.get_data()
+static_affine = template_img.affine
 moving = mean_b0_masked_stanford
 moving_affine = hardi_img.affine
 
-identity = np.eye(4)
-affine_map = AffineMap(identity, static.shape, static_affine, moving.shape,
-                       moving_affine)
-resampled = affine_map.transform(moving)
+"""
+We estimate an affine that maps the origin of the moving image to that of the
+static image. We can then use this later to account for the offsets of each
+image.
+
+"""
+affine_map = transform_origins(static, static_affine, moving, moving_affine)
 
 """
 We specify the mismatch metric:
@@ -153,10 +159,10 @@ We bump up the iterations to get a more exact fit:
 """
 
 affine_reg.level_iters = [1000, 1000, 100]
-affine_map = affine_reg.optimize(static, moving, transform, params0,
+highres_map = affine_reg.optimize(static, moving, transform, params0,
                                  static_affine, moving_affine,
                                  starting_affine=rigid_map.affine)
-transformed = affine_map.transform(moving)
+transformed = highres_map.transform(moving)
 
 
 """
@@ -174,9 +180,8 @@ level_iters = [10, 10, 5]
 sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 
 mapping = sdr.optimize(static, moving, static_affine, moving_affine,
-                       affine_map.affine)
+                       highres_map.affine)
 warped_moving = mapping.transform(moving)
-warped_static = mapping.transform_inverse(moving)
 
 """
 We show the registration result with:
@@ -208,43 +213,40 @@ We read the streamlines from file in voxel space:
 """
 
 from dipy.io.streamline import load_trk
-
 streamlines, hdr = load_trk('lr-superiorfrontal.trk')
 
 
 """
 We then apply the obtained deformation field to the streamlines. We first
-apply the non-rigid warping and then apply the computed affine transformation
-whose extents must be corrected to account for the different voxel grids of
-the moving and static images:
+apply the non-rigid warping and simultaneously apply a computed rigid affine
+transformation whose extents must be corrected to account for the different
+voxel grids of the moving and static images:
 
 """
+from dipy.tracking.streamline import deform_streamlines
 
-from dipy.tracking.streamline import deform_streamlines, Streamlines
+# Create an isocentered affine
+target_isocenter = np.diag(np.array([-vox_size, vox_size, vox_size, 1]))
 
-from dipy.tracking.utils import move_streamlines
+# Take the off-origin affine capturing the extent contrast between fa image and the template
+origin_affine = affine_map.affine.copy()
 
-warped_streamlines = \
-    deform_streamlines(streamlines,
-                       deform_field=mapping.get_forward_field(),
-                       stream_to_current_grid=moving_affine,
-                       current_grid_to_world=mapping.codomain_grid2world,
-                       stream_to_ref_grid=static_affine,
-                       ref_grid_to_world=mapping.domain_grid2world)
+# Now we flip the sign in the x and y planes so that we get the mirror image of the forward deformation field.
+origin_affine[0][3] = -origin_affine[0][3]
+origin_affine[1][3] = -origin_affine[1][3]
 
+# Scale z by the voxel size
+origin_affine[2][3] = origin_affine[2][3]/vox_size
 
-adjusted_affine = moving_affine.copy()
-adjusted_affine[0][3] = -adjusted_affine[0][3] - static_affine[0][3]
-adjusted_affine[1][3] = -adjusted_affine[1][3] + static_affine[1][3]
-adjusted_affine[2][3] = -adjusted_affine[2][3] + static_affine[2][3]
+# Scale y by the square of the voxel size since we've already scaled along the z-plane.
+origin_affine[1][3] = origin_affine[1][3]/vox_size**vox_size
 
-rotation, scale = np.linalg.qr(affine_map.affine)
-streams = move_streamlines(streamlines, rotation)
-scale[0:3, 0:3] = np.dot(scale[0:3, 0:3], np.diag(1. / hdr['voxel_sizes']))
-scale[0:3, 3] = abs(scale[0:3, 3])*1. / hdr['voxel_sizes'][0]
-
-affine_streamlines = Streamlines(move_streamlines(warped_streamlines, scale))
-
+# Apply the deformation and correct for the extents
+mni_streamlines = deform_streamlines(streamlines, deform_field=mapping.get_forward_field(),
+                                     stream_to_current_grid=target_isocenter,
+                                     current_grid_to_world=origin_affine,
+                                     stream_to_ref_grid=target_isocenter,
+                                     ref_grid_to_world=np.eye(4))
 
 """
 We display the original streamlines and the registered streamlines:
@@ -256,12 +258,10 @@ from dipy.viz import has_fury
 def show_template_bundles(bundles, show=True, fname=None):
 
     renderer = window.Renderer()
-    template_img_data = img_t2_mni.get_data().astype('bool')
-    template_actor = actor.contour_from_roi(template_img_data,
-                                            color=(50, 50, 50), opacity=0.05)
+    template_img_data = template_img.get_data().astype('bool')
+    template_actor = actor.contour_from_roi(template_img_data, color=(50, 50, 50), opacity=0.1)
     renderer.add(template_actor)
-    lines_actor = actor.streamtube(bundles, window.colors.orange,
-                                   linewidth=0.3)
+    lines_actor = actor.streamtube(bundles, window.colors.orange, linewidth=0.3)
     renderer.add(lines_actor)
     if show:
         window.show(renderer)
@@ -272,7 +272,7 @@ def show_template_bundles(bundles, show=True, fname=None):
 
 if has_fury:
 
-    from dipy.viz import window, actor
+    from fury import actor, window
 
     from time import sleep
 
