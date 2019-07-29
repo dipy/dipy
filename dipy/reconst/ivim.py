@@ -10,6 +10,11 @@ from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
+# global variables for bounding least_squares in both models
+BOUNDS_TRF = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
+BOUNDS_VP = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
+
+
 def ivim_prediction(params, gtab):
     """The Intravoxel incoherent motion (IVIM) model function.
 
@@ -133,11 +138,16 @@ def ivim_model_selector(gtab, fit_method='trf', **kwargs):
         default : trf
 
     """
+    boundsWarning = 'Bounds for this fit have been set from experiments '
+    boundsWarning += 'and literature survey. To change the bounds, please '
+    boundsWarning += 'input your bounds in model definition...'
 
     if fit_method.lower() == 'trf':
+        warnings.warn(boundsWarning, UserWarning)
         return IvimModelTRF(gtab, **kwargs)
 
     elif fit_method.lower() == 'varpro':
+        warnings.warn(boundsWarning, UserWarning)
         return IvimModelVP(gtab, **kwargs)
 
     else:
@@ -268,7 +278,7 @@ class IvimModelTRF(ReconstModel):
                         'eps': eps, 'maxiter': maxiter}
         self.x_scale = x_scale
 
-        self.bounds = bounds or ((0., 0., 0., 0.), (np.inf, .3, 1., 1.))
+        self.bounds = bounds or BOUNDS_TRF
 
     @multi_voxel_fit
     def fit(self, data):
@@ -493,7 +503,7 @@ class IvimModelTRF(ReconstModel):
 
 class IvimModelVP(ReconstModel):
 
-    def __init__(self, gtab, maxiter=10, xtol=1e-8):
+    def __init__(self, gtab, bounds=None, maxiter=10, xtol=1e-8):
         r""" Initialize an IvimModelVP class.
 
         The IVIM model assumes that biological tissue includes a volume
@@ -590,7 +600,7 @@ class IvimModelVP(ReconstModel):
         x_f = self.x_and_f_to_x_f(x, f)
 
         # Setting up the bounds for least_squares
-        bounds = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
+        bounds = BOUNDS_VP
 
         # Optimizer #3: Nonlinear-Least Squares
         res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
