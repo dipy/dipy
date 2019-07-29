@@ -152,8 +152,8 @@ def test_ivim_errors():
     with bounds for older Scipy versions should raise an error.
     """
     ivim_model_trf = IvimModel(gtab, bounds=([0., 0., 0., 0.],
-                                            [np.inf, 1., 1., 1.]),
-                              fit_method='trf')
+                                             [np.inf, 1., 1., 1.]),
+                               fit_method='trf')
     ivim_fit = ivim_model_trf.fit(data_multi)
     est_signal = ivim_fit.predict(gtab, S0=1.)
     assert_array_equal(est_signal.shape, data_multi.shape)
@@ -384,8 +384,8 @@ def test_estimate_f_D_star():
     """
     params_f_D = f + 0.001, D + 0.0001
     assert_array_almost_equal(ivim_model_trf.estimate_f_D_star(params_f_D,
-                                                              data_single, S0,
-                                                              D),
+                                                               data_single, S0,
+                                                               D),
                               (f, D_star))
 
 
