@@ -63,7 +63,6 @@ if __name__ == '__main__':
     docwriter = ApiDocWriter(package, rst_extension='.rst',
                              other_defines=other_defines)
     docwriter.package_skip_patterns += [r'\.fixes$',
-                                        r'\.externals$',
                                         r'\.tracking\.interfaces.*$',
                                         r'\.tracking\.gui_tools.*$',
                                         r'.*test.*$',
