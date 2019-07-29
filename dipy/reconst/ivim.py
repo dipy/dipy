@@ -12,7 +12,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 # global variables for bounding least_squares in both models
 BOUNDS_TRF = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
-BOUNDS_VP = ([0.01, 0.005, 10**-4], [0.3, 0.02,  0.003])
+BOUNDS_VP = ([0.01, 0.005, 10**-4], [0.3, 0.02, 0.003])
 
 
 def ivim_prediction(params, gtab):

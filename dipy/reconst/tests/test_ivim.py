@@ -11,84 +11,102 @@ References
        of brain perfusion with intravoxel incoherent motion
        MR imaging." Radiology 265.3 (2012): 874-881.
 """
+import warnings
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
-                           dec)
+                           assert_, assert_equal, dec)
+from dipy.testing import assert_greater_equal
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
 from dipy.utils.optpkg import optional_package
-cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 needs_cvxpy = dec.skipif(not have_cvxpy)
 
 
-# Let us generate some data for testing.
-bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
-                  120., 140., 160., 180., 200., 300., 400.,
-                  500., 600., 700., 800., 900., 1000.])
-N = len(bvals)
-bvecs = generate_bvecs(N)
-gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
+def setup_module():
+    global gtab, ivim_fit_single, ivim_model_trf, data_single, params_trf, \
+        data_multi, ivim_params_trf, D_star, D, f, S0, gtab_with_multiple_b0, \
+        noisy_single, mevals, gtab_no_b0, ivim_fit_multi, ivim_model_VP, \
+        f_VP, D_star_VP, D_VP, params_VP
 
-S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
-# params for a single voxel
-params_trf = np.array([S0, f, D_star, D])
+    # Let us generate some data for testing.
+    bvals = np.array([0., 10., 20., 30., 40., 60., 80., 100.,
+                      120., 140., 160., 180., 200., 300., 400.,
+                      500., 600., 700., 800., 900., 1000.])
+    N = len(bvals)
+    bvecs = generate_bvecs(N)
+    gtab = gradient_table(bvals, bvecs.T, b0_threshold=0)
 
-mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
-# This gives an isotropic signal.
-signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
-                      fractions=[f * 100, 100 * (1 - f)])
-# Single voxel data
-data_single = signal[0]
+    S0, f, D_star, D = 1000.0, 0.132, 0.00885, 0.000921
+    # params for a single voxel
+    params_trf = np.array([S0, f, D_star, D])
 
-data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
-data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
-    1, 0, 0] = data_multi[1, 1, 0] = data_single
+    mevals = np.array(([D_star, D_star, D_star], [D, D, D]))
+    # This gives an isotropic signal.
+    signal = multi_tensor(gtab, mevals, snr=None, S0=S0,
+                          fractions=[f * 100, 100 * (1 - f)])
+    # Single voxel data
+    data_single = signal[0]
 
-ivim_params_trf = np.zeros((2, 2, 1, 4))
-ivim_params_trf[0, 0, 0] = ivim_params_trf[0, 1, 0] = params_trf
-ivim_params_trf[1, 0, 0] = ivim_params_trf[1, 1, 0] = params_trf
+    data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+    data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
+        1, 0, 0] = data_multi[1, 1, 0] = data_single
 
-ivim_model_trf = IvimModel(gtab, fit_method='trf')
-ivim_model_one_stage = IvimModel(gtab, fit_method='trf')
-ivim_fit_single = ivim_model_trf.fit(data_single)
-ivim_fit_multi = ivim_model_trf.fit(data_multi)
+    ivim_params_trf = np.zeros((2, 2, 1, 4))
+    ivim_params_trf[0, 0, 0] = ivim_params_trf[0, 1, 0] = params_trf
+    ivim_params_trf[1, 0, 0] = ivim_params_trf[1, 1, 0] = params_trf
 
-ivim_fit_single_one_stage = ivim_model_one_stage.fit(data_single)
-ivim_fit_multi_one_stage = ivim_model_one_stage.fit(data_multi)
+    ivim_model_trf = IvimModel(gtab, fit_method='trf')
+    ivim_model_one_stage = IvimModel(gtab, fit_method='trf')
+    ivim_fit_single = ivim_model_trf.fit(data_single)
+    ivim_fit_multi = ivim_model_trf.fit(data_multi)
 
-bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
-                        120., 140., 160., 180., 200., 300., 400.,
-                        500., 600., 700., 800., 900., 1000.])
+    ivim_model_one_stage.fit(data_single)
+    ivim_model_one_stage.fit(data_multi)
 
-bvecs_no_b0 = generate_bvecs(N)
-gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+    bvals_no_b0 = np.array([5., 10., 20., 30., 40., 60., 80., 100.,
+                            120., 140., 160., 180., 200., 300., 400.,
+                            500., 600., 700., 800., 900., 1000.])
 
-bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
-                                   120., 140., 160., 180., 200., 300., 400.,
-                                   500., 600., 700., 800., 900., 1000.])
+    _ = generate_bvecs(N)  # bvecs_no_b0
+    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
-bvecs_with_multiple_b0 = generate_bvecs(N)
-gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
-                                       bvecs_with_multiple_b0.T,
-                                       b0_threshold=0)
+    bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
+                                       120., 140., 160., 180., 200., 300.,
+                                       400., 500., 600., 700., 800., 900.,
+                                       1000.])
 
-noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
-                         4439.36816406, 4420.06201172, 4152.30078125,
-                         4114.34912109, 4104.59375, 4151.61914062,
-                         4003.58374023, 4013.68408203, 3906.39428711,
-                         3909.06079102, 3495.27197266, 3402.57006836,
-                         3163.10180664, 2896.04003906, 2663.7253418,
-                         2614.87695312, 2316.55371094, 2267.7722168])
+    bvecs_with_multiple_b0 = generate_bvecs(N)
+    gtab_with_multiple_b0 = gradient_table(bvals_with_multiple_b0,
+                                           bvecs_with_multiple_b0.T,
+                                           b0_threshold=0)
 
-noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
-noisy_multi[0, 1, 0] = noisy_multi[
-    1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
-noisy_multi[0, 0, 0] = data_single
+    noisy_single = np.array([4243.71728516, 4317.81298828, 4244.35693359,
+                            4439.36816406, 4420.06201172, 4152.30078125,
+                            4114.34912109, 4104.59375, 4151.61914062,
+                            4003.58374023, 4013.68408203, 3906.39428711,
+                            3909.06079102, 3495.27197266, 3402.57006836,
+                            3163.10180664, 2896.04003906, 2663.7253418,
+                            2614.87695312, 2316.55371094, 2267.7722168])
+
+    noisy_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+    noisy_multi[0, 1, 0] = noisy_multi[
+        1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
+    noisy_multi[0, 0, 0] = data_single
+
+    ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
+    f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
+    # params for a single voxel
+    params_VP = np.array([f, D_star, D])
+
+    ivim_params_VP = np.zeros((2, 2, 1, 3))
+    ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
+    ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
 
 
 def single_exponential(S0, D, bvals):
@@ -321,7 +339,17 @@ def test_noisy_fit():
     Scipy version.
     """
     model_one_stage = IvimModel(gtab, fit_method='trf')
-    fit_one_stage = model_one_stage.fit(noisy_single)
+    with warnings.catch_warnings(record=True) as w:
+        fit_one_stage = model_one_stage.fit(noisy_single)
+        assert_equal(len(w), 3)
+        for l_w in w:
+            assert_(issubclass(l_w.category, UserWarning))
+        assert_("" in str(w[0].message))
+        assert_("x0 obtained from linear fitting is not feasibile" in
+                str(w[0].message))
+        assert_("x0 is unfeasible" in str(w[1].message))
+        assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
+
     assert_array_less(fit_one_stage.model_params, [10000., 0.3, .01, 0.001])
 
 
@@ -415,7 +443,18 @@ def test_leastsq_failing():
     Test for cases where leastsq fitting fails and the results from a linear
     fit is returned.
     """
-    fit_single = ivim_model_trf.fit(noisy_single)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
+        fit_single = ivim_model_trf.fit(noisy_single)
+        assert_greater_equal(len(w), 3)
+        u_warn = [l_w for l_w in w if issubclass(l_w.category, UserWarning)]
+        assert_greater_equal(len(u_warn), 3)
+        message = ["x0 obtained from linear fitting is not feasibile",
+                   "x0 is unfeasible",
+                   "Bounds are violated for leastsq fitting"]
+        assert_greater_equal(len([lw for lw in u_warn for m in message
+                                  if m in str(lw.message)]), 3)
+
     # Test for the S0 and D values
     assert_array_almost_equal(fit_single.S0_predicted, 4356.268901117833)
     assert_array_almost_equal(fit_single.D, 6.936684e-04)
@@ -427,21 +466,15 @@ def test_leastsq_error():
     passed. If an unfeasible x0 value is passed using which leastsq fails, the
     x0 value is returned as it is.
     """
-    fit = ivim_model_trf._leastsq(data_single, [-1, -1, -1, -1])
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=UserWarning)
+        fit = ivim_model_trf._leastsq(data_single, [-1, -1, -1, -1])
+        assert_greater_equal(len(w), 1)
+        assert_(issubclass(w[-1].category, UserWarning))
+        assert_("" in str(w[-1].message))
+        assert_("x0 is unfeasible" in str(w[-1].message))
+
     assert_array_almost_equal(fit, [-1, -1, -1, -1])
-
-
-ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
-f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
-# params for a single voxel
-params_VP = np.array([f, D_star, D])
-
-ivim_params_VP = np.zeros((2, 2, 1, 3))
-ivim_params_VP[0, 0, 0] = ivim_params_VP[0, 1, 0] = params_VP
-ivim_params_VP[1, 0, 0] = ivim_params_VP[1, 1, 0] = params_VP
-
-test_vae = "Using the Variable Projection Method for " + \
-                             "fitting needs SciPy >= 0.15.1"
 
 
 @needs_cvxpy
