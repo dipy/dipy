@@ -261,7 +261,7 @@ class ReconstDtiFlow(Workflow):
             with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
             last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
             `nifti_tensor` is False, this will be saved in an alternate format
-            that is used by other software (e.g., FSL and Trackviz): a
+            that is used by other software (e.g., FSL): a
             4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy,
             Dyz, Dzz on the last dimension.
         out_fa : string, optional
@@ -291,7 +291,7 @@ class ReconstDtiFlow(Workflow):
         nifti_tensor : bool, optional
             Whether the tensor is saved in the standard Nifti format or in an
             alternate format
-            that is used by other software (e.g., FSL and Trackviz): a
+            that is used by other software (e.g., FSL): a
             4-dimensional volume (shape (i, j, k, 6)) with
             Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension. Default: True
 
