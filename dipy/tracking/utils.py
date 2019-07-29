@@ -319,8 +319,8 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
-    """Creates seeds for fiber tracking from a binary mask.
+def seeds_from_mask(mask, density=[1, 1, 1], affine=None):
+    """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
     are ``True``.
@@ -333,8 +333,6 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         Specifies the number of seeds to place along each dimension. A
         ``density`` of `2` is the same as ``[2, 2, 2]`` and will result in a
         total of 8 seeds per voxel.
-    voxel_size :
-        This argument is deprecated.
     affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
@@ -353,21 +351,16 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
+    >>> seeds_from_mask(mask, [1,1,1], np.eye(4))
     array([[ 0.5,  0.5,  0.5]])
-    >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
+    >>> seeds_from_mask(mask, [1,2,3], np.eye(4))
     array([[ 0.5       ,  0.25      ,  0.16666667],
            [ 0.5       ,  0.75      ,  0.16666667],
            [ 0.5       ,  0.25      ,  0.5       ],
            [ 0.5       ,  0.75      ,  0.5       ],
            [ 0.5       ,  0.25      ,  0.83333333],
            [ 0.5       ,  0.75      ,  0.83333333]])
-    >>> mask[0,1,2] = 1
-    >>> seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
-    array([[ 0.55 ,  0.55 ,  0.625],
-           [ 0.55 ,  0.55 ,  1.875],
-           [ 0.55 ,  1.65 ,  5.625],
-           [ 0.55 ,  1.65 ,  6.875]])
+
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
@@ -398,10 +391,6 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
-    elif voxel_size is not None:
-        # Use voxel_size to move seeds into trackvis space
-        seeds += .5
-        seeds *= voxel_size
 
     return seeds
 
