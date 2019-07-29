@@ -50,6 +50,7 @@ The `voxel_size` parameter has been removed from the following function:
 - ``dipy.tracking.utils.density_map``
 - ``dipy.tracking.utils.stremline_mapping``
 - ``dipy.tracking._util._mapping_to_voxel``
+- ``dipy.tracking.utils.seeds_from_mask``
 
 The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
