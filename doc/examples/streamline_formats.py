@@ -10,7 +10,7 @@ Overview
 DIPY_ can read and write many different file formats. In this example
 we give a short introduction on how to use it for loading or saving
 streamlines. The new statefull tractogram class was made to reduce errors
-cause by spatial transformation and complex file format convention.
+caused by spatial transformation and complex file format convention.
 
 Read :ref:`faq`
 
@@ -65,7 +65,7 @@ raf_sft = load_tractogram(bundles_filename[3], reference_anatomy)
 """
 These files contain invalid streamlines (negative values once in voxel space)
 This is not considered a valid tractography file, but it is possible to load
-it anyway
+it anyway.
 """
 
 lpt_sft = load_tractogram(bundles_filename[2], reference_anatomy,
@@ -106,11 +106,11 @@ print(is_header_compatible(reference_anatomy, bundles_filename[0]))
 
 """
 If a TRK was generated with a valid header, but the reference NIFTI was lost
-an header can be generated to then generate a fake NIFTI file.
+a header can be generated to then generate a fake NIFTI file.
 
 If you wish to manually save Trk and Tck file using nibabel streamlines
-API for more freedom of action (not recommended for beginner) you can
-create valid header using create_tractogram_header
+API for more freedom of action (not recommended for beginners) you can
+create a valid header using create_tractogram_header
 """
 
 nifti_header = create_nifti_header(affine, dimensions, voxel_sizes)
@@ -120,9 +120,11 @@ nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
 
 """
 Once loaded, no matter the original file format, the stateful tractogram is
-self contained and maintain a valid state and can be easily be manipulated
-Let's save all file as TRK to visualize in TrackVis for example.
-However, when loaded the lpt and rpt files contains invalid streamlines and
+self-contained and maintains a valid state. By requiring a reference the 
+tractogram's spatial transformation can be easily manipulated.
+
+Let's save all files as TRK to visualize in TrackVis for example.
+However, when loaded the lpt and rpt files contain invalid streamlines and
 for particular operations/tools/functions it is safer to remove them
 """
 
@@ -141,14 +143,15 @@ print(rpt_sft.is_bbox_in_vox_valid())
 save_tractogram(rpt_sft, 'rpt.trk')
 
 """
-Some functions in dipy require streamlines to be in voxel space so computation
+Some functions in DIPY require streamlines to be in voxel space so computation
 can be perfomed on a grid (connectivity matrix, ROIs masking, density map).
-The stateful tractogram class provided safe function for such manipulation.
-These function can be called safely over and over, by knowing in which state
-the tractogram is the operation is computed only necessary.
+The stateful tractogram class provides safe functions for such manipulation.
+These functions can be called safely over and over, by knowing in which state
+the tractogram is operating, and compute only necessary transformations
 
-No matter the state, function such as saving or removing invalid coordinate
-can be called safely and the transformation are handle internally if needed.
+No matter the state, functions such as ``save_tractogram`` or 
+``removing_invalid_coordinates`` can be called safely and the transformations 
+are handled internally when needed.
 """
 
 cc_sft.to_voxmm()
@@ -189,16 +192,16 @@ rpt_density = density_map(rpt_streamlines_vox, dimensions)
 
 """
 Replacing streamlines is possible, but if the state was modified between
-operation such as this one is not recommended:
+operations such as this one is not recommended:
 -> cc_sft.streamlines = cc_streamlines_vox
 
 It is recommended to re-create a new StatefulTractogram object and
-explicitly specified in which space the streamlines are. Be careful to follow
+explicitly specify in which space the streamlines are. Be careful to follow
 the order of operations.
 
 If the tractogram was from a Trk file with metadata, this will be lost.
 If you wish to keep metadata while manipulating the number or the order
-look the function StatefulTractogram.remove_invalid_streamlines() for more
+look at the function StatefulTractogram.remove_invalid_streamlines() for more
 details
 
 It is important to mention that once the object is created in a consistent state
