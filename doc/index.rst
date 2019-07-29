@@ -13,7 +13,7 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 0.16.0** is now available. New features include:
+**DIPY 1.0.0** is now available. New features include:
 
 - Horizon, medical visualization interface powered by QuickBundlesX.
 - New Tractometry tools: Bundle Analysis / Bundle Profiles.
