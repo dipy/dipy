@@ -109,7 +109,7 @@ If a TRK was generated with a valid header, but the reference NIFTI was lost
 an header can be generated to then generate a fake NIFTI file.
 
 If you wish to manually save Trk and Tck file using nibabel streamlines
-API for more freedom of action (not recommanded for beginner) you can
+API for more freedom of action (not recommended for beginner) you can
 create valid header using create_tractogram_header
 """
 
@@ -189,11 +189,11 @@ rpt_density = density_map(rpt_streamlines_vox, dimensions)
 
 """
 Replacing streamlines is possible, but if the state was modified between
-operation such as this one is not recommanded:
+operation such as this one is not recommended:
 -> cc_sft.streamlines = cc_streamlines_vox
 
-It is recommanded to re-create a new StatefulTractogram object and
-explicitely specified in which space the streamline are. Be careful to follow
+It is recommended to re-create a new StatefulTractogram object and
+explicitly specified in which space the streamlines are. Be careful to follow
 the order of operations.
 
 If the tractogram was from a Trk file with metadata, this will be lost.

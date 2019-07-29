@@ -291,7 +291,7 @@ class StatefulTractogram(object):
 
     def remove_invalid_streamlines(self):
         """ Remove streamlines with invalid coordinates from the object.
-        Will also remove the data_per_point and data_per_streamlines.
+        Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
         dimensions or below zero
         Returns
