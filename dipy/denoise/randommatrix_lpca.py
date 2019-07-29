@@ -33,7 +33,7 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
             the default will be automatically computed as:
 
             .. math ::
-                    patch_extent = max(5,\ lfloor N^{1/3} \ rfloor)
+                    patch_extent = max(5,|lfloor N^{1/3}| rfloor)
 
         out_dtype : str or dtype, optional
             The dtype for the output array. Default: output has the same
@@ -89,15 +89,18 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
     noise_arr = np.zeros(arr.shape[:-1])
     denoised_arr = np.zeros(arr.shape)
 
-    pad_width = ((patch_radius, patch_radius), (patch_radius, patch_radius), (patch_radius, patch_radius), (0, 0))
-    padded_arr = np.pad(arr, pad_width=pad_width, mode='constant', constant_values=0)
+    pad_width = ((patch_radius, patch_radius),
+                 (patch_radius, patch_radius),
+                 (patch_radius, patch_radius),
+                 (0, 0))
+    padded_arr = np.pad(arr,
+                        pad_width=pad_width,
+                        mode='constant',
+                        constant_values=0)
 
     for k in range(0, arr.shape[2]):
-    # for k in range(3,15):
         for j in range(0, arr.shape[1]):
-        # for j in range(8,13):
             for i in range(0, arr.shape[0]):
-            # for i in range(6,15):
                 Y = padded_arr[i: i + 2 * patch_radius + 1,
                                j:j + 2 * patch_radius + 1,
                                k:k + 2 * patch_radius + 1,
@@ -149,11 +152,11 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
                 # Reconstructing denoised image
                 if (p_hat != (p - 1)):
                     if m <= n:
-                        # nvals = eigenVec.dot(np.diag(eigenVal)).dot(eigenVec.transpose()).dot(X[:, n // 2])
-                        nvals = eigenVec@(np.diag(eigenVal))@(eigenVec.transpose())@(X[:, n // 2])
+                        nvals = eigenVec.dot(np.diag(eigenVal)).dot(eigenVec.transpose()).dot(X[:, n // 2])
+                        # nvals = eigenVec@(np.diag(eigenVal))@(eigenVec.transpose())@(X[:, n // 2])
                     else:
-                        # nvals = np.dot(X, np.dot(eigenVec, np.dot(np.diag(eigenVal), eigenVec.transpose()[:, n // 2])))
-                        nvals = X@(eigenVec@(np.diag(eigenVal)@eigenVec.T[:,n//2]))
+                        nvals = np.dot(X, np.dot(eigenVec, np.dot(np.diag(eigenVal), eigenVec.transpose()[:, n // 2])))
+                        # nvals = X@(eigenVec@(np.diag(eigenVal)@eigenVec.T[:,n//2]))
                 else:
                     nvals = X[:, n // 2]
 
