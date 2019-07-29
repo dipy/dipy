@@ -110,7 +110,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             streamlines = list(tracking_result)
             seeds = {}
 
-        sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+        sft = StatefulTractogram(streamlines, stopping_path, Space.RASMM,
                                  data_per_streamline=seeds)
         save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info('Saved {0}'.format(out_tract))
@@ -323,7 +323,7 @@ class PFTrackingPAMFlow(Workflow):
                 streamlines = list(tracking_result)
                 seeds = {}
 
-            sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+            sft = StatefulTractogram(streamlines, wm_path, Space.RASMM,
                                      data_per_streamline=seeds)
             save_tractogram(sft, out_tract, bbox_valid_check=False)
             logging.info('Saved {0}'.format(out_tract))
