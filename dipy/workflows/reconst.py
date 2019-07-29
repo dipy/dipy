@@ -223,7 +223,7 @@ class ReconstDtiFlow(Workflow):
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz', fsl_tensor=False):
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz', nifti_tensor=True):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
@@ -260,9 +260,10 @@ class ReconstDtiFlow(Workflow):
             Per default, this will be saved following the nifti standard:
             with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
             last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
-            `fsl_tensor` is True, this will be saved in the format saved by
-            FSL: a 4-dimensional volume (shape (i, j, k, 6))
-            with Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+            `nifti_tensor` is False, this will be saved in an alternate format
+            that is used by other software (e.g., FSL and Trackviz): a
+            4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy,
+            Dyz, Dzz on the last dimension.
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved
             (default 'fa.nii.gz')
@@ -287,10 +288,12 @@ class ReconstDtiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
-        fsl_tensor : bool, optional
-            Whether the tensor is saved in FSL format: a 4-dimensional volume
-            (shape (i, j, k, 6)) with the elements Dxx, Dxy, Dxz, Dyy, Dyz, Dzz
-            on the last dimension.
+        nifti_tensor : bool, optional
+            Whether the tensor is saved in the standard Nifti format or in an
+            alternate format
+            that is used by other software (e.g., FSL and Trackviz): a
+            4-dimensional volume (shape (i, j, k, 6)) with
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension. Default: True
 
         References
         ----------
@@ -335,13 +338,13 @@ class ReconstDtiFlow(Workflow):
             if 'tensor' in save_metrics:
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
 
-                if fsl_tensor:
-                    fsl_order = [0, 1, 3, 2, 4, 5]
-                    ten_img = nib.Nifti1Image(
-                            tensor_vals[..., fsl_order].astype(np.float32),
-                            affine)
-                else:
+                if nifti_tensor:
                     ten_img = nifti1_symmat(tensor_vals, affine=affine)
+                else:
+                    alt_order = [0, 1, 3, 2, 4, 5]
+                    ten_img = nib.Nifti1Image(
+                            tensor_vals[..., alt_order].astype(np.float32),
+                            affine)
 
                 nib.save(ten_img, otensor)
 

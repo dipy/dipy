@@ -18,9 +18,9 @@ def test_reconst_dti_nlls():
     reconst_flow_core(ReconstDtiFlow, extra_args=[], extra_kwargs={})
 
 
-def test_reconst_dti_fsl_tensor():
+def test_reconst_dti_alt_tensor():
     reconst_flow_core(ReconstDtiFlow, extra_args=[],
-                      extra_kwargs={'fsl_tensor': True})
+                      extra_kwargs={'nifti_tensor': False})
 
 
 def reconst_flow_core(flow, extra_args=[], extra_kwargs={}):
@@ -49,8 +49,8 @@ def reconst_flow_core(flow, extra_args=[], extra_kwargs={}):
         tensor_path = dti_flow.last_generated_outputs['out_tensor']
         tensor_data = nib.load(tensor_path)
         # Per default, tensor data is 5D, with six tensor elements on the last
-        # dimension, except if fsl_tensor is set to True:
-        if extra_kwargs.get('fsl_tensor', False):
+        # dimension, except if nifti_tensor is set to False:
+        if extra_kwargs.get('nifti_tensor', True):
             assert_equal(tensor_data.shape[-1], 6)
             assert_equal(tensor_data.shape[:-1], volume.shape[:-1])
         else:
