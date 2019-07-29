@@ -71,7 +71,7 @@ from dipy.io.bvectxt import orientation_from_string
 import nibabel as nib
 
 
-def density_map(streamlines, vol_dims, affine=None):
+def density_map(streamlines, vol_dims, affine):
     """Counts the number of unique streamlines that pass through each voxel.
 
     Parameters
@@ -84,6 +84,7 @@ def density_map(streamlines, vol_dims, affine=None):
         counts
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     Returns
     -------
@@ -114,7 +115,7 @@ def density_map(streamlines, vol_dims, affine=None):
     return counts
 
 
-def connectivity_matrix(streamlines, label_volume, affine=None,
+def connectivity_matrix(streamlines, label_volume, affine,
                         symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair.
@@ -128,6 +129,7 @@ def connectivity_matrix(streamlines, label_volume, affine=None,
         volume map to anatomical structures.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline coordinates.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -319,7 +321,7 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
+def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     """Creates seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
@@ -329,16 +331,16 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     ----------
     mask : binary 3d array_like
         A binary array specifying where to place the seeds for fiber tracking.
+    affine : array, (4, 4)
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
+        A seed point at the center the voxel ``[i, j, k]`` 
+        will be represented as ``[x, y, z]`` where 
+        ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     density : int or array_like (3,)
         Specifies the number of seeds to place along each dimension. A
         ``density`` of `2` is the same as ``[2, 2, 2]`` and will result in a
         total of 8 seeds per voxel.
-    voxel_size :
-        This argument is deprecated.
-    affine : array, (4, 4)
-        The mapping between voxel indices and the point space for seeds. A
-        seed point at the center the voxel ``[i, j, k]`` will be represented as
-        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
 
     See Also
     --------
@@ -363,7 +365,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
            [ 0.5       ,  0.25      ,  0.83333333],
            [ 0.5       ,  0.75      ,  0.83333333]])
     >>> mask[0,1,2] = 1
-    >>> seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
+    >>> seeds_from_mask(mask, np.eye(4), [1,1,2]])
     array([[ 0.55 ,  0.55 ,  0.625],
            [ 0.55 ,  0.55 ,  1.875],
            [ 0.55 ,  1.65 ,  5.625],
@@ -394,20 +396,16 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     seeds = seeds.reshape((-1, 3))
 
     # Apply the spatial transform
-    if affine is not None:
+    if seeds is not None:
         # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
-    elif voxel_size is not None:
-        # Use voxel_size to move seeds into trackvis space
-        seeds += .5
-        seeds *= voxel_size
 
     return seeds
 
 
-def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
-                           affine=None, random_seed=None):
+def random_seeds_from_mask(mask, affine, seeds_count=1,
+                           seed_count_per_voxel=True, random_seed=None):
     """Creates randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
@@ -421,6 +419,12 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     ----------
     mask : binary 3d array_like
         A binary array specifying where to place the seeds for fiber tracking.
+    affine : array, (4, 4)
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
+        A seed point at the center the voxel ``[i, j, k]`` 
+        will be represented as ``[x, y, z]`` where 
+        ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     seeds_count : int
         The number of seeds to generate. If ``seed_count_per_voxel`` is True,
         specifies the number of seeds to place in each voxel. Otherwise,
@@ -428,10 +432,6 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
     seed_count_per_voxel: bool
         If True, seeds_count is per voxel, else seeds_count is the total number
         of seeds.
-    affine : array, (4, 4)
-        The mapping between voxel indices and the point space for seeds. A
-        seed point at the center the voxel ``[i, j, k]`` will be represented as
-        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     random_seed : int
         The seed for the random seed generator (numpy.random.seed).
 
@@ -460,8 +460,8 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
            [ 0.39286015, -0.16802019,  0.32122912],
            [-0.42369171,  0.27991879, -0.06159077]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=2, seed_count_per_voxel=True,
-    ... random_seed=1)
+    >>> random_seeds_from_mask(mask, np.eye(4), 
+    ... seeds_count=2, seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248],
            [-0.27800683,  1.37073231,  1.70671916],
            [ 0.0507979 ,  0.20814782, -0.20909526],
@@ -507,7 +507,7 @@ def random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
         seeds = seeds[:seeds_count]
 
     # Apply the spatial transform
-    if affine is not None:
+    if seeds is not None:
         # Use affine to move seeds into real world coordinates
         seeds = np.dot(seeds, affine[:3, :3].T)
         seeds += affine[:3, 3]
@@ -543,7 +543,8 @@ def target(streamlines, target_mask, affine, include=True):
         A mask used as a target. Non-zero values are considered to be within
         the target region.
     affine : array (4, 4)
-        The affine transform from voxel indices to streamline points.
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     include : bool, default True
         If True, streamlines passing through `target_mask` are kept. If False,
         the streamlines not passing through `target_mask` are kept.
@@ -580,7 +581,7 @@ def target(streamlines, target_mask, affine, include=True):
 
 
 @_with_initialize
-def target_line_based(streamlines, target_mask, affine=None, include=True):
+def target_line_based(streamlines, target_mask, affine, include=True):
     """Filters streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
@@ -597,7 +598,8 @@ def target_line_based(streamlines, target_mask, affine=None, include=True):
         A mask used as a target. Non-zero values are considered to be within
         the target region.
     affine : array (4, 4)
-        The affine transform from voxel indices to streamline points.
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     include : bool, default True
         If True, streamlines passing through `target_mask` are kept. If False,
         the streamlines not passing through `target_mask` are kept.
@@ -682,7 +684,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
         return np.all(np.min(dist, -1) <= tol)
 
 
-def near_roi(streamlines, region_of_interest, affine=None, tol=None,
+def near_roi(streamlines, region_of_interest, affine, tol=None,
              mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
     they fall within a tolerance distance from an ROI
@@ -695,8 +697,9 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
     region_of_interest : ndarray
         A mask used as a target. Non-zero values are considered to be within
         the target region.
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
+    affine : array (4, 4)
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
@@ -723,8 +726,6 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
     that passes within a tolerance distance from the target ROI, `False`
     otherwise.
     """
-    if affine is None:
-        affine = np.eye(4)
     dtc = dist_to_corner(affine)
     if tol is None:
         tol = dtc
@@ -754,113 +755,13 @@ def near_roi(streamlines, region_of_interest, affine=None, tol=None,
         return(np.array(out, dtype=bool))
 
 
-def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
-    """Calculates a linear transformation equivalent to changing voxel order.
-
-    Calculates a linear transformation A such that [a, b, c, 1] =
-    A[x, y, z, 1], where [x, y, z] is a point in the coordinate system defined
-    by input_ornt and [a, b, c] is the same point in the coordinate system
-    defined by output_ornt.
-
-    Parameters
-    ----------
-    input_ornt : array (n, 2)
-        A description of the orientation of a point in n-space. See
-        ``nibabel.orientation`` or ``dipy.io.bvectxt`` for more information.
-    output_ornt : array (n, 2)
-        A description of the orientation of a point in n-space.
-    shape : tuple of int
-        Shape of the image in the input orientation.
-        ``map = ornt_mapping(input_ornt, output_ornt)``
-    voxel_size : int
-        Voxel size of the image in the input orientation.
-
-    Returns
-    -------
-    A : array (n+1, n+1)
-        Affine matrix of the transformation between input_ornt and output_ornt.
-
-    See Also
-    --------
-    nibabel.orientation
-    dipy.io.bvectxt.orientation_to_string
-    dipy.io.bvectxt.orientation_from_string
-    """
-    map = ornt_mapping(input_ornt, output_ornt)
-    if input_ornt.shape != output_ornt.shape:
-        raise ValueError("input_ornt and output_ornt must have the same shape")
-    affine = eye(len(input_ornt)+1)
-    affine[:3] = affine[map[:, 0]]
-    corner = asarray(voxel_size) * shape
-    affine[:3, 3] = (map[:, 1] < 0) * corner[map[:, 0]]
-    # multiply the rows of affine to get right sign
-    affine[:3, :3] *= map[:, 1:]
-    return affine
+# reorder_voxels_affine
 
 
-def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
-    """
-    Converts an affine matrix from flirt (FSLdot) and a given voxel size for
-    input and output images and returns an adjusted affine matrix for trackvis.
-
-    Parameters
-    ----------
-    mat_affine : array of shape (4, 4)
-       An FSL flirt affine.
-    input_voxsz : array of shape (3,)
-       The input image voxel dimensions.
-    output_voxsz : array of shape (3,)
-
-    Returns
-    -------
-    affine : array of shape (4, 4)
-      A trackvis-compatible affine.
-
-    """
-    # TODO the affine returned by this function uses a different reference than
-    # the nifti-style index coordinates dipy has adopted as a convention. We
-    # should either fix this function in a backward compatible way or replace
-    # and deprecate it.
-    input_voxsz = asarray(input_voxsz)
-    output_voxsz = asarray(output_voxsz)
-    shift = eye(4)
-    shift[:3, 3] = -input_voxsz / 2
-
-    affine = dot(mat_affine, shift)
-    affine[:3, 3] += output_voxsz / 2
-
-    return affine
+# affine_from_fsl_mat_file
 
 
-def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
-                        ref_img_voxel_order=None):
-    """Returns an affine which maps points for voxel indices to trackvis
-    space.
-
-    Parameters
-    ----------
-    voxel_size : array (3,)
-        The sizes of the voxels in the reference image.
-
-    Returns
-    -------
-    affine : array (4, 4)
-        Mapping from the voxel indices of the reference image to trackvis
-        space.
-    """
-    if ((voxel_order is not None or dim is not None or
-         ref_img_voxel_order is not None)):
-        raise NotImplemented
-
-    # Create affine
-    voxel_size = np.asarray(voxel_size)
-    affine = np.eye(4)
-    affine[[0, 1, 2], [0, 1, 2]] = voxel_size
-    affine[:3, 3] = voxel_size / 2.
-    return affine
-
-
-def length(streamlines, affine=None):
+def length(streamlines):
     """
     Calculate the lengths of many streamlines in a bundle.
 
@@ -868,17 +769,13 @@ def length(streamlines, affine=None):
     ----------
     streamlines : list
         Each item in the list is an array with 3D coordinates of a streamline.
-    affine : 4 x 4 array
-        An affine transformation to move the fibers by, before computing their
-        lengths.
 
     Returns
     -------
     Iterator object which then computes the length of each
     streamline in the bundle, upon iteration.
     """
-    if affine is not None:
-        streamlines = move_streamlines(streamlines, affine)
+
     return map(metrics.length, streamlines)
 
 
@@ -914,52 +811,8 @@ def unique_rows(in_array, dtype='f4'):
     diff_in_array = diff_x[un_order]
     return in_array[diff_in_array]
 
-
-@_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None,
-                     seeds=None):
-    """Applies a linear transformation, given by affine, to streamlines.
-
-    Parameters
-    ----------
-    streamlines : sequence
-        A set of streamlines to be transformed.
-    output_space : array (4, 4)
-        An affine matrix describing the target space to which the streamlines
-        will be transformed.
-    input_space : array (4, 4), optional
-        An affine matrix describing the current space of the streamlines, if no
-        ``input_space`` is specified, it's assumed the streamlines are in the
-        reference space. The reference space is the same as the space
-        associated with the affine matrix ``np.eye(4)``.
-    seeds : np.array, optional
-        If set, seeds associated to streamlines will be also moved and returned
-
-    Returns
-    -------
-    streamlines : generator
-        A sequence of transformed streamlines.
-        If return_seeds is True, also return seeds
-
-    """
-    if input_space is None:
-        affine = output_space
-    else:
-        inv = np.linalg.inv(input_space)
-        affine = np.dot(output_space, inv)
-
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
-    yield
-    # End of initialization
-
-    if seeds is not None:
-        for sl, seed in zip(streamlines, seeds):
-            yield np.dot(sl, lin_T) + offset, np.dot(seed, lin_T) + offset
-    else:
-        for sl in streamlines:
-            yield np.dot(sl, lin_T) + offset
-
+# affine_for_trackvis
+# move_streamlines
 
 def reduce_rois(rois, include):
     """Reduce multiple ROIs to one inclusion and one exclusion ROI.
@@ -1002,66 +855,9 @@ def reduce_rois(rois, include):
     return include_roi, exclude_roi
 
 
-def flexi_tvis_affine(sl_vox_order, grid_affine, dim, voxel_size):
-    """ Computes the mapping from voxel indices to streamline points,
-        reconciling streamlines and grids with different voxel orders
+# flexi_tvis_affine
 
-    Parameters
-    ----------
-    sl_vox_order : string of length 3
-        a string that describes the voxel order of the streamlines (ex: LPS)
-    grid_affine : array (4, 4),
-        An affine matrix describing the current space of the grid in relation
-        to RAS+ scanner space
-    dim : tuple of length 3
-        dimension of the grid
-    voxel_size : array (3,0)
-        voxel size of the grid
-
-    Returns
-    -------
-    flexi_tvis_aff : this affine maps between a grid and a trackvis space
-    """
-
-    sl_ornt = orientation_from_string(str(sl_vox_order))
-    grid_ornt = nib.io_orientation(grid_affine)
-    reorder_grid = reorder_voxels_affine(
-        grid_ornt, sl_ornt, np.array(dim)-1, np.array([1, 1, 1]))
-
-    tvis_aff = affine_for_trackvis(voxel_size)
-
-    flexi_tvis_aff = np.dot(tvis_aff, reorder_grid)
-
-    return flexi_tvis_aff
-
-
-def get_flexi_tvis_affine(tvis_hdr, nii_aff):
-    """ Computes the mapping from voxel indices to streamline points,
-        reconciling streamlines and grids with different voxel orders
-
-    Parameters
-    ----------
-    tvis_hdr : header from a trackvis file
-    nii_aff : array (4, 4),
-        An affine matrix describing the current space of the grid in relation
-        to RAS+ scanner space
-    nii_data : nd array
-        3D array, each with shape (x, y, z) corresponding to the shape of the
-        brain volume.
-
-    Returns
-    -------
-    flexi_tvis_aff : array (4,4)
-        this affine maps between a grid and a trackvis space
-    """
-
-    sl_vox_order = tvis_hdr['voxel_order']
-    voxel_size = tvis_hdr['voxel_size']
-    dim = tvis_hdr['dim']
-
-    flexi_tvis_aff = flexi_tvis_affine(sl_vox_order, nii_aff, dim, voxel_size)
-
-    return flexi_tvis_aff
+# get_flexi_tvis_affine
 
 
 def _min_at(a, index, value):
@@ -1097,7 +893,8 @@ def path_length(streamlines, aoi, affine, fill_value=-1):
     aoi : array, 3d
         A mask (binary array) of voxels from which to start computing distance.
     affine : array (4, 4)
-        The mapping from voxel indices to streamline points.
+        The mapping between voxel indices and the point space for seeds.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     fill_value : float
         The value of voxel in the path length map that are not connected to the
         aoi.
