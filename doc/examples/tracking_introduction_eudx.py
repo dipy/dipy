@@ -142,7 +142,7 @@ from dipy.tracking import utils
 import numpy as np
 
 seed_mask = (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=np.eye(4))
+seeds = utils.seeds_from_mask(seed_mask, np.eye(4), density=[2, 2, 2])
 
 """
 Finally, we can bring it all together using ``LocalTracking``, performing Using

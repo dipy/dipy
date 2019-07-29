@@ -62,7 +62,7 @@ lesion mask, or electrode mask).
 
 # Make a corpus callosum seed mask for tracking
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Make a streamline bundle model of the corpus callosum ROI connectivity
 streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,

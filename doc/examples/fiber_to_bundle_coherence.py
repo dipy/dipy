@@ -130,7 +130,7 @@ from dipy.tracking import utils
 mask = np.zeros(data.shape[:-1], 'bool')
 rad = 3
 mask[26-rad:26+rad, 29-rad:29+rad, 31-rad:31+rad] = True
-seeds = utils.seeds_from_mask(mask, density=[4, 4, 4], affine=affine)
+seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 
 """
 Local Tracking is used for probabilistic tractography which takes the

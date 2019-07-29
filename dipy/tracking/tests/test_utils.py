@@ -46,7 +46,7 @@ def test_density_map():
     x = np.arange(10)
     expected = np.zeros(shape)
     expected[x, x, x] = 1.
-    dm = density_map(streamlines, vol_dims=shape, affine=np.eye(4))
+    dm = density_map(streamlines, np.eye(4), shape)
     npt.assert_array_equal(dm, expected)
 
     # add streamline, make voxel_size smaller. Each streamline should only be
@@ -59,16 +59,16 @@ def test_density_map():
     expected[0, 0, 0] += 1
     affine = np.eye(4) * 2
     affine[:3, 3] = 0.05
-    dm = density_map(streamlines, vol_dims=shape, affine=affine)
+    dm = density_map(streamlines, affine, shape)
     npt.assert_array_equal(dm, expected)
     # should work with a generator
-    dm = density_map(iter(streamlines), vol_dims=shape, affine=affine)
+    dm = density_map(iter(streamlines), affine, shape)
     npt.assert_array_equal(dm, expected)
 
     # Test passing affine
     affine = np.diag([2, 2, 2, 1.])
     affine[: 3, 3] = 1.
-    dm = density_map(streamlines, shape, affine=affine)
+    dm = density_map(streamlines, affine, shape)
     npt.assert_array_equal(dm, expected)
 
     # Shift the image by 2 voxels, ie 4mm
@@ -77,7 +77,7 @@ def test_density_map():
     new_shape = [i + 2 for i in shape]
     expected = np.zeros(new_shape)
     expected[2:, 2:, 2:] = expected_old
-    dm = density_map(streamlines, new_shape, affine=affine)
+    dm = density_map(streamlines, affine, new_shape)
     npt.assert_array_equal(dm, expected)
 
 
@@ -114,12 +114,11 @@ def test_connectivity_matrix():
     expected[3, 4] = 2
     expected[4, 3] = 1
     # Check basic Case
-    matrix = connectivity_matrix(streamlines, label_volume, affine=np.eye(4),
+    matrix = connectivity_matrix(streamlines, np.eye(4), label_volume,
                                  symmetric=False)
     npt.assert_array_equal(matrix, expected)
     # Test mapping
-    matrix, mapping = connectivity_matrix(streamlines, label_volume,
-                                          affine=np.eye(4),
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
                                           symmetric=False,
                                           return_mapping=True)
     npt.assert_array_equal(matrix, expected)
@@ -127,8 +126,7 @@ def test_connectivity_matrix():
     npt.assert_equal(mapping[4, 3], [2])
     npt.assert_equal(mapping.get((0, 0)), None)
     # Test mapping and symmetric
-    matrix, mapping = connectivity_matrix(streamlines, label_volume,
-                                          affine=np.eye(4),
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
                                           symmetric=True, return_mapping=True)
     npt.assert_equal(mapping[3, 4], [0, 1, 2])
     # When symmetric only (3,4) is a key, not (4, 3)
@@ -137,8 +135,7 @@ def test_connectivity_matrix():
     expected = expected + expected.T
     npt.assert_array_equal(matrix, expected)
     # Test mapping_as_streamlines, mapping dict has lists of streamlines
-    matrix, mapping = connectivity_matrix(streamlines, label_volume,
-                                          affine=np.eye(4),
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
                                           symmetric=False,
                                           return_mapping=True,
                                           mapping_as_streamlines=True)
@@ -149,7 +146,7 @@ def test_connectivity_matrix():
     # Test passing affine to connectivity_matrix
     affine = np.diag([-1, -1, -1, 1.])
     streamlines = [-i for i in streamlines]
-    matrix = connectivity_matrix(streamlines, label_volume, affine=affine)
+    matrix = connectivity_matrix(streamlines, affine, label_volume)
     # In the symmetrical case, the matrix should be, well, symmetric:
     npt.assert_equal(matrix[4, 3], matrix[4, 3])
 
@@ -502,18 +499,18 @@ def test_length():
 
 def test_seeds_from_mask():
     mask = np.random.randint(0, 1, size=(10, 10, 10))
-    seeds = seeds_from_mask(mask, density=1)
+    seeds = seeds_from_mask(mask, np.eye(4), density=1)
     npt.assert_equal(mask.sum(), len(seeds))
     npt.assert_array_equal(np.argwhere(mask), seeds)
 
     mask[:] = False
     mask[3, 3, 3] = True
-    seeds = seeds_from_mask(mask, density=[3, 4, 5])
+    seeds = seeds_from_mask(mask, np.eye(4), density=[3, 4, 5])
     npt.assert_equal(len(seeds), 3 * 4 * 5)
     assert_true(np.all((seeds > 2.5) & (seeds < 3.5)))
 
     mask[4, 4, 4] = True
-    seeds = seeds_from_mask(mask, density=[3, 4, 5])
+    seeds = seeds_from_mask(mask, np.eye(4), density=[3, 4, 5])
     npt.assert_equal(len(seeds), 2 * 3 * 4 * 5)
     assert_true(np.all((seeds > 2.5) & (seeds < 4.5)))
     in_333 = ((seeds > 2.5) & (seeds < 3.5)).all(1)
@@ -524,35 +521,35 @@ def test_seeds_from_mask():
 
 def test_random_seeds_from_mask():
     mask = np.random.randint(0, 1, size=(4, 6, 3))
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=24,
                                    seed_count_per_voxel=True)
     npt.assert_equal(mask.sum() * 24, len(seeds))
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=0,
                                    seed_count_per_voxel=True)
     npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=8,
                                    seed_count_per_voxel=True)
     npt.assert_equal(mask.sum() * 8, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=24,
                                    seed_count_per_voxel=False)
     npt.assert_equal(24, len(seeds))
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=0,
                                    seed_count_per_voxel=False)
     npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
-    seeds = random_seeds_from_mask(mask,
+    seeds = random_seeds_from_mask(mask, np.eye(4), 
                                    seeds_count=100,
                                    seed_count_per_voxel=False)
     npt.assert_equal(100, len(seeds))
@@ -560,18 +557,18 @@ def test_random_seeds_from_mask():
 
     mask = np.zeros((15, 15, 15))
     mask[2:14, 2:14, 2:14] = 1
-    seeds_npv_2 = random_seeds_from_mask(mask, seeds_count=2,
+    seeds_npv_2 = random_seeds_from_mask(mask, np.eye(4), seeds_count=2,
                                          seed_count_per_voxel=True,
                                          random_seed=0)[:150]
-    seeds_npv_3 = random_seeds_from_mask(mask, seeds_count=3,
+    seeds_npv_3 = random_seeds_from_mask(mask, np.eye(4), seeds_count=3,
                                          seed_count_per_voxel=True,
                                          random_seed=0)[:150]
     assert_true(np.all(seeds_npv_2 == seeds_npv_3))
 
-    seeds_nt_150 = random_seeds_from_mask(mask, seeds_count=150,
+    seeds_nt_150 = random_seeds_from_mask(mask, np.eye(4), seeds_count=150,
                                           seed_count_per_voxel=False,
                                           random_seed=0)[:150]
-    seeds_nt_500 = random_seeds_from_mask(mask, seeds_count=500,
+    seeds_nt_500 = random_seeds_from_mask(mask, np.eye(4), seeds_count=500,
                                           seed_count_per_voxel=False,
                                           random_seed=0)[:150]
     assert_true(np.all(seeds_nt_150 == seeds_nt_500))
@@ -589,7 +586,7 @@ def test_connectivity_matrix_shape():
                    np.array([[0., 1., 1.],
                              [0., 1., 0.5],
                              [0., 1., 0.]])]
-    matrix = connectivity_matrix(streamlines, labels, affine=np.eye(4))
+    matrix = connectivity_matrix(streamlines, np.eye(4), labels)
     npt.assert_equal(matrix.shape, (3, 3))
 
 

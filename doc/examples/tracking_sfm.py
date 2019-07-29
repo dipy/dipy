@@ -83,7 +83,7 @@ matter:
 """
 
 from dipy.tracking import utils
-seeds = utils.seeds_from_mask(white_matter, density=[2, 2, 2], affine=affine)
+seeds = utils.seeds_from_mask(white_matter, affine, density=[2, 2, 2])
 
 """
 For the sake of brevity, we will take only the first 1000 seeds, generating

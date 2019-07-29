@@ -56,7 +56,7 @@ dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
 
 seed_mask = (labels == 2)
 seed_mask[img_pve_wm.get_data() < 0.5] = 0
-seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
 """
 CMC/ACT Tissue Classifiers

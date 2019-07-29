@@ -78,13 +78,12 @@ def density_map(streamlines, vol_dims, affine):
     ----------
     streamlines : iterable
         A sequence of streamlines.
-
-    vol_dims : 3 ints
-        The shape of the volume to be returned containing the streamlines
-        counts
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline points.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    vol_dims : 3 ints
+        The shape of the volume to be returned containing the streamlines
+        counts
 
     Returns
     -------
@@ -115,7 +114,7 @@ def density_map(streamlines, vol_dims, affine):
     return counts
 
 
-def connectivity_matrix(streamlines, label_volume, affine,
+def connectivity_matrix(streamlines, affine, label_volume,
                         symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair.
@@ -124,12 +123,12 @@ def connectivity_matrix(streamlines, label_volume, affine,
     ----------
     streamlines : sequence
         A sequence of streamlines.
-    label_volume : ndarray
-        An image volume with an integer data type, where the intensities in the
-        volume map to anatomical structures.
     affine : array_like (4, 4)
         The mapping from voxel coordinates to streamline coordinates.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
+    label_volume : ndarray
+        An image volume with an integer data type, where the intensities in the
+        volume map to anatomical structures.
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -355,9 +354,9 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
+    >>> seeds_from_mask(mask, np.eye(4), [1,1,1], [1,1,1])
     array([[ 0.5,  0.5,  0.5]])
-    >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
+    >>> seeds_from_mask(mask, np.eye(4), [1,2,3], [1,1,1])
     array([[ 0.5       ,  0.25      ,  0.16666667],
            [ 0.5       ,  0.75      ,  0.16666667],
            [ 0.5       ,  0.25      ,  0.5       ],
@@ -448,11 +447,11 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, seeds_count=1, seed_count_per_voxel=True,
-    ... random_seed=1)
+    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1, 
+    ... seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248]])
-    >>> random_seeds_from_mask(mask, seeds_count=6, seed_count_per_voxel=True,
-    ... random_seed=1)
+    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6, 
+    ... seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248],
            [ 0.0507979 ,  0.20814782, -0.20909526],
            [ 0.46702984,  0.04723225,  0.47268436],

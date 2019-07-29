@@ -61,7 +61,7 @@ classifier, determining when the tracking stops, is set to stop when the
 tracking exit the white matter.
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=1)
+seeds = utils.seeds_from_mask(white_matter, np.eye(4), density=1)
 tissue_classifier = BinaryTissueClassifier(white_matter)
 affine = np.eye(4)
 
@@ -157,7 +157,7 @@ by their endpoints. Notice that this function only considers the endpoints of
 each streamline.
 """
 
-M, grouping = utils.connectivity_matrix(cc_streamlines, labels, affine=affine,
+M, grouping = utils.connectivity_matrix(cc_streamlines, affine, labels,
                                         return_mapping=True,
                                         mapping_as_streamlines=True)
 M[:3, :] = 0
@@ -212,7 +212,7 @@ left and right superior frontal gyrus.
 
 lr_superiorfrontal_track = grouping[11, 54]
 shape = labels.shape
-dm = utils.density_map(lr_superiorfrontal_track, shape, affine=affine)
+dm = utils.density_map(lr_superiorfrontal_track, affine, shape)
 
 """
 Let's save this density map and the streamlines so that they can be
@@ -264,7 +264,7 @@ moved our streamlines to "trackvis space", we can still compute the density map
 as long as we specify the right coordinate system.
 """
 
-dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=np.eye(4))
+dm_trackvis = utils.density_map(lr_sf_trk, np.eye(4), shape)
 assert np.all(dm == dm_trackvis)
 
 """

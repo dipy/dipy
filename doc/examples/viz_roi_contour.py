@@ -41,7 +41,7 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
 
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Initialization of LocalTracking. The computation happens in the next step.
 streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
