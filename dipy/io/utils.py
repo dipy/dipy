@@ -2,7 +2,7 @@
 import logging
 import os
 
-from dipy.io.stateful_tractogram import StatefulTractogram
+import dipy
 import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
@@ -182,7 +182,7 @@ def get_reference_info(reference):
     elif isinstance(reference, dict) and 'magic_number' in reference:
         header = reference
         is_trk = True
-    elif isinstance(reference, StatefulTractogram):
+    elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
         is_sft = True
 
     if is_nifti:
