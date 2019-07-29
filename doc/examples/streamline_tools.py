@@ -234,8 +234,8 @@ dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-sft = StatefulTractogram(lr_sf_trk, dm_img, Space.RASMM)
-save_trk(sft, "lr-superiorfrontal.trk", bbox_valid_check=False)
+sft = StatefulTractogram(lr_sf_trk, dm_img, Space.VOX)
+save_trk(sft, "lr-superiorfrontal.trk")
 
 """
 .. rubric:: Footnotes
