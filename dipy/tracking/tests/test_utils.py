@@ -1,9 +1,7 @@
-from __future__ import division, print_function, absolute_import
-
 import warnings
 
 import numpy as np
-from dipy.io.bvectxt import orientation_from_string
+from dipy.tracking import metrics
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.utils import (connectivity_matrix, density_map, length,
                                  ndbincount, reduce_labels, seeds_from_mask,
@@ -12,9 +10,6 @@ from dipy.tracking.utils import (connectivity_matrix, density_map, length,
                                  reduce_rois, path_length, _min_at)
 
 from dipy.tracking._utils import _to_voxel_coordinates
-
-import dipy.tracking.metrics as metrix
-
 from dipy.tracking.vox2track import streamline_mapping
 import numpy.testing as npt
 from dipy.testing import assert_true
@@ -329,7 +324,8 @@ def test_near_roi():
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
-    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, mode="both_end"),
+    npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask,
+                                    mode="both_end"),
                            np.array([False, True, False]))
 
     # Test with a generator input:
@@ -393,7 +389,7 @@ def test_length():
 
     bundle_lengths = length(bundle)
     for idx, this_length in enumerate(bundle_lengths):
-        npt.assert_equal(this_length, metrix.length(bundle[idx]))
+        npt.assert_equal(this_length, metrics.length(bundle[idx]))
 
 
 def test_seeds_from_mask():
@@ -420,35 +416,35 @@ def test_seeds_from_mask():
 
 def test_random_seeds_from_mask():
     mask = np.random.randint(0, 1, size=(4, 6, 3))
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=24,
                                    seed_count_per_voxel=True)
     npt.assert_equal(mask.sum() * 24, len(seeds))
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=0,
                                    seed_count_per_voxel=True)
     npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=8,
                                    seed_count_per_voxel=True)
     npt.assert_equal(mask.sum() * 8, len(seeds))
     assert_true(np.all((seeds > 1.5) & (seeds < 2.5)))
 
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=24,
                                    seed_count_per_voxel=False)
     npt.assert_equal(24, len(seeds))
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=0,
                                    seed_count_per_voxel=False)
     npt.assert_equal(0, len(seeds))
 
     mask[:] = False
     mask[2, 2, 2] = True
-    seeds = random_seeds_from_mask(mask, np.eye(4), 
+    seeds = random_seeds_from_mask(mask, np.eye(4),
                                    seeds_count=100,
                                    seed_count_per_voxel=False)
     npt.assert_equal(100, len(seeds))

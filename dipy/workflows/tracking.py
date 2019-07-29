@@ -2,7 +2,6 @@
 from __future__ import division
 
 import logging
-import numpy as np
 
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter,
@@ -112,7 +111,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             seeds = {}
 
         sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
-                                data_per_streamline=seeds)
+                                 data_per_streamline=seeds)
         save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info('Saved {0}'.format(out_tract))
 
@@ -325,6 +324,6 @@ class PFTrackingPAMFlow(Workflow):
                 seeds = {}
 
             sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
-                                    data_per_streamline=seeds)
+                                     data_per_streamline=seeds)
             save_tractogram(sft, out_tract, bbox_valid_check=False)
             logging.info('Saved {0}'.format(out_tract))

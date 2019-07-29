@@ -13,9 +13,9 @@ signal as a combination of the signals from different fascicles (see also
 # Enables/disables interactive visualization
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.tracking.streamline import select_random_set_of_streamlines
+from dipy.tracking.streamline import (select_random_set_of_streamlines,
+                                      transform_streamlines)
 from numpy.linalg import inv
-from dipy.tracking.utils import move_streamlines
 from dipy.data import read_stanford_t1
 from dipy.viz import window, actor, colormap, has_fury
 from dipy.tracking.streamline import Streamlines
@@ -92,7 +92,6 @@ Tracking will be started from a set of seeds evenly distributed in the white
 matter:
 """
 
-from dipy.tracking import utils
 seeds = utils.seeds_from_mask(white_matter, affine, density=[2, 2, 2])
 
 """
@@ -133,7 +132,7 @@ plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 if has_fury:
     streamlines_actor = actor.streamtube(
-        list(move_streamlines(plot_streamlines, inv(t1_aff))),
+        list(transform_streamlines(plot_streamlines, inv(t1_aff))),
         colormap.line_colors(streamlines), linewidth=0.1)
 
     vol_actor = actor.slicer(t1_data)

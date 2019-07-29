@@ -140,7 +140,8 @@ direction getter along with the classifier and seeds as input.
 # Perform tracking using Local Tracking
 from dipy.tracking.local import LocalTracking
 
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine,
+                                      step_size=.5)
 
 # Compute streamlines.
 from dipy.tracking.streamline import Streamlines
@@ -242,7 +243,9 @@ vol_actor2.display(x=35)
 ren.add(vol_actor2)
 
 # Show original fibers
-ren.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+ren.set_camera(position=(-264, 285, 155),
+               focal_point=(0, -14, 9),
+               view_up=(0, 0, 1))
 window.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
 if interactive:
     window.show(ren)

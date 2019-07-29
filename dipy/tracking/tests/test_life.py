@@ -6,7 +6,6 @@ import dipy.data as dpd
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 import dipy.tracking.life as life
-from dipy.tracking.streamline import transform_streamlines
 import nibabel as nib
 import numpy as np
 import numpy.testing as npt
@@ -165,7 +164,7 @@ def test_fit_data():
     sft = StatefulTractogram(tensor_streamlines, ni_data, Space.RASMM)
     sft.to_vox()
     tensor_streamlines_vox = sft.streamlines
-    
+
     life_model = life.FiberModel(gtab)
     life_fit = life_model.fit(data, tensor_streamlines_vox)
     model_error = life_fit.predict() - life_fit.data

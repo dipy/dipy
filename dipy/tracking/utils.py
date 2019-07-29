@@ -60,15 +60,12 @@ from dipy.core.geometry import dist_to_corner
 from collections import defaultdict
 
 import numpy as np
-from numpy import (asarray, ceil, dot, empty, eye, sqrt)
-from dipy.io.bvectxt import ornt_mapping
+from numpy import (asarray, ceil, empty, sqrt)
 from dipy.tracking import metrics
 from dipy.tracking.vox2track import _streamlines_in_mask
 
 # Import helper functions shared with vox2track
 from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
-from dipy.io.bvectxt import orientation_from_string
-import nibabel as nib
 
 
 def density_map(streamlines, affine, vol_dims):
@@ -103,9 +100,6 @@ def density_map(streamlines, affine, vol_dims):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    if affine is None:
-        affine = np.eye(4)
-
     lin_T, offset = _mapping_to_voxel(affine)
     counts = np.zeros(vol_dims, 'int')
     for sl in streamlines:
@@ -336,8 +330,8 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
-        A seed point at the center the voxel ``[i, j, k]`` 
-        will be represented as ``[x, y, z]`` where 
+        A seed point at the center the voxel ``[i, j, k]``
+        will be represented as ``[x, y, z]`` where
         ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     density : int or array_like (3,)
         Specifies the number of seeds to place along each dimension. A
@@ -424,8 +418,8 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
     affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
-        A seed point at the center the voxel ``[i, j, k]`` 
-        will be represented as ``[x, y, z]`` where 
+        A seed point at the center the voxel ``[i, j, k]``
+        will be represented as ``[x, y, z]`` where
         ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
     seeds_count : int
         The number of seeds to generate. If ``seed_count_per_voxel`` is True,
@@ -450,10 +444,10 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1, 
+    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=1,
     ... seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248]])
-    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6, 
+    >>> random_seeds_from_mask(mask, np.eye(4), seeds_count=6,
     ... seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248],
            [ 0.0507979 ,  0.20814782, -0.20909526],
@@ -462,7 +456,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
            [ 0.39286015, -0.16802019,  0.32122912],
            [-0.42369171,  0.27991879, -0.06159077]])
     >>> mask[0,1,2] = 1
-    >>> random_seeds_from_mask(mask, np.eye(4), 
+    >>> random_seeds_from_mask(mask, np.eye(4),
     ... seeds_count=2, seed_count_per_voxel=True, random_seed=1)
     array([[-0.0640051 , -0.47407377,  0.04966248],
            [-0.27800683,  1.37073231,  1.70671916],
@@ -564,7 +558,6 @@ def target(streamlines, affine, target_mask, include=True):
     See Also
     --------
     density_map
-
     """
     target_mask = np.array(target_mask, dtype=bool, copy=True)
     lin_T, offset = _mapping_to_voxel(affine)
@@ -850,6 +843,7 @@ def transform_tracking_output(tracking_output, affine, seeding_activated=False):
     else:
         for sl in streamlines:
             yield np.dot(sl, lin_T) + offset
+
 
 def reduce_rois(rois, include):
     """Reduce multiple ROIs to one inclusion and one exclusion ROI.
