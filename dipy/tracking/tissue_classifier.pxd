@@ -1,5 +1,5 @@
 
-cpdef enum TissueTypes:
+cpdef enum StreamlineStatus:
     PYERROR = -2
     OUTSIDEIMAGE = -1
     INVALIDPOINT = 0
@@ -11,8 +11,8 @@ cdef class TissueClassifier:
     cdef:
         double interp_out_double[1]
         double[::1] interp_out_view
-    cpdef TissueTypes check_point(self, double[::1] point)
-    cdef TissueTypes check_point_c(self, double* point)
+    cpdef StreamlineStatus check_point(self, double[::1] point)
+    cdef StreamlineStatus check_point_c(self, double* point)
 
 
 cdef class BinaryTissueClassifier(TissueClassifier):

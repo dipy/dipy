@@ -18,7 +18,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tissue_classifier import (ActTissueClassifier,
                                              BinaryTissueClassifier,
                                              ThresholdTissueClassifier,
-                                             TissueTypes)
+                                             StreamlineStatus)
 from dipy.tracking.utils import seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
 
@@ -27,9 +27,9 @@ def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
     following tissue types.
     """
-    # TissueTypes.TRACKPOINT = 1
-    # TissueTypes.ENDPOINT = 2
-    # TissueTypes.INVALIDPOINT = 0
+    # StreamlineStatus.TRACKPOINT = 1
+    # StreamlineStatus.ENDPOINT = 2
+    # StreamlineStatus.INVALIDPOINT = 0
     tissue = np.array([[2, 1, 1, 2, 1],
                        [2, 2, 1, 1, 2],
                        [1, 1, 1, 1, 1],
@@ -52,8 +52,8 @@ def test_stop_conditions():
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
-    endpoint_mask = tissue == TissueTypes.ENDPOINT
-    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    endpoint_mask = tissue == StreamlineStatus.ENDPOINT
+    invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
     tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
@@ -181,8 +181,8 @@ def test_save_seeds():
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
-    endpoint_mask = tissue == TissueTypes.ENDPOINT
-    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
+    endpoint_mask = tissue == StreamlineStatus.ENDPOINT
+    invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
     tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 

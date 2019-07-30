@@ -8,12 +8,12 @@ from dipy.tracking.tissue_classifier import (ActTissueClassifier,
                                              BinaryTissueClassifier,
                                              CmcTissueClassifier,
                                              ThresholdTissueClassifier,
-                                             TissueTypes)
+                                             StreamlineStatus)
 
 
 def test_binary_tissue_classifier():
     """This tests that the binary tissue classifier returns expected
-     tissue types.
+    streamline statuses.
     """
 
     mask = np.random.random((4, 4, 4))
@@ -28,11 +28,11 @@ def test_binary_tissue_classifier():
         state_boolean = btc_boolean.check_point(pts)
         state_float64 = btc_float64.check_point(pts)
         if mask[ind] > 0:
-            npt.assert_equal(state_boolean, int(TissueTypes.TRACKPOINT))
-            npt.assert_equal(state_float64, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state_boolean, int(StreamlineStatus.TRACKPOINT))
+            npt.assert_equal(state_float64, int(StreamlineStatus.TRACKPOINT))
         else:
-            npt.assert_equal(state_boolean, int(TissueTypes.ENDPOINT))
-            npt.assert_equal(state_float64, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state_boolean, int(StreamlineStatus.ENDPOINT))
+            npt.assert_equal(state_float64, int(StreamlineStatus.ENDPOINT))
 
     # Test random points in voxel
     for ind in ndindex(mask.shape):
@@ -41,11 +41,11 @@ def test_binary_tissue_classifier():
             state_boolean = btc_boolean.check_point(pts)
             state_float64 = btc_float64.check_point(pts)
             if mask[ind] > 0:
-                npt.assert_equal(state_boolean, int(TissueTypes.TRACKPOINT))
-                npt.assert_equal(state_float64, int(TissueTypes.TRACKPOINT))
+                npt.assert_equal(state_boolean, int(StreamlineStatus.TRACKPOINT))
+                npt.assert_equal(state_float64, int(StreamlineStatus.TRACKPOINT))
             else:
-                npt.assert_equal(state_boolean, int(TissueTypes.ENDPOINT))
-                npt.assert_equal(state_float64, int(TissueTypes.ENDPOINT))
+                npt.assert_equal(state_boolean, int(StreamlineStatus.ENDPOINT))
+                npt.assert_equal(state_float64, int(StreamlineStatus.ENDPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -54,13 +54,13 @@ def test_binary_tissue_classifier():
         pts = np.array(pts, dtype='float64')
         state_boolean = btc_boolean.check_point(pts)
         state_float64 = btc_float64.check_point(pts)
-        npt.assert_equal(state_boolean, int(TissueTypes.OUTSIDEIMAGE))
-        npt.assert_equal(state_float64, int(TissueTypes.OUTSIDEIMAGE))
+        npt.assert_equal(state_boolean, int(StreamlineStatus.OUTSIDEIMAGE))
+        npt.assert_equal(state_float64, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
 def test_threshold_tissue_classifier():
     """This tests that the thresholdy tissue classifier returns expected
-     tissue types.
+    streamline statuses.
     """
 
     tissue_map = np.random.random((4, 4, 4))
@@ -72,9 +72,9 @@ def test_threshold_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = ttc.check_point(pts)
         if tissue_map[ind] > 0.5:
-            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.TRACKPOINT))
         else:
-            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.ENDPOINT))
 
     # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
@@ -86,9 +86,9 @@ def test_threshold_tissue_classifier():
         res = scipy.ndimage.map_coordinates(
             tissue_map, np.reshape(pts, (3, 1)), order=1, mode='nearest')
         if res > 0.5:
-            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.TRACKPOINT))
         else:
-            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.ENDPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -96,12 +96,12 @@ def test_threshold_tissue_classifier():
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         state = ttc.check_point(pts)
-        npt.assert_equal(state, int(TissueTypes.OUTSIDEIMAGE))
+        npt.assert_equal(state, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
 def test_act_tissue_classifier():
     """This tests that the act tissue classifier returns expected
-     tissue types.
+    streamline statuses.
     """
 
     gm = np.random.random((4, 4, 4))
@@ -119,11 +119,11 @@ def test_act_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = act_tc.check_point(pts)
         if csf[ind] > 0.5:
-            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.INVALIDPOINT))
         elif gm[ind] > 0.5:
-            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.ENDPOINT))
         else:
-            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.TRACKPOINT))
 
     # Test random points in voxel
     inds = [[0, 1.4, 2.2], [0, 2.3, 2.3], [0, 2.2, 1.3], [0, 0.9, 2.2],
@@ -137,11 +137,11 @@ def test_act_tissue_classifier():
         csf_res = scipy.ndimage.map_coordinates(
             csf, np.reshape(pts, (3, 1)), order=1, mode='nearest')
         if csf_res > 0.5:
-            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.INVALIDPOINT))
         elif gm_res > 0.5:
-            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.ENDPOINT))
         else:
-            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.TRACKPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -149,12 +149,12 @@ def test_act_tissue_classifier():
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         state = act_tc.check_point(pts)
-        npt.assert_equal(state, int(TissueTypes.OUTSIDEIMAGE))
+        npt.assert_equal(state, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
 def test_cmc_tissue_classifier():
     """This tests that the cmc tissue classifier returns expected
-     tissue types.
+    streamline statuses.
     """
 
     gm = np.array([[[1, 1], [0, 0], [0, 0]]])
@@ -186,11 +186,11 @@ def test_cmc_tissue_classifier():
         pts = np.array(ind, dtype='float64')
         state = cmc_tc.check_point(pts)
         if csf[ind] == 1:
-            npt.assert_equal(state, int(TissueTypes.INVALIDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.INVALIDPOINT))
         elif gm[ind] == 1:
-            npt.assert_equal(state, int(TissueTypes.ENDPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.ENDPOINT))
         else:
-            npt.assert_equal(state, int(TissueTypes.TRACKPOINT))
+            npt.assert_equal(state, int(StreamlineStatus.TRACKPOINT))
 
     # Test outside points
     outside_pts = [[100, 100, 100], [0, -1, 1], [0, 10, 2],
@@ -198,7 +198,7 @@ def test_cmc_tissue_classifier():
     for pts in outside_pts:
         pts = np.array(pts, dtype='float64')
         npt.assert_equal(cmc_tc.check_point(pts),
-                         int(TissueTypes.OUTSIDEIMAGE))
+                         int(StreamlineStatus.OUTSIDEIMAGE))
         npt.assert_equal(cmc_tc.get_exclude(pts), 0)
         npt.assert_equal(cmc_tc.get_include(pts), 0)
 
