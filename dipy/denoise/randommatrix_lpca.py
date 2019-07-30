@@ -153,11 +153,12 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
                 # Reconstructing denoised image
                 if (p_hat != (p - 1)):
                     if m <= n:
-                        nvals = eigenVec.dot(np.diag(eigenVal)).dot(eigenVec.transpose()).dot(X[:, n // 2])
-                        # nvals = eigenVec@(np.diag(eigenVal))@(eigenVec.transpose())@(X[:, n // 2])
+                        nvals = eigenVec.dot(np.diag(eigenVal))\
+                            .dot(eigenVec.transpose()).dot(X[:, n // 2])
                     else:
-                        nvals = np.dot(X, np.dot(eigenVec, np.dot(np.diag(eigenVal), eigenVec.transpose()[:, n // 2])))
-                        # nvals = X@(eigenVec@(np.diag(eigenVal)@eigenVec.T[:,n//2]))
+                        nvals = np.dot(X, np.dot(eigenVec,
+                                                 np.dot(np.diag(eigenVal),
+                                                eigenVec.transpose()[:, n // 2])))
                 else:
                     nvals = X[:, n // 2]
 

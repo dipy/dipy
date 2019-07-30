@@ -230,7 +230,6 @@ def main(**extra_args):
           # admittedly only a workaround to get things started -- not a
           # solution
           package_data={'dipy': [pjoin('data', 'files', '*')],},
-
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc', 'examples', '*.py')))],
           scripts=glob(pjoin('bin', 'dipy_*')),
