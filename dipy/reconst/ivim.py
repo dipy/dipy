@@ -138,7 +138,7 @@ def ivim_model_selector(gtab, fit_method='trf', **kwargs):
         default : trf
 
     """
-    boundsWarning = 'Bounds for this fit have been set from experiments '
+    bounds_warning = 'Bounds for this fit have been set from experiments '
     boundsWarning += 'and literature survey. To change the bounds, please '
     boundsWarning += 'input your bounds in model definition...'
 
