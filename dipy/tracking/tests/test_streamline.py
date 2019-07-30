@@ -353,6 +353,7 @@ def test_set_number_of_points_memory_leaks():
         streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
+    rstreamlines = set_number_of_points(streamlines, nb_points=2)
     list_refcount_after = get_type_refcount()["list"]
 
     # Calling `set_number_of_points` should increase the refcount of `list`
@@ -758,6 +759,7 @@ def test_compress_streamlines_memory_leaks():
         streamlines.append(rng.randn(rng.randint(10, 100), 3).astype(dtype))
 
     list_refcount_before = get_type_refcount()["list"]
+    cstreamlines = compress_streamlines(streamlines)
     list_refcount_after = get_type_refcount()["list"]
 
     # Calling `compress_streamlines` should increase the refcount of `list` by
