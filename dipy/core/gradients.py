@@ -2,11 +2,7 @@ from __future__ import division, print_function, absolute_import
 from warnings import warn
 
 import numpy as np
-try:
-    from scipy.linalg import polar
-except ImportError:   # Some elderly scipy doesn't have polar
-    from dipy.fixes.scipy import polar
-from scipy.linalg import inv
+from scipy.linalg import inv, polar
 
 from dipy.io import gradients as io
 from dipy.core.onetime import auto_attr

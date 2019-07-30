@@ -14,7 +14,8 @@ Subpackages
  core.geometry -- Spherical geometry, coordinate and vector manipulation
  core.meshes   -- Point distributions on the sphere
  data          -- Small testing datasets
- external      -- Interfaces to external tools such as FSL
+ denoise       -- Denoising algorithms
+ direction     -- Manage peaks and tracking
  io            -- Loading/saving of dpy datasets
  reconst       -- Signal reconstruction modules (tensor, spherical harmonics,
                   diffusion spectrum, etc.)
