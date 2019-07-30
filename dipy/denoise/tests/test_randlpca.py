@@ -22,6 +22,7 @@ def test_lpca_random_noise():
     assert_(S0ns.max() < S0.max())
     assert_equal(np.round(S0ns.mean()), 100)
 
+
 def test_lpca_boundary_behaviour():
     # check is first slice is getting denoised or not ?
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
@@ -61,8 +62,8 @@ def test_lpca_sharpness():
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
     S0ns, _, _ = randommatrix_lpca(S0)
     # check the edge gradient
-    edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20,:] -
-                          S0ns[12, 10:20, 10:20,:]) - 50)
+    edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20, :] -
+                          S0ns[12, 10:20, 10:20, :]) - 50)
     assert_(edgs < 2)
 
 
@@ -78,7 +79,7 @@ def test_lpca_dtype():
 
     # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns, _, _ = randommatrix_lpca(S0, out_dtype= np.float32)
+    S0ns, _, _ = randommatrix_lpca(S0, out_dtype=np.float32)
 
     assert_equal(np.float32, S0ns.dtype)
 

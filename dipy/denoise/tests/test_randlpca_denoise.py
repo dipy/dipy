@@ -6,7 +6,8 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.randomlpca_denoise import randomlpca_denoise as randommatrix_lpca
+from dipy.denoise.randomlpca_denoise import \
+    randomlpca_denoise as randommatrix_lpca
 
 
 def test_lpca_static():
@@ -21,6 +22,7 @@ def test_lpca_random_noise():
     assert_(S0ns.min() > S0.min())
     assert_(S0ns.max() < S0.max())
     assert_equal(np.round(S0ns.mean()), 100)
+
 
 def test_lpca_boundary_behaviour():
     # check is first slice is getting denoised or not ?
@@ -48,7 +50,7 @@ def test_lpca_boundary_behaviour():
 def test_lpca_rmse():
     S0_w_noise = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
     rmse_w_noise = np.sqrt(np.mean((S0_w_noise - 100) ** 2))
-    S0_denoised,_,_ = randommatrix_lpca(S0_w_noise)
+    S0_denoised, _, _ = randommatrix_lpca(S0_w_noise)
     rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
     # Denoising should always improve the RMSE:
     assert_(rmse_denoised < rmse_w_noise)
@@ -61,8 +63,8 @@ def test_lpca_sharpness():
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
     S0ns, _, _ = randommatrix_lpca(S0)
     # check the edge gradient
-    edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20,:] -
-                          S0ns[12, 10:20, 10:20,:]) - 50)
+    edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20, :] -
+                          S0ns[12, 10:20, 10:20, :]) - 50)
     assert_(edgs < 2)
 
 

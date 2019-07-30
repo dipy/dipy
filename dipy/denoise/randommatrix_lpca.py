@@ -135,7 +135,8 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
                 p_hat = 0
                 for t in range(p - 1):
                     gamma = (p - t - 1) / n
-                    sigma_hat = (eigenVal[t + 1] - eigenVal[p - 1]) / (4 * sqrt(gamma))
+                    sigma_hat = (eigenVal[t + 1] - eigenVal[p - 1]) / \
+                                (4 * sqrt(gamma))
                     RHS = (p - t - 1) * sigma_hat
                     if cum_eigenVal[t] >= RHS:
                         p_hat = t
