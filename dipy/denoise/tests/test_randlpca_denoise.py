@@ -80,7 +80,7 @@ def test_lpca_dtype():
 
     # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns, _, _ = randommatrix_lpca(S0, out_dtype= np.float32)
+    S0ns, _, _ = randommatrix_lpca(S0, out_dtype=np.float32)
 
     assert_equal(np.float32, S0ns.dtype)
 
