@@ -10,7 +10,7 @@ First import the necessary modules.
 """
 
 import numpy as np
-from nibabel import trackvis as tv
+from dipy.io.streamline import load_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
@@ -28,9 +28,10 @@ fname = get_fnames('fornix')
 Load fornix streamlines.
 """
 
-streams, hdr = tv.read(fname)
+fornix = load_tractogram(fname, 'same',
+                         bbox_valid_check=False).streamlines
 
-streamlines = [i[0] for i in streams]
+streamlines = Streamlines(fornix)
 
 """
 Perform QuickBundles clustering using the MDF metric and a 10mm distance

@@ -15,7 +15,7 @@ from numpy.testing import measure
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.data import get_fnames
-from nibabel import trackvis as tv
+from dipy.io.streamline import load_tractogram
 
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
@@ -107,8 +107,10 @@ def bench_length():
 def bench_compress_streamlines():
     repeat = 10
     fname = get_fnames('fornix')
-    streams, hdr = tv.read(fname)
-    streamlines = [i[0] for i in streams]
+    fornix = load_tractogram(fname, 'same',
+                             bbox_valid_check=False).streamlines
+
+    streamlines = Streamlines(fornix)
 
     print("Timing compress_streamlines() in Cython"
           " ({0} streamlines)".format(len(streamlines)))
@@ -116,9 +118,7 @@ def bench_compress_streamlines():
     print("Cython time: {0:.3}sec".format(cython_time))
     del streamlines
 
-    fname = get_fnames('fornix')
-    streams, hdr = tv.read(fname)
-    streamlines = [i[0] for i in streams]
+    streamlines = Streamlines(fornix)
     python_time = measure("map(compress_streamlines_python, streamlines)",
                           repeat)
     print("Python time: {0:.2}sec".format(python_time))

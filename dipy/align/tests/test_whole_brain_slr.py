@@ -1,18 +1,21 @@
 import numpy as np
-import nibabel as nib
 from numpy.testing import (assert_equal, run_module_suite,
                            assert_array_almost_equal)
+
+from dipy.align.streamlinear import (compose_matrix44, decompose_matrix44,
+                                     transform_streamlines, whole_brain_slr,
+                                     slr_with_qbx)
+from dipy.io.streamline import load_tractogram
 from dipy.data import get_fnames
 from dipy.tracking.streamline import Streamlines
-from dipy.align.streamlinear import whole_brain_slr, slr_with_qbx
 from dipy.tracking.distances import bundles_distances_mam
-from dipy.align.streamlinear import transform_streamlines
-from dipy.align.streamlinear import compose_matrix44, decompose_matrix44
 
 
 def test_whole_brain_slr():
-    streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-    fornix = [s[0] for s in streams]
+    fname = get_fnames('fornix')
+
+    fornix = load_tractogram(fname, 'same',
+                             bbox_valid_check=False).streamlines
 
     f = Streamlines(fornix)
     f1 = f.copy()

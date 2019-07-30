@@ -18,12 +18,12 @@ from dipy.tracking.streamline import (center_streamlines,
                                       unlist_streamlines,
                                       relist_streamlines,
                                       transform_streamlines,
-                                      set_number_of_points)
-
+                                      set_number_of_points,
+                                      Streamlines)
+from dipy.io.streamline import load_tractogram
 from dipy.core.geometry import compose_matrix
 
 from dipy.data import get_fnames, two_cingulum_bundles
-from nibabel import trackvis as tv
 from dipy.align.bundlemin import (_bundle_minimum_distance_matrix,
                                   _bundle_minimum_distance,
                                   distance_matrix_mdf)
@@ -46,8 +46,13 @@ def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
 
 def fornix_streamlines(no_pts=12):
     fname = get_fnames('fornix')
-    streams, hdr = tv.read(fname)
-    streamlines = [set_number_of_points(i[0], no_pts) for i in streams]
+
+    fornix = load_tractogram(fname, 'same',
+                             bbox_valid_check=False).streamlines
+
+    fornix_streamlines = Streamlines(fornix)
+    streamlines = [set_number_of_points(i[0], no_pts)
+                   for i in fornix_streamlines]
     return streamlines
 
 
