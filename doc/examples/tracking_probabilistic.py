@@ -44,7 +44,7 @@ response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-"""ThresholdTissueClassifier
+"""
 We use the GFA of the CSA model to build a tissue classifier.
 """
 
