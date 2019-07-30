@@ -62,6 +62,9 @@ The `TissueClassifiers` were moved from ``dipy.tracking.local.tissue_classifier`
 to ``dipy.tracking.tissue_classifier``.
 They now need to be imported from ``dipy.tracking.tissue_classifier``.
 
+The ``dipy.tracking.tissue_classifier.TissueClass`` was renamed
+``dipy.tracking.tissue_classifier.StreamStatus`.
+
 The `EuDX` tracking function has been removed. EuDX tractography can be
 performed using ``dipy.tracking.local_tracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
