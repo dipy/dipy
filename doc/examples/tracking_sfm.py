@@ -11,12 +11,27 @@ signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 """
 # Enables/disables interactive visualization
+from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.tracking.streamline import select_random_set_of_streamlines
+from numpy.linalg import inv
+from dipy.tracking.utils import move_streamlines
+from dipy.data import read_stanford_t1
+from dipy.viz import window, actor, colormap, has_fury
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.local import LocalTracking
+from dipy.tracking import utils
+from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.direction.peaks import peaks_from_model
+from dipy.reconst import sfm
+from dipy.data import get_sphere
+from dipy.reconst.csdeconv import auto_response
+from dipy.data import read_stanford_labels
 interactive = False
 """
 To begin, we read the Stanford HARDI data set into memory:
 """
 
-from dipy.data import read_stanford_labels
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
 labels = labels_img.get_data()
@@ -38,7 +53,6 @@ For the SFM, this requires first that we define a canonical response function
 that will be used to deconvolve the signal in every voxel
 """
 
-from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 
@@ -48,9 +62,7 @@ default sphere (362  vertices, symmetrically distributed on the surface of the
 sphere):
 """
 
-from dipy.data import get_sphere
 sphere = get_sphere()
-from dipy.reconst import sfm
 sf_model = sfm.SparseFascicleModel(gtab, sphere=sphere,
                                    l1_ratio=0.5, alpha=0.001,
                                    response=response[0])
@@ -60,7 +72,6 @@ We fit this model to the data in each voxel in the white-matter mask, so that
 we can use these directions in tracking:
 """
 
-from dipy.direction.peaks import peaks_from_model
 
 pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,
@@ -74,7 +85,6 @@ through areas in which the Generalized Fractional Anisotropy (GFA) is
 sufficiently high.
 """
 
-from dipy.tracking.local import ThresholdTissueClassifier
 classifier = ThresholdTissueClassifier(pnm.gfa, .25)
 
 """
@@ -82,7 +92,6 @@ Tracking will be started from a set of seeds evenly distributed in the white
 matter:
 """
 
-from dipy.tracking import utils
 seeds = utils.seeds_from_mask(white_matter, density=[2, 2, 2], affine=affine)
 
 """
@@ -98,8 +107,6 @@ We now have the necessary components to construct a tracking pipeline and
 execute the tracking
 """
 
-from dipy.tracking.local import LocalTracking
-from dipy.tracking.streamline import Streamlines
 streamline_generator = LocalTracking(pnm, classifier, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
@@ -109,10 +116,6 @@ Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.data import read_stanford_t1
-from dipy.tracking.utils import move_streamlines
-from numpy.linalg import inv
 t1 = read_stanford_t1()
 t1_data = t1.get_data()
 t1_aff = t1.affine
@@ -125,7 +128,6 @@ entire white matter, generating many streamlines. In this case, for
 demonstration purposes, we subselect 900 streamlines.
 """
 
-from dipy.tracking.streamline import select_random_set_of_streamlines
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 if has_fury:
@@ -157,9 +159,8 @@ if has_fury:
 Finally, we can save these streamlines to a 'trk' file, for use in other
 software, or for further analysis.
 """
-
-from dipy.io.trackvis import save_trk
-save_trk("tractogram_sfm_detr.trk", streamlines, affine, labels.shape)
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_sfm_detr.trk")
 
 """
 References

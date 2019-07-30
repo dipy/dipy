@@ -20,9 +20,13 @@ created in that example:
 
 """
 
+from mpl_toolkits.axes_grid1 import AxesGrid
+import matplotlib
+import matplotlib.pyplot as plt
+import dipy.tracking.life as life
+from dipy.viz import window, actor, colormap as cmap
 import numpy as np
 import os.path as op
-import nibabel as nib
 from dipy.io.streamline import load_trk
 import dipy.core.optimize as opt
 if not op.exists('lr-superiorfrontal.trk'):
@@ -39,11 +43,11 @@ else:
     t1 = read_stanford_t1()
     t1_data = t1.get_data()
     data = hardi_img.get_data()
-# Read the candidates from file in voxel space:
 
-candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
-# candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
-#                                                  points_space='voxel')[0]]
+# Read the candidates from file in voxel space:
+candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
+candidate_sl_sft.to_vox()
+candidate_sl = candidate_sl_sft.streamlines
 
 """
 
@@ -60,7 +64,6 @@ the anatomical structure of this brain:
 
 """
 
-from dipy.viz import window, actor, colormap as cmap
 
 # Enables/disables interactive visualization
 interactive = False
@@ -105,7 +108,6 @@ which contains the classes and functions that implement the model:
 
 """
 
-import dipy.tracking.life as life
 fiber_model = life.FiberModel(gtab)
 
 """
@@ -155,8 +157,6 @@ streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 """
 
-import matplotlib.pyplot as plt
-import matplotlib
 fig, ax = plt.subplots(1)
 ax.hist(fiber_fit.beta, bins=100, histtype='step')
 ax.set_xlabel('Fiber weights')
@@ -256,7 +256,7 @@ to add back the mean and then multiply by S0 in every voxel:
 
 mean_pred[..., gtab.b0s_mask] = S0[:, None]
 mean_pred[..., ~gtab.b0s_mask] =\
-        (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
+    (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
 mean_error = mean_pred - fiber_fit.data
 mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 
@@ -314,7 +314,6 @@ vol_improve[fiber_fit.vox_coords[:, 0],
             fiber_fit.vox_coords[:, 1],
             fiber_fit.vox_coords[:, 2]] = mean_rmse - model_rmse
 sl_idx = 49
-from mpl_toolkits.axes_grid1 import AxesGrid
 fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
 ax = AxesGrid(fig, 111,
@@ -332,7 +331,8 @@ ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[1].matshow(np.rot90(vol_mean[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
-im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
+im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]),
+                   cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
 for lax in ax:
     lax.set_xticks([])

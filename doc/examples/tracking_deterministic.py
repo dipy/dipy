@@ -25,14 +25,20 @@ mask (tissue classifier).
 """
 
 # Enables/disables interactive visualization
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.tracking.streamline import Streamlines
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_trk
+from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.data import default_sphere
+from dipy.viz import window, actor, colormap, has_fury
+from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
+from dipy.tracking import utils
+from dipy.reconst.shm import CsaOdfModel
+from dipy.data import read_stanford_labels
 interactive = False
 
-from dipy.data import read_stanford_labels
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.reconst.shm import CsaOdfModel
-from dipy.tracking import utils
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
@@ -43,7 +49,9 @@ seed_mask = labels == 2
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
@@ -59,10 +67,6 @@ direction getter. Here, the spherical harmonic representation of the FOD
 is used.
 """
 
-from dipy.data import default_sphere
-from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.io.streamline import save_trk
-from dipy.tracking.streamline import Streamlines
 
 detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                              max_angle=30.,
@@ -70,8 +74,9 @@ detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
 streamline_generator = LocalTracking(detmax_dg, classifier, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
-save_trk("'tractogram_deterministic_dg.trk", streamlines, affine,
-         labels.shape)
+
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_deterministic_dg.trk")
 
 if has_fury:
     r = window.Renderer()
