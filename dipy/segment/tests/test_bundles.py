@@ -1,4 +1,6 @@
+import sys
 import numpy as np
+import pytest
 import nibabel as nib
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
@@ -9,23 +11,29 @@ from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import qbx_and_merge
 
-
-streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-fornix = [s[0] for s in streams]
-
-f = Streamlines(fornix)
-f1 = f.copy()
-
-f2 = f1[:20].copy()
-f2._data += np.array([50, 0, 0])
-
-f3 = f1[200:].copy()
-f3._data += np.array([100, 0, 0])
-
-f.extend(f2)
-f.extend(f3)
+is_big_endian = 'big' in sys.byteorder.lower()
 
 
+def setup_module():
+    global f, f1, f2, f3, fornix
+    streams, _ = nib.trackvis.read(get_fnames('fornix'))
+    fornix = [s[0] for s in streams]
+
+    f = Streamlines(fornix)
+    f1 = f.copy()
+
+    f2 = f1[:20].copy()
+    f2._data += np.array([50, 0, 0])
+
+    f3 = f1[200:].copy()
+    f3._data += np.array([100, 0, 0])
+
+    f.extend(f2)
+    f.extend(f3)
+
+
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_check_defaults():
 
     rb = RecoBundles(f, greater_than=0, clust_thr=10)
@@ -53,6 +61,8 @@ def test_rb_check_defaults():
         assert_equal(row.min(), 0)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_disable_slr():
 
     rb = RecoBundles(f, greater_than=0, clust_thr=10)
@@ -81,6 +91,8 @@ def test_rb_disable_slr():
         assert_equal(row.min(), 0)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_slr_threads():
 
     rng_multi = np.random.RandomState(42)
@@ -108,6 +120,8 @@ def test_rb_slr_threads():
         assert_almost_equal(row.min(), 0, decimal=4)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_no_verbose_and_mam():
 
     rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=False)
@@ -137,6 +151,8 @@ def test_rb_no_verbose_and_mam():
         assert_equal(row.min(), 0)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_clustermap():
 
     cluster_map = qbx_and_merge(f, thresholds=[40, 25, 20, 10])
@@ -166,6 +182,8 @@ def test_rb_clustermap():
         assert_equal(row.min(), 0)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_no_neighb():
     # what if no neighbors are found? No recognition
 
@@ -200,6 +218,8 @@ def test_rb_no_neighb():
         assert_equal(len(rec_trans), 0)
 
 
+@pytest.mark.skipif(is_big_endian,
+                    reason="Little Endian architecture required")
 def test_rb_reduction_mam():
 
     rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=True)
