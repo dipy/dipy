@@ -21,7 +21,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.reconst.csdeconv import auto_response
 from dipy.reconst import sfm
 from dipy.tracking import utils
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import (select_random_set_of_streamlines,
                                       Streamlines)
 from dipy.tracking.tissue_classifier import ThresholdTissueClassifier

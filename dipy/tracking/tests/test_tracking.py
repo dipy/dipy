@@ -12,8 +12,8 @@ from dipy.direction import (BootDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.tracking.localtracking import (LocalTracking,
-                                         ParticleFilteringTracking)
+from dipy.tracking.local_tracking import (LocalTracking,
+                                          ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tissue_classifier import (ActTissueClassifier,
                                              BinaryTissueClassifier,

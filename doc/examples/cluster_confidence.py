@@ -14,7 +14,7 @@ from dipy.direction import peaks_from_model
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking import utils
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines, cluster_confidence
 from dipy.tracking.utils import length
 from dipy.viz import actor, window

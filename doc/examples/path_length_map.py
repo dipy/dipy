@@ -21,7 +21,7 @@ from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
 from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking import utils
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 from dipy.tracking.utils import path_length

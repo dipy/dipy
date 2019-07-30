@@ -34,7 +34,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
-from dipy.tracking.localtracking import (LocalTracking,
+from dipy.tracking.local_tracking import (LocalTracking,
                                           ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking import utils

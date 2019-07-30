@@ -95,7 +95,7 @@ def local_tracker(
     """Tracks one direction from a seed.
 
     This function is the main workhorse of the ``LocalTracking`` class defined
-    in ``dipy.tracking.localtracking``.
+    in ``dipy.tracking.local_tracking``.
 
     Parameters
     ----------
@@ -215,7 +215,7 @@ def pft_tracker(
     """Tracks one direction from a seed using the particle filtering algorithm.
 
     This function is the main workhorse of the ``ParticleFilteringTracking``
-    class defined in ``dipy.tracking.localtracking``.
+    class defined in ``dipy.tracking.local_tracking``.
 
     Parameters
     ----------

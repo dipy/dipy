@@ -55,15 +55,15 @@ The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
 The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
-``dipy.tracking.local.localtracking`` to ``dipy.tracking.localtracking``.
-They now need to be imported from ``dipy.tracking.localtracking``.
+``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
+They now need to be imported from ``dipy.tracking.local_tracking``.
 
 The `TissueClassifiers` were moved from ``dipy.tracking.local.tissue_classifier``
 to ``dipy.tracking.tissue_classifier``.
 They now need to be imported from ``dipy.tracking.tissue_classifier``.
 
 The `EuDX` tracking function has been removed. EuDX tractography can be
-performed using ``dipy.tracking.LocalTracking`` using
+performed using ``dipy.tracking.local_tracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
 DIPY 0.16 Changes

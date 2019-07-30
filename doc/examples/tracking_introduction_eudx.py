@@ -153,7 +153,7 @@ used here and the default option when providing the output of peaks directly
 in LocalTracking.
 """
 
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 
 # Initialization of LocalTracking. The computation happens in the next step.

@@ -42,6 +42,9 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 datasets in DIPY_.
 """
 
+# Enables/disables interactive visualization
+interactive = False
+
 import numpy as np
 from dipy.data import (read_stanford_labels, fetch_stanford_t1,
                        read_stanford_t1)
@@ -138,7 +141,7 @@ direction getter along with the classifier and seeds as input.
 """
 
 # Perform tracking using Local Tracking
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 
 streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
 
@@ -221,9 +224,6 @@ after the cleaning procedure via RFBC thresholding (see
 
 # Visualize the results
 from dipy.viz import window, actor
-
-# Enables/disables interactive visualization
-interactive = False
 
 # Create renderer
 ren = window.Renderer()

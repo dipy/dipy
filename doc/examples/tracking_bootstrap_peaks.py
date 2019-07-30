@@ -25,7 +25,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
-from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.viz import window, actor, colormap, has_fury
