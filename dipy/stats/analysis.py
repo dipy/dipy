@@ -404,6 +404,8 @@ def afq_profile(data, bundle, affine=None, n_points=100,
     """
     if orient_by is not None:
         bundle = orient_by_streamline(bundle, orient_by)
+    if affine is None:
+        affine = np.eye(4)
     if len(bundle) == 0:
         raise ValueError("The bundle contains no streamlines")
 
