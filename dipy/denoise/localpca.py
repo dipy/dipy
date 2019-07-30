@@ -50,21 +50,21 @@ def _pca_classifier(L, m):
 
 def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
              tau_factor=None, return_sigma=False, out_dtype=None):
-    r"""Local PCA-based denoising of diffusion datasets.
+    r"""General function to perform PCA-based denoising of diffusion datasets.
 
     Parameters
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    mask : 3D boolean array (optional)
-        A mask with voxels that are true inside the brain and false outside of
-        it. The function denoises within the true part and returns zeros
-        outside of those voxels.
     sigma : float or 3D array (optional)
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
         [1]_,[2]_
+    mask : 3D boolean array (optional)
+        A mask with voxels that are true inside the brain and false outside of
+        it. The function denoises within the true part and returns zeros
+        outside of those voxels.
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
@@ -83,8 +83,7 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
         \tau_{factor} can be set to a predefined values (e.g. \tau_{factor} =
         2.3 [3]_), or automatically calculated using random matrix theory
-        (optimal value). The optimal value is used if \tau_{factor} is set to
-        None.
+        (in case that \tau_{factor} is set to None).
         Default: None.
     return_sigma : bool (optional)
         If true, the Standard deviation of the noise will be returned.
