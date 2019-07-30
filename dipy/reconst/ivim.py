@@ -142,12 +142,16 @@ def ivim_model_selector(gtab, fit_method='trr', **kwargs):
     bounds_warning += 'input your bounds in model definition...'
 
     if fit_method.lower() == 'trr':
-        warnings.warn(bounds_warning, UserWarning)
-        return IvimModelTRR(gtab, **kwargs)
+        ivimmodel_trr = IvimModelTRR(gtab, **kwargs)
+        if ivimmodel_trr.bounds == BOUNDS:
+            warnings.warn(bounds_warning, UserWarning)
+        return ivimmodel_trr
 
     elif fit_method.lower() == 'varpro':
-        warnings.warn(bounds_warning, UserWarning)
-        return IvimModelVP(gtab, **kwargs)
+        ivimmodel_vp = IvimModelVP(gtab, **kwargs)
+        if ivimmodel_vp.bounds == (BOUNDS[0][1:], BOUNDS[1][1:]):
+            warnings.warn(bounds_warning, UserWarning)
+        return ivimmodel_vp
 
     else:
         opt_msg = 'The fit_method option chosen was not correct. '
