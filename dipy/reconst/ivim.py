@@ -723,7 +723,7 @@ class IvimModelVP(ReconstModel):
         constraints = [cvxpy.sum(f) == 1,
                        f[0] >= 0.011,
                        f[1] >= 0.011,
-                       f[0] <= 0.29,
+                       f[0] <= self.bounds[1][0],
                        f[1] <= 0.89]
 
         # Form objective.
