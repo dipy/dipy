@@ -1117,7 +1117,7 @@ def test_values_from_volume():
 
             # The generator has already been consumed so needs to be
             # regenerated:
-            x_sl1 = list(transform_streamlines(sl1, affine))
+            x_sl1 = transform_streamlines(sl1, affine)
             vv = values_from_volume(data, x_sl1, affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
