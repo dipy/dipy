@@ -58,6 +58,10 @@ The `EuDX` tracking function has been removed. EuDX tractography can be
 performed using ``dipy.tracking.local.LocalTracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
+**Streamlines**
+
+``dipy.io.trackvis`` has been removed. Use ``dipy.io.streamline`` instead.
+
 **Notes**
 
 - ``dipy.external`` package has been removed
