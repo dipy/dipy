@@ -25,19 +25,20 @@ mask (tissue classifier).
 """
 
 # Enables/disables interactive visualization
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.tracking.streamline import Streamlines
+interactive = False
+
+from dipy.data import default_sphere, read_stanford_labels
+from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
-from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.data import default_sphere
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.tracking import utils
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.reconst.shm import CsaOdfModel
-from dipy.data import read_stanford_labels
-interactive = False
+from dipy.tracking import utils
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.tracking.streamline import Streamlines
+from dipy.viz import window, actor, colormap, has_fury
 
 
 hardi_img, gtab, labels_img = read_stanford_labels()

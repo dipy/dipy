@@ -9,21 +9,17 @@ have similar pathways. The details can be found in [Jordan_2018_plm]_.
 
 """
 
-from dipy.data import read_stanford_labels
-from dipy.reconst.shm import CsaOdfModel
-from dipy.data import default_sphere
+from dipy.data import default_sphere, read_stanford_labels
 from dipy.direction import peaks_from_model
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.reconst.shm import CsaOdfModel
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking
-from dipy.tracking.streamline import Streamlines
-from dipy.viz import actor, window
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.streamline import Streamlines, cluster_confidence
 from dipy.tracking.utils import length
+from dipy.viz import actor, window
 
 import matplotlib.pyplot as plt
-import matplotlib
-
-from dipy.tracking.streamline import cluster_confidence
 
 
 """

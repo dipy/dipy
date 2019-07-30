@@ -14,6 +14,9 @@ example. Let's start by loading the necessary modules for executing this
 tutorial.
 """
 
+# Enables/disables interactive visualization
+interactive = False
+
 from dipy.data import read_stanford_labels, small_sphere
 from dipy.direction import BootDirectionGetter, ClosestPeakDirectionGetter
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -26,9 +29,6 @@ from dipy.tracking.localtracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.viz import window, actor, colormap, has_fury
-
-# Enables/disables interactive visualization
-interactive = False
 
 
 hardi_img, gtab, labels_img = read_stanford_labels()

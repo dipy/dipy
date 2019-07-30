@@ -23,11 +23,12 @@ data and fitting a Constrained Spherical Deconvolution (CSD) model.
 interactive = False
 
 from dipy.data import read_stanford_labels
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.tracking import utilsThresholdTissueClassifier
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.tracking import utils
 from dipy.tracking.localtracking import LocalTracking
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
 from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()

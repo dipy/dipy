@@ -24,29 +24,28 @@ fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
 
+# Enables/disables interactive visualization
+interactive = False
 
-from dipy.tracking.local import ActTissueClassifier
-from dipy.tracking.local import BinaryTissueClassifier
-from dipy.tracking.local import ThresholdTissueClassifier
-from dipy.reconst.dti import fractional_anisotropy
-import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking import utils
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking.local import LocalTracking
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.io.streamline import save_trk
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.direction import DeterministicMaximumDirectionGetter
+import numpy as np
+
 from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
-import numpy as np
-
-# Enables/disables interactive visualization
-interactive = False
+from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.reconst.dti import fractional_anisotropy, TensorModel
+from dipy.tracking import utils
+from dipy.tracking.localtracking import LocalTracking
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.tissue_classifier import (ActTissueClassifier,
+                                             BinaryTissueClassifier,
+                                             ThresholdTissueClassifier)
+from dipy.viz import window, actor, colormap, has_fury
 
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -96,7 +95,7 @@ direction to follow.
 """
 
 
-tensor_model = dti.TensorModel(gtab)
+tensor_model = TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
 FA = fractional_anisotropy(tenfit.evals)
 
