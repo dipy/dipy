@@ -737,12 +737,6 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
         return(np.array(out, dtype=bool))
 
 
-# reorder_voxels_affine
-
-
-# affine_from_fsl_mat_file
-
-
 def length(streamlines):
     """
     Calculate the lengths of many streamlines in a bundle.
@@ -795,7 +789,7 @@ def unique_rows(in_array, dtype='f4'):
 
 
 @_with_initialize
-def transform_tracking_output(tracking_output, affine, seeding_activated=False):
+def transform_tracking_output(tracking_output, affine, save_seeds=False):
     """Applies a linear transformation, given by affine, to streamlines.
     Parameters
     ----------
@@ -813,7 +807,7 @@ def transform_tracking_output(tracking_output, affine, seeding_activated=False):
         A sequence of transformed streamlines.
         If return_seeds is True, also return seeds
     """
-    if seeding_activated:
+    if save_seeds:
         streamlines, seeds = zip(*tracking_output)
     else:
         streamlines = tracking_output

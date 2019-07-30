@@ -113,7 +113,7 @@ class LocalTracking(object):
         track = self._generate_streamlines()
 
         return utils.transform_tracking_output(track, self.affine,
-                                               seeding_activated=self.save_seeds)
+                                               save_seeds=self.save_seeds)
 
     def _generate_streamlines(self):
         """A streamline generator"""
