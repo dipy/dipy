@@ -1,8 +1,6 @@
 import numpy as np
 from dipy.tracking.streamline import (set_number_of_points, nbytes,
-                                      select_random_set_of_streamlines,
-                                      values_from_volume,
-                                      orient_by_streamline)
+                                      select_random_set_of_streamlines)
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.distances import (bundles_distances_mdf,
                                      bundles_distances_mam)
