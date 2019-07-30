@@ -10,9 +10,8 @@ from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
-# global variables for bounding least_squares in both models
-BOUNDS_TRF = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
-BOUNDS_VP = ([0.01, 0.005, 10**-4], [0.3, 0.02, 0.003])
+# global variable for bounding least_squares in both models
+BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
 
 
 def ivim_prediction(params, gtab):
@@ -125,42 +124,42 @@ def f_D_star_error(params, gtab, signal, S0, D):
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
 
 
-def ivim_model_selector(gtab, fit_method='trf', **kwargs):
+def ivim_model_selector(gtab, fit_method='trr', **kwargs):
     """
     Selector function to switch between the 2-stage Trust-Region Reflective
-    based NLLS fitting method (also containing the linear fit): `trf` and the
+    based NLLS fitting method (also containing the linear fit): `trr` and the
     Variable Projections based fitting method: `varpro`.
 
     Parameters
     ----------
     fit_method : string, optional
-        The value fit_method can either be 'trf' or 'varpro'.
-        default : trf
+        The value fit_method can either be 'trr' or 'varpro'.
+        default : trr
 
     """
-    boundsWarning = 'Bounds for this fit have been set from experiments '
-    boundsWarning += 'and literature survey. To change the bounds, please '
-    boundsWarning += 'input your bounds in model definition...'
+    bounds_warning = 'Bounds for this fit have been set from experiments '
+    bounds_warning += 'and literature survey. To change the bounds, please '
+    bounds_warning += 'input your bounds in model definition...'
 
-    if fit_method.lower() == 'trf':
-        warnings.warn(boundsWarning, UserWarning)
-        return IvimModelTRF(gtab, **kwargs)
+    if fit_method.lower() == 'trr':
+        warnings.warn(bounds_warning, UserWarning)
+        return IvimModelTRR(gtab, **kwargs)
 
     elif fit_method.lower() == 'varpro':
-        warnings.warn(boundsWarning, UserWarning)
+        warnings.warn(bounds_warning, UserWarning)
         return IvimModelVP(gtab, **kwargs)
 
     else:
         opt_msg = 'The fit_method option chosen was not correct. '
-        opt_msg += 'Using fit_method: TRF instead...'
+        opt_msg += 'Using fit_method: TRR instead...'
         warnings.warn(opt_msg, UserWarning)
-        return IvimModelTRF(gtab, **kwargs)
+        return IvimModelTRR(gtab, **kwargs)
 
 
 IvimModel = ivim_model_selector
 
 
-class IvimModelTRF(ReconstModel):
+class IvimModelTRR(ReconstModel):
     """Ivim model
     """
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
@@ -278,11 +277,11 @@ class IvimModelTRF(ReconstModel):
                         'eps': eps, 'maxiter': maxiter}
         self.x_scale = x_scale
 
-        self.bounds = bounds or BOUNDS_TRF
+        self.bounds = bounds or BOUNDS
 
     @multi_voxel_fit
     def fit(self, data):
-        """ Fit method of the IvimModelTRF class.
+        """ Fit method of the IvimModelTRR class.
 
         The fitting takes place in the following steps: Linear fitting for D
         (bvals > `split_b_D` (default: 400)) and store S0_prime. Another linear
@@ -552,6 +551,7 @@ class IvimModelVP(ReconstModel):
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
+        self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
     def fit(self, data, bounds_de=None):
@@ -600,7 +600,7 @@ class IvimModelVP(ReconstModel):
         x_f = self.x_and_f_to_x_f(x, f)
 
         # Setting up the bounds for least_squares
-        bounds = BOUNDS_VP
+        bounds = self.bounds
 
         # Optimizer #3: Nonlinear-Least Squares
         res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
