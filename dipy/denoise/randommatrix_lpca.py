@@ -157,10 +157,10 @@ def randommatrix_lpca(arr, patch_size=0, out_dtype=None):
                             .dot(eigenVec.transpose()).dot(X[:, n // 2])
                     else:
                         nvals = np.dot(X,
-                                       np.dot(
-                                       eigenVec,
-                                       np.dot(np.diag(eigenVal),
-                                       eigenVec.transpose()[:, n // 2])))
+                                       np.dot(eigenVec,
+                                              np.dot(np.diag(eigenVal),
+                                              eigenVec.transpose()[:, n // 2]))
+                                       )
                 else:
                     nvals = X[:, n // 2]
 
