@@ -11,11 +11,10 @@ from dipy.testing import assert_arrays_equal
 
 from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite, assert_allclose,
+                           assert_raises, assert_allclose,
                            assert_almost_equal, assert_equal)
 
 from dipy.tracking.streamline import Streamlines
-import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
                                       relist_streamlines,
@@ -807,8 +806,8 @@ def test_select_by_rois():
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
 
-    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2], [True, True],
-                               tol=1)
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                               [True, True], tol=1)
 
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
@@ -821,13 +820,13 @@ def test_select_by_rois():
     # Setting tolerance too low gets overridden:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2], [True, False],
-                                   tol=0.1)
+        selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                                   [True, False], tol=0.1)
 
         assert_arrays_equal(list(selection), [streamlines[1]])
 
-    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2], [True, True],
-                               tol=0.87)
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                               [True, True], tol=0.87)
 
     assert_arrays_equal(list(selection), [streamlines[1]])
 

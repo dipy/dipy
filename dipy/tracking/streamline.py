@@ -215,20 +215,20 @@ def select_by_rois(streamlines, affine, rois, include, mode=None,
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
         z). Non-zeros in each volume are considered to be within the region
     include : array or list
-        A list or 1D array of locationsboolean values marking inclusion or exclusion
-        criteria. If a streamllocationsine is near any of the inclusion ROIs, it
-        should evaluate to Trulocationse, unless it is also near any of the exclusion
-        ROIs.locations
-    mode : string, optionallocations
-        One of {"any", "all", locations"either_end", "both_end"}, where a streamline is
-        associated with an ROIlocations if:
-locations
-        "any" : any point is wlocationsithin tol from ROI. Default.
-locations
-        "all" : all points arelocations within tol from ROI.
-locations
-        "either_end" : either locationsof the end-points is within tol from ROI
-locations
+        A list or 1D array of boolean values marking inclusion or exclusion
+        criteria. If a streamline is near any of the inclusion ROIs, it
+        should evaluate to True, unless it is also near any of the exclusion
+        ROIs.
+    mode : string, optional
+        One of {"any", "all", "either_end", "both_end"}, where a streamline is
+        associated with an ROI if:
+
+        "any" : any point is within tol from ROI. Default.
+
+        "all" : all points are within tol from ROI.
+
+        "either_end" : either of the end-points is within tol from ROI
+
         "both_end" : both end points are within tol from ROI.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
