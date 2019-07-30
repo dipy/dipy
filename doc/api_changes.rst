@@ -32,6 +32,14 @@ The API of ``dipy.io.streamlines.load_tractogram`` and
 When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
 guarantee proper spatial transformation handling.
 
+**Spatial transformation handling**
+
+Functions from ``dipy.tracking.streamlines`` were modified to enforce the
+affine parameter and uniformize docstring. ``deform_streamlines``
+``select_by_rois``, ``orient_by_rois``, ``_extract_vals`` 
+and ``values_from_volume``.
+
+
 **Simulation**
 
 - ``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
