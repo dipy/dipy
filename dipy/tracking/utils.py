@@ -318,7 +318,7 @@ def subsegment(streamlines, max_segment_length):
 
 
 def seeds_from_mask(mask, affine, density=[1, 1, 1]):
-    """Creates seeds for fiber tracking from a binary mask.
+    """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
     are ``True``.
@@ -351,21 +351,8 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     --------
     >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
-    >>> seeds_from_mask(mask, np.eye(4), [1,1,1], [1,1,1])
-    array([[ 0.5,  0.5,  0.5]])
-    >>> seeds_from_mask(mask, np.eye(4), [1,2,3], [1,1,1])
-    array([[ 0.5       ,  0.25      ,  0.16666667],
-           [ 0.5       ,  0.75      ,  0.16666667],
-           [ 0.5       ,  0.25      ,  0.5       ],
-           [ 0.5       ,  0.75      ,  0.5       ],
-           [ 0.5       ,  0.25      ,  0.83333333],
-           [ 0.5       ,  0.75      ,  0.83333333]])
-    >>> mask[0,1,2] = 1
-    >>> seeds_from_mask(mask, np.eye(4), [1,1,2]])
-    array([[ 0.55 ,  0.55 ,  0.625],
-           [ 0.55 ,  0.55 ,  1.875],
-           [ 0.55 ,  1.65 ,  5.625],
-           [ 0.55 ,  1.65 ,  6.875]])
+    >>> seeds_from_mask(mask, np.eye(4), [1,1,1])
+    array([[ 0.0,  0.0,  0.0]])
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
@@ -402,7 +389,7 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
 
 def random_seeds_from_mask(mask, affine, seeds_count=1,
                            seed_count_per_voxel=True, random_seed=None):
-    """Creates randomly placed seeds for fiber tracking from a binary mask.
+    """Create randomly placed seeds for fiber tracking from a binary mask.
 
     Seeds points are placed randomly distributed in voxels of ``mask``
     which are ``True``.
