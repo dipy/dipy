@@ -72,7 +72,7 @@ estimate.
 
 t = time()
 
-denoised_arr = localpca(data, sigma=None, patch_radius=2)
+denoised_arr = localpca(data, sigma=sigma, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 
