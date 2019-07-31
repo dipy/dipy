@@ -5,7 +5,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.localpca import (localpca, _pca_classifier)
+from dipy.denoise.localpca import (localpca, mppca, genpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
@@ -288,12 +288,12 @@ def test_pca_classifier():
     assert_(std_error < 5)
 
 
-def test_mpPCA_in_phantom():
+def test_mppca_in_phantom():
     DWIgt = rfiw_phantom(gtab, snr=None)
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
-    DWIden = localpca(DWInoise, patch_radius=2)
+    DWIden = mppca(DWInoise, patch_radius=2)
 
     # Test if denoised data is closer to ground truth than noisy data
     rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
@@ -301,21 +301,21 @@ def test_mpPCA_in_phantom():
     assert_(rmse_den < rmse_noisy)
 
 
-def test_lpca_returned_sigma():
+def test_mppca_returned_sigma():
     DWIgt = rfiw_phantom(gtab, snr=None)
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
 
     # Case that sigma is estimated using mpPCA
-    DWIden0, sigma = localpca(DWInoise, patch_radius=2, return_sigma=True)
+    DWIden0, sigma = mppca(DWInoise, patch_radius=2, return_sigma=True)
     msigma = np.mean(sigma)
     std_error = abs(msigma - std_gt)/std_gt * 100
     assert_(std_error < 5)
 
     # Case that sigma is inputed (sigma outputed should be the same as the one
     # inputed)
-    DWIden1, rsigma = localpca(DWInoise, sigma=sigma,
+    DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
                                patch_radius=2, return_sigma=True)
     assert_array_almost_equal(rsigma, sigma)
 
