@@ -1,6 +1,6 @@
 """
 =======================================================
-Denoise images using Local PCA and empirical thresholds
+Denoise images using Local PCA via empirical thresholds
 =======================================================
 
 PCA-based denoising algorithms are effective denoising methods because they

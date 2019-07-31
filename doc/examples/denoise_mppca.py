@@ -9,13 +9,13 @@ been shown to provide an optimal compromise between noise suppression and loss
 of anatomical information for different techniques such as DTI [Manjon2013]_,
 spherical deconvolution [Veraart2016a] and DKI [Henri2018]_.
 
-The basic idea behind the PCA-based denoising algorithm is to remove the
-data's principal components classified being mostly related to noise.
-The principal components classification can be performed based on prior noise
-variance estimates [Manjon2013]_ (see :ref:`denoise_localpca`)or automatically
-based on the Marcenko-Pastur distribution [Veraa2016a]_. In addition to noise
-suppression, the PCA algorithm can be used to estimate the noise standard
-deviation [Veraa2016b].
+The basic idea behind the PCA-based denoising algorithms is to remove the
+components of the data that are classified as noise. The Principal Components
+classification can be performed based on prior noise variance estimates
+[Manjon2013]_ (see :ref:`denoise_localpca`)or automatically based on the
+Marcenko-Pastur distribution [Veraa2016a]_. In addition to noise
+suppression, the PCA algorithm can be used to get the standard deviation of
+the noise[Veraa2016b]_.
 
 In the following example, we show how to denoise diffusion MRI images and
 estimate the noise standard deviation using the PCA algorithm based
@@ -146,7 +146,7 @@ nib.save(nib.Nifti1Image(denoised_arr,
 print("Entire denoised data saved in denoised_mppca.nii.gz")
 
 """
-Additionally, we show on this example how the PCA denoising algorithm effects
+Additionally, we show in this example how the PCA denoising algorithm affects
 different diffusion measurements. For this, we run the diffusion kurtosis model
 below on both original and denoised versions of the data:
 """

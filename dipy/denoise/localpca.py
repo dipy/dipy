@@ -238,11 +238,11 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
     denoised_arr = thetax / theta
     denoised_arr.clip(min=0, out=denoised_arr)
-    denoised_arr[~mask] = 0
+    denoised_arr[mask == 0] = 0
     if return_sigma is True:
         if sigma is None:
             var = var / thetavar
-            var[~mask] = 0
+            var[mask == 0] = 0
             return denoised_arr.astype(out_dtype), np.sqrt(var)
         else:
             return denoised_arr.astype(out_dtype), sigma
