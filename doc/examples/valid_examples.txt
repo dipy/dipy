@@ -43,7 +43,7 @@
  tracking_deterministic.py
  tracking_probabilistic.py
  tracking_bootstrap_peaks.py
- tracking_tissue_classifier.py
+ tracking_stopping_criterion.py
  tracking_pft.py
  tracking_sfm.py
  affine_registration_3d.py

@@ -2,7 +2,7 @@
 cimport numpy as np
 
 from dipy.direction.pmf cimport PmfGen
-from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.tracking.direction_getter cimport DirectionGetter
 
 cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity)

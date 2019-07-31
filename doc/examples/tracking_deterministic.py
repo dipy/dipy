@@ -21,23 +21,24 @@ This example is an extension of the :ref:`example_tracking_probabilistic`
 example. We begin by loading the data, fitting a Constrained Spherical
 Deconvolution (CSD) reconstruction model for the tractography and fitting
 the constant solid angle (CSA) reconstruction model to define the tracking
-mask (tissue classifier).
+mask (stopping criterion).
 """
 
 # Enables/disables interactive visualization
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.tracking.streamline import Streamlines
+interactive = False
+
+from dipy.data import default_sphere, read_stanford_labels
+from dipy.direction import DeterministicMaximumDirectionGetter
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
-from dipy.direction import DeterministicMaximumDirectionGetter
-from dipy.data import default_sphere
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
-from dipy.tracking import utils
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
 from dipy.reconst.shm import CsaOdfModel
-from dipy.data import read_stanford_labels
-interactive = False
+from dipy.tracking import utils
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
+from dipy.tracking.streamline import Streamlines
+from dipy.viz import window, actor, colormap, has_fury
 
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -56,7 +57,7 @@ csd_fit = csd_model.fit(data, mask=white_matter)
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
-classifier = ThresholdTissueClassifier(gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
 """
 The Fiber Orientation Distribution (FOD) of the CSD model estimates the
@@ -68,11 +69,10 @@ is used.
 """
 
 
-detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
-                                                             max_angle=30.,
-                                                             sphere=default_sphere)
-streamline_generator = LocalTracking(detmax_dg, classifier, seeds, affine,
-                                     step_size=.5)
+detmax_dg = DeterministicMaximumDirectionGetter.from_shcoeff(
+    csd_fit.shm_coeff, max_angle=30., sphere=default_sphere)
+streamline_generator = LocalTracking(detmax_dg, stopping_criterion, seeds,
+                                     affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
 
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
