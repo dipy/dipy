@@ -26,8 +26,9 @@ from dipy.data import read_stanford_labels
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking import utils
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap, has_fury
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -44,14 +45,14 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 """
-We use the GFA of the CSA model to build a tissue classifier.
+We use the GFA of the CSA model to build a stopping criterion.
 """
 
 from dipy.reconst.shm import CsaOdfModel
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
-classifier = ThresholdTissueClassifier(gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
 """
 The Fiber Orientation Distribution (FOD) of the CSD model estimates the
@@ -73,8 +74,8 @@ fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
 prob_dg = ProbabilisticDirectionGetter.from_pmf(pmf, max_angle=30.,
                                                 sphere=small_sphere)
-streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
-                                     step_size=.5)
+streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
+                                     affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_pmf.trk")
@@ -110,8 +111,8 @@ from dipy.data import default_sphere
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     max_angle=30.,
                                                     sphere=default_sphere)
-streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
-                                     step_size=.5)
+streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
+                                     affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_sh.trk")
@@ -143,8 +144,8 @@ fod_coeff = peaks.shm_coeff
 
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,
                                                     sphere=default_sphere)
-streamline_generator = LocalTracking(prob_dg, classifier, seeds, affine,
-                                     step_size=.5)
+streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
+                                     affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_sh_pfm.trk")

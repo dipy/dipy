@@ -143,7 +143,7 @@ def test_local_fiber_tracking_workflow():
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
 
-        # Test tracking with binary tissue classifier
+        # Test tracking with binary stopping criterion
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
         lf_track_pam.run(pam_path, mask_path, seeds_path,

@@ -150,7 +150,7 @@ Fiber tracking
 - :ref:`example_tracking_deterministic`
 - :ref:`example_tracking_probabilistic`
 - :ref:`example_tracking_bootstrap_peaks`
-- :ref:`example_tracking_tissue_classifier`
+- :ref:`example_tracking_stopping_criterion`
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
 
@@ -242,10 +242,7 @@ Visualization
 - :ref:`example_viz_advanced`
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
-- :ref:`example_viz_surfaces`
 - :ref:`example_viz_roi_contour`
-- :ref:`example_viz_ui`
-- :ref:`example_viz_timers`
 
 ---------
 Workflows

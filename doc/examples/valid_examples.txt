@@ -16,6 +16,8 @@
  reconst_ivim.py
  reconst_mapmri.py
  reconst_qtdmri.py
+ reconst_shore.py
+ reconst_shore_metrics.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
@@ -30,8 +32,6 @@
  simulate_dki.py
  restore_dti.py
  streamline_length.py
- reconst_shore.py
- reconst_shore_metrics.py
  streamline_tools.py
  linear_fascicle_evaluation.py
  denoise_nlmeans.py
@@ -43,7 +43,7 @@
  tracking_deterministic.py
  tracking_probabilistic.py
  tracking_bootstrap_peaks.py
- tracking_tissue_classifier.py
+ tracking_stopping_criterion.py
  tracking_pft.py
  tracking_sfm.py
  affine_registration_3d.py
@@ -58,12 +58,9 @@
  contextual_enhancement.py
  workflow_creation.py
  combined_workflow_creation.py
- viz_surfaces.py
  viz_roi_contour.py
- viz_ui.py
  register_binary_fuzzy.py
  bundle_extraction.py
- viz_timers.py
  cluster_confidence.py
  path_length_map.py
  afq_tract_profiles.py

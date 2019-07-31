@@ -262,6 +262,10 @@ cdef cnp.npy_intp _streamline_in_mask(
         direction_norm = norm(direction[0], direction[1], direction[2])
         remaining_distance = direction_norm
 
+        # If consecutive coordinates are the same, skip one.
+        if direction_norm == 0:
+            continue
+
         # Check if it's already a real edge. If not, find the closest edge.
         if floor(current_edge[0]) != current_edge[0] and \
            floor(current_edge[1]) != current_edge[1] and \

@@ -11,8 +11,6 @@ ignore:
   - "setup.py"
   - "*/setup.py"
   - "*/tests/*"
-  - "*/fixes/*"
-  - "*/external/*"
 
 coverage:
   status:

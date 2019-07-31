@@ -12,12 +12,14 @@ from dipy.direction import (BootDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-from dipy.tracking.local import (ActTissueClassifier, BinaryTissueClassifier,
-                                 LocalTracking, ParticleFilteringTracking,
-                                 ThresholdTissueClassifier)
-from dipy.tracking.local.localtracking import TissueTypes
-from dipy.tracking.utils import seeds_from_mask
+from dipy.tracking.local_tracking import (LocalTracking,
+                                          ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
+from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
+                                              BinaryStoppingCriterion,
+                                              ThresholdStoppingCriterion,
+                                              StreamlineStatus)
+from dipy.tracking.utils import seeds_from_mask
 from dipy.sims.voxel import single_tensor, multi_tensor
 
 
@@ -25,9 +27,9 @@ def test_stop_conditions():
     """This tests that the Local Tracker behaves as expected for the
     following tissue types.
     """
-    # TissueTypes.TRACKPOINT = 1
-    # TissueTypes.ENDPOINT = 2
-    # TissueTypes.INVALIDPOINT = 0
+    # StreamlineStatus.TRACKPOINT = 1
+    # StreamlineStatus.ENDPOINT = 2
+    # StreamlineStatus.INVALIDPOINT = 0
     tissue = np.array([[2, 1, 1, 2, 1],
                        [2, 2, 1, 1, 2],
                        [1, 1, 1, 1, 1],
@@ -50,14 +52,14 @@ def test_stop_conditions():
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
-    endpoint_mask = tissue == TissueTypes.ENDPOINT
-    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
-    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    endpoint_mask = tissue == StreamlineStatus.ENDPOINT
+    invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
+    sc = ActStoppingCriterion(endpoint_mask, invalidpoint_mask)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
     # valid streamlines only
     streamlines_generator = LocalTracking(direction_getter=dg,
-                                          tissue_classifier=tc,
+                                          stopping_criterion=sc,
                                           seeds=seeds,
                                           affine=np.eye(4),
                                           step_size=1.,
@@ -66,7 +68,7 @@ def test_stop_conditions():
 
     # all streamlines
     streamlines_all_generator = LocalTracking(direction_getter=dg,
-                                              tissue_classifier=tc,
+                                              stopping_criterion=sc,
                                               seeds=seeds,
                                               affine=np.eye(4),
                                               step_size=1.,
@@ -179,14 +181,14 @@ def test_save_seeds():
     seeds = np.column_stack([x, y, z])
 
     # Set up tracking
-    endpoint_mask = tissue == TissueTypes.ENDPOINT
-    invalidpoint_mask = tissue == TissueTypes.INVALIDPOINT
-    tc = ActTissueClassifier(endpoint_mask, invalidpoint_mask)
+    endpoint_mask = tissue == StreamlineStatus.ENDPOINT
+    invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
+    sc = ActStoppingCriterion(endpoint_mask, invalidpoint_mask)
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
 
     # valid streamlines only
     streamlines_generator = LocalTracking(direction_getter=dg,
-                                          tissue_classifier=tc,
+                                          stopping_criterion=sc,
                                           seeds=seeds,
                                           affine=np.eye(4),
                                           step_size=1.,
@@ -201,7 +203,7 @@ def test_save_seeds():
     npt.assert_equal(seed, seeds[1])
     # Verifiy that seeds are returned by the PFTTracker also
     pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
-                                                tissue_classifier=tc,
+                                                stopping_criterion=sc,
                                                 seeds=seeds,
                                                 affine=np.eye(4),
                                                 step_size=1.,
@@ -240,11 +242,11 @@ def test_probabilistic_odf_weighted_tracker():
     seeds = [np.array([1., 1., 0.])] * 30
 
     mask = (simple_image > 0).astype(float)
-    tc = ThresholdTissueClassifier(mask, .5)
+    sc = ThresholdStoppingCriterion(mask, .5)
 
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
                                                pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
@@ -274,7 +276,7 @@ def test_probabilistic_odf_weighted_tracker():
     # The first path is not possible if 90 degree turns are excluded
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere,
                                                pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
@@ -283,14 +285,14 @@ def test_probabilistic_odf_weighted_tracker():
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
     dg = ProbabilisticDirectionGetter.from_pmf(10*pmf, 90, sphere,
                                                pmf_threshold=0.67)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
     # Test non WM seed position
     seeds = [[0, 0, 0], [5, 5, 5]]
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 0.2, max_cross=1,
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 0.2, max_cross=1,
                                 return_all=True)
     streamlines = Streamlines(streamlines)
     npt.assert_(len(streamlines[0]) == 1)  # INVALIDPOINT
@@ -298,7 +300,7 @@ def test_probabilistic_odf_weighted_tracker():
 
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(mask.shape), np.eye(4), density=2)
-    streamline_generator = LocalTracking(dg, tc, seeds, np.eye(4), 0.5,
+    streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 0.5,
                                          return_all=True)
     streamlines = Streamlines(streamline_generator)
     for s in streamlines:
@@ -310,10 +312,10 @@ def test_probabilistic_odf_weighted_tracker():
     npt.assert_(np.array([len(streamlines) == len(seeds)]))
 
     # Test reproducibility
-    tracking_1 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+    tracking_1 = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4),
                                            0.5,
                                            random_seed=0)).data
-    tracking_2 = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4),
+    tracking_2 = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4),
                                            0.5,
                                            random_seed=0)).data
     npt.assert_equal(tracking_1, tracking_2)
@@ -348,7 +350,8 @@ def test_particle_filtering_tractography():
                            simple_gm,
                            np.zeros(simple_gm.shape)])
     simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
-    tc = ActTissueClassifier.from_pve(simple_wm, simple_gm, simple_csf)
+
+    sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
     seeds = seeds_from_mask(simple_wm, np.eye(4), density=2)
 
     # Random pmf in every voxel
@@ -359,13 +362,13 @@ def test_particle_filtering_tractography():
 
     # Test that PFT recover equal or more streamlines than localTracking
     dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
-    local_streamlines_generator = LocalTracking(dg, tc, seeds, np.eye(4),
+    local_streamlines_generator = LocalTracking(dg, sc, seeds, np.eye(4),
                                                 step_size, max_cross=1,
                                                 return_all=False)
     local_streamlines = Streamlines(local_streamlines_generator)
 
     pft_streamlines_generator = ParticleFilteringTracking(
-        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=False,
+        dg, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=False,
         pft_back_tracking_dist=1, pft_front_tracking_dist=0.5)
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
@@ -374,7 +377,7 @@ def test_particle_filtering_tractography():
 
     # Test that all points are equally spaced
     for l in [1, 2, 5, 10, 100]:
-        pft_streamlines = ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
+        pft_streamlines = ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
                                                     step_size, max_cross=1,
                                                     return_all=True, maxlen=l)
         for s in pft_streamlines:
@@ -384,7 +387,7 @@ def test_particle_filtering_tractography():
     # Test that all points are within the image volume
     seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)
     pft_streamlines_generator = ParticleFilteringTracking(
-        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
+        dg, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
     for s in pft_streamlines:
@@ -398,67 +401,67 @@ def test_particle_filtering_tractography():
     # Test non WM seed position
     seeds = [[0, 5, 4], [0, 0, 1], [50, 50, 50]]
     pft_streamlines_generator = ParticleFilteringTracking(
-        dg, tc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
+        dg, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
     pft_streamlines = Streamlines(pft_streamlines_generator)
 
     npt.assert_equal(len(pft_streamlines[0]), 3)  # INVALIDPOINT
     npt.assert_equal(len(pft_streamlines[1]), 3)  # ENDPOINT
     npt.assert_equal(len(pft_streamlines[2]), 1)  # OUTSIDEIMAGE
 
-    # Test with wrong tissueclassifier type
-    tc_bin = BinaryTissueClassifier(simple_wm)
+    # Test with wrong StoppingCriterion type
+    sc_bin = BinaryStoppingCriterion(simple_wm)
     npt.assert_raises(ValueError,
-                      lambda: ParticleFilteringTracking(dg, tc_bin, seeds,
+                      lambda: ParticleFilteringTracking(dg, sc_bin, seeds,
                                                         np.eye(4), step_size))
     # Test with invalid back/front tracking distances
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           pft_back_tracking_dist=0,
                                           pft_front_tracking_dist=0))
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           pft_back_tracking_dist=-1))
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           pft_back_tracking_dist=0,
                                           pft_front_tracking_dist=-2))
 
     # Test with invalid affine shape
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(3), step_size))
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(3), step_size))
 
     # Test with invalid maxlen
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           maxlen=0))
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           maxlen=-1))
 
     # Test with invalid particle count
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           particle_count=0))
     npt.assert_raises(
         ValueError,
-        lambda: ParticleFilteringTracking(dg, tc, seeds, np.eye(4), step_size,
+        lambda: ParticleFilteringTracking(dg, sc, seeds, np.eye(4), step_size,
                                           particle_count=-1))
 
     # Test reproducibility
-    tracking_1 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                       step_size,
-                                                       random_seed=0)).data
-    tracking_2 = Streamlines(ParticleFilteringTracking(dg, tc, seeds, np.eye(4),
-                                                       step_size,
-                                                       random_seed=0)).data
-    npt.assert_equal(tracking_1, tracking_2)
+    tracking1 = Streamlines(ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
+                                                      step_size,
+                                                      random_seed=0)).data
+    tracking2 = Streamlines(ParticleFilteringTracking(dg, sc, seeds, np.eye(4),
+                                                      step_size,
+                                                      random_seed=0)).data
+    npt.assert_equal(tracking1, tracking2)
 
 
 def test_maximum_deterministic_tracker():
@@ -486,11 +489,11 @@ def test_maximum_deterministic_tracker():
     seeds = [np.array([1., 1., 0.])] * 30
 
     mask = (simple_image > 0).astype(float)
-    tc = ThresholdTissueClassifier(mask, .5)
+    sc = ThresholdStoppingCriterion(mask, .5)
 
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
                                                       pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
@@ -517,7 +520,7 @@ def test_maximum_deterministic_tracker():
     # The first path is not possible if 90 degree turns are excluded
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
                                                       pmf_threshold=0.1)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
@@ -528,7 +531,7 @@ def test_maximum_deterministic_tracker():
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
     dg = DeterministicMaximumDirectionGetter.from_pmf(10*pmf, 80, sphere,
                                                       pmf_threshold=0.67)
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[2]))
@@ -573,12 +576,12 @@ def test_bootstap_peak_tracker():
 
     seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
 
-    tc = BinaryTissueClassifier((simple_image > 0).astype(float))
+    sc = BinaryStoppingCriterion((simple_image > 0).astype(float))
     sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
                                             sphere=sphere)
 
-    streamlines_generator = LocalTracking(boot_dg, tc, seeds, np.eye(4), 1.)
+    streamlines_generator = LocalTracking(boot_dg, sc, seeds, np.eye(4), 1.)
     streamlines = Streamlines(streamlines_generator)
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
@@ -626,11 +629,11 @@ def test_closest_peak_tracker():
     seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
 
     mask = (simple_image > 0).astype(float)
-    tc = BinaryTissueClassifier(mask)
+    sc = BinaryStoppingCriterion(mask)
 
     dg = ClosestPeakDirectionGetter.from_pmf(pmf, 90, sphere,
                                              pmf_threshold=0.1)
-    streamlines = Streamlines(LocalTracking(dg, tc, seeds, np.eye(4), 1.))
+    streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
 
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
@@ -684,13 +687,13 @@ def test_peak_direction_tracker():
     dg.ang_thr = 90
 
     mask = (simple_image >= 0).astype(float)
-    tc = ThresholdTissueClassifier(mask, 0.5)
+    sc = ThresholdStoppingCriterion(mask, 0.5)
     seeds = [np.array([1., 1., 1.]),
              np.array([2., 4., 1.]),
              np.array([1., 3., 1.]),
              np.array([4., 4., 1.])]
 
-    streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
+    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[0., 1., 1.],
                           [1., 1., 1.],
@@ -748,19 +751,19 @@ def test_affine_transformations():
                           [2., 4., 0.]])]
 
     mask = (simple_image > 0).astype(float)
-    tc = BinaryTissueClassifier(mask)
+    sc = BinaryStoppingCriterion(mask)
 
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 60, sphere,
                                                       pmf_threshold=0.1)
 
     # TST- bad affine wrong shape
     bad_affine = np.eye(3)
-    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
+    npt.assert_raises(ValueError, LocalTracking, dg, sc, seeds, bad_affine, 1.)
 
     # TST - bad affine with shearing
     bad_affine = np.eye(4)
     bad_affine[0, 1] = 1.
-    npt.assert_raises(ValueError, LocalTracking, dg, tc, seeds, bad_affine, 1.)
+    npt.assert_raises(ValueError, LocalTracking, dg, sc, seeds, bad_affine, 1.)
 
     # TST - identity
     a0 = np.eye(4)
@@ -793,7 +796,7 @@ def test_affine_transformations():
         voxel_size = np.mean(np.sqrt(np.dot(lin, lin).diagonal()))
 
         streamlines = LocalTracking(direction_getter=dg,
-                                    tissue_classifier=tc,
+                                    stopping_criterion=sc,
                                     seeds=seeds_trans,
                                     affine=affine,
                                     step_size=voxel_size,

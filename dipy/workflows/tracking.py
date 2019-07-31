@@ -11,10 +11,11 @@ from dipy.io.peaks import load_peaks
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
-from dipy.tracking.local import (BinaryTissueClassifier,
-                                 ThresholdTissueClassifier, LocalTracking,
-                                 CmcTissueClassifier,
-                                 ParticleFilteringTracking)
+from dipy.tracking.local_tracking import (LocalTracking,
+                                          ParticleFilteringTracking)
+from dipy.tracking.stopping_criterion import (BinaryStoppingCriterion,
+                                              CmcStoppingCriterion,
+                                              ThresholdStoppingCriterion)
 from dipy.workflows.workflow import Workflow
 
 
@@ -83,10 +84,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         stop, affine = load_nifti(stopping_path)
         if use_binary_mask:
-            classifier = BinaryTissueClassifier(stop > stopping_thr)
+            stopping_criterion = BinaryStoppingCriterion(stop > stopping_thr)
         else:
-            classifier = ThresholdTissueClassifier(stop, stopping_thr)
-        logging.info('classifier done')
+            stopping_criterion = ThresholdStoppingCriterion(stop, stopping_thr)
+        logging.info('stopping criterion done')
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
             utils.seeds_from_mask(
@@ -95,7 +96,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         logging.info('seeds done')
 
         tracking_result = LocalTracking(direction_getter,
-                                        classifier,
+                                        stopping_criterion,
                                         seeds,
                                         affine,
                                         step_size=step_size,
@@ -110,7 +111,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             streamlines = list(tracking_result)
             seeds = {}
 
-        sft = StatefulTractogram(streamlines, stopping_path, Space.RASMM,
+        sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
                                  data_per_streamline=seeds)
         save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info('Saved {0}'.format(out_tract))
@@ -136,11 +137,11 @@ class LocalFiberTrackingPAMFlow(Workflow):
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
         stopping_files : string
-            Path to images (e.g. FA) used for stopping criteria for tracking.
+            Path to images (e.g. FA) used for stopping criterion for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         use_binary_mask : bool, optional
-            If True, uses a binary tissue classifier. If the provided
+            If True, uses a binary stopping criterion. If the provided
             `stopping_files` are not binary, `stopping_thr` will be used to
             binarize the images.
         stopping_thr : float, optional
@@ -287,10 +288,9 @@ class PFTrackingPAMFlow(Workflow):
             gm, _ = load_nifti(gm_path)
             csf, _ = load_nifti(csf_path)
             avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
-            classifier = CmcTissueClassifier.from_pve(wm, gm, csf,
-                                                      step_size=step_size,
-                                                      average_voxel_size=avs)
-            logging.info('classifier done')
+            stopping_criterion = CmcStoppingCriterion.from_pve(
+                wm, gm, csf, step_size=step_size, average_voxel_size=avs)
+            logging.info('stopping criterion done')
             seed_mask, _ = load_nifti(seeding_path)
             seeds = utils.seeds_from_mask(seed_mask, affine,
                                           density=[seed_density, seed_density,
@@ -305,7 +305,7 @@ class PFTrackingPAMFlow(Workflow):
 
             tracking_result = ParticleFilteringTracking(
                 direction_getter,
-                classifier,
+                stopping_criterion,
                 seeds, affine,
                 step_size=step_size,
                 pft_back_tracking_dist=pft_back,
@@ -323,7 +323,7 @@ class PFTrackingPAMFlow(Workflow):
                 streamlines = list(tracking_result)
                 seeds = {}
 
-            sft = StatefulTractogram(streamlines, wm_path, Space.RASMM,
+            sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
                                      data_per_streamline=seeds)
             save_tractogram(sft, out_tract, bbox_valid_check=False)
             logging.info('Saved {0}'.format(out_tract))
