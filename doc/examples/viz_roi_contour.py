@@ -13,7 +13,7 @@ from dipy.data import read_stanford_labels
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
@@ -38,13 +38,13 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              min_separation_angle=45,
                              mask=white_matter)
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
+streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
                             step_size=2)
 
 # Compute streamlines and store as a list.

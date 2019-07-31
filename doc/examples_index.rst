@@ -150,7 +150,7 @@ Fiber tracking
 - :ref:`example_tracking_deterministic`
 - :ref:`example_tracking_probabilistic`
 - :ref:`example_tracking_bootstrap_peaks`
-- :ref:`example_tracking_tissue_classifier`
+- :ref:`example_tracking_stopping_criterion`
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
 

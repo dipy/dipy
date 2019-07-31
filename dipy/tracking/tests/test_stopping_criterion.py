@@ -4,23 +4,23 @@ import numpy.testing as npt
 import scipy.ndimage
 
 from dipy.core.ndindex import ndindex
-from dipy.tracking.tissue_classifier import (ActTissueClassifier,
-                                             BinaryTissueClassifier,
-                                             CmcTissueClassifier,
-                                             ThresholdTissueClassifier,
-                                             StreamlineStatus)
+from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
+                                              BinaryStoppingCriterion,
+                                              CmcStoppingCriterion,
+                                              ThresholdStoppingCriterion,
+                                              StreamlineStatus)
 
 
-def test_binary_tissue_classifier():
-    """This tests that the binary tissue classifier returns expected
+def test_binary_stopping_criterion():
+    """This tests that the binary stopping criterion returns expected
     streamline statuses.
     """
 
     mask = np.random.random((4, 4, 4))
     mask[mask < 0.4] = 0.0
 
-    btc_boolean = BinaryTissueClassifier(mask > 0)
-    btc_float64 = BinaryTissueClassifier(mask)
+    btc_boolean = BinaryStoppingCriterion(mask > 0)
+    btc_float64 = BinaryStoppingCriterion(mask)
 
     # Test voxel center
     for ind in ndindex(mask.shape):
@@ -41,8 +41,10 @@ def test_binary_tissue_classifier():
             state_boolean = btc_boolean.check_point(pts)
             state_float64 = btc_float64.check_point(pts)
             if mask[ind] > 0:
-                npt.assert_equal(state_boolean, int(StreamlineStatus.TRACKPOINT))
-                npt.assert_equal(state_float64, int(StreamlineStatus.TRACKPOINT))
+                npt.assert_equal(state_boolean,
+                                 int(StreamlineStatus.TRACKPOINT))
+                npt.assert_equal(state_float64,
+                                 int(StreamlineStatus.TRACKPOINT))
             else:
                 npt.assert_equal(state_boolean, int(StreamlineStatus.ENDPOINT))
                 npt.assert_equal(state_float64, int(StreamlineStatus.ENDPOINT))
@@ -58,14 +60,14 @@ def test_binary_tissue_classifier():
         npt.assert_equal(state_float64, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
-def test_threshold_tissue_classifier():
-    """This tests that the thresholdy tissue classifier returns expected
+def test_threshold_stopping_criterion():
+    """This tests that the thresholdy stopping criterion returns expected
     streamline statuses.
     """
 
     tissue_map = np.random.random((4, 4, 4))
 
-    ttc = ThresholdTissueClassifier(tissue_map.astype('float32'), 0.5)
+    ttc = ThresholdStoppingCriterion(tissue_map.astype('float32'), 0.5)
 
     # Test voxel center
     for ind in ndindex(tissue_map.shape):
@@ -99,8 +101,8 @@ def test_threshold_tissue_classifier():
         npt.assert_equal(state, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
-def test_act_tissue_classifier():
-    """This tests that the act tissue classifier returns expected
+def test_act_stopping_criterion():
+    """This tests that the act stopping criterion returns expected
     streamline statuses.
     """
 
@@ -112,7 +114,7 @@ def test_act_tissue_classifier():
     wm /= tissue_sum
     csf /= tissue_sum
 
-    act_tc = ActTissueClassifier(include_map=gm, exclude_map=csf)
+    act_tc = ActStoppingCriterion(include_map=gm, exclude_map=csf)
 
     # Test voxel center
     for ind in ndindex(wm.shape):
@@ -152,8 +154,8 @@ def test_act_tissue_classifier():
         npt.assert_equal(state, int(StreamlineStatus.OUTSIDEIMAGE))
 
 
-def test_cmc_tissue_classifier():
-    """This tests that the cmc tissue classifier returns expected
+def test_cmc_stopping_criterion():
+    """This tests that the cmc stopping criterion returns expected
     streamline statuses.
     """
 
@@ -163,15 +165,15 @@ def test_cmc_tissue_classifier():
     include_map = gm
     exclude_map = csf
 
-    cmc_tc = CmcTissueClassifier(include_map=include_map,
-                                 exclude_map=exclude_map,
-                                 step_size=1,
-                                 average_voxel_size=1)
-    cmc_tc_from_pve = CmcTissueClassifier.from_pve(wm_map=wm,
-                                                   gm_map=gm,
-                                                   csf_map=csf,
-                                                   step_size=1,
-                                                   average_voxel_size=1)
+    cmc_tc = CmcStoppingCriterion(include_map=include_map,
+                                  exclude_map=exclude_map,
+                                  step_size=1,
+                                  average_voxel_size=1)
+    cmc_tc_from_pve = CmcStoppingCriterion.from_pve(wm_map=wm,
+                                                    gm_map=gm,
+                                                    csf_map=csf,
+                                                    step_size=1,
+                                                    average_voxel_size=1)
 
     # Test constructors
     for idx in np.ndindex(wm.shape):

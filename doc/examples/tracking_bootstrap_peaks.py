@@ -27,7 +27,7 @@ from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap, has_fury
 
 
@@ -48,13 +48,13 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
 """
-we use the CSA fit to calculate GFA, which will serve as our tissue
-classifier.
+we use the CSA fit to calculate GFA, which will serve as our stopping
+criterion.
 """
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
-classifier = ThresholdTissueClassifier(gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
 """
 Next, we need to set up our two direction getters
@@ -68,8 +68,8 @@ Example #1: Bootstrap direction getter with CSD Model
 
 boot_dg_csd = BootDirectionGetter.from_data(data, csd_model, max_angle=30.,
                                             sphere=small_sphere)
-boot_streamline_generator = LocalTracking(boot_dg_csd, classifier, seeds,
-                                          affine, step_size=.5)
+boot_streamline_generator = LocalTracking(boot_dg_csd, stopping_criterion,
+                                          seeds, affine, step_size=.5)
 streamlines = Streamlines(boot_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_bootstrap_dg.trk")
@@ -101,8 +101,8 @@ Example #2: Closest peak direction getter with CSD Model
 pmf = csd_fit.odf(small_sphere).clip(min=0)
 peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.,
                                               sphere=small_sphere)
-peak_streamline_generator = LocalTracking(peak_dg, classifier, seeds, affine,
-                                          step_size=.5)
+peak_streamline_generator = LocalTracking(peak_dg, stopping_criterion, seeds,
+                                          affine, step_size=.5)
 streamlines = Streamlines(peak_streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "closest_peak_dg_CSD.trk")

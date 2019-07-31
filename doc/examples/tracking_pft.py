@@ -5,7 +5,7 @@ Particle Filtering Tractography
 Particle Filtering Tractography (PFT) [Girard2014]_ uses tissue partial
 volume estimation (PVE) to reconstruct trajectories connecting the gray matter,
 and not incorrectly stopping in the white matter or in the corticospinal fluid.
-It relies on a tissue classifier that identifies the tissue where the
+It relies on a stopping criterion that identifies the tissue where the
 streamline stopped. If the streamline correctly stopped in the gray matter, the
 trajectory is kept. If the streamline incorrectly stopped in the white matter
 or in the corticospinal fluid, PFT uses anatomical information to find an
@@ -13,11 +13,11 @@ alternative streamline segment to extend the trajectory. When this segment is
 found, the tractography continues until the streamline correctly stops in the
 gray matter.
 
-PFT finds an alternative streamline segment whenever the tissue classifier
+PFT finds an alternative streamline segment whenever the stopping criterion
 returns a position classified as 'INVALIDPOINT'.
 
 This example is an extension of :ref:`example_tracking_probabilistic` and
-:ref:`example_tracking_tissue_classifier` examples. We begin by loading the
+:ref:`example_tracking_stopping_criterion` examples. We begin by loading the
 data, fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model, creating the probabilistic direction getter and defining the seeds.
 """
@@ -61,24 +61,24 @@ seed_mask[img_pve_wm.get_data() < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
 
 """
-CMC/ACT Tissue Classifiers
+CMC/ACT Stopping Criterion
 ==========================
 Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
 tractography (ACT) [Smith2012]_ both uses PVEs information from
 anatomical images to determine when the tractography stops.
-Both tissue classifiers use a trilinear interpolation
-at the tracking position. CMC tissue classifier uses a probability derived from
-the PVE maps to determine if the streamline reaches a 'valid' or 'invalid'
-region. ACT uses a fixed threshold on the PVE maps. Both tissue classifiers can
+Both stopping criterion use a trilinear interpolation
+at the tracking position. CMC stopping criterion uses a probability derived
+from the PVE maps to determine if the streamline reaches a 'valid' or 'invalid'
+region. ACT uses a fixed threshold on the PVE maps. Both stopping criterion can
 be used in conjunction with PFT. In this example, we used CMC.
 """
 
-from dipy.tracking.tissue_classifier import CmcTissueClassifier
+from dipy.tracking.stopping_criterion import CmcStoppingCriterion
 
 voxel_size = np.average(img_pve_wm.header['pixdim'][1:4])
 step_size = 0.2
 
-cmc_classifier = CmcTissueClassifier.from_pve(img_pve_wm.get_data(),
+cmc_criterion = CmcStoppingCriterion.from_pve(img_pve_wm.get_data(),
                                               img_pve_gm.get_data(),
                                               img_pve_csf.get_data(),
                                               step_size=step_size,
@@ -86,7 +86,7 @@ cmc_classifier = CmcTissueClassifier.from_pve(img_pve_wm.get_data(),
 
 # Particle Filtering Tractography
 pft_streamline_generator = ParticleFilteringTracking(dg,
-                                                     cmc_classifier,
+                                                     cmc_criterion,
                                                      seeds,
                                                      affine,
                                                      max_cross=1,
@@ -117,7 +117,7 @@ if has_fury:
 
 # Local Probabilistic Tractography
 prob_streamline_generator = LocalTracking(dg,
-                                          cmc_classifier,
+                                          cmc_criterion,
                                           seeds,
                                           affine,
                                           max_cross=1,

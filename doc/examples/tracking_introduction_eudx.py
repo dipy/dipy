@@ -102,9 +102,9 @@ the ODF shows significant restricted diffusion by thresholding on
 the generalized fractional anisotropy (GFA).
 """
 
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 """
 Again, for quality assurance we can also visualize a slice the GFA and the
@@ -157,7 +157,7 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
+streamlines_generator = LocalTracking(csa_peaks, stopping_criterion, seeds,
                                       affine=affine, step_size=.5)
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)

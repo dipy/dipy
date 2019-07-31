@@ -7,7 +7,7 @@ cpdef enum StreamlineStatus:
     ENDPOINT = 2
 
 
-cdef class TissueClassifier:
+cdef class StoppingCriterion:
     cdef:
         double interp_out_double[1]
         double[::1] interp_out_view
@@ -15,20 +15,20 @@ cdef class TissueClassifier:
     cdef StreamlineStatus check_point_c(self, double* point)
 
 
-cdef class BinaryTissueClassifier(TissueClassifier):
+cdef class BinaryStoppingCriterion(StoppingCriterion):
     cdef:
         unsigned char [:, :, :] mask
     pass
 
 
-cdef class ThresholdTissueClassifier(TissueClassifier):
+cdef class ThresholdStoppingCriterion(StoppingCriterion):
     cdef:
         double threshold
         double[:, :, :] metric_map
     pass
 
 
-cdef class ConstrainedTissueClassifier(TissueClassifier):
+cdef class AnatomicalStoppingCriterion(StoppingCriterion):
     cdef:
         double[:, :, :] include_map, exclude_map
     cpdef double get_exclude(self, double[::1] point)
@@ -38,11 +38,11 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
     pass
 
 
-cdef class ActTissueClassifier(ConstrainedTissueClassifier):
+cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     pass
 
 
-cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
+cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
     cdef:
         double step_size
         double average_voxel_size

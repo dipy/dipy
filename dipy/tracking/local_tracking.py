@@ -3,8 +3,8 @@ import random
 import numpy as np
 
 from dipy.tracking.localtrack import local_tracker, pft_tracker
-from dipy.tracking.tissue_classifier import (ConstrainedTissueClassifier,
-                                             StreamlineStatus)
+from dipy.tracking.stopping_criterion import (AnatomicalStoppingCriterion,
+                                              StreamlineStatus)
 from dipy.tracking import utils
 
 
@@ -28,7 +28,7 @@ class LocalTracking(object):
             raise ValueError(msg)
         return np.sqrt(dotlin.diagonal())
 
-    def __init__(self, direction_getter, tissue_classifier, seeds, affine,
+    def __init__(self, direction_getter, stopping_criterion, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True,
                  return_all=True, random_seed=None, save_seeds=False):
         """Creates streamlines by using local fiber-tracking.
@@ -37,7 +37,7 @@ class LocalTracking(object):
         ----------
         direction_getter : instance of DirectionGetter
             Used to get directions for fiber tracking.
-        tissue_classifier : instance of TissueClassifier
+        stopping_criterion : instance of StoppingCriterion
             Identifies endpoints and invalid points to inform tracking.
         seeds : array (N, 3)
             Points to seed the tracking. Seed points should be given in point
@@ -71,7 +71,7 @@ class LocalTracking(object):
         """
 
         self.direction_getter = direction_getter
-        self.tissue_classifier = tissue_classifier
+        self.stopping_criterion = stopping_criterion
         self.seeds = seeds
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
@@ -92,7 +92,7 @@ class LocalTracking(object):
 
     def _tracker(self, seed, first_step, streamline):
         return local_tracker(self.direction_getter,
-                             self.tissue_classifier,
+                             self.stopping_criterion,
                              seed,
                              first_step,
                              self._voxel_size,
@@ -165,7 +165,7 @@ class LocalTracking(object):
 
 class ParticleFilteringTracking(LocalTracking):
 
-    def __init__(self, direction_getter, tissue_classifier, seeds, affine,
+    def __init__(self, direction_getter, stopping_criterion, seeds, affine,
                  step_size, max_cross=None, maxlen=500,
                  pft_back_tracking_dist=2, pft_front_tracking_dist=1,
                  pft_max_trial=20, particle_count=15, return_all=True,
@@ -177,7 +177,7 @@ class ParticleFilteringTracking(LocalTracking):
         ----------
         direction_getter : instance of ProbabilisticDirectionGetter
             Used to get directions for fiber tracking.
-        tissue_classifier : instance of ConstrainedTissueClassifier
+        stopping_criterion : instance of AnatomicalStoppingCriterion
             Identifies endpoints and invalid points to inform tracking.
         seeds : array (N, 3)
             Points to seed the tracking. Seed points should be given in point
@@ -229,8 +229,8 @@ class ParticleFilteringTracking(LocalTracking):
                tractography biases. NeuroImage, 98, 266-278, 2014.
         """
 
-        if not isinstance(tissue_classifier, ConstrainedTissueClassifier):
-            raise ValueError("expecting ConstrainedTissueClassifier")
+        if not isinstance(stopping_criterion, AnatomicalStoppingCriterion):
+            raise ValueError("expecting AnatomicalStoppingCriterion")
 
         self.pft_max_nbr_back_steps = int(np.ceil(pft_back_tracking_dist
                                                   / step_size))
@@ -261,7 +261,7 @@ class ParticleFilteringTracking(LocalTracking):
         self.particle_stream_statuses = np.empty((2, self.particle_count),
                                                  dtype=int)
         super(ParticleFilteringTracking, self).__init__(direction_getter,
-                                                        tissue_classifier,
+                                                        stopping_criterion,
                                                         seeds,
                                                         affine,
                                                         step_size,
@@ -274,7 +274,7 @@ class ParticleFilteringTracking(LocalTracking):
 
     def _tracker(self, seed, first_step, streamline):
         return pft_tracker(self.direction_getter,
-                           self.tissue_classifier,
+                           self.stopping_criterion,
                            seed,
                            first_step,
                            self._voxel_size,

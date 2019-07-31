@@ -24,7 +24,7 @@ from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import (select_random_set_of_streamlines,
                                       Streamlines)
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking.utils import move_streamlines
 from dipy.viz import window, actor, colormap, has_fury
 from numpy.linalg import inv
@@ -82,12 +82,12 @@ pnm = peaks_from_model(sf_model, data, sphere,
                        parallel=True)
 
 """
-A ThresholdTissueClassifier object is used to segment the data to track only
+A ThresholdStoppingCriterion object is used to segment the data to track only
 through areas in which the Generalized Fractional Anisotropy (GFA) is
 sufficiently high.
 """
 
-classifier = ThresholdTissueClassifier(pnm.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(pnm.gfa, .25)
 
 """
 Tracking will be started from a set of seeds evenly distributed in the white
@@ -109,7 +109,7 @@ We now have the necessary components to construct a tracking pipeline and
 execute the tracking
 """
 
-streamline_generator = LocalTracking(pnm, classifier, seeds, affine,
+streamline_generator = LocalTracking(pnm, stopping_criterion, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
 

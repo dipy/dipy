@@ -13,7 +13,7 @@ from dipy.core.interpolation cimport trilinear_interpolate4d_c
 
 import numpy as np
 
-cdef class TissueClassifier:
+cdef class StoppingCriterion:
     cpdef StreamlineStatus check_point(self, double[::1] point):
         if point.shape[0] != 3:
             raise ValueError("Point has wrong shape")
@@ -24,7 +24,7 @@ cdef class TissueClassifier:
          pass
 
 
-cdef class BinaryTissueClassifier(TissueClassifier):
+cdef class BinaryStoppingCriterion(StoppingCriterion):
     """
     cdef:
         unsigned char[:, :, :] mask
@@ -57,9 +57,9 @@ cdef class BinaryTissueClassifier(TissueClassifier):
             return ENDPOINT
 
 
-cdef class ThresholdTissueClassifier(TissueClassifier):
+cdef class ThresholdStoppingCriterion(StoppingCriterion):
     """
-    # Declarations from tissue_classifier.pxd bellow
+    # Declarations from stopping_criterion.pxd bellow
     cdef:
         double threshold, interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
@@ -95,7 +95,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             return ENDPOINT
 
 
-cdef class ConstrainedTissueClassifier(TissueClassifier):
+cdef class AnatomicalStoppingCriterion(StoppingCriterion):
     r"""
     Abstract class that takes as input included and excluded tissue maps.
     The 'include_map' defines when the streamline reached a 'valid' stopping
@@ -118,7 +118,7 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
 
     @classmethod
     def from_pve(klass, wm_map, gm_map, csf_map, **kw):
-        """ConstrainedTissueClassifier from partial volume fraction (PVE)
+        """AnatomicalStoppingCriterion from partial volume fraction (PVE)
         maps.
 
         Parameters
@@ -166,9 +166,9 @@ cdef class ConstrainedTissueClassifier(TissueClassifier):
         return self.interp_out_view[0]
 
 
-cdef class ActTissueClassifier(ConstrainedTissueClassifier):
+cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
     r"""
-    Anatomically-Constrained Tractography (ACT) stopping criteria from [1]_.
+    Anatomically-Constrained Tractography (ACT) stopping criterion from [1]_.
     This implements the use of partial volume fraction (PVE) maps to
     determine when the tracking stops. The proposed ([1]_) method that
     cuts streamlines going through subcortical gray matter regions is
@@ -227,9 +227,9 @@ cdef class ActTissueClassifier(ConstrainedTissueClassifier):
             return TRACKPOINT
 
 
-cdef class CmcTissueClassifier(ConstrainedTissueClassifier):
+cdef class CmcStoppingCriterion(AnatomicalStoppingCriterion):
     r"""
-    Continuous map criterion (CMC) stopping criteria from [1]_.
+    Continuous map criterion (CMC) stopping criterion from [1]_.
     This implements the use of partial volume fraction (PVE) maps to
     determine when the tracking stops.
 

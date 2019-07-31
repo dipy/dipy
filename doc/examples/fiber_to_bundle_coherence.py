@@ -71,8 +71,8 @@ selectionmask[xa:xb, ya:yb, za:zb] = True
 
 """
 The data is first fitted to Constant Solid Angle (CDA) ODF Model. CSA is a
-good choice to estimate general fractional anisotropy (GFA), which the tissue
-classifier can use to restrict fiber tracking to those areas where the ODF
+good choice to estimate general fractional anisotropy (GFA), which the stopping
+criterion can use to restrict fiber tracking to those areas where the ODF
 shows significant restricted diffusion, thus creating a region-of-interest in
 which the computations are done.
 """
@@ -88,10 +88,10 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              min_separation_angle=45,
                              mask=selectionmask)
 
-# Tissue classifier
-from dipy.tracking.tissue_classifier import ThresholdTissueClassifier
+# Stopping Criterion
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, 0.25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 
 """
 In order to perform probabilistic fiber tracking we first fit the data to the
@@ -137,13 +137,14 @@ seeds = utils.seeds_from_mask(mask, density=[4, 4, 4], affine=affine)
 
 """
 Local Tracking is used for probabilistic tractography which takes the
-direction getter along with the classifier and seeds as input.
+direction getter along with the stopping criterion and seeds as input.
 """
 
 # Perform tracking using Local Tracking
 from dipy.tracking.local_tracking import LocalTracking
 
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
+                                      affine, step_size=.5)
 
 # Compute streamlines.
 from dipy.tracking.streamline import Streamlines

@@ -26,7 +26,7 @@ from dipy.direction import peaks
 from dipy.reconst import shm
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.tracking.tissue_classifier import BinaryTissueClassifier
+from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -57,16 +57,16 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 
 """
 Now we can use EuDX to track all of the white matter. To keep things reasonably
-fast we use ``density=1`` which will result in 1 seeds per voxel. The tissue
-classifier, determining when the tracking stops, is set to stop when the
+fast we use ``density=1`` which will result in 1 seeds per voxel. The stopping
+criterion, determining when the tracking stops, is set to stop when the
 tracking exit the white matter.
 """
 
 seeds = utils.seeds_from_mask(white_matter, density=1)
-tissue_classifier = BinaryTissueClassifier(white_matter)
+stopping_criterion = BinaryStoppingCriterion(white_matter)
 affine = np.eye(4)
 
-streamline_generator = LocalTracking(csapeaks, tissue_classifier, seeds,
+streamline_generator = LocalTracking(csapeaks, stopping_criterion, seeds,
                                      affine=affine, step_size=0.5)
 streamlines = Streamlines(streamline_generator)
 
