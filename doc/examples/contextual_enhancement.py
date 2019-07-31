@@ -97,7 +97,9 @@ data_noisy = add_noise(data, 10.0, np.mean(b0_slice[mask]), noise_type='rician')
 # Select a small part of it.
 padding = 3  # Include a larger region to avoid boundary effects
 data_small = data[25-padding:40+padding, 65-padding:80+padding, 35:42]
-data_noisy_small = data_noisy[25-padding:40+padding, 65-padding:80+padding, 35:42]
+data_noisy_small = data_noisy[25-padding:40+padding,
+                              65-padding:80+padding,
+                              35:42]
 
 """
 Enables/disables interactive visualization
@@ -127,9 +129,9 @@ csd_shm_noisy = csd_fit_noisy.shm_coeff
 """
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing
 rotated versions of the kernel :math:`P_t` sampled over a discrete set of
-orientations. In order to ensure rotationally invariant processing, the discrete
-orientations are required to be equally distributed over a sphere. By default,
-a sphere with 100 directions is used.
+orientations. In order to ensure rotationally invariant processing, the
+discrete orientations are required to be equally distributed over a sphere.
+By default, a sphere with 100 directions is used.
 
 """
 
@@ -189,7 +191,8 @@ The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 
 # Sharpen via the Sharpening Deconvolution Transform
 from dipy.reconst.csdeconv import odf_sh_to_sharp
-csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8, lambda_=0.1)
+csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8,
+                                    lambda_=0.1)
 
 # Convert raw and enhanced data to discrete form
 csd_sf_orig = sh_to_sf(csd_shm_orig, default_sphere, sh_order=8)
@@ -209,7 +212,7 @@ ren = window.Renderer()
 
 # original ODF field
 fodf_spheres_org = actor.odf_slicer(csd_sf_orig,
-                                    sphere=sphere,
+                                    sphere=default_sphere,
                                     scale=0.4,
                                     norm=False)
 fodf_spheres_org.display(z=3)
@@ -218,7 +221,7 @@ ren.add(fodf_spheres_org)
 
 # ODF field with added noise
 fodf_spheres = actor.odf_slicer(csd_sf_noisy,
-                                sphere=sphere,
+                                sphere=default_sphere,
                                 scale=0.4,
                                 norm=False,)
 fodf_spheres.SetPosition(0, 0, 0)
@@ -226,7 +229,7 @@ ren.add(fodf_spheres)
 
 # Enhancement of noisy ODF field
 fodf_spheres_enh = actor.odf_slicer(csd_sf_enh,
-                                    sphere=sphere,
+                                    sphere=default_sphere,
                                     scale=0.4,
                                     norm=False)
 fodf_spheres_enh.SetPosition(25, 0, 0)
@@ -234,7 +237,7 @@ ren.add(fodf_spheres_enh)
 
 # Additional sharpening
 fodf_spheres_enh_sharp = actor.odf_slicer(csd_sf_enh_sharp,
-                                          sphere=sphere,
+                                          sphere=default_sphere,
                                           scale=0.4,
                                           norm=False)
 fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
