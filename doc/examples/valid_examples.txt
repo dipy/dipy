@@ -6,6 +6,7 @@
  reconst_csd.py
  reconst_forecast.py
  reconst_dki.py
+ reconst_dki_micro.py
  reconst_msdki.py
  reconst_dsi_metrics.py
  reconst_dsi.py
