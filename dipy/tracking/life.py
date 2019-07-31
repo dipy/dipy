@@ -453,8 +453,8 @@ class FiberModel(ReconstModel):
             The mapping from voxel coordinates to streamline points.
             The voxel_to_rasmm matrix, typically from a NIFTI file.
         evals : list (optional)
-            The eigenvalues of the tensor response function used in constructing
-            the model signal. Default: [0.001, 0, 0]
+            The eigenvalues of the tensor response function used in
+            constructing the model signal. Default: [0.001, 0, 0]
         sphere: `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the

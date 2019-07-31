@@ -112,7 +112,7 @@ oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
 """
 Read volumetric data from an image corresponding to this subject.
 
-For the purpose of this, we've extracted only the FA within the bundles in 
+For the purpose of this, we've extracted only the FA within the bundles in
 question, but in real use, this is where you would add the FA map of your
 subject.
 """
