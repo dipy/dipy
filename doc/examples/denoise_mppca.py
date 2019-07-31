@@ -1,24 +1,25 @@
 """
-==========================================================
-Denoise images using the Marcenko and Pastur PCA algorithm
-==========================================================
+======================================================
+Denoise images using the Marcenko-Pastur PCA algorithm
+======================================================
 
-The local PCA based denoising algorithm is an effective denoising
-method because it exploits the redundancy across the diffusion-weighted images
-[Manjon2013]_, [Veraart2016a]_. This algorithm has been shown to provide an
-optimal compromise between noise suppression and loss of anatomical information
-for different techniques such as DTI [Manjon2013]_, spherical deconvolution
-[Veraart2016a] and DKI [Henri2018]_.
+The PCA-based denoising algorithm exploits the redundancy across the
+diffusion-weighted images [Manjon2013]_, [Veraart2016a]_. This algorithm has
+been shown to provide an optimal compromise between noise suppression and loss
+of anatomical information for different techniques such as DTI [Manjon2013]_,
+spherical deconvolution [Veraart2016a] and DKI [Henri2018]_.
 
-The basic idea behind local PCA based diffusion denoising is to remove the
-data's principal components mostly related to noise. The classification of
-the principal components can be performed based on prior noise variance
-estimates and empirical thresholds [Manjon2013]_ or based on random matrix
-theory [Veraa2016a]. In addition to noise suppression, local PCA can be used
-to estimate the noise variance [Veraa2016b].
+The basic idea behind the PCA-based denoising algorithm is to remove the
+data's principal components classified being mostly related to noise.
+The principal components classification can be performed based on prior noise
+variance estimates [Manjon2013]_ (see :ref:`denoise_localpca`)or automatically
+based on the Marcenko-Pastur distribution [Veraa2016a]_. In addition to noise
+suppression, the PCA algorithm can be used to estimate the noise standard
+deviation [Veraa2016b].
 
 In the following example, we show how to denoise diffusion MRI images and
-estimate the noise variance using the local PCA algorithm.
+estimate the noise standard deviation using the PCA algorithm based
+on the Marcenko-Pastur distribution [Veraa2016a]
 
 Let's load the necessary modules
 """
@@ -56,8 +57,8 @@ data = img.get_data()
 affine = img.affine
 
 """
-For the sake of simplicity, we only select two non-zero b-values of this
-extensive dataset.
+For the sake of simplicity, we only select two non-zero b-values for this
+example.
 """
 
 bvals = gtab.bvals
@@ -77,25 +78,28 @@ As one can see from its shape, the selected data contains a total of 67
 volumes of images corresponding to all the diffusion gradient directions
 of the selected b-values.
 
-Local PCA denoising can be performed by running the following command:
-""" 
+The local PCA denoising based on the Marcenko and Pastur distribution
+can be performed by calling the function ``localpca`` without specifying a
+prior estimate to the noise standard deviation:
+"""
 
 t = time()
 
-denoised_arr = localpca(data, patch_radius=2)
+denoised_arr = localpca(data, sigma=None, patch_radius=2)
 
 print("Time taken for local PCA ", -t + time())
 
 """
-Internally, the ``localpca`` algorithm locally denoises the 4D data using
-a 3D sliding window which is defined by the variable patch_radius (number of
-comprising voxels around the center of the window). In total, this window
-should comprise a larger number of voxels than the number of diffusion-weighted
-volumes. Since our data has a total of 67 volumes, the patch_radius is set to
-2 which corresponds to a 5x5x5 sliding window comprising a total of 125 voxels.
+Internally, the ``localpca`` algorithm locally denoises the
+diffusion-weighted data using a 3D sliding window which is defined by the
+variable patch_radius. In total, this window should comprise a larger number
+of voxels than the number of diffusion-weighted volumes. Since our data has a
+total of 67 volumes, the patch_radius is set to 2 which corresponds to a 5x5x5
+sliding window comprising a total of 125 voxels.
 
-To assess the performance of the ``localpca`` algorithm, an axial slice of the
-original, denoised data, and their difference are ploted below:
+To assess the performance of the Marcenko-Pastur PCA denosing algorithm,
+an axial slice of the original data, denoised data, and residuals are plotted
+below:
 """
 
 sli = data.shape[2] // 2
@@ -114,31 +118,39 @@ ax.flat[0].imshow(orig.T, cmap='gray', interpolation='none',
 ax.flat[0].set_title('Original')
 ax.flat[1].imshow(den.T, cmap='gray', interpolation='none',
                   origin='lower')
-ax.flat[1].set_title('Debiused Output')
+ax.flat[1].set_title('Denoised Output')
 ax.flat[2].imshow(rms_diff.T, cmap='gray', interpolation='none',
                   origin='lower')
-ax.flat[2].set_title('denoised_localpca.png', bbox_inches='tight')
+ax.flat[2].set_title('Residuals')
 
-print("The result saved in denoised_localpca.png")
+fig1.savefig('denoised_mppca.png')
+
+print("The result saved in denoised_mppca.png")
 
 """
-.. figure:: denoised_localpca.png
+.. figure:: denoised_mppca.png
    :align: center
 
-   Showing the middle axial slice of the local PCA denoised output.
+The noise suppressing can be visually appreciated by comparing the original
+data slice (left panel) to its denoised version (middle panel). The difference
+between original and denoised data showing only random noise indicates that
+the data's structural information is preserved by the PCA denoising algorithm
+(left panel).
+
+Below we show how the denoised data can be saved.
 """
 
 nib.save(nib.Nifti1Image(denoised_arr,
-                         affine), 'denoised_localpca.nii.gz')
+                         affine), 'denoised_mppca.nii.gz')
 
-print("Entire denoised data saved in denoised_localpca.nii.gz")
-
-"""
-
+print("Entire denoised data saved in denoised_mppca.nii.gz")
 
 """
+Additionally, we show on this example how the PCA denoising algorithm effects
+different diffusion measurements. For this, we run the diffusion kurtosis model
+below on both original and denoised versions of the data:
+"""
 
-import dipy.reconst.dki as dki
 dkimodel = dki.DiffusionKurtosisModel(gtab)
 
 maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
@@ -146,6 +158,11 @@ maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
 
 dki_orig = dkimodel.fit(data, mask=mask)
 dki_den = dkimodel.fit(denoised_arr, mask=mask)
+
+"""
+We use the following code to plot the MD, FA and MK estimates from the two data
+fits:
+"""
 
 FA_orig = dki_orig.fa
 FA_den = dki_den.fa
@@ -155,10 +172,10 @@ MK_orig = dki_orig.mk(0, 3)
 MK_den = dki_den.mk(0, 3)
 
 
-fig1, ax = plt.subplots(2, 3, figsize=(10, 10),
+fig2, ax = plt.subplots(2, 3, figsize=(10, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 
-fig1.subplots_adjust(hspace=0.3, wspace=0.03)
+fig2.subplots_adjust(hspace=0.3, wspace=0.03)
 
 ax.flat[0].imshow(MD_orig[:, :, sli].T, cmap='gray', vmin=0, vmax=2.0e-3,
                   origin='lower')
@@ -179,9 +196,68 @@ ax.flat[5].imshow(MK_den[:, :, sli].T, cmap='gray', vmin=0, vmax=1.5,
                   origin='lower')
 ax.flat[5].set_title('AD (DKI)')
 plt.show()
-fig1.savefig('Diffusion_tensor_measures_from_DTI_and_DKI.png')
+fig2.savefig('denoised_dki.png')
+
+print("The result saved in denoised_dki.png")
 
 """
+.. figure:: denoised_dki.png
+   :align: center
+
+In the above figure, the DKI maps obtained from the original data are shown in
+the upper panels, while the DKI maps from the denoised data are shown in the
+lower panels. Substantial improvements on measurements robustness can be
+visually appreciated, particularly for the FA and MK estimates.
+
+## noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
+
+As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
+estimate the image's noise standard deviation (std). The noise std
+automatically computed from the ``localpca`` function can be returned by
+setting the optional input parameter ``return_sigma`` to True.
+"""
+
+denoised_arr, sigma = localpca(data, sigma=None, patch_radius=2,
+                               return_sigma=True)
+
+""" Let's plot the noise standard deviation estimate """
+
+fig3 = plt.figure('PCA Noise standard deviation estimation')
+plt.imshow(sigma[..., sli].T, cmap='gray', origin='lower')
+plt.axis('off')
+plt.show()
+fig3.savefig('pca_sigma.png')
+
+print("The result saved in pca_sigma.png")
+
+"""
+.. figure:: pca_sigma.png
+   :align: center
+
+The above figure shows that the Marcenko-Pastur PCA algorithm computes a 3D
+spatial varying noise level map. To obtain the mean noise std across all
+voxels, you can use the following lines of code:
+"""
+
+mean_sigma = np.mean(sigma[mask])
+
+print(mean_sigma)
+
+"""
+Below we use this mean noise std value to estimate the data's nominal SNR
+(i.e. SNR at b-value=0):
+"""
+
+b0 = denoised_arr[..., 0]
+
+mean_signal = np.mean(b0[mask])
+
+snr = mean_signal / mean_sigma
+
+print(snr)
+
+"""
+
 References
 ----------
 
