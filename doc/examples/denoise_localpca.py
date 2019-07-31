@@ -83,7 +83,7 @@ to 2.3.
 
 t = time()
 
-denoised_arr = localpca(data, sigma=sigma, tau_factor=2.3, patch_radius=2)
+denoised_arr = localpca(data, sigma, tau_factor=2.3, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 
