@@ -446,7 +446,7 @@ def slicer_panel(renderer, iren,
 
     def label_colormap_callback(obj, event):
 
-        if HORIZON.slicer_colormap_cnt == len(HORIZON.slicer_colormaps):
+        if HORIZON.slicer_colormap_cnt == len(HORIZON.slicer_colormaps) - 1:
             HORIZON.slicer_colormap_cnt = 0
         else:
             HORIZON.slicer_colormap_cnt += 1

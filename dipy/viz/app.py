@@ -12,6 +12,7 @@ if has_fury:
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from dipy.viz.gmem import HORIZON
+    from fury.tests.test_ui import EventCounter
 
 
 def apply_shader(hz, actor):
@@ -315,6 +316,9 @@ class Horizon(object):
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
     def build_show(self, scene):
+        # event_counter = EventCounter()
+        # event_counter.monitor(button_test)
+        # event_counter.monitor(self.panel)
 
         show_m = window.ShowManager(scene, size=(1200, 900),
                                     order_transparent=True,
@@ -618,12 +622,45 @@ class Horizon(object):
         scene.reset_clipping_range()
 
         if self.interactive:
+            self.event_testing = True
+            if not self.event_testing:
 
-            show_m.add_window_callback(win_callback)
-            show_m.add_timer_callback(True, 200, timer_callback)
-            show_m.iren.AddObserver('KeyPressEvent', key_press)
-            show_m.render()
-            show_m.start()
+                show_m.add_window_callback(win_callback)
+                show_m.add_timer_callback(True, 200, timer_callback)
+                show_m.iren.AddObserver('KeyPressEvent', key_press)
+                show_m.render()
+                show_m.start()
+
+            else:
+
+                # event_counter = EventCounter()
+                # # event_counter.monitor(button_test)
+                # event_counter.monitor(self.panel)
+                # event_counter.monitor(HORIZON.slicer_curr_actor_x)
+                # event_counter.monitor(HORIZON.slicer_curr_actor_y)
+                # event_counter.monitor(HORIZON.slicer_curr_actor_z)
+
+                # show_m = window.ShowManager(size=current_size, title="FURY Button")
+                show_m.add_window_callback(win_callback)
+                show_m.add_timer_callback(True, 200, timer_callback)
+                show_m.iren.AddObserver('KeyPressEvent', key_press)
+
+                # show_manager.scene.add(panel)
+                recording = True
+                recording_filename = 'record.log'
+                # expected_events_counts_filename = 'event_counter.pkl'
+
+                if recording:
+                    show_m.record_events_to_file(recording_filename)
+                    # print(list(event_counter.events_counts.items()))
+                    # for ec in list(event_counter.events_counts.items()):
+                    #    print(ec)
+                    #event_counter.save(expected_events_counts_filename)
+
+                else:
+                    show_m.play_events_from_file(recording_filename)
+                    # expected = EventCounter.load(expected_events_counts_filename)
+                    # event_counter.check_counts(expected)
 
         else:
 

@@ -15,6 +15,24 @@ skip_it = use_xvfb == 'skip'
 
 @npt.dec.skipif(skip_it or not has_fury)
 @xvfb_it
+def test_horizon_events():
+    recording = True
+
+    affine = np.diag([2., 1, 1, 1]).astype('f8')
+    data = 255 * np.random.rand(150, 150, 150)
+    images = [(data, affine)]
+    from dipy.segment.tests.test_bundles import f1
+    streamlines = f1.copy()
+    tractograms = [streamlines]
+
+    horizon(tractograms, images=images, cluster=True, cluster_thr=5,
+            random_colors=False, length_lt=np.inf, length_gt=0,
+            clusters_lt=np.inf, clusters_gt=0,
+            world_coords=True, interactive=True)
+
+
+@npt.dec.skipif(skip_it or not has_fury)
+@xvfb_it
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -72,6 +90,10 @@ def test_horizon():
 
 
 
+
+
 if __name__ == '__main__':
 
     test_horizon()
+    test_horizon_events()
+
