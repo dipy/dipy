@@ -12,7 +12,7 @@ biological tissues is non-Gaussian using the kurtosis tensor (KT)
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
 heterogeneity [Jensen2010]_. Moreover, DKI can be used to: 1) derive concrete
-biophysical parameters, such as the density of axonal fibres and diffusion
+biophysical parameters, such as the density of axonal fibers and diffusion
 tortuosity [Fierem2011]_ (see :ref:`example_reconst_dki_micro`); and 2)
 resolve crossing fibers in tractography and to obtain invariant rotational
 measures not limited to well-aligned fiber populations [NetoHe2015]_.

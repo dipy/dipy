@@ -75,7 +75,7 @@ regions in which this model provides meaningful information (i.e. voxels of
 well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple way
 to select this region is to generate a well-aligned fiber mask based on the
 values of diffusion sphericity, planarity and linearity. Here we will follow
-these selection criteria for a better comparision of our figures with the
+these selection criteria for a better comparison of our figures with the
 original article published by Fieremans et al. [Fieremans2011]_. Nevertheless,
 it is important to note that voxels with well-aligned fibers can be selected
 based on other approaches such as using predefined regions of interest.
