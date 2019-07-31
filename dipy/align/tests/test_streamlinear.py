@@ -51,8 +51,7 @@ def fornix_streamlines(no_pts=12):
                              bbox_valid_check=False).streamlines
 
     fornix_streamlines = Streamlines(fornix)
-    streamlines = [set_number_of_points(i[0], no_pts)
-                   for i in fornix_streamlines]
+    streamlines = set_number_of_points(fornix_streamlines, no_pts)
     return streamlines
 
 

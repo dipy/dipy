@@ -11,11 +11,10 @@ With Pytest, Run this benchmark with:
 
 """
 import numpy as np
-import nibabel as nib
 
 from dipy.data import get_fnames
-
-import dipy.tracking.streamline as streamline_utils
+from dipy.io.streamline import load_tractogram
+from dipy.tracking.streamline import Streamlines, set_number_of_points
 from dipy.segment.metric import Metric
 from dipy.segment.clustering import QuickBundles as QB_New
 from numpy.testing import assert_equal
@@ -45,8 +44,7 @@ def bench_quickbundles():
                              bbox_valid_check=False).streamlines
 
     fornix_streamlines = Streamlines(fornix)
-    fornix_streamlines = [set_number_of_points(i[0], nb_points)
-                          for i in fornix_streamlines]
+    fornix_streamlines = set_number_of_points(fornix_streamlines, nb_points)
 
     # Create eight copies of the fornix to be clustered (one in each octant).
     streamlines = []

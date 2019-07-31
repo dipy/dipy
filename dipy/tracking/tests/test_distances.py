@@ -6,6 +6,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_almost_equal)
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
+from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 
@@ -66,7 +67,7 @@ def test_LSCv2():
     fornix = load_tractogram(fname, 'same',
                              bbox_valid_check=False).streamlines
 
-    T3 = [tm.downsample(s[0], 6) for s in fornix]
+    T3 = set_number_of_points(fornix, 6)
 
     print('lenT3', len(T3))
 
