@@ -33,7 +33,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     _, extension = os.path.splitext(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
-        TypeError('Output filename is not one of the supported format')
+        raise TypeError('Output filename is not one of the supported format')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
