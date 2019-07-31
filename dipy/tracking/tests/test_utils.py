@@ -236,7 +236,7 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
                        [0, .2, 0, 0],
                        [0, 0, .4, 0],
                        [0, 0, 0, 1]])
-    streamlines = list(transform_streamlines(streamlines, affine))
+    streamlines = transform_streamlines(streamlines, affine)
     new = list(target_f(streamlines, affine, mask))
     npt.assert_equal(len(new), 1)
     assert_true(new[0] is streamlines[0])
