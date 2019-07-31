@@ -112,7 +112,7 @@ oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
 """
 Read volumetric data from an image corresponding to this subject.
 
-For the purpose of this, we've extracted only the FA within the bundles in 
+For the purpose of this, we've extracted only the FA within the bundles in
 question, but in real use, this is where you would add the FA map of your
 subject.
 """
@@ -135,10 +135,10 @@ w_af_l = dsa.gaussian_weights(oriented_af_l)
 And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=img.affine,
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, img.affine,
                                 weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_af_l, affine=img.affine,
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, img.affine,
                                weights=w_af_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
