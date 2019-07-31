@@ -18,7 +18,7 @@ def _pca_classifier(L, nvoxels):
     ----------
     L : array (n,)
         Array containing the PCA eigenvalues in ascending order.
-    wdim : int
+    nvoxels : int
         Number of voxels used to compute L
 
     Returns
@@ -50,8 +50,8 @@ def _pca_classifier(L, nvoxels):
     return var, ncomps
 
 
-def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
-             tau_factor=None, return_sigma=False, out_dtype=None):
+def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
+           tau_factor=None, return_sigma=False, out_dtype=None):
     r"""General function to perform PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -67,14 +67,14 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
+    patch_radius : int (optional)
+        The radius of the local patch to be taken around each voxel (in
+        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
         method is 'eig' which is faster. However, occasionally 'svd' might be
         more accurate.
-    patch_radius : int (optional)
-        The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     tau_factor : float (optional)
         Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
         are smaller than:
@@ -102,13 +102,13 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
 
     References
     ----------
-    .. [1] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
-           mapping using random matrix theory. Magnetic Resonance in Medicine.
-           doi: 10.1002/mrm.26059.
-    .. [2] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
            Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
            theory. Neuroimage 142:394-406.
            doi: 10.1016/j.neuroimage.2016.08.016
+    .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+           mapping using random matrix theory. Magnetic Resonance in Medicine.
+           doi: 10.1002/mrm.26059.
     .. [3] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
            Diffusion Weighted Image Denoising Using Overcomplete Local
            PCA. PLoS ONE 8(9): e73021.
@@ -248,3 +248,118 @@ def localpca(arr, sigma=None, mask=None, pca_method='eig', patch_radius=2,
             return denoised_arr.astype(out_dtype), sigma
     else:
         return denoised_arr.astype(out_dtype)
+
+
+def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
+             tau_factor=2.3, out_dtype=None):
+    r""" Performs local PCA denoising according to Manjon et al. [1]_.
+
+    Parameters
+    ----------
+    arr : 4D array
+        Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+        are the diffusion gradient directions.
+    sigma : float or 3D array
+        Standard deviation of the noise estimated from the data.
+    mask : 3D boolean array (optional)
+        A mask with voxels that are true inside the brain and false outside of
+        it. The function denoises within the true part and returns zeros
+        outside of those voxels.
+    patch_radius : int (optional)
+        The radius of the local patch to be taken around each voxel (in
+        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    pca_method : 'eig' or 'svd' (optional)
+        Use either eigenvalue decomposition (eig) or singular value
+        decomposition (svd) for principal component analysis. The default
+        method is 'eig' which is faster. However, occasionally 'svd' might be
+        more accurate.
+    tau_factor : float (optional)
+        Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
+        are smaller than:
+
+        .. math ::
+
+                \tau = (\tau_{factor} \sigma)^2
+
+        \tau_{factor} can be change to adjust the relationship between the
+        noise standard deviation and the threshold \tau. If \tau_{factor} is
+        set to None, it will be automatically calculated using the
+        Marcenko-Pastur distribution [2]_.
+        Default: 2.3 (according to [1]_)
+    out_dtype : str or dtype (optional)
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
+
+    Returns
+    -------
+    denoised_arr : 4D array
+        This is the denoised array of the same size as that of the input data,
+        clipped to non-negative values
+
+    References
+    ----------
+    .. [1] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
+           Diffusion Weighted Image Denoising Using Overcomplete Local
+           PCA. PLoS ONE 8(9): e73021.
+           https://doi.org/10.1371/journal.pone.0073021
+    .. [2] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+           theory. Neuroimage 142:394-406.
+           doi: 10.1016/j.neuroimage.2016.08.016
+    """
+    return genpca(arr, sigma=sigma, mask=mask, patch_radius=patch_radius,
+                  pca_method=pca_method, tau_factor=2.3,
+                  return_sigma=False, out_dtype=out_dtype)
+
+
+def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
+          return_sigma=False, out_dtype=None):
+    r"""Performs PCA-based denoising using the Marcenko-Pastur
+    distribution [1]_.
+
+    Parameters
+    ----------
+    arr : 4D array
+        Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+        are the diffusion gradient directions.
+    mask : 3D boolean array (optional)
+        A mask with voxels that are true inside the brain and false outside of
+        it. The function denoises within the true part and returns zeros
+        outside of those voxels.
+    patch_radius : int (optional)
+        The radius of the local patch to be taken around each voxel (in
+        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    pca_method : 'eig' or 'svd' (optional)
+        Use either eigenvalue decomposition (eig) or singular value
+        decomposition (svd) for principal component analysis. The default
+        method is 'eig' which is faster. However, occasionally 'svd' might be
+        more accurate.
+    return_sigma : bool (optional)
+        If true, a noise standard deviation estimate based on the
+        Marcenko-Pastur distribution is returned [2]_.
+        Default: False.
+    out_dtype : str or dtype (optional)
+        The dtype for the output array. Default: output has the same dtype as
+        the input.
+
+    Returns
+    -------
+    denoised_arr : 4D array
+        This is the denoised array of the same size as that of the input data,
+        clipped to non-negative values
+    sigma : 3D array (when return_sigma=True)
+        Estimate of the spatial varying standard deviation of the noise
+
+    References
+    ----------
+    .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+           Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+           theory. Neuroimage 142:394-406.
+           doi: 10.1016/j.neuroimage.2016.08.016
+    .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+           mapping using random matrix theory. Magnetic Resonance in Medicine.
+           doi: 10.1002/mrm.26059.
+    """
+    return genpca(arr, sigma=None, mask=mask, patch_radius=patch_radius,
+                  pca_method=pca_method, tau_factor=None,
+                  return_sigma=return_sigma, out_dtype=out_dtype)
