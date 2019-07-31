@@ -15,7 +15,7 @@ because it is simple and robust.
 
 In order to perform local fiber tracking, three things are needed: 1) A method
 for getting directions from a diffusion data set. 2) A method for identifying
-when the tracking must stops. 3) A set of seeds from which to
+when the tracking must stop. 3) A set of seeds from which to
 begin tracking. This example shows how to combine the 3 parts described above
 to create a tractography reconstruction from a diffusion data set.
 """
