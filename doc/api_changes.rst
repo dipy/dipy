@@ -27,7 +27,7 @@ The order of parameters has also changed.
 
 **Tractogram loading and saving**
 
-The API of ``dipy.io.streamlines.load_tractogram`` and 
+The API of ``dipy.io.streamlines.load_tractogram`` and
 ``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
 When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
 guarantee proper spatial transformation handling.
@@ -39,6 +39,11 @@ affine parameter and uniformize docstring. ``deform_streamlines``
 ``select_by_rois``, ``orient_by_rois``, ``_extract_vals`` 
 and ``values_from_volume``.
 
+Functions from ``dipy.tracking.life`` were modified to enforce the
+affine parameter and uniformize docstring. ``voxel2streamline``,
+``setup`` and ``fit`` from class ``FiberModel`` were all modified.
+
+``afq_profile`` from ``dipy.stats.analysis`` was modified in a similar way.
 
 **Simulation**
 
@@ -62,9 +67,34 @@ The `voxel_size` parameter has been removed from the following function:
 The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
 been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
 
+The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
+``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
+They now need to be imported from ``dipy.tracking.local_tracking``.
+
+- functions argument `tissue_classifier` were renamed `stopping_criterion`
+
+The `TissueClassifier` were renamed `StoppingCriterion` and moved from
+``dipy.tracking.local.tissue_classifier`` to ``dipy.tracking.stopping_criterion``.
+They now need to be imported from ``dipy.tracking.stopping_criterion``.
+
+- `TissueClassifier` -> `StoppingCriterion`
+- `BinaryTissueClassifier` -> `BinaryStoppingCriterion`
+- `ThresholdTissueClassifier` -> `ThresholdStoppingCriterion`
+- `ConstrainedTissueClassifier` -> `AnatomicalStoppingCriterion`
+- `ActTissueClassifier` -> `ActStoppingCriterion`
+- `CmcTissueClassifier` -> `CmcStoppingCriterion`
+
+The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
+``dipy.tracking.stopping_criterion.StreamlineStatus`.
+
 The `EuDX` tracking function has been removed. EuDX tractography can be
-performed using ``dipy.tracking.local.LocalTracking`` using
+performed using ``dipy.tracking.local_tracking`` using
 ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
+
+**Notes**
+
+- ``dipy.external`` package has been removed
+- ``dipy.fixes`` package has been removed
 
 DIPY 0.16 Changes
 -----------------

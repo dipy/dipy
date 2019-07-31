@@ -10,24 +10,26 @@ Model (SFM), described in [Rokem2015]_. This model reconstructs the diffusion
 signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 """
+
 # Enables/disables interactive visualization
+interactive = False
+
+from dipy.data import get_sphere, read_stanford_labels, read_stanford_t1
+from dipy.direction.peaks import peaks_from_model
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.tracking.streamline import select_random_set_of_streamlines
-from numpy.linalg import inv
-from dipy.tracking.utils import move_streamlines
-from dipy.data import read_stanford_t1
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking.local import LocalTracking
-from dipy.tracking import utils
-from dipy.tracking.local import ThresholdTissueClassifier
-from dipy.direction.peaks import peaks_from_model
-from dipy.reconst import sfm
-from dipy.data import get_sphere
 from dipy.reconst.csdeconv import auto_response
-from dipy.data import read_stanford_labels
-interactive = False
+from dipy.reconst import sfm
+from dipy.tracking import utils
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.streamline import (select_random_set_of_streamlines,
+                                      Streamlines)
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
+from dipy.tracking.utils import move_streamlines
+from dipy.viz import window, actor, colormap, has_fury
+from numpy.linalg import inv
+
+
 """
 To begin, we read the Stanford HARDI data set into memory:
 """
@@ -80,12 +82,12 @@ pnm = peaks_from_model(sf_model, data, sphere,
                        parallel=True)
 
 """
-A ThresholdTissueClassifier object is used to segment the data to track only
+A ThresholdStoppingCriterion object is used to segment the data to track only
 through areas in which the Generalized Fractional Anisotropy (GFA) is
 sufficiently high.
 """
 
-classifier = ThresholdTissueClassifier(pnm.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(pnm.gfa, .25)
 
 """
 Tracking will be started from a set of seeds evenly distributed in the white
@@ -96,8 +98,8 @@ seeds = utils.seeds_from_mask(white_matter, density=[2, 2, 2], affine=affine)
 
 """
 For the sake of brevity, we will take only the first 1000 seeds, generating
-only 1000 streamlines. Remove this line to track from many more points in all of
-the white matter
+only 1000 streamlines. Remove this line to track from many more points in all
+of the white matter
 """
 
 seeds = seeds[:1000]
@@ -107,7 +109,7 @@ We now have the necessary components to construct a tracking pipeline and
 execute the tracking
 """
 
-streamline_generator = LocalTracking(pnm, classifier, seeds, affine,
+streamline_generator = LocalTracking(pnm, stopping_criterion, seeds, affine,
                                      step_size=.5)
 streamlines = Streamlines(streamline_generator)
 

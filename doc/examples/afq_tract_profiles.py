@@ -133,10 +133,10 @@ w_af_l = dsa.gaussian_weights(oriented_af_l)
 And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=img.affine,
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, img.affine,
                                 weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_af_l, affine=img.affine,
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, img.affine,
                                weights=w_af_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)

@@ -1,15 +1,15 @@
 """
 =================================================
-Using Various Tissue Classifiers for Tractography
+Using Various Stopping Criterion for Tractography
 =================================================
-The tissue classifier determines if the tracking stops or continues at each
+The stopping criterion determines if the tracking stops or continues at each
 tracking position. The tracking stops when it reaches an ending region
 (e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
 boundaries. The tracking also stops if the direction getter has no direction
 to follow.
 
-Each tissue classifier determines if the stopping is 'valid' or
-'invalid'. A streamline is 'valid' when the tissue classifier determines if
+Each stopping criterion determines if the stopping is 'valid' or
+'invalid'. A streamline is 'valid' when the stopping criterion determines if
 the streamline stops in a position classified as 'ENDPOINT' or 'OUTSIDEIMAGE'.
 A streamline is 'invalid' when it stops in a position classified as
 'TRACKPOINT' or 'INVALIDPOINT'. These conditions are described below. The
@@ -25,26 +25,27 @@ model and creating the maximum deterministic direction getter.
 """
 
 # Enables/disables interactive visualization
-from dipy.tracking.local import ActTissueClassifier
-from dipy.tracking.local import BinaryTissueClassifier
-from dipy.tracking.local import ThresholdTissueClassifier
-from dipy.reconst.dti import fractional_anisotropy
-import dipy.reconst.dti as dti
+interactive = False
+
 import matplotlib.pyplot as plt
-from dipy.viz import window, actor, colormap, has_fury
-from dipy.tracking import utils
-from dipy.tracking.streamline import Streamlines
-from dipy.tracking.local import LocalTracking
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.io.streamline import save_trk
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.direction import DeterministicMaximumDirectionGetter
+import numpy as np
+
 from dipy.data import (read_stanford_labels,
                        default_sphere,
                        read_stanford_pve_maps)
-import numpy as np
-interactive = False
+from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.io.streamline import save_trk
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+from dipy.reconst.dti import fractional_anisotropy, TensorModel
+from dipy.tracking import utils
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.streamline import Streamlines
+from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
+                                              BinaryStoppingCriterion,
+                                              ThresholdStoppingCriterion)
+from dipy.viz import window, actor, colormap, has_fury
 
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -67,13 +68,13 @@ dg = DeterministicMaximumDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                       sphere=default_sphere)
 
 """
-Threshold Tissue Classifier
-===========================
+Threshold Stopping Criterion
+============================
 A scalar map can be used to define where the tracking stops. The threshold
-tissue classifier uses a scalar map to stop the tracking whenever the
+stopping criterion uses a scalar map to stop the tracking whenever the
 interpolated scalar value is lower than a fixed threshold. Here, we show
 an example using the fractional anisotropy (FA) map of the DTI model.
-The threshold tissue classifier uses a trilinear interpolation at the
+The threshold stopping criterion uses a trilinear interpolation at the
 tracking position.
 
 **Parameters**
@@ -94,11 +95,11 @@ direction to follow.
 """
 
 
-tensor_model = dti.TensorModel(gtab)
+tensor_model = TensorModel(gtab)
 tenfit = tensor_model.fit(data, mask=labels > 0)
 FA = fractional_anisotropy(tenfit.evals)
 
-threshold_classifier = ThresholdTissueClassifier(FA, .2)
+threshold_criterion = ThresholdStoppingCriterion(FA, .2)
 
 fig = plt.figure()
 mask_fa = FA.copy()
@@ -118,7 +119,7 @@ fig.savefig('threshold_fa.png')
 """
 
 streamline_generator = LocalTracking(dg,
-                                     threshold_classifier,
+                                     threshold_criterion,
                                      seeds,
                                      affine,
                                      step_size=.5,
@@ -143,12 +144,12 @@ if has_fury:
  fractional anisotropy mask.**
 """
 """
-Binary Tissue Classifier
-========================
+Binary Stopping Criterion
+=========================
 A binary mask can be used to define where the tracking stops. The binary
-tissue classifier stops the tracking whenever the tracking position is outside
-the mask. Here, we show how to obtain the binary tissue classifier from
-the white matter mask defined above. The binary tissue classifier uses a
+stopping criterion stops the tracking whenever the tracking position is outside
+the mask. Here, we show how to obtain the binary stopping criterion from
+the white matter mask defined above. The binary stopping criterion uses a
 nearest-neighborhood interpolation at the tracking position.
 
 **Parameters**
@@ -168,7 +169,7 @@ follow.
 """
 
 
-binary_classifier = BinaryTissueClassifier(white_matter == 1)
+binary_criterion = BinaryStoppingCriterion(white_matter == 1)
 
 fig = plt.figure()
 plt.xticks([])
@@ -187,7 +188,7 @@ fig.savefig('white_matter_mask.png')
 """
 
 streamline_generator = LocalTracking(dg,
-                                     binary_classifier,
+                                     binary_criterion,
                                      seeds,
                                      affine,
                                      step_size=.5,
@@ -213,8 +214,8 @@ if has_fury:
 """
 
 """
-ACT Tissue Classifier
-=====================
+ACT Stopping Criterion
+======================
 Anatomically-constrained tractography (ACT) [Smith2012]_ uses information from
 anatomical images to determine when the tractography stops. The ``include_map``
 defines when the streamline reached a 'valid' stopping region (e.g. gray
@@ -222,7 +223,7 @@ matter partial volume estimation (PVE) map) and the ``exclude_map`` defines
 when the streamline reached an 'invalid' stopping region (e.g. corticospinal
 fluid PVE map). The background of the anatomical image should be added to the
 ``include_map`` to keep streamlines exiting the brain (e.g. through the
-brain stem). The ACT tissue classifier uses a trilinear interpolation
+brain stem). The ACT stopping criterion uses a trilinear interpolation
 at the tracking position.
 
 **Parameters**
@@ -256,7 +257,7 @@ include_map = img_pve_gm.get_data()
 include_map[background > 0] = 1
 exclude_map = img_pve_csf.get_data()
 
-act_classifier = ActTissueClassifier(include_map, exclude_map)
+act_criterion = ActStoppingCriterion(include_map, exclude_map)
 
 fig = plt.figure()
 plt.subplot(121)
@@ -282,7 +283,7 @@ fig.savefig('act_maps.png')
 """
 
 streamline_generator = LocalTracking(dg,
-                                     act_classifier,
+                                     act_criterion,
                                      seeds,
                                      affine,
                                      step_size=.5,
@@ -308,7 +309,7 @@ if has_fury:
 """
 
 streamline_generator = LocalTracking(dg,
-                                     act_classifier,
+                                     act_criterion,
                                      seeds,
                                      affine,
                                      step_size=.5,
@@ -334,10 +335,10 @@ if has_fury:
 """
 
 """
-The threshold and binary tissue classifiers use respectively a scalar map and a
-binary mask to stop the tracking. The ACT tissue classifier use partial volume
+The threshold and binary stopping criterion use respectively a scalar map and a
+binary mask to stop the tracking. The ACT stopping criterion use partial volume
 fraction (PVE) maps from an anatomical image to stop the tracking.
-Additionally, the ACT tissue classifier determines if the tracking stopped in
+Additionally, the ACT stopping criterion determines if the tracking stopped in
 expected regions (e.g. gray matter) and allows the user to get only
 streamlines stopping in those regions.
 

@@ -3,7 +3,7 @@ cimport numpy as np
 import numpy as np
 
 from dipy.tracking.propspeed cimport _propagation_direction
-from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.tracking.direction_getter cimport DirectionGetter
 
 cdef extern from "dpy_math.h" nogil:
     double dpy_rint(double x)

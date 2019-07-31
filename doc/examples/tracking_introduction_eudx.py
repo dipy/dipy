@@ -15,8 +15,8 @@ because it is simple and robust.
 
 In order to perform local fiber tracking, three things are needed: 1) A method
 for getting directions from a diffusion data set. 2) A method for identifying
-different tissue types within the data set. 3) A set of seeds from which to
-begin tracking.  This example shows how to combine the 3 parts described above
+when the tracking must stop. 3) A set of seeds from which to
+begin tracking. This example shows how to combine the 3 parts described above
 to create a tractography reconstruction from a diffusion data set.
 """
 
@@ -102,9 +102,9 @@ the ODF shows significant restricted diffusion by thresholding on
 the generalized fractional anisotropy (GFA).
 """
 
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 """
 Again, for quality assurance we can also visualize a slice the GFA and the
@@ -153,11 +153,11 @@ used here and the default option when providing the output of peaks directly
 in LocalTracking.
 """
 
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines_generator = LocalTracking(csa_peaks, classifier, seeds,
+streamlines_generator = LocalTracking(csa_peaks, stopping_criterion, seeds,
                                       affine=affine, step_size=.5)
 # Generate streamlines object
 streamlines = Streamlines(streamlines_generator)

@@ -77,7 +77,7 @@ def test_voxel2streamline():
     streamline = [[[1.1, 2.4, 2.9], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
     affine = np.eye(4)
-    v2f, v2fn = life.voxel2streamline(streamline, False, affine)
+    v2f, v2fn = life.voxel2streamline(streamline, affine)
     npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
     npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
                             1: {0: [0], 1: [1], 2: [2]}})
@@ -87,7 +87,7 @@ def test_voxel2streamline():
                        [0, 0, 0, 1]])
 
     xform_sl = life.transform_streamlines(streamline, np.linalg.inv(affine))
-    v2f, v2fn = life.voxel2streamline(xform_sl, False, affine)
+    v2f, v2fn = life.voxel2streamline(xform_sl, affine)
     npt.assert_equal(v2f, {0: [0, 1], 1: [0, 1], 2: [0, 1], 3: [0]})
     npt.assert_equal(v2fn, {0: {0: [0], 1: [1], 2: [2], 3: [3]},
                             1: {0: [0], 1: [1], 2: [2]}})
@@ -127,7 +127,7 @@ def test_FiberFit():
     streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
                   [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
 
-    fiber_matrix, vox_coords = FM.setup(streamline, None, evals)
+    fiber_matrix, vox_coords = FM.setup(streamline, np.eye(4), evals)
 
     w = np.array([0.5, 0.5])
     sig = opt.spdot(fiber_matrix, w) + 1.0  # Add some isotropic stuff
@@ -140,7 +140,7 @@ def test_FiberFit():
     # Grab some realistic S0 values:
     this_data = np.concatenate([data[..., gtab.b0s_mask], this_data], -1)
 
-    fit = FM.fit(this_data, streamline)
+    fit = FM.fit(this_data, streamline, np.eye(4))
     npt.assert_almost_equal(fit.predict()[1],
                             fit.data[1], decimal=-1)
 
@@ -165,7 +165,7 @@ def test_fit_data():
     tensor_streamlines_vox = sft.streamlines
 
     life_model = life.FiberModel(gtab)
-    life_fit = life_model.fit(data, tensor_streamlines_vox)
+    life_fit = life_model.fit(data, tensor_streamlines_vox, np.eye(4))
     model_error = life_fit.predict() - life_fit.data
     model_rmse = np.sqrt(np.mean(model_error ** 2, -1))
     matlab_rmse, matlab_weights = dpd.matlab_life_results()

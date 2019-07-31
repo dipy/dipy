@@ -141,34 +141,34 @@ def test_afq_profile():
                              [1, 0., 0],
                              [2, 0,  0.]]]))
 
-    profile = afq_profile(data, bundle)
+    profile = afq_profile(data, bundle, np.eye(4))
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_profile(data, bundle, affine=None, n_points=10,
+    profile = afq_profile(data, bundle, np.eye(4), n_points=10,
                           weights=None)
     npt.assert_equal(profile, np.ones(10))
 
-    profile = afq_profile(data, bundle, affine=None,
+    profile = afq_profile(data, bundle, np.eye(4),
                           weights=gaussian_weights, stat=np.median)
 
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_profile(data, bundle, affine=None, orient_by=bundle[0],
+    profile = afq_profile(data, bundle, np.eye(4), orient_by=bundle[0],
                           weights=gaussian_weights, stat=np.median)
 
     npt.assert_equal(profile, np.ones(100))
 
-    profile = afq_profile(data, bundle, affine=None, n_points=10,
+    profile = afq_profile(data, bundle, np.eye(4), n_points=10,
                           weights=None)
     npt.assert_equal(profile, np.ones(10))
 
-    profile = afq_profile(data, bundle, affine=None, n_points=10,
+    profile = afq_profile(data, bundle, np.eye(4), n_points=10,
                           weights=np.ones((2, 10)) * 0.5)
     npt.assert_equal(profile, np.ones(10))
 
     # Disallow setting weights that don't sum to 1 across fibers/nodes:
     npt.assert_raises(ValueError, afq_profile,
-                      data, bundle, affine=None,
+                      data, bundle, np.eye(4),
                       n_points=10, weights=np.ones((2, 10)) * 0.6)
 
     # Test using an affine:
@@ -178,7 +178,7 @@ def test_afq_profile():
     bundle._data = bundle._data + affine[:3, 3]
     profile = afq_profile(data,
                           bundle,
-                          affine=affine,
+                          affine,
                           n_points=10,
                           weights=None)
 
@@ -186,7 +186,7 @@ def test_afq_profile():
 
     # Test for error-handling:
     empty_bundle = Streamlines([])
-    npt.assert_raises(ValueError, afq_profile, data, empty_bundle)
+    npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
 
 
 if __name__ == '__main__':

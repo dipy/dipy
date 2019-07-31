@@ -5,8 +5,8 @@ cimport cython
 cimport numpy as np
 import numpy as np
 from .direction_getter cimport DirectionGetter
-from .tissue_classifier cimport(
-    TissueClass, TissueClassifier, ConstrainedTissueClassifier,
+from .stopping_criterion cimport(
+    StreamlineStatus, StoppingCriterion, AnatomicalStoppingCriterion,
     TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
@@ -85,7 +85,7 @@ cdef void fixed_step(double * point, double * direction, double step_size) nogil
 
 def local_tracker(
         DirectionGetter dg,
-        TissueClassifier tc,
+        StoppingCriterion sc,
         np.float_t[:] seed_pos,
         np.float_t[:] first_step,
         np.float_t[:] voxel_size,
@@ -95,14 +95,14 @@ def local_tracker(
     """Tracks one direction from a seed.
 
     This function is the main workhorse of the ``LocalTracking`` class defined
-    in ``dipy.tracking.local.localtracking``.
+    in ``dipy.tracking.local_tracking``.
 
     Parameters
     ----------
     dg : DirectionGetter
         Used to choosing tracking directions.
-    tc : TissueClassifier
-        Used to check tissue type along path.
+    sc : StoppingCriterion
+        Used to check the streamline status (e.g. endpoint) along path.
     seed_pos : array, float, 1d, (3,)
         First point of the (partial) streamline.
     first_step : array, float, 1d, (3,)
@@ -123,12 +123,12 @@ def local_tracker(
     -------
     end : int
         Length of the tracked streamline
-    tissue_class : TissueClass
-        Ending state of the streamlines as determined by the TissueClassifier.
+    stream_status : StreamlineStatus
+        Ending state of the streamlines as determined by the StoppingCriterion.
     """
     cdef:
         size_t i
-        TissueClass tissue_class
+        StreamlineStatus stream_status
         double dir[3]
         double vs[3]
         double seed[3]
@@ -142,23 +142,23 @@ def local_tracker(
         vs[i] = voxel_size[i]
         seed[i] = seed_pos[i]
 
-    i = _local_tracker(dg, tc, seed, dir, vs, streamline,
-                       step_size, fixedstep, &tissue_class)
-    return i, tissue_class
+    i = _local_tracker(dg, sc, seed, dir, vs, streamline,
+                       step_size, fixedstep, &stream_status)
+    return i, stream_status
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef int _local_tracker(DirectionGetter dg,
-                        TissueClassifier tc,
+                        StoppingCriterion sc,
                         double* seed,
                         double* dir,
                         double* voxel_size,
                         np.float_t[:, :] streamline,
                         double step_size,
                         int fixedstep,
-                        TissueClass* tissue_class):
+                        StreamlineStatus* stream_status):
     cdef:
         size_t i
         double point[3]
@@ -173,7 +173,7 @@ cdef int _local_tracker(DirectionGetter dg,
     copy_point(seed, point)
     copy_point(seed, &streamline[0,0])
 
-    tissue_class[0] = TRACKPOINT
+    stream_status[0] = TRACKPOINT
     for i in range(1, streamline.shape[0]):
         if dg.get_direction_c(point, dir):
             break
@@ -181,12 +181,12 @@ cdef int _local_tracker(DirectionGetter dg,
             voxdir[j] = dir[j] / voxel_size[j]
         step(point, voxdir, step_size)
         copy_point(point, &streamline[i, 0])
-        tissue_class[0] = tc.check_point_c(point)
-        if tissue_class[0] == TRACKPOINT:
+        stream_status[0] = sc.check_point_c(point)
+        if stream_status[0] == TRACKPOINT:
             continue
-        elif (tissue_class[0] == ENDPOINT or
-              tissue_class[0] == INVALIDPOINT or
-              tissue_class[0] == OUTSIDEIMAGE):
+        elif (stream_status[0] == ENDPOINT or
+              stream_status[0] == INVALIDPOINT or
+              stream_status[0] == OUTSIDEIMAGE):
             break
     else:
         # maximum length of streamline has been reached, return everything
@@ -196,7 +196,7 @@ cdef int _local_tracker(DirectionGetter dg,
 
 def pft_tracker(
         DirectionGetter dg,
-        ConstrainedTissueClassifier tc,
+        AnatomicalStoppingCriterion sc,
         np.float_t[:] seed_pos,
         np.float_t[:] first_step,
         np.float_t[:] voxel_size,
@@ -211,18 +211,18 @@ def pft_tracker(
         np.float_t[:, :, :, :] particle_dirs,
         np.float_t[:] particle_weights,
         np.int_t[:, :]  particle_steps,
-        np.int_t[:, :]  particle_tissue_classes):
+        np.int_t[:, :]  particle_stream_statuses):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
     This function is the main workhorse of the ``ParticleFilteringTracking``
-    class defined in ``dipy.tracking.local.localtracking``.
+    class defined in ``dipy.tracking.local_tracking``.
 
     Parameters
     ----------
     dg : DirectionGetter
         Used to choosing tracking directions.
-    tc : TissueClassifier
-        Used to check tissue type along path.
+    sc : AnatomicalStoppingCriterion
+        Used to check the streamline status (e.g. endpoint) along path.
     seed_pos : array, float, 1d, (3,)
         First point of the (partial) streamline.
     first_step : array, float, 1d, (3,)
@@ -257,20 +257,20 @@ def pft_tracker(
         Temporary array for the weights of particles.
     particle_steps : array, float, (2, particle_count)
         Temporary array for the number of steps of particles.
-    particle_tissue_classes : array, float, (2, particle_count)
-        Temporary array for the tissue classes of particles.
+    particle_stream_statuses : array, float, (2, particle_count)
+        Temporary array for the stream status of particles.
 
     Returns
     -------
     end : int
         Length of the tracked streamline
-    tissue_class : TissueClass
-        Ending state of the streamlines as determined by the TissueClassifier.
+    stream_status : StreamlineStatus
+        Ending state of the streamlines as determined by the StoppingCriterion.
 
     """
     cdef:
         size_t i
-        TissueClass tissue_class
+        StreamlineStatus stream_status
         double dir[3]
         double vs[3]
         double seed[3]
@@ -284,26 +284,27 @@ def pft_tracker(
         vs[i] = voxel_size[i]
         seed[i] = seed_pos[i]
 
-    i = _pft_tracker(dg, tc, seed, dir, vs, streamline,
-                     directions, step_size, &tissue_class, pft_max_nbr_back_steps,
-                     pft_max_nbr_front_steps, pft_max_trials, particle_count,
-                     particle_paths, particle_dirs, particle_weights,
-                     particle_steps, particle_tissue_classes)
-    return i, tissue_class
+    i = _pft_tracker(dg, sc, seed, dir, vs, streamline,
+                     directions, step_size, &stream_status,
+                     pft_max_nbr_back_steps, pft_max_nbr_front_steps,
+                     pft_max_trials, particle_count, particle_paths,
+                     particle_dirs, particle_weights, particle_steps,
+                     particle_stream_statuses)
+    return i, stream_status
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef _pft_tracker(DirectionGetter dg,
-                  ConstrainedTissueClassifier tc,
+                  AnatomicalStoppingCriterion sc,
                   double* seed,
                   double* dir,
                   double* voxel_size,
                   np.float_t[:, :] streamline,
                   np.float_t[:, :] directions,
                   double step_size,
-                  TissueClass * tissue_class,
+                  StreamlineStatus * stream_status,
                   int pft_max_nbr_back_steps,
                   int pft_max_nbr_front_steps,
                   int pft_max_trials,
@@ -312,7 +313,7 @@ cdef _pft_tracker(DirectionGetter dg,
                   np.float_t[:, :, :, :] particle_dirs,
                   np.float_t[:] particle_weights,
                   np.int_t[:, :] particle_steps,
-                  np.int_t[:, :] particle_tissue_classes):
+                  np.int_t[:, :] particle_stream_statuses):
     cdef:
         int i, pft_trial, pft_streamline_i, back_steps, front_steps
         int strl_array_len
@@ -324,14 +325,14 @@ cdef _pft_tracker(DirectionGetter dg,
     copy_point(seed, &streamline[0,0])
     copy_point(dir, &directions[0, 0])
 
-    tissue_class[0] = TRACKPOINT
+    stream_status[0] = TRACKPOINT
     pft_trial = 0
     i = 1
     strl_array_len = streamline.shape[0]
     while i < strl_array_len:
         if dg.get_direction_c(point, dir):
             # no valid diffusion direction to follow
-            tissue_class[0] = INVALIDPOINT
+            stream_status[0] = INVALIDPOINT
         else:
             for j in range(3):
                 voxdir[j] = dir[j] / voxel_size[j]
@@ -339,28 +340,28 @@ cdef _pft_tracker(DirectionGetter dg,
             fixed_step(point, voxdir, step_size)
             copy_point(point, &streamline[i, 0])
             copy_point(dir, &directions[i, 0])
-            tissue_class[0] = tc.check_point_c(point)
+            stream_status[0] = sc.check_point_c(point)
             i += 1
-        if tissue_class[0] == TRACKPOINT:
+        if stream_status[0] == TRACKPOINT:
             # The tracking continues normally
             continue
-        elif tissue_class[0] == INVALIDPOINT:
+        elif stream_status[0] == INVALIDPOINT:
             if pft_trial < pft_max_trials and i > 1:
                 back_steps = min(i - 1, pft_max_nbr_back_steps)
                 front_steps = min(strl_array_len - i - back_steps - 1,
                                   pft_max_nbr_front_steps)
                 front_steps = max(0, front_steps)
-                i = _pft(streamline, i - back_steps, directions, dg, tc,
-                         voxel_size, step_size, tissue_class,
+                i = _pft(streamline, i - back_steps, directions, dg, sc,
+                         voxel_size, step_size, stream_status,
                          back_steps + front_steps, particle_count,
                          particle_paths, particle_dirs, particle_weights,
-                         particle_steps, particle_tissue_classes)
+                         particle_steps, particle_stream_statuses)
                 pft_trial += 1
                 # update the current point with the PFT results
                 copy_point(&streamline[i-1, 0], point)
                 copy_point(&directions[i-1, 0], dir)
 
-                if tissue_class[0] != TRACKPOINT:
+                if stream_status[0] != TRACKPOINT:
                     # The tracking stops. PFT returned a valid stopping point
                     # (ENDPOINT, OUTSIDEIMAGE) or failed to find one
                     # (INVALIDPOINT, PYERROR)
@@ -374,7 +375,7 @@ cdef _pft_tracker(DirectionGetter dg,
             # or an invalid point (PYERROR)
             break
 
-    if tissue_class[0] == OUTSIDEIMAGE or tissue_class[0] == PYERROR:
+    if stream_status[0] == OUTSIDEIMAGE or stream_status[0] == PYERROR:
         i -= 1
     return i
 
@@ -386,17 +387,17 @@ cdef _pft(np.float_t[:, :] streamline,
           int streamline_i,
           np.float_t[:, :] directions,
           DirectionGetter dg,
-          ConstrainedTissueClassifier tc,
+          AnatomicalStoppingCriterion sc,
           double* voxel_size,
           double step_size,
-          TissueClass * tissue_class,
+          StreamlineStatus * stream_status,
           int pft_nbr_steps,
           int particle_count,
           np.float_t[:, :, :, :] particle_paths,
           np.float_t[:, :, :, :] particle_dirs,
           np.float_t[:] particle_weights,
           np.int_t[:, :] particle_steps,
-          np.int_t[:, :] particle_tissue_classes):
+          np.int_t[:, :] particle_stream_statuses):
     cdef:
         double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3]
@@ -412,12 +413,12 @@ cdef _pft(np.float_t[:, :] streamline,
         copy_point(&streamline[streamline_i, 0], &particle_paths[0, p, 0, 0])
         copy_point(&directions[streamline_i, 0], &particle_dirs[0, p, 0, 0])
         particle_weights[p] = 1. / particle_count
-        particle_tissue_classes[0, p] = TRACKPOINT
+        particle_stream_statuses[0, p] = TRACKPOINT
         particle_steps[0, p] = 0
 
     for s in range(pft_nbr_steps):
         for p in range(particle_count):
-            if particle_tissue_classes[0, p] != TRACKPOINT:
+            if particle_stream_statuses[0, p] != TRACKPOINT:
                 for j in range(3):
                     particle_paths[0, p, s, j] = 0
                     particle_dirs[0, p, s, j] = 0
@@ -426,7 +427,7 @@ cdef _pft(np.float_t[:, :] streamline,
             copy_point(&particle_dirs[0, p, s, 0], dir)
 
             if dg.get_direction_c(point, dir):
-                particle_tissue_classes[0, p] = INVALIDPOINT
+                particle_stream_statuses[0, p] = INVALIDPOINT
                 particle_weights[p] = 0
             else:
                 for j in range(3):
@@ -434,14 +435,14 @@ cdef _pft(np.float_t[:, :] streamline,
                 fixed_step(point, voxdir, step_size)
                 copy_point(point, &particle_paths[0, p, s + 1, 0])
                 copy_point(dir, &particle_dirs[0, p, s + 1, 0])
-                particle_tissue_classes[0, p] = tc.check_point_c(point)
+                particle_stream_statuses[0, p] = sc.check_point_c(point)
                 particle_steps[0, p] = s + 1
-                particle_weights[p] *= 1 - tc.get_exclude_c(point)
+                particle_weights[p] *= 1 - sc.get_exclude_c(point)
                 if particle_weights[p] < eps:
                     particle_weights[p] = 0
-                if (particle_tissue_classes[0, p] == INVALIDPOINT and
+                if (particle_stream_statuses[0, p] == INVALIDPOINT and
                         particle_weights[p] > 0):
-                    particle_tissue_classes[0, p] = TRACKPOINT
+                    particle_stream_statuses[0, p] = TRACKPOINT
 
         sum_weights = 0
         for p in range(particle_count):
@@ -465,8 +466,8 @@ cdef _pft(np.float_t[:, :] streamline,
                                   &particle_paths[1, pp, ss, 0])
                         copy_point(&particle_dirs[0, pp, ss, 0],
                                   &particle_dirs[1, pp, ss, 0])
-                    particle_tissue_classes[1, pp] = \
-                            particle_tissue_classes[0, pp]
+                    particle_stream_statuses[1, pp] = \
+                            particle_stream_statuses[0, pp]
                     particle_steps[1, pp] = particle_steps[0, pp]
 
                 # sample N new particle
@@ -483,8 +484,8 @@ cdef _pft(np.float_t[:, :] streamline,
                                   &particle_paths[0, pp, ss, 0])
                         copy_point(&particle_dirs[1, p_source, ss, 0],
                                   &particle_dirs[0, pp, ss, 0])
-                    particle_tissue_classes[0, pp] = \
-                            particle_tissue_classes[1, p_source]
+                    particle_stream_statuses[0, pp] = \
+                            particle_stream_statuses[1, p_source]
                     particle_steps[0, pp] = particle_steps[1, p_source]
                 for pp in range(particle_count):
                     particle_weights[pp] = 1. / particle_count
@@ -503,5 +504,5 @@ cdef _pft(np.float_t[:, :] streamline,
         copy_point(&particle_paths[0, p, s, 0],
                    &streamline[streamline_i + s, 0])
         copy_point(&particle_dirs[0, p, s, 0], &directions[streamline_i + s, 0])
-    tissue_class[0] = <TissueClass> particle_tissue_classes[0, p]
+    stream_status[0] = <StreamlineStatus> particle_stream_statuses[0, p]
     return streamline_i + particle_steps[0, p]

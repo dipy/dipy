@@ -345,7 +345,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     return w / np.sum(w, 0)
 
 
-def afq_profile(data, bundle, affine=None, n_points=100,
+def afq_profile(data, bundle, affine, n_points=100,
                 orient_by=None, weights=None, **weights_kwarg):
     """
     Calculates a summarized profile of data for a bundle or tract
@@ -362,23 +362,18 @@ def afq_profile(data, bundle, affine=None, n_points=100,
         The collection of streamlines (possibly already resampled into an array
          for each to have the same length) with which we are resampling. See
          Note below about orienting the streamlines.
-
-    affine: 4-by-4 array, optional.
-        A transformation associated with the streamlines in the bundle.
-        Default: identity.
-
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     n_points: int, optional
         The number of points to sample along the bundle. Default: 100.
-
     orient_by: streamline, optional.
         A streamline to use as a standard to orient all of the streamlines in
         the bundle according to.
-
     weights : 1D array or 2D array or callable (optional)
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
-
     weights_kwarg : key-word arguments
         Additional key-word arguments to pass to the weight-calculating
         function. Only to be used if weights is a callable.
