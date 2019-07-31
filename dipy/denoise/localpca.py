@@ -10,7 +10,7 @@ except ImportError:
 from scipy.linalg import eigh
 
 
-def _pca_classifier(L, m):
+def _pca_classifier(L, nvoxels):
     """ Classifies which PCA eigenvalues are related to noise and estimates the
     noise variance
 
@@ -18,6 +18,8 @@ def _pca_classifier(L, m):
     ----------
     L : array (n,)
         Array containing the PCA eigenvalues in ascending order.
+    wdim : int
+        Number of voxels used to compute L
 
     Returns
     -------
@@ -39,11 +41,11 @@ def _pca_classifier(L, m):
     """
     var = np.mean(L)
     c = L.size - 1
-    r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
+    r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / nvoxels) * var
     while r > 0:
         var = np.mean(L[:c])
         c = c - 1
-        r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / m) * var
+        r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / nvoxels) * var
     ncomps = c + 1
     return var, ncomps
 
