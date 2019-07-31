@@ -440,7 +440,8 @@ class QuickBundles(Clustering):
     --------
     >>> from dipy.segment.clustering import QuickBundles
     >>> from dipy.data import get_fnames
-    >>> from dipy.io.streamlines import load_tractogram
+    >>> from dipy.io.streamline import load_tractogram
+    >>> from dipy.tracking.streamline import Streamlines
     >>> fname = get_fnames('fornix')
     >>> fornix = load_tractogram(fname, 'same',
     ...                          bbox_valid_check=False).streamlines
