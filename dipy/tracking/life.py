@@ -206,6 +206,7 @@ class LifeSignalMaker(object):
     A class for generating signals from streamlines in an efficient and speedy
     manner.
     """
+
     def __init__(self, gtab, evals=[0.001, 0, 0], sphere=None):
         """
         Initialize a signal maker
@@ -261,7 +262,7 @@ class LifeSignalMaker(object):
         return sig_out
 
 
-def voxel2streamline(streamline, transformed=False, affine=None,
+def voxel2streamline(streamline, affine, transformed=False,
                      unique_idx=None):
     """
     Maps voxels to streamlines and streamlines to voxels, for setting up
@@ -272,15 +273,9 @@ def voxel2streamline(streamline, transformed=False, affine=None,
     streamline : list
         A collection of streamlines, each n by 3, with n being the number of
         nodes in the fiber.
-
-    affine : 4 by 4 array (optional)
-       Defines the spatial transformation from streamline to data.
-       Default: np.eye(4)
-
-    transformed : bool (optional)
-        Whether the streamlines have been already transformed (in which case
-        they don't need to be transformed in here).
-
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     unique_idx : array (optional).
        The unique indices in the streamlines
 
@@ -295,12 +290,7 @@ def voxel2streamline(streamline, transformed=False, affine=None,
     this streamline passes through, which nodes of that streamline are in that
     voxel?
     """
-    if transformed:
-        transformed_streamline = streamline
-    else:
-        if affine is None:
-            affine = np.eye(4)
-        transformed_streamline = transform_streamlines(streamline, affine)
+    transformed_streamline = transform_streamlines(streamline, affine)
 
     if unique_idx is None:
         all_coords = np.concatenate(transformed_streamline)
@@ -323,6 +313,7 @@ class FiberModel(ReconstModel):
         B.A. (2014). Validation and statistical inference in living
         connectomes. Nature Methods.
     """
+
     def __init__(self, gtab):
         """
         Parameters
@@ -343,8 +334,9 @@ class FiberModel(ReconstModel):
         ----------
         streamline : list
             Streamlines, each is an array of shape (n, 3)
-        affine : 4 by 4 array
-            Mapping from the streamline coordinates to the data
+        affine : array_like (4, 4)
+            The mapping from voxel coordinates to streamline points.
+            The voxel_to_rasmm matrix, typically from a NIFTI file.
         evals : list (3 items, optional)
             The eigenvalues of the canonical tensor used as a response
             function. Default:[0.001, 0, 0].
@@ -361,8 +353,6 @@ class FiberModel(ReconstModel):
                                           evals=evals,
                                           sphere=sphere)
 
-        if affine is None:
-            affine = np.eye(4)
         streamline = transform_streamlines(streamline, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(streamline)
@@ -370,8 +360,8 @@ class FiberModel(ReconstModel):
         del all_coords
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
-        v2f, v2fn = voxel2streamline(streamline, transformed=True,
-                                     affine=affine, unique_idx=vox_coords)
+        v2f, v2fn = voxel2streamline(streamline, np.eye(4),
+                                     unique_idx=vox_coords)
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
         n_unique_f = len(np.hstack(v2f.values()))
@@ -416,7 +406,7 @@ class FiberModel(ReconstModel):
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format:
         life_matrix = sps.csr_matrix((f_matrix_sig,
-                                     [f_matrix_row, f_matrix_col]))
+                                      [f_matrix_row, f_matrix_col]))
 
         return life_matrix, vox_coords
 
@@ -447,7 +437,7 @@ class FiberModel(ReconstModel):
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
 
-    def fit(self, data, streamline, affine=None, evals=[0.001, 0, 0],
+    def fit(self, data, streamline, affine, evals=[0.001, 0, 0],
             sphere=None):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
@@ -456,19 +446,15 @@ class FiberModel(ReconstModel):
         Parameters
         ----------
         data : 4D array
-           Diffusion-weighted data
-
+            Diffusion-weighted data
         streamline : list
-           A bunch of streamlines
-
-        affine: 4 by 4 array (optional)
-           The affine to go from the streamline coordinates to the data
-           coordinates. Defaults to use `np.eye(4)`
-
+            A bunch of streamlines
+        affine : array_like (4, 4)
+            The mapping from voxel coordinates to streamline points.
+            The voxel_to_rasmm matrix, typically from a NIFTI file.
         evals : list (optional)
-           The eigenvalues of the tensor response function used in constructing
-           the model signal. Default: [0.001, 0, 0]
-
+            The eigenvalues of the tensor response function used in constructing
+            the model signal. Default: [0.001, 0, 0]
         sphere: `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
@@ -496,6 +482,7 @@ class FiberFit(ReconstFit):
     """
     A fit of the LiFE model to diffusion data
     """
+
     def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
                  weighted_signal, b0_signal, relative_signal, mean_sig,
                  vox_data, streamline, affine, evals):
