@@ -58,7 +58,7 @@ The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
 ``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
 They now need to be imported from ``dipy.tracking.local_tracking``.
 
-- function argument `tissue_classifier` was renamed `stopping_criterion`
+- functions argument `tissue_classifier` were renamed `stopping_criterion`
 
 The `TissueClassifier` were renamed `StoppingCriterion` and moved from
 ``dipy.tracking.local.tissue_classifier`` to ``dipy.tracking.stopping_criterion``.
@@ -71,7 +71,7 @@ They now need to be imported from ``dipy.tracking.stopping_criterion``.
 - `ActTissueClassifier` -> `ActStoppingCriterion`
 - `CmcTissueClassifier` -> `CmcStoppingCriterion`
 
-The ``dipy.tracking.tissue_classifier.TissueClass`` was renamed
+The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
 ``dipy.tracking.stopping_criterion.StreamlineStatus`.
 
 The `EuDX` tracking function has been removed. EuDX tractography can be

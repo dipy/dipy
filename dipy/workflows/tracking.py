@@ -2,7 +2,6 @@
 from __future__ import division
 
 import logging
-import numpy as np
 
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter,
@@ -292,7 +291,7 @@ class PFTrackingPAMFlow(Workflow):
             avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
             stopping_criterion = CmcStoppingCriterion.from_pve(
                 wm, gm, csf, step_size=step_size, average_voxel_size=avs)
-            logging.info('cstopping criterion done')
+            logging.info('stopping criterion done')
             seed_mask, _ = load_nifti(seeding_path)
             seeds = utils.seeds_from_mask(seed_mask,
                                           density=[seed_density, seed_density,
