@@ -681,11 +681,9 @@ def values_from_volume(data, streamlines, affine):
         If list, len(n_streamlines) with (n_nodes, 3) array in
         each element of the list.
 
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        For example, if no affine is provided and the first
-        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
-        would be returned as the value for that streamline coordinate
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     Returns
     ---------
