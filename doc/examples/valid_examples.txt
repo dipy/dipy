@@ -36,6 +36,7 @@
  linear_fascicle_evaluation.py
  denoise_nlmeans.py
  denoise_localpca.py
+ denoise_mppca.py
  denoise_gibbs.py
  fiber_to_bundle_coherence.py
 # denoise_ascm.py
