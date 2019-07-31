@@ -262,8 +262,7 @@ class LifeSignalMaker(object):
         return sig_out
 
 
-def voxel2streamline(streamline, affine, transformed=False,
-                     unique_idx=None):
+def voxel2streamline(streamline, affine, unique_idx=None):
     """
     Maps voxels to streamlines and streamlines to voxels, for setting up
     the LiFE equations matrix
