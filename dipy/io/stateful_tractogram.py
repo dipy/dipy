@@ -302,6 +302,9 @@ class StatefulTractogram(object):
         output : tuple
             Tuple of two list, indices_to_remove, indices_to_keep
         """
+        if not self.streamlines:
+            return
+
         old_space = deepcopy(self.space)
         old_shift = deepcopy(self.shifted_origin)
 
@@ -435,6 +438,9 @@ class StatefulTractogram(object):
     def _shift_voxel_origin(self):
         """ Unsafe function to switch the origin from center to corner
         and vice versa """
+        if not self.streamlines:
+            return
+
         shift = np.asarray([0.5, 0.5, 0.5])
         if self._space == Space.VOXMM:
             shift = shift * self._voxel_sizes
@@ -455,8 +461,8 @@ class StatefulTractogram(object):
 
 
 def _is_data_per_point_valid(streamlines, data):
-    """ Verify that the number of item in data is X and that each of these items
-        has Y_i items.
+    """ Verify that the number of item in data is X and that each of these
+        items has Y_i items.
 
         X being the number of streamlines
         Y_i being the number of points on streamlines #i

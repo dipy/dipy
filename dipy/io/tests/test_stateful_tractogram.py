@@ -248,6 +248,39 @@ def iterative_to_voxmm_transformation():
                         sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
+def empty_space_change():
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+
+    try:
+        sft.to_vox()
+        sft.to_voxmm()
+        sft.to_rasmm()
+        return False
+    except:
+        return True
+
+
+def empty_shift_change():
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+
+    try:
+        sft.to_corner()
+        sft.to_center()
+        return False
+    except:
+        return True
+
+
+def empty_remove_invalid():
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+
+    try:
+        sft.remove_invalid_streamlines()
+        return False
+    except:
+        return True
+
+
 def shift_corner_from_rasmm():
     sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                             to_space=Space.VOX)
@@ -470,6 +503,16 @@ def test_equal_in_voxmm_space():
 def test_switch_reference():
     switch_voxel_sizes_from_rasmm()
     switch_voxel_sizes_from_voxmm()
+
+
+def test_empty_sft():
+    # First two is expected to fail
+    if empty_space_change():
+        raise AssertionError()
+    if empty_shift_change():
+        raise AssertionError()
+    if empty_remove_invalid():
+        raise AssertionError()
 
 
 def test_shifting_corner():
