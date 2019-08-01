@@ -440,9 +440,12 @@ class QuickBundles(Clustering):
     --------
     >>> from dipy.segment.clustering import QuickBundles
     >>> from dipy.data import get_fnames
-    >>> from nibabel import trackvis as tv
-    >>> streams, hdr = tv.read(get_fnames('fornix'))
-    >>> streamlines = [i[0] for i in streams]
+    >>> from dipy.io.streamline import load_tractogram
+    >>> from dipy.tracking.streamline import Streamlines
+    >>> fname = get_fnames('fornix')
+    >>> fornix = load_tractogram(fname, 'same',
+    ...                          bbox_valid_check=False).streamlines
+    >>> streamlines = Streamlines(fornix)
     >>> # Segment fornix with a threshold of 10mm and streamlines resampled
     >>> # to 12 points.
     >>> qb = QuickBundles(threshold=10.)

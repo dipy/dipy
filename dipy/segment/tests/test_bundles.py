@@ -1,11 +1,12 @@
 import sys
 import numpy as np
 import pytest
-import nibabel as nib
+
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite)
 from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
 from dipy.segment.bundles import RecoBundles
 from dipy.tracking.distances import bundles_distances_mam
 from dipy.tracking.streamline import Streamlines
@@ -16,8 +17,10 @@ is_big_endian = 'big' in sys.byteorder.lower()
 
 def setup_module():
     global f, f1, f2, f3, fornix
-    streams, _ = nib.trackvis.read(get_fnames('fornix'))
-    fornix = [s[0] for s in streams]
+
+    fname = get_fnames('fornix')
+    fornix = load_tractogram(fname, 'same',
+                             bbox_valid_check=False).streamlines
 
     f = Streamlines(fornix)
     f1 = f.copy()

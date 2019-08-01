@@ -1078,7 +1078,8 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
 
     dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
 
-    from nibabel import trackvis as tv
+    from dipy.io.streamline import load_tractogram
+    from dipy.tracking.streamline import Streamlines
 
     res = {}
 
@@ -1098,10 +1099,12 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
 
     for bun in bundles:
 
-        streams, hdr = tv.read(pjoin(dname, subj_id,
+        streams = load_tractogram(pjoin(dname, subj_id,
                                      'bundles', 'bundles_' + bun + '.trk'),
-                               points_space="rasmm")
-        streamlines = [s[0] for s in streams]
+                                  'same',
+                                  bbox_valid_check=False).streamlines
+
+        streamlines = Streamlines(streams)
         res[bun] = streamlines
 
     return res
