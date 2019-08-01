@@ -256,7 +256,6 @@ def empty_space_change():
     assert_array_equal([], sft.streamlines.data)
 
 
-
 def empty_shift_change():
     sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
     sft.to_corner()
