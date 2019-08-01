@@ -4,7 +4,7 @@ import os
 from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -249,33 +249,25 @@ def iterative_to_voxmm_transformation():
 
 
 def empty_space_change():
-    try:
-        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-        sft.to_vox()
-        sft.to_voxmm()
-        sft.to_rasmm()
-        return False
-    except:
-        return True
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+    sft.to_vox()
+    sft.to_voxmm()
+    sft.to_rasmm()
+    assert_array_equal([], sft.streamlines.data)
+
 
 
 def empty_shift_change():
-    try:
-        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-        sft.to_corner()
-        sft.to_center()
-        return False
-    except:
-        return True
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+    sft.to_corner()
+    sft.to_center()
+    assert_array_equal([], sft.streamlines.data)
 
 
 def empty_remove_invalid():
-    try:
-        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-        sft.remove_invalid_streamlines()
-        return False
-    except:
-        return True
+    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
+    sft.remove_invalid_streamlines()
+    assert_array_equal([], sft.streamlines.data)
 
 
 def shift_corner_from_rasmm():
@@ -503,13 +495,9 @@ def test_switch_reference():
 
 
 def test_empty_sft():
-    # First two is expected to fail
-    if empty_space_change():
-        raise AssertionError()
-    if empty_shift_change():
-        raise AssertionError()
-    if empty_remove_invalid():
-        raise AssertionError()
+    empty_space_change()
+    empty_shift_change()
+    empty_remove_invalid()
 
 
 def test_shifting_corner():
