@@ -249,9 +249,8 @@ def iterative_to_voxmm_transformation():
 
 
 def empty_space_change():
-    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-
     try:
+        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
         sft.to_vox()
         sft.to_voxmm()
         sft.to_rasmm()
@@ -261,9 +260,8 @@ def empty_space_change():
 
 
 def empty_shift_change():
-    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-
     try:
+        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
         sft.to_corner()
         sft.to_center()
         return False
@@ -272,9 +270,8 @@ def empty_shift_change():
 
 
 def empty_remove_invalid():
-    sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
-
     try:
+        sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
         sft.remove_invalid_streamlines()
         return False
     except:
