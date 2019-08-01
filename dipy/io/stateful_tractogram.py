@@ -258,6 +258,9 @@ class StatefulTractogram(object):
         output : bool
             Are the streamlines within the volume of the associated reference
         """
+        if not self.streamlines:
+            return True
+
         old_space = deepcopy(self.space)
         old_shift = deepcopy(self.shifted_origin)
 
