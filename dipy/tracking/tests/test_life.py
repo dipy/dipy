@@ -159,6 +159,7 @@ def test_fit_data():
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
     data = ni_data.get_data()
+
     tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
     sft = StatefulTractogram(tensor_streamlines, ni_data, Space.RASMM)
     sft.to_vox()

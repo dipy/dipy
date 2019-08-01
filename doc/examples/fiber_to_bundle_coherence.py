@@ -133,7 +133,7 @@ from dipy.tracking import utils
 mask = np.zeros(data.shape[:-1], 'bool')
 rad = 3
 mask[26-rad:26+rad, 29-rad:29+rad, 31-rad:31+rad] = True
-seeds = utils.seeds_from_mask(mask, density=[4, 4, 4], affine=affine)
+seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 
 """
 Local Tracking is used for probabilistic tractography which takes the
@@ -162,8 +162,7 @@ rad = 5
 mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 
 # Select all the fibers that enter the LGN and discard all others
-filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8,
-                                  affine=affine)
+filtered_fibers2 = utils.near_roi(streamlines, affine, mask_lgn, tol=1.8)
 
 sfil = []
 for i in range(len(streamlines)):
@@ -244,7 +243,9 @@ vol_actor2.display(x=35)
 ren.add(vol_actor2)
 
 # Show original fibers
-ren.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+ren.set_camera(position=(-264, 285, 155),
+               focal_point=(0, -14, 9),
+               view_up=(0, 0, 1))
 window.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
 if interactive:
     window.show(ren)

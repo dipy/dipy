@@ -62,9 +62,9 @@ criterion, determining when the tracking stops, is set to stop when the
 tracking exit the white matter.
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=1)
-stopping_criterion = BinaryStoppingCriterion(white_matter)
 affine = np.eye(4)
+seeds = utils.seeds_from_mask(white_matter, affine, density=1)
+stopping_criterion = BinaryStoppingCriterion(white_matter)
 
 streamline_generator = LocalTracking(csapeaks, stopping_criterion, seeds,
                                      affine=affine, step_size=0.5)
@@ -85,10 +85,10 @@ with the ROI and those that don't.
 """
 
 cc_slice = labels == 2
-cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
+cc_streamlines = utils.target(streamlines, affine, cc_slice)
 cc_streamlines = Streamlines(cc_streamlines)
 
-other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
+other_streamlines = utils.target(streamlines, affine, cc_slice,
                                  include=False)
 other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
@@ -158,7 +158,7 @@ by their endpoints. Notice that this function only considers the endpoints of
 each streamline.
 """
 
-M, grouping = utils.connectivity_matrix(cc_streamlines, labels, affine=affine,
+M, grouping = utils.connectivity_matrix(cc_streamlines, affine, labels,
                                         return_mapping=True,
                                         mapping_as_streamlines=True)
 M[:3, :] = 0
@@ -213,7 +213,7 @@ left and right superior frontal gyrus.
 
 lr_superiorfrontal_track = grouping[11, 54]
 shape = labels.shape
-dm = utils.density_map(lr_superiorfrontal_track, shape, affine=affine)
+dm = utils.density_map(lr_superiorfrontal_track, affine, shape)
 
 """
 Let's save this density map and the streamlines so that they can be

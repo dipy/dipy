@@ -11,11 +11,10 @@ from dipy.testing import assert_arrays_equal
 
 from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, run_module_suite, assert_allclose,
+                           assert_raises, assert_allclose,
                            assert_almost_equal, assert_equal)
 
 from dipy.tracking.streamline import Streamlines
-import dipy.tracking.utils as ut
 from dipy.tracking.streamline import (set_number_of_points,
                                       length,
                                       relist_streamlines,
@@ -1110,15 +1109,15 @@ def test_values_from_volume():
 
             affine = np.eye(4)
             affine[:, 3] = [-100, 10, 1, 1]
-            x_sl1 = ut.move_streamlines(sl1, affine)
-            x_sl2 = ut.move_streamlines(sl1, affine)
+            x_sl1 = transform_streamlines(sl1, affine)
+            x_sl2 = transform_streamlines(sl1, affine)
 
             vv = values_from_volume(data, x_sl1, affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             # The generator has already been consumed so needs to be
             # regenerated:
-            x_sl1 = list(ut.move_streamlines(sl1, affine))
+            x_sl1 = transform_streamlines(sl1, affine)
             vv = values_from_volume(data, x_sl1, affine=affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 

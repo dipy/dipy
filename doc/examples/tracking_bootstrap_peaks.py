@@ -38,7 +38,7 @@ affine = hardi_img.affine
 
 seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
 """
 Next, we fit the CSD model.

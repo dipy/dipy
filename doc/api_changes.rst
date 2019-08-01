@@ -34,6 +34,14 @@ guarantee proper spatial transformation handling.
 
 **Spatial transformation handling**
 
+Functions from ``dipy.tracking.utils`` were modified to enforce the
+affine parameter and uniformize docstring. ``density_map``
+``connectivity_matrix``, ``seeds_from_mask``, ``random_seeds_from_mask``,
+``target``, ``target_line_based``, ``near_roi``, ``length`` and
+``path_length`` were all modified.
+The function ``affine_for_trackvis``, ``move_streamlines``,
+``flexi_tvis_affine`` and ``get_flexi_tvis_affine`` were deleted.
+
 Functions from ``dipy.tracking.life`` were modified to enforce the
 affine parameter and uniformize docstring. ``voxel2streamline``,
 ``setup`` and ``fit`` from class ``FiberModel`` were all modified.

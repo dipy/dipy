@@ -212,7 +212,7 @@ Save the bundle as a trk file:
 """
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
                                 Space.RASMM)
-save_trk(reco_af_l, "CST_L.trk", bbox_valid_check=False)
+save_trk(reco_cst_l, "CST_L.trk", bbox_valid_check=False)
 
 
 """

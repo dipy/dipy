@@ -57,7 +57,7 @@ white_matter = img_pve_wm.get_data()
 
 seed_mask = (labels == 2)
 seed_mask[img_pve_wm.get_data() < 0.5] = 0
-seeds = utils.seeds_from_mask(seed_mask, density=2, affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)

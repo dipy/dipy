@@ -120,7 +120,7 @@ nib.save(reference_anatomy, os.path.basename(ref_anat_filename))
 
 """
 Once loaded, no matter the original file format, the stateful tractogram is
-self-contained and maintains a valid state. By requiring a reference the 
+self-contained and maintains a valid state. By requiring a reference the
 tractogram's spatial transformation can be easily manipulated.
 
 Let's save all files as TRK to visualize in TrackVis for example.
@@ -149,8 +149,8 @@ The stateful tractogram class provides safe functions for such manipulation.
 These functions can be called safely over and over, by knowing in which state
 the tractogram is operating, and compute only necessary transformations
 
-No matter the state, functions such as ``save_tractogram`` or 
-``removing_invalid_coordinates`` can be called safely and the transformations 
+No matter the state, functions such as ``save_tractogram`` or
+``removing_invalid_coordinates`` can be called safely and the transformations
 are handled internally when needed.
 """
 
@@ -184,11 +184,11 @@ rpt_streamlines_vox = select_random_set_of_streamlines(rpt_sft.streamlines,
 
 # Same dimensions for every stateful tractogram, can be re-use
 affine, dimensions, voxel_sizes, voxel_order = cc_sft.space_attribute
-cc_density = density_map(cc_streamlines_vox, dimensions)
-laf_density = density_map(laf_streamlines_vox, dimensions)
-raf_density = density_map(raf_streamlines_vox, dimensions)
-lpt_density = density_map(lpt_streamlines_vox, dimensions)
-rpt_density = density_map(rpt_streamlines_vox, dimensions)
+cc_density = density_map(cc_streamlines_vox, np.eye(4), dimensions)
+laf_density = density_map(laf_streamlines_vox, np.eye(4), dimensions)
+raf_density = density_map(raf_streamlines_vox, np.eye(4), dimensions)
+lpt_density = density_map(lpt_streamlines_vox, np.eye(4), dimensions)
+rpt_density = density_map(rpt_streamlines_vox, np.eye(4), dimensions)
 
 """
 Replacing streamlines is possible, but if the state was modified between

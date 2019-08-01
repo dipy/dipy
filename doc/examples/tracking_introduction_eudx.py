@@ -143,7 +143,7 @@ label value ``2`` in the labels image.
 from dipy.tracking import utils
 
 seed_mask = (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 """
 Finally, we can bring it all together using ``LocalTracking``, performing Using

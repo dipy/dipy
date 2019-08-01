@@ -131,10 +131,8 @@ def test_local_fiber_tracking_workflow():
         seeds_path = mask_flow.last_generated_outputs['out_mask']
         mask_path = mask_flow.last_generated_outputs['out_mask']
 
-        # Put identity in gfa path to prevent impossible to use
-        # local tracking because of affine containing shearing.
         gfa_img = nib.load(gfa_path)
-        save_nifti(gfa_path, gfa_img.get_data(), np.eye(4), gfa_img.header)
+        save_nifti(gfa_path, gfa_img.get_data(), vol_img.affine, gfa_img.header)
 
         # Test tracking with pam no sh
         lf_track_pam = LocalFiberTrackingPAMFlow()
