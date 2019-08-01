@@ -405,7 +405,7 @@ def test_interp_rbf():
         warnings.simplefilter("always")
         interp_rbf(data, s0, s1, norm="euclidean_norm")
         npt.assert_(len(w) == 1)
-        npt.assert_(issubclass(w[-1].category, DeprecationWarning))
+        npt.assert_(issubclass(w[-1].category, PendingDeprecationWarning))
         npt.assert_("deprecated" in str(w[-1].message))
 
 
