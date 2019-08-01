@@ -83,7 +83,7 @@ class Horizon(object):
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
-                 out_png='tmp.png'):
+                 out_png='tmp.png', recorded_events=None):
         """ Highly interactive visualization - invert the Horizon!
 
         Parameters
@@ -105,6 +105,8 @@ class Horizon(object):
         world_coords : bool
         interactive : bool
         out_png : string
+        recorded_events : string
+            File path to replay recorded events
 
         References
         ----------
@@ -133,6 +135,7 @@ class Horizon(object):
         self.cea = {}  # holds centroid actors
         self.cla = {}  # holds cluster actors
         self.tractogram_clusters = {}
+        self.recorded_events = recorded_events
 
     def build_scene(self):
 
@@ -622,8 +625,8 @@ class Horizon(object):
         scene.reset_clipping_range()
 
         if self.interactive:
-            self.event_testing = True
-            if not self.event_testing:
+
+            if self.recorded_events is None:
 
                 show_m.add_window_callback(win_callback)
                 show_m.add_timer_callback(True, 200, timer_callback)
@@ -633,34 +636,17 @@ class Horizon(object):
 
             else:
 
-                # event_counter = EventCounter()
-                # # event_counter.monitor(button_test)
-                # event_counter.monitor(self.panel)
-                # event_counter.monitor(HORIZON.slicer_curr_actor_x)
-                # event_counter.monitor(HORIZON.slicer_curr_actor_y)
-                # event_counter.monitor(HORIZON.slicer_curr_actor_z)
-
-                # show_m = window.ShowManager(size=current_size, title="FURY Button")
                 show_m.add_window_callback(win_callback)
                 show_m.add_timer_callback(True, 200, timer_callback)
                 show_m.iren.AddObserver('KeyPressEvent', key_press)
 
-                # show_manager.scene.add(panel)
                 recording = True
-                recording_filename = 'record.log'
-                # expected_events_counts_filename = 'event_counter.pkl'
+                recording_filename = self.recorded_events
 
                 if recording:
                     show_m.record_events_to_file(recording_filename)
-                    # print(list(event_counter.events_counts.items()))
-                    # for ec in list(event_counter.events_counts.items()):
-                    #    print(ec)
-                    #event_counter.save(expected_events_counts_filename)
-
                 else:
                     show_m.play_events_from_file(recording_filename)
-                    # expected = EventCounter.load(expected_events_counts_filename)
-                    # event_counter.check_counts(expected)
 
         else:
 
@@ -673,7 +659,8 @@ def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10000,
-            world_coords=True, interactive=True, out_png='tmp.png'):
+            world_coords=True, interactive=True, out_png='tmp.png',
+            recorded_events=None):
     """Highly interactive visualization - invert the Horizon!
 
     Parameters
@@ -695,6 +682,8 @@ def horizon(tractograms=None, images=None, pams=None,
     world_coords : bool
     interactive : bool
     out_png : string
+    recorded_events : string
+        File path to replay recorded events
 
     References
     ----------
@@ -706,7 +695,7 @@ def horizon(tractograms=None, images=None, pams=None,
     """
     hz = Horizon(tractograms, images, pams, cluster, cluster_thr, random_colors,
                  length_gt, length_lt, clusters_gt, clusters_lt,
-                 world_coords, interactive, out_png)
+                 world_coords, interactive, out_png, recorded_events)
 
     scene = hz.build_scene()
 
