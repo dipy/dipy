@@ -1,7 +1,7 @@
 """
-=========================================================================
-Using the free water elimination model to remove free water contamination
-=========================================================================
+=============================================================================
+Using the free water elimination model to remove DTI free water contamination
+=============================================================================
 
 As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
 model is a simple way to characterize diffusion anisotropy. However, in regions
@@ -14,7 +14,8 @@ atrophy that occurs in several brain pathologies and ageing).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
-diffusion. The expression of the expanded DTI model is shown below:
+diffusion [Pasternak2009]_. The expression of the expanded DTI model is shown
+below:
 
 .. math::
 
@@ -28,8 +29,12 @@ no diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
 fraction of the free water component, and $D_{iso}$ is the isotropic value of
 the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
-In this example, we show how to process a diffusion weighting dataset using the
-free water elimination.
+In this example, we show how to process a diffusion weighting dataset using
+an adapted version of the free water elimination proposed by [Hoy2014]_.
+
+The full details of Dipy's free water DTI implementation was published on
+the ReScience C initiative [Henriques2017]_. Please cite this work if you use
+this algorithm.
 
 Let's start by importing the relevant modules:
 """
@@ -226,10 +231,16 @@ fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_corrected.png')
 
 References
 ----------
-
+.. [Pasternak2009] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y.,
+   2009. Free water elimination and mapping from diffusion MRI. Magn. Reson.
+   Med. 62(3): 717-30. doi: 10.1002/mrm.22055.
 .. [Hoy2014] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
    Optimization of a free water elimination two-compartmental model for
    diffusion tensor imaging. NeuroImage 103, 323-333. doi:
    10.1016/j.neuroimage.2014.09.053
+.. [Henriques2017] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+   Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free water
+   elimination two-compartment model for diffusion tensor imaging.
+   ReScience volume 3, issue 1, article number 2
 
 """

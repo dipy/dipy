@@ -11,11 +11,11 @@ biological tissues is non-Gaussian using the kurtosis tensor (KT)
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
-heterogeneity [Jensen2010]_ and to derive concrete biophysical parameters, such
-as the density of axonal fibres and diffusion tortuosity [Fieremans2011]_.
-Moreover, DKI can be used to resolve crossing fibers in tractography and to
-obtain invariant rotational measures not limited to well-aligned fiber
-populations [NetoHe2015]_.
+heterogeneity [Jensen2010]_. Moreover, DKI can be used to: 1) derive concrete
+biophysical parameters, such as the density of axonal fibers and diffusion
+tortuosity [Fierem2011]_ (see :ref:`example_reconst_dki_micro`); and 2)
+resolve crossing fibers in tractography and to obtain invariant rotational
+measures not limited to well-aligned fiber populations [NetoHe2015]_.
 
 The diffusion kurtosis model expresses the diffusion-weighted signal as:
 
@@ -64,7 +64,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
-import dipy.reconst.dki_micro as dki_micro
 from dipy.data import fetch_cfin_multib
 from dipy.data import read_cfin_dwi
 from dipy.segment.mask import median_otsu
@@ -180,30 +179,30 @@ fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
-                  origin='lower')
+ax.flat[0].imshow(FA[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=0.7, origin='lower')
 ax.flat[0].set_title('FA (DKI)')
-ax.flat[1].imshow(MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[1].imshow(MD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[1].set_title('MD (DKI)')
-ax.flat[2].imshow(AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[2].imshow(AD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[2].set_title('AD (DKI)')
-ax.flat[3].imshow(RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[3].imshow(RD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[3].set_title('RD (DKI)')
 
-ax.flat[4].imshow(dti_FA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=0.7,
-                  origin='lower')
+ax.flat[4].imshow(dti_FA[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=0.7, origin='lower')
 ax.flat[4].set_title('FA (DTI)')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[5].set_title('MD (DTI)')
-ax.flat[6].imshow(dti_AD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[6].imshow(dti_AD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[6].set_title('AD (DTI)')
-ax.flat[7].imshow(dti_RD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+ax.flat[7].imshow(dti_RD[:, :, axial_slice].T, cmap='gray',
+                  vmin=0, vmax=2.0e-3, origin='lower')
 ax.flat[7].set_title('RD (DTI)')
 
 plt.show()
@@ -264,105 +263,6 @@ Therefore, as the figure above shows, white matter kurtosis values are smaller
 along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
 
-As mentioned above, DKI can also be used to derive concrete biophysical
-parameters by applying microstructural models to DT and KT estimated from DKI.
-For instance,  Fieremans et al. [Fieremans2011]_ showed that DKI can be used to
-estimate the contribution of hindered and restricted diffusion for well-aligned
-fibers. These tensors can be also interpreted as the influences of intra- and
-extra-cellular compartments and can be used to estimate the axonal volume
-fraction and diffusion extra-cellular tortuosity. According to recent studies,
-these latter measures can be used to distinguish processes of axonal loss from
-processes of myelin degeneration [Fieremans2012]_.
-
-The model proposed by Fieremans and colleagues can be defined in DIPY by
-instantiating the 'KurtosisMicrostructureModel' object in the following way:
-"""
-
-dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
-
-"""
-Before fitting this microstructural model, it is useful to indicate the
-regions in which this model provides meaningful information (i.e. voxels of
-well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple way
-to select this region is to generate a well-aligned fiber mask based on the
-values of diffusion sphericity, planarity and linearity. Here we will follow
-these selection criteria for a better comparision of our figures with the
-original article published by Fieremans et al. [Fieremans2011]_. Nevertheless,
-it is important to note that voxels with well-aligned fibers can be selected
-based on other approaches such as using predefined regions of interest.
-"""
-
-well_aligned_mask = np.ones(data.shape[:-1], dtype='bool')
-
-# Diffusion coefficient of linearity (cl) has to be larger than 0.4, thus
-# we exclude voxels with cl < 0.4.
-cl = dkifit.linearity.copy()
-well_aligned_mask[cl < 0.4] = False
-
-# Diffusion coefficient of planarity (cp) has to be lower than 0.2, thus
-# we exclude voxels with cp > 0.2.
-cp = dkifit.planarity.copy()
-well_aligned_mask[cp > 0.2] = False
-
-# Diffusion coefficient of sphericity (cs) has to be lower than 0.35, thus
-# we exclude voxels with cs > 0.35.
-cs = dkifit.sphericity.copy()
-well_aligned_mask[cs > 0.35] = False
-
-# Removing nan associated with background voxels
-well_aligned_mask[np.isnan(cl)] = False
-well_aligned_mask[np.isnan(cp)] = False
-well_aligned_mask[np.isnan(cs)] = False
-
-"""
-Analogous to DKI, the data fit can be done by calling the ``fit`` function of
-the model's object as follows:
-"""
-
-dki_micro_fit = dki_micro_model.fit(data_smooth, mask=well_aligned_mask)
-
-"""
-The KurtosisMicrostructureFit object created by this ``fit`` function can then
-be used to extract model parameters such as the axonal water fraction and
-diffusion hindered tortuosity:
-"""
-
-AWF = dki_micro_fit.awf
-TORT = dki_micro_fit.tortuosity
-
-"""
-These parameters are plotted below on top of the mean kurtosis maps:
-"""
-
-fig3, ax = plt.subplots(1, 2, figsize=(9, 4),
-                        subplot_kw={'xticks': [], 'yticks': []})
-
-AWF[AWF == 0] = np.nan
-TORT[TORT == 0] = np.nan
-
-ax[0].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
-             origin='lower')
-im0 = ax[0].imshow(AWF[:, :, axial_slice].T, cmap=plt.cm.Reds, alpha=0.9,
-                   vmin=0.3, vmax=0.7, interpolation='nearest', origin='lower')
-fig3.colorbar(im0, ax=ax.flat[0])
-
-ax[1].imshow(MK[:, :, axial_slice].T, cmap=plt.cm.gray, interpolation='nearest',
-             origin='lower')
-im1 = ax[1].imshow(TORT[:, :, axial_slice].T, cmap=plt.cm.Blues, alpha=0.9,
-                   vmin=2, vmax=6, interpolation='nearest', origin='lower')
-fig3.colorbar(im1, ax=ax.flat[1])
-
-fig3.savefig('Kurtosis_Microstructural_measures.png')
-
-"""
-.. figure:: Kurtosis_Microstructural_measures.png
-   :align: center
-
-   Axonal water fraction (left panel) and tortuosity (right panel) values
-   of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
-   image.
-
-
 References
 ----------
 
@@ -377,15 +277,9 @@ References
 .. [Jensen2010] Jensen JH, Helpern JA (2010). MRI quantification of
                 non-Gaussian water diffusion by kurtosis analysis. NMR in
                 Biomedicine 23(7): 698-710
-.. [Fieremans2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
+.. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
-.. [Fieremans2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
-                Inglese M, Novikov DS. (2012). Diffusion distinguishes between
-                axonal loss and demyelination in brain white matter.
-                Proceedings of the 20th Annual Meeting of the International
-                Society for Magnetic Resonance Medicine; Melbourne, Australia.
-                May 5-11.
 .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
                 kurtosis strategies, b-value optimization and exploration of
                 diffusion MRI contrast. Scientific Data 3: 160072

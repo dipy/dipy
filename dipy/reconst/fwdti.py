@@ -58,10 +58,10 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
 
     References
     ----------
-    .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-           Optimization of a free water elimination two-compartmental model
-           for diffusion tensor imaging. NeuroImage 103, 323-333.
-           doi: 10.1016/j.neuroimage.2014.09.053
+    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+           water elimination two-compartment model for diffusion tensor
+           imaging. ReScience volume 3, issue 1, article number 2
     """
     evals = params[..., :3]
     evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
@@ -108,10 +108,10 @@ class FreeWaterTensorModel(ReconstModel):
 
         References
         ----------
-        .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-               Optimization of a free water elimination two-compartmental model
-               for diffusion tensor imaging. NeuroImage 103, 323-333.
-               doi: 10.1016/j.neuroimage.2014.09.053
+        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+               water elimination two-compartment model for diffusion tensor
+               imaging. ReScience volume 3, issue 1, article number 2
         """
         ReconstModel.__init__(self, gtab)
 
@@ -192,6 +192,13 @@ class FreeWaterTensorFit(TensorFit):
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) The volume fraction of the free water compartment
+
+        References
+        ----------
+        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+               water elimination two-compartment model for diffusion tensor
+               imaging. ReScience volume 3, issue 1, article number 2
         """
         TensorFit.__init__(self, model, model_params)
 
@@ -367,10 +374,10 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6,
 
     References
     ----------
-    .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-           Optimization of a free water elimination two-compartmental model
-           for diffusion tensor imaging. NeuroImage 103, 323-333.
-           doi: 10.1016/j.neuroimage.2014.09.053
+    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+           water elimination two-compartment model for diffusion tensor
+           imaging. ReScience volume 3, issue 1, article number 2
     """
     fw_params = np.zeros(data.shape[:-1] + (13,))
     W = design_matrix(gtab)

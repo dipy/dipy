@@ -86,8 +86,11 @@ Diffusion Tensor Imaging
 
 - :ref:`example_reconst_dti`
 - :ref:`example_restore_dti`
-- :ref:`example_reconst_fwdti`
 
+Free-water Diffusion Tensor Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_fwdti`
 
 Diffusion Kurtosis Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,6 +98,9 @@ Diffusion Kurtosis Imaging
 - :ref:`example_reconst_dki`
 - :ref:`example_reconst_msdki`
 
+White Matter Tract Integrity Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- :ref:`example_reconst_dki_micro`
 
 Q-Ball Constant Solid Angle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
