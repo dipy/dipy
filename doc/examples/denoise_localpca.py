@@ -1,14 +1,15 @@
 """
-===============================
-Denoise images using Local PCA
-===============================
+=======================================================
+Denoise images using Local PCA via empirical thresholds
+=======================================================
 
-The local PCA based denoising algorithm [Manjon2013]_ is an effective denoising
-method because it takes into account the directional information in diffusion
-data.
+PCA-based denoising algorithms are effective denoising methods because they
+explore the redundancy of the multi-dimensional information of
+diffusion-weighted datasets. In this example, we will show how to
+perform the PCA-based denoising using the algorithm proposed by Manjon et al.
+[Manjon2013]_.
 
-The basic idea behind local PCA based diffusion denoising can be explained in
-the following three basic steps:
+This algorithm involves the following steps:
 
 * First, we estimate the local noise variance at each voxel.
 
@@ -17,6 +18,10 @@ the following three basic steps:
 
 * Finally, we threshold the eigenvalues based on the local estimate of sigma
   and then do a PCA reconstruction
+
+
+To perform PCA denoising without a prior noise standard deviation estimate
+please see the following example instead: :ref:`denoise_mppca`
 
 Let's load the necessary modules
 """
@@ -44,12 +49,14 @@ affine = img.affine
 print("Input Volume", data.shape)
 
 """
+## Estimate the noise standard deviation
 
 We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
-used in local PCA algorithm. It takes both data and the gradient table object
-as input and returns an estimate of local noise standard deviation as a 3D
-array. We return a smoothed version, where a Gaussian filter with radius
-3 voxels has been applied to the estimate of the noise before returning it.
+used in local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
+It takes both data and the gradient table object as input and returns an
+estimate of local noise standard deviation as a 3D array. We return a smoothed
+version, where a Gaussian filter with radius 3 voxels has been applied to the
+estimate of the noise before returning it.
 
 We correct for the bias due to Rician noise, based on an equation developed by
 Koay and Basser [Koay2006]_.
@@ -61,24 +68,29 @@ sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
 print("Sigma estimation time", time() - t)
 
 """
-Perform the localPCA using the function localpca.
+## Perform the localPCA using the function localpca.
 
-The localpca algorithm takes into account for the directional
-information in the diffusion MR data. It performs PCA on local 4D patch and
-then thresholds it using the local variance estimate done by noise estimation
-function, then performing PCA reconstruction on it gives us the deniosed
-estimate.
+The localpca algorithm takes into account the multi-dimensional information of
+the diffusion MR data. It performs PCA on local 4D patch and
+then removes the noise components by thresholding the lowest eigenvalues.
+The eigenvalue threshold will be computed from the local variance estimate
+performed by the ``pca_noise_estimate`` function, if this is inputted in the
+main ``localpca`` function. The relationship between the noise variance
+estimate and the eigenvalue threshold can be adjusted using the input parameter
+``tau_factor``. According to Manjon et al. [Manjon2013]_, this parameter is set
+to 2.3.
 """
 
 t = time()
 
-denoised_arr = localpca(data, sigma=sigma, patch_radius=2)
+denoised_arr = localpca(data, sigma, tau_factor=2.3, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 
 """
-Let us plot the axial slice of the original and denoised data.
-We visualize all the slices (22 in total)
+The ``localpca`` function returns the denoised data which is plotted below
+(middle panel) together with the original version of the data (left panel) and
+the algorithm residual (right panel) .
 """
 
 sli = data.shape[2] // 2
@@ -105,7 +117,7 @@ print("The result saved in denoised_localpca.png")
 .. figure:: denoised_localpca.png
    :align: center
 
-   Showing the middle axial slice of the local PCA denoised output.
+Below we show how the denoised data can be saved.
 """
 
 nib.save(nib.Nifti1Image(denoised_arr,
