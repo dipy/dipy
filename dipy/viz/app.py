@@ -647,7 +647,8 @@ class Horizon(object):
                 show_m.add_timer_callback(True, 200, timer_callback)
                 show_m.iren.AddObserver('KeyPressEvent', key_press)
 
-                recording = True
+                # set to True if event recording needs updating
+                recording = False
                 recording_filename = self.recorded_events
 
                 if recording:
