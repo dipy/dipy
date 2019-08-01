@@ -23,14 +23,11 @@ streamline bundle.
 def get_streamlines():
     from dipy.data import get_fnames
     from dipy.io.streamline import load_tractogram
-    from dipy.tracking.streamline import Streamlines
 
     fname = get_fnames('fornix')
-    fornix = load_tractogram(fname, 'same',
-                             bbox_valid_check=False).streamlines
+    fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
 
-    streamlines = Streamlines(fornix)
-    return streamlines
+    return fornix.streamlines
 
 """
 .. _clustering-examples-AveragePointwiseEuclideanMetric:

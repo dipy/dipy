@@ -28,10 +28,8 @@ fname = get_fnames('fornix')
 Load fornix streamlines.
 """
 
-fornix = load_tractogram(fname, 'same',
-                         bbox_valid_check=False).streamlines
-
-streamlines = Streamlines(fornix)
+fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+streamlines = fornix.streamlines
 
 """
 Perform QuickBundles clustering using the MDF metric and a 10mm distance

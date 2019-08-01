@@ -218,10 +218,8 @@ from dipy.tracking.streamline import Streamlines
 from dipy.viz import window, actor
 
 fname = get_fnames('fornix')
-fornix = load_tractogram(fname, 'same',
-                         bbox_valid_check=False).streamlines
-
-streamlines = Streamlines(fornix)
+fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+streamlines = fornix.streamlines
 
 """
 Perform QuickBundles clustering using our metric ``CosineMetric``.
