@@ -723,7 +723,8 @@ class IvimModelVP(ReconstModel):
 
         # Create four scalar optimization variables.
         f = cvxpy.Variable(2)
-        # Create four constraints.
+        # Constraints have been set similar to the MIX paper's
+        # Supplementary Note 2: Synthetic Data Experiments, experiment 2
         constraints = [cvxpy.sum(f) == 1,
                        f[0] >= 0.011,
                        f[1] >= 0.011,
