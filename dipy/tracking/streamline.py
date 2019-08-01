@@ -122,7 +122,8 @@ def deform_streamlines(streamlines,
 
     stream_in_curr_grid = transform_streamlines(streamlines,
                                                 stream_to_current_grid)
-    displacements = values_from_volume(deform_field, stream_in_curr_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid,
+                                       np.eye(4))
     stream_in_world = transform_streamlines(stream_in_curr_grid,
                                             current_grid_to_world)
     new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
@@ -196,7 +197,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
     return [streamlines[i] for i in index]
 
 
-def select_by_rois(streamlines, rois, include, mode=None, affine=None,
+def select_by_rois(streamlines, affine, rois, include, mode=None,
                    tol=None):
     """Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
@@ -206,6 +207,9 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     ----------
     streamlines : list
         A list of candidate streamlines for selection
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     rois : list or ndarray
         A list of 3D arrays, each with shape (x, y, z) corresponding to the
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
@@ -226,9 +230,6 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
         "either_end" : either of the end-points is within tol from ROI
 
         "both_end" : both end points are within tol from ROI.
-
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
@@ -264,7 +265,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     >>> mask2 = np.zeros_like(mask1)
     >>> mask1[0, 0, 0] = True
     >>> mask2[1, 0, 0] = True
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            tol=1)
     >>> list(selection) # The result is a generator
@@ -272,14 +273,14 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
            [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, False],
     ...                            tol=0.87)
     >>> list(selection)
     [array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            mode="both_end",
     ...                            tol=1.0)
@@ -287,7 +288,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]])]
     >>> mask2[0, 2, 2] = True
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            mode="both_end",
     ...                            tol=1.0)
@@ -297,8 +298,6 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
     """
-    if affine is None:
-        affine = np.eye(4)
     # This calculates the maximal distance to a corner of the voxel:
     dtc = dist_to_corner(affine)
     if tol is None:
@@ -442,8 +441,8 @@ def _orient_by_roi_list(out, roi1, roi2):
     return out
 
 
-def orient_by_rois(streamlines, roi1, roi2, in_place=False,
-                   as_generator=False, affine=None):
+def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False,
+                   as_generator=False):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -451,6 +450,9 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     streamlines : list or generator
         List or generator of 2d arrays of 3d coordinates. Each array contains
         the xyz coordinates of a single streamline.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     roi1, roi2 : ndarray
         Binary masks designating the location of the regions of interest, or
         coordinate arrays (n-by-3 array with ROI coordinate in each row).
@@ -461,8 +463,6 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         Default: False.
     as_generator : bool
         Whether to return a generator as output. Default: False
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
 
     Returns
     -------
@@ -482,7 +482,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     >>> roi2 = np.zeros_like(roi1)
     >>> roi1[0, 0, 0] = True
     >>> roi2[1, 0, 0] = True
-    >>> orient_by_rois(streamlines, roi1, roi2)
+    >>> orient_by_rois(streamlines, np.eye(4), roi1, roi2)
     [array([[ 0.,  0.,  0.],
            [ 1.,  0.,  0.],
            [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
@@ -496,9 +496,8 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     if len(roi2.shape) == 3:
         roi2 = np.asarray(np.where(roi2.astype(bool))).T
 
-    if affine is not None:
-        roi1 = apply_affine(affine, roi1)
-        roi2 = apply_affine(affine, roi2)
+    roi1 = apply_affine(affine, roi1)
+    roi2 = apply_affine(affine, roi2)
 
     if as_generator:
         if in_place:
@@ -544,7 +543,7 @@ def _orient_by_sl_list(out, std_array, fgarray):
 
 
 def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
-                         as_generator=False, affine=None):
+                         as_generator=False):
     """
     Orient a bundle of streamlines to a standard streamline.
 
@@ -564,8 +563,6 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
         Default: False.
     as_generator : bool
         Whether to return a generator as output. Default: False
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
 
     Returns
     -------
@@ -597,7 +594,7 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
     return _orient_by_sl_list(out, std_array, fgarray)
 
 
-def _extract_vals(data, streamlines, affine=None, threedvec=False):
+def _extract_vals(data, streamlines, affine, threedvec=False):
     """
     Helper function for use with `values_from_volume`.
 
@@ -613,9 +610,9 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         If list, len(n_streamlines) with (n_nodes, 3) array in
         each element of the list.
 
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     threedvec : bool
         Whether the last dimension has length 3. This is a special case in
@@ -632,10 +629,8 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     if (isinstance(streamlines, list) or
             isinstance(streamlines, types.GeneratorType) or
             isinstance(streamlines, Streamlines)):
-        if affine is not None:
-            streamlines = transform_streamlines(streamlines,
-                                                np.linalg.inv(affine))
-
+        streamlines = transform_streamlines(streamlines,
+                                            np.linalg.inv(affine))
         vals = []
         for sl in streamlines:
             if threedvec:
@@ -650,10 +645,9 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         sl_cat = streamlines.reshape(sl_shape[0] *
                                      sl_shape[1], 3).astype(np.float)
 
-        if affine is not None:
-            inv_affine = np.linalg.inv(affine)
-            sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
-                      inv_affine[:3, 3])
+        inv_affine = np.linalg.inv(affine)
+        sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
+                  inv_affine[:3, 3])
 
         # So that we can index in one operation:
         if threedvec:
@@ -671,7 +665,7 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     return vals
 
 
-def values_from_volume(data, streamlines, affine=None):
+def values_from_volume(data, streamlines, affine):
     """Extract values of a scalar/vector along each streamline from a volume.
 
     Parameters
@@ -686,11 +680,9 @@ def values_from_volume(data, streamlines, affine=None):
         If list, len(n_streamlines) with (n_nodes, 3) array in
         each element of the list.
 
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity. For example, if no affine is provided and the first
-        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
-        would be returned as the value for that streamline coordinate
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     Returns
     ---------
@@ -708,14 +700,12 @@ def values_from_volume(data, streamlines, affine=None):
     data = np.asarray(data)
     if len(data.shape) == 4:
         if data.shape[-1] == 3:
-            return _extract_vals(data, streamlines, affine=affine,
-                                 threedvec=True)
+            return _extract_vals(data, streamlines, affine, threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
             streamlines = Streamlines(streamlines)
         vals = []
         for ii in range(data.shape[-1]):
-            vals.append(_extract_vals(data[..., ii], streamlines,
-                                      affine=affine))
+            vals.append(_extract_vals(data[..., ii], streamlines, affine))
 
         if isinstance(vals[-1], np.ndarray):
             return np.swapaxes(np.array(vals), 2, 1).T
@@ -729,7 +719,7 @@ def values_from_volume(data, streamlines, affine=None):
             return new_vals
 
     elif len(data.shape) == 3:
-        return _extract_vals(data, streamlines, affine=affine)
+        return _extract_vals(data, streamlines, affine)
     else:
         raise ValueError("Data needs to have 3 or 4 dimensions")
 

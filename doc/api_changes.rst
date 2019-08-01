@@ -34,6 +34,11 @@ guarantee proper spatial transformation handling.
 
 **Spatial transformation handling**
 
+Functions from ``dipy.tracking.streamlines`` were modified to enforce the
+affine parameter and uniformize docstring. ``deform_streamlines``
+``select_by_rois``, ``orient_by_rois``, ``_extract_vals`` 
+and ``values_from_volume``.
+
 Functions from ``dipy.tracking.utils`` were modified to enforce the
 affine parameter and uniformize docstring. ``density_map``
 ``connectivity_matrix``, ``seeds_from_mask``, ``random_seeds_from_mask``,

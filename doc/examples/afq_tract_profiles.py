@@ -103,10 +103,8 @@ individual, and not relative to the atlas space.
 """
 
 
-oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l,
-                                          affine=transform)
-oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
-                                         affine=transform)
+oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l)
+oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l)
 
 
 """

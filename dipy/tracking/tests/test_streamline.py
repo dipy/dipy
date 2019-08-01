@@ -543,7 +543,8 @@ def test_deform_streamlines():
 
     # Interpolate displacements onto original streamlines
     streamlines_in_grid = transform_streamlines(streamlines, stream2grid)
-    disps = values_from_volume(deformation_field, streamlines_in_grid)
+    disps = values_from_volume(deformation_field, streamlines_in_grid,
+                               np.eye(4))
 
     # Put new_streamlines into world space
     new_streamlines_world = transform_streamlines(new_streamlines,
@@ -557,7 +558,7 @@ def test_deform_streamlines():
                                              np.linalg.inv(stream2world))
     # All close because of floating pt imprecision
     for o, s in zip(orig_streamlines, streamlines):
-        assert_allclose(s, o, rtol=1e-10, atol=0)
+        assert_allclose(s, o, rtol=1e-6, atol=1e-6)
 
 
 def test_center_and_transform():
@@ -799,71 +800,74 @@ def test_select_by_rois():
     mask1[0, 0, 0] = True
     mask2[1, 0, 0] = True
 
-    selection = select_by_rois(streamlines, [mask1], [True],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1], [True],
                                tol=1)
 
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
 
-    selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
-                               tol=1)
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                               [True, True], tol=1)
 
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
 
-    selection = select_by_rois(streamlines, [mask1, mask2], [True, False])
+    selection = select_by_rois(streamlines, np.eye(4), [
+                               mask1, mask2], [True, False])
 
     assert_arrays_equal(list(selection), [streamlines[1]])
 
     # Setting tolerance too low gets overridden:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        selection = select_by_rois(streamlines, [mask1, mask2], [True, False],
-                                   tol=0.1)
+        selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                                   [True, False], tol=0.1)
 
         assert_arrays_equal(list(selection), [streamlines[1]])
 
-    selection = select_by_rois(streamlines, [mask1, mask2], [True, True],
-                               tol=0.87)
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
+                               [True, True], tol=0.87)
 
     assert_arrays_equal(list(selection), [streamlines[1]])
 
     mask3 = np.zeros_like(mask1)
     mask3[0, 2, 2] = 1
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2, mask3],
                                [True, True, False], tol=1.0)
 
     assert_arrays_equal(list(selection), [streamlines[0]])
 
     # Select using only one ROI
-    selection = select_by_rois(streamlines, [mask1], [True], tol=0.87)
+    selection = select_by_rois(streamlines, np.eye(4), [
+                               mask1], [True], tol=0.87)
     assert_arrays_equal(list(selection), [streamlines[1]])
 
-    selection = select_by_rois(streamlines, [mask1], [True], tol=1.0)
+    selection = select_by_rois(streamlines, np.eye(4), [
+                               mask1], [True], tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
 
     # Use different modes:
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2, mask3],
                                [True, True, False],
                                mode="all",
                                tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0]])
 
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2, mask3],
                                [True, True, False],
                                mode="either_end",
                                tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0]])
 
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2, mask3],
                                [True, True, False],
                                mode="both_end",
                                tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0]])
 
     mask2[0, 2, 2] = True
-    selection = select_by_rois(streamlines, [mask1, mask2, mask3],
+    selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2, mask3],
                                [True, True, False],
                                mode="both_end",
                                tol=1.0)
@@ -872,8 +876,8 @@ def test_select_by_rois():
                                           streamlines[1]])
 
     # Test with generator input:
-    selection = select_by_rois(generate_sl(streamlines), [mask1], [True],
-                               tol=1.0)
+    selection = select_by_rois(generate_sl(streamlines), np.eye(4), [mask1],
+                               [True], tol=1.0)
     assert_arrays_equal(list(selection), [streamlines[0],
                                           streamlines[1]])
 
@@ -902,11 +906,10 @@ def test_orient_by_rois():
 
     # After reorientation, this should be the answer:
     flipped_sl = Streamlines([streamlines[0], streamlines[1][::-1]])
-    new_streamlines = orient_by_rois(streamlines,
+    new_streamlines = orient_by_rois(streamlines, np.eye(4),
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=None,
                                      as_generator=False)
     npt.assert_array_equal(new_streamlines, flipped_sl)
 
@@ -914,30 +917,27 @@ def test_orient_by_rois():
 
     # Test with affine:
     x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
-    new_streamlines = orient_by_rois(x_streamlines,
+    new_streamlines = orient_by_rois(x_streamlines, affine,
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=affine,
                                      as_generator=False)
     npt.assert_array_equal(new_streamlines, x_flipped_sl)
     npt.assert_(new_streamlines is not x_streamlines)
 
     # Test providing coord ROIs instead of vol ROIs:
-    new_streamlines = orient_by_rois(x_streamlines,
+    new_streamlines = orient_by_rois(x_streamlines, affine,
                                      mask1_coords,
                                      mask2_coords,
                                      in_place=False,
-                                     affine=affine,
                                      as_generator=False)
     npt.assert_array_equal(new_streamlines, x_flipped_sl)
 
     # Test with as_generator set to True
-    new_streamlines = orient_by_rois(streamlines,
+    new_streamlines = orient_by_rois(streamlines, np.eye(4),
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=None,
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
@@ -945,11 +945,10 @@ def test_orient_by_rois():
     npt.assert_array_equal(ll, flipped_sl)
 
     # Test with as_generator set to True and with the affine
-    new_streamlines = orient_by_rois(x_streamlines,
+    new_streamlines = orient_by_rois(x_streamlines, affine,
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=affine,
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
@@ -957,11 +956,10 @@ def test_orient_by_rois():
     npt.assert_array_equal(ll, x_flipped_sl)
 
     # Test with generator input:
-    new_streamlines = orient_by_rois(generate_sl(streamlines),
+    new_streamlines = orient_by_rois(generate_sl(streamlines), np.eye(4),
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=None,
                                      as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
@@ -970,29 +968,27 @@ def test_orient_by_rois():
 
     # Generator output cannot take a True `in_place` kwarg:
     npt.assert_raises(ValueError, orient_by_rois, *[generate_sl(streamlines),
+                                                    np.eye(4),
                                                     mask1_vol,
                                                     mask2_vol],
                       **dict(in_place=True,
-                             affine=None,
                              as_generator=True))
 
     # But you can input a generator and get a non-generator as output:
-    new_streamlines = orient_by_rois(generate_sl(streamlines),
+    new_streamlines = orient_by_rois(generate_sl(streamlines), np.eye(4),
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=False,
-                                     affine=None,
                                      as_generator=False)
 
     npt.assert_(not isinstance(new_streamlines, types.GeneratorType))
     npt.assert_array_equal(new_streamlines, flipped_sl)
 
     # Modify in-place:
-    new_streamlines = orient_by_rois(streamlines,
+    new_streamlines = orient_by_rois(streamlines, np.eye(4),
                                      mask1_vol,
                                      mask2_vol,
                                      in_place=True,
-                                     affine=None,
                                      as_generator=False)
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
@@ -1022,8 +1018,7 @@ def test_orient_by_streamline():
     new_streamlines = orient_by_streamline(streamlines,
                                            standard_streamline,
                                            n_points=12,
-                                           in_place=False,
-                                           affine=None)
+                                           in_place=False)
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
     npt.assert_(new_streamlines is not streamlines)
@@ -1032,8 +1027,7 @@ def test_orient_by_streamline():
     x_flipped_sl = Streamlines([s + affine[:3, 3] for s in flipped_sl])
     new_streamlines = orient_by_streamline(x_streamlines,
                                            standard_streamline,
-                                           in_place=False,
-                                           affine=affine)
+                                           in_place=False)
     npt.assert_array_equal(new_streamlines, x_flipped_sl)
     npt.assert_(new_streamlines is not x_streamlines)
 
@@ -1041,7 +1035,6 @@ def test_orient_by_streamline():
     new_streamlines = orient_by_streamline(streamlines,
                                            standard_streamline,
                                            in_place=False,
-                                           affine=None,
                                            as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
@@ -1052,7 +1045,6 @@ def test_orient_by_streamline():
     new_streamlines = orient_by_streamline(x_streamlines,
                                            standard_streamline,
                                            in_place=False,
-                                           affine=affine,
                                            as_generator=True)
 
     npt.assert_(isinstance(new_streamlines, types.GeneratorType))
@@ -1062,8 +1054,7 @@ def test_orient_by_streamline():
     # Modify in-place:
     new_streamlines = orient_by_streamline(streamlines,
                                            standard_streamline,
-                                           in_place=True,
-                                           affine=None)
+                                           in_place=True)
 
     npt.assert_array_equal(new_streamlines, flipped_sl)
     # The two objects are one and the same:
@@ -1098,13 +1089,13 @@ def test_values_from_volume():
                      data[3, 0, 0] + (data[4, 0, 0] - data[3, 0, 0]) * 0.9,
                      data[4, 0, 0] + (data[5, 0, 0] - data[4, 0, 0]) * 0.1]]
 
-            vv = values_from_volume(data, sl1)
+            vv = values_from_volume(data, sl1, np.eye(4))
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
-            vv = values_from_volume(data, np.array(sl1))
+            vv = values_from_volume(data, np.array(sl1), np.eye(4))
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
-            vv = values_from_volume(data, Streamlines(sl1))
+            vv = values_from_volume(data, Streamlines(sl1), np.eye(4))
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             affine = np.eye(4)
@@ -1112,27 +1103,26 @@ def test_values_from_volume():
             x_sl1 = transform_streamlines(sl1, affine)
             x_sl2 = transform_streamlines(sl1, affine)
 
-            vv = values_from_volume(data, x_sl1, affine=affine)
+            vv = values_from_volume(data, x_sl1, affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
-            # The generator has already been consumed so needs to be
-            # regenerated:
             x_sl1 = transform_streamlines(sl1, affine)
-            vv = values_from_volume(data, x_sl1, affine=affine)
+            vv = values_from_volume(data, x_sl1, affine)
+
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             # Test that the streamlines haven't mutated:
             l_sl2 = list(x_sl2)
             npt.assert_equal(x_sl1, l_sl2)
 
-            vv = values_from_volume(data, np.array(x_sl1), affine=affine)
+            vv = values_from_volume(data, np.array(x_sl1), affine)
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
             npt.assert_equal(np.array(x_sl1), np.array(l_sl2))
 
             # Test for lists of streamlines with different numbers of nodes:
             sl2 = [sl1[0][:-1], sl1[1]]
             ans2 = [ans1[0][:-1], ans1[1]]
-            vv = values_from_volume(data, sl2)
+            vv = values_from_volume(data, sl2, np.eye(4))
             for ii, v in enumerate(vv):
                 npt.assert_almost_equal(v, ans2[ii], decimal=decimal)
 
@@ -1147,16 +1137,20 @@ def test_values_from_volume():
                              [3.9, 0, 0],
                              [4.1, 0, 0]]))
 
-    npt.assert_raises(RuntimeError, values_from_volume, data, nonsense_sl)
+    npt.assert_raises(RuntimeError, values_from_volume, data,
+                      nonsense_sl,
+                      np.eye(4))
 
     # For some use-cases we might have singleton streamlines (with only one
     # node each):
     data3D = np.ones((2, 2, 2))
     streamlines = np.ones((10, 1, 3))
-    npt.assert_equal(values_from_volume(data3D, streamlines).shape, (10, 1))
+    npt.assert_equal(values_from_volume(data3D, streamlines,
+                                        np.eye(4)).shape, (10, 1))
     data4D = np.ones((2, 2, 2, 2))
     streamlines = np.ones((10, 1, 3))
-    npt.assert_equal(values_from_volume(data4D, streamlines).shape, (10, 1, 2))
+    npt.assert_equal(values_from_volume(data4D, streamlines,
+                                        np.eye(4)).shape, (10, 1, 2))
 
 
 def test_streamlines_generator():

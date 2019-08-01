@@ -398,7 +398,9 @@ def afq_profile(data, bundle, affine, n_points=100,
 
     """
     if orient_by is not None:
-        bundle = orient_by_streamline(bundle, orient_by, affine=affine)
+        bundle = orient_by_streamline(bundle, orient_by)
+    if affine is None:
+        affine = np.eye(4)
     if len(bundle) == 0:
         raise ValueError("The bundle contains no streamlines")
 
@@ -406,7 +408,7 @@ def afq_profile(data, bundle, affine, n_points=100,
     fgarray = set_number_of_points(bundle, n_points)
 
     # Extract the values
-    values = np.array(values_from_volume(data, fgarray, affine=affine))
+    values = np.array(values_from_volume(data, fgarray, affine))
 
     if weights is None:
         weights = np.ones(values.shape) / values.shape[0]
