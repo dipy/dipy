@@ -13,6 +13,7 @@ if has_fury:
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from dipy.viz.gmem import HORIZON
     from fury.tests.test_ui import EventCounter
+    from fury.colormap import distinguishable_colormap
 
 
 def apply_shader(hz, actor):
@@ -220,14 +221,21 @@ class Horizon(object):
             scene.rm(ca_)
 
     def add_actors(self, scene, tractograms, threshold):
-        """ Experimental
+        """ Add streamline actors to the scene
         """
+        color_gen = distinguishable_colormap()
         for (t, streamlines) in enumerate(tractograms):
             if self.random_colors:
-                # TODO use distinguished colormap
-                colors = self.prng.random_sample(3)
+                colors = next(color_gen)
             else:
                 colors = None
+
+            if not self.world_coords:
+                # TODO we need to read the affine of a tractogram
+                # from a StatefullTractogram
+                msg = 'Currently native coordinates are not supported'
+                msg += ' for streamlines'
+                raise ValueError(msg)
 
             if self.cluster:
 
@@ -319,9 +327,6 @@ class Horizon(object):
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
 
     def build_show(self, scene):
-        # event_counter = EventCounter()
-        # event_counter.monitor(button_test)
-        # event_counter.monitor(self.panel)
 
         show_m = window.ShowManager(scene, size=(1200, 900),
                                     order_transparent=True,
@@ -422,7 +427,7 @@ class Horizon(object):
 
             scene.add(self.panel2)
 
-            text_block = build_label(HELP_MESSAGE, 16)  # ui.TextBlock2D()
+            text_block = build_label(HELP_MESSAGE, 16)
             text_block.message = HELP_MESSAGE
 
             help_panel = ui.Panel2D(size=(300, 200),
@@ -436,6 +441,8 @@ class Horizon(object):
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
             data, affine = self.images[0]
+            self.vox2ras = affine
+
             if len(self.pams) > 0:
                 pam = self.pams[0]
             else:
