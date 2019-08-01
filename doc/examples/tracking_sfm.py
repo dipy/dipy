@@ -25,7 +25,6 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import (select_random_set_of_streamlines,
                                       Streamlines)
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
-from dipy.tracking.utils import move_streamlines
 from dipy.viz import window, actor, colormap, has_fury
 from numpy.linalg import inv
 
@@ -94,7 +93,7 @@ Tracking will be started from a set of seeds evenly distributed in the white
 matter:
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=[2, 2, 2], affine=affine)
+seeds = utils.seeds_from_mask(white_matter, affine, density=[2, 2, 2])
 
 """
 For the sake of brevity, we will take only the first 1000 seeds, generating
@@ -134,7 +133,7 @@ plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
 
 if has_fury:
     streamlines_actor = actor.streamtube(
-        list(move_streamlines(plot_streamlines, inv(t1_aff))),
+        list(transform_streamlines(plot_streamlines, inv(t1_aff))),
         colormap.line_colors(streamlines), linewidth=0.1)
 
     vol_actor = actor.slicer(t1_data)

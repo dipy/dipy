@@ -1108,6 +1108,7 @@ def test_values_from_volume():
 
             x_sl1 = transform_streamlines(sl1, affine)
             vv = values_from_volume(data, x_sl1, affine)
+
             npt.assert_almost_equal(vv, ans1, decimal=decimal)
 
             # Test that the streamlines haven't mutated:

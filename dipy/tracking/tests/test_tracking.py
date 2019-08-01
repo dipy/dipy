@@ -299,7 +299,7 @@ def test_probabilistic_odf_weighted_tracker():
     npt.assert_(len(streamlines[1]) == 1)  # OUTSIDEIMAGE
 
     # Test that all points are within the image volume
-    seeds = seeds_from_mask(np.ones(mask.shape), density=2)
+    seeds = seeds_from_mask(np.ones(mask.shape), np.eye(4), density=2)
     streamline_generator = LocalTracking(dg, sc, seeds, np.eye(4), 0.5,
                                          return_all=True)
     streamlines = Streamlines(streamline_generator)
@@ -350,8 +350,9 @@ def test_particle_filtering_tractography():
                            simple_gm,
                            np.zeros(simple_gm.shape)])
     simple_csf = np.ones(simple_wm.shape) - simple_wm - simple_gm
+
     sc = ActStoppingCriterion.from_pve(simple_wm, simple_gm, simple_csf)
-    seeds = seeds_from_mask(simple_wm, density=2)
+    seeds = seeds_from_mask(simple_wm, np.eye(4), density=2)
 
     # Random pmf in every voxel
     shape_img = list(simple_wm.shape)
@@ -384,7 +385,7 @@ def test_particle_filtering_tractography():
                 npt.assert_almost_equal(np.linalg.norm(s[i] - s[i + 1]),
                                         step_size)
     # Test that all points are within the image volume
-    seeds = seeds_from_mask(np.ones(simple_wm.shape), density=1)
+    seeds = seeds_from_mask(np.ones(simple_wm.shape), np.eye(4), density=1)
     pft_streamlines_generator = ParticleFilteringTracking(
         dg, sc, seeds, np.eye(4), step_size, max_cross=1, return_all=True)
     pft_streamlines = Streamlines(pft_streamlines_generator)

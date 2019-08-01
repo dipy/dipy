@@ -91,9 +91,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
             utils.seeds_from_mask(
-                seed_mask,
-                density=[seed_density, seed_density, seed_density],
-                affine=affine)
+                seed_mask, affine,
+                density=[seed_density, seed_density, seed_density])
         logging.info('seeds done')
 
         tracking_result = LocalTracking(direction_getter,
@@ -293,10 +292,9 @@ class PFTrackingPAMFlow(Workflow):
                 wm, gm, csf, step_size=step_size, average_voxel_size=avs)
             logging.info('stopping criterion done')
             seed_mask, _ = load_nifti(seeding_path)
-            seeds = utils.seeds_from_mask(seed_mask,
+            seeds = utils.seeds_from_mask(seed_mask, affine,
                                           density=[seed_density, seed_density,
-                                                   seed_density],
-                                          affine=affine)
+                                                   seed_density])
             logging.info('seeds done')
             dg = ProbabilisticDirectionGetter
 

@@ -7,8 +7,8 @@ from scipy.spatial.distance import cdist
 import numpy as np
 from nibabel.affines import apply_affine
 from nibabel.streamlines import ArraySequence as Streamlines
-from dipy.tracking.streamlinespeed import (set_number_of_points, length,
-                                           compress_streamlines)
+from dipy.tracking.streamlinespeed import (compress_streamlines, length,
+                                           set_number_of_points)
 from dipy.tracking.distances import bundles_distances_mdf
 import dipy.tracking.utils as ut
 from dipy.core.geometry import dist_to_corner
@@ -631,7 +631,6 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
             isinstance(streamlines, Streamlines)):
         streamlines = transform_streamlines(streamlines,
                                             np.linalg.inv(affine))
-
         vals = []
         for sl in streamlines:
             if threedvec:

@@ -32,9 +32,9 @@ from mpl_toolkits.axes_grid1 import AxesGrid
 
 """
 First, we need to generate some streamlines and visualize. For a more complete
-description of these steps, please refer to the :ref:`example_probabilistic_fiber_tracking`
-and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
-
+description of these steps, please refer to the
+:ref:`example_probabilistic_fiber_tracking` and the Visualization of ROI
+Surface Rendered with Streamlines Tutorials.
 """
 
 hardi_img, gtab, labels_img = read_stanford_labels()
@@ -62,7 +62,7 @@ lesion mask, or electrode mask).
 
 # Make a corpus callosum seed mask for tracking
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Make a streamline bundle model of the corpus callosum ROI connectivity
 streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
@@ -118,8 +118,7 @@ Path Length Map base ROI to restrict the analysis to the CST)
 path_length_map_base_roi = seed_mask
 
 # calculate the WMPL
-
-wmpl = path_length(streamlines, path_length_map_base_roi, affine)
+wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 
 # save the WMPL as a nifti
 path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
