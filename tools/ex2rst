@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/env python
 #
 # Note before note: dipy copied this file from nitime who ...
 # Note: this file is copied (possibly with minor modifications) from the
@@ -113,28 +113,15 @@ def exfile2rst(filename):
                     # rescue what is left on the line
                     proc_line = cleanline[3:]  # strip """
             else:
-                last_line_empty = False
-
-            # if we have something that should go into the text
-            if indocs \
-              or (cleanline.startswith('"""') or cleanline.startswith("'''")):
-                proc_line = None
-                # handle doc start
-                if not indocs:
-                    # guarenteed to start with """
-                    if len(cleanline) > 3 \
-                      and (cleanline.endswith('"""')
-                           or cleanline.endswith("'''")):
-                        # single line doc
-                        code2doc = True
-                        doc2code = True
-                        proc_line = cleanline[3:-3]
-                    else:
-                        # must be start of multiline block
-                        indocs = True
-                        code2doc = True
-                        # rescue what is left on the line
-                        proc_line = cleanline[3:]  # strip """
+                # we are already in the docs
+                # handle doc end
+                if cleanline.endswith('"""') or cleanline.endswith("'''"):
+                    indocs = False
+                    doc2code = True
+                    # rescue what is left on the line
+                    proc_line = cleanline[:-3]
+                    # reset the indentation
+                    indent_level = 0
                 else:
                     # has to be documentation
                     # if the indentation is whitespace remove it, other wise
