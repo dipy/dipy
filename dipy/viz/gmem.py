@@ -36,4 +36,4 @@ class GlobalHorizon(object):
         self.cluster_actors = []
 
 
-HORIZON = GlobalHorizon()
+HORIMEM = GlobalHorizon()

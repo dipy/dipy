@@ -11,7 +11,7 @@ if has_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
-    from dipy.viz.gmem import HORIZON
+    from dipy.viz.gmem import HORIMEM
     from fury.tests.test_ui import EventCounter
     from fury.colormap import distinguishable_colormap
 
@@ -174,7 +174,7 @@ class Horizon(object):
                                                       linewidth=linewidths[i],
                                                       lod=False)
                     scene.add(centroid_actor)
-                    HORIZON.centroid_actors.append(centroid_actor)
+                    HORIMEM.centroid_actors.append(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -184,7 +184,7 @@ class Horizon(object):
                     cluster_actor.VisibilityOff()
 
                     scene.add(cluster_actor)
-                    HORIZON.cluster_actors.append(cluster_actor)
+                    HORIMEM.cluster_actors.append(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -211,14 +211,14 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
-                HORIZON.streamline_actors.append(streamline_actor)
+                HORIMEM.streamline_actors.append(streamline_actor)
         return scene
 
     def remove_actors(self, scene):
 
-        for ca_ in HORIZON.centroid_actors:
+        for ca_ in HORIMEM.centroid_actors:
             scene.rm(ca_)
-        for ca_ in HORIZON.cluster_actors:
+        for ca_ in HORIMEM.cluster_actors:
             scene.rm(ca_)
 
     def add_actors(self, scene, tractograms, threshold):
@@ -264,7 +264,7 @@ class Horizon(object):
                                                       linewidth=linewidths[i],
                                                       lod=False)
                     scene.add(centroid_actor)
-                    HORIZON.centroid_actors.append(centroid_actor)
+                    HORIMEM.centroid_actors.append(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -274,7 +274,7 @@ class Horizon(object):
                     cluster_actor.VisibilityOff()
 
                     scene.add(cluster_actor)
-                    HORIZON.cluster_actors.append(cluster_actor)
+                    HORIMEM.cluster_actors.append(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -301,7 +301,7 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
-                HORIZON.streamline_actors.append(streamline_actor)
+                HORIMEM.streamline_actors.append(streamline_actor)
 
         def left_click_centroid_callback(obj, event):
 
@@ -617,13 +617,13 @@ class Horizon(object):
 
                 self.show_m.render()
 
-        HORIZON.window_timer_cnt = 0
+        HORIMEM.window_timer_cnt = 0
 
         def timer_callback(obj, event):
 
-            HORIZON.window_timer_cnt += 1
+            HORIMEM.window_timer_cnt += 1
             # TODO possibly add automatic rotation option
-            # cnt = HORIZON.window_timer_cnt
+            # cnt = HORIMEM.window_timer_cnt
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
 
@@ -701,9 +701,11 @@ def horizon(tractograms=None, images=None, pams=None,
         adaptive visualization, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
-    hz = Horizon(tractograms, images, pams, cluster, cluster_thr, random_colors,
-                 length_gt, length_lt, clusters_gt, clusters_lt,
-                 world_coords, interactive, out_png, recorded_events)
+    hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
+                 random_colors, length_gt, length_lt,
+                 clusters_gt, clusters_lt,
+                 world_coords, interactive,
+                 out_png, recorded_events)
 
     scene = hz.build_scene()
 
