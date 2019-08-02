@@ -17,7 +17,6 @@ skip_it = use_xvfb == 'skip'
 @npt.dec.skipif(skip_it or not has_fury)
 @xvfb_it
 def test_horizon_events():
-    recording = True
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
     data = 255 * np.random.rand(150, 150, 150)

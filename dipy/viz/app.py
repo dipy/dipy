@@ -137,6 +137,7 @@ class Horizon(object):
         self.cla = {}  # holds cluster actors
         self.tractogram_clusters = {}
         self.recorded_events = recorded_events
+        self.show_m = None
 
     def build_scene(self):
 
@@ -307,7 +308,7 @@ class Horizon(object):
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
             self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
                 self.cea[obj]['selected']
-            show_m.render()
+            self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
 
@@ -318,7 +319,7 @@ class Horizon(object):
                 obj.VisibilityOff()
                 self.cea[ca]['expanded'] = 0
 
-            show_m.render()
+            self.show_m.render()
 
         for cl in self.cla:
             cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
@@ -328,10 +329,10 @@ class Horizon(object):
 
     def build_show(self, scene):
 
-        show_m = window.ShowManager(scene, size=(1200, 900),
-                                    order_transparent=True,
-                                    reset_camera=False)
-        show_m.initialize()
+        self.show_m = window.ShowManager(scene, size=(1200, 900),
+                                         order_transparent=True,
+                                         reset_camera=False)
+        self.show_m.initialize()
 
         if self.cluster and self.tractograms:
 
@@ -397,7 +398,7 @@ class Horizon(object):
                             k.SetVisibility(0)
                     else:
                         self.cla[k]['centroid_actor'].SetVisibility(1)
-                show_m.render()
+                self.show_m.render()
 
             def hide_clusters_size(slider):
                 self.size_min = np.round(slider.value)
@@ -410,7 +411,7 @@ class Horizon(object):
                             k.SetVisibility(0)
                     else:
                         self.cla[k]['centroid_actor'].SetVisibility(1)
-                show_m.render()
+                self.show_m.render()
 
             slider_length.on_change = hide_clusters_length
 
@@ -447,7 +448,7 @@ class Horizon(object):
                 pam = self.pams[0]
             else:
                 pam = None
-            self.panel = slicer_panel(scene, show_m.iren, data, affine,
+            self.panel = slicer_panel(scene, self.show_m.iren, data, affine,
                                       self.world_coords, pam=pam)
         else:
             data = None
@@ -467,14 +468,14 @@ class Horizon(object):
                     self.panel2.re_align(size_change)
                     help_panel.re_align(size_change)
 
-        show_m.initialize()
+        self.show_m.initialize()
 
         def left_click_centroid_callback(obj, event):
 
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
             self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
                 self.cea[obj]['selected']
-            show_m.render()
+            self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
 
@@ -485,7 +486,7 @@ class Horizon(object):
                 obj.VisibilityOff()
                 self.cea[ca]['expanded'] = 0
 
-            show_m.render()
+            self.show_m.render()
 
         for cl in self.cla:
             cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
@@ -515,7 +516,7 @@ class Horizon(object):
                                 if self.cea[ca]['selected'] == 0:
                                     ca.VisibilityOn()
                     self.hide_centroids = not self.hide_centroids
-                    show_m.render()
+                    self.show_m.render()
 
                 # invert selection
                 if key == 'i' or key == 'I':
@@ -528,7 +529,7 @@ class Horizon(object):
                             cas = self.cea[ca]['cluster_actor']
                             self.cla[cas]['selected'] = \
                                 self.cea[ca]['selected']
-                    show_m.render()
+                    self.show_m.render()
 
                 # save current result
                 if key == 's' or key == 'S':
@@ -554,7 +555,7 @@ class Horizon(object):
                             active_streamlines.extend(Streamlines(indices))
 
                     # self.tractograms = [active_streamlines]
-                    hz2 = horizon([active_streamlines],
+                    hz2 = Horizon([active_streamlines],
                                   self.images, cluster=True, cluster_thr=5,
                                   random_colors=self.random_colors,
                                   length_lt=np.inf,
@@ -575,7 +576,7 @@ class Horizon(object):
                                 cas = self.cea[ca]['cluster_actor']
                                 self.cla[cas]['selected'] = \
                                     self.cea[ca]['selected']
-                        show_m.render()
+                        self.show_m.render()
                         self.select_all = True
                     else:
                         for ca in self.cea:
@@ -585,7 +586,7 @@ class Horizon(object):
                                 cas = self.cea[ca]['cluster_actor']
                                 self.cla[cas]['selected'] = \
                                     self.cea[ca]['selected']
-                        show_m.render()
+                        self.show_m.render()
                         self.select_all = False
 
                 if key == 'e' or key == 'E':
@@ -602,7 +603,7 @@ class Horizon(object):
                                     c.VisibilityOff()
                                     self.cea[c]['expanded'] = 1
 
-                    show_m.render()
+                    self.show_m.render()
 
                 if key == 'r' or key == 'R':
 
@@ -614,7 +615,7 @@ class Horizon(object):
                             c.VisibilityOn()
                             self.cea[c]['expanded'] = 0
 
-                show_m.render()
+                self.show_m.render()
 
         HORIZON.window_timer_cnt = 0
 
@@ -623,7 +624,6 @@ class Horizon(object):
             HORIZON.window_timer_cnt += 1
             # TODO possibly add automatic rotation option
             # cnt = HORIZON.window_timer_cnt
-            # print("Let's count up to 100 " + str(cnt))
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
 
@@ -635,26 +635,26 @@ class Horizon(object):
 
             if self.recorded_events is None:
 
-                show_m.add_window_callback(win_callback)
-                show_m.add_timer_callback(True, 200, timer_callback)
-                show_m.iren.AddObserver('KeyPressEvent', key_press)
-                show_m.render()
-                show_m.start()
+                self.show_m.add_window_callback(win_callback)
+                self.show_m.add_timer_callback(True, 200, timer_callback)
+                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
+                self.show_m.render()
+                self.show_m.start()
 
             else:
 
-                show_m.add_window_callback(win_callback)
-                show_m.add_timer_callback(True, 200, timer_callback)
-                show_m.iren.AddObserver('KeyPressEvent', key_press)
+                self.show_m.add_window_callback(win_callback)
+                self.show_m.add_timer_callback(True, 200, timer_callback)
+                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
 
                 # set to True if event recording needs updating
                 recording = False
                 recording_filename = self.recorded_events
 
                 if recording:
-                    show_m.record_events_to_file(recording_filename)
+                    self.show_m.record_events_to_file(recording_filename)
                 else:
-                    show_m.play_events_from_file(recording_filename)
+                    self.show_m.play_events_from_file(recording_filename)
 
         else:
 
