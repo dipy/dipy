@@ -5,12 +5,10 @@ Direct Streamline Normalization
 
 This example shows how to register streamlines into a template space by
 applying non-rigid deformations.
-
 At times we will be interested in bringing a set of streamlines into some
 common, reference space to compute statistics out of the registered
 streamlines. For a discussion on the effects of spatial normalization
 approaches on tractography the work by Green et al. [Greene17]_ can be read.
-
 For brevity, we will include in this example only streamlines going through
 the corpus callosum connecting left to right superior frontal cortex. The
 process of tracking and finding these streamlines is fully demonstrated in
@@ -18,10 +16,8 @@ the :ref:`streamline_tools` example. If this example has been run, we can read
 the streamlines from file. Otherwise, we'll run that example first, by
 importing it. This provides us with all of the variables that were created in
 that example.
-
 In order to get the deformation field, we will first use two b0 volumes. The
 first one will be the b0 from the Stanford HARDI dataset:
-
 """
 
 import os.path as op
@@ -35,19 +31,24 @@ else:
     vox_size = hardi_img.header.get_zooms()[0]
 
 """
-The second one will be the T2-contrast MNI template image.
-
+The second one will be the T2-contrast MNI template image, which we'll need to
+reslice to 2x2x2 mm isotropic voxel resolution to match the HARDI data.
 """
 
 from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
+from dipy.align.reslice import reslice
 
 fetch_mni_template()
 img_t2_mni = read_mni_template("a", contrast = "T2")
 
+new_zooms = (2., 2., 2.)
+data2, affine2 = reslice(img_t2_mni.get_data(), img_t2_mni.affine,
+img_t2_mni.header.get_zooms(), new_zooms)
+img_t2_mni = nib.Nifti1Image(data2, affine=affine2)
+
 """
 We filter the diffusion data from the Stanford HARDI dataset to find the b0
 images.
-
 """
 
 import numpy as np
@@ -57,7 +58,6 @@ b0_data_stanford = data[..., b0_idx_stanford]
 
 """
 We then remove the skull from them:
-
 """
 
 from dipy.segment.mask import median_otsu
@@ -65,7 +65,6 @@ from dipy.segment.mask import median_otsu
 b0_masked_stanford, _ = median_otsu(b0_data_stanford,
                 vol_idx=list(range(b0_data_stanford.shape[-1])),
                 median_radius=4, numpass=4)
-
 
 """
 And go on to compute the Stanford HARDI dataset mean b0 image.
@@ -75,18 +74,13 @@ And go on to compute the Stanford HARDI dataset mean b0 image.
 mean_b0_masked_stanford = np.mean(b0_masked_stanford, axis=3,
                                   dtype=data.dtype)
 
-"""
-We will register the mean b0 to the MNI T2 image template non-rigidly to
-obtain the deformation field that will be applied to the streamlines. This is
-just one of the strategies that can be used to obtain an appropriate
-deformation field. Other strategies include computing an FA map as the static
-image or template, which may eventually lead to results with improved
-accuracy.
-
-We will first perform an affine registration to roughly align the two volumes:
 
 """
+We will register the mean b0-masked FA map to the template FA map non-rigidly to obtain the
+deformation field that will be applied to the streamlines. We will first
+perform an affine registration to roughly align the two volumes:
 
+"""
 from dipy.align.imaffine import (AffineMap, MutualInformationMetric,
                                  AffineRegistration, transform_origins)
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
@@ -96,11 +90,6 @@ static = img_t2_mni.get_data()
 static_affine = img_t2_mni.affine
 moving = mean_b0_masked_stanford
 moving_affine = hardi_img.affine
-
-identity = np.eye(4)
-affine_map = AffineMap(identity, static.shape, static_affine, moving.shape,
-                       moving_affine)
-resampled = affine_map.transform(moving)
 
 """
 We estimate an affine that maps the origin of the moving image to that of the
@@ -179,12 +168,12 @@ We show the registration result with:
 """
 from dipy.viz import regtools
 
-regtools.overlay_slices(static, warped_moving, None, 0, 'Static', 'Moving',
-                        'transformed_sagittal.png')
-regtools.overlay_slices(static, warped_moving, None, 1, 'Static', 'Moving',
-                        'transformed_coronal.png')
-regtools.overlay_slices(static, warped_moving, None, 2, 'Static', 'Moving',
-                        'transformed_axial.png')
+regtools.overlay_slices(static, warped_moving, None, 0, "Static", "Moving",
+                        "transformed_sagittal.png")
+regtools.overlay_slices(static, warped_moving, None, 1, "Static", "Moving",
+                        "transformed_coronal.png")
+regtools.overlay_slices(static, warped_moving, None, 2, "Static", "Moving",
+                        "transformed_axial.png")
 
 """
 .. figure:: transformed_sagittal.png
@@ -206,6 +195,7 @@ from dipy.io.streamline import load_tractogram
 
 sft = load_tractogram('lr-superiorfrontal.trk', 'same')
 
+
 """
 We then apply the obtained deformation field to the streamlines. Note that the
 process can be sensitive to image orientation and voxel resolution. Thus, we
@@ -214,61 +204,48 @@ affine transformation whose extents must be corrected to account for the
 different voxel grids of the moving and static images.
 
 """
-
 from dipy.tracking.streamline import deform_streamlines
 
 # Create an isocentered affine
 target_isocenter = np.diag(np.array([-vox_size, vox_size, vox_size, 1]))
 
-# Take the off-origin affine capturing the extent contrast between the mean b0
-# image and the template
+# Take the off-origin affine capturing the extent contrast between fa image and the template
 origin_affine = affine_map.affine.copy()
 
 """
 In order to align the FOV of the template and the mirror image of the
 streamlines, we first need to flip the sign on the x-offset and y-offset so
 that we get the mirror image of the forward deformation field.
-
 We need to use the information about the origin offsets (i.e. between the
 static and moving images) that we obtained using :meth:`transform_origins`:
-
 """
-
 origin_affine[0][3] = -origin_affine[0][3]
 origin_affine[1][3] = -origin_affine[1][3]
 
 """
-
 :meth:`transform_origins` returns this affine transformation with (1, 1, 1)
 zooms and not (2, 2, 2), which means that the offsets need to be scaled by 2.
 Thus, we scale z by the voxel size:
- 
-"""
 
+"""
 origin_affine[2][3] = origin_affine[2][3]/vox_size
 
 """
 But when scaling the z-offset, we are also implicitly scaling the y-offset as
 well (by 1/2).Thus we need to correct for this by only scaling the y by the
 square of the voxel size (1/4, and not 1/2):
+"""
+origin_affine[1][3] = origin_affine[1][3]/vox_size**2
+
+# Apply the deformation and correct for the extents
+mni_streamlines = deform_streamlines(sft, deform_field=mapping.get_forward_field(),
+                                     stream_to_current_grid=target_isocenter,
+                                     current_grid_to_world=origin_affine,
+                                     stream_to_ref_grid=target_isocenter,
+                                     ref_grid_to_world=np.eye(4))
 
 """
-
-origin_affine[1][3] = origin_affine[1][3]/vox_size**vox_size
-
-"""
-Finally, we apply the deformation and correct for the extents:
-
-"""
-
-warped_streamlines = deform_streamlines(
-    sft.streamlines, deform_field=mapping.get_forward_field(),
-    stream_to_current_grid=target_isocenter,
-    current_grid_to_world=origin_affine, stream_to_ref_grid=target_isocenter,
-    ref_grid_to_world=np.eye(4))
-
-"""
-We display the warped streamlines overlaid to the template image:
+We display the original streamlines and the registered streamlines:
 
 """
 
@@ -294,31 +271,30 @@ if has_fury:
 
     from fury import actor, window
 
-    show_template_bundles(warped_streamlines, show=False,
-                          fname='streamline_registration.png')
+    show_template_bundles(mni_streamlines, show=False,
+                          fname='streamlines_DSN_MNI.png')
 
     """
     .. figure:: streamline_registration.png
        :align: center
 
-       Streamlines after registration.
+       Streamlines before and after registration.
 
-    The corpus callosum bundles have been deformed to adapt to the MNI
-    template space.
+    As it can be seen, the corpus callosum bundles have been deformed to adapt
+    to the MNI template space.
 
     """
 
 """
 Finally, we save the registered streamlines:
-
 """
 
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 
-sft = StatefulTractogram(warped_streamlines, img_t2_mni, Space.RASMM)
+sft = StatefulTractogram(mni_streamlines, img_t2_mni, Space.RASMM)
 
-save_tractogram(sft, 'warped-lr-superiorfrontal.trk', bbox_valid_check=True)
+save_tractogram(sft, 'mni-lr-superiorfrontal.trk', bbox_valid_check=True)
 
 
 """
