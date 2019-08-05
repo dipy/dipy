@@ -643,7 +643,7 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
     vects = optimize.fmin_slsqp(_get_forces_alt, init_pointset.reshape(K * 3),
                                 f_eqcons=_equality_constraints,
                                 fprime=_get_grad_forces_alt, iter=iters, acc=tol,
-                                args=[], iprint=0)
+                                args=(), iprint=0)
     return vects
 
 
