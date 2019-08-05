@@ -513,7 +513,7 @@ def _equality_constraints(vects, *args):
 
     """
 
-    N = vects.shape[0] / 3
+    N = vects.shape[0] // 3
     vects = vects.reshape((N, 3))
     return (vects ** 2).sum(1) - 1.0
 
@@ -533,7 +533,7 @@ def _grad_equality_constraints(vects):
 
     """
 
-    N = vects.shape[0] / 3
+    N = vects.shape[0] // 3
     vects = vects.reshape((N, 3))
     vects = (vects.T / np.sqrt((vects ** 2).sum(1))).T
     grad = np.zeros((N, N * 3))
@@ -562,7 +562,7 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
 
     """
 
-    nb_points = vects.shape[0] / 3
+    nb_points = vects.shape[0] // 3
     # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
     weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
@@ -599,7 +599,7 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
 
     """
 
-    nb_points = vects.shape[0] / 3
+    nb_points = vects.shape[0] // 3
     # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
     weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
