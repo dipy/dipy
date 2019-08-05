@@ -8,7 +8,7 @@ from time import time
 from dipy.segment.mask import median_otsu
 from dipy.io.streamline import load_trk, save_trk
 from dipy.segment.bundles import RecoBundles
-
+from dipy.tracking.streamline import Streamlines
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -92,7 +92,7 @@ class RecoBundlesFlow(Workflow):
         return 'recobundles'
 
     def run(self, streamline_files, model_bundle_files,
-            greater_than=50, less_than=1000000,
+            greater_than=30, less_than=1000000,
             no_slr=False, clust_thr=15.,
             reduction_thr=15.,
             reduction_distance='mdf',
@@ -317,6 +317,11 @@ class LabelsBundlesFlow(Workflow):
             streamlines, header = load_trk(sf)
             logging.info(lb)
             location = np.load(lb)
+            if len(location) < 1 :
+                bundle = Streamlines([])
+            else:
+                bundle = streamlines[location]
+                
             logging.info('Saving output files ...')
-            save_trk(out_bundle, streamlines[location], np.eye(4))
+            save_trk(out_bundle, bundle , np.eye(4))
             logging.info(out_bundle)

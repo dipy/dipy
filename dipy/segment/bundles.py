@@ -75,7 +75,7 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines,  greater_than=50, less_than=1000000,
+    def __init__(self, streamlines,  greater_than=30, less_than=1000000,
                  cluster_map=None, clust_thr=15, nb_pts=20,
                  rng=None, verbose=True):
         """ Recognition of bundles
@@ -615,6 +615,12 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
+        # edit here
+        
+        if len(pruned_indices) == 0:
+            print(' You have removed all streamlines')
+            return Streamlines([]), []
+        
         pruned_streamlines = transf_streamlines[np.array(pruned_indices)]
 
         initial_indices = list(chain(*neighb_indices))

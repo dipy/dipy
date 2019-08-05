@@ -62,6 +62,7 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
     if mask is None:
         # If mask is not specified, use the whole volume
         mask = np.ones_like(arr, dtype=bool)[..., 0]
+        #mask = np.zeros(arr, dtype=bool)[..., 0]
 
     if out_dtype is None:
         out_dtype = arr.dtype
@@ -112,52 +113,58 @@ def localpca(arr, sigma, mask=None, pca_method='eig', patch_radius=2,
         for j in range(patch_radius, arr.shape[1] - patch_radius):
             for i in range(patch_radius, arr.shape[0] - patch_radius):
                 # Shorthand for indexing variables:
-                if not mask[i, j, k]:
-                    continue
-                ix1 = i - patch_radius
-                ix2 = i + patch_radius + 1
-                jx1 = j - patch_radius
-                jx2 = j + patch_radius + 1
-                kx1 = k - patch_radius
-                kx2 = k + patch_radius + 1
-
-                X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
-                                patch_size ** 3, arr.shape[-1])
-                # compute the mean and normalize
-                M = np.mean(X, axis=0)
-                # Upcast the dtype for precision in the SVD
-                X = X - M
-
-                if is_svd:
-                    # PCA using an SVD
-                    U, S, Vt = svd(X, *svd_args)[:3]
-                    # Items in S are the eigenvalues, but in ascending order
-                    # We invert the order (=> descending), square and normalize
-                    # \lambda_i = s_i^2 / n
-                    d = S[::-1] ** 2 / X.shape[0]
-                    # Rows of Vt are eigenvectors, but also in ascending
-                    # eigenvalue order:
-                    W = Vt[::-1].T
-
-                else:
-                    # PCA using an Eigenvalue decomposition
-                    C = np.transpose(X).dot(X)
-                    C = C / X.shape[0]
-                    [d, W] = eigh(C, turbo=True)
-
-                # Threshold by tau:
-                W[:, d < tau] = 0
-                # This is equations 1 and 2 in Manjon 2013:
-                Xest = X.dot(W).dot(W.T) + M
-                Xest = Xest.reshape(patch_size,
-                                    patch_size,
-                                    patch_size, arr.shape[-1])
-                # This is equation 3 in Manjon 2013:
-                this_theta = 1.0 / (1.0 + np.sum(d > 0))
-                theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
-                thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
+                if  mask[i, j, k]: # not mask
+                    #print(mask[i][j][k])
+                    ix1 = i - patch_radius
+                    ix2 = i + patch_radius + 1
+                    jx1 = j - patch_radius
+                    jx2 = j + patch_radius + 1
+                    kx1 = k - patch_radius
+                    kx2 = k + patch_radius + 1
+    
+                    X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
+                                    patch_size ** 3, arr.shape[-1])
+                    # compute the mean and normalize
+                    M = np.mean(X, axis=0)
+                    # Upcast the dtype for precision in the SVD
+                    X = X - M
+    
+                    if is_svd:
+                        # PCA using an SVD
+                        U, S, Vt = svd(X, *svd_args)[:3]
+                        # Items in S are the eigenvalues, but in ascending order
+                        # We invert the order (=> descending), square and normalize
+                        # \lambda_i = s_i^2 / n
+                        d = S[::-1] ** 2 / X.shape[0]
+                        # Rows of Vt are eigenvectors, but also in ascending
+                        # eigenvalue order:
+                        W = Vt[::-1].T
+    
+                    else:
+                        # PCA using an Eigenvalue decomposition
+                        C = np.transpose(X).dot(X)
+                        C = C / X.shape[0]
+                        [d, W] = eigh(C, turbo=True)
+    
+                    # Threshold by tau:
+                    W[:, d < tau] = 0
+                    # This is equations 1 and 2 in Manjon 2013:
+                    Xest = X.dot(W).dot(W.T) + M
+                    Xest = Xest.reshape(patch_size,
+                                        patch_size,
+                                        patch_size, arr.shape[-1])
+                    # This is equation 3 in Manjon 2013:
+                    this_theta = 1.0 / (1.0 + np.sum(d > 0))
+                    theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
+                    thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
 
     denoised_arr = thetax / theta
     denoised_arr.clip(min=0, out=denoised_arr)
     denoised_arr[~mask] = 0
+    
+    #d1 = denoised_arr.copy()
+    #denoised_arr[mask==0] = 0
+    #print(mask==0)
+    print("done")
+    #return d1.astype(out_dtype), denoised_arr.astype(out_dtype)
     return denoised_arr.astype(out_dtype)

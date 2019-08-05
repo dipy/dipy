@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import numpy as np
+from time import time
 from scipy import spatial
 from scipy.spatial import cKDTree
 from scipy.ndimage.interpolation import map_coordinates
@@ -18,7 +19,7 @@ from dipy.tracking.streamline import (set_number_of_points,
                                       orient_by_streamline,
                                       transform_streamlines,
                                       Streamlines)
-
+from glob import glob
 pd, have_pd, _ = optional_package("pandas")
 _, have_tables, _ = optional_package("tables")
 
@@ -26,7 +27,7 @@ if have_pd:
     import pandas as pd
 
 
-def _save_hdf5(fname, dt, col_name, col_size=5):
+def _save_hdf5(fname, dt, col_name, col_size=16):
     """ Saves the given input dataframe to .h5 file
 
     Parameters
@@ -38,7 +39,7 @@ def _save_hdf5(fname, dt, col_name, col_size=5):
     col_name : string
         column name to have specific column size
     col_size : integer
-        max column size (default=5)
+        max column size (default=16)
 
     """
 
@@ -206,21 +207,31 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
     """
 
+
+    t = time()
+
     dt = dict()
 
-    mb = os.listdir(model_bundle_folder)
+    #mb = os.listdir(model_bundle_folder)
+    mb = glob(model_bundle_folder+"/*.trk")
+    
     mb.sort()
-    bd = os.listdir(bundle_folder)
+    #bd = os.listdir(bundle_folder)
+    #bd.sort()
+    
+    bd = glob(bundle_folder+"/*.trk")
     bd.sort()
-    org_bd = os.listdir(orig_bundle_folder)
+    
+    #org_bd = os.listdir(orig_bundle_folder)
+    org_bd = glob(orig_bundle_folder+"/*.trk")
     org_bd.sort()
     n = len(org_bd)
 
     for io in range(n):
-        mbundles, _ = load_trk(os.path.join(model_bundle_folder, mb[io]))
-        bundles, _ = load_trk(os.path.join(bundle_folder, bd[io]))
-        orig_bundles, _ = load_trk(os.path.join(orig_bundle_folder,
-                                   org_bd[io]))
+        mbundles, _ = load_trk(mb[io]) #os.path.join(model_bundle_folder, mb[io]))
+        bundles, _ = load_trk(bd[io]) #os.path.join(bundle_folder, bd[io]))
+        orig_bundles, _ = load_trk(org_bd[io])#os.path.join(orig_bundle_folder,
+                                   #org_bd[io]))
 
         mbundle_streamlines = set_number_of_points(mbundles,
                                                    nb_points=no_disks)
@@ -240,7 +251,8 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         _, indx = cKDTree(centroids.data, 1,
                           copy_data=True).query(bundles.data, k=1)
 
-        metric_files_names = os.listdir(metric_folder)
+        #metric_files_names = os.listdir(metric_folder)
+        metric_files_names = ["fa.nii.gz", "md.nii.gz", "csd_peaks.pam5"]
         _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
 
         affine_r = np.linalg.inv(affine)
@@ -250,13 +262,15 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         for mn in range(0, len(metric_files_names)):
 
             ind = np.array(indx)
-            fm = metric_files_names[mn][:2]
-            bm = mb[io][:-4]
+            fm = metric_files_names[mn][:-7]
+            bm = mb[io][14:-4]
+            print("bm = ", bm)
             dt = dict()
             metric_name = os.path.join(metric_folder,
                                        metric_files_names[mn])
 
-            if metric_files_names[mn][2:] == '.nii.gz':
+            print("metric = ", metric_files_names[mn])
+            if metric_files_names[mn][-7:] == '.nii.gz':
                 metric, _ = load_nifti(metric_name)
 
                 dti_measures(transformed_orig_bundles, metric, dt, fm,
@@ -268,6 +282,8 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                 peak_values(bundles, metric, dt, fm, bm, subject, group,
                             ind, out_dir)
 
+
+    print("total time taken in minutes = ", (-t + time())/60)
 
 def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
                      stat=np.mean):

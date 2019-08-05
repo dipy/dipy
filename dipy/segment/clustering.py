@@ -595,6 +595,9 @@ class TreeCluster(ClusterCentroid):
     @property
     def is_leaf(self):
         return len(self.children) == 0
+    
+    def return_indices(self):
+        return self.children
 
 
 class TreeClusterMap(ClusterMap):
