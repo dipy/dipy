@@ -13,8 +13,8 @@ if has_fury:
 
 skip_it = use_xvfb == 'skip'
 
-
-@npt.dec.skipif(skip_it or not has_fury)
+# we will have to skip this as creates issues with xvfb (XIO error)
+@npt.dec.skipif(skip_it)
 @xvfb_it
 def test_horizon_events():
 
@@ -31,8 +31,8 @@ def test_horizon_events():
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=True, recorded_events=fname)
 
-
-@npt.dec.skipif(skip_it or not has_fury)
+# see comment above
+@npt.dec.skipif(skip_it)
 @xvfb_it
 def test_horizon_events2():
 
