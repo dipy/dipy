@@ -565,7 +565,6 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
     """
 
     nb_points = vects.shape[0] // 3
-    # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
     weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
     all_charges = np.concatenate((charges, -charges))
@@ -602,7 +601,6 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
     """
 
     nb_points = vects.shape[0] // 3
-    # weights = kwargs.get('weights', np.ones((nb_points, nb_points)) / nb_points**2)
     weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
     charges = vects.reshape((nb_points, 3))
     all_charges = np.concatenate((charges, -charges))
