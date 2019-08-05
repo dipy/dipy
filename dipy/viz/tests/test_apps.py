@@ -14,7 +14,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # we will have to skip this as creates issues with xvfb (XIO error)
-@npt.dec.skipif(skip_it)
+@npt.dec.skipif(True)
 @xvfb_it
 def test_horizon_events():
 
@@ -32,7 +32,7 @@ def test_horizon_events():
             world_coords=True, interactive=True, recorded_events=fname)
 
 # see comment above
-@npt.dec.skipif(skip_it)
+@npt.dec.skipif(True)
 @xvfb_it
 def test_horizon_events2():
 
