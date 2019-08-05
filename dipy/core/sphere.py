@@ -500,7 +500,8 @@ def disperse_charges(hemi, iters, const=.2):
 
 def _equality_constraints(vects, *args):
     """Spherical equality constraint. Returns 0 if vects lies on the unit
-    sphere.
+    sphere. Note that a flattened array is returned because `scipy.optimize`
+    expects a 1-D array.
 
     Parameters
     ----------
@@ -544,7 +545,8 @@ def _grad_equality_constraints(vects):
 
 def _get_forces_alt(vects, alpha=2.0, **kwargs):
     """Electrostatic-repulsion objective function. The alpha parameter
-    controls the power repulsion (energy varies as $1 / r^\alpha$).
+    controls the power repulsion (energy varies as $1 / r^\alpha$). For
+    $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
 
     Parameters
     ----------
@@ -621,11 +623,11 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
 
 def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
     """Reimplementation of disperse_charges making use of
-    scipy.optimize.fmin_slsqp.
+    `scipy.optimize.fmin_slsqp`.
 
     Parameters
     ----------
-    init_pointset : HemiSphere
+    init_pointset : (N,) ndarray
         Points on a unit sphere.
     iters : int
         Number of iterations to run.
