@@ -518,7 +518,6 @@ def _equality_constraints(vects, *args):
     vects = vects.reshape((N, 3))
     return (vects ** 2).sum(1) - 1.0
 
-
 def _grad_equality_constraints(vects):
     """Return normals to the surface constraint (which corresponds to
     the gradient of the implicit function).
@@ -642,8 +641,8 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
     K = init_pointset.shape[0]
     vects = optimize.fmin_slsqp(_get_forces_alt, init_pointset.reshape(K * 3),
                                 f_eqcons=_equality_constraints,
-                                fprime=_get_grad_forces_alt, iter=iters, acc=tol,
-                                args=(), iprint=0)
+                                fprime=_get_grad_forces_alt, iter=iters,
+                                acc=tol, args=(), iprint=0)
     return vects
 
 
