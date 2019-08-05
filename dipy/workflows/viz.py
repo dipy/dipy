@@ -1,9 +1,11 @@
+import numpy as np
 from os.path import join as pjoin
 import nibabel as nib
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import Dpy
 from dipy.io.image import load_nifti
 from dipy.viz.app import horizon
+from dipy.io.peaks import load_peaks
 
 
 class HorizonFlow(Workflow):
@@ -13,8 +15,8 @@ class HorizonFlow(Workflow):
         return 'horizon'
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
-            random_colors=False, length_lt=1000, length_gt=0,
-            clusters_lt=10**8, clusters_gt=0, native_coords=False,
+            random_colors=False, length_gt=0, length_lt=1000,
+            clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, out_dir='', out_stealth_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
@@ -27,10 +29,10 @@ class HorizonFlow(Workflow):
         cluster : bool
         cluster_thr : float
         random_colors : bool
-        length_lt : float
         length_gt : float
-        clusters_lt : int
+        length_lt : float
         clusters_gt : int
+        clusters_lt : int
         native_coords : bool
         stealth : bool
         out_dir : string
@@ -44,12 +46,11 @@ class HorizonFlow(Workflow):
             S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
             adaptive visualization, Proceedings of: International Society of
             Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
-
-
         """
         verbose = True
         tractograms = []
         images = []
+        pams = []
         interactive = not stealth
         world_coords = not native_coords
 
@@ -82,11 +83,25 @@ class HorizonFlow(Workflow):
                 data, affine = load_nifti(fname)
                 images.append((data, affine))
                 if verbose:
+                    print('Affine to RAS')
+                    np.set_printoptions(3, suppress=True)
                     print(affine)
+                    np.set_printoptions()
 
-        horizon(tractograms, images, cluster, cluster_thr,
-                random_colors, length_lt, length_gt, clusters_lt,
-                clusters_gt,
+            if ends(".pam5"):
+
+                pam = load_peaks(fname)
+                pams.append(pam)
+
+                if verbose:
+                    print('Peak_dirs shape')
+                    print(pam.peak_dirs.shape)
+
+        horizon(tractograms=tractograms, images=images, pams=pams,
+                cluster=cluster, cluster_thr=cluster_thr,
+                random_colors=random_colors,
+                length_gt=length_gt, length_lt=length_lt,
+                clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive,
                 out_png=pjoin(out_dir, out_stealth_png))

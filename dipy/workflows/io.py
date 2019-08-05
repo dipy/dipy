@@ -40,9 +40,10 @@ class IoInfoFlow(Workflow):
         io_it = self.get_io_iterator()
 
         for input_path in io_it:
-            logging.info('------------------------------------------')
+            mult_ = len(input_path)
+            logging.info('-----------' + mult_*'-')
             logging.info('Looking at {0}'.format(input_path))
-            logging.info('------------------------------------------')
+            logging.info('-----------' + mult_*'-')
 
             ipath_lower = input_path.lower()
 
@@ -55,14 +56,25 @@ class IoInfoFlow(Workflow):
                     return_coords=True)
                 logging.info('Data size {0}'.format(data.shape))
                 logging.info('Data type {0}'.format(data.dtype))
-                logging.info('Data min {0} max {1} avg {2}'
-                             .format(data.min(), data.max(), data.mean()))
-                logging.info('2nd percentile {0} 98th percentile {1}'
-                             .format(np.percentile(data, 2),
-                                     np.percentile(data, 98)))
+
+                if data.ndim == 3:
+                    logging.info('Data min {0} max {1} avg {2}'
+                                 .format(data.min(), data.max(), data.mean()))
+                    logging.info('2nd percentile {0} 98th percentile {1}'
+                                 .format(np.percentile(data, 2),
+                                         np.percentile(data, 98)))
+                if data.ndim == 4:
+                    logging.info('Data min {0} max {1} avg {2} of vol 0'
+                                 .format(data[..., 0].min(),
+                                         data[..., 0].max(),
+                                         data[..., 0].mean()))
+                    msg = '2nd percentile {0} 98th percentile {1} of vol 0'
+                    logging.info(msg
+                                 .format(np.percentile(data[..., 0], 2),
+                                         np.percentile(data[..., 0], 98)))
                 logging.info('Native coordinate system {0}'
                              .format(''.join(affcodes)))
-                logging.info('Affine to RAS1mm \n{0}'.format(affine))
+                logging.info('Affine Native to RAS matrix \n{0}'.format(affine))
                 logging.info('Voxel size {0}'.format(np.array(vox_sz)))
                 if np.sum(np.abs(np.diff(vox_sz))) > 0.1:
                     msg = \
@@ -189,7 +201,7 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
-            # We load the module again so that if we run another one of these in 
-            # the same process, we don't have the env variable pointing to the 
+            # We load the module again so that if we run another one of these in
+            # the same process, we don't have the env variable pointing to the
             # wrong place
             self.load_module('dipy.data.fetcher')
