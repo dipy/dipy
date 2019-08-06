@@ -11,7 +11,7 @@ if has_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
-    from dipy.viz.gmem import HORIMEM
+    from dipy.viz.gmem import GlobalHorizon
     from fury.tests.test_ui import EventCounter
     from fury.colormap import distinguishable_colormap
 
@@ -138,6 +138,7 @@ class Horizon(object):
         self.tractogram_clusters = {}
         self.recorded_events = recorded_events
         self.show_m = None
+        self.mem = GlobalHorizon()
 
     def build_scene(self):
 
@@ -174,7 +175,7 @@ class Horizon(object):
                                                       linewidth=linewidths[i],
                                                       lod=False)
                     scene.add(centroid_actor)
-                    HORIMEM.centroid_actors.append(centroid_actor)
+                    self.mem.centroid_actors.append(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -184,7 +185,7 @@ class Horizon(object):
                     cluster_actor.VisibilityOff()
 
                     scene.add(cluster_actor)
-                    HORIMEM.cluster_actors.append(cluster_actor)
+                    self.mem.cluster_actors.append(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -211,14 +212,14 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
-                HORIMEM.streamline_actors.append(streamline_actor)
+                self.mem.streamline_actors.append(streamline_actor)
         return scene
 
     def remove_actors(self, scene):
 
-        for ca_ in HORIMEM.centroid_actors:
+        for ca_ in self.mem.centroid_actors:
             scene.rm(ca_)
-        for ca_ in HORIMEM.cluster_actors:
+        for ca_ in self.mem.cluster_actors:
             scene.rm(ca_)
 
     def add_actors(self, scene, tractograms, threshold):
@@ -264,7 +265,7 @@ class Horizon(object):
                                                       linewidth=linewidths[i],
                                                       lod=False)
                     scene.add(centroid_actor)
-                    HORIMEM.centroid_actors.append(centroid_actor)
+                    self.mem.centroid_actors.append(centroid_actor)
 
                     cluster_actor = actor.line(clusters[i],
                                                lod=False)
@@ -274,7 +275,7 @@ class Horizon(object):
                     cluster_actor.VisibilityOff()
 
                     scene.add(cluster_actor)
-                    HORIMEM.cluster_actors.append(cluster_actor)
+                    self.mem.cluster_actors.append(cluster_actor)
 
                     # Every centroid actor (cea) is paired to a cluster actor
                     # (cla).
@@ -301,7 +302,7 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
-                HORIMEM.streamline_actors.append(streamline_actor)
+                self.mem.streamline_actors.append(streamline_actor)
 
         def left_click_centroid_callback(obj, event):
 
@@ -449,7 +450,8 @@ class Horizon(object):
             else:
                 pam = None
             self.panel = slicer_panel(scene, self.show_m.iren, data, affine,
-                                      self.world_coords, pam=pam)
+                                      self.world_coords,
+                                      pam=pam, mem=self.mem)
         else:
             data = None
             affine = None
@@ -617,13 +619,13 @@ class Horizon(object):
 
                 self.show_m.render()
 
-        HORIMEM.window_timer_cnt = 0
+        self.mem.window_timer_cnt = 0
 
         def timer_callback(obj, event):
 
-            HORIMEM.window_timer_cnt += 1
+            self.mem.window_timer_cnt += 1
             # TODO possibly add automatic rotation option
-            # cnt = HORIMEM.window_timer_cnt
+            # cnt = self.mem.window_timer_cnt
             # show_m.scene.azimuth(0.05 * cnt)
             # show_m.render()
 

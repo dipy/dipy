@@ -6,7 +6,7 @@ fury, have_fury, setup_module = optional_package('fury')
 
 if have_fury:
     from dipy.viz import actor, ui, colormap
-    from dipy.viz.gmem import HORIMEM
+    from dipy.viz.gmem import GlobalHorizon
 
 
 def build_label(text, font_size=18, bold=False):
@@ -56,7 +56,7 @@ def _color_dslider(slider):
 def slicer_panel(renderer, iren,
                  data=None, affine=None,
                  world_coords=False,
-                 pam=None, mask=None):
+                 pam=None, mask=None, mem=GlobalHorizon()):
     """ Slicer panel with slicer included
 
     Parameters
@@ -70,6 +70,7 @@ def slicer_panel(renderer, iren,
 
     peaks : PeaksAndMetrics
         Default None
+    mem :
 
     Returns
     -------
@@ -88,7 +89,7 @@ def slicer_panel(renderer, iren,
             value_range = np.percentile(data[..., 0], q=[2, 98])
         if orig_shape[-1] == 3:
             value_range = (0, 1.)
-            HORIMEM.slicer_rgb = True
+            mem.slicer_rgb = True
     if ndim == 3:
         value_range = np.percentile(tmp, q=[2, 98])
 
@@ -153,12 +154,12 @@ def slicer_panel(renderer, iren,
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
-        HORIMEM.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
+        mem.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
                                                    0, shape[1] - 1, z, z)
         if pam is not None:
-            HORIMEM.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
+            mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
                                                         0, shape[1] - 1, z, z)
-        HORIMEM.slicer_curr_z = z
+        mem.slicer_curr_z = z
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1,
@@ -170,10 +171,10 @@ def slicer_panel(renderer, iren,
 
     def change_slice_x(slider):
         x = int(np.round(slider.value))
-        HORIMEM.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
+        mem.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                    shape[2] - 1)
-        HORIMEM.slicer_curr_x = x
-        HORIMEM.window_timer_cnt += 100
+        mem.slicer_curr_x = x
+        mem.window_timer_cnt += 100
 
     line_slider_y = ui.LineSlider2D(min_value=0,
                                     max_value=shape[1] - 1,
@@ -186,9 +187,9 @@ def slicer_panel(renderer, iren,
     def change_slice_y(slider):
         y = int(np.round(slider.value))
 
-        HORIMEM.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
+        mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
                                                    0, shape[2] - 1)
-        HORIMEM.slicer_curr_y = y
+        mem.slicer_curr_y = y
 
     double_slider = ui.LineDoubleSlider2D(length=140,
                                           initial_values=value_range,
@@ -199,17 +200,17 @@ def slicer_panel(renderer, iren,
     _color_dslider(double_slider)
 
     def apply_colormap(r1, r2):
-        if HORIMEM.slicer_rgb:
+        if mem.slicer_rgb:
             return
 
-        if HORIMEM.slicer_colormap == 'disting':
+        if mem.slicer_colormap == 'disting':
             # use distinguishable colors
             rgb = colormap.distinguishable_colormap(nb_colors=256)
             rgb = np.asarray(rgb)
         else:
             # use matplotlib colormaps
             rgb = colormap.create_colormap(np.linspace(r1, r2, 256),
-                                           name=HORIMEM.slicer_colormap,
+                                           name=mem.slicer_colormap,
                                            auto=True)
         N = rgb.shape[0]
 
@@ -222,8 +223,8 @@ def slicer_panel(renderer, iren,
         lut.SetRampToLinear()
         lut.Build()
 
-        HORIMEM.slicer_curr_actor_z.output.SetLookupTable(lut)
-        HORIMEM.slicer_curr_actor_z.output.Update()
+        mem.slicer_curr_actor_z.output.SetLookupTable(lut)
+        mem.slicer_curr_actor_z.output.Update()
 
     def on_change_ds(slider):
 
@@ -243,9 +244,9 @@ def slicer_panel(renderer, iren,
 
     def change_opacity(slider):
         slicer_opacity = slider.value
-        HORIMEM.slicer_curr_actor_x.opacity(slicer_opacity)
-        HORIMEM.slicer_curr_actor_y.opacity(slicer_opacity)
-        HORIMEM.slicer_curr_actor_z.opacity(slicer_opacity)
+        mem.slicer_curr_actor_x.opacity(slicer_opacity)
+        mem.slicer_curr_actor_y.opacity(slicer_opacity)
+        mem.slicer_curr_actor_z.opacity(slicer_opacity)
 
     volume_slider = ui.LineSlider2D(min_value=0,
                                     max_value=data.shape[-1] - 1,
@@ -257,11 +258,11 @@ def slicer_panel(renderer, iren,
 
     def change_volume(istyle, obj, slider):
         vol_idx = int(np.round(slider.value))
-        HORIMEM.slicer_vol_idx = vol_idx
+        mem.slicer_vol_idx = vol_idx
 
-        renderer.rm(HORIMEM.slicer_curr_actor_x)
-        renderer.rm(HORIMEM.slicer_curr_actor_y)
-        renderer.rm(HORIMEM.slicer_curr_actor_z)
+        renderer.rm(mem.slicer_curr_actor_x)
+        renderer.rm(mem.slicer_curr_actor_y)
+        renderer.rm(mem.slicer_curr_actor_z)
 
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
@@ -271,48 +272,48 @@ def slicer_panel(renderer, iren,
                                      picking_tol=0.025)
 
         tmp_new = image_actor_z.resliced_array()
-        HORIMEM.slicer_vol = tmp_new
+        mem.slicer_vol = tmp_new
 
-        z = HORIMEM.slicer_curr_z
+        z = mem.slicer_curr_z
         image_actor_z.display_extent(0, shape[0] - 1,
                                      0, shape[1] - 1,
                                      z,
                                      z)
 
-        HORIMEM.slicer_curr_actor_z = image_actor_z
-        HORIMEM.slicer_curr_actor_x = image_actor_z.copy()
+        mem.slicer_curr_actor_z = image_actor_z
+        mem.slicer_curr_actor_x = image_actor_z.copy()
 
         if pam is not None:
-            HORIMEM.slicer_peaks_actor_z = peaks_actor_z
+            mem.slicer_peaks_actor_z = peaks_actor_z
 
-        x = HORIMEM.slicer_curr_x
-        HORIMEM.slicer_curr_actor_x.display_extent(x,
+        x = mem.slicer_curr_x
+        mem.slicer_curr_actor_x.display_extent(x,
                                                    x, 0,
                                                    shape[1] - 1, 0,
                                                    shape[2] - 1)
 
-        HORIMEM.slicer_curr_actor_y = image_actor_z.copy()
-        y = HORIMEM.slicer_curr_y
-        HORIMEM.slicer_curr_actor_y.display_extent(0, shape[0] - 1,
+        mem.slicer_curr_actor_y = image_actor_z.copy()
+        y = mem.slicer_curr_y
+        mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1,
                                                    y,
                                                    y,
                                                    0, shape[2] - 1)
 
-        HORIMEM.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
+        mem.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
-        HORIMEM.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
+        mem.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
-        HORIMEM.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
+        mem.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
                                                 left_click_picker_callback,
                                                 1.0)
-        renderer.add(HORIMEM.slicer_curr_actor_z)
-        renderer.add(HORIMEM.slicer_curr_actor_x)
-        renderer.add(HORIMEM.slicer_curr_actor_y)
+        renderer.add(mem.slicer_curr_actor_z)
+        renderer.add(mem.slicer_curr_actor_x)
+        renderer.add(mem.slicer_curr_actor_y)
 
         if pam is not None:
-            renderer.add(HORIMEM.slicer_peaks_actor_z)
+            renderer.add(mem.slicer_peaks_actor_z)
 
         r1, r2 = double_slider._values
         apply_colormap(r1, r2)
@@ -330,7 +331,7 @@ def slicer_panel(renderer, iren,
                         renderer)
 
         i, j, k = obj.picker.GetPointIJK()
-        res = HORIMEM.slicer_vol[i, j, k]
+        res = mem.slicer_vol[i, j, k]
         try:
             message = '%.3f' % res
         except TypeError:
@@ -338,34 +339,34 @@ def slicer_panel(renderer, iren,
         picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) \
             + ' ' + message
 
-    HORIMEM.slicer_vol_idx = 0
-    HORIMEM.slicer_vol = tmp_new
-    HORIMEM.slicer_curr_actor_x = image_actor_x
-    HORIMEM.slicer_curr_actor_y = image_actor_y
-    HORIMEM.slicer_curr_actor_z = image_actor_z
+    mem.slicer_vol_idx = 0
+    mem.slicer_vol = tmp_new
+    mem.slicer_curr_actor_x = image_actor_x
+    mem.slicer_curr_actor_y = image_actor_y
+    mem.slicer_curr_actor_z = image_actor_z
 
     if pam is not None:
         # change_volume.peaks_actor_z = peaks_actor_z
-        HORIMEM.slicer_peaks_actor_z = peaks_actor_z
+        mem.slicer_peaks_actor_z = peaks_actor_z
 
-    HORIMEM.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
+    mem.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
                                             left_click_picker_callback,
                                             1.0)
-    HORIMEM.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
+    mem.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
                                             left_click_picker_callback,
                                             1.0)
-    HORIMEM.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
+    mem.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
                                             left_click_picker_callback,
                                             1.0)
 
     if pam is not None:
-        HORIMEM.slicer_peaks_actor_z.AddObserver('LeftButtonPressEvent',
+        mem.slicer_peaks_actor_z.AddObserver('LeftButtonPressEvent',
                                                  left_click_picker_callback,
                                                  1.0)
 
-    HORIMEM.slicer_curr_x = int(np.round(shape[0] / 2))
-    HORIMEM.slicer_curr_y = int(np.round(shape[1] / 2))
-    HORIMEM.slicer_curr_z = int(np.round(shape[2] / 2))
+    mem.slicer_curr_x = int(np.round(shape[0] / 2))
+    mem.slicer_curr_y = int(np.round(shape[1] / 2))
+    mem.slicer_curr_z = int(np.round(shape[2] / 2))
 
     line_slider_x.on_change = change_slice_x
     line_slider_y.on_change = change_slice_y
@@ -389,9 +390,9 @@ def slicer_panel(renderer, iren,
         line_slider_x.set_visibility(line_slider_label_x.visibility)
         cnt = next(x_counter)
         if line_slider_label_x.visibility and cnt > 0:
-            renderer.add(HORIMEM.slicer_curr_actor_x)
+            renderer.add(mem.slicer_curr_actor_x)
         else:
-            renderer.rm(HORIMEM.slicer_curr_actor_x)
+            renderer.rm(mem.slicer_curr_actor_x)
         iren.Render()
 
     line_slider_label_x.actor.AddObserver('LeftButtonPressEvent',
@@ -407,9 +408,9 @@ def slicer_panel(renderer, iren,
         line_slider_y.set_visibility(line_slider_label_y.visibility)
         cnt = next(y_counter)
         if line_slider_label_y.visibility and cnt > 0:
-            renderer.add(HORIMEM.slicer_curr_actor_y)
+            renderer.add(mem.slicer_curr_actor_y)
         else:
-            renderer.rm(HORIMEM.slicer_curr_actor_y)
+            renderer.rm(mem.slicer_curr_actor_y)
         iren.Render()
 
     line_slider_label_y.actor.AddObserver('LeftButtonPressEvent',
@@ -425,9 +426,9 @@ def slicer_panel(renderer, iren,
         line_slider_z.set_visibility(line_slider_label_z.visibility)
         cnt = next(z_counter)
         if line_slider_label_z.visibility and cnt > 0:
-            renderer.add(HORIMEM.slicer_curr_actor_z)
+            renderer.add(mem.slicer_curr_actor_z)
         else:
-            renderer.rm(HORIMEM.slicer_curr_actor_z)
+            renderer.rm(mem.slicer_curr_actor_z)
 
         iren.Render()
 
@@ -442,14 +443,14 @@ def slicer_panel(renderer, iren,
 
     def label_colormap_callback(obj, event):
 
-        if HORIMEM.slicer_colormap_cnt == len(HORIMEM.slicer_colormaps) - 1:
-            HORIMEM.slicer_colormap_cnt = 0
+        if mem.slicer_colormap_cnt == len(mem.slicer_colormaps) - 1:
+            mem.slicer_colormap_cnt = 0
         else:
-            HORIMEM.slicer_colormap_cnt += 1
+            mem.slicer_colormap_cnt += 1
 
-        cnt = HORIMEM.slicer_colormap_cnt
-        HORIMEM.slicer_colormap = HORIMEM.slicer_colormaps[cnt]
-        double_slider_label.message = HORIMEM.slicer_colormap
+        cnt = mem.slicer_colormap_cnt
+        mem.slicer_colormap = mem.slicer_colormaps[cnt]
+        double_slider_label.message = mem.slicer_colormap
         values = double_slider._values
         r1, r2 = values
         apply_colormap(r1, r2)

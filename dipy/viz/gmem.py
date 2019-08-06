@@ -1,3 +1,5 @@
+# Shared objects across Horizon's systems
+
 class GlobalHorizon(object):
     def __init__(self):
         # window level sharing
@@ -36,4 +38,3 @@ class GlobalHorizon(object):
         self.cluster_actors = []
 
 
-HORIMEM = GlobalHorizon()
