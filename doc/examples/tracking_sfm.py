@@ -23,6 +23,7 @@ from dipy.reconst import sfm
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import (select_random_set_of_streamlines,
+                                      transform_streamlines,
                                       Streamlines)
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap, has_fury
@@ -160,6 +161,7 @@ if has_fury:
 Finally, we can save these streamlines to a 'trk' file, for use in other
 software, or for further analysis.
 """
+
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_sfm_detr.trk")
 

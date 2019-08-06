@@ -96,7 +96,8 @@ bvecs = np.vstack((np.zeros((2, 3)), directions, directions))
 gtab = gradient_table(bvals, bvecs)
 
 
-""" Simulations are looped for different intra- and extra-cellular water
+"""
+Simulations are looped for different intra- and extra-cellular water
 volume fractions and different intersection angles of the two-fiber
 populations.
 """
@@ -123,7 +124,8 @@ for f_i in range(f.size):
                                       fractions=fractions, snr=None)
         dwi[f_i, a_i, :] = signal
 
-""" Now that all synthetic signals were produced, we can go forward with
+"""
+Now that all synthetic signals were produced, we can go forward with
 MSDKI fitting. As other Dipy's reconstruction techniques, the MSDKI model has
 to be first defined for the specific GradientTable object of the synthetic
 data. For MSDKI, this is done by instantiating the MeanDiffusionKurtosisModel
@@ -157,7 +159,8 @@ dki_fit = dki_model.fit(dwi)
 MD = dki_fit.md
 MK = dki_fit.mk(0, 3)
 
-""" Now we plot the results as a function of the ground truth intersection
+"""
+Now we plot the results as a function of the ground truth intersection
 angle and for different volume fractions of intra-cellular water.
 """
 

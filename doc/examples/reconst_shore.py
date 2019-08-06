@@ -38,7 +38,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 object (gradient information e.g. b-values). For example, to show the b-values
 it is possible to write::
 
-    ``print(gtab.bvals)``
+    print(gtab.bvals)
 
 Instantiate the SHORE Model.
 
