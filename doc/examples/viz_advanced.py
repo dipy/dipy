@@ -52,7 +52,6 @@ We will use 3 bundles, FA and the affine transformation that brings the voxel
 coordinates to world coordinates (RAS 1mm).
 """
 
-# import ipdb; ipdb.set_trace()
 streamlines = Streamlines(res['af.left'])
 streamlines.extend(res['cst.right'])
 streamlines.extend(res['cc_1'])
