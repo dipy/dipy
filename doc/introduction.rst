@@ -18,7 +18,7 @@ e-mail list neuroimaging@python.org with subject starting with ``[DIPY]``.
 
    This is a depiction of tractography created with DIPY.
 
-   If you want to learn more how you can create these with your datasets 
+   If you want to learn more how you can create these with your datasets
    read the examples in our :ref:`documentation` .
 
 .. include:: links_names.inc
