@@ -15,15 +15,21 @@ Highlights
 
 **DIPY 1.0.0** is now available. New features include:
 
-- Horizon, medical visualization interface powered by QuickBundlesX.
-- New Tractometry tools: Bundle Analysis / Bundle Profiles.
-- New reconstruction model: IVIM MIX (Variable Projection).
-- New command line interface: Affine and Diffeomorphic Registration.
-- New command line interface: Probabilistic, Deterministic and PFT Tracking.
-- Integration of Cython Guidelines for developers.
-- Replacement of Nose by Pytest.
-- Documentation update.
-- Closed 103 issues and merged 41 pull requests.
+- Critical :doc:`API changes <api_changes>`
+- Large refactoring of tracking API.
+- New pre-processing algorithms: MP-PCA, Gibbs Ringing.
+- New interpolation module: ``dipy.core.interpolation``.
+- New reconstruction model: MTMS-CSD.
+- Increase affine consistency by updating API.
+- New object to manage safely tractography data: StatefulTractogram
+- New command line interface for downloading datasets: FetchFlow
+- Horizon updated, medical visualization interface powered by QuickBundlesX.
+- Removed all deprecated functions and parameters.
+- Removed compatibility with Python 2.7.
+- Updated minimum dependencies version (Numpy, Scipy).
+-  3 New tutorials added and all updated to API changes.
+- Large documentation update.
+- Closed 289 issues and merged 97 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -40,10 +46,9 @@ Announcements
   </div>
 
 
-- :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
+- :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
 - :doc:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
 - :doc:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
-- :doc:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.
 
 
 See some of our :ref:`Past Announcements <old_news>`
