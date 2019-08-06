@@ -19,7 +19,7 @@ Highlights
 - Large refactoring of tracking API.
 - New pre-processing algorithms: MP-PCA, Gibbs Ringing.
 - New interpolation module: ``dipy.core.interpolation``.
-- New reconstruction model: MTMS-CSD.
+- New reconstruction model: MTMS-CSD, Mean Signal DKI.
 - Increase affine consistency by updating API.
 - New object to manage safely tractography data: StatefulTractogram
 - New command line interface for downloading datasets: FetchFlow
